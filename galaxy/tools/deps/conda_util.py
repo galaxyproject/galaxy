@@ -30,7 +30,9 @@ VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
 CONDA_VERSION = "4.2.13"
-CONDA_BUILD_VERSION = "2.1.5"
+# 2.1.5 is incompatible with 4.2 Conda because of
+# https://github.com/conda/conda-build/pull/1766
+CONDA_BUILD_VERSION = "2.1.4"
 USE_LOCAL_DEFAULT = False
 
 
