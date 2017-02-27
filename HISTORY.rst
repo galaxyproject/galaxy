@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.5.4.dev0
+17.5.4 (2017-02-26)
 ---------------------
 
 * Fix local builds Conda support to reflect conda-build is required.
