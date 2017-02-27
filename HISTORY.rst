@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.5.5.dev0
+17.5.5 (2017-02-26)
 ---------------------
 
 * Fix bug in 17.5.4 where under certain conditions conda-build would attempt to be setup
