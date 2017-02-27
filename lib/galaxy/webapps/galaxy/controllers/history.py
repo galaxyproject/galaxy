@@ -1262,21 +1262,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # TODO: used in page/editor.mako
 
     @web.expose
-    def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
-        """Return autocomplete data for history names"""
-        user = trans.get_user()
-        if not user:
-            return
-
-        ac_data = ""
-        for history in ( trans.sa_session.query( model.History )
-                         .filter_by( user=user )
-                         .filter( func.lower( model.History.name ).like(q.lower() + "%") ) ):
-            ac_data = ac_data + history.name + "\n"
-        return ac_data
-        # TODO: used in grid_base.mako
-
-    @web.expose
     @web.require_login( "rename histories" )
     def rename( self, trans, id=None, name=None, **kwd ):
         user = trans.get_user()
