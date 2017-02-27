@@ -17,6 +17,7 @@ from galaxy import model
 from galaxy import util
 from galaxy import web
 from galaxy.exceptions import ObjectInvalid
+from galaxy.queue_worker import send_local_control_task
 from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
                                                  validate_password,
@@ -624,9 +625,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 refresh_frames = [ 'masthead', 'history', 'tools' ]
             else:
                 refresh_frames = [ 'masthead', 'history' ]
-            # Recalculate user disk usage.
             if trans.user:
-                trans.user.calculate_disk_usage()
+                # Queue a quota recalculation (async) task -- this takes a
+                # while sometimes, so we don't want to block on logout.
+                send_local_control_task( trans.app,
+                                         'recalculate_user_disk_usage',
+                                         {'user_id': trans.security.encode_id(trans.user.id)} )
             # Since logging an event requires a session, we'll log prior to ending the session
             trans.log_event( "User logged out" )
         else:
