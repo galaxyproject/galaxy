@@ -47,18 +47,19 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(1), __webpack_require__(2) ], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils, Cytoscape ) {
 	    return Backbone.Model.extend({
 	        initialize: function( options ) {
-	            var chart    = options.chart;
-	            var dataset  = options.dataset;
+	            var chart    = options.chart,
+	                dataset  = options.dataset,
+	                settings = options.chart.settings;
 	            Utils.get( {
 	                url     : dataset.download_url,
 	                success : function( content ) {
 	                    try {
-	                        Cytoscape({
+	                        var cytoscape = Cytoscape({
 				    container: document.getElementById( options.targets[ 0 ] ),
 				    boxSelectionEnabled: false,
 				    autounselectify: true,
 				    layout: {
-				        name: 'grid'
+				        name: settings.get( 'layout_name' )
 				    },
 				    style: [{
 				        selector: 'node',
@@ -69,7 +70,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 				    {
 				        selector: 'edge',
 				        style: {
-					    'curve-style': 'haystack',
+					    'curve-style': settings.get( 'curve_style' ),
 					    'haystack-radius': 0,
 					    'width': 5,
 					    'opacity': 0.5,
