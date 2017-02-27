@@ -168,7 +168,8 @@ class CondaContext(installable.InstallableContext):
     def ensure_conda_build_installed_if_needed(self):
         if self.use_local and not self.conda_build_available:
             conda_targets = [CondaTarget("conda-build", version=CONDA_BUILD_VERSION)]
-            return install_conda_targets(conda_targets, env_name=None, conda_context=self)
+            # Cannot use --use-local during installation fo conda-build.
+            return install_conda_targets(conda_targets, env_name=None, conda_context=self, allow_local=False)
         else:
             return 0
 
@@ -263,11 +264,11 @@ class CondaContext(installable.InstallableContext):
             log.warning(e)
             return e.returncode
 
-    def exec_create(self, args):
+    def exec_create(self, args, allow_local=True):
         create_base_args = [
             "-y"
         ]
-        if self._use_local:
+        if allow_local and self._use_local:
             create_base_args.extend(["--use-local"])
         create_base_args.extend(args)
         return self.exec_command("create", create_base_args)
@@ -281,11 +282,11 @@ class CondaContext(installable.InstallableContext):
         remove_base_args.extend(args)
         return self.exec_command("env", remove_base_args)
 
-    def exec_install(self, args):
+    def exec_install(self, args, allow_local=True):
         install_base_args = [
             "-y"
         ]
-        if self._use_local:
+        if allow_local and self._use_local:
             install_base_args.extend(["--use-local"])
         install_base_args.extend(args)
         return self.exec_command("install", install_base_args)
@@ -448,7 +449,7 @@ def install_conda(conda_context=None, force_conda_build=False):
             os.remove(script_path)
 
 
-def install_conda_targets(conda_targets, env_name=None, conda_context=None):
+def install_conda_targets(conda_targets, env_name=None, conda_context=None, allow_local=True):
     conda_context = _ensure_conda_context(conda_context)
     conda_context.ensure_channels_configured()
     if env_name is not None:
@@ -457,9 +458,9 @@ def install_conda_targets(conda_targets, env_name=None, conda_context=None):
         ]
         for conda_target in conda_targets:
             create_args.append(conda_target.package_specifier)
-        return conda_context.exec_create(create_args)
+        return conda_context.exec_create(create_args, allow_local=allow_local)
     else:
-        return conda_context.exec_install([t.package_specifier for t in conda_targets])
+        return conda_context.exec_install([t.package_specifier for t in conda_targets], allow_local=allow_local)
 
 
 def install_conda_target(conda_target, conda_context=None, skip_environment=False):
