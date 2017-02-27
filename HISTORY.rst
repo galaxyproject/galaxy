@@ -9,7 +9,8 @@ History
 17.5.4.dev0
 ---------------------
 
-    
+* Fix local builds Conda support to reflect conda-build is required.
+* Fix default target path for miniconda installs.
 
 ---------------------
 17.5.3 (2017-02-24)
