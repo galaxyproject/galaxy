@@ -11,6 +11,7 @@ import sys
 import copy
 import collections
 import re
+from functools import reduce
 
 
 # log to galaxy's logger
@@ -37,7 +38,6 @@ def get_keys_from_dict(dl, keys_list):
         map(lambda x: get_keys_from_dict(x, keys_list), dl.values())
     elif isinstance(dl, list):
         map(lambda x: get_keys_from_dict(x, keys_list), dl)
-
 
 
 class RuleValidator:
@@ -1306,10 +1306,10 @@ def map_tool_to_destination(
                                 for arg in rule["arguments"]:
                                     arg_dict = {arg : rule["arguments"][arg]}
                                     arg_keys_list = []
-                                    get_keys_from_dict(arg_dict, arg_keys_list) 
+                                    get_keys_from_dict(arg_dict, arg_keys_list)
                                     try:
-                                        options_value=reduce(dict.__getitem__, arg_keys_list, options)
-                                        arg_value=reduce(dict.__getitem__, arg_keys_list, arg_dict)
+                                        options_value = reduce(dict.__getitem__, arg_keys_list, options)
+                                        arg_value = reduce(dict.__getitem__, arg_keys_list, arg_dict)
                                         if (arg_value != options_value):
                                             matched = False
                                     except KeyError:
