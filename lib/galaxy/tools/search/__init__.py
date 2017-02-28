@@ -73,7 +73,7 @@ class ToolBoxSearch( object ):
             else:
                 add_doc_kwds['name'] = to_unicode( tool.name )
             if tool.guid:
-                # Crate a stub consisting of owner, repo, and tool from guid
+                # Create a stub consisting of owner, repo, and tool from guid
                 slash_indexes = [ m.start() for m in re.finditer( '/', tool.guid ) ]
                 id_stub = tool.guid[ ( slash_indexes[1] + 1 ): slash_indexes[4] ]
                 add_doc_kwds['stub'] = (' ').join( [ token.text for token in self.rex( to_unicode( id_stub ) ) ] )
