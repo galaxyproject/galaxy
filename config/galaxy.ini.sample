@@ -365,6 +365,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # the plugin's ini config file.
 #interactive_environment_swarm_mode = False
 
+# Galaxy can run a "swarm manager" service that will monitor utilization of the
+# swarm and provision/deprovision worker nodes as necessary. The service has
+# its own configuration file.
+#swarm_manager_config_file = config/swarm_manager_conf.yml
+
 # Interactive tour directory: where to store interactive tour definition files.
 # Galaxy ships with several basic interface tours enabled, though a different
 # directory with custom tours can be specified here. The path is relative to the

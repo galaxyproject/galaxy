@@ -283,17 +283,23 @@ Galaxy supports both Docker Engine swarm mode and the legacy Docker Swarm
 system. Legacy Docker Swarm is supported without any special configuration,
 because the containers are still run with ``docker run`` as before. To support
 Docker Engine swarm mode, additional configuration is required. Begin by
-editing your GIE config plugin's ini configuration file (e.g. ``jupyter.ini``)
-and set the ``docker_connect_port`` and ``swarm_mode options`` in addition to
-any other relevant options. Unless you are using a non-standard Docker image,
-the correct value for ``docker_connect_port`` should be suggested to you in the
-sample configuration file:
+editing your GIE plugin's ini configuration file (e.g. ``jupyter.ini``) and set
+the ``docker_connect_port`` and ``swarm_mode options`` in addition to any other
+relevant options. Unless you are using a non-standard Docker image, the correct
+value for ``docker_connect_port`` should be suggested to you in the sample
+configuration file:
 
 .. code-block:: ini
 
     [docker]
     docker_connect_port = 8888
     swarm_mode = True
+
+You can also enable swarm mode for *all* GIE plugins by setting
+``interactive_environment_swarm_mode`` in ``galaxy.ini`` to ``True``. If using
+this setting, you must still set ``docker_connect_port`` in each GIE plugin's
+ini configuration file. The ``swarm_mode`` setting in individual GIE plugin
+config files will override the value set in ``galaxy.ini``.
 
 Note that your Galaxy server does not need to be a member of the swarm itself.
 It can use the method outlined above in the `Docker on Another Host`_ section
@@ -303,18 +309,10 @@ Once configured, you should see that your GIE containers are started and run as
 services, which you can inspect using the ``docker service ls`` command and
 other ``docker service`` subcommands.
 
-**Docker services are not cleaned up by Galaxy**. To clean them up, we have
-provided a script that can be run from cron which will locate "shut down"
-services (GIE containers which have stopped themselves) at
-`cron/clean_docker_swarm_mode_services.sh
-<https://github.com/galaxyproject/galaxy/blob/dev/cron/clean_docker_swarm_mode_services.sh>`__
-in the Galaxy source. This script can be run from cron with a crontab entry
-like this example which runs every 15 minutes:
+**Galaxy swarm manager**
 
-.. code-block:: bash
-
-    */15 * * * * bash /path/to/clean_docker_swarm_mode_services.sh /path/to/galaxy/log/dir/clean_docker_swarm_mode_services.log
-
-This entry would be suitable to be run as ``root`` on a swarm mode manager. You
-could also run it as the Galaxy user on the Galaxy server (with modifications
-to set the correct daemon socket, if running remotely).
+Galaxy will start a "swarm manager" process when the first swarm mode GIE is
+launched. You can control this daemon with the config file
+``config/swarm_mode_manager.yml``. Consult the sample configuration at
+``config/swarm_mode_manager.yml.sample`` for syntax. It will automatically shut
+down when no services or nodes remain to be managed.
