@@ -850,6 +850,24 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                            { label : 'Null', value: 'null' },
 	                            { label : 'Preset', value : 'preset' },
 	                            { label : 'Random', value : 'random' } ]
+	            },
+	            min_zoom : {
+	                name  : 'min_zoom',
+	                label : 'Minimum zoom',
+	                help  : 'Select minimum zoom for the display.',
+	                type  : 'float',
+	                min   : 1/10,
+	                max   : 1,
+	                value : 1/2
+	            },
+	            max_zoom : {
+	                name  : 'max_zoom',
+	                label : 'Maximum zoom',
+	                help  : 'Select maximum zoom for the display.',
+	                type  : 'float',
+	                min   : 2,
+	                max   : 20,
+	                value : 5
 	            }
 	        }
 	    }

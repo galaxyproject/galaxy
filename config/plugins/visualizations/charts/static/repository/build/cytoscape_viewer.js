@@ -61,6 +61,8 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 				    layout: {
 				        name: settings.get( 'layout_name' )
 				    },
+	                            minZoom: parseFloat( settings.get( 'min_zoom' ) ),
+	                            maxZoom: parseFloat( settings.get( 'max_zoom' ) ),
 				    style: [{
 				        selector: 'node',
 				        style: {
@@ -73,12 +75,13 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 					    'curve-style': settings.get( 'curve_style' ),
 					    'haystack-radius': 0,
 					    'width': 5,
-					    'opacity': 0.5,
+					    'opacity': 1,
 					    'line-color': '#ad1a66'
 				        }
 				    }],
 	                            elements: content
 	                        });
+	                        
 	                        chart.state( 'ok', 'Chart drawn.' );
 	                    } catch( err ) {
 	                        chart.state( 'failed', err );
