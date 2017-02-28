@@ -28,21 +28,17 @@ class ScannerError(Exception):
     pass
 
 
-def is_arg_in_options(arg_list,options):
+def get_keys_from_dict(dl, keys_list):
     """
-    This recursive function check if an argument in the options dictionary
-    The argument can have those shape: input or inputs|input
+    This function builds a list using the keys from nest dictionaries
     """
-    arg_parent = arg_list[0]
-    log.debug(arg_parent)
-    log.debug(options)
-    if not arg_parent in options:
-        return False
-    else:
-        if len(arg_list) > 1:
-            return(is_arg_in_options(arg_list[1:],options[arg_parent]))
-        else:
-            return options[arg_parent]
+    if isinstance(dl, dict):
+        keys_list += dl.keys()
+        map(lambda x: get_keys_from_dict(x, keys_list), dl.values())
+    elif isinstance(dl, list):
+        map(lambda x: get_keys_from_dict(x, keys_list), dl)
+
+
 
 class RuleValidator:
     """
@@ -1308,12 +1304,15 @@ def map_tool_to_destination(
                                 matched = True
                                 # check if the args in the config file are available
                                 for arg in rule["arguments"]:
-                                    value = is_arg_in_options(arg.split("|"),options)
-                                    if value:
-                                        if rule["arguments"][arg] != value:
+                                    arg_dict = {arg : rule["arguments"][arg]}
+                                    arg_keys_list = []
+                                    get_keys_from_dict(arg_dict, arg_keys_list) 
+                                    try:
+                                        options_value=reduce(dict.__getitem__, arg_keys_list, options)
+                                        arg_value=reduce(dict.__getitem__, arg_keys_list, arg_dict)
+                                        if (arg_value != options_value):
                                             matched = False
-                                            options = "test"
-                                    else:
+                                    except KeyError:
                                         matched = False
                                         if verbose:
                                             error = "Argument '" + str(arg)
