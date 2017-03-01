@@ -1771,7 +1771,7 @@ class DataToolParameter( BaseDataToolParameter ):
             tags = [ t.user_tname for t in hda.tags ]
             return list.append( { 'id'   : trans.security.encode_id( hda.id ),
                                   'hid'  : hda.hid,
-                                  'name' : '%s [%s]' % ( name, ', '.join( tags ) ) if tags else name,
+                                  'name' : '%s, %s' % ( name, ', '.join( tags ) ) if tags else name,
                                   'src'  : src,
                                   'keep' : keep } )
 
