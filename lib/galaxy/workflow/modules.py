@@ -236,7 +236,7 @@ class SubWorkflowModule( WorkflowModule ):
 
     @classmethod
     def from_dict( Class, trans, d, **kwds ):
-        module = Class( trans )
+        module = super( SubWorkflowModule, Class ).from_dict( trans, d, **kwds )
         if "subworkflow" in d:
             module.subworkflow = d[ "subworkflow" ]
         elif "content_id" in d:
@@ -244,14 +244,12 @@ class SubWorkflowModule( WorkflowModule ):
             module.subworkflow = WorkflowsManager( trans.app ).get_owned_workflow( trans, d[ "content_id" ] )
         else:
             raise Exception( "Step associated subworkflow could not be found." )
-        module.label = d.get( "label" )
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step, **kwds ):
-        module = Class( trans )
+        module = super( SubWorkflowModule, Class ).from_workflow_step( trans, step, **kwds )
         module.subworkflow = step.subworkflow
-        module.label = step.label
         return module
 
     def save_to_step( self, step ):
@@ -274,11 +272,9 @@ class SubWorkflowModule( WorkflowModule ):
         if hasattr( self.subworkflow, 'input_steps' ):
             for step in self.subworkflow.input_steps:
                 name = step.label
-                if name is None:
-                    step_module = module_factory.from_workflow_step( self.trans, step )
-                    name = step_module.state.inputs.get( "name" )
                 if not name:
-                    raise Exception( "Failed to find name for workflow module." )
+                    step_module = module_factory.from_workflow_step( self.trans, step )
+                    name = step_module.get_name()
                 step_type = step.type
                 assert step_type in step_to_input_type
                 input = dict(
@@ -379,11 +375,6 @@ class InputModule( WorkflowModule ):
 class InputDataModule( InputModule ):
     type = "data_input"
     name = "Input dataset"
-    default_name = "Input Dataset"
-
-    def get_inputs( self ):
-        name = self.state.inputs.get( 'name', self.default_name )
-        return dict( name=TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) ) )
 
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input'] ) ]
@@ -400,21 +391,17 @@ class InputDataModule( InputModule ):
         return ', '.join( filter_set )
 
     def get_runtime_inputs( self, connections=None ):
-        label = self.state.inputs.get( "name", "Input Dataset" )
-        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=False, type="data", format=self.get_filter_set( connections ) ), self.trans ) )
+        return dict( input=DataToolParameter( None, Element( "param", name="input", label=self.label, multiple=False, type="data", format=self.get_filter_set( connections ) ), self.trans ) )
 
 
 class InputDataCollectionModule( InputModule ):
     type = "data_collection_input"
     name = "Input dataset collection"
-    default_name = "Input Dataset Collection"
     default_collection_type = "list"
     collection_type = default_collection_type
 
     def get_inputs( self ):
-        name = self.state.inputs.get( "name", self.default_name )
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
-        input_name = TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) )
         input_collection_type = TextToolParameter( None, XML(
             '''
             <param name="collection_type" label="Collection type" type="text" value="%s">
@@ -423,12 +410,11 @@ class InputDataCollectionModule( InputModule ):
                 <option value="list:paired">List of Dataset Pairs</option>
             </param>
             ''' % collection_type ) )
-        return odict( [ ( "name", input_name ), ( "collection_type", input_collection_type ) ] )
+        return dict( collection_type=input_collection_type )
 
     def get_runtime_inputs( self, **kwds ):
-        label = self.state.inputs.get( "name", self.default_name )
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
-        input_element = Element( "param", name="input", label=label, type="data_collection", collection_type=collection_type )
+        input_element = Element( "param", name="input", label=self.label, type="data_collection", collection_type=collection_type )
         return dict( input=DataCollectionToolParameter( None, input_element, self.trans ) )
 
     def get_data_outputs( self ):

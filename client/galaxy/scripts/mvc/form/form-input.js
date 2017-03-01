@@ -46,22 +46,19 @@ define([], function() {
             });
         },
 
-        /** Set backdrop for input element
-        */
+        /** Set backdrop for input element */
         backdrop: function() {
             this.model.set( 'backdrop', true );
         },
 
-        /** Set error text
-        */
+        /** Set error text */
         error: function( text ) {
             this.model.set( 'error_text', text );
         },
 
-        /** Reset this view
-        */
+        /** Reset this view */
         reset: function() {
-            this.model.set( 'error_text', null );
+            !this.model.get( 'fixed' ) && this.model.set( 'error_text', null );
         },
 
         render: function() {
