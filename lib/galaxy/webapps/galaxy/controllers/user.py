@@ -17,6 +17,7 @@ from galaxy import model
 from galaxy import util
 from galaxy import web
 from galaxy.exceptions import ObjectInvalid
+from galaxy.queue_worker import send_local_control_task
 from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
                                                  validate_password,
@@ -624,9 +625,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 refresh_frames = [ 'masthead', 'history', 'tools' ]
             else:
                 refresh_frames = [ 'masthead', 'history' ]
-            # Recalculate user disk usage.
             if trans.user:
-                trans.user.calculate_disk_usage()
+                # Queue a quota recalculation (async) task -- this takes a
+                # while sometimes, so we don't want to block on logout.
+                send_local_control_task( trans.app,
+                                         'recalculate_user_disk_usage',
+                                         {'user_id': trans.security.encode_id(trans.user.id)} )
             # Since logging an event requires a session, we'll log prior to ending the session
             trans.log_event( "User logged out" )
         else:
@@ -1190,3 +1194,209 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     message=message,
                                     display_top=kwd.get('redirect_home', False)
                                     )
+
+    @web.expose
+    @web.require_admin
+    def edit_info( self, trans, cntrller, **kwd ):
+        """
+        TEMPORARY ENDPOINT - added back to support admin-level user info
+        editing prior to adminjs.  This is code that was prematurely removed
+        from the user controller when the user-side editing functionality was
+        replaced.
+
+        The method manage_user_info, which follows this, should also be removed
+        at that time.
+
+        Edit user information = username, email or password.
+        """
+        params = util.Params( kwd )
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        user_id = params.get( 'user_id', None )
+        if user_id and is_admin:
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        elif user_id and ( not trans.user or trans.user.id != trans.security.decode_id( user_id ) ):
+            message = 'Invalid user id'
+            status = 'error'
+            user = None
+        else:
+            user = trans.user
+        if user and params.get( 'login_info_button', False ):
+            # Editing email and username
+            email = util.restore_text( params.get( 'email', '' ) )
+            username = util.restore_text( params.get( 'username', '' ) ).lower()
+
+            # Validate the new values for email and username
+            message = validate_email( trans, email, user )
+            if not message and username:
+                message = validate_publicname( trans, username, user )
+            if message:
+                status = 'error'
+            else:
+                if ( user.email != email ):
+                    # The user's private role name must match the user's login ( email )
+                    private_role = trans.app.security_agent.get_private_user_role( user )
+                    private_role.name = email
+                    private_role.description = 'Private role for ' + email
+                    # Change the email itself
+                    user.email = email
+                    trans.sa_session.add_all( ( user, private_role ) )
+                    trans.sa_session.flush()
+                    if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
+                        user.active = False
+                        trans.sa_session.add( user )
+                        trans.sa_session.flush()
+                        is_activation_sent = self.send_verification_email( trans, user.email, user.username )
+                        if is_activation_sent:
+                            message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
+                        else:
+                            message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                            if trans.app.config.error_email_to is not None:
+                                message += ' Contact: %s' % trans.app.config.error_email_to
+                if ( user.username != username ):
+                    user.username = username
+                    trans.sa_session.add( user )
+                    trans.sa_session.flush()
+                message = 'The login information has been updated with the changes.'
+        elif user and params.get( 'edit_user_info_button', False ):
+            # Edit user information - webapp MUST BE 'galaxy'
+            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
+            if user_type_fd_id not in [ 'none' ]:
+                user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
+            elif user.values:
+                user_type_form_definition = user.values.form_definition
+            else:
+                # User was created before any of the user_info forms were created
+                user_type_form_definition = None
+            if user_type_form_definition:
+                values = self.get_form_values( trans, user, user_type_form_definition, **kwd )
+            else:
+                values = {}
+            flush_needed = False
+            if user.values:
+                # Editing the user info of an existing user with existing user info
+                user.values.content = values
+                trans.sa_session.add( user.values )
+                flush_needed = True
+            elif values:
+                form_values = trans.model.FormValues( user_type_form_definition, values )
+                trans.sa_session.add( form_values )
+                user.values = form_values
+                flush_needed = True
+            if flush_needed:
+                trans.sa_session.add( user )
+                trans.sa_session.flush()
+            message = "The user information has been updated with the changes."
+        if user and trans.webapp.name == 'galaxy' and is_admin:
+            kwd[ 'user_id' ] = trans.security.encode_id( user.id )
+        kwd[ 'id' ] = user_id
+        if message:
+            kwd[ 'message' ] = util.sanitize_text( message )
+        if status:
+            kwd[ 'status' ] = status
+        return trans.response.send_redirect( web.url_for( controller='user',
+                                                          action='manage_user_info',
+                                                          cntrller=cntrller,
+                                                          **kwd ) )
+
+    @web.expose
+    @web.require_admin
+    def manage_user_info( self, trans, cntrller, **kwd ):
+        '''TEMPORARY ENDPOINT - added back to support admin-level user info
+        editing prior to adminjs.  This is code that was prematurely removed
+        from the user controller when the user-side editing functionality was
+        replaced.
+
+        When this is removed, templates/webapps/galaxy/user/manage_info.mako
+        should go as well.
+
+        Manage a user's login, password, public username, type,
+        addresses, etc.'''
+
+        def __get_user_type_form_definition( trans, user=None, **kwd ):
+            params = util.Params( kwd )
+            if user and user.values:
+                user_type_fd_id = trans.security.encode_id( user.values.form_definition.id )
+            else:
+                user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
+            if user_type_fd_id not in [ 'none' ]:
+                user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
+            else:
+                user_type_form_definition = None
+            return user_type_form_definition
+
+        def __get_widgets( trans, user_type_form_definition, user=None, **kwd ):
+            widgets = []
+            if user_type_form_definition:
+                if user:
+                    if user.values:
+                        widgets = user_type_form_definition.get_widgets( user=user,
+                                                                         contents=user.values.content,
+                                                                         **kwd )
+                    else:
+                        widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
+                else:
+                    widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
+            return widgets
+
+        def __build_user_type_fd_id_select_field( trans, selected_value ):
+            from galaxy.web.form_builder import build_select_field
+            # Get all the user information forms
+            user_info_forms = self.get_all_forms( trans,
+                                                  filter=dict( deleted=False ),
+                                                  form_type=trans.model.FormDefinition.types.USER_INFO )
+            return build_select_field( trans,
+                                       objs=user_info_forms,
+                                       label_attr='name',
+                                       select_field_name='user_type_fd_id',
+                                       initial_value='none',
+                                       selected_value=selected_value,
+                                       refresh_on_change=True )
+
+        params = util.Params( kwd )
+        user_id = params.get( 'id', None )
+        if user_id:
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
+        if not user:
+            raise AssertionError("The user id (%s) is not valid" % str( user_id ))
+        email = util.restore_text( params.get( 'email', user.email ) )
+        username = util.restore_text( params.get( 'username', '' ) )
+        if not username:
+            username = user.username
+        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
+        status = params.get( 'status', 'done' )
+        user_type_form_definition = __get_user_type_form_definition( trans, user=user, **kwd )
+        user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
+        if user_type_fd_id == 'none' and user_type_form_definition is not None:
+            user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
+        user_type_fd_id_select_field = __build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
+        widgets = __get_widgets( trans, user_type_form_definition, user=user, **kwd )
+        # user's addresses
+        show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
+        if show_filter == 'All':
+            addresses = [address for address in user.addresses]
+        elif show_filter == 'Deleted':
+            addresses = [address for address in user.addresses if address.deleted]
+        else:
+            addresses = [address for address in user.addresses if not address.deleted]
+        user_info_forms = self.get_all_forms( trans,
+                                              filter=dict( deleted=False ),
+                                              form_type=trans.app.model.FormDefinition.types.USER_INFO )
+        return trans.fill_template( '/webapps/galaxy/user/manage_info.mako',
+                                    cntrller=cntrller,
+                                    user=user,
+                                    email=email,
+                                    is_admin=True,
+                                    username=username,
+                                    user_type_fd_id_select_field=user_type_fd_id_select_field,
+                                    user_info_forms=user_info_forms,
+                                    user_type_form_definition=user_type_form_definition,
+                                    user_type_fd_id=user_type_fd_id,
+                                    widgets=widgets,
+                                    addresses=addresses,
+                                    show_filter=show_filter,
+                                    message=message,
+                                    status=status )
