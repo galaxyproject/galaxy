@@ -1768,12 +1768,12 @@ class DataToolParameter( BaseDataToolParameter ):
 
         # build and append a new select option
         def append( list, hda, name, src, keep=False ):
+            tags = [ t.user_tname for t in hda.tags ]
             return list.append( { 'id'   : trans.security.encode_id( hda.id ),
                                   'hid'  : hda.hid,
-                                  'name' : name,
+                                  'name' : '%s [%s]' % ( name, ', '.join( tags ) ) if tags else name,
                                   'src'  : src,
-                                  'keep' : keep,
-                                  'tags' : [ t.user_tname for t in hda.tags ]  } )
+                                  'keep' : keep } )
 
         # add datasets
         visible_hda = other_values.get( self.name )
