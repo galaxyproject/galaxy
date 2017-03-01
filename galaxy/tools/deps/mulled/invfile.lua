@@ -52,7 +52,9 @@ end
 
 local verbose = VAR.VERBOSE
 if verbose == '' then
-    VERBOSE = '--queit'
+    verbose = '--quiet'
+else
+    verbose = '--verbose'
 end
 
 local preinstall = VAR.PREINSTALL
@@ -75,7 +77,7 @@ inv.task('build')
             .. 'conda install '
             .. channel_args .. ' '
             .. target_args
-            .. ' -p /usr/local --copy --yes'
+            .. ' -p /usr/local --copy --yes '
             .. verbose
             .. postinstall)
     .wrap('build/dist')

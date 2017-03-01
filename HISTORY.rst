@@ -9,7 +9,8 @@ History
 17.5.6.dev0
 ---------------------
 
-    
+* Expanded options for mulled CLI tools and library functionality.
+  Fixes #49.
 
 ---------------------
 17.5.5 (2017-02-26)

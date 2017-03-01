@@ -116,7 +116,7 @@ def mull_targets(
     command="build", channels=DEFAULT_CHANNELS, namespace="mulled",
     test='true', test_files=None, image_build=None, name_override=None,
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
-    conda_version=False, verbose=False, binds=DEFAULT_BINDS
+    conda_version=None, verbose=False, binds=DEFAULT_BINDS
 ):
     targets = list(targets)
     if involucro_context is None:
