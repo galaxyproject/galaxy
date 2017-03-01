@@ -29,7 +29,7 @@ def build_engine(url, engine_options, database_query_profiling_proxy=False, trac
                                  parameters, context, executemany):
             total = time.time() - conn.info['query_start_time'].pop(-1)
             if total > slow_query_log_threshold:
-                log.debug("Slow query: %f(s) for %s" % (total, statement))
+                log.debug("Slow query: %f(s)\n%s\nParameters: %s" % (total, statement, parameters))
 
     # Create the database engine
     engine = create_engine( url, proxy=proxy, **engine_options )

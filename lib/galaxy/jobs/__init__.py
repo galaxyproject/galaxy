@@ -1322,6 +1322,12 @@ class JobWrapper( object, HasResourceParameters ):
                     dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
                 dataset.tool_version = self.version_string
                 dataset.set_size()
+                if 'uuid' in context:
+                    dataset.dataset.uuid = context['uuid']
+                # Update (non-library) job output datasets through the object store
+                if dataset not in job.output_library_datasets:
+                    self.app.object_store.update_from_file(dataset.dataset, create=True)
+                self._collect_extra_files(dataset.dataset, self.working_directory)
                 # Handle composite datatypes of auto_primary_file type
                 if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data():
                     try:
@@ -1332,12 +1338,6 @@ class JobWrapper( object, HasResourceParameters ):
                             dataset.set_size()
                     except Exception as e:
                         log.warning( 'Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e )
-                if 'uuid' in context:
-                    dataset.dataset.uuid = context['uuid']
-                # Update (non-library) job output datasets through the object store
-                if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file(dataset.dataset, create=True)
-                self._collect_extra_files(dataset.dataset, self.working_directory)
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()

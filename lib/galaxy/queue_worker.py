@@ -9,6 +9,7 @@ import time
 
 import galaxy.queues
 from galaxy import util
+from galaxy.model.util import pgcalc
 
 from kombu import Connection
 from kombu.mixins import ConsumerMixin
@@ -18,7 +19,31 @@ logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
+def send_local_control_task(app, task, kwargs={}):
+    """
+    This sends a message to the process-local control worker, which is useful
+    for one-time asynchronous tasks like recalculating user disk usage.
+    """
+    log.info("Queuing async task %s." % task)
+    payload = {'task': task,
+               'kwargs': kwargs}
+    try:
+        c = Connection(app.config.amqp_internal_connection)
+        with producers[c].acquire(block=True) as producer:
+            producer.publish(payload,
+                             exchange=galaxy.queues.galaxy_exchange,
+                             declare=[galaxy.queues.galaxy_exchange] + [galaxy.queues.control_queue_from_config(app.config)],
+                             routing_key='control')
+    except Exception:
+        log.exception("Error queueing async task: %s." % payload)
+
+
 def send_control_task(app, task, noop_self=False, kwargs={}):
+    """
+    This sends a control task out to all processes, useful for things like
+    reloading a data table, which needs to happen individually in all
+    processes.
+    """
     log.info("Sending %s control task." % task)
     payload = {'task': task,
                'kwargs': kwargs}
@@ -112,6 +137,21 @@ def reload_sanitize_whitelist(app):
     app.config.reload_sanitize_whitelist()
 
 
+def recalculate_user_disk_usage(app, **kwargs):
+    user_id = kwargs.get('user_id', None)
+    sa_session = app.model.context
+    if user_id:
+        user = sa_session.query( app.model.User ).get( app.security.decode_id( user_id ) )
+        if user:
+            if sa_session.get_bind().dialect.name not in ( 'postgres', 'postgresql' ):
+                new = user.calculate_disk_usage()
+            else:
+                new = pgcalc(sa_session, user.id)
+            user.set_disk_usage(new)
+            sa_session.add(user)
+            sa_session.flush()
+
+
 def reload_tool_data_tables(app, **kwargs):
     params = util.Params(kwargs)
     log.debug("Executing tool data table reload for %s" % params.get('table_names', 'all tables'))
@@ -135,7 +175,8 @@ control_message_to_task = { 'create_panel_section': create_panel_section,
                             'reload_display_application': reload_display_application,
                             'reload_tool_data_tables': reload_tool_data_tables,
                             'admin_job_lock': admin_job_lock,
-                            'reload_sanitize_whitelist': reload_sanitize_whitelist}
+                            'reload_sanitize_whitelist': reload_sanitize_whitelist,
+                            'recalculate_user_disk_usage': recalculate_user_disk_usage}
 
 
 class GalaxyQueueWorker(ConsumerMixin, threading.Thread):

@@ -101,7 +101,6 @@
         'cur_page_num'                  : cur_page_num,
         'num_pages'                     : num_pages,
         'num_page_links'                : num_page_links,
-        'history_tag_autocomplete_url'  : url( controller='tag', action='tag_autocomplete_data', item_class=item_class ),
         'status'                        : status,
         'message'                       : util.restore_text(message),
         'global_actions'                : [],
