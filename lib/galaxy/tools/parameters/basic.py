@@ -1767,8 +1767,13 @@ class DataToolParameter( BaseDataToolParameter ):
         multiple = self.multiple
 
         # build and append a new select option
-        def append( list, id, hid, name, src, keep=False ):
-            return list.append( { 'id' : trans.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src, 'keep': keep } )
+        def append( list, hda, name, src, keep=False ):
+            return list.append( { 'id'   : trans.security.encode_id( hda.id ),
+                                  'hid'  : hda.hid,
+                                  'name' : name,
+                                  'src'  : src,
+                                  'keep' : keep,
+                                  'tags' : [ t.user_tname for t in hda.tags ]  } )
 
         # add datasets
         visible_hda = other_values.get( self.name )
@@ -1779,7 +1784,7 @@ class DataToolParameter( BaseDataToolParameter ):
                 m = match.hda
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
                 m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
-                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m_name, 'hda' )
+                append( d[ 'options' ][ 'hda' ], m, m_name, 'hda' )
         if not has_matched and hasattr( visible_hda, 'hid' ):
             if visible_hda.deleted:
                 hda_state = 'deleted'
@@ -1787,13 +1792,13 @@ class DataToolParameter( BaseDataToolParameter ):
                 hda_state = 'hidden'
             else:
                 hda_state = 'unavailable'
-            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(%s) %s' % ( hda_state, visible_hda.name ), 'hda', True )
+            append( d[ 'options' ][ 'hda' ], visible_hda, '(%s) %s' % ( hda_state, visible_hda.name ), 'hda', True )
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
         for hdca in history.active_dataset_collections:
             if dataset_collection_matcher.hdca_match( hdca, reduction=multiple ):
-                append( d[ 'options' ][ 'hdca' ], hdca.id, hdca.hid, hdca.name, 'hdca' )
+                append( d[ 'options' ][ 'hdca' ], hdca.id, hdca.name, 'hdca' )
 
         # sort both lists
         d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k['hid'], reverse=True)
