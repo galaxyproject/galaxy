@@ -49,8 +49,9 @@ class ToolBoxSearch( object ):
         self.build_index( index_help )
 
     def build_index( self, index_help=True ):
-        # Works around https://bitbucket.org/mchaput/whoosh/issues/391/race-conditions-with-temp-storage
+        """Prepare search index for tools loaded in toolbox."""
         RamStorage.temp_storage = _temp_storage
+        # Works around https://bitbucket.org/mchaput/whoosh/issues/391/race-conditions-with-temp-storage
         self.storage = RamStorage()
         self.index = self.storage.create_index( self.schema )
         writer = self.index.writer()
@@ -66,16 +67,15 @@ class ToolBoxSearch( object ):
                 "section": to_unicode( tool.get_panel_section()[1] if len( tool.get_panel_section() ) == 2 else '' ),
                 "help": to_unicode( "" )
             }
-            # Hyphens are wildcards in Whoosh causing bad things
             if tool.name.find( '-' ) != -1:
+                # Hyphens are wildcards in Whoosh causing bad things
                 add_doc_kwds['name'] = (' ').join( [ token.text for token in self.rex( to_unicode( tool.name ) ) ] )
             else:
                 add_doc_kwds['name'] = to_unicode( tool.name )
-            # We do not want to search Tool Shed or version parts
-            # of the long ids
-            if id.find( '/' ) != -1:
-                slash_indexes = [ m.start() for m in re.finditer( '/', id ) ]
-                id_stub = id[ ( slash_indexes[1] + 1 ): slash_indexes[4] ]
+            if tool.guid:
+                # Create a stub consisting of owner, repo, and tool from guid
+                slash_indexes = [ m.start() for m in re.finditer( '/', tool.guid ) ]
+                id_stub = tool.guid[ ( slash_indexes[1] + 1 ): slash_indexes[4] ]
                 add_doc_kwds['stub'] = (' ').join( [ token.text for token in self.rex( to_unicode( id_stub ) ) ] )
             else:
                 add_doc_kwds['stub'] = to_unicode( id )
