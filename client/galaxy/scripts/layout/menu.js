@@ -247,10 +247,10 @@ var Collection = Backbone.Collection.extend({
                         title   : 'Logged in as ' + Galaxy.user.get( 'email' )
                     },{
                         title   : 'Preferences',
-                        url     : 'users',
+                        url     : 'user',
                         target  : 'galaxy_main',
                         onclick : function() {
-                            window.location = Galaxy.root + 'users';
+                            window.location = Galaxy.root + 'user';
                         }
                     },{
                         title   : 'Custom Builds',
