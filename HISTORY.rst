@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.5.6.dev0
+17.5.6 (2017-03-01)
 ---------------------
 
 * Expanded options for mulled CLI tools and library functionality.
