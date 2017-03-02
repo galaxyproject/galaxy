@@ -122,6 +122,12 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "maf_limit_size1",
     "maf_by_block_number1",
     "wiggle2simple1",
+    # Converters
+    "CONVERTER_fastq_to_fqtoc0",
+    "CONVERTER_gff_to_interval_index_0",
+    "CONVERTER_maf_to_fasta_0",
+    "CONVERTER_maf_to_interval_0",
+    "CONVERTER_wiggle_to_interval_0",
     # Tools improperly migrated to the tool shed (devteam)
     "lastz_wrapper_2",
     "qualityFilter",
