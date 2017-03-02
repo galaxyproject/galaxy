@@ -1768,11 +1768,10 @@ class DataToolParameter( BaseDataToolParameter ):
 
         # build and append a new select option
         def append( list, hda, name, src, keep=False ):
-            tags = [ t.user_tname for t in hda.tags ]
             return list.append( { 'id'   : trans.security.encode_id( hda.id ),
                                   'hid'  : hda.hid,
                                   'name' : name,
-                                  'tags' : tags,
+                                  'tags' : [ t.user_tname for t in hda.tags ],
                                   'src'  : src,
                                   'keep' : keep } )
 
@@ -1926,20 +1925,22 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         # append directly matched collections
         for hdca in self.match_collections( trans, history, dataset_matcher ):
             d['options']['hdca'].append({
-                'id': trans.security.encode_id( hdca.id ),
-                'hid': hdca.hid,
-                'name': hdca.name,
-                'src': 'hdca'
+                'id'   : trans.security.encode_id( hdca.id ),
+                'hid'  : hdca.hid,
+                'name' : hdca.name,
+                'src'  : 'hdca',
+                'tags' : [ t.user_tname for t in hdca.tags ]
             })
 
         # append matching subcollections
         for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
             subcollection_type = self._history_query( trans ).can_map_over( hdca ).collection_type
             d['options']['hdca'].append({
-                'id': trans.security.encode_id( hdca.id ),
-                'hid': hdca.hid,
-                'name': hdca.name,
-                'src': 'hdca',
+                'id'   : trans.security.encode_id( hdca.id ),
+                'hid'  : hdca.hid,
+                'name' : hdca.name,
+                'src'  : 'hdca',
+                'tags' : [ t.user_tname for t in hdca.tags ],
                 'map_over_type': subcollection_type
             })
 
