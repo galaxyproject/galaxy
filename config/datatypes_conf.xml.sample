@@ -598,6 +598,10 @@
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true" />
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true" />
     <!-- PlantTribes datatypes -->
+    <datatype extension="ptalign" type="galaxy.datatypes.text:PlantTribesMultipleSequenceAlignment" />
+    <datatype extension="ptortho" type="galaxy.datatypes.text:PlantTribesOrtho" />
+    <datatype extension="ptorthocs" type="galaxy.datatypes.text:PlantTribesOrthoCodingSequence" />
+    <datatype extension="pttree" type="galaxy.datatypes.text:PlantTribesPhylogeneticTree" />
     <datatype extension="smat" type="galaxy.datatypes.text:Smat" display_in_upload="true" />
   </registration>
   <sniffers>
