@@ -41,6 +41,13 @@ HDAListItemView.prototype.templates = (function(){
             '<div class="title">',
                 //TODO: remove whitespace and use margin-right
                 '<span class="hid"><%- dataset.hid %></span> ',
+                '<span class="nametags">',
+                    '<% _.each(dataset.tags, function(tag){ %>',
+                        '<% if (tag.startsWith("name.")){ %>',
+                            '<span class="label label-info"><%- tag.substring(5) %></span>',
+                        '<% } %>',
+                    '<% }); %>',
+                '</span>',
                 '<span class="name"><%- dataset.name %></span>',
             '</div>',
         '</div>'
