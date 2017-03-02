@@ -88,7 +88,7 @@ Please visit <a href="https://wiki.galaxyproject.org/Admin" target="_blank">the 
                 </li>
             %endif
                 <li>
-                    <strong>Data libraries</strong> - This view is <strong>deprecated</strong>, for majority of use cases please use the interface under Shared Data in the top menu.
+                    <strong>Data libraries</strong> - This view is <strong>deprecated</strong>, for the majority of use cases please use the interface under Shared Data in the top menu.
                     <br/>
                     Data libraries enable authorized Galaxy users to share datasets with other groups or users. Only administrators can create data libraries. See <a href="https://wiki.galaxyproject.org/DataLibraries" target="_blank">wiki</a> for details and <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">this page</a> for security description.
                 </li>
