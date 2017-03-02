@@ -71,8 +71,8 @@ def paste_app_factory( global_conf, **kwargs ):
 
     webapp.add_client_route( '/tours' )
     webapp.add_client_route( '/tours/{tour_id}' )
-    webapp.add_client_route( '/users' )
-    webapp.add_client_route( '/users/{form_id}' )
+    webapp.add_client_route( '/user' )
+    webapp.add_client_route( '/user/{form_id}' )
 
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
