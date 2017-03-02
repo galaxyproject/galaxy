@@ -100,7 +100,7 @@
                         %if trans.app.config.enable_quotas:
                             <div class="toolTitle"><a href="${h.url_for( controller='admin', action='quotas' )}" target="galaxy_main">Quotas</a></div>
                         %endif
-                        <div class="toolTitle"><a href="${h.url_for( controller='library_admin', action='browse_libraries' )}" target="galaxy_main">Data libraries</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='library_admin', action='browse_libraries' )}" target="galaxy_main">Data libraries (deprecated)</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='data_manager' )}" target="galaxy_main">Local data</a></div>
                     </div>
                 </div>

@@ -20,7 +20,7 @@ Please visit <a href="https://wiki.galaxyproject.org/Admin" target="_blank">the 
                     <strong>Display applications</strong> - See all display applications configured in this Galaxy.
                 </li>
                 <li>
-                    <strong>Manage jobs</strong> - Display all jobs that are currently not finished (i.e., their state is new, waiting, queued, or running).  Administrators are able to cleanly stop long-running jobs. 
+                    <strong>Manage jobs</strong> - Display all jobs that are currently not finished (i.e., their state is new, waiting, queued, or running).  Administrators are able to cleanly stop long-running jobs.
                 </li>
             </ul>
 
@@ -61,7 +61,7 @@ Please visit <a href="https://wiki.galaxyproject.org/Admin" target="_blank">the 
         <h4>User Management</h4>
             <ul>
                 <li>
-                    <strong>Users</strong> - A view of all users and all groups and non-private roles associated with each user.  
+                    <strong>Users</strong> - A view of all users and all groups and non-private roles associated with each user.
                 </li>
                 <li>
                     <strong>Groups</strong> - A view of all groups along with the members of the group and the roles associated with each group.
@@ -88,7 +88,9 @@ Please visit <a href="https://wiki.galaxyproject.org/Admin" target="_blank">the 
                 </li>
             %endif
                 <li>
-                    <strong>Data libraries</strong> - Data libraries enable authorized Galaxy users to share datasets with other groups or users. Only administrators can create data libraries. See <a href="https://wiki.galaxyproject.org/DataLibraries" target="_blank">wiki</a> for details and <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">this page</a> for security description.
+                    <strong>Data libraries</strong> - This view is <strong>deprecated</strong>, for majority of use cases please use the interface under Shared Data in the top menu.
+                    <br/>
+                    Data libraries enable authorized Galaxy users to share datasets with other groups or users. Only administrators can create data libraries. See <a href="https://wiki.galaxyproject.org/DataLibraries" target="_blank">wiki</a> for details and <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">this page</a> for security description.
                 </li>
                 <li>
                     <strong>Local data</strong> - Manage the reference (and other) data that is stored within Tool Data Tables. See <a href="https://wiki.galaxyproject.org/Admin/Tools/DataManagers" target="_blank">wiki</a> for details.
