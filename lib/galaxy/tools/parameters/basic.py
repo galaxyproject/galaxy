@@ -1798,7 +1798,7 @@ class DataToolParameter( BaseDataToolParameter ):
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
         for hdca in history.active_dataset_collections:
             if dataset_collection_matcher.hdca_match( hdca, reduction=multiple ):
-                append( d[ 'options' ][ 'hdca' ], hdca.id, hdca.name, 'hdca' )
+                append( d[ 'options' ][ 'hdca' ], hdca, hdca.name, 'hdca' )
 
         # sort both lists
         d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k['hid'], reverse=True)
