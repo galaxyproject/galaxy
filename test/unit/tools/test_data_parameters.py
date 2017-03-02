@@ -204,11 +204,11 @@ class MockHistoryDatasetAssociation( object ):
         )
         self.dbkey = "hg19"
         self.implicitly_converted_parent_datasets = False
-
         self.name = name
         self.hid = id
         self.id = id
         self.children = []
+        self.tags = []
 
     @property
     def state( self ):
