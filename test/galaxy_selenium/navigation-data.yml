@@ -107,6 +107,8 @@ historyPanel:
             nameEditableTextInput : '.name input'
             subtitle    : '.subtitle'
             size        : '.history-size'
+            multiOperationsIcon: '.actions .show-selectors-btn'
+            multiOperationsActionBtn: '.list-action-menu .list-action-menu-btn'
             tagIcon     : '.actions .history-tag-btn'
             tagArea     : '.controls .tags-display'
             annoIcon    : '.actions .history-annotate-btn'

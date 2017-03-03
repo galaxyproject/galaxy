@@ -301,6 +301,31 @@ class NavigatesGalaxy(HasDriver):
         menu_selector = self.test_data["historyOptions"]["selectors"]["menu"]
         return menu_selector
 
+    def history_panel_multi_operations_selector(self):
+        return self.test_data["historyPanel"]["selectors"]["history"]["multiOperationsIcon"]
+
+    def history_panel_multi_operations_show(self):
+        operations_selector = self.history_panel_multi_operations_selector()
+        operations_element = self.wait_for_selector_clickable(operations_selector)
+        operations_element.click()
+
+    def history_panel_muli_operation_select_hid(self, hid):
+        item_selector = self.history_panel_item_selector(hid, wait=True)
+        operation_radio_selector = "%s .selector" % item_selector
+        element = self.wait_for_selector_clickable(operation_radio_selector)
+        element.click()
+
+    def history_panel_multi_operation_action_selector(self):
+        return self.test_data["historyPanel"]["selectors"]["history"]["multiOperationsActionBtn"]
+
+    def history_panel_multi_operation_action_click(self, action):
+        time.sleep(5)
+        button_element = self.wait_for_selector_clickable(self.history_panel_multi_operation_action_selector())
+        button_element.click()
+        menu_element = self.wait_for_selector_visible(".list-action-menu.open")
+        action_element = menu_element.find_element_by_link_text(action)
+        action_element.click()
+
     def history_panel_item_selector(self, hid, wait=False):
         current_history_id = self.current_history_id()
         contents = self.api_get("histories/%s/contents" % current_history_id)

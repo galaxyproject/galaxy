@@ -48,6 +48,10 @@ class HasDriver:
         wait = self.wait()
         return wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
 
+    def wait_for_selector_clickable(self, selector):
+        wait = self.wait()
+        return wait.until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+
     def wait_for_selector_absent_or_hidden(self, selector):
         wait = self.wait()
         return wait.until(ec.invisibility_of_element_located((By.CSS_SELECTOR, selector)))
