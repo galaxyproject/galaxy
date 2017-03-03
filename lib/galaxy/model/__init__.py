@@ -1416,6 +1416,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
                       .options( joinedload("dataset"),
                                 joinedload("dataset.actions"),
                                 joinedload("dataset.actions.role"),
+                                joinedload("tags"),
                                 ))
             self._active_datasets_and_roles = query.all()
         return self._active_datasets_and_roles
