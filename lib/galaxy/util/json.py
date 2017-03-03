@@ -57,7 +57,7 @@ def safe_loads( arg ):
     """
     This is a wrapper around loads that returns the parsed value instead of
     raising a value error. It also avoids autoconversion of non-iterables
-    such as numeric and boolean.
+    i.e numeric and boolean values.
     """
     try:
         loaded = json.loads( arg )
