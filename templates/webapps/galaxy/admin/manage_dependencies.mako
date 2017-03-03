@@ -92,7 +92,7 @@
     <input type="submit" name="viewkey" value="View tool-centric dependencies"/>
     <input type="submit" name="viewkey" value="View dependency details"/>
     <div class="toolForm">
-        <div class="toolFormTitle">${viewkey}
+        <div class="toolFormTitle">${viewkey}</div>
         <div class="toolFormBody">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 %if viewkey == "View tool-centric dependencies":
