@@ -38,6 +38,12 @@ HDAListItemView.prototype.templates = (function(){
         // adding the hid display to the title
         '<div class="title-bar clear" tabindex="0">',
             '<span class="state-icon"></span>',
+            '<div class="title">',
+                //TODO: remove whitespace and use margin-right
+                '<span class="hid"><%- dataset.hid %></span> ',
+                '<span class="name"><%- dataset.name %></span>',
+            '</div>',
+            '</br>',
             '<span class="nametags">',
                 '<% _.each(dataset.tags, function(tag){ %>',
                     '<% if (tag.startsWith("name.")){ %>',
@@ -45,11 +51,6 @@ HDAListItemView.prototype.templates = (function(){
                     '<% } %>',
                 '<% }); %>',
             '</span>',
-            '<div class="title">',
-                //TODO: remove whitespace and use margin-right
-                '<span class="hid"><%- dataset.hid %></span> ',
-                '<span class="name"><%- dataset.name %></span>',
-            '</div>',
         '</div>'
     ], 'dataset' );
 
