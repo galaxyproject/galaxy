@@ -130,7 +130,7 @@ var View = Backbone.View.extend({
         if ( this.model.get( 'searchable' ) ) {
             this.data2 = [];
             _.each( this.data, function( option, index ) {
-                var tags = _.reduce( option.tags, function( memo, tag ) { return memo + ',' + tag }, '');
+                var tags = _.reduce( option.tags, function( memo, tag ) { return memo + ' ' + tag }, '');
                 self.data2.push( { order: index, id: option.value, text: option.label, tags: tags } );
             });
             this.$select.data( 'select2' ) && this.$select.select2( 'destroy' );
