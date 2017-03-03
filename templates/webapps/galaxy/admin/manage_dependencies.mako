@@ -88,20 +88,24 @@
     ${render_msg( message, status )}
 %endif
 
-    <form name="manage_tool_dependencies" action="${h.url_for( controller='admin', action='manage_tool_dependencies' )}">
-    <input type="submit" name="viewkey" value="View tool-centric dependencies"/>
-    <input type="submit" name="viewkey" value="View dependency details"/>
+<form name="manage_tool_dependencies" action="${h.url_for( controller='admin', action='manage_tool_dependencies' )}">
+%if viewkey == "Switch to tool-centric view":
+    <input type="submit" name="viewkey" value="Switch to details view"/>
     <div class="toolForm">
-        <div class="toolFormTitle">${viewkey}</div>
+        <div class="toolFormTitle">Tool-centric dependencies</div>
         <div class="toolFormBody">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-                %if viewkey == "View tool-centric dependencies":
-                    ${render_tool_centric_table(tools, requirements_status)}
-                %else:
+                ${render_tool_centric_table(tools, requirements_status)}
+%else:
+    <input type="submit" name="viewkey" value="Switch to tool-centric view"/>
+    <div class="toolForm">
+        <div class="toolFormTitle">Dependency details</div>
+        <div class="toolFormBody">
+            <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                     ${render_dependencies_details(tools, requirements_status, tool_ids_by_requirements)}
-                %endif
+%endif
             </table>
         </div>
     </div>
     <input type="submit" name="install_dependencies" value="Install checked dependencies using Conda"/>
-    </form>
+</form>
