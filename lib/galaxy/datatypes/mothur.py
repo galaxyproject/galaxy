@@ -270,7 +270,7 @@ class AlignCheck(Tabular):
         dataset.metadata.column_names = self.column_names
         dataset.metadata.column_types = self.column_types
         dataset.metadata.comment_lines = self.comment_lines
-        if isinstance(dataset.metadata.datalines, int):
+        if isinstance(dataset.metadata.data_lines, int):
             dataset.metadata.data_lines -= self.comment_lines
 
 
@@ -736,7 +736,7 @@ class CountTable(Tabular):
             dataset.metadata.groups = colnames[2:]
 
         dataset.metadata.comment_lines = 1
-        if isinstance(dataset.metadata.datalines, int):
+        if isinstance(dataset.metadata.data_lines, int):
             dataset.metadata.data_lines -= 1
 
 
