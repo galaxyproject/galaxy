@@ -130,7 +130,8 @@ var View = Backbone.View.extend({
         if ( this.model.get( 'searchable' ) ) {
             this.data2 = [];
             _.each( this.data, function( option, index ) {
-                self.data2.push( { order: index, id: option.value, text: option.label, tags: option.tags } );
+                var tags = _.reduce( option.tags, function( memo, tag ) { return memo + ',' + tag }, '');
+                self.data2.push( { order: index, id: option.value, text: option.label, tags: tags } );
             });
             this.$select.data( 'select2' ) && this.$select.select2( 'destroy' );
             this.$select.select2({
@@ -140,11 +141,7 @@ var View = Backbone.View.extend({
                 query           : function( q ) {
                     var pagesize = self.model.get( 'pagesize' );
                     var results = _.filter( self.data2, function ( e ) {
-                        var matched = false;
-                        _.each( e.tags, function( tag ) {
-                            matched = matched || self._match( q.term, tag );
-                        });
-                        return matched || self._match( q.term, e.text );
+                        return self._match( q.term, e.text ) || self._match( q.term, e.tags );
                     });
                     q.callback({
                         results: results.slice( ( q.page - 1 ) * pagesize, q.page * pagesize ),
