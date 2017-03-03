@@ -393,11 +393,9 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         """
         nametags = []
         for tag in hda.tags:
-            if tag.tag.name.startswith('name.'):
-                nametags.append(tag.tag.name[5:])
+            if tag.user_tname.startswith('name.'):
+                nametags.append(tag.user_tname[5:])
         return nametags
-
-        return [tag for tag in hda.tags if tag.tag.name.startswith('name.')]
 
     def serialize_old_display_applications( self, hda, key, trans=None, **context ):
         """
