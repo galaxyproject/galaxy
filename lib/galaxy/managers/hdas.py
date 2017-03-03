@@ -254,13 +254,18 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'id',
             'type_id',
             'name',
-            'history_id', 'hid',
+            'history_id',
+            'hid',
             'history_content_type',
             'dataset_id',
-            'state', 'extension',
+            'state',
+            'extension',
             'deleted', 'purged', 'visible',
-            'type', 'url',
-            'create_time', 'update_time',
+            'tags',
+            'type',
+            'url',
+            'create_time',
+            'update_time',
         ])
         self.add_view( 'detailed', [
             'model_class',
@@ -292,7 +297,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             # 'url',
             'download_url',
 
-            'annotation', 'tags',
+            'annotation',
 
             'api_type'
         ], include_keys_from='summary' )
