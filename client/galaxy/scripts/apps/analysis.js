@@ -101,8 +101,8 @@ window.app = function app( options, bootstrapped ){
             // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
             '(/)tours(/)(:tour_id)' : 'show_tours',
-            '(/)users(/)' : 'show_users',
-            '(/)users(/)(:form_id)' : 'show_user_form',
+            '(/)user(/)' : 'show_user',
+            '(/)user(/)(:form_id)' : 'show_user_form',
         },
 
         show_tours : function( tour_id ){
@@ -113,7 +113,7 @@ window.app = function app( options, bootstrapped ){
             }
         },
 
-        show_users : function(){
+        show_user : function(){
             centerPanel.display( new UserPreferences.View() );
         },
 

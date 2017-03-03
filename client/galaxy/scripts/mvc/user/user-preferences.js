@@ -123,7 +123,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             if ( options.onclick ) {
                 $a.on( 'click', function() { options.onclick() } );
             } else {
-                $a.attr( 'href', Galaxy.root + 'users/' + action );
+                $a.attr( 'href', Galaxy.root + 'user/' + action );
             }
             this.$table.append( $row );
         },
