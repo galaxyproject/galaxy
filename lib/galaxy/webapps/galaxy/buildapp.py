@@ -567,6 +567,13 @@ def populate_api_routes( webapp, app ):
                            '/api/webhooks/{webhook_name}/get_data',
                            controller='webhooks',
                            action='get_data',
+                           params=None,
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'get_data',
+                           '/api/webhooks/{webhook_name}/get_data/{params}',
+                           controller='webhooks',
+                           action='get_data',
                            conditions=dict( method=[ "GET" ] ) )
 
     # =======================
