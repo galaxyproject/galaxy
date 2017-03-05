@@ -1160,7 +1160,7 @@ use_interactive = True
 # walltime limits but did fail quickly (either while queueing or running). The
 # commented out default below results in no default job resubmission condition,
 # failing jobs are just failed outright.
-#default_job_resubmission_condition = 
+#default_job_resubmission_condition =
 
 # In multiprocess configurations, notification between processes about new jobs
 # must be done via the database.  In single process configurations, this can be

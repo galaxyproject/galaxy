@@ -14,8 +14,7 @@
     position: fixed;
     top:0;
     left:0;
-    /*background: rgba(44, 49, 67, 0.85);  // dark-blue */
-    background: rgba(224, 224, 224, 0.75);  /*light-gray*/
+    background: rgba(224, 224, 224, 0.75);
     z-index: 201;
     width:100%;
     height:100%;
@@ -42,14 +41,12 @@
 .overlay-filters li a {
     display: block;
     text-decoration: none;
-    /*color: white;*/
     cursor: pointer;
     font-weight: bold;
     padding: 5px 5px;
 }
 
 .overlay-filters li a:hover i {
-    /*color: gold;*/
     color: #212121;
 }
 
@@ -58,20 +55,12 @@
 }
 
 .search-header {
-    /* Dark-blue */
-    /*background-color: #343a4f;*/
-    /*background: -moz-linear-gradient(top, rgba(52, 58, 79, 1) 0%, rgba(60, 67, 91, 1) 37%, rgba(52, 58, 79, 1) 100%);*/
-    /*background: linear-gradient(to bottom, rgba(52, 58, 79, 1) 0%, rgba(60, 67, 91, 1) 37%, rgba(52, 58, 79, 1) 100%);*/
-    /*-moz-box-shadow: 0px 2px 5px 0px rgba(0,0,0,0.75);*/
-    /*box-shadow: 0px 2px 5px 0px rgba(0,0,0,0.75);*/
-
-    /* Light-gray */
     background-color: #e1e1e1;
     background: -moz-linear-gradient(top, rgba(225, 225, 225, 1) 0%, rgba(238, 238, 238, 1) 37%, rgba(225, 225, 225, 1) 100%);
     background: linear-gradient(to bottom, rgba(225, 225, 225, 1) 0%, rgba(238, 238, 238, 1) 37%, rgba(225, 225, 225, 1) 100%);
     -moz-box-shadow: 0px 2px 5px 0px rgba(158, 158, 158, 0.75);
     box-shadow: 0px 2px 5px 0px rgba(158, 158, 158, 0.75);
-    
+
     position: fixed;
     top: 34px;
     width: 100%;
@@ -89,25 +78,18 @@
 }
 
 .search-section {
-    color: white;
+    color: #007AB5;
     margin-top: 20px;
     font-weight: bold;
 }
 
 .search-section .section-title {
-    margin-left: 5px;
-    text-shadow: 2px 2px 5px rgba(150, 150, 150, 1);
+    margin-left: 7px;
 }
 
 .link-tile {
-    /* Dark-blue */
-    /*background-color: #626e96;*/
-    /*border: 1px solid #353c50;*/
-
-    /* Light-blue*/
-    background-color: #b4c2f1;
-    border: 1px solid #899fe9;
-
+    background-color: #0070A8;
+    border: 1px solid #005A85;
     border-radius: 5px;
     font-size: 12px;
     width: 19%;
@@ -118,16 +100,14 @@
 
 .link-tile.btn-primary:hover,
 .link-tile.btn-primary:hover {
-    /*background-color: #4e5777;  // dark-blue*/
-    background-color: #899fe9;
-    border-color: #899fe9;
+    background-color: #005A85;
+    border-color: #005A85;
 }
 
 .link-tile.btn-primary:active,
 .link-tile.btn-primary:focus {
-    /*background-color: #4e5777;  // dark-blue*/
-    background-color: #899fe9;
-    border-color: #899fe9;
+    background-color: #005A85;
+    border-color: #005A85;
 }
 
 .search-results,
