@@ -19,6 +19,10 @@ define([], function() {
         initialize: function(options) {
             var me = this;
 
+            if (options.toolId) {
+                this.$el.attr('tool-id', options.toolId);
+            }
+
             this.model = new WebhookModel();
             this.model.urlRoot = options.urlRoot;
             this.model.fetch({
@@ -34,7 +38,7 @@ define([], function() {
             this.$el.html('<div id="' + webhook.name + '"></div>');
             if (webhook.styles) $('<style/>', {type: 'text/css'}).text(webhook.styles).appendTo('head');
             if (webhook.script) $('<script/>', {type: 'text/javascript'}).text(webhook.script).appendTo('head');
-            
+
             return this;
         }
     });

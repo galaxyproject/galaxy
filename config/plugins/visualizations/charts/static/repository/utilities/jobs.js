@@ -43,7 +43,7 @@ define( [ 'utilities/utils' ], function( Utils ) {
                     }
                     chart.state( 'failed', 'This visualization requires the \'' + parameters.tool_id + '\' tool. Please make sure it is installed. ' + message );
                     error && error();
-                          
+
                 }
             });
         }

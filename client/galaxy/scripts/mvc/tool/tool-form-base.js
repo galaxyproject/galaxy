@@ -181,6 +181,18 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 });
             };
             menu_button.addMenu({
+                icon    : 'fa-puzzle-piece',
+                title   : 'Generate Tour',
+                tooltip : 'Generate Tour from the tool\'s test data',
+                onclick : function() {
+                    if (typeof TourGenerator !== 'undefined') {
+                        new TourGenerator({toolId: options.id});
+                    } else {
+                        alert('Please activate Tour Generator first.');
+                    }
+                }
+            });
+            menu_button.addMenu({
                 icon    : 'fa-share',
                 title   : 'Share',
                 onclick : function() {

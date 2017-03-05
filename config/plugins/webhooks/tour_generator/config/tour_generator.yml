@@ -1,0 +1,21 @@
+name: tour_generator
+type:
+  - masthead
+activate: true
+
+icon: fa-puzzle-piece
+tooltip: Activate Tour Generator
+
+function: >
+  $.getJSON('/api/webhooks/masthead/all', function(data) {
+      for (var index in data) {
+          var webhook = data[index];
+          if (webhook.name === 'tour_generator') {
+              if (webhook.script) {
+                  $('<script/>', {type: 'text/javascript'}).text(webhook.script).appendTo('head');
+                  $('<style/>', {type: 'text/css'}).text(webhook.styles).appendTo('head');
+              }
+              break;
+          }
+      }
+  });

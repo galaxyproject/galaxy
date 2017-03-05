@@ -8,6 +8,7 @@ from galaxy.web.base.controller import BaseAPIController
 
 import logging
 import random
+import json
 import imp
 
 log = logging.getLogger(__name__)
@@ -55,11 +56,16 @@ class WebhooksController(BaseAPIController):
         ]
 
     @expose_api_anonymous_and_sessionless
-    def get_data(self, trans, webhook_name, **kwd):
+    def get_data(self, trans, webhook_name, params, **kwd):
         """
-        *GET /api/webhooks/{webhook_name}/get_data
+        *GET /api/webhooks/{webhook_name}/get_data/{params}
         Returns the result of executing helper function
         """
+
+        # If params is not None, convert it into a dictionary
+        if params:
+            params = json.loads(params)
+
         webhook = [
             webhook
             for webhook in self.app.webhooks_registry.webhooks
@@ -68,4 +74,5 @@ class WebhooksController(BaseAPIController):
         return imp.load_source('helper', webhook[0].helper).main(
             trans,
             webhook[0],
+            params,
         ) if webhook and webhook[0].helper != '' else {}
