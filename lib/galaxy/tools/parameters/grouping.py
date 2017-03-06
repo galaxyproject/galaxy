@@ -600,6 +600,10 @@ class Conditional( Group ):
         cond_dict[ "test_param" ] = nested_to_dict( self.test_param )
         return cond_dict
 
+    @property
+    def case_strings(self):
+        return [c.value for c in self.cases]
+
 
 class ConditionalWhen( object, Dictifiable ):
     dict_collection_visible_keys = ( 'value', )

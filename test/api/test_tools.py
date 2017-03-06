@@ -1,4 +1,4 @@
-# Test tools API.
+"""Test the Galaxy Tool API."""
 import json
 
 from base import api
@@ -25,6 +25,7 @@ MINIMAL_TOOL = {
 
 
 class ToolsTestCase( api.ApiTestCase ):
+    """Test the Galaxy Tool API."""
 
     def setUp( self ):
         super( ToolsTestCase, self ).setUp( )
@@ -1311,11 +1312,12 @@ class ToolsTestCase( api.ApiTestCase ):
     def _run_cat1( self, history_id, inputs, assert_ok=False ):
         return self._run( 'cat1', history_id, inputs, assert_ok=assert_ok )
 
-    def _run( self, tool_id, history_id, inputs, assert_ok=False, tool_version=None ):
+    def _run( self, tool_id, history_id, inputs, assert_ok=False, tool_version=None, inputs_representation=None ):
         payload = self.dataset_populator.run_tool_payload(
             tool_id=tool_id,
             inputs=inputs,
             history_id=history_id,
+            inputs_representation=inputs_representation,
         )
         if tool_version is not None:
             payload[ "tool_version" ] = tool_version

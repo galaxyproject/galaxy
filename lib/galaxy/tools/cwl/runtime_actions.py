@@ -7,6 +7,8 @@ from .parser import (
     load_job_proxy,
 )
 
+from .cwltool_deps import ref_resolver
+
 
 def handle_outputs(job_directory=None):
     # Relocate dynamically collected files to pre-determined locations
@@ -21,9 +23,9 @@ def handle_outputs(job_directory=None):
     tool_working_directory = os.path.join(job_directory, "working")
     outputs = job_proxy.collect_outputs(tool_working_directory)
     for output_name, output in outputs.items():
-        target_path = job_proxy.output_path( output_name )
-        if isinstance(output, dict) and "path" in output:
-            output_path = output["path"]
+        target_path = job_proxy.output_path(output_name)
+        if isinstance(output, dict) and "location" in output:
+            output_path = ref_resolver.uri_file_path(output["location"])
             if output["class"] != "File":
                 open("galaxy.json", "w").write(json.dump({
                     "dataset_id": job_proxy.output_id(output_name),
@@ -33,7 +35,7 @@ def handle_outputs(job_directory=None):
             shutil.move(output_path, target_path)
             for secondary_file in output.get("secondaryFiles", []):
                 # TODO: handle nested files...
-                secondary_file_path = secondary_file["path"]
+                secondary_file_path = ref_resolver.uri_file_path(secondary_file["location"])
                 assert secondary_file_path.startswith(output_path)
                 secondary_file_name = secondary_file_path[len(output_path):]
                 secondary_files_dir = job_proxy.output_secondary_files_dir(

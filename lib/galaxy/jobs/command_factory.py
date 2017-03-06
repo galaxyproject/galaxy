@@ -6,6 +6,7 @@ from os.path import (
 )
 
 from galaxy import util
+from galaxy.util import bunch
 from galaxy.jobs.runners.util.job_script import (
     check_script_integrity,
     INTEGRITY_INJECTION,
@@ -175,8 +176,13 @@ def __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_comm
     if 'working_directory' in remote_command_params:
         work_dir_outputs_kwds['job_working_directory'] = remote_command_params['working_directory']
     work_dir_outputs = runner.get_work_dir_outputs( job_wrapper, **work_dir_outputs_kwds )
-    if work_dir_outputs:
+    if work_dir_outputs or job_wrapper.is_cwl_job:
         commands_builder.capture_return_code()
+        if job_wrapper.is_cwl_job:
+            metadata_script_file = join(job_wrapper.working_directory, "relocate_dynamic_outputs.py")
+            relocate_contents = 'from galaxy_ext.cwl.handle_outputs import relocate_dynamic_outputs; relocate_dynamic_outputs()'
+            write_script(metadata_script_file, relocate_contents, bunch.Bunch(check_job_script_integrity=False))
+            commands_builder.append_command("python %s" % metadata_script_file)
         copy_commands = map(__copy_if_exists_command, work_dir_outputs)
         commands_builder.append_commands(copy_commands)
 

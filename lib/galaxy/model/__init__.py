@@ -695,6 +695,8 @@ class Job( object, JobLike, Dictifiable ):
             # System level details that only admins should have.
             rval['external_id'] = self.job_runner_external_id
             rval['command_line'] = self.command_line
+            rval['cwl_command_state'] = self.cwl_command_state
+            rval['cwl_command_state_version'] = self.cwl_command_state_version
 
         if view == 'element':
             param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )

@@ -11,6 +11,7 @@ from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
+from galaxy.tools.cwl import to_galaxy_parameters
 
 log = logging.getLogger( __name__ )
 
@@ -312,6 +313,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
         # Set up inputs.
         inputs = payload.get( 'inputs', {} )
+
+        inputs_representation = payload.get( 'inputs_representation', 'galaxy' )
+        if inputs_representation == "cwl":
+            inputs = to_galaxy_parameters( tool, inputs )
+
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.iteritems():
             if k.startswith('files_') or k.startswith('__files_'):

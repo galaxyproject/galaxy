@@ -171,3 +171,7 @@ class MockJobWrapper( object ):
         self.stdout = stdout
         self.stderr = stderr
         self.exit_code = exit_code
+
+    @property
+    def is_cwl_job(self):
+        return False

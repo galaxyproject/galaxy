@@ -22,6 +22,7 @@ from .tools import DynamicToolManager
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.steps import attach_ordered_steps
 from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolModule, WorkflowModuleInjector
+from galaxy.tools.cwl import workflow_proxy
 from galaxy.tools.parameters.basic import DataToolParameter, DataCollectionToolParameter, RuntimeValue, workflow_building_modes
 from galaxy.tools.parameters import visit_input_values, params_to_incoming
 from galaxy.jobs.actions.post import ActionBox
@@ -278,6 +279,10 @@ class WorkflowContentsManager(UsesAnnotations):
     def _workflow_from_dict(self, trans, data, name, **kwds):
         if isinstance(data, string_types):
             data = json.loads(data)
+        if "src" in data:
+            assert data["src"] == "path"
+            wf_proxy = workflow_proxy(data["path"])
+            data = wf_proxy.to_dict()
 
         # Create new workflow from source data
         workflow = model.Workflow()

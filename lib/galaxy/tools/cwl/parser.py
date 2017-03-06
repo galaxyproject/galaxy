@@ -18,7 +18,7 @@ from galaxy.util.odict import odict
 
 from .cwltool_deps import (
     ensure_cwltool_available,
-    main,
+    process,
     workflow,
 )
 
@@ -95,8 +95,7 @@ def to_cwl_tool_object(tool_path):
 
 def to_cwl_workflow_object(workflow_path):
     proxy_class = WorkflowProxy
-    make_tool = workflow.defaultMakeTool
-    cwl_workflow = main.load_tool(workflow_path, False, False, make_tool, False)
+    cwl_workflow = schema_loader.tool(path=workflow_path)
     raw_workflow = cwl_workflow.tool
     check_requirements(raw_workflow, tool=False)
 
@@ -237,13 +236,20 @@ class JobProxy(object):
 
     def _ensure_cwl_job_initialized(self):
         if self._cwl_job is None:
+
             self._cwl_job = next(self._tool_proxy._tool.job(
                 self._input_dict,
                 self._output_callback,
                 basedir=self._job_directory,
+                select_resources=self._select_resources,
                 use_container=False
             ))
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")
+
+    def _select_resources(self, request):
+        new_request = request.copy()
+        new_request["cores"] = "$GALAXY_SLOTS"
+        return new_request
 
     @property
     def command_line(self):
@@ -323,6 +329,12 @@ class JobProxy(object):
         if create and not os.path.exists(secondary_files_dir):
             safe_makedirs(secondary_files_dir)
         return secondary_files_dir
+
+    def stage_files(self):
+        cwl_job = self.cwl_job()
+        if hasattr(cwl_job, "pathmapper"):
+            process.stageFiles(self.cwl_job().pathmapper, os.symlink, ignoreWritable=True)
+        # else: expression tools do not have a path mapper.
 
     @staticmethod
     def _job_file(job_directory):

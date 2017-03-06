@@ -498,6 +498,8 @@ model.Job.table = Table(
     Column( "object_store_id", TrimmedString( 255 ), index=True ),
     Column( "imported", Boolean, default=False, index=True ),
     Column( "params", TrimmedString(255), index=True ),
+    Column( "cwl_command_state", JSONType, nullable=True ),
+    Column( "cwl_command_state_version", Integer, default=1 ),
     Column( "handler", TrimmedString( 255 ), index=True ) )
 
 model.JobStateHistory.table = Table(

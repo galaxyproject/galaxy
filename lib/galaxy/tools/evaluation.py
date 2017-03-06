@@ -380,7 +380,7 @@ class ToolEvaluator( object ):
 
         param_dict['__tool_directory__'] = self.compute_environment.tool_directory()
         param_dict['__get_data_table_entry__'] = get_data_table_entry
-
+        param_dict['__local_working_directory__'] = self.local_working_directory
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper( self.app )
         # More convienent access to app.config.new_file_path; we don't need to
@@ -518,7 +518,12 @@ class ToolEvaluator( object ):
     def __build_environment_variables( self ):
         param_dict = self.param_dict
         environment_variables = []
-        for environment_variable_def in self.tool.environment_variables:
+        environment_variables_raw = self.tool.environment_variables
+        for key, value in param_dict.get("__cwl_command_state", {}).get("env", {}).items():
+            environment_variable = dict(name=key, template=value)
+            environment_variables_raw.append(environment_variable)
+
+        for environment_variable_def in environment_variables_raw:
             directory = self.local_working_directory
             environment_variable = environment_variable_def.copy()
             environment_variable_template = environment_variable_def["template"]

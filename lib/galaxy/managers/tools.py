@@ -66,6 +66,13 @@ class DynamicToolManager(ModelManager):
             tool_version = representation.get("version", None)
             tool_hash = build_tool_hash(representation)
             value = representation
+        elif tool_format in ["CommandLineTool", "ExpressionTool"]:
+            # CWL tools
+            uuid = None
+            tool_id = representation.get("id", None)
+            tool_version = representation.get("version", None)
+            tool_hash = build_tool_hash(representation)
+            value = representation
         else:
             raise Exception("Unknown tool type encountered.")
         # TODO: enforce via DB constraint and catch appropriate

@@ -149,6 +149,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'workflow_id',
             'installed_repository_file',
             'from_history_id',
+            'from_path',
             'shared_workflow_id',
             'workflow',
         ] )
@@ -188,6 +189,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item = stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             item[ 'url' ] = url_for( 'workflow', id=item[ 'id' ] )
             return item
+
+        if 'from_path' in payload:
+            if not trans.user_is_admin():
+                raise exceptions.AdminRequiredException()
+
+            from_path = payload.get( 'from_path' )
+            payload["workflow"] = {"src": "from_path", "path": from_path}
+            return self.__api_import_new_workflow( trans, payload, **kwd )
 
         if 'shared_workflow_id' in payload:
             workflow_id = payload[ 'shared_workflow_id' ]

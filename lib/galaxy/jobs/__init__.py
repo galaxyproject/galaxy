@@ -870,6 +870,9 @@ class JobWrapper( object, HasResourceParameters ):
         # Should the job handler split this job up?
         return self.app.config.use_tasked_jobs and self.tool.parallelism
 
+    def is_cwl_job( self ):
+        return self.tool.tool_type == "cwl"
+
     def get_job_runner_url( self ):
         log.warning('(%s) Job runner URLs are deprecated, use destinations instead.' % self.job_id)
         return self.job_destination.url
@@ -974,10 +977,13 @@ class JobWrapper( object, HasResourceParameters ):
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
         job.dependencies = self.tool.dependencies
+        param_dict = tool_evaluator.param_dict
+        job.cwl_command_state = param_dict.get('__cwl_command_state', None)
+        job.cwl_command_state_version = param_dict.get('__cwl_command_state_version', None)
         self.sa_session.add( job )
         self.sa_session.flush()
         # Return list of all extra files
-        self.param_dict = tool_evaluator.param_dict
+        self.param_dict = param_dict
         version_string_cmd_raw = self.tool.version_string_cmd
         if version_string_cmd_raw:
             version_command_template = string.Template(version_string_cmd_raw)
