@@ -130,21 +130,25 @@ var View = Backbone.View.extend({
         if ( this.model.get( 'searchable' ) ) {
             this.data2 = [];
             _.each( this.data, function( option, index ) {
-                var filterstr = _.reduce( option.tags, function( memo, tag ) { return memo + tag + ' ' }, '' );
-                var filterhtml = '<div class="ui-tags">' +
-                    _.reduce( option.tags, function( memo, tag ) { return memo + '&nbsp;<div class="label label-info">' + _.escape( tag ) + '</div>' }, '' )
-                + '</div>';
-                self.data2.push( { order: index, id: option.value, text: option.label, filterhtml: filterhtml, filterstr: filterstr } );
+                self.data2.push( { order: index, id: option.value, text: option.label, tags: option.tags } );
             });
             this.$select.data( 'select2' ) && this.$select.select2( 'destroy' );
+            this.matched_tags = {};
             this.$select.select2({
                 data            : self.data2,
                 closeOnSelect   : !this.model.get( 'multiple' ),
                 multiple        : this.model.get( 'multiple' ),
                 query           : function( q ) {
+                    self.matched_tags = {};
                     var pagesize = self.model.get( 'pagesize' );
                     var results = _.filter( self.data2, function ( e ) {
-                        return self._match( q.term, e.text ) || self._match( q.term, e.filterstr );
+                        var found = false;
+                        _.each( e.tags, function( tag ) {
+                            if ( self._match( q.term, tag ) ) {
+                                found = self.matched_tags[ tag ] = true;
+                            }
+                        });
+                        return found || self._match( q.term, e.text );
                     });
                     q.callback({
                         results: results.slice( ( q.page - 1 ) * pagesize, q.page * pagesize ),
@@ -152,7 +156,18 @@ var View = Backbone.View.extend({
                     });
                 },
                 formatResult    : function( result ) {
-                    return _.escape( result.text ) + result.filterhtml;
+                    return _.escape( result.text ) +
+                        '<div class="ui-tags">' +
+                            _.reduce( result.tags, function( memo, tag ) {
+                                if ( self.matched_tags[ tag ] ) {
+                                    return memo + '&nbsp;' +
+                                        '<div class="label label-info">' +
+                                            _.escape( tag ) +
+                                        '</div>'
+                                }
+                                return memo;
+                            }, '' ) +
+                        '</div>';
                 }
             });
             this.$( '.select2-container .select2-search input' ).off( 'blur' );
