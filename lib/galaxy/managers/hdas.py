@@ -388,13 +388,13 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
     def serialize_nametags( self, hda, key, trans=None, **context ):
         """
-        Return list of 'name.' child tags attached to this dataset.
-        TODO: investigate faster ways to fetch children of .name
+        Return list of 'name' child tags attached to this dataset.
+        TODO: investigate faster ways to fetch 'name' tags and values
         """
         nametags = []
         for tag in hda.tags:
-            if tag.user_tname.startswith('name.'):
-                nametags.append(tag.user_tname[5:])
+            if tag.tag.name == 'name':
+                nametags.append(tag.value)
         return nametags
 
     def serialize_old_display_applications( self, hda, key, trans=None, **context ):
