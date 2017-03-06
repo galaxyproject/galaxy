@@ -132,7 +132,7 @@ var View = Backbone.View.extend({
             _.each( this.data, function( option, index ) {
                 var filterstr = _.reduce( option.tags, function( memo, tag ) { return memo + tag + ' ' }, '' );
                 var filterhtml = '<div class="ui-tags">' +
-                    _.reduce( option.tags, function( memo, tag ) { return memo + '&nbsp;<div class="label label-info">' + tag + '</div>' }, '' )
+                    _.reduce( option.tags, function( memo, tag ) { return memo + '&nbsp;<div class="label label-info">' + _.escape( tag ) + '</div>' }, '' )
                 + '</div>';
                 self.data2.push( { order: index, id: option.value, text: option.label, filterhtml: filterhtml, filterstr: filterstr } );
             });
@@ -152,7 +152,7 @@ var View = Backbone.View.extend({
                     });
                 },
                 formatResult    : function( result ) {
-                    return result.text + result.filterhtml;
+                    return _.escape( result.text ) + result.filterhtml;
                 }
             });
             this.$( '.select2-container .select2-search input' ).off( 'blur' );
