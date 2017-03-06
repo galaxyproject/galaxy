@@ -594,8 +594,8 @@ class Data( object ):
             files[ substitute_composite_key( key, value ) ] = value
         return files
 
-    def generate_auto_primary_file( self, dataset=None ):
-        raise Exception( "generate_auto_primary_file is not implemented for this datatype." )
+    def generate_primary_file( self, dataset=None ):
+        raise Exception( "generate_primary_file is not implemented for this datatype." )
 
     @property
     def has_resolution(self):

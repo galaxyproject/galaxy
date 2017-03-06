@@ -155,18 +155,6 @@ return Backbone.View.extend({
             });
         });
 
-        // Initialize autocomplete for text inputs in search UI.
-        var t1 = this.$el.find('#input-tags-filter');
-        if (t1.length) {
-            t1.autocomplete(this.grid.history_tag_autocomplete_url,
-                { selectFirst: false, autoFill: false, highlight: false, mustMatch: false });
-        }
-        var t2 = this.$el.find('#input-name-filter');
-        if (t2.length) {
-            t2.autocomplete(this.grid.history_name_autocomplete_url,
-                { selectFirst: false, autoFill: false, highlight: false, mustMatch: false });
-        }
-
         // Initialize standard, advanced search toggles.
         this.$el.find('.advanced-search-toggle').each( function() {
             $(this).off();

@@ -201,7 +201,8 @@ You might want to run your IEs on a host different to the one that hosts your
 Galaxy webserver, since IEs on the same host as the webserver compete for
 resources with that webserver and introduce some security considerations which
 could be mitigated by moving containers to a separate host. This feature has
-been available since 15.07 and is used in production at the University of Freiburg.
+been available since 15.07 and is used in production at the University of
+Freiburg and on usegalaxy.org.
 
 First you need to configure a second host to be Docker enabled. In the
 following we call this host ``gx-docker`` You need to start the Docker daemon
@@ -213,9 +214,9 @@ you can start the daemon with
     $ docker -H 0.0.0.0:4243 -d
 
 On your client, the Galaxy webserver, you can now install a Docker client. This
-can also be done on older Systems like Scientific-Linux, CentOS 6, which does
-not have Docker support by default. The client just talks to the Docker daemon
-on host ``gx-docker``, and does not run anything itself, locally. You can test
+can also be done on older systems like Scientific-Linux, CentOS 6, which do not
+have Docker support by default. The client just talks to the Docker daemon on
+host ``gx-docker``, and does not run anything itself, locally. You can test
 your configuration for example by starting busybox from your client on the
 Docker host with
 
@@ -223,7 +224,13 @@ Docker host with
 
     $ docker -H tcp://gx-docker:4243 run -it busybox sh
 
-So far so good! Now we need to configure Galaxy to use our new Docker host
+So far so good! Note, however, that unless restricted by a firewall, this mode
+of operation is insecure, as any client could connect and run containers on
+``gx-docker``. If this is a concern at your site, follow the instructions in
+the Docker documentation to `Protect the Docker daemon socket
+<https://docs.docker.com/engine/security/https/>`__.
+
+Now we need to configure Galaxy to use our new Docker host
 to start the Interactive Environments. For that we need to edit the Jupyter GIE
 configuration, ``jupyter.ini`` to use our custom docker host
 
@@ -233,14 +240,18 @@ configuration, ``jupyter.ini`` to use our custom docker host
 
     [docker]
     command = docker -H tcp://gx-docker:4243 {docker_args}
-    image = bgruening/docker-ipython-notebook:dev
     docker_hostname = gx-docker
 
-Please adapt your ``command`` and the ``image`` as needed.
+Please adapt your ``command`` as needed.
 
-As next step we need to configure a share mount point between the Docker host
-and Galaxy. Unfortunately, this can not be a NFS mount. Docker does not like
-NFS yet. You could for example use a sshfs mount with the following script
+The Jupyter GIE supports getting and fetching Galaxy history datasets entirely
+through the Galaxy API so it is not necessary to share a filesystem with
+``gx-docker``. However, other GIE plugins may still require this.
+
+For those GIE plugins, we need to configure a share mount point between the
+Docker host and Galaxy. Unfortunately, this can not be a NFS mount. Docker does
+not like NFS yet. You could for example use a sshfs mount with the following
+script
 
 .. code-block:: bash
 
@@ -252,3 +263,58 @@ NFS yet. You could for example use a sshfs mount with the following script
     fi
 
 This will let Galaxy and the Docker host share temporary files.
+
+Docker Engine Swarm Mode
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+As of Docker Engine version 1.12, Docker Engine can be configured to provide a
+cluster of Docker Engines in a configuration known as *Docker Engine swarm
+mode*.  This replaces the previous and similarly named *Docker Swarm*
+clustering solution, which is not compatible with swarm mode.
+
+`The Docker Engine swarm mode documentation
+<https://docs.docker.com/engine/swarm/>`__ fully explains the differences, but
+the major difference is that whereas under Docker Swarm one could run commands
+on the swarm with ``docker run``, Docker Engine swarm mode requires one to
+create persistent services with ``docker service create`` and to remove those
+services once no longer in use with ``docker service rm``.
+
+Galaxy supports both Docker Engine swarm mode and the legacy Docker Swarm
+system. Legacy Docker Swarm is supported without any special configuration,
+because the containers are still run with ``docker run`` as before. To support
+Docker Engine swarm mode, additional configuration is required. Begin by
+editing your GIE config plugin's ini configuration file (e.g. ``jupyter.ini``)
+and set the ``docker_connect_port`` and ``swarm_mode options`` in addition to
+any other relevant options. Unless you are using a non-standard Docker image,
+the correct value for ``docker_connect_port`` should be suggested to you in the
+sample configuration file:
+
+.. code-block:: ini
+
+    [docker]
+    docker_connect_port = 8888
+    swarm_mode = True
+
+Note that your Galaxy server does not need to be a member of the swarm itself.
+It can use the method outlined above in the `Docker on Another Host`_ section
+to connect as a client to a Docker daemon acting as a swarm mode manager.
+
+Once configured, you should see that your GIE containers are started and run as
+services, which you can inspect using the ``docker service ls`` command and
+other ``docker service`` subcommands.
+
+**Docker services are not cleaned up by Galaxy**. To clean them up, we have
+provided a script that can be run from cron which will locate "shut down"
+services (GIE containers which have stopped themselves) at
+`cron/clean_docker_swarm_mode_services.sh
+<https://github.com/galaxyproject/galaxy/blob/dev/cron/clean_docker_swarm_mode_services.sh>`__
+in the Galaxy source. This script can be run from cron with a crontab entry
+like this example which runs every 15 minutes:
+
+.. code-block:: bash
+
+    */15 * * * * bash /path/to/clean_docker_swarm_mode_services.sh /path/to/galaxy/log/dir/clean_docker_swarm_mode_services.log
+
+This entry would be suitable to be run as ``root`` on a swarm mode manager. You
+could also run it as the Galaxy user on the Galaxy server (with modifications
+to set the correct daemon socket, if running remotely).
