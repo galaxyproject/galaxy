@@ -107,7 +107,10 @@ class NavigatesGalaxy(HasDriver):
             assert final_state == "ok", final_state
         return final_state
 
-    def history_panel_wait_for_hid_ok(self, hid, timeout=30):
+    def history_panel_wait_for_hid_ok(self, hid, timeout=60):
+        self.history_panel_wait_for_hid_state(hid, 'ok', timeout=timeout)
+
+    def history_panel_wait_for_hid_state(self, hid, state, timeout=60):
         current_history_id = self.current_history_id()
 
         def history_has_hid(driver):
@@ -117,8 +120,21 @@ class NavigatesGalaxy(HasDriver):
         self.wait(timeout).until(history_has_hid)
         contents = self.api_get("histories/%s/contents" % current_history_id)
         history_item = [d for d in contents if d["hid"] == hid][0]
-        history_item_selector_okay = "#%s-%s.state-ok" % (history_item["history_content_type"], history_item["id"])
-        self.wait_for_selector_visible(history_item_selector_okay)
+        history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
+        self.wait_for_selector_visible(history_item_selector)
+        history_item_selector_state = "%s.state-%s" % (history_item_selector, state)
+        try:
+            self.wait_for_selector_visible(history_item_selector_state)
+        except self.TimeoutException as e:
+            history_item = self.driver.find_element_by_css_selector(history_item_selector)
+            current_state = "UNKNOWN"
+            classes = history_item.get_attribute("class").split(" ")
+            for clazz in classes:
+                if clazz.startswith("state-"):
+                    current_state = clazz[len("state-"):]
+            template = "Failed waiting on history item %d state to change to [%s] current state [%s]. "
+            message = template % (hid, state, current_state)
+            raise self.prepend_timeout_message(e, message)
 
     def get_logged_in_user(self):
         return self.api_get("users/current")
