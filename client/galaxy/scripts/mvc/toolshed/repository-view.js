@@ -392,7 +392,7 @@ define(['mvc/toolshed/toolshed-model',
             '</div>'].join('')),
 
         templateRepoDependency: _.template([
-            '<li id="metadata_<%= id %>" class="datasetRow repository_dependency_row" style="display: table-row;">',
+            '<li id="metadata_<%= id %>" class="datasetRow repository_dependency_row">',
                 'Repository <b><%= repository.name %></b> revision <b><%= changeset_revision %></b> owned by <b><%= repository.owner %></b>',
                 '<% if (has_repository_dependencies) { %>',
                     '<ul class="child_dependencies">',

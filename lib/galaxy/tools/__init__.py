@@ -139,13 +139,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "cufflinks",
     # Tools improperly migrated to the tool shed (iuc)
     "tabular_to_dbnsfp",
-    # From peterjc and others seq utils
-    "venn_list",
-    "seq_rename",
-    "seq_primer_clip",
-    "fastq_groomer_parallel",
-    "fasta_filter_by_id",
-    "fastq_filter_by_id",
 ]
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.
