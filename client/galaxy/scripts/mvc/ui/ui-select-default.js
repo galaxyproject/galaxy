@@ -109,11 +109,6 @@ var View = Backbone.View.extend({
         }
     },
 
-    /** Matches a search term with a given text */
-    _match: function( term, text ) {
-        return !term || term == '' || String( text ).toUpperCase().indexOf( term.toUpperCase() ) >= 0
-    },
-
     /** Updates the selection options */
     _changeData: function() {
         var self = this;
@@ -130,8 +125,7 @@ var View = Backbone.View.extend({
         if ( this.model.get( 'searchable' ) ) {
             this.data2 = [];
             _.each( this.data, function( option, index ) {
-                var tags = _.reduce( option.tags, function( memo, tag ) { return memo + ' ' + tag }, '');
-                self.data2.push( { order: index, id: option.value, text: option.label, tags: tags } );
+                self.data2.push( { order: index, id: option.value, text: option.label } );
             });
             this.$select.data( 'select2' ) && this.$select.select2( 'destroy' );
             this.$select.select2({
@@ -141,7 +135,7 @@ var View = Backbone.View.extend({
                 query           : function( q ) {
                     var pagesize = self.model.get( 'pagesize' );
                     var results = _.filter( self.data2, function ( e ) {
-                        return self._match( q.term, e.text ) || self._match( q.term, e.tags );
+                        return !q.term || q.term == '' || String( e.text ).toUpperCase().indexOf( q.term.toUpperCase() ) >= 0;
                     });
                     q.callback({
                         results: results.slice( ( q.page - 1 ) * pagesize, q.page * pagesize ),
