@@ -152,7 +152,7 @@ var View = Backbone.View.extend({
                     });
                 },
                 formatResult    : function( result ) {
-                    return result.text + result.filterhtml;
+                    return _.escape( result.text ) + result.filterhtml;
                 }
             });
             this.$( '.select2-container .select2-search input' ).off( 'blur' );
