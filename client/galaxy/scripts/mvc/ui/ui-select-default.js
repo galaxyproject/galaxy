@@ -132,7 +132,7 @@ var View = Backbone.View.extend({
             _.each( this.data, function( option, index ) {
                 var filterstr = _.reduce( option.tags, function( memo, tag ) { return memo + tag + ' ' }, '' );
                 var filterhtml = '<div class="ui-tags">' +
-                    _.reduce( option.tags, function( memo, tag ) { return memo + '&nbsp;<div class="label label-info">' + tag + '</div>' }, '' )
+                    _.reduce( option.tags, function( memo, tag ) { return memo + '&nbsp;<div class="label label-info">' + _.escape( tag ) + '</div>' }, '' )
                 + '</div>';
                 self.data2.push( { order: index, id: option.value, text: option.label, filterhtml: filterhtml, filterstr: filterstr } );
             });
