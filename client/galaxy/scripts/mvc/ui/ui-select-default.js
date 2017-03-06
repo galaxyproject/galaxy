@@ -130,8 +130,11 @@ var View = Backbone.View.extend({
         if ( this.model.get( 'searchable' ) ) {
             this.data2 = [];
             _.each( this.data, function( option, index ) {
-                var tags = _.reduce( option.tags, function( memo, tag ) { return memo + ' ' + tag }, '');
-                self.data2.push( { order: index, id: option.value, text: option.label, tags: tags } );
+                var filterstr = _.reduce( option.tags, function( memo, tag ) { return memo + tag + ' ' }, '' );
+                var filterhtml = '<div class="ui-tags">' +
+                    _.reduce( option.tags, function( memo, tag ) { return memo + '&nbsp;<div class="label label-info">' + tag + '</div>' }, '' )
+                + '</div>';
+                self.data2.push( { order: index, id: option.value, text: option.label, filterhtml: filterhtml, filterstr: filterstr } );
             });
             this.$select.data( 'select2' ) && this.$select.select2( 'destroy' );
             this.$select.select2({
@@ -141,12 +144,15 @@ var View = Backbone.View.extend({
                 query           : function( q ) {
                     var pagesize = self.model.get( 'pagesize' );
                     var results = _.filter( self.data2, function ( e ) {
-                        return self._match( q.term, e.text ) || self._match( q.term, e.tags );
+                        return self._match( q.term, e.text ) || self._match( q.term, e.filterstr );
                     });
                     q.callback({
                         results: results.slice( ( q.page - 1 ) * pagesize, q.page * pagesize ),
                         more   : results.length >= q.page * pagesize
                     });
+                },
+                formatResult    : function( result ) {
+                    return result.text + result.filterhtml;
                 }
             });
             this.$( '.select2-container .select2-search input' ).off( 'blur' );
