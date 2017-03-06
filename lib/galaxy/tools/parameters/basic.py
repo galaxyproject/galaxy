@@ -1929,7 +1929,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
                 'hid'  : hdca.hid,
                 'name' : hdca.name,
                 'src'  : 'hdca',
-                'tags' : [ t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags ],
+                'tags' : [ t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags ]
             })
 
         # append matching subcollections
