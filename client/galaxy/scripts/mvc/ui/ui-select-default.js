@@ -130,9 +130,9 @@ var View = Backbone.View.extend({
         if ( this.model.get( 'searchable' ) ) {
             this.data2 = [];
             _.each( this.data, function( option, index ) {
-                var filterstr = _.reduce( option.tags, function( memo, tag ) { return memo + tag + ' ' }, '' );
+                var filterstr = _.reduce( option.tags, function( memo, tag ) { return memo + tag[0] + (tag[1] ? ":"+tag[1] : '' ) + ' ' }, '' );
                 var filterhtml = '<div class="ui-tags">' +
-                    _.reduce( option.tags, function( memo, tag ) { return memo + '&nbsp;<div class="label label-info">' + tag + '</div>' }, '' )
+                    _.reduce( option.tags, function( memo, tag ) { return memo + '&nbsp;<div class="label label-info">' + tag[0] + (tag[1] ? ":"+tag[1] : '' )  + '</div>' }, '' )
                 + '</div>';
                 self.data2.push( { order: index, id: option.value, text: option.label, filterhtml: filterhtml, filterstr: filterstr } );
             });
