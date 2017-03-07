@@ -107,7 +107,10 @@ class NavigatesGalaxy(HasDriver):
             assert final_state == "ok", final_state
         return final_state
 
-    def history_panel_wait_for_hid_ok(self, hid, timeout=30):
+    def history_panel_wait_for_hid_ok(self, hid, timeout=60):
+        self.history_panel_wait_for_hid_state(hid, 'ok', timeout=timeout)
+
+    def history_panel_wait_for_hid_state(self, hid, state, timeout=60):
         current_history_id = self.current_history_id()
 
         def history_has_hid(driver):
@@ -117,8 +120,21 @@ class NavigatesGalaxy(HasDriver):
         self.wait(timeout).until(history_has_hid)
         contents = self.api_get("histories/%s/contents" % current_history_id)
         history_item = [d for d in contents if d["hid"] == hid][0]
-        history_item_selector_okay = "#%s-%s.state-ok" % (history_item["history_content_type"], history_item["id"])
-        self.wait_for_selector_visible(history_item_selector_okay)
+        history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
+        self.wait_for_selector_visible(history_item_selector)
+        history_item_selector_state = "%s.state-%s" % (history_item_selector, state)
+        try:
+            self.wait_for_selector_visible(history_item_selector_state)
+        except self.TimeoutException as e:
+            history_item = self.driver.find_element_by_css_selector(history_item_selector)
+            current_state = "UNKNOWN"
+            classes = history_item.get_attribute("class").split(" ")
+            for clazz in classes:
+                if clazz.startswith("state-"):
+                    current_state = clazz[len("state-"):]
+            template = "Failed waiting on history item %d state to change to [%s] current state [%s]. "
+            message = template % (hid, state, current_state)
+            raise self.prepend_timeout_message(e, message)
 
     def get_logged_in_user(self):
         return self.api_get("users/current")
@@ -300,6 +316,31 @@ class NavigatesGalaxy(HasDriver):
     def history_options_menu_selector(self):
         menu_selector = self.test_data["historyOptions"]["selectors"]["menu"]
         return menu_selector
+
+    def history_panel_multi_operations_selector(self):
+        return self.test_data["historyPanel"]["selectors"]["history"]["multiOperationsIcon"]
+
+    def history_panel_multi_operations_show(self):
+        operations_selector = self.history_panel_multi_operations_selector()
+        operations_element = self.wait_for_selector_clickable(operations_selector)
+        operations_element.click()
+
+    def history_panel_muli_operation_select_hid(self, hid):
+        item_selector = self.history_panel_item_selector(hid, wait=True)
+        operation_radio_selector = "%s .selector" % item_selector
+        element = self.wait_for_selector_clickable(operation_radio_selector)
+        element.click()
+
+    def history_panel_multi_operation_action_selector(self):
+        return self.test_data["historyPanel"]["selectors"]["history"]["multiOperationsActionBtn"]
+
+    def history_panel_multi_operation_action_click(self, action):
+        time.sleep(5)
+        button_element = self.wait_for_selector_clickable(self.history_panel_multi_operation_action_selector())
+        button_element.click()
+        menu_element = self.wait_for_selector_visible(".list-action-menu.open")
+        action_element = menu_element.find_element_by_link_text(action)
+        action_element.click()
 
     def history_panel_item_selector(self, hid, wait=False):
         current_history_id = self.current_history_id()
