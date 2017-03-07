@@ -1771,7 +1771,7 @@ class DataToolParameter( BaseDataToolParameter ):
             return list.append( { 'id'   : trans.security.encode_id( hda.id ),
                                   'hid'  : hda.hid,
                                   'name' : name,
-                                  'tags' : [ t.user_tname for t in hda.tags ],
+                                  'tags' : [ t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hda.tags ],
                                   'src'  : src,
                                   'keep' : keep } )
 
@@ -1929,7 +1929,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
                 'hid'  : hdca.hid,
                 'name' : hdca.name,
                 'src'  : 'hdca',
-                'tags' : [ t.user_tname for t in hdca.tags ]
+                'tags' : [ t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags ]
             })
 
         # append matching subcollections
@@ -1940,7 +1940,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
                 'hid'  : hdca.hid,
                 'name' : hdca.name,
                 'src'  : 'hdca',
-                'tags' : [ t.user_tname for t in hdca.tags ],
+                'tags' : [ t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags ],
                 'map_over_type': subcollection_type
             })
 
