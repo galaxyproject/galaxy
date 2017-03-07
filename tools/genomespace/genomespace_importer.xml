@@ -1,7 +1,9 @@
 <?xml version="1.0"?>
 <tool name="GenomeSpace Importer" id="genomespace_importer" require_login="False" version="0.0.4">
     <description> - receive data from GenomeSpace</description>
-    <command interpreter="python">genomespace_importer.py
+    <command><![CDATA[
+        export PYTHONPATH=$__root_dir__/lib:\$PYTHONPATH &&
+        $__root_dir__/.venv/bin/python $__root_dir__/tools/genomespace/genomespace_importer.py
         #set $input_file = $URL.split("^")[0] if "^" in $URL else $URL
         #set $token = $URL.split("^")[1] if "^" in $URL and $URL.split("^")[1] else $__user__.preferences.get( 'genomespace_token', None )
 
@@ -10,7 +12,7 @@
         --json_parameter_file "${output_file1}"
         --galaxy_root $__root_dir__
         --data_conf $__datatypes_config__
-    </command>
+    ]]></command>
     <!-- If using this tool through bioblend, the URL parameter should contain the path to the GenomeSpaceFile + the security token
          separated by a ^ as follows: GenomeSpaceFilePath^Token -->
     <inputs check_values="False">
