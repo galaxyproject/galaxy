@@ -106,7 +106,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         _templateRow: function( options ) {
             return  '<tr class="upload-ftp-row">' +
                         '<td class="_has_collection" style="display: none;"><div class="icon"/></td>' +
-                        '<td class="ftp-name">' + options.path + '</td>' +
+                        '<td class="ftp-name">' + _.escape(options.path) + '</td>' +
                         '<td class="ftp-size">' + Utils.bytesToString( options.size ) + '</td>' +
                         '<td class="ftp-time">' + options.ctime + '</td>' +
                     '</tr>';
