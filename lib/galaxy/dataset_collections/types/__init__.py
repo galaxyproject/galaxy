@@ -1,13 +1,18 @@
-from galaxy import exceptions
-from abc import ABCMeta
-from abc import abstractmethod
-
 import logging
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
+
+import six
+
+from galaxy import exceptions
+
 log = logging.getLogger( __name__ )
 
 
+@six.add_metaclass(ABCMeta)
 class DatasetCollectionType(object):
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def generate_elements( self, dataset_instances ):

@@ -2,6 +2,7 @@
 Basic tool parameters.
 """
 import logging
+import numbers
 import os
 import os.path
 import re
@@ -130,6 +131,8 @@ class ToolParameter( object, Dictifiable ):
 
     def to_python( self, value, app ):
         """Convert a value created with to_json back to an object representation"""
+        if isinstance( value, numbers.Number ):
+            return unicodify( value )
         return value
 
     def value_to_basic( self, value, app, use_security=False ):
@@ -206,8 +209,7 @@ class ToolParameter( object, Dictifiable ):
         tool_dict[ 'optional' ] = self.optional
         tool_dict[ 'hidden' ] = self.hidden
         tool_dict[ 'is_dynamic' ] = self.is_dynamic
-        if hasattr( self, 'value' ):
-            tool_dict[ 'value' ] = self.value
+        tool_dict[ 'value' ] = self.value_to_basic( self.get_initial_value( trans, other_values ), trans.app, use_security=True )
         return tool_dict
 
     @classmethod
@@ -239,16 +241,19 @@ class TextToolParameter( ToolParameter ):
     Parameter that can take on any text value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch()
+    >>> trans = Bunch( app=None )
     >>> p = TextToolParameter( None, XML( '<param name="_name" type="text" value="default" />' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('area', False), ('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__( self, tool, input_source )
+        self.datalist = []
+        for ( title, value, selected ) in input_source.parse_static_options():
+            self.datalist.append( { 'label' : title, 'value': value } )
         self.value = input_source.get( 'value' )
         self.area = input_source.get_bool( 'area', False )
 
@@ -271,6 +276,7 @@ class TextToolParameter( ToolParameter ):
     def to_dict( self, trans, other_values={} ):
         d = super(TextToolParameter, self).to_dict(trans)
         d['area'] = self.area
+        d['datalist'] = self.datalist
         return d
 
 
@@ -279,12 +285,12 @@ class IntegerToolParameter( TextToolParameter ):
     Parameter that takes an integer value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch(), workflow_building_mode=True )
+    >>> trans = Bunch( app=None, history=Bunch(), workflow_building_mode=True )
     >>> p = IntegerToolParameter( None, XML( '<param name="_name" type="integer" value="10" />' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('area', False), ('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', '10')]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', '10')]
     >>> type( p.from_json( "10", trans ) )
     <type 'int'>
     >>> type( p.from_json( "_string", trans ) )
@@ -355,12 +361,12 @@ class FloatToolParameter( TextToolParameter ):
     Parameter that takes a real number value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch(), workflow_building_mode=True )
+    >>> trans = Bunch( app=None, history=Bunch(), workflow_building_mode=True )
     >>> p = FloatToolParameter( None, XML( '<param name="_name" type="float" value="3.141592" />' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('area', False), ('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', '3.141592')]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', '3.141592')]
     >>> type( p.from_json( "36.1", trans ) )
     <type 'float'>
     >>> type( p.from_json( "_string", trans ) )
@@ -431,12 +437,12 @@ class BooleanToolParameter( ToolParameter ):
     Parameter that takes one of two values.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = BooleanToolParameter( None, XML( '<param name="_name" type="boolean" checked="yes" truevalue="_truevalue" falsevalue="_falsevalue" />' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', True)]
+    [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', 'true')]
     >>> print p.from_json( 'true' )
     True
     >>> print p.to_param_dict_string( True )
@@ -476,7 +482,6 @@ class BooleanToolParameter( ToolParameter ):
 
     def to_dict( self, trans, other_values={} ):
         d = super( BooleanToolParameter, self ).to_dict( trans )
-        d['value'] = self.checked
         d['truevalue'] = self.truevalue
         d['falsevalue'] = self.falsevalue
         return d
@@ -491,12 +496,12 @@ class FileToolParameter( ToolParameter ):
     Parameter that takes an uploaded file as a value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = FileToolParameter( None, XML( '<param name="_name" type="file"/>' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FileToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'file')]
+    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FileToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'file'), ('value', None)]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
@@ -541,21 +546,18 @@ class FileToolParameter( ToolParameter ):
         else:
             raise Exception( "FileToolParameter cannot be persisted" )
 
-    def get_initial_value( self, trans, other_values ):
-        return None
-
 
 class FTPFileToolParameter( ToolParameter ):
     """
     Parameter that takes a file uploaded via FTP as a value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch(), user=None )
     >>> p = FTPFileToolParameter( None, XML( '<param name="_name" type="ftpfile"/>' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FTPFileToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'ftpfile')]
+    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FTPFileToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'ftpfile'), ('value', None)]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
@@ -622,12 +624,12 @@ class HiddenToolParameter( ToolParameter ):
     Parameter that takes one of two values.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = HiddenToolParameter( None, XML( '<param name="_name" type="hidden" value="_value"/>' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', '_value')]
+    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', u'_value')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
@@ -647,14 +649,14 @@ class ColorToolParameter( ToolParameter ):
     Parameter that stores a color.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff"/>' ) )
     >>> print p.name
     _name
     >>> print p.to_param_dict_string( "#fdeada" )
     #fdeada
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', '#ffffff')]
+    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', u'#ffffff')]
     >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff" rgb="True"/>' ) )
     >>> print p.to_param_dict_string( "#fdeada" )
     (253, 234, 218)
@@ -687,12 +689,12 @@ class BaseURLToolParameter( HiddenToolParameter ):
     current server base url. Used in all redirects.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = BaseURLToolParameter( None, XML( '<param name="_name" type="base_url" value="_value"/>' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', '_value')]
+    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', u'_value')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
@@ -714,7 +716,6 @@ class BaseURLToolParameter( HiddenToolParameter ):
 
     def to_dict( self, trans, other_values={} ):
         d = super( BaseURLToolParameter, self ).to_dict( trans )
-        d[ 'value' ] = self._get_value()
         return d
 
 
@@ -723,7 +724,7 @@ class SelectToolParameter( ToolParameter ):
     Parameter that takes on one (or many) or a specific set of values.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = SelectToolParameter( None, XML(
     ... '''
     ... <param name="_name" type="select">
@@ -747,7 +748,7 @@ class SelectToolParameter( ToolParameter ):
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('type', 'select'), ('value', 'z')]
+    [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('type', 'select'), ('value', ['y', 'z'])]
     >>> print p.to_param_dict_string( ["y", "z"] )
     y,z
     """
@@ -885,7 +886,7 @@ class SelectToolParameter( ToolParameter ):
             else:
                 value = None
         elif len( value ) == 1:
-            value = value[0]
+            value = value[ 0 ]
         return value
 
     def value_to_display_text( self, value, app ):
@@ -920,14 +921,6 @@ class SelectToolParameter( ToolParameter ):
         # Get options, value.
         options = self.get_options( trans, other_values )
         d[ 'options' ] = options
-        if options:
-            value = options[ 0 ][ 1 ]
-            for option in options:
-                if option[ 2 ]:
-                    # Found selected option.
-                    value = option[ 1 ]
-            d[ 'value' ] = value
-
         d[ 'display' ] = self.display
         d[ 'multiple' ] = self.multiple
         return d
@@ -939,7 +932,7 @@ class GenomeBuildParameter( SelectToolParameter ):
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
+    >>> trans = Bunch( app=None, history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
     >>> p = GenomeBuildParameter( None, XML( '<param name="_name" type="genomebuild" value="hg17" />' ) )
     >>> print p.name
     _name
@@ -1162,7 +1155,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     Creating a hierarchical select menu, which allows users to 'drill down' a tree-like set of options.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
+    >>> trans = Bunch( app=None, history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
     >>> p = DrillDownSelectToolParameter( None, XML(
     ... '''
     ... <param name="_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
@@ -1461,7 +1454,7 @@ class BaseDataToolParameter( ToolParameter ):
         if history is not None:
             dataset_matcher = DatasetMatcher( trans, self, None, other_values )
             if isinstance( self, DataToolParameter ):
-                for hda in reversed( history.active_datasets_children_and_roles ):
+                for hda in reversed( history.active_datasets_and_roles ):
                     match = dataset_matcher.hda_match( hda, check_security=False )
                     if match:
                         return match.hda
@@ -1581,25 +1574,6 @@ class DataToolParameter( BaseDataToolParameter ):
         for history_dataset_collection in history.active_dataset_collections:
             if dataset_collection_matcher.hdca_match( history_dataset_collection, reduction=reduction ):
                 yield history_dataset_collection
-
-    def match_datasets( self, history, dataset_matcher ):
-
-        def dataset_collector( hdas, parent_hid ):
-            for i, hda in enumerate( hdas ):
-                if parent_hid is not None:
-                    hid = "%s.%d" % ( parent_hid, i + 1 )
-                else:
-                    hid = str( hda.hid )
-                hda_match = dataset_matcher.hda_match( hda )
-                if not hda_match:
-                    continue
-                yield (hda_match, hid)
-                # Also collect children via association object
-                for item in dataset_collector( hda.children, hid ):
-                    yield item
-
-        for item in dataset_collector( history.active_datasets_children_and_roles, None ):
-            yield item
 
     def from_json( self, value, trans, other_values={} ):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
@@ -1793,27 +1767,38 @@ class DataToolParameter( BaseDataToolParameter ):
         multiple = self.multiple
 
         # build and append a new select option
-        def append( list, id, hid, name, src, keep=False ):
-            return list.append( { 'id' : trans.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src, 'keep': keep } )
+        def append( list, hda, name, src, keep=False ):
+            return list.append( { 'id'   : trans.security.encode_id( hda.id ),
+                                  'hid'  : hda.hid,
+                                  'name' : name,
+                                  'tags' : [ t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hda.tags ],
+                                  'src'  : src,
+                                  'keep' : keep } )
 
         # add datasets
         visible_hda = other_values.get( self.name )
         has_matched = False
-        for hda in history.active_datasets_children_and_roles:
+        for hda in history.active_datasets_and_roles:
             match = dataset_matcher.hda_match( hda, check_security=False )
             if match:
                 m = match.hda
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
                 m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
-                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m_name if m.visible else '(hidden) %s' % m_name, 'hda' )
-        if not has_matched and hasattr( visible_hda, 'id' ) and hasattr( visible_hda, 'hid' ) and hasattr( visible_hda, 'name' ):
-            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda', True )
+                append( d[ 'options' ][ 'hda' ], m, m_name, 'hda' )
+        if not has_matched and hasattr( visible_hda, 'hid' ):
+            if visible_hda.deleted:
+                hda_state = 'deleted'
+            elif not visible_hda.visible:
+                hda_state = 'hidden'
+            else:
+                hda_state = 'unavailable'
+            append( d[ 'options' ][ 'hda' ], visible_hda, '(%s) %s' % ( hda_state, visible_hda.name ), 'hda', True )
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
         for hdca in history.active_dataset_collections:
             if dataset_collection_matcher.hdca_match( hdca, reduction=multiple ):
-                append( d[ 'options' ][ 'hdca' ], hdca.id, hdca.hid, hdca.name, 'hdca' )
+                append( d[ 'options' ][ 'hdca' ], hdca, hdca.name, 'hdca' )
 
         # sort both lists
         d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k['hid'], reverse=True)
@@ -1940,20 +1925,22 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         # append directly matched collections
         for hdca in self.match_collections( trans, history, dataset_matcher ):
             d['options']['hdca'].append({
-                'id': trans.security.encode_id( hdca.id ),
-                'hid': hdca.hid,
-                'name': hdca.name,
-                'src': 'hdca'
+                'id'   : trans.security.encode_id( hdca.id ),
+                'hid'  : hdca.hid,
+                'name' : hdca.name,
+                'src'  : 'hdca',
+                'tags' : [ t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags ]
             })
 
         # append matching subcollections
         for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
             subcollection_type = self._history_query( trans ).can_map_over( hdca ).collection_type
             d['options']['hdca'].append({
-                'id': trans.security.encode_id( hdca.id ),
-                'hid': hdca.hid,
-                'name': hdca.name,
-                'src': 'hdca',
+                'id'   : trans.security.encode_id( hdca.id ),
+                'hid'  : hdca.hid,
+                'name' : hdca.name,
+                'src'  : 'hdca',
+                'tags' : [ t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags ],
                 'map_over_type': subcollection_type
             })
 
@@ -1975,9 +1962,6 @@ class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
         self.type = "hidden_data"
         self.hidden = True
 
-    def get_initial_value( self, trans, other_values ):
-        return None
-
 
 class LibraryDatasetToolParameter( ToolParameter ):
     """
@@ -1988,9 +1972,6 @@ class LibraryDatasetToolParameter( ToolParameter ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.multiple = input_source.get_bool( 'multiple', True )
-
-    def get_initial_value( self, trans, other_values ):
-        return None
 
     def from_json( self, value, trans, other_values={} ):
         return self.to_python( value, trans.app, other_values=other_values, validate=True )

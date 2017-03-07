@@ -1406,20 +1406,20 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         return galaxy.util.nice_size( self.disk_size )
 
     @property
-    def active_datasets_children_and_roles( self ):
-        if not hasattr(self, '_active_datasets_children_and_roles'):
+    def active_datasets_and_roles( self ):
+        if not hasattr(self, '_active_datasets_and_roles'):
             db_session = object_session( self )
             query = ( db_session.query( HistoryDatasetAssociation )
                       .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
                       .filter( not_( HistoryDatasetAssociation.deleted ) )
                       .order_by( HistoryDatasetAssociation.table.c.hid.asc() )
-                      .options( joinedload("children"),
-                                joinedload("dataset"),
+                      .options( joinedload("dataset"),
                                 joinedload("dataset.actions"),
                                 joinedload("dataset.actions.role"),
+                                joinedload("tags"),
                                 ))
-            self._active_datasets_children_and_roles = query.all()
-        return self._active_datasets_children_and_roles
+            self._active_datasets_and_roles = query.all()
+        return self._active_datasets_and_roles
 
     @property
     def active_contents( self ):

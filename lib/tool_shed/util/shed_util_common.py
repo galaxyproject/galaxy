@@ -225,7 +225,7 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
 
 
 def get_requirements_from_tools(tools):
-    return {tool['id']: [galaxy.tools.deps.requirements.ToolRequirement.from_dict(r) for r in tool['requirements']] for tool in tools}
+    return {tool['id']: galaxy.tools.deps.requirements.ToolRequirements.from_list(tool['requirements']) for tool in tools}
 
 
 def get_requirements_from_repository(repository):

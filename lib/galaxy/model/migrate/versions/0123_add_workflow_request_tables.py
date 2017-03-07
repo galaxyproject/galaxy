@@ -3,14 +3,12 @@ Migration script for workflow request tables.
 """
 from __future__ import print_function
 
-import datetime
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table, TEXT, Unicode
 
 from galaxy.model.custom_types import JSONType, TrimmedString, UUIDType
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 
@@ -87,8 +85,8 @@ def upgrade(migrate_engine):
     cmd = "UPDATE workflow_invocation SET state = 'scheduled'"
     try:
         migrate_engine.execute( cmd )
-    except Exception as e:
-        log.debug( "failed to update past workflow invocation states: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("failed to update past workflow invocation states.")
 
     WorkflowInvocationStepAction_column = Column( "action", JSONType, nullable=True )
     __add_column( WorkflowInvocationStepAction_column, "workflow_invocation_step", metadata )
@@ -102,10 +100,10 @@ def downgrade(migrate_engine):
         __drop(table)
 
     __drop_column( "state", "workflow_invocation", metadata )
-    __drop_column( "scheduler_id", "workflow_invocation", metadata )
+    __drop_column( "scheduler", "workflow_invocation", metadata )
     __drop_column( "uuid", "workflow_invocation", metadata )
     __drop_column( "history_id", "workflow_invocation", metadata )
-    __drop_column( "handler_id", "workflow_invocation", metadata )
+    __drop_column( "handler", "workflow_invocation", metadata )
     __drop_column( "action", "workflow_invocation_step", metadata )
 
 
@@ -113,31 +111,27 @@ def __add_column(column, table_name, metadata, **kwds):
     try:
         table = Table( table_name, metadata, autoload=True )
         column.create( table, **kwds )
-    except Exception as e:
-        print(str(e))
-        log.exception( "Adding column %s column failed." % column)
+    except Exception:
+        log.exception("Adding column %s column failed." % column)
 
 
 def __drop_column( column_name, table_name, metadata ):
     try:
         table = Table( table_name, metadata, autoload=True )
         getattr( table.c, column_name ).drop()
-    except Exception as e:
-        print(str(e))
-        log.exception( "Dropping column %s failed." % column_name )
+    except Exception:
+        log.exception("Dropping column %s failed." % column_name)
 
 
 def __create(table):
     try:
         table.create()
-    except Exception as e:
-        print(str(e))
-        log.exception("Creating %s table failed: %s" % (table.name, str( e ) ) )
+    except Exception:
+        log.exception("Creating %s table failed." % table.name)
 
 
 def __drop(table):
     try:
         table.drop()
-    except Exception as e:
-        print(str(e))
-        log.exception("Dropping %s table failed: %s" % (table.name, str( e ) ) )
+    except Exception:
+        log.exception("Dropping %s table failed." % table.name)

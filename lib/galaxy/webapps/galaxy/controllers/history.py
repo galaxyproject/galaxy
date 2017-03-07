@@ -827,6 +827,20 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                     send_to_err=send_to_err )
 
     @web.expose
+    def adjust_hidden( self, trans, id=None, **kwd ):
+        """ THIS METHOD IS A TEMPORARY ADDITION. It'll allow us to fix the
+        regression in history-wide actions, and will be removed in the first
+        release after 17.01 """
+        action = kwd.get('user_action', None)
+        if action == 'delete':
+            for hda in trans.history.datasets:
+                if not hda.visible:
+                    hda.mark_deleted()
+        elif action == 'unhide':
+            trans.history.unhide_datasets()
+        trans.sa_session.flush()
+
+    @web.expose
     @web.require_login( "share restricted histories with other users" )
     def share_restricted( self, trans, id=None, email="", **kwd ):
         if 'action' in kwd:
@@ -1246,21 +1260,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             trans.sa_session.flush()
         return
         # TODO: used in page/editor.mako
-
-    @web.expose
-    def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
-        """Return autocomplete data for history names"""
-        user = trans.get_user()
-        if not user:
-            return
-
-        ac_data = ""
-        for history in ( trans.sa_session.query( model.History )
-                         .filter_by( user=user )
-                         .filter( func.lower( model.History.name ).like(q.lower() + "%") ) ):
-            ac_data = ac_data + history.name + "\n"
-        return ac_data
-        # TODO: used in grid_base.mako
 
     @web.expose
     @web.require_login( "rename histories" )

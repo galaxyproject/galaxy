@@ -1,11 +1,17 @@
+from logging import getLogger
+from subprocess import (
+    PIPE,
+    Popen
+)
 from tempfile import TemporaryFile
 from time import sleep
-from subprocess import Popen, PIPE
 
 from ..shell import BaseShellExec
-from ....util import Bunch, kill_pid
+from ....util import (
+    Bunch,
+    kill_pid
+)
 
-from logging import getLogger
 log = getLogger(__name__)
 
 TIMEOUT_ERROR_MESSAGE = u'Execution timed out'

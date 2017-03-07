@@ -5,11 +5,16 @@ from abc import (
     abstractproperty,
 )
 
+import six
+import yaml
+
+from galaxy.util import listify
 from galaxy.util.dictifiable import Dictifiable
 
 from ..requirements import ToolRequirement
 
 
+@six.add_metaclass(ABCMeta)
 class DependencyResolver(Dictifiable, object):
     """Abstract description of a technique for resolving container images for tool execution."""
 
@@ -22,10 +27,10 @@ class DependencyResolver(Dictifiable, object):
     # resolution.
     disabled = False
     resolves_simple_dependencies = True
-    __metaclass__ = ABCMeta
+    config_options = {}
 
     @abstractmethod
-    def resolve( self, name, version, type, **kwds ):
+    def resolve( self, requirement, **kwds ):
         """Given inputs describing dependency in the abstract yield a Dependency object.
 
         The Dependency object describes various attributes (script, bin,
@@ -37,25 +42,22 @@ class DependencyResolver(Dictifiable, object):
         request version is 'default'.)
         """
 
-    def _get_config_option(self, key, dependency_resolver, default=None, config_prefix=None, **kwds):
-        """ Look in resolver-specific settings for option and then fallback to
-        global settings.
+
+class MultipleDependencyResolver:
+    """Variant of DependencyResolver that can optionally resolve multiple dependencies together."""
+
+    @abstractmethod
+    def resolve_all( self, requirements, **kwds ):
+        """Given multiple requirements yield Dependency objects if and only if they may all be resolved together.
         """
-        global_key = "%s_%s" % (config_prefix, key)
-        if key in kwds:
-            return kwds.get(key)
-        elif global_key in dependency_resolver.extra_config:
-            return dependency_resolver.extra_config.get(global_key)
-        else:
-            return default
 
 
+@six.add_metaclass(ABCMeta)
 class ListableDependencyResolver:
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can iterate over its dependencies and generate
     requirements.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def list_dependencies(self):
@@ -67,11 +69,152 @@ class ListableDependencyResolver:
         return ToolRequirement(name=name, type="package", version=version)
 
 
+class MappableDependencyResolver:
+    """Mix this into a ``DependencyResolver`` to allow mapping files.
+
+    Mapping files allow adapting generic requirements to specific local implementations.
+    """
+
+    def _setup_mapping(self, dependency_manager, **kwds):
+        mapping_files = dependency_manager.get_resolver_option(self, "mapping_files", explicit_resolver_options=kwds)
+        mappings = []
+        if mapping_files:
+            mapping_files = listify(mapping_files)
+            for mapping_file in mapping_files:
+                mappings.extend(MappableDependencyResolver._mapping_file_to_list(mapping_file))
+        self._mappings = mappings
+
+    @staticmethod
+    def _mapping_file_to_list(mapping_file):
+        with open(mapping_file, "r") as f:
+            raw_mapping = yaml.load(f) or []
+        return map(RequirementMapping.from_dict, raw_mapping)
+
+    def _expand_mappings(self, requirement):
+        for mapping in self._mappings:
+            if mapping.matches_requirement(requirement):
+                requirement = mapping.apply(requirement)
+                break
+
+        return requirement
+
+
+FROM_UNVERSIONED = object()
+
+
+class RequirementMapping(object):
+
+    def __init__(self, from_name, from_version, to_name, to_version):
+        self.from_name = from_name
+        self.from_version = from_version
+        self.to_name = to_name
+        self.to_version = to_version
+
+    def matches_requirement(self, requirement):
+        """Check if supplied ToolRequirement matches this mapping description.
+
+        For it to match - the names must match. Additionally if the
+        requirement is created with a version or with unversioned being set to
+        True additional checks are needed. If a version is specified, it must
+        match the supplied version exactly. If ``unversioned`` is True, then
+        the supplied requirement must be unversioned (i.e. its version must be
+        set to ``None``).
+        """
+
+        if requirement.name != self.from_name:
+            return False
+        elif self.from_version is None:
+            return True
+        elif self.from_version is FROM_UNVERSIONED:
+            return requirement.version is None
+        else:
+            return requirement.version == self.from_version
+
+    def apply(self, requirement):
+        requirement = requirement.copy()
+        requirement.name = self.to_name
+        if self.to_version is not None:
+            requirement.version = self.to_version
+        return requirement
+
+    @staticmethod
+    def from_dict(raw_mapping):
+        from_raw = raw_mapping.get("from")
+        if isinstance(from_raw, dict):
+            from_name = from_raw.get("name")
+            raw_version = from_raw.get("version", None)
+            unversioned = from_raw.get("unversioned", False)
+            if unversioned and raw_version:
+                raise Exception("Cannot define both version and set unversioned to True.")
+
+            if unversioned:
+                from_version = FROM_UNVERSIONED
+            else:
+                from_version = str(raw_version) if raw_version is not None else raw_version
+        else:
+            from_name = from_raw
+            from_version = None
+
+        to_raw = raw_mapping.get("to")
+        if isinstance(to_raw, dict):
+            to_name = to_raw.get("name", from_name)
+            to_version = str(to_raw.get("version"))
+        else:
+            to_name = to_raw
+            to_version = None
+
+        return RequirementMapping(from_name, from_version, to_name, to_version)
+
+
+@six.add_metaclass(ABCMeta)
+class SpecificationAwareDependencyResolver:
+    """Mix this into a :class:`DependencyResolver` to implement URI specification matching.
+
+    Allows adapting generic requirements to more specific URIs - to tailor name
+    or version to specified resolution system.
+    """
+
+    @abstractmethod
+    def _expand_specs(self, requirement):
+        """Find closest matching specification for discovered resolver and return new concrete requirement."""
+
+
+class SpecificationPatternDependencyResolver:
+    """Implement the :class:`SpecificationAwareDependencyResolver` with a regex pattern."""
+
+    @abstractproperty
+    def _specification_pattern(self):
+        """Pattern of URI to match against."""
+
+    def _find_specification(self, specs):
+        pattern = self._specification_pattern
+        for spec in specs:
+            if pattern.match(spec.uri):
+                return spec
+        return None
+
+    def _expand_specs(self, requirement):
+        name = requirement.name
+        version = requirement.version
+        specs = requirement.specs
+
+        spec = self._find_specification(specs)
+        if spec is not None:
+            name = spec.short_name
+            version = spec.version or version
+
+            requirement = requirement.copy()
+            requirement.name = name
+            requirement.version = version
+
+        return requirement
+
+
+@six.add_metaclass(ABCMeta)
 class InstallableDependencyResolver:
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can attempt to install new dependencies.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def install_dependency(self, name, version, type, **kwds):
@@ -80,9 +223,9 @@ class InstallableDependencyResolver:
         """
 
 
+@six.add_metaclass(ABCMeta)
 class Dependency(Dictifiable, object):
     dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version', 'cacheable']
-    __metaclass__ = ABCMeta
     cacheable = False
 
     @abstractmethod

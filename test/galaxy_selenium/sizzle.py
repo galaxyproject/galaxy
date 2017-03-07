@@ -15,7 +15,21 @@ def sizzle_selector_clickable(selector):
         if not elements:
             return False
         element = elements[0]
-        if element.is_displayed() and element.is_enabled():
+        try:
+            clickable = element.is_displayed() and element.is_enabled()
+        except Exception as e:
+            # Handle the case where the element is detached between when it is
+            # discovered and when it is checked - it is likely changing quickly
+            # and the next pass will be the final state. If not, this should be
+            # wrapped in a wait anyway - so no problems there. For other
+            # non-custom selectors I believe this all happens on the Selenium
+            # server and so there is likely no need to handle this case - they
+            # are effectively atomic.
+            if _exception_indicates_stale_element(e):
+                return None
+
+            raise
+        if clickable:
             return element
         else:
             return None
@@ -29,12 +43,25 @@ def sizzle_presence_of_selector(selector):
         if not elements:
             return False
         element = elements[0]
-        if element.is_displayed():
+        try:
+            displayed = element.is_displayed()
+        except Exception as e:
+            # See note above insizzle_selector_clickable about this exception.
+            if _exception_indicates_stale_element(e):
+                return None
+
+            raise
+
+        if displayed:
             return element
         else:
             return None
 
     return ec
+
+
+def _exception_indicates_stale_element(exception):
+    return "stale" in str(exception)
 
 
 def find_element_by_sizzle(driver, sizzle_selector):

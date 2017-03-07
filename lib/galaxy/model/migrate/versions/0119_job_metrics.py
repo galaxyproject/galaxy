@@ -3,12 +3,10 @@ Migration script for job metric plugins.
 """
 from __future__ import print_function
 
-import datetime
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Numeric, Table, Unicode
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 
@@ -86,14 +84,12 @@ def downgrade(migrate_engine):
 def __create(table):
     try:
         table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug("Creating %s table failed: %s" % (table.name, str( e ) ) )
+    except Exception:
+        log.exception("Creating %s table failed." % table.name)
 
 
 def __drop(table):
     try:
         table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug("Dropping %s table failed: %s" % (table.name, str( e ) ) )
+    except Exception:
+        log.exception("Dropping %s table failed." % table.name)

@@ -106,7 +106,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         """
         galaxy.queue_worker.send_control_task( trans.app, 'reload_tool', noop_self=True, kwargs={ 'tool_id': id } )
         message, status = trans.app.toolbox.reload_tool_by_id( id )
-        return { status: message }
+        if status == 'error':
+            raise exceptions.MessageException( message )
+        return { 'message': message }
 
     @expose_api
     @web.require_admin
@@ -236,6 +238,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool_stub_boost = self.app.config.get( 'tool_stub_boost', 5 )
         tool_help_boost = self.app.config.get( 'tool_help_boost', 0.5 )
         tool_search_limit = self.app.config.get( 'tool_search_limit', 20 )
+        tool_enable_ngram_search = self.app.config.get( 'tool_enable_ngram_search', False )
+        tool_ngram_minsize = self.app.config.get( 'tool_ngram_minsize', 3 )
+        tool_ngram_maxsize = self.app.config.get( 'tool_ngram_maxsize', 4 )
 
         results = self.app.toolbox_search.search( q=q,
                                                   tool_name_boost=tool_name_boost,
@@ -244,7 +249,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                                                   tool_label_boost=tool_label_boost,
                                                   tool_stub_boost=tool_stub_boost,
                                                   tool_help_boost=tool_help_boost,
-                                                  tool_search_limit=tool_search_limit )
+                                                  tool_search_limit=tool_search_limit,
+                                                  tool_enable_ngram_search=tool_enable_ngram_search,
+                                                  tool_ngram_minsize=tool_ngram_minsize,
+                                                  tool_ngram_maxsize=tool_ngram_maxsize )
         return results
 
     @expose_api_anonymous_and_sessionless

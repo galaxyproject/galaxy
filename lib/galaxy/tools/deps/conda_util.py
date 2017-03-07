@@ -82,6 +82,41 @@ class CondaContext(installable.InstallableContext):
             ensure_channels = None
         self.ensure_channels = ensure_channels
         self.ensured_channels = False
+        self._conda_version = None
+        self._miniconda_version = None
+
+    @property
+    def conda_version(self):
+        if self._conda_version is None:
+            self._guess_conda_version()
+        return self._conda_version
+
+    def _guess_conda_version(self):
+        conda_meta_path = self._conda_meta_path
+        # Perhaps we should call "conda info --json" and parse it but for now we are going
+        # to assume the default.
+        conda_version = LooseVersion(CONDA_VERSION)
+        miniconda_version = "3"
+
+        if os.path.exists(conda_meta_path):
+            for package in os.listdir(conda_meta_path):
+                package_parts = package.split("-")
+                if len(package_parts) < 3:
+                    continue
+                package = '-'.join(package_parts[:-2])
+                version = package_parts[-2]
+                # build = package_parts[-1]
+                if package == "conda":
+                    conda_version = LooseVersion(version)
+                if package == "python" and version.startswith("2"):
+                    miniconda_version = "2"
+
+        self._conda_version = conda_version
+        self._miniconda_version = miniconda_version
+
+    @property
+    def _conda_meta_path(self):
+        return os.path.join(self.conda_prefix, "conda-meta")
 
     def ensure_channels_configured(self):
         if not self.ensured_channels:
@@ -180,16 +215,19 @@ class CondaContext(installable.InstallableContext):
 
     def exec_command(self, operation, args):
         command = self.command(operation, args)
-        env = {'HOME': self.conda_prefix}  # We don't want to pollute ~/.conda, which may not even be writable
+        env = {}
         condarc_override = self.condarc_override
         if condarc_override:
             env["CONDARC"] = condarc_override
         log.debug("Executing command: %s", command)
+        env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
         try:
             return self.shell_exec(command, env=env)
         except commands.CommandLineException as e:
             log.warning(e)
             return e.returncode
+        finally:
+            shutil.rmtree(env['HOME'], ignore_errors=True)
 
     def exec_create(self, args):
         create_base_args = [
@@ -214,7 +252,7 @@ class CondaContext(installable.InstallableContext):
         install_base_args.extend(args)
         return self.exec_command("install", install_base_args)
 
-    def exec_clean(self, args=[]):
+    def exec_clean(self, args=[], quiet=False):
         """
         Clean up after conda installation.
         """
@@ -222,8 +260,10 @@ class CondaContext(installable.InstallableContext):
             "--tarballs",
             "-y"
         ]
-        clean_base_args.extend(args)
-        return self.exec_command("clean", clean_base_args)
+        clean_args = clean_base_args + args
+        if quiet:
+            clean_args.extend([">", "/dev/null"])
+        return self.exec_command("clean", clean_args)
 
     def export_list(self, name, path):
         return self.exec_command("list", [
@@ -365,27 +405,33 @@ def install_conda(conda_context=None):
             os.remove(script_path)
 
 
-def install_conda_targets(conda_targets, env_name, conda_context=None):
+def install_conda_targets(conda_targets, env_name=None, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
     conda_context.ensure_channels_configured()
-    create_args = [
-        "--name", env_name,  # enviornment for package
-    ]
-    for conda_target in conda_targets:
-        create_args.append(conda_target.package_specifier)
-    return conda_context.exec_create(create_args)
+    if env_name is not None:
+        create_args = [
+            "--name", env_name,  # environment for package
+        ]
+        for conda_target in conda_targets:
+            create_args.append(conda_target.package_specifier)
+        return conda_context.exec_create(create_args)
+    else:
+        return conda_context.exec_install([t.package_specifier for t in conda_targets])
 
 
-def install_conda_target(conda_target, conda_context=None):
+def install_conda_target(conda_target, conda_context=None, skip_environment=False):
     """ Install specified target into a its own environment.
     """
     conda_context = _ensure_conda_context(conda_context)
     conda_context.ensure_channels_configured()
-    create_args = [
-        "--name", conda_target.install_environment,  # enviornment for package
-        conda_target.package_specifier,
-    ]
-    return conda_context.exec_create(create_args)
+    if not skip_environment:
+        create_args = [
+            "--name", conda_target.install_environment,  # environment for package
+            conda_target.package_specifier,
+        ]
+        return conda_context.exec_create(create_args)
+    else:
+        return conda_context.exec_install([conda_target.package_specifier])
 
 
 def cleanup_failed_install_of_environment(env, conda_context=None):
@@ -472,6 +518,7 @@ def build_isolated_environment(
     path=None,
     copy=False,
     conda_context=None,
+    quiet=False,
 ):
     """ Build a new environment (or reuse an existing one from hashes)
     for specified conda packages.
@@ -495,7 +542,16 @@ def build_isolated_environment(
                 export_path
             )
             export_paths.append(export_path)
-        create_args = ["--unknown", "--offline"]
+        create_args = ["--unknown"]
+        # Works in 3.19, 4.0 - 4.2 - not in 4.3.
+        # Adjust fix if they fix Conda - xref
+        # - https://github.com/galaxyproject/galaxy/issues/3635
+        # - https://github.com/conda/conda/issues/2035
+        offline_works = conda_context.conda_version < LooseVersion("4.3")
+        if offline_works:
+            create_args.extend(["--offline"])
+        else:
+            create_args.extend(["--use-index-cache"])
         if path is None:
             create_args.extend(["--name", tempdir_name])
         else:
@@ -508,6 +564,9 @@ def build_isolated_environment(
                 "--file", export_path, ">", "/dev/null"
             ])
 
+        if quiet:
+            create_args.extend([">", "/dev/null"])
+
         if path is not None and os.path.exists(path):
             exit_code = conda_context.exec_install(create_args)
         else:
@@ -515,7 +574,7 @@ def build_isolated_environment(
 
         return (path or tempdir_name, exit_code)
     finally:
-        conda_context.exec_clean()
+        conda_context.exec_clean(quiet=quiet)
         shutil.rmtree(tempdir)
 
 

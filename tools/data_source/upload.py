@@ -95,6 +95,7 @@ def add_file( dataset, registry, json_file, output_path ):
             file_err( 'Unable to fetch %s\n%s' % ( dataset.path, str( e ) ), dataset, json_file )
             return
         dataset.path = temp_name
+        dataset.name = os.path.basename( dataset.name )
     # See if we have an empty file
     if not os.path.exists( dataset.path ):
         file_err( 'Uploaded temporary file (%s) does not exist.' % dataset.path, dataset, json_file )

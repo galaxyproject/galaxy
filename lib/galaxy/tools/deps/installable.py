@@ -2,12 +2,13 @@
 
 import logging
 import os
-
 from abc import (
     ABCMeta,
     abstractmethod,
     abstractproperty,
 )
+
+import six
 
 from galaxy.util.filelock import (
     FileLock,
@@ -17,10 +18,9 @@ from galaxy.util.filelock import (
 log = logging.getLogger(__name__)
 
 
+@six.add_metaclass(ABCMeta)
 class InstallableContext(object):
     """Represent a directory/configuration of something that can be installed."""
-
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def is_installed(self):

@@ -45,14 +45,14 @@ class DependencyResolversView(object):
     def resolver_dependency(self, index, **kwds):
         return self._dependency(**kwds)
 
-    def show_dependencies(self, requirements, installed_tool_dependencies=None):
+    def show_dependencies(self, tool_requirements_d, installed_tool_dependencies=None):
         """
         Resolves dependencies to build a requirements status in the admin panel/API
         """
         kwds = {'install': False,
                 'return_null': True,
                 'installed_tool_dependencies': installed_tool_dependencies}
-        dependencies_per_tool = {tool: self._dependency_manager.requirements_to_dependencies(dependencies, **kwds) for tool, dependencies in requirements.items()}
+        dependencies_per_tool = {tool: self._dependency_manager.requirements_to_dependencies(requirements, **kwds) for tool, requirements in tool_requirements_d.items()}
         return dependencies_per_tool
 
     def install_dependencies(self, requirements):
@@ -138,12 +138,12 @@ class DependencyResolversView(object):
         """
         return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled ]
 
-    def get_requirements_status(self, requested_requirements, installed_tool_dependencies=None):
-        dependencies = self.show_dependencies(requested_requirements, installed_tool_dependencies)
-        # dependencies is a dict keyed on tool_ids, values are lists of ToolRequirements for that tool.
-        # we collapse requested requirements to single set,
-        # then use collapsed requirements to get resolved dependencies without duplicates.
-        flat_tool_requirements = set([r for requirement_list in requested_requirements.values() for r in requirement_list])
+    def get_requirements_status(self, tool_requirements_d, installed_tool_dependencies=None):
+        dependencies = self.show_dependencies(tool_requirements_d, installed_tool_dependencies)
+        # dependencies is a dict keyed on tool_ids, value is a ToolRequirements object for that tool.
+        # We use the union of resolvable ToolRequirements to get resolved dependencies without duplicates.
+        requirements = [r.resolvable for r in tool_requirements_d.values()]
+        flat_tool_requirements = set().union(*requirements)
         flat_dependencies = []
         for requirements_odict in dependencies.values():
             for requirement in requirements_odict:
