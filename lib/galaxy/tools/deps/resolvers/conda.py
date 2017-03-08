@@ -127,12 +127,14 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             return None
         environments = set([os.path.basename(dependency.environment_path) for dependency in all_resolved])
         return_codes = [self.conda_context.exec_remove([env]) for env in environments]
+        final_return_code = 0
         for env, return_code in zip(environments, return_codes):
             if return_code == 0:
                 log.debug("Conda environment '%s' sucessfully removed." % env)
             else:
                 log.debug("Conda environment '%s' could not be removed." % env)
-        return return_code
+                final_return_code = return_code
+        return final_return_code
 
     def install_all(self, conda_targets):
         env = self.merged_environment_name(conda_targets)
