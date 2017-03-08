@@ -1049,8 +1049,7 @@ class AdminToolshed( AdminGalaxy ):
         repo_info_dicts = [ encoding_util.tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
         dd = dependency_display.DependencyDisplayer( trans.app )
         install_repository_manager = install_manager.InstallRepositoryManager( trans.app )
-        if ( ( not includes_tools_for_display_in_tool_panel and kwd.get( 'select_shed_tool_panel_config_button', False ) ) or
-             ( includes_tools_for_display_in_tool_panel and kwd.get( 'select_tool_panel_section_button', False ) ) ):
+        if kwd.get( 'select_tool_panel_section_button', False ):
             if updating:
                 repository = repository_util.get_tool_shed_repository_by_id( trans.app, updating_repository_id )
                 decoded_updated_metadata = encoding_util.tool_shed_decode( encoded_updated_metadata )
@@ -1129,7 +1128,7 @@ class AdminToolshed( AdminGalaxy ):
             if not has_repository_dependencies:
                 has_repository_dependencies = dependencies_for_repository_dict.get( 'has_repository_dependencies', False )
             if not includes_tool_dependencies:
-                includes_tool_dependencies = dependencies_for_repository_dict.get( 'includes_tool_dependencies', False ) or requirements_status
+                includes_tool_dependencies = dependencies_for_repository_dict.get( 'includes_tool_dependencies', False )
             if not includes_tools:
                 includes_tools = dependencies_for_repository_dict.get( 'includes_tools', False )
             if not includes_tools_for_display_in_tool_panel:
