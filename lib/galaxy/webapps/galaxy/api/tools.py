@@ -140,7 +140,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
         parameters:
             build_dependency_cache:  If true, attempts to cache dependencies for this tool
-            force_rebuild:           If true and chache dir exists, attempts to delete cache dir
+            force_rebuild:           If true and cache dir exists, attempts to delete cache dir
         """
         tool = self._get_tool(id)
         tool._view.install_dependencies(tool.requirements)
