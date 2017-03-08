@@ -88,6 +88,9 @@
     ${render_msg( message, status )}
 %endif
 
+<h2>Manage Tool Dependencies</h2>
+<p>This page gives an overview of all tool dependencies required by all tools currently loaded, including tools not installed through the Tool Shed.</p>
+
 <form name="manage_tool_dependencies" action="${h.url_for( controller='admin', action='manage_tool_dependencies' )}">
 %if viewkey == "Switch to tool-centric view":
     <input type="submit" name="viewkey" value="Switch to details view"/>
