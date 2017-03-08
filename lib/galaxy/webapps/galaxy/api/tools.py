@@ -152,6 +152,19 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
     @expose_api
     @web.require_admin
+    def uninstall_dependencies(self, trans, id, **kwds):
+        """
+        POST /api/tools/{tool_id}/uninstall_dependencies
+        Attempts to uninstall requirements via the dependency resolver
+
+        """
+        tool = self._get_tool(id)
+        tool._view.uninstall_dependencies(index=None, requirements=tool.requirements)
+        # TODO: rework resolver install system to log and report what has been done.
+        return tool.tool_requirements_status
+
+    @expose_api
+    @web.require_admin
     def build_dependency_cache(self, trans, id, **kwds):
         """
         POST /api/tools/{tool_id}/build_dependency_cache

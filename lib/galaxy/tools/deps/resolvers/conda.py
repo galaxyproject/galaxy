@@ -59,6 +59,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
 
     def __init__(self, dependency_manager, **kwds):
+        self.can_uninstall_dependencies = True
         self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         self.dependency_manager = dependency_manager
@@ -115,6 +116,23 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
 
     def clean(self, **kwds):
         return self.conda_context.exec_clean()
+
+    def uninstall(self, requirements):
+        """Uninstall requirements installed by install_all or multiple install statements."""
+        all_resolved = [r for r in self.resolve_all(requirements) if r.dependency_type]
+        if not all_resolved:
+            all_resolved = [self.resolve(requirement.name, requirement.type, requirement.version) for requirement in requirements]
+            all_resolved = [r for r in all_resolved if r.dependency_type]
+        if not all_resolved:
+            return None
+        environments = set([os.path.basename(dependency.environment_path) for dependency in all_resolved])
+        return_codes = [self.conda_context.exec_remove([env]) for env in environments]
+        for env, return_code in zip(environments, return_codes):
+            if return_code == 0:
+                log.debug("Conda environment '%s' sucessfully removed." % env)
+            else:
+                log.debug("Conda environment '%s' could not be removed." % env)
+        return return_code
 
     def install_all(self, conda_targets):
         env = self.merged_environment_name(conda_targets)

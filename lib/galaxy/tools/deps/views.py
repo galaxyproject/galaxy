@@ -55,6 +55,22 @@ class DependencyResolversView(object):
         dependencies_per_tool = {tool: self._dependency_manager.requirements_to_dependencies(requirements, **kwds) for tool, requirements in tool_requirements_d.items()}
         return dependencies_per_tool
 
+    def uninstall_dependencies(self, index=None, **payload):
+        """Attempt to uninstall requirements. Returns 0 if successfull, else None."""
+        requirements = payload.get('requirements')
+        if not requirements:
+            return None
+        if index:
+            resolver = self._dependency_resolvers[index]
+            if resolver.can_uninstall_dependencies:
+                return resolver.uninstall(requirements)
+        else:
+            for index in self.uninstallable_resolvers:
+                return_code = self._dependency_resolvers[index].uninstall(requirements)
+                if return_code == 0:
+                    return return_code
+        return None
+
     def install_dependencies(self, requirements):
         return self._dependency_manager._requirements_to_dependencies_dict(requirements, **{'install': True})
 
@@ -134,9 +150,16 @@ class DependencyResolversView(object):
     @property
     def installable_resolvers(self):
         """
-        List index for all active resolvers that have the 'install_dependency' attribute
+        List index for all active resolvers that have the 'install_dependency' attribute.
         """
         return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled ]
+
+    @property
+    def uninstallable_resolvers(self):
+        """
+        List index for all active resolvers that can uninstall dependencies that have been installed through this resolver.
+        """
+        return [index for index, resolver in enumerate(self._dependency_resolvers) if resolver.can_uninstall_dependencies and not resolver.disabled]
 
     def get_requirements_status(self, tool_requirements_d, installed_tool_dependencies=None):
         dependencies = self.show_dependencies(tool_requirements_d, installed_tool_dependencies)
