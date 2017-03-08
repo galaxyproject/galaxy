@@ -1,6 +1,5 @@
 $(document).ready(function() {
 
-    var ToolForm = window.toolform;
     /** Display search overlay and search */
     var OverlaySearchView = Backbone.View.extend({
 
@@ -369,9 +368,9 @@ $(document).ready(function() {
         getActiveFilter: function() {
 	    var active_filter = "all";
                 active_filter = ( $( '.all-filter' ).hasClass( 'filter-active') ? "all" : active_filter );
-	        active_filter = ( $( '.tool-filter' ).hasClass( 'filter-active') ? "tools" : active_filter );
-	        active_filter = ( $( '.history-filter' ).hasClass( 'filter-active' ) ? "history" : active_filter );
-	        active_filter = ( $( '.datalibrary-filter' ).hasClass( 'filter-active' ) ? "data_library" : active_filter );
+                active_filter = ( $( '.tool-filter' ).hasClass( 'filter-active') ? "tools" : active_filter );
+                active_filter = ( $( '.history-filter' ).hasClass( 'filter-active' ) ? "history" : active_filter );
+                active_filter = ( $( '.datalibrary-filter' ).hasClass( 'filter-active' ) ? "data_library" : active_filter );
                 active_filter = ( $( '.workflow-filter' ).hasClass( 'filter-active' ) ? "workflow" : active_filter );
                 active_filter = ( $( '.removeditems-filter' ).hasClass( 'filter-active' ) ? "removeditems" : active_filter );
 	    return active_filter;
@@ -843,18 +842,14 @@ $(document).ready(function() {
 	        version = $target_element.attr( 'data-version' );
 	        // Load as modal popup
 	        if( id === 'upload1' ) {
-		    Galaxy.upload.show();
+                Galaxy.upload.show();
 	        }
-	        // Open the link in the iframe
-	        else if ( form_style === 'regular' ) {
-		    var form = new ToolForm.View( { id : id, version : version } );
-		    form.deferred.execute(function() {
-		        Galaxy.app.display( form );
-		    });
-	        }
-	        else if ( form_style === 'special' ) {
-		    // Redirect to url other than the Galaxy
-		    document.location = $target_element.attr( 'href' );
+            // Redirect to the toolform -- we'll want to let Galaxy routing
+            // handle this down the road, but this is still much less
+            // cumbersome than instead of instantiating a tool form here.
+	        else if ( form_style === 'regular' || form_style === 'special' ) {
+                // Redirect to url other than the Galaxy
+                document.location = $target_element.attr( 'href' );
 	        }
 	    }
         },
@@ -862,15 +857,15 @@ $(document).ready(function() {
         /** Make custom search section */
         makeCustomSearchSection: function( section_object ) {
 	    var self = this,
-                template_string = "",
-	        $el_search_result = $( '.search-results' ),
-	        $el_section_link = $( "." + section_object.link_class_name ),
-	        link = "",
-	        target = '_top',
-	        data_type = "",
-                section_class_name = section_object.class_name.split(" ")[1],
-                header_text = "",
-                active_filter = self.getActiveFilter();
+            template_string = "",
+            $el_search_result = $( '.search-results' ),
+            $el_section_link = $( "." + section_object.link_class_name ),
+            link = "",
+            target = '_top',
+            data_type = "",
+            section_class_name = section_object.class_name.split(" ")[1],
+            header_text = "",
+            active_filter = self.getActiveFilter();
             // Set datatype for different url of links
 	    if( section_object.link_class_name.indexOf( 'history' ) > -1 ) {
 	        data_type = "history";
