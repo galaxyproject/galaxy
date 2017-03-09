@@ -146,7 +146,7 @@ def recalculate_user_disk_usage(app, **kwargs):
         else:
             log.error("Recalculate user disk usage task failed, user %s not found" % user_id)
     else:
-        log.error("Recalculate user disk usage task received without user_id." % user_id)
+        log.error("Recalculate user disk usage task received without user_id.")
 
 
 def reload_tool_data_tables(app, **kwargs):
