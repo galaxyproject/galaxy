@@ -874,27 +874,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
         if not user:
             return trans.show_error_message( "User not found for id (%s)" % sanitize_text( str( user_id ) ) )
-        engine = None
-        if trans.app.config.database_connection:
-            engine = trans.app.config.database_connection.split(':')[0]
-        if engine not in ( 'postgres', 'postgresql' ):
-            done = False
-            while not done:
-                current = user.get_disk_usage()
-                new = user.calculate_disk_usage()
-                trans.sa_session.refresh( user )
-                # make sure usage didn't change while calculating, set done
-                if user.get_disk_usage() == current:
-                    done = True
-                if new not in (current, None):
-                    user.set_disk_usage( new )
-                    trans.sa_session.add( user )
-                    trans.sa_session.flush()
-        else:
-            # We can use the lightning fast pgcalc!
-            current = user.get_disk_usage()
-            new = pgcalc( self.sa_session, user.id )
-        # yes, still a small race condition between here and the flush
+        current = user.get_disk_usage()
+        user.calculate_and_set_disk_usage()
+        new = user.get_disk_usage()
         if new in ( current, None ):
             message = 'Usage is unchanged at %s.' % nice_size( current )
         else:
