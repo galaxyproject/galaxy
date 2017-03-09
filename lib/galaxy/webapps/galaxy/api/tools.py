@@ -135,7 +135,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     @web.require_admin
     def install_dependencies(self, trans, id, **kwds):
         """
-        POST /api/tools/{tool_id}/install_dependencies
+        POST /api/tools/{tool_id}/dependencies
+
+        This endpoint is also available through POST /api/tools/{tool_id}/install_dependencies,
+        but will be deprecated in the future.
+
         Attempts to install requirements via the dependency resolver
 
         parameters:
@@ -154,7 +158,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     @web.require_admin
     def uninstall_dependencies(self, trans, id, **kwds):
         """
-        POST /api/tools/{tool_id}/uninstall_dependencies
+        DELETE /api/tools/{tool_id}/dependencies
         Attempts to uninstall requirements via the dependency resolver
 
         """
