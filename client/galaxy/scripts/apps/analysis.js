@@ -68,15 +68,6 @@ window.app = function app( options, bootstrapped ){
     Galaxy.currHistoryPanel = historyPanel.historyView;
     Galaxy.currHistoryPanel.listenToGalaxy( Galaxy );
 
-    //HACK: move there
-    Galaxy.app = {
-        display : function( view, target ){
-            // TODO: Remove this line after select2 update
-            $( '.select2-hidden-accessible' ).remove();
-            centerPanel.display( view );
-        },
-    };
-
     // .................................................... routes
     /**  */
     Galaxy.router = new ( Backbone.Router.extend({
@@ -84,6 +75,15 @@ window.app = function app( options, bootstrapped ){
         // since we're at root here, this may be the last to be routed entirely on the client.
         initialize : function( options ){
             this.options = options;
+        },
+
+        /** helper to push a new navigation state */
+        push: function( url, data ) {
+            if ( !$.isEmptyObject( data ) ) {
+                url += url.indexOf( '?' ) == -1 ? '?' : '&';
+                url += $.param( data , true );
+            }
+            this.navigate( url, { 'trigger': true } );
         },
 
         /** override to parse query string into obj and send to each route */
