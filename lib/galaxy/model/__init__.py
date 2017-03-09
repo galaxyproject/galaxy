@@ -280,14 +280,26 @@ class User( object, Dictifiable ):
         """
         Calculates and sets user disk usage.
         """
+        new = None
         db_session = object_session(self)
+        current = self.get_disk_usage()
         if db_session.get_bind().dialect.name not in ( 'postgres', 'postgresql' ):
-            new = self.calculate_disk_usage()
+            done = False
+            while not done:
+                new = self.calculate_disk_usage()
+                db_session.refresh( self )
+                # make sure usage didn't change while calculating
+                # set done if it has not, otherwise reset current and iterate again.
+                if self.get_disk_usage() == current:
+                    done = True
+                else:
+                    current = self.get_disk_usage()
         else:
             new = pgcalc(db_session, self.id)
-        self.set_disk_usage(new)
-        db_session.add(self)
-        db_session.flush()
+        if new not in (current, None):
+            self.set_disk_usage( new )
+            db_session.add( self )
+            db_session.flush()
 
     @staticmethod
     def user_template_environment( user ):
