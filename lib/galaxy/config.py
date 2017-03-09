@@ -903,34 +903,25 @@ class ConfiguresGalaxyMixin:
 
             time.sleep(1)
 
-    def reload_toolbox(self):
-        # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
-
-        tool_configs = self.config.tool_configs
-        if self.config.migrated_tools_config not in tool_configs:
-            tool_configs.append( self.config.migrated_tools_config )
-
-        from galaxy import tools
-        old_toolbox = self.toolbox
-        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-        self.reindex_tool_search()
-        if old_toolbox:
-            old_toolbox.shutdown()
-
     def _configure_toolbox( self ):
+        from galaxy import tools
         from galaxy.managers.citations import CitationsManager
-        self.citations_manager = CitationsManager( self )
-
+        from galaxy.tools.deps import containers
         from galaxy.tools.toolbox.cache import ToolCache
         from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
+
+        self.citations_manager = CitationsManager( self )
         self.tool_cache = ToolCache()
         self.tool_version_cache = ToolVersionCache(self)
 
         self._toolbox_lock = threading.RLock()
-        self.toolbox = None
-        self.reload_toolbox()
+        # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
+        tool_configs = self.config.tool_configs
+        if self.config.migrated_tools_config not in tool_configs:
+            tool_configs.append( self.config.migrated_tools_config )
+        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
+        self.reindex_tool_search()
 
-        from galaxy.tools.deps import containers
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
         app_info = containers.AppInfo(
