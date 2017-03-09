@@ -45,6 +45,7 @@ PACKAGES = [
     'galaxy.tools.toolbox.filters',
     'galaxy.tools.toolbox.lineages',
     'galaxy.tools.linters',
+    'galaxy.tools.locations',
     'galaxy.tools.deps',
     'galaxy.tools.deps.container_resolvers',
     'galaxy.tools.deps.mulled',
