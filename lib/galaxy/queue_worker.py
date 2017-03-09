@@ -141,7 +141,8 @@ def recalculate_user_disk_usage(app, **kwargs):
     sa_session = app.model.context
     if user_id:
         user = sa_session.query( app.model.User ).get( app.security.decode_id( user_id ) )
-        user.calculate_and_set_disk_usage()
+        if user:
+            user.calculate_and_set_disk_usage()
 
 
 def reload_tool_data_tables(app, **kwargs):
