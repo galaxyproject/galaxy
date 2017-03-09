@@ -215,16 +215,19 @@ class CondaContext(installable.InstallableContext):
 
     def exec_command(self, operation, args):
         command = self.command(operation, args)
-        env = {'HOME': self.conda_prefix}  # We don't want to pollute ~/.conda, which may not even be writable
+        env = {}
         condarc_override = self.condarc_override
         if condarc_override:
             env["CONDARC"] = condarc_override
         log.debug("Executing command: %s", command)
+        env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
         try:
             return self.shell_exec(command, env=env)
         except commands.CommandLineException as e:
             log.warning(e)
             return e.returncode
+        finally:
+            shutil.rmtree(env['HOME'], ignore_errors=True)
 
     def exec_create(self, args):
         create_base_args = [

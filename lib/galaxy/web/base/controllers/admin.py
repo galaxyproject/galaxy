@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
-from six import string_types
+import six
 from string import punctuation as PUNCTUATION
 
 from sqlalchemy import and_, false, func, or_
@@ -1122,12 +1122,36 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
+    def manage_tool_dependencies( self, trans, install_dependencies=False, build_cache=False, install_for_tools=[], viewkey='View tool-centric dependencies'):
+        tools_by_id = trans.app.toolbox.tools_by_id
+        if install_dependencies:
+            # install the dependencies for the tools in the install_for_tools list
+            if not isinstance(install_for_tools, list):
+                install_for_tools = [install_for_tools]
+            requirements = set([tools_by_id[tid].tool_requirements for tid in install_for_tools])
+            [trans.app.toolbox.tools_by_id[install_for_tools[0]]._view.install_dependencies(r) for r in requirements]
+        view = six.next(six.itervalues(trans.app.toolbox.tools_by_id))._view
+        tool_ids_by_requirements = {}
+        for tid, tool in trans.app.toolbox.tools_by_id.items():
+            if tool.tool_requirements not in tool_ids_by_requirements:
+                tool_ids_by_requirements[tool.tool_requirements] = [tid]
+            else:
+                tool_ids_by_requirements[tool.tool_requirements].append(tid)
+        requirements_status = {r: view.get_requirements_status({tid: r}, tools_by_id[tids[0]].installed_tool_dependencies) for r, tids in tool_ids_by_requirements.items()}
+        return trans.fill_template( '/webapps/galaxy/admin/manage_dependencies.mako',
+                                    tools=tools_by_id,
+                                    requirements_status=requirements_status,
+                                    tool_ids_by_requirements=tool_ids_by_requirements,
+                                    viewkey=viewkey )
+
+    @web.expose
+    @web.require_admin
     def sanitize_whitelist( self, trans, submit_whitelist=False, tools_to_whitelist=[]):
         if submit_whitelist:
             # write the configured sanitize_whitelist_file with new whitelist
             # and update in-memory list.
             with open(trans.app.config.sanitize_whitelist_file, 'wt') as f:
-                if isinstance(tools_to_whitelist, string_types):
+                if isinstance(tools_to_whitelist, six.string_types):
                     tools_to_whitelist = [tools_to_whitelist]
                 new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))

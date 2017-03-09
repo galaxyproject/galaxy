@@ -1005,9 +1005,7 @@ steps:
         assert invocation[ 'state' ] != 'scheduled'
 
         self.__review_paused_steps( uploaded_workflow_id, invocation_id, order_index=4, action=True )
-
-        time.sleep( 5 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.wait_for_invocation_and_jobs( history_id, uploaded_workflow_id, invocation_id )
         invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
         assert invocation[ 'state' ] == 'scheduled'
         self.assertEqual("reviewed\n1\nreviewed\n4\n", self.dataset_populator.get_history_dataset_content( history_id ) )

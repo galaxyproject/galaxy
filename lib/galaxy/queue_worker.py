@@ -226,13 +226,13 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
             if body.get('noop', None) != self.app.config.server_name:
                 try:
                     f = self.task_mapping[body['task']]
-                    log.info("Instance '%s' recieved '%s' task, executing now.", self.app.config.server_name, body['task'])
+                    log.info("Instance '%s' received '%s' task, executing now.", self.app.config.server_name, body['task'])
                     f(self.app, **body['kwargs'])
                 except Exception:
                     # this shouldn't ever throw an exception, but...
                     log.exception("Error running control task type: %s" % body['task'])
         else:
-            log.warning("Recieved a malformed task message:\n%s" % body)
+            log.warning("Received a malformed task message:\n%s" % body)
         message.ack()
 
     def shutdown(self):

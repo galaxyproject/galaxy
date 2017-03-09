@@ -745,9 +745,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 del step_dict['tool_id']
                 del step_dict['tool_version']
                 del step_dict['tool_inputs']
-                workflow = step.subworkflow
-                step_dict['stored_workflow_id'] = encode(workflow.stored_workflow.id)
-                step_dict['workflow_id'] = encode(workflow.id)
+                step_dict['workflow_id'] = encode(step.subworkflow.id)
 
             for conn in step.input_connections:
                 step_id = step.id if legacy else step.order_index
