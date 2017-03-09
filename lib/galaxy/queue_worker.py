@@ -143,6 +143,10 @@ def recalculate_user_disk_usage(app, **kwargs):
         user = sa_session.query( app.model.User ).get( app.security.decode_id( user_id ) )
         if user:
             user.calculate_and_set_disk_usage()
+        else:
+            log.error("Recalculate user disk usage task failed, user %s not found" % user_id)
+    else:
+        log.error("Recalculate user disk usage task received without user_id." % user_id)
 
 
 def reload_tool_data_tables(app, **kwargs):
