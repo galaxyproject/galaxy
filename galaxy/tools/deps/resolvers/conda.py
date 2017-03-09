@@ -237,7 +237,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         if job_directory:
             conda_environment = os.path.join(job_directory, conda_env)
         else:
-            conda_environment = None
+            conda_environment = self.conda_context.env_path(conda_target.install_environment)
 
         return CondaDependency(
             self.conda_context,
