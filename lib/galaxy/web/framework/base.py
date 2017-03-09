@@ -164,7 +164,7 @@ class WebApplication( object ):
         # Get the controller class
         controller_name = map_match.pop( 'controller', None )
         controller = controllers.get( controller_name, None )
-        if controller_name is None:
+        if controller is None:
             raise httpexceptions.HTTPNotFound( "No controller for " + path_info )
         # Resolve action method on controller
         action = map_match.pop( 'action', 'index' )
