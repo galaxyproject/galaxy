@@ -142,32 +142,32 @@ class WebApplication( object ):
         request_id = environ.get( 'request_id', 'unknown' )
         # Map url using routes
         path_info = environ.get( 'PATH_INFO', '' )
-        map = self.mapper.match( path_info, environ )
+        map_match = self.mapper.match( path_info, environ )
         if path_info.startswith('/api'):
             environ[ 'is_api_request' ] = True
             controllers = self.api_controllers
         else:
             environ[ 'is_api_request' ] = False
             controllers = self.controllers
-        if map is None:
+        if map_match is None:
             raise httpexceptions.HTTPNotFound( "No route for " + path_info )
-        self.trace( path_info=path_info, map=map )
+        self.trace( path_info=path_info, map_match=map_match )
         # Setup routes
         rc = routes.request_config()
         rc.mapper = self.mapper
-        rc.mapper_dict = map
+        rc.mapper_dict = map_match
         rc.environ = environ
         # Setup the transaction
         trans = self.transaction_factory( environ )
         trans.request_id = request_id
         rc.redirect = trans.response.send_redirect
         # Get the controller class
-        controller_name = map.pop( 'controller', None )
+        controller_name = map_match.pop( 'controller', None )
         controller = controllers.get( controller_name, None )
         if controller_name is None:
             raise httpexceptions.HTTPNotFound( "No controller for " + path_info )
         # Resolve action method on controller
-        action = map.pop( 'action', 'index' )
+        action = map_match.pop( 'action', 'index' )
         # This is the easiest way to make the controller/action accessible for
         # url_for invocations.  Specifically, grids.
         trans.controller = controller_name
@@ -186,7 +186,7 @@ class WebApplication( object ):
         environ['controller_action_key'] = "%s.%s.%s" % ('api' if environ['is_api_request'] else 'web', controller_name, action or 'default')
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
-        kwargs.update( map )
+        kwargs.update( map_match )
         # Special key for AJAX debugging, remove to avoid confusing methods
         kwargs.pop( '_', None )
         try:
