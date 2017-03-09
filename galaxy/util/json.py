@@ -56,10 +56,13 @@ def swap_inf_nan( val ):
 def safe_loads( arg ):
     """
     This is a wrapper around loads that returns the parsed value instead of
-    raising a value error.
+    raising a value error. It also avoids autoconversion of non-iterables
+    i.e numeric and boolean values.
     """
     try:
         loaded = json.loads( arg )
+        if loaded is not None and not isinstance( loaded, collections.Iterable ):
+            loaded = arg
     except ( TypeError, ValueError ):
         loaded = arg
     return loaded
