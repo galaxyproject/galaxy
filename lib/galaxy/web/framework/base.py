@@ -188,10 +188,13 @@ class WebApplication( object ):
         # Resolve mapping to controller/method
         try:
             controller_name, controller, action, method = self._resolve_map_match( map_match, path_info, controllers )
-        except:
+        except httpexceptions.HTTPNotFound:
             # Failed, let's check client routes
-            map_match = self.clientside_routes.match( path_info, environ )
-            controller_name, controller, action, method = self._resolve_map_match( map_match, path_info, controllers )
+            if not environ[ 'is_api_request' ]:
+                map_match = self.clientside_routes.match( path_info, environ )
+                controller_name, controller, action, method = self._resolve_map_match( map_match, path_info, controllers )
+            else:
+                raise
         trans.controller = controller_name
         trans.action = action
         environ['controller_action_key'] = "%s.%s.%s" % ('api' if environ['is_api_request'] else 'web', controller_name, action or 'default')
