@@ -26,6 +26,7 @@ For more information on the Galaxy Project, please visit the https://galaxyproje
    :caption: Admin Documentation
 
    Administration <admin/index>
+   Special topics <admin/special_topics/index>
 
 .. _dev-docs:
 
