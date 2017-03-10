@@ -62,6 +62,7 @@ class WebApplication( object ):
         self.controllers = dict()
         self.api_controllers = dict()
         self.mapper = routes.Mapper()
+        self.clientside_routes = routes.Mapper()
         # FIXME: The following two options are deprecated and should be
         # removed.  Consult the Routes documentation.
         self.mapper.minimization = True
@@ -98,7 +99,7 @@ class WebApplication( object ):
         self.mapper.connect( route, **kwargs )
 
     def add_client_route( self, route ):
-        self.add_route(route, controller='root', action='client')
+        self.clientside_routes.connect( route, controller='root', action='client' )
 
     def set_transaction_factory( self, transaction_factory ):
         """
@@ -152,6 +153,7 @@ class WebApplication( object ):
         if map_match is None:
             raise httpexceptions.HTTPNotFound( "No route for " + path_info )
         self.trace( path_info=path_info, map_match=map_match )
+
         # Setup routes
         rc = routes.request_config()
         rc.mapper = self.mapper
@@ -161,28 +163,54 @@ class WebApplication( object ):
         trans = self.transaction_factory( environ )
         trans.request_id = request_id
         rc.redirect = trans.response.send_redirect
-        # Get the controller class
-        controller_name = map_match.pop( 'controller', None )
-        controller = controllers.get( controller_name, None )
-        if controller is None:
-            raise httpexceptions.HTTPNotFound( "No controller for " + path_info )
-        # Resolve action method on controller
-        action = map_match.pop( 'action', 'index' )
-        # This is the easiest way to make the controller/action accessible for
-        # url_for invocations.  Specifically, grids.
+
+        try:
+            # Get the controller class
+            controller_name = map_match.pop( 'controller', None )
+            controller = controllers.get( controller_name, None )
+            if controller is None:
+                raise httpexceptions.HTTPNotFound( "No controller for " + path_info )
+            # Resolve action method on controller
+            # This is the easiest way to make the controller/action accessible for
+            # url_for invocations.  Specifically, grids.
+            action = map_match.pop( 'action', 'index' )
+            method = getattr( controller, action, None )
+            if method is None:
+                method = getattr( controller, 'default', None )
+            if method is None:
+                raise httpexceptions.HTTPNotFound( "No action for " + path_info )
+            # Is the method exposed
+            if not getattr( method, 'exposed', False ):
+                raise httpexceptions.HTTPNotFound( "Action not exposed for " + path_info )
+            # Is the method callable
+            if not callable( method ):
+                raise httpexceptions.HTTPNotFound( "Action not callable for " + path_info )
+        except:
+            # Check client routes
+            map_match = self.clientside_routes.match( path_info, environ )
+            # rc.mapper_dict = map_match
+            controller_name = map_match.pop( 'controller', None )
+            controller = controllers.get( controller_name, None )
+            if controller is None:
+                raise httpexceptions.HTTPNotFound( "No controller for " + path_info )
+            # Resolve action method on controller
+            # This is the easiest way to make the controller/action accessible for
+            # url_for invocations.  Specifically, grids.
+            action = map_match.pop( 'action', 'index' )
+            method = getattr( controller, action, None )
+            if method is None:
+                method = getattr( controller, 'default', None )
+            if method is None:
+                raise httpexceptions.HTTPNotFound( "No action for " + path_info )
+            # Is the method exposed
+            if not getattr( method, 'exposed', False ):
+                raise httpexceptions.HTTPNotFound( "Action not exposed for " + path_info )
+            # Is the method callable
+            if not callable( method ):
+                raise httpexceptions.HTTPNotFound( "Action not callable for " + path_info )
+
         trans.controller = controller_name
         trans.action = action
-        method = getattr( controller, action, None )
-        if method is None:
-            method = getattr( controller, 'default', None )
-        if method is None:
-            raise httpexceptions.HTTPNotFound( "No action for " + path_info )
-        # Is the method exposed
-        if not getattr( method, 'exposed', False ):
-            raise httpexceptions.HTTPNotFound( "Action not exposed for " + path_info )
-        # Is the method callable
-        if not callable( method ):
-            raise httpexceptions.HTTPNotFound( "Action not callable for " + path_info )
         environ['controller_action_key'] = "%s.%s.%s" % ('api' if environ['is_api_request'] else 'web', controller_name, action or 'default')
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
