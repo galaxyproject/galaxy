@@ -250,7 +250,11 @@ var Collection = Backbone.Collection.extend({
                         url     : 'user',
                         target  : 'galaxy_main',
                         onclick : function() {
-                            window.location = Galaxy.root + 'user';
+                            if ( Galaxy.router ) {
+                                Galaxy.router.push( 'user' );
+                            } else {
+                                window.location = Galaxy.root + 'user';
+                            }
                         }
                     },{
                         title   : 'Custom Builds',

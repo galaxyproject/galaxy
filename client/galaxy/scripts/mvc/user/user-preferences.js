@@ -176,11 +176,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             title    : options.submit_title || 'Save settings',
                             icon     : options.submit_icon || 'fa-save',
                             onclick  : function() { self._submit( form, options ) }
-                        }),
-                        'back': new Ui.ButtonIcon({
-                            icon     : 'fa-caret-left',
-                            title    : 'Cancel',
-                            onclick  : function() { window.history.back() }
                         })
                     }
                 });
