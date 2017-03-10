@@ -79,6 +79,8 @@ window.app = function app( options, bootstrapped ){
 
         /** helper to push a new navigation state */
         push: function( url, data ) {
+            data = data || {};
+            data.__identifer = Math.random().toString( 36 ).substr( 2 );
             if ( !$.isEmptyObject( data ) ) {
                 url += url.indexOf( '?' ) == -1 ? '?' : '&';
                 url += $.param( data , true );
