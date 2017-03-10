@@ -99,7 +99,7 @@ class CondaContext(installable.InstallableContext):
         self._conda_version = None
         self._miniconda_version = None
         self._conda_build_available = None
-        self._use_local = use_local
+        self.use_local = use_local
 
     @property
     def conda_version(self):
@@ -112,10 +112,6 @@ class CondaContext(installable.InstallableContext):
         if self._conda_build_available is None:
             self._guess_conda_properties()
         return self._conda_build_available
-
-    @property
-    def use_local(self):
-        return self._use_local
 
     def _guess_conda_properties(self):
         conda_meta_path = self._conda_meta_path
@@ -271,7 +267,7 @@ class CondaContext(installable.InstallableContext):
         create_base_args = [
             "-y"
         ]
-        if allow_local and self._use_local:
+        if allow_local and self.use_local:
             create_base_args.extend(["--use-local"])
         create_base_args.extend(args)
         return self.exec_command("create", create_base_args)
@@ -289,7 +285,7 @@ class CondaContext(installable.InstallableContext):
         install_base_args = [
             "-y"
         ]
-        if allow_local and self._use_local:
+        if allow_local and self.use_local:
             install_base_args.extend(["--use-local"])
         install_base_args.extend(args)
         return self.exec_command("install", install_base_args)
