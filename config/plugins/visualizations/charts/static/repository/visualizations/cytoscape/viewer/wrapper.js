@@ -1,12 +1,19 @@
-define( [ 'utilities/utils', 'plugins/cytoscape/cytoscape' ], function( Utils, Cytoscape ) {
+define( [ 'utilities/utils', 'utilities/sifjson', 'plugins/cytoscape/cytoscape' ], function( Utils, SIF, Cytoscape ) {
     return Backbone.Model.extend({
         initialize: function( options ) {
             var chart    = options.chart,
                 dataset  = options.dataset,
-                settings = options.chart.settings;
+                settings = options.chart.settings,
+                data_content = null;
             Utils.get( {
                 url     : dataset.download_url,
                 success : function( content ) {
+                    if( dataset.file_ext === "sif" ) {
+                        data_content = SIF.SIFJS.parse( content ).content;
+                    }
+                    else {
+                        data_content = content;
+                    }
                     try {
                         var cytoscape = Cytoscape({
 			    container: document.getElementById( options.targets[ 0 ] ),
@@ -33,7 +40,7 @@ define( [ 'utilities/utils', 'plugins/cytoscape/cytoscape' ], function( Utils, C
 				    'line-color': '#ad1a66'
 			        }
 			    }],
-                            elements: content
+                            elements: data_content
                         });
                         
                         chart.state( 'ok', 'Chart drawn.' );

@@ -2,7 +2,7 @@ define( [], function() {
     return {
         title       : 'Cytoscape',
         library     : 'Cytoscape',
-        datatypes   : [ 'json' ],
+        datatypes   : [ 'sif', 'json' ],
         keywords    : 'cytoscape graph nodes edges',
         description : 'A viewer based on graph theory/ network library for analysis and visualisation hosted at http://js.cytoscape.org.',
         settings    : {
