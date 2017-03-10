@@ -62,6 +62,7 @@ class WebApplication( object ):
         self.controllers = dict()
         self.api_controllers = dict()
         self.mapper = routes.Mapper()
+        self.clientside_routes = routes.Mapper()
         # FIXME: The following two options are deprecated and should be
         # removed.  Consult the Routes documentation.
         self.mapper.minimization = True
@@ -98,7 +99,7 @@ class WebApplication( object ):
         self.mapper.connect( route, **kwargs )
 
     def add_client_route( self, route ):
-        self.add_route(route, controller='root', action='client')
+        self.clientside_routes.connect( route, controller='root', action='client' )
 
     def set_transaction_factory( self, transaction_factory ):
         """
@@ -137,41 +138,16 @@ class WebApplication( object ):
             if self.trace_logger:
                 self.trace_logger.context_remove( "request_id" )
 
-    def handle_request( self, environ, start_response, body_renderer=None ):
-        # Grab the request_id (should have been set by middleware)
-        request_id = environ.get( 'request_id', 'unknown' )
-        # Map url using routes
-        path_info = environ.get( 'PATH_INFO', '' )
-        map = self.mapper.match( path_info, environ )
-        if path_info.startswith('/api'):
-            environ[ 'is_api_request' ] = True
-            controllers = self.api_controllers
-        else:
-            environ[ 'is_api_request' ] = False
-            controllers = self.controllers
-        if map is None:
-            raise httpexceptions.HTTPNotFound( "No route for " + path_info )
-        self.trace( path_info=path_info, map=map )
-        # Setup routes
-        rc = routes.request_config()
-        rc.mapper = self.mapper
-        rc.mapper_dict = map
-        rc.environ = environ
-        # Setup the transaction
-        trans = self.transaction_factory( environ )
-        trans.request_id = request_id
-        rc.redirect = trans.response.send_redirect
+    def _resolve_map_match( self, map_match, path_info, controllers ):
         # Get the controller class
-        controller_name = map.pop( 'controller', None )
+        controller_name = map_match.pop( 'controller', None )
         controller = controllers.get( controller_name, None )
-        if controller_name is None:
+        if controller is None:
             raise httpexceptions.HTTPNotFound( "No controller for " + path_info )
         # Resolve action method on controller
-        action = map.pop( 'action', 'index' )
         # This is the easiest way to make the controller/action accessible for
         # url_for invocations.  Specifically, grids.
-        trans.controller = controller_name
-        trans.action = action
+        action = map_match.pop( 'action', 'index' )
         method = getattr( controller, action, None )
         if method is None:
             method = getattr( controller, 'default', None )
@@ -183,10 +159,48 @@ class WebApplication( object ):
         # Is the method callable
         if not callable( method ):
             raise httpexceptions.HTTPNotFound( "Action not callable for " + path_info )
+        return ( controller_name, controller, action, method )
+
+    def handle_request( self, environ, start_response, body_renderer=None ):
+        # Grab the request_id (should have been set by middleware)
+        request_id = environ.get( 'request_id', 'unknown' )
+        # Map url using routes
+        path_info = environ.get( 'PATH_INFO', '' )
+        map_match = self.mapper.match( path_info, environ )
+        if path_info.startswith('/api'):
+            environ[ 'is_api_request' ] = True
+            controllers = self.api_controllers
+        else:
+            environ[ 'is_api_request' ] = False
+            controllers = self.controllers
+        if map_match is None:
+            raise httpexceptions.HTTPNotFound( "No route for " + path_info )
+        self.trace( path_info=path_info, map_match=map_match )
+        # Setup routes
+        rc = routes.request_config()
+        rc.mapper = self.mapper
+        rc.mapper_dict = map_match
+        rc.environ = environ
+        # Setup the transaction
+        trans = self.transaction_factory( environ )
+        trans.request_id = request_id
+        rc.redirect = trans.response.send_redirect
+        # Resolve mapping to controller/method
+        try:
+            controller_name, controller, action, method = self._resolve_map_match( map_match, path_info, controllers )
+        except httpexceptions.HTTPNotFound:
+            # Failed, let's check client routes
+            if not environ[ 'is_api_request' ]:
+                map_match = self.clientside_routes.match( path_info, environ )
+                controller_name, controller, action, method = self._resolve_map_match( map_match, path_info, controllers )
+            else:
+                raise
+        trans.controller = controller_name
+        trans.action = action
         environ['controller_action_key'] = "%s.%s.%s" % ('api' if environ['is_api_request'] else 'web', controller_name, action or 'default')
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
-        kwargs.update( map )
+        kwargs.update( map_match )
         # Special key for AJAX debugging, remove to avoid confusing methods
         kwargs.pop( '_', None )
         try:
