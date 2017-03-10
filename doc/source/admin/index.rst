@@ -1,12 +1,12 @@
-Special Topics in Galaxy Administration & Deployment Documentation
-==================================================================
+Galaxy Deployment & Administration
+==================================
 
-This documentation intends to function as a version-specific supplement to the
-`wiki <https://wiki.galaxyproject.org/Admin/>`__, not the primary admin
-documentation. These resources should be used together.
+This documentation is in the midst of being ported and unified based on resources from `old wiki <https://wiki.galaxyproject.org/Admin/>`__ and `new hub <https://new.galaxyproject.org/admin/>`__. These resources should be used together for now.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
+
+   tool_panel
 
    dependency_resolvers.rst
 

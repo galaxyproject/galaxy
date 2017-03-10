@@ -1,7 +1,7 @@
-Interactive Environments in Detail (and How to Build Your Own)
-==============================================================
+Build an Interactive Environment
+================================
 
-Unfortunately building a GIE isn't completely straightforward, and it's
+Unfortunately building a Galaxy Interactive Environment (GIE) isn't completely straightforward, and it's
 certainly not as simple as picking out an existing container and plugging it
 in. Here we'll go through build a "Hello, World" GIE which just displays a file
 from a user's history.
