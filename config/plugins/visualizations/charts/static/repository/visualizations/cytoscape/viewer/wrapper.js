@@ -4,7 +4,8 @@ define( [ 'utilities/utils', 'utilities/sifjson', 'plugins/cytoscape/cytoscape' 
             var chart    = options.chart,
                 dataset  = options.dataset,
                 settings = options.chart.settings,
-                data_content = null;
+                data_content = null,
+                cytoscape = null;
             Utils.get( {
                 url     : dataset.download_url,
                 success : function( content ) {
@@ -15,7 +16,7 @@ define( [ 'utilities/utils', 'utilities/sifjson', 'plugins/cytoscape/cytoscape' 
                         data_content = content;
                     }
                     try {
-                        var cytoscape = Cytoscape({
+                        cytoscape = Cytoscape({
 			    container: document.getElementById( options.targets[ 0 ] ),
 			    boxSelectionEnabled: false,
 			    autounselectify: true,
@@ -44,6 +45,8 @@ define( [ 'utilities/utils', 'utilities/sifjson', 'plugins/cytoscape/cytoscape' 
                         });
                         
                         chart.state( 'ok', 'Chart drawn.' );
+                        // Re-renders the graph view when window is resized
+                        $( window ).resize( function() { cytoscape.layout(); } );
                     } catch( err ) {
                         chart.state( 'failed', err );
                     }

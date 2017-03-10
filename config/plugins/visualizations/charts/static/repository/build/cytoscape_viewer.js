@@ -50,7 +50,8 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	            var chart    = options.chart,
 	                dataset  = options.dataset,
 	                settings = options.chart.settings,
-	                data_content = null;
+	                data_content = null,
+	                cytoscape = null;
 	            Utils.get( {
 	                url     : dataset.download_url,
 	                success : function( content ) {
@@ -61,7 +62,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                        data_content = content;
 	                    }
 	                    try {
-	                        var cytoscape = Cytoscape({
+	                        cytoscape = Cytoscape({
 				    container: document.getElementById( options.targets[ 0 ] ),
 				    boxSelectionEnabled: false,
 				    autounselectify: true,
@@ -90,6 +91,8 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                        });
 	                        
 	                        chart.state( 'ok', 'Chart drawn.' );
+	                        // Re-renders the graph view when window is resized
+	                        $( window ).resize( function() { cytoscape.layout(); } );
 	                    } catch( err ) {
 	                        chart.state( 'failed', err );
 	                    }
@@ -238,29 +241,32 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/** SIF to JSON */
+	/** Inspired from https://www.npmjs.com/package/sif.js */
 	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() {
 	
-	    //public
 	    function SIFJS() {};
 	
-	    //private members
 	    var nodes = {}, links = {}, content = [];
 	    
-	    var _getNode = function(id) {
-	        if(!nodes[id]) nodes[id] = {id:id};
+	    var _getNode = function( id ) {
+	        if(!nodes[id]) nodes[id] = {id: id};
 	        return nodes[id];
 	    };
 	
-	    var _parse = function(line, i) {
+	    var _parse = function( line, i ) {
 	        line = (line.split('\t').length > 1) ? line.split('\t') : line.split(' ');
-	        if( line.length > 2 ) {
+	        if( line.length && line.length > 1 ) {
 	            var source = _getNode(line[0]), intType = line[1], j, length;
 	            for (j = 2, length = line.length; j < length; j++) {
-		        var target = _getNode(line[j]);
-		        if(source < target){
-		            links[source.id + target.id + intType] = {target: target.id, source: source.id, id: source.id + target.id};
+		        var target = _getNode(line[j]),
+	                    relObj = {target: target.id,
+	                        source: source.id,
+	                        id: source.id + target.id,
+	                        relation: intType.replace(/[''""]+/g, '') };
+		        if(source < target) {
+		            links[source.id + target.id + intType] = relObj;
 		        } else {
-		            links[target.id + source.id + intType] = {target: target.id, source: source.id, id: source.id + target.id};
+		            links[target.id + source.id + intType] = relObj;
 		        }
 	            }
 	        }      
