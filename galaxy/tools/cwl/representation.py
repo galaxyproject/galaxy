@@ -19,6 +19,7 @@ GALAXY_TO_CWL_TYPES = {
     'float': 'float',
     'data': 'File',
     'boolean': 'boolean',
+    'text': 'text'
 }
 
 
@@ -56,7 +57,8 @@ def to_cwl_job(tool, param_dict, local_working_directory):
                     os.symlink(secondary_file_path, new_input_path + secondary_file_name)
                 path = new_input_path
 
-            return {"path": path, "class": "File"}
+            return {"location": path,
+                    "class": "File"}
         elif cwl_type == "integer":
             return int(str(param_dict_value))
         elif cwl_type == "long":
@@ -67,7 +69,7 @@ def to_cwl_job(tool, param_dict, local_working_directory):
             return float(str(param_dict_value))
         elif cwl_type == "boolean":
             return string_as_bool(param_dict_value)
-        elif cwl_type == "string":
+        elif cwl_type == "text":
             return str(param_dict_value)
         elif cwl_type == "json":
             raw_value = param_dict_value.value
@@ -94,9 +96,6 @@ def to_cwl_job(tool, param_dict, local_working_directory):
         else:
             input_json[input_name] = simple_value(input, param_dict[input_name])
 
-    input_json["allocatedResources"] = {
-        "cpu": "$GALAXY_SLOTS",
-    }
     return input_json
 
 
