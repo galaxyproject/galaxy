@@ -121,7 +121,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         """Uninstall requirements installed by install_all or multiple install statements."""
         all_resolved = [r for r in self.resolve_all(requirements) if r.dependency_type]
         if not all_resolved:
-            all_resolved = [self.resolve(requirement.name, requirement.type, requirement.version) for requirement in requirements]
+            all_resolved = [self.resolve(requirement) for requirement in requirements]
             all_resolved = [r for r in all_resolved if r.dependency_type]
         if not all_resolved:
             return None
