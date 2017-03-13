@@ -24,7 +24,7 @@
 
 <%def name="render_tool_centric_table( tools, requirements_status)">
     <tr>
-        <th bgcolor="#D8D8D8">Install</th>
+        <th bgcolor="#D8D8D8">Select</th>
         <th bgcolor="#D8D8D8">Name</th>
         <th bgcolor="#D8D8D8">ID</th>
         <th bgcolor="#D8D8D8">Requirement</th>
@@ -42,7 +42,7 @@
                 <tr class="tr">
             %endif
             <td>
-                <input type="checkbox" name="install_for_tools" value="${tool.id}"/>
+                <input type="checkbox" name="selected_tool_ids" value="${tool.id}"/>
             </td>
             <td>${ tool.name | h }</td>
             <td>${ tool.id | h }</td>
@@ -55,7 +55,7 @@
 
 <%def name="render_dependencies_details( tools, requirements_status, tool_ids_by_requirements)">
     <tr>
-        <th bgcolor="#D8D8D8">Install</th>
+        <th bgcolor="#D8D8D8">Select</th>
         <th bgcolor="#D8D8D8">Used by</th>
         <th bgcolor="#D8D8D8">Environment Path</th>
         <th bgcolor="#D8D8D8">Requirement</th>
@@ -74,7 +74,7 @@
                 <tr class="tr">
             %endif
             <td>
-                <input type="checkbox" name="install_for_tools" value="${tool_ids[0]}"/>
+                <input type="checkbox" name="selected_tool_ids" value="${tool_ids[0]}"/>
             </td>
             <td>${ ", ".join([tools[tid].name for tid in tool_ids]) | h }</td>
             ${render_tool_dependencies( r_status, ctr=ctr, show_environment_path=True, ncols_extra=3) }
@@ -111,4 +111,5 @@
         </div>
     </div>
     <input type="submit" name="install_dependencies" value="Install checked dependencies using Conda"/>
+    <input type="submit" name="uninstall_dependencies" value="Uninstall checked dependencies using Conda"/>
 </form>

@@ -1122,15 +1122,20 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
-    def manage_tool_dependencies( self, trans, install_dependencies=False, build_cache=False, install_for_tools=[], viewkey='View tool-centric dependencies'):
+    def manage_tool_dependencies( self, trans, install_dependencies=False, uninstall_dependencies=False, selected_tool_ids=None, viewkey='View tool-centric dependencies'):
+        if not selected_tool_ids:
+            selected_tool_ids = []
         tools_by_id = trans.app.toolbox.tools_by_id
-        if install_dependencies:
-            # install the dependencies for the tools in the install_for_tools list
-            if not isinstance(install_for_tools, list):
-                install_for_tools = [install_for_tools]
-            requirements = set([tools_by_id[tid].tool_requirements for tid in install_for_tools])
-            [trans.app.toolbox.tools_by_id[install_for_tools[0]]._view.install_dependencies(r) for r in requirements]
         view = six.next(six.itervalues(trans.app.toolbox.tools_by_id))._view
+        if selected_tool_ids:
+            # install the dependencies for the tools in the selected_tool_ids list
+            if not isinstance(selected_tool_ids, list):
+                selected_tool_ids = [selected_tool_ids]
+            requirements = set([tools_by_id[tid].tool_requirements for tid in selected_tool_ids])
+            if install_dependencies:
+                [view.install_dependencies(r) for r in requirements]
+            elif uninstall_dependencies:
+                [view.uninstall_dependencies(index=None, requirements=r) for r in requirements]
         tool_ids_by_requirements = {}
         for tid, tool in trans.app.toolbox.tools_by_id.items():
             if tool.tool_requirements not in tool_ids_by_requirements:

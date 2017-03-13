@@ -198,8 +198,8 @@ class DependencyManager( object ):
         return [
             ToolShedPackageDependencyResolver(self),
             GalaxyPackageDependencyResolver(self),
-            GalaxyPackageDependencyResolver(self, versionless=True),
             CondaDependencyResolver(self),
+            GalaxyPackageDependencyResolver(self, versionless=True),
             CondaDependencyResolver(self, versionless=True),
         ]
 
