@@ -148,6 +148,8 @@
   <tool file="mulled_example_multi_versionless.xml" />
   <tool file="mulled_example_multi_incomplete.xml" />
   <tool file="mulled_example_conflict.xml" />
+  <tool file="mulled_example_simple.xml" />
+  <tool file="mulled_example_explicit.xml" />
 
   <tool file="simple_constructs.yml" />
 
