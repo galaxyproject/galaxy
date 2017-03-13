@@ -629,50 +629,36 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         """ Return custom builds. """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
-        installed_builds = []
-        for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
-            installed_builds.append( os.path.basename(build).split(".len")[0] )
-
-        # Add chrom/contig count to dbkeys dict.
         updated = False
         for key, attributes in dbkeys.items():
             if 'count' in attributes:
-                # Already have count, so do nothing.
                 continue
-
-            # Get len file.
             fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( attributes[ 'fasta' ] )
             len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
             # HACK: need to request dataset again b/c get_converted_dataset()
             # doesn't return dataset (as it probably should).
             len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
             if len_dataset.state == trans.app.model.Job.states.ERROR:
-                # Can't use len dataset.
                 continue
-
-            # Get chrom count file.
             chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
             if not chrom_count_dataset or chrom_count_dataset.state != trans.app.model.Job.states.OK:
-                # No valid linecount dataset.
                 continue
             else:
-                # Set chrom count.
                 try:
                     chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
                     attributes[ 'count' ] = chrom_count
                     updated = True
                 except Exception as e:
                     log.error( "Failed to open chrom count dataset: %s", e )
-
         if updated:
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
-
-        # Potential genome data for custom builds is limited to fasta datasets in current history for now.
+        installed_builds = []
+        for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
+            installed_builds.append( os.path.basename(build).split(".len")[0] )
         fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                           .filter_by( history=trans.history, extension="fasta", deleted=False ) \
                           .order_by( model.HistoryDatasetAssociation.hid.desc() )
-
         return {
             'dbkeys'            : dbkeys,
             'installed_builds'  : installed_builds,
