@@ -8,6 +8,12 @@ import logging
 import os
 import random
 
+try:
+    import uwsgi
+except ImportError:
+    uwsgi = None
+
+
 log = logging.getLogger(__name__)
 
 
@@ -100,6 +106,8 @@ class ConfiguresHandlers:
 
         :return: bool
         """
+        if uwsgi and self.app.config.server_name.startswith('mule'):
+            return True
         for collection in self.handlers.values():
             if server_name in collection:
                 return True
@@ -127,6 +135,8 @@ class ConfiguresHandlers:
 
         :returns: str -- A valid job handler ID.
         """
+        if id_or_tag is None and self.default_handler_id is None:
+            return None
         if id_or_tag is None:
             id_or_tag = self.default_handler_id
         return self._get_single_item(self.handlers[id_or_tag], index=index)

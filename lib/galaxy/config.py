@@ -20,6 +20,10 @@ from datetime import timedelta
 
 from six import string_types
 from six.moves import configparser
+try:
+    import uwsgi
+except:
+    uwsgi = None
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
@@ -499,14 +503,17 @@ class Configuration(object):
         if self.heartbeat_log is None:
             self.heartbeat_log = 'heartbeat_{server_name}.log'
         # Determine which 'server:' this is
-        self.server_name = 'main'
-        for arg in sys.argv:
-            # Crummy, but PasteScript does not give you a way to determine this
-            if arg.lower().startswith('--server-name='):
-                self.server_name = arg.split('=', 1)[-1]
-        # Allow explicit override of server name in confg params
-        if "server_name" in kwargs:
-            self.server_name = kwargs.get("server_name")
+        if uwsgi and uwsgi.mule_id() > 0:
+            self.server_name = 'mule%d' % uwsgi.mule_id()
+        else:
+            self.server_name = 'main'
+            for arg in sys.argv:
+                # Crummy, but PasteScript does not give you a way to determine this
+                if arg.lower().startswith('--server-name='):
+                    self.server_name = arg.split('=', 1)[-1]
+            # Allow explicit override of server name in confg params
+            if "server_name" in kwargs:
+                self.server_name = kwargs.get("server_name")
         # Store all configured server names
         self.server_names = []
         for section in global_conf_parser.sections():
@@ -539,6 +546,7 @@ class Configuration(object):
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',')]
         self.default_job_handlers = [x.strip() for x in kwargs.get('default_job_handlers', ','.join(self.job_handlers)).split(',')]
+        self.job_handler_count = int( kwargs.get( 'job_handler_count', 1 ) )
         # Store per-tool runner configs
         self.tool_handlers = self.__read_tool_job_config(global_conf_parser, 'galaxy:tool_handlers', 'name')
         self.tool_runners = self.__read_tool_job_config(global_conf_parser, 'galaxy:tool_runners', 'url')
