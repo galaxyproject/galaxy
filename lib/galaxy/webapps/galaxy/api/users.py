@@ -751,12 +751,14 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         """ Delete custom builds. """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
-        key = kwds.get('key', '')
+        key = kwds.get('key')
         if key and key in dbkeys:
             del dbkeys[key]
-        user.preferences['dbkeys'] = json.dumps(dbkeys)
-        trans.sa_session.flush()
-        return {}
+            user.preferences['dbkeys'] = json.dumps(dbkeys)
+            trans.sa_session.flush()
+            return { message: 'Deleted %s.' % key }
+        else:
+            raise MessageException('Could not find and delete build (%s).' % key)
 
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)
