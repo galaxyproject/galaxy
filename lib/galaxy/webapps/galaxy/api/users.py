@@ -657,12 +657,16 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
             installed_builds.append( os.path.basename(build).split(".len")[0] )
         fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-                          .filter_by( history=trans.history, extension="fasta", deleted=False ) \
-                          .order_by( model.HistoryDatasetAssociation.hid.desc() )
+                        .filter_by( history=trans.history, extension="fasta", deleted=False ) \
+                        .order_by( model.HistoryDatasetAssociation.hid.desc() )
+        len_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+                        .filter_by( history=trans.history, extension="len", deleted=False ) \
+                        .order_by( model.HistoryDatasetAssociation.hid.desc() )
         return {
             'dbkeys'            : dbkeys,
             'installed_builds'  : installed_builds,
-            'fasta_hdas'        : [ fasta.hid for fasta in fasta_hdas ],
+            'fasta_hdas'        : [ ( hda.name, hda.hid ) for hda in fasta_hdas ],
+            'len_hdas'          : [ ( hda.name, hda.hid ) for hda in len_hdas ],
         }
 
     @expose_api
