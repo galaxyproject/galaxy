@@ -56,6 +56,8 @@ class MultipleDependencyResolver:
 
         :param requirements: list of tool requirements
         :param type: [ToolRequirement] or ToolRequirements
+
+        :returns: list of resolved dependencies
         :rtype: [Dependency]
         """
 
