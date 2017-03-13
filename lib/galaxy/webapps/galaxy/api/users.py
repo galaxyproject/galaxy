@@ -2,13 +2,16 @@
 API operations on User objects.
 """
 
+import glob
 import logging
 import datetime
+import json
 import re
+import os
 
 from sqlalchemy import false, true, and_, or_
 
-from galaxy import exceptions, util, web
+from galaxy import exceptions, model, util, web
 from galaxy.exceptions import MessageException
 from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email
@@ -620,6 +623,150 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         trans.sa_session.add(user)
         trans.sa_session.flush()
         return {'message': message}
+
+    @expose_api
+    def get_custom_builds(self, trans, id, payload={}, **kwd):
+        """ Return custom builds. """
+        user = self._get_user(trans, id)
+        dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
+        installed_builds = []
+        for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
+            installed_builds.append( os.path.basename(build).split(".len")[0] )
+
+        # Add chrom/contig count to dbkeys dict.
+        updated = False
+        for key, attributes in dbkeys.items():
+            if 'count' in attributes:
+                # Already have count, so do nothing.
+                continue
+
+            # Get len file.
+            fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( attributes[ 'fasta' ] )
+            len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
+            # HACK: need to request dataset again b/c get_converted_dataset()
+            # doesn't return dataset (as it probably should).
+            len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
+            if len_dataset.state == trans.app.model.Job.states.ERROR:
+                # Can't use len dataset.
+                continue
+
+            # Get chrom count file.
+            chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
+            if not chrom_count_dataset or chrom_count_dataset.state != trans.app.model.Job.states.OK:
+                # No valid linecount dataset.
+                continue
+            else:
+                # Set chrom count.
+                try:
+                    chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                    attributes[ 'count' ] = chrom_count
+                    updated = True
+                except Exception as e:
+                    log.error( "Failed to open chrom count dataset: %s", e )
+
+        if updated:
+            user.preferences['dbkeys'] = json.dumps(dbkeys)
+            trans.sa_session.flush()
+
+        # Potential genome data for custom builds is limited to fasta datasets in current history for now.
+        fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+                          .filter_by( history=trans.history, extension="fasta", deleted=False ) \
+                          .order_by( model.HistoryDatasetAssociation.hid.desc() )
+
+        return {
+            'dbkeys'            : dbkeys,
+            'installed_builds'  : installed_builds,
+            'fasta_hdas'        : [ fasta.hid for fasta in fasta_hdas ],
+        }
+
+    @expose_api
+    def add_custom_builds(self, trans, id, payload={}, **kwd):
+        user = self._get_user(trans, id)
+        dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
+
+        # Add new custom build.
+        name = kwds.get('name', '')
+        key = kwds.get('key', '')
+
+        # Look for build's chrom info in len_file and len_text.
+        len_file = kwds.get( 'len_file', None )
+        if getattr( len_file, "file", None ):  # Check if it's a FieldStorage object
+            len_text = len_file.file.read()
+        else:
+            len_text = kwds.get( 'len_text', None )
+
+        if not len_text:
+            # Using FASTA from history.
+            dataset_id = kwds.get('dataset_id', '')
+
+        if not name or not key or not ( len_text or dataset_id ):
+            message = "You must specify values for all the fields."
+        elif key in dbkeys:
+            message = "There is already a custom build with that key. Delete it first if you want to replace it."
+        else:
+            # Have everything needed; create new build.
+            build_dict = { "name": name }
+            if len_text:
+                # Create new len file
+                new_len = trans.app.model.HistoryDatasetAssociation( extension="len", create_dataset=True, sa_session=trans.sa_session )
+                trans.sa_session.add( new_len )
+                new_len.name = name
+                new_len.visible = False
+                new_len.state = trans.app.model.Job.states.OK
+                new_len.info = "custom build .len file"
+                try:
+                    trans.app.object_store.create( new_len.dataset )
+                except ObjectInvalid:
+                    raise Exception( 'Unable to create output dataset: object store is full' )
+
+                trans.sa_session.flush()
+                counter = 0
+                f = open(new_len.file_name, "w")
+                # LEN files have format:
+                #   <chrom_name><tab><chrom_length>
+                for line in len_text.split("\n"):
+                    lst = line.strip().rsplit(None, 1)  # Splits at the last whitespace in the line
+                    if not lst or len(lst) < 2:
+                        lines_skipped += 1
+                        continue
+                    chrom, length = lst[0], lst[1]
+                    try:
+                        length = int(length)
+                    except ValueError:
+                        lines_skipped += 1
+                        continue
+
+                    if chrom != escape(chrom):
+                        message = 'Invalid chromosome(s) with HTML detected and skipped'
+                        lines_skipped += 1
+                        continue
+
+                    counter += 1
+                    f.write("%s\t%s\n" % (chrom, length))
+                f.close()
+
+                build_dict.update( { "len": new_len.id, "count": counter } )
+            else:
+                dataset_id = trans.security.decode_id( dataset_id )
+                build_dict[ "fasta" ] = dataset_id
+            dbkeys[key] = build_dict
+        # Save builds.
+        # TODO: use database table to save builds.
+        user.preferences['dbkeys'] = dumps(dbkeys)
+        trans.sa_session.flush()
+        return {}
+
+    @expose_api
+    def delete_custom_builds(self, trans, id, payload={}, **kwd):
+        """ Delete custom builds. """
+        user = self._get_user(trans, id)
+        dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
+        key = kwds.get('key', '')
+        if key and key in dbkeys:
+            del dbkeys[key]
+        user.preferences['dbkeys'] = json.dumps(dbkeys)
+        trans.sa_session.flush()
+        return {}
 
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)
