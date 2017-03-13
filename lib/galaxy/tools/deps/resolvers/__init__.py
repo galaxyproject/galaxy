@@ -19,7 +19,7 @@ class DependencyResolver(Dictifiable, object):
     """Abstract description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
-    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies']
+    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies', 'can_uninstall_dependencies']
     # A "simple" dependency is one that does not depend on the the tool
     # resolving the dependency. Classic tool shed dependencies are non-simple
     # because the repository install context is used in dependency resolution
@@ -27,6 +27,7 @@ class DependencyResolver(Dictifiable, object):
     # resolution.
     disabled = False
     resolves_simple_dependencies = True
+    can_uninstall_dependencies = False
     config_options = {}
 
     @abstractmethod

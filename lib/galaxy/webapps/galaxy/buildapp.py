@@ -269,6 +269,8 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( '/api/tools/{id:.+?}/download', action='download', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/requirements', action='requirements', controller="tools")
     webapp.mapper.connect( '/api/tools/{id:.+?}/install_dependencies', action='install_dependencies', controller="tools", conditions=dict( method=[ "POST" ] ))
+    webapp.mapper.connect( '/api/tools/{id:.+?}/dependencies', action='install_dependencies', controller="tools", conditions=dict( method=[ "POST" ] ))
+    webapp.mapper.connect( '/api/tools/{id:.+?}/dependencies', action='uninstall_dependencies', controller="tools", conditions=dict( method=[ "DELETE" ] ))
     webapp.mapper.connect( '/api/tools/{id:.+?}/build_dependency_cache', action='build_dependency_cache', controller="tools", conditions=dict( method=[ "POST" ] ))
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
