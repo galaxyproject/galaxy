@@ -131,6 +131,8 @@ def setup_galaxy_config(
     log_format=None,
 ):
     """Setup environment and build config for test Galaxy instance."""
+    # For certain docker operations this needs to be evaluated out - e.g. for cwltool.
+    tmpdir = os.path.realpath(tmpdir)
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
     file_path = os.path.join(tmpdir, 'files')
