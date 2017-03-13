@@ -48,8 +48,15 @@ class MultipleDependencyResolver:
     """Variant of DependencyResolver that can optionally resolve multiple dependencies together."""
 
     @abstractmethod
-    def resolve_all( self, requirements, **kwds ):
-        """Given multiple requirements yield Dependency objects if and only if they may all be resolved together.
+    def resolve_all(self, requirements, **kwds):
+        """
+        Given multiple requirements yields a list of Dependency objects if and only if they may all be resolved together.
+
+        Unsuccessfull attempts should return an empty list.
+
+        :param requirements: list of tool requirements
+        :param type: [ToolRequirement] or ToolRequirements
+        :rtype: [Dependency]
         """
 
 
