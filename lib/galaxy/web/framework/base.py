@@ -62,7 +62,7 @@ class WebApplication( object ):
         self.controllers = dict()
         self.api_controllers = dict()
         self.mapper = routes.Mapper()
-        self.clientside_routes = routes.Mapper()
+        self.clientside_routes = routes.Mapper(controller_scan=None, register=False)
         # FIXME: The following two options are deprecated and should be
         # removed.  Consult the Routes documentation.
         self.mapper.minimization = True
