@@ -66,7 +66,6 @@ class WebApplication( object ):
         # FIXME: The following two options are deprecated and should be
         # removed.  Consult the Routes documentation.
         self.mapper.minimization = True
-        # self.mapper.explicit = False
         self.transaction_factory = DefaultWebTransaction
         # Set if trace logging is enabled
         self.trace_logger = None
