@@ -11,9 +11,10 @@
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
 #
-# Examples of many of these options are explained in more detail in the wiki:
+# Examples of many of these options are explained in more detail in the Galaxy
+# Community Hub.
 #
-#   https://wiki.galaxyproject.org/Admin/Config
+#   https://galaxyproject.org/admin/config
 #
 # Config hackers are encouraged to check there before asking for help.
 
@@ -179,7 +180,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Path to the directory in which tool dependencies are placed.  This is used by
 # the Tool Shed to install dependencies and can also be used by administrators
 # to manually install or link to dependencies.  For details, see:
-#   https://wiki.galaxyproject.org/Admin/Config/ToolDependencies
+#   https://galaxyproject.org/admin/config/tool-dependencies
 # Set the string to None to explicitly disable tool dependency handling.
 # If this option is set to none or an invalid path, installing tools with dependencies
 # from the Tool Shed will fail.
@@ -305,9 +306,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # applied to the ToolDataTableManager at server start up.
 #shed_tool_data_table_config = config/shed_tool_data_table_conf.xml
 
-# Directory where data used by tools is located, see the samples in that
-# directory and the wiki for help:
-#   https://wiki.galaxyproject.org/Admin/DataIntegration
+# Directory where data used by tools is located.  See the samples in that
+# directory and the Galaxy Community Hub for help:
+# https://galaxyproject.org/admin/data-integration
 #tool_data_path = tool-data
 
 # Directory where Tool Data Table related files will be placed
@@ -478,7 +479,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # URL of the support resource for the galaxy instance.  Used in activation
 # emails.
-#instance_resource_url = https://wiki.galaxyproject.org/
+#instance_resource_url = https://galaxyproject.org/
 
 # E-mail domains blacklist is used for filtering out users that are using
 # disposable email address during the registration.  If their address domain
@@ -539,7 +540,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # bypass security to display datasets.  Please be aware that there are security
 # implications if this is allowed.  More details (including required changes to
 # the proxy server config) are available in the Apache proxy documentation on
-# the wiki.
+# the Galaxy Community Hub.
 #
 # The list of servers in this sample config are for the UCSC Main, Test and
 # Archaea browsers, but the default if left commented is to not allow any
@@ -605,19 +606,19 @@ nglims_config_file = tool-data/nglims.yaml
 #logo_url = /
 
 # The URL linked by the "Wiki" link in the "Help" menu.
-#wiki_url = https://wiki.galaxyproject.org/
+#wiki_url = https://galaxyproject.org/
 
 # The URL linked by the "Support" link in the "Help" menu.
-#support_url = https://wiki.galaxyproject.org/Support
+#support_url = https://galaxyproject.org/support
 
 # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
-#citation_url = https://wiki.galaxyproject.org/CitingGalaxy
+#citation_url = https://galaxyproject.org/citing-galaxy
 
 # The URL linked by the "Search" link in the "Help" menu.
-#search_url = http://galaxyproject.org/search/usegalaxy/
+#search_url = http://galaxyproject.org/search/
 
 # The URL linked by the "Mailing Lists" link in the "Help" menu.
-#mailing_lists_url = https://wiki.galaxyproject.org/MailingLists
+#mailing_lists_url = https://galaxyproject.org/mailing-lists
 
 # The URL linked by the "Videos" link in the "Help" menu.
 #screencasts_url = https://vimeo.com/galaxyproject
@@ -872,8 +873,9 @@ use_interactive = True
 
 # -- Data Libraries
 
-# These library upload options are described in much more detail in the wiki:
-#   https://wiki.galaxyproject.org/Admin/DataLibraries/UploadingLibraryFiles
+# These library upload options are described in much more detail in the Galaxy
+# Community Hub:
+# https://galaxyproject.org/admin/data-libraries/uploading-library-files
 
 # Add an option to the library upload form which allows administrators to
 # upload a directory of files.
@@ -959,7 +961,7 @@ use_interactive = True
 # User authentication can be delegated to an upstream proxy server (usually
 # Apache).  The upstream proxy should set a REMOTE_USER header in the request.
 # Enabling remote user disables regular logins.  For more information, see:
-#   https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
+#   https://galaxyproject.org/admin/config/apache-proxy
 #use_remote_user = False
 
 # If use_remote_user is enabled and your external authentication
@@ -1002,7 +1004,7 @@ use_interactive = True
 # users (email addresses).  These users will have access to the Admin section
 # of the server, and will have access to create users, groups, roles,
 # libraries, and more.  For more information, see:
-#   https://wiki.galaxyproject.org/Admin/Interface
+#   https://galaxyproject.org/admin/interface
 #admin_users = None
 
 # Force everyone to log in (disable anonymous access).
@@ -1181,7 +1183,7 @@ use_interactive = True
 # separate Galaxy into multiple processes.  There are more than one way to do
 # this, and they are explained in detail in the documentation:
 #
-#   https://wiki.galaxyproject.org/Admin/Config/Performance/Scaling
+#   https://galaxyproject.org/admin/config/performance/scaling
 
 # By default, Galaxy manages and executes jobs from within a single process and
 # notifies itself of new jobs via in-memory queues.  Jobs are run locally on
@@ -1270,7 +1272,7 @@ use_interactive = True
 # actual user instead of as the user running the Galaxy server process.  For
 # details on these options, see the documentation at:
 #
-# https://wiki.galaxyproject.org/Admin/Config/Performance/Cluster
+# https://galaxyproject.org/admin/config/performance/cluster
 #
 #drmaa_external_runjob_script = scripts/drmaa_external_runner.py
 #drmaa_external_killjob_script = scripts/drmaa_external_killer.py
