@@ -23,6 +23,3 @@ class ToolLocationFetcher(object):
             path = self.resolver_classes[scheme]().get_tool_source_path(uri_like)
 
         return path
-
-
-DEFAULT_TOOL_LOCATION_FETCHER = ToolLocationFetcher()
