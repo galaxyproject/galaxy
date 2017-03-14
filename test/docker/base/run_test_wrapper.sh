@@ -50,10 +50,11 @@ export TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 
+HOME=/galaxy
 sudo -E -u "#${GALAXY_TEST_UID}" ./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; }
 
 dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt
-[ -f $dev_requirements ] && $GALAXY_VIRTUAL_ENV/bin/pip install -r $dev_requirements
+[ -f $dev_requirements ] && sudo -E -u "#${GALAXY_TEST_UID}" $GALAXY_VIRTUAL_ENV/bin/pip install -r $dev_requirements
 
 echo "Upgrading test database..."
 sudo -E -u "#${GALAXY_TEST_UID}" sh manage_db.sh upgrade
