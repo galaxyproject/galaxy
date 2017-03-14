@@ -138,7 +138,7 @@ class WebApplication( object ):
             if self.trace_logger:
                 self.trace_logger.context_remove( "request_id" )
 
-    def _resolve_map_match( self, map_match, path_info, controllers ):
+    def _resolve_map_match( self, map_match, path_info, controllers, failthrough=None ):
         # Get the controller class
         controller_name = map_match.pop( 'controller', None )
         controller = controllers.get( controller_name, None )
@@ -149,7 +149,10 @@ class WebApplication( object ):
         # url_for invocations.  Specifically, grids.
         action = map_match.pop( 'action', 'index' )
         method = getattr( controller, action, None )
+        if method is None and failthrough:
+            return self._resolve_map_match( failthrough, path_info, controllers )
         if method is None:
+            # no matching method, we try for a default
             method = getattr( controller, 'default', None )
         if method is None:
             raise httpexceptions.HTTPNotFound( "No action for " + path_info )
@@ -166,7 +169,8 @@ class WebApplication( object ):
         request_id = environ.get( 'request_id', 'unknown' )
         # Map url using routes
         path_info = environ.get( 'PATH_INFO', '' )
-        map_match = self.mapper.match( path_info, environ )
+        clientmatch = self.clientside_routes.match( path_info, environ )
+        map_match = self.mapper.match( path_info, environ ) or clientmatch
         if path_info.startswith('/api'):
             environ[ 'is_api_request' ] = True
             controllers = self.api_controllers
@@ -187,7 +191,7 @@ class WebApplication( object ):
         rc.redirect = trans.response.send_redirect
         # Resolve mapping to controller/method
         try:
-            controller_name, controller, action, method = self._resolve_map_match( map_match, path_info, controllers )
+            controller_name, controller, action, method = self._resolve_map_match( map_match, path_info, controllers, failthrough=clientmatch)
         except httpexceptions.HTTPNotFound:
             # Failed, let's check client routes
             if not environ[ 'is_api_request' ]:
