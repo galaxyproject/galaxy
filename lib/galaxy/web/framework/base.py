@@ -138,7 +138,7 @@ class WebApplication( object ):
             if self.trace_logger:
                 self.trace_logger.context_remove( "request_id" )
 
-    def _resolve_map_match( self, map_match, path_info, controllers, failthrough=None ):
+    def _resolve_map_match( self, map_match, path_info, controllers, use_default=True):
         # Get the controller class
         controller_name = map_match.pop( 'controller', None )
         controller = controllers.get( controller_name, None )
@@ -149,8 +149,10 @@ class WebApplication( object ):
         # url_for invocations.  Specifically, grids.
         action = map_match.pop( 'action', 'index' )
         method = getattr( controller, action, None )
-        if method is None and failthrough:
-            return self._resolve_map_match( failthrough, path_info, controllers )
+        if method is None and not use_default:
+            # Skip default, we do this, for example, when we want to fail
+            # through to another mapper.
+            raise httpexceptions.HTTPNotFound( "No action for " + path_info )
         if method is None:
             # no matching method, we try for a default
             method = getattr( controller, 'default', None )
@@ -169,8 +171,8 @@ class WebApplication( object ):
         request_id = environ.get( 'request_id', 'unknown' )
         # Map url using routes
         path_info = environ.get( 'PATH_INFO', '' )
-        clientmatch = self.clientside_routes.match( path_info, environ )
-        map_match = self.mapper.match( path_info, environ ) or clientmatch
+        client_match = self.clientside_routes.match( path_info, environ )
+        map_match = self.mapper.match( path_info, environ ) or client_match
         if path_info.startswith('/api'):
             environ[ 'is_api_request' ] = True
             controllers = self.api_controllers
@@ -191,12 +193,13 @@ class WebApplication( object ):
         rc.redirect = trans.response.send_redirect
         # Resolve mapping to controller/method
         try:
-            controller_name, controller, action, method = self._resolve_map_match( map_match, path_info, controllers, failthrough=clientmatch)
+            # We don't use default methods if there's a clientside match for this route.
+            use_default = client_match is None
+            controller_name, controller, action, method = self._resolve_map_match( map_match, path_info, controllers, use_default=use_default)
         except httpexceptions.HTTPNotFound:
             # Failed, let's check client routes
             if not environ[ 'is_api_request' ]:
-                map_match = self.clientside_routes.match( path_info, environ )
-                controller_name, controller, action, method = self._resolve_map_match( map_match, path_info, controllers )
+                controller_name, controller, action, method = self._resolve_map_match( client_match, path_info, controllers )
             else:
                 raise
         trans.controller = controller_name
