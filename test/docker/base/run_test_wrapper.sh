@@ -4,6 +4,8 @@ set -e
 echo "Deleting galaxy user - it may not exist and this is fine."
 deluser galaxy | true
 
+GALAXY_TEST_UID=${GALAXY_TEST_UID:-"1"}
+
 echo "Creating galaxy group with gid $GALAXY_TEST_UID - it may already exist and this is fine."
 groupadd -r galaxy -g "$GALAXY_TEST_UID" | true
 echo "Creating galaxy user with uid $GALAXY_TEST_UID - it may already exist and this is fine."
