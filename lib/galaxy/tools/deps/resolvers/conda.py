@@ -130,7 +130,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         final_return_code = 0
         for env, return_code in zip(environments, return_codes):
             if return_code == 0:
-                log.debug("Conda environment '%s' sucessfully removed." % env)
+                log.debug("Conda environment '%s' successfully removed." % env)
             else:
                 log.debug("Conda environment '%s' could not be removed." % env)
                 final_return_code = return_code
@@ -152,15 +152,30 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         return is_installed
 
     def resolve_all(self, requirements, **kwds):
+        """
+        Some combinations of tool requirements need to be resolved all at once, so that Conda can select a compatible
+        combination of dependencies. This method returns a list of MergedCondaDependency instances (one for each requirement)
+        if all requirements have been successfully resolved, or an empty list if any of the requirements could not be resolved.
+
+        Parameters specific to this resolver are:
+
+            preserve_python_environment: Boolean, controls whether the python environment should be maintained during job creation for tools
+                                         that rely on galaxy being importable.
+
+            install:                     Controls if `requirements` should be installed. If `install` is True and the requirements are not installed
+                                         an attempt is made to install the requirements. If `install` is None requirements will only be installed if
+                                         `conda_auto_install` has been activated and the requirements are not yet installed. If `install` is
+                                         False will not install requirements.
+        """
         if len(requirements) == 0:
-            return False
+            return []
 
         if not os.path.isdir(self.conda_context.conda_prefix):
-            return False
+            return []
 
         for requirement in requirements:
             if requirement.type != "package":
-                return False
+                return []
 
         ToolRequirements = galaxy.tools.deps.requirements.ToolRequirements
         expanded_requirements = ToolRequirements([self._expand_requirement(r) for r in requirements])
