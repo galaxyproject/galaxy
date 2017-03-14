@@ -57,6 +57,15 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         window.location.href = Galaxy.root + 'user/openid_manage?cntrller=user&use_panels=True';
                     }
                 },
+                'custom_builds': {
+                    title           : 'Manage custom builds',
+                    description     : 'Add or remove custom builds using history datasets.',
+                    icon            : 'fa-cubes',
+                    onclick         : function() {
+                        //url             : 'api/users/' + options.user_id + '/custom_builds/inputs',
+                        //window.location.href = Galaxy.root + 'user/openid_manage?cntrller=user&use_panels=True';
+                    }
+                },
                 'logout': {
                     title           : 'Sign out',
                     description     : 'Click here to sign out of all sessions.',
@@ -102,6 +111,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 if( config.enable_communication_server ) {
                     self._addLink( 'communication' );
                 }
+                self._addLink( 'custom_builds' );
                 self._addLink( 'permissions' );
                 self._addLink( 'api_key' );
                 if( config.has_user_tool_filters ) {

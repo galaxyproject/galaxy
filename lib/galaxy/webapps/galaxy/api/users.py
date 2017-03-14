@@ -626,30 +626,26 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     @expose_api
     def get_custom_builds(self, trans, id, payload={}, **kwd):
-        """ Return custom builds. """
+        """ Build custom build inputs. """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
         updated = False
         for key, attributes in dbkeys.items():
-            if 'count' in attributes:
-                continue
-            fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( attributes[ 'fasta' ] )
-            len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
-            # HACK: need to request dataset again b/c get_converted_dataset()
-            # doesn't return dataset (as it probably should).
-            len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
-            if len_dataset.state == trans.app.model.Job.states.ERROR:
-                continue
-            chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
-            if not chrom_count_dataset or chrom_count_dataset.state != trans.app.model.Job.states.OK:
-                continue
-            else:
-                try:
-                    chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
-                    attributes[ 'count' ] = chrom_count
-                    updated = True
-                except Exception as e:
-                    log.error( "Failed to open chrom count dataset: %s", e )
+            if 'count' not in attributes:
+                fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( attributes[ 'fasta' ] )
+                len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
+                # HACK: need to request dataset again b/c get_converted_dataset()
+                # doesn't return dataset (as it probably should).
+                len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
+                if len_dataset.state != trans.app.model.Job.states.ERROR:
+                    chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
+                    if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
+                        try:
+                            chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                            attributes[ 'count' ] = chrom_count
+                            updated = True
+                        except Exception as e:
+                            raise MessageException('Failed to open chrom count dataset: %s.' % e)
         if updated:
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
@@ -663,7 +659,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                         .filter_by( history=trans.history, extension="len", deleted=False ) \
                         .order_by( model.HistoryDatasetAssociation.hid.desc() )
         return {
-            'dbkeys'            : dbkeys,
+            'custom_builds'     : dbkeys,
             'installed_builds'  : installed_builds,
             'fasta_hdas'        : [ ( hda.name, hda.hid ) for hda in fasta_hdas ],
             'len_hdas'          : [ ( hda.name, hda.hid ) for hda in len_hdas ],
