@@ -52,7 +52,9 @@ if [ $INITIALIZE_TOOL_DEPENDENCIES -eq 1 ]; then
     python ./scripts/manage_tool_dependencies.py -c "$GALAXY_CONFIG_FILE" init_if_needed
 fi
 
-if [ -n "$GALAXY_RUN_ALL" ]; then
+if [ -n "$GALAXY_UWSGI" ]; then
+    uwsgi $(python ./scripts/get_uwsgi_args.py get_uwsgi_args)
+elif [ -n "$GALAXY_RUN_ALL" ]; then
     servers=$(sed -n 's/^\[server:\(.*\)\]/\1/  p' "$GALAXY_CONFIG_FILE" | xargs echo)
     if [ -z "$stop_daemon_arg_set" -a -z "$daemon_or_restart_arg_set" ]; then
         echo "ERROR: \$GALAXY_RUN_ALL cannot be used without the '--daemon', '--stop-daemon' or 'restart' arguments to run.sh"
