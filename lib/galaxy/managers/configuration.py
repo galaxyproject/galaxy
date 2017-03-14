@@ -44,10 +44,10 @@ class ConfigSerializer( base.ModelSerializer ):
             # TODO: don't hardcode here - hardcode defaults once in config.py
             'wiki_url'                          : _defaults_to( "http://galaxyproject.org/" ),
             'search_url'                        : _defaults_to( "http://galaxyproject.org/search/usegalaxy/" ),
-            'mailing_lists'                     : _defaults_to( "https://wiki.galaxyproject.org/MailingLists" ),
+            'mailing_lists'                     : _defaults_to( "https://galaxyproject.org/mailing-lists" ),
             'screencasts_url'                   : _defaults_to( "https://vimeo.com/galaxyproject" ),
-            'citation_url'                      : _defaults_to( "https://wiki.galaxyproject.org/CitingGalaxy" ),
-            'support_url'                       : _defaults_to( "https://wiki.galaxyproject.org/Support" ),
+            'citation_url'                      : _defaults_to( "https://galaxyproject.org/citing-galaxy" ),
+            'support_url'                       : _defaults_to( "https://galaxyproject.org/support" ),
             'lims_doc_url'                      : _defaults_to( "https://usegalaxy.org/u/rkchak/p/sts" ),
             'biostar_url'                       : _defaults_to( '' ),
             'biostar_url_redirect'              : lambda *a, **c: self.url_for( controller='biostar', action='biostar_redirect', qualified=True ),
