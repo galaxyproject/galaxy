@@ -114,6 +114,7 @@ class WebApplication( object ):
         """
         # Create/compile the regular expressions for route mapping
         self.mapper.create_regs( self.controllers.keys() )
+        self.clientside_routes.create_regs()
 
     def trace( self, **fields ):
         if self.trace_logger:
