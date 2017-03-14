@@ -1,5 +1,6 @@
 import yaml
 
+
 def main(trans, webhook):
     data = {}
     data['tools'] = []
@@ -11,7 +12,9 @@ def main(trans, webhook):
         if tool[1].tool_shed_repository is not None:
 
             name = str(tool[1].tool_shed_repository.name)
-            revision = str(tool[1].tool_shed_repository.installed_changeset_revision)
+            revision = str(
+                    tool[1].tool_shed_repository.installed_changeset_revision
+                    )
 
             if (name + revision) not in unique_tools:
 
@@ -29,6 +32,6 @@ def main(trans, webhook):
                 })
                 if tool[1].get_panel_section()[0]:
                     data['tools'][-1]['tool_panel_section_id'] = \
-                    tool[1].get_panel_section()[0]
+                        tool[1].get_panel_section()[0]
 
     return {'yaml': yaml.safe_dump(data, default_flow_style=False)}
