@@ -52,7 +52,7 @@
         repository tools may include code that produces malicious behavior, so be aware of what you are installing.
     </p>
     <p>
-        If you discover a repository that causes problems after installation, contact <a href="https://wiki.galaxyproject.org/Support" target="_blank">Galaxy support</a>,
+        If you discover a repository that causes problems after installation, contact <a href="${app.config.support_url}" target="_blank">Galaxy support</a>,
         sending all necessary information, and appropriate action will be taken.
     </p>
     <p>
