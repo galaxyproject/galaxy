@@ -49,7 +49,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
 
         _renderForm: function() {
             var form = new Form({
-                //cls     : 'ui-portlet-plain',
                 inputs  : [{
                     type    : 'text',
                     name    : 'id',
