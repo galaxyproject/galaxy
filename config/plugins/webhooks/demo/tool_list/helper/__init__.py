@@ -13,8 +13,8 @@ def main(trans, webhook):
 
             name = str(tool[1].tool_shed_repository.name)
             revision = str(
-                    tool[1].tool_shed_repository.installed_changeset_revision
-                    )
+                tool[1].tool_shed_repository.installed_changeset_revision
+            )
 
             if (name + revision) not in unique_tools:
 
