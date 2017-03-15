@@ -1,5 +1,5 @@
-Galaxy Interactive Environments (GIEs)
-======================================
+Galaxy Interactive Environments
+===============================
 
 A GIE is a Docker container, launched by Galaxy, proxied by Galaxy, with some
 extra sugar inside the container to allow users to interact easily with their
