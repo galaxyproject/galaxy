@@ -64,15 +64,6 @@ def paste_app_factory( global_conf, **kwargs ):
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
 
-    # CLIENTSIDE ROUTES
-    # The following are routes that are handled completely on the clientside.
-    # The following routes don't bootstrap any information, simply provide the
-    # base analysis interface at which point the application takes over.
-
-    webapp.add_client_route( '/tours' )
-    webapp.add_client_route( '/tours/{tour_id}' )
-    webapp.add_client_route( '/users' )
-
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to view of current
@@ -109,6 +100,16 @@ def paste_app_factory( global_conf, **kwargs ):
     # TODO: Refactor above routes into external method to allow testing in
     # isolation as well.
     populate_api_routes( webapp, app )
+
+    # CLIENTSIDE ROUTES
+    # The following are routes that are handled completely on the clientside.
+    # The following routes don't bootstrap any information, simply provide the
+    # base analysis interface at which point the application takes over.
+
+    webapp.add_client_route( '/tours' )
+    webapp.add_client_route( '/tours/{tour_id}' )
+    webapp.add_client_route( '/user' )
+    webapp.add_client_route( '/user/{form_id}' )
 
     # ==== Done
     # Indicate that all configuration settings have been provided
