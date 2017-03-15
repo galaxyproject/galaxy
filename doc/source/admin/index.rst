@@ -7,7 +7,8 @@ This documentation is in the midst of being ported and unified based on resource
    :maxdepth: 2
 
    tool_panel
-   dependency_resolvers.rst
-   conda_faq.rst
-   framework_dependencies.rst
-   useful_scripts.rst
+   authentication
+   dependency_resolvers
+   conda_faq
+   framework_dependencies
+   useful_scripts
