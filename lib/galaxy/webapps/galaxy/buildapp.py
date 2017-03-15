@@ -183,11 +183,6 @@ def populate_api_routes( webapp, app ):
                             path_prefix='/api/histories/{history_id}/contents',
                             parent_resources=dict( member_name='history', collection_name='histories' ),
                             )
-
-    contents_archive_mapper = webapp.mapper.submapper( action='archive', controller='history_contents' )
-    contents_archive_mapper.connect( '/api/histories/{history_id}/contents/archive' )
-    contents_archive_mapper.connect( '/api/histories/{history_id}/contents/archive/{filename}{.format}' )
-
     # Legacy access to HDA details via histories/{history_id}/contents/{hda_id}
     webapp.mapper.resource( 'content',
                             'contents',
@@ -338,6 +333,11 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( "history_archive_download",
                            "/api/histories/{id}/exports/{jeha_id}", controller="histories",
                            action="archive_download", conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( '/api/histories/{history_id}/contents/archive',
+                           controller='history_contents', action='archive')
+    webapp.mapper.connect( '/api/histories/{history_id}/contents/archive/{filename}{.format}',
+                           controller='history_contents', action='archive')
 
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
