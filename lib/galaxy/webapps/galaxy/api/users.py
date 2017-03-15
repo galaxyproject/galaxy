@@ -625,8 +625,27 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         return {'message': message}
 
     @expose_api
+    def get_custom_builds_metadata(self, trans, id, payload={}, **kwd):
+        """ Returns meta data for custom builds. """
+        user = self._get_user(trans, id)
+        installed_builds = []
+        for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
+            installed_builds.append( os.path.basename(build).split(".len")[0] )
+        fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+                        .filter_by( history=trans.history, extension="fasta", deleted=False ) \
+                        .order_by( model.HistoryDatasetAssociation.hid.desc() )
+        len_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+                        .filter_by( history=trans.history, extension="len", deleted=False ) \
+                        .order_by( model.HistoryDatasetAssociation.hid.desc() )
+        return {
+            'installed_builds'  : installed_builds,
+            'fasta_hdas'        : [ ( hda.name, hda.hid ) for hda in fasta_hdas ],
+            'len_hdas'          : [ ( hda.name, hda.hid ) for hda in len_hdas ],
+        }
+
+    @expose_api
     def get_custom_builds(self, trans, id, payload={}, **kwd):
-        """ Build custom build inputs. """
+        """ Returns collection of custom builds. """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
         updated = False
@@ -649,21 +668,11 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         if updated:
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
-        installed_builds = []
-        for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
-            installed_builds.append( os.path.basename(build).split(".len")[0] )
-        fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-                        .filter_by( history=trans.history, extension="fasta", deleted=False ) \
-                        .order_by( model.HistoryDatasetAssociation.hid.desc() )
-        len_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-                        .filter_by( history=trans.history, extension="len", deleted=False ) \
-                        .order_by( model.HistoryDatasetAssociation.hid.desc() )
-        return {
-            'custom_builds'     : dbkeys,
-            'installed_builds'  : installed_builds,
-            'fasta_hdas'        : [ ( hda.name, hda.hid ) for hda in fasta_hdas ],
-            'len_hdas'          : [ ( hda.name, hda.hid ) for hda in len_hdas ],
-        }
+        dbkey_collection = []
+        for key, attributes in dbkeys.items():
+            attributes['id'] = key;
+            dbkey_collection.append(attributes)
+        return dbkey_collection
 
     @expose_api
     def add_custom_builds(self, trans, id, payload={}, **kwd):
