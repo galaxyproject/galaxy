@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.5.7.dev0
+17.5.7 (2017-03-15)
 ---------------------
 
 * Updates to CWL library functionality for several months worth of CWL tool updates.
