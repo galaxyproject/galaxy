@@ -218,6 +218,25 @@
             <param id="godocker_project">galaxy</param>
             <!-- Specify the project present in the GoDocker setup -->
         </plugin>
+        <plugin id="chronos" type="runner" load="galaxy.jobs.runners.chronos:ChronosJobRunner">
+            <!-- Chronos is a framework for the Apache Mesos software; a software which manages
+                 computer clusters. Specifically, Chronos runs of top of Mesos and it's used
+                 for job orchestration.
+
+                 This runner requires a shared file system where the directories of
+                 `job_working_directory`, `file_path` and `new_file_path` settings defined on
+                 the `galaxy.ini` file are shared amongst the Mesos agents (i.e. nodes wich
+                 actually run the jobs).
+            -->
+            <param id="chronos">`chronos_host`</param>
+            <!-- Hostname which runs Chronos instance. -->
+            <param id="owner">foo@bar.com</param>
+            <!-- The email address of the person responsible for the job. -->
+            <param id="username">username</param>
+            <!-- Username to access Mesos cluster. -->
+            <param id="password">password</param>
+            <!-- Password to access Mesos cluster. -->
+        </plugin>
 
     </plugins>
     <handlers default="handlers">
@@ -702,6 +721,17 @@
                  then enable it by setting the value to true.
                  Disable venv by setting the value to false.
             -->
+        </destination>
+        <destination id="chronos_dest" runner="chronos">
+            <param id="docker_enabled">true</param>
+            <param id="docker_memory">512</param>
+            <param id="docker_cpu">2</param>
+            <param id="volumes">/directory/</param>
+            <!-- Directory which is mounted to the container and is parent of
+                 the  `job_working_directory`, `file_path`, `new_file_path`
+                 directories -->
+            <param id="max_retries">2</param>
+            <!-- Number of retries to attempt if a command returns a non-zero status -->
         </destination>
 
         <!-- Templatized destinations - macros can be used to create templated
