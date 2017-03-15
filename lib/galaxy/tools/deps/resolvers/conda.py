@@ -59,6 +59,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
 
     def __init__(self, dependency_manager, **kwds):
+        self.can_uninstall_dependencies = True
         self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         self.dependency_manager = dependency_manager
@@ -116,6 +117,25 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
     def clean(self, **kwds):
         return self.conda_context.exec_clean()
 
+    def uninstall(self, requirements):
+        """Uninstall requirements installed by install_all or multiple install statements."""
+        all_resolved = [r for r in self.resolve_all(requirements) if r.dependency_type]
+        if not all_resolved:
+            all_resolved = [self.resolve(requirement) for requirement in requirements]
+            all_resolved = [r for r in all_resolved if r.dependency_type]
+        if not all_resolved:
+            return None
+        environments = set([os.path.basename(dependency.environment_path) for dependency in all_resolved])
+        return_codes = [self.conda_context.exec_remove([env]) for env in environments]
+        final_return_code = 0
+        for env, return_code in zip(environments, return_codes):
+            if return_code == 0:
+                log.debug("Conda environment '%s' successfully removed." % env)
+            else:
+                log.debug("Conda environment '%s' could not be removed." % env)
+                final_return_code = return_code
+        return final_return_code
+
     def install_all(self, conda_targets):
         env = self.merged_environment_name(conda_targets)
         return_code = install_conda_targets(conda_targets, env, conda_context=self.conda_context)
@@ -132,15 +152,30 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         return is_installed
 
     def resolve_all(self, requirements, **kwds):
+        """
+        Some combinations of tool requirements need to be resolved all at once, so that Conda can select a compatible
+        combination of dependencies. This method returns a list of MergedCondaDependency instances (one for each requirement)
+        if all requirements have been successfully resolved, or an empty list if any of the requirements could not be resolved.
+
+        Parameters specific to this resolver are:
+
+            preserve_python_environment: Boolean, controls whether the python environment should be maintained during job creation for tools
+                                         that rely on galaxy being importable.
+
+            install:                     Controls if `requirements` should be installed. If `install` is True and the requirements are not installed
+                                         an attempt is made to install the requirements. If `install` is None requirements will only be installed if
+                                         `conda_auto_install` has been activated and the requirements are not yet installed. If `install` is
+                                         False will not install requirements.
+        """
         if len(requirements) == 0:
-            return False
+            return []
 
         if not os.path.isdir(self.conda_context.conda_prefix):
-            return False
+            return []
 
         for requirement in requirements:
             if requirement.type != "package":
-                return False
+                return []
 
         ToolRequirements = galaxy.tools.deps.requirements.ToolRequirements
         expanded_requirements = ToolRequirements([self._expand_requirement(r) for r in requirements])
@@ -232,7 +267,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         if job_directory:
             conda_environment = os.path.join(job_directory, conda_env)
         else:
-            conda_environment = None
+            conda_environment = self.conda_context.env_path(conda_target.install_environment)
 
         return CondaDependency(
             self.conda_context,

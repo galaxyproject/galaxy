@@ -135,12 +135,16 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     @web.require_admin
     def install_dependencies(self, trans, id, **kwds):
         """
-        POST /api/tools/{tool_id}/install_dependencies
+        POST /api/tools/{tool_id}/dependencies
+
+        This endpoint is also available through POST /api/tools/{tool_id}/install_dependencies,
+        but will be deprecated in the future.
+
         Attempts to install requirements via the dependency resolver
 
         parameters:
             build_dependency_cache:  If true, attempts to cache dependencies for this tool
-            force_rebuild:           If true and chache dir exists, attempts to delete cache dir
+            force_rebuild:           If true and cache dir exists, attempts to delete cache dir
         """
         tool = self._get_tool(id)
         tool._view.install_dependencies(tool.requirements)
@@ -148,6 +152,19 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             tool.build_dependency_cache(**kwds)
         # TODO: rework resolver install system to log and report what has been done.
         # _view.install_dependencies should return a dict with stdout, stderr and success status
+        return tool.tool_requirements_status
+
+    @expose_api
+    @web.require_admin
+    def uninstall_dependencies(self, trans, id, **kwds):
+        """
+        DELETE /api/tools/{tool_id}/dependencies
+        Attempts to uninstall requirements via the dependency resolver
+
+        """
+        tool = self._get_tool(id)
+        tool._view.uninstall_dependencies(index=None, requirements=tool.requirements)
+        # TODO: rework resolver install system to log and report what has been done.
         return tool.tool_requirements_status
 
     @expose_api

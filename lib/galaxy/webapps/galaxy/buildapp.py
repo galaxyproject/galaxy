@@ -64,15 +64,6 @@ def paste_app_factory( global_conf, **kwargs ):
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
 
-    # CLIENTSIDE ROUTES
-    # The following are routes that are handled completely on the clientside.
-    # The following routes don't bootstrap any information, simply provide the
-    # base analysis interface at which point the application takes over.
-
-    webapp.add_client_route( '/tours' )
-    webapp.add_client_route( '/tours/{tour_id}' )
-    webapp.add_client_route( '/users' )
-
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to view of current
@@ -109,6 +100,16 @@ def paste_app_factory( global_conf, **kwargs ):
     # TODO: Refactor above routes into external method to allow testing in
     # isolation as well.
     populate_api_routes( webapp, app )
+
+    # CLIENTSIDE ROUTES
+    # The following are routes that are handled completely on the clientside.
+    # The following routes don't bootstrap any information, simply provide the
+    # base analysis interface at which point the application takes over.
+
+    webapp.add_client_route( '/tours' )
+    webapp.add_client_route( '/tours/{tour_id}' )
+    webapp.add_client_route( '/user' )
+    webapp.add_client_route( '/user/{form_id}' )
 
     # ==== Done
     # Indicate that all configuration settings have been provided
@@ -183,11 +184,6 @@ def populate_api_routes( webapp, app ):
                             path_prefix='/api/histories/{history_id}/contents',
                             parent_resources=dict( member_name='history', collection_name='histories' ),
                             )
-
-    contents_archive_mapper = webapp.mapper.submapper( action='archive', controller='history_contents' )
-    contents_archive_mapper.connect( '/api/histories/{history_id}/contents/archive' )
-    contents_archive_mapper.connect( '/api/histories/{history_id}/contents/archive/{filename}{.format}' )
-
     # Legacy access to HDA details via histories/{history_id}/contents/{hda_id}
     webapp.mapper.resource( 'content',
                             'contents',
@@ -269,6 +265,8 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( '/api/tools/{id:.+?}/download', action='download', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/requirements', action='requirements', controller="tools")
     webapp.mapper.connect( '/api/tools/{id:.+?}/install_dependencies', action='install_dependencies', controller="tools", conditions=dict( method=[ "POST" ] ))
+    webapp.mapper.connect( '/api/tools/{id:.+?}/dependencies', action='install_dependencies', controller="tools", conditions=dict( method=[ "POST" ] ))
+    webapp.mapper.connect( '/api/tools/{id:.+?}/dependencies', action='uninstall_dependencies', controller="tools", conditions=dict( method=[ "DELETE" ] ))
     webapp.mapper.connect( '/api/tools/{id:.+?}/build_dependency_cache', action='build_dependency_cache', controller="tools", conditions=dict( method=[ "POST" ] ))
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
@@ -336,6 +334,11 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( "history_archive_download",
                            "/api/histories/{id}/exports/{jeha_id}", controller="histories",
                            action="archive_download", conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( '/api/histories/{history_id}/contents/archive',
+                           controller='history_contents', action='archive')
+    webapp.mapper.connect( '/api/histories/{history_id}/contents/archive/{filename}{.format}',
+                           controller='history_contents', action='archive')
 
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated

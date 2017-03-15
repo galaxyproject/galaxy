@@ -365,6 +365,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # the plugin's ini config file.
 #interactive_environment_swarm_mode = False
 
+# Galaxy can run a "swarm manager" service that will monitor utilization of the
+# swarm and provision/deprovision worker nodes as necessary. The service has
+# its own configuration file.
+#swarm_manager_config_file = config/swarm_manager_conf.yml
+
 # Interactive tour directory: where to store interactive tour definition files.
 # Galaxy ships with several basic interface tours enabled, though a different
 # directory with custom tours can be specified here. The path is relative to the
@@ -1201,7 +1206,7 @@ use_interactive = True
 # walltime limits but did fail quickly (either while queueing or running). The
 # commented out default below results in no default job resubmission condition,
 # failing jobs are just failed outright.
-#default_job_resubmission_condition = 
+#default_job_resubmission_condition =
 
 # In multiprocess configurations, notification between processes about new jobs
 # must be done via the database.  In single process configurations, this can be

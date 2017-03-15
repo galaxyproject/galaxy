@@ -9,7 +9,6 @@ import time
 
 import galaxy.queues
 from galaxy import util
-from galaxy.model.util import pgcalc
 
 from kombu import Connection
 from kombu.mixins import ConsumerMixin
@@ -143,13 +142,11 @@ def recalculate_user_disk_usage(app, **kwargs):
     if user_id:
         user = sa_session.query( app.model.User ).get( app.security.decode_id( user_id ) )
         if user:
-            if sa_session.get_bind().dialect.name not in ( 'postgres', 'postgresql' ):
-                new = user.calculate_disk_usage()
-            else:
-                new = pgcalc(sa_session, user.id)
-            user.set_disk_usage(new)
-            sa_session.add(user)
-            sa_session.flush()
+            user.calculate_and_set_disk_usage()
+        else:
+            log.error("Recalculate user disk usage task failed, user %s not found" % user_id)
+    else:
+        log.error("Recalculate user disk usage task received without user_id.")
 
 
 def reload_tool_data_tables(app, **kwargs):
@@ -226,13 +223,13 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
             if body.get('noop', None) != self.app.config.server_name:
                 try:
                     f = self.task_mapping[body['task']]
-                    log.info("Instance '%s' recieved '%s' task, executing now.", self.app.config.server_name, body['task'])
+                    log.info("Instance '%s' received '%s' task, executing now.", self.app.config.server_name, body['task'])
                     f(self.app, **body['kwargs'])
                 except Exception:
                     # this shouldn't ever throw an exception, but...
                     log.exception("Error running control task type: %s" % body['task'])
         else:
-            log.warning("Recieved a malformed task message:\n%s" % body)
+            log.warning("Received a malformed task message:\n%s" % body)
         message.ack()
 
     def shutdown(self):

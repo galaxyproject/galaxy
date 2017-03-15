@@ -237,6 +237,7 @@ class CondaContext(installable.InstallableContext):
         return self.exec_command("create", create_base_args)
 
     def exec_remove(self, args):
+        """Remove a conda environment using conda env remove -y --name `args`."""
         remove_base_args = [
             "remove",
             "-y",

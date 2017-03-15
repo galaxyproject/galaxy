@@ -218,14 +218,7 @@ var DatasetListItemEdit = _super.extend(
                 faIcon      : 'fa-refresh',
                 onclick     : function( ev ) {
                     ev.preventDefault();
-                    // create webpack split point in order to load the tool form async
-                    // TODO: split not working (tool loads fine)
-                    require([ 'mvc/tool/tool-form' ], function( ToolForm ){
-                        var form = new ToolForm.View({ 'job_id' : creating_job });
-                        form.deferred.execute( function(){
-                            Galaxy.app.display( form );
-                        });
-                    });
+                    Galaxy.router.push( '/', { job_id : creating_job } );
                 }
             });
         }

@@ -356,6 +356,10 @@ Read more about configuring Galaxy to run Docker jobs
       <xs:documentation xml:lang="en"><![CDATA[
 **Deprecated** do not use this unless absolutely necessary.
 
+The extensions described here can cause problems using your tool with certain components
+of Galaxy (like the workflow system). It is highly recommended to avoid these constructs
+unless absolutely necessary.
+
 This tag set provides detailed control of the way the tool is executed. This
 (optional) code can be deployed in a separate file in the same directory as the
 tool's config file. These hooks are being replaced by new tool config features
@@ -443,6 +447,76 @@ def get_field_components_options( dataset, field_name ):
         options.append( ( field_component, field_component, i == 0 ) )
     return options
 ```
+
+#### Parameter Validation
+
+This function is called before the tool is executed. If it raises any exceptions the tool execution will be aborted and the exception's value will be displayed in an error message box. Here is an example:
+
+```python
+def validate(incoming):
+    """Validator for the plotting program"""
+    
+    
+    bins = incoming.get("bins","")
+    col = incoming.get("col","")
+
+
+    if not bins or not col:
+        raise Exception, "You need to specify a number for bins and columns"
+
+
+    try:
+        bins = int(bins)
+        col = int(col)
+    except:
+        raise Exception, "Parameters are not integers, columns:%s, bins:%s" % (col, bins)
+
+
+    if not 1<bins<100:
+        raise Exception, "The number of bins %s must be a number between 1 and 100" % bins
+```
+
+This code will intercept a number of parameter errors and return corresponding error messages. The parameter ``incoming`` contains a dictionary with all the parameters that were sent through the web.
+
+#### Pre-job and pre-process code
+
+The signature of both of these is the same:
+
+```python
+def exec_before_job(inp_data, out_data, param_dict, tool):
+def exec_before_process(inp_data, out_data, param_dict, tool):
+```
+
+The ``param_dict`` is a dictionary that contains all the values in the ``incoming`` parameter above plus a number of keys and values generated internally by galaxy. The ``inp_data`` and the ``out_data`` are dictionaries keyed by parameter name containing the classes that represent the data.
+
+Example:
+
+```python
+def exec_before_process(inp_data, out_data, param_dict, tool):
+    for name, data in out_data.items():
+        data.name = 'New name'
+```
+
+This custom code will change the name of the data that was created for this tool to **New name**. The difference between these two functions is that the ``exec_before_job`` executes before the page returns and the user will see the new name right away. If one were to use ``exec_before_process`` the new name would be set only once the job starts to execute.
+
+#### Post-process code
+
+This code executes after the background process running the tool finishes its run. The example below is more advanced one that replaces the type of the output data depending on the parameter named ``extension``:
+
+```python
+from galaxy import datatypes
+def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
+    ext = param_dict.get('extension', 'text')
+    items = out_data.items()   
+    for name, data in items: 
+        newdata = datatypes.factory(ext)(id=data.id)
+        for key, value in data. __dict__.items():
+            setattr(newdata, key, value)
+        newdata.ext = ext
+        out_data[name] = newdata
+```
+
+The content of ``stdout`` and ``stderr`` are strings containing the output of the process.
 
 ]]></xs:documentation>
 
