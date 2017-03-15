@@ -11,6 +11,7 @@ from subprocess import Popen, PIPE
 
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
+from galaxy.container import docker_swarm
 from galaxy import web, model
 from galaxy.managers import api_keys
 from galaxy.tools.deps.docker_util import DockerVolume
@@ -370,6 +371,9 @@ class InteractiveEnvironmentRequest(object):
             log.debug( "Container host: %s", self.attr.docker_hostname )
             host_port = None
 
+            if self.attr.swarm_mode:
+                docker_swarm.main(argv=['-c', self.trans.app.config.config_file], fork=True)
+
             if len(port_mappings) > 1:
                 if self.attr.docker_connect_port is not None:
                     for _service, _host_ip, _host_port in port_mappings:
@@ -393,7 +397,9 @@ class InteractiveEnvironmentRequest(object):
                 port=host_port,
                 proxy_prefix=self.attr.proxy_prefix,
                 route_name=self.attr.viz_id,
-                container_ids=[container_id],
+                container_ids=[container_id] if not self.attr.swarm_mode else [],
+                service_ids=[container_id] if self.attr.swarm_mode else [],
+                docker_command=self.attr.viz_config.get("docker", "command"),
             )
             # These variables then become available for use in templating URLs
             self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
