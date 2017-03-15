@@ -9,7 +9,6 @@ import tarfile
 import tempfile
 import time
 import types
-from Cookie import SimpleCookie
 
 import routes
 import webob
@@ -17,6 +16,7 @@ import webob
 from paste import httpexceptions
 from paste.request import get_cookies
 from paste.response import HeaderDict
+from six.moves.http_cookies import SimpleCookie
 
 from galaxy.util import smart_str
 
@@ -113,7 +113,7 @@ class WebApplication( object ):
         requests
         """
         # Create/compile the regular expressions for route mapping
-        self.mapper.create_regs( self.controllers.keys() )
+        self.mapper.create_regs( list(self.controllers.keys()) )
         self.clientside_routes.create_regs()
 
     def trace( self, **fields ):
@@ -285,7 +285,7 @@ class LazyProperty( object ):
         if obj is None:
             return self
         value = self.func( obj )
-        setattr( obj, self.func.func_name, value )
+        setattr( obj, self.func.__name__, value )
         return value
 
 
@@ -414,14 +414,14 @@ class Response( object ):
         self.headers = HeaderDict( { "content-type": "text/html" } )
         self.cookies = SimpleCookie()
 
-    def set_content_type( self, type ):
+    def set_content_type( self, type_ ):
         """
         Sets the Content-Type header
         """
-        self.headers[ "content-type" ] = type
+        self.headers[ "content-type" ] = type_
 
     def get_content_type( self ):
-        return self.headers[ "content-type" ]
+        return self.headers.get("content-type", None)
 
     def send_redirect( self, url ):
         """
@@ -435,8 +435,7 @@ class Response( object ):
         """
         result = self.headers.headeritems()
         # Add cookie to header
-        for name in self.cookies.keys():
-            crumb = self.cookies[name]
+        for name, crumb in self.cookies.items():
             header, value = str( crumb ).split( ': ', 1 )
             result.append( ( header, value ) )
         return result
