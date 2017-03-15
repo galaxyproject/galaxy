@@ -7,8 +7,11 @@ icon: fa-list
 tooltip: Generate tool list
 
 function: >
-  alert('The tool file will be created and opened in a new window. Please ' +
-  'be patient, this might take a moment.');
+
+  setTimeout(function() {
+    alert('The tool file will be created and opened in a new window. Please ' +
+    'be patient, this might take a moment.');
+  }, 1);
 
   $.getJSON("/api/webhooks/tool_list/get_data", function(data) {
     var popup = window.open('tool_list.html');
