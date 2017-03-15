@@ -255,19 +255,26 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	
 	    var _parse = function( line, i ) {
 	        line = (line.split('\t').length > 1) ? line.split('\t') : line.split(' ');
-	        if( line.length && line.length > 1 ) {
-	            var source = _getNode(line[0]), intType = line[1], j, length;
-	            for (j = 2, length = line.length; j < length; j++) {
-		        var target = _getNode(line[j]),
-	                    relObj = {target: target.id,
-	                        source: source.id,
-	                        id: source.id + target.id,
-	                        relation: intType.replace(/[''""]+/g, '') };
-		        if(source < target) {
-		            links[source.id + target.id + intType] = relObj;
-		        } else {
-		            links[target.id + source.id + intType] = relObj;
-		        }
+	        if( line.length && line.length > 0 && line[0] !== "" ) {
+	            var source = _getNode( line[0] ), intType = ( line[1] ? line[1] : "" ), j, length;
+	            if( intType !== "" ) {
+	                for (j = 2, length = line.length; j < length; j++) {
+	                    if( line[j] !== "" ) {
+	                        var target = _getNode(line[j]),
+	                        relObj = {target: target.id,
+	                            source: source.id,
+	                            id: source.id + target.id,
+	                            relation: intType.replace(/[''""]+/g, '') };
+		                if(source < target) {
+		                    links[ source.id + target.id + intType ] = relObj;
+		                } else {
+		                    links[ target.id + source.id + intType ] = relObj;
+		                }
+	                    }	            
+	                }
+	            }
+	            else {
+	                links[ source.id ] = { target: "", source: source.id, id: source.id, relation: "" };
 	            }
 	        }      
 	    };
