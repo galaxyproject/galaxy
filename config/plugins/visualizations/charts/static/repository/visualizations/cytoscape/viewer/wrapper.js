@@ -42,7 +42,8 @@ define( [ 'utilities/utils', 'utilities/sifjson', 'plugins/cytoscape/cytoscape' 
 				    'haystack-radius': 0,
 				    'width': 5,
 				    'opacity': 0.5,
-				    'line-color': '#a8eae5'
+				    'line-color': '#a8eae5',
+                                    'target-arrow-shape': settings.get( 'directed' )
 			        }
 			    }],
                             elements: data_content

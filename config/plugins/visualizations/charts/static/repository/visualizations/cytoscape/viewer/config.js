@@ -32,6 +32,16 @@ define( [], function() {
                             { label : 'Preset', value : 'preset' },
                             { label : 'Random', value : 'random' } ]
             },
+            directed : {
+                label   : 'Directed/Undirected',
+                help    : 'Select a kind of edge.',
+                type    : 'select',
+                display : 'radio',
+                value   : '',
+                data    : [ { label : 'Directed', value : 'triangle' },
+                            { label : 'Undirected', value : '' } ]
+
+            },
             min_zoom : {
                 name  : 'min_zoom',
                 label : 'Minimum zoom',
