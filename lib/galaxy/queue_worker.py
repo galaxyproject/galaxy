@@ -51,8 +51,9 @@ def send_control_task(app, task, noop_self=False, kwargs={}):
     try:
         c = Connection(app.config.amqp_internal_connection)
         with producers[c].acquire(block=True) as producer:
+            control_queues = galaxy.queues.all_control_queues_for_declare(app.config, app.application_stack)
             producer.publish(payload, exchange=galaxy.queues.galaxy_exchange,
-                             declare=[galaxy.queues.galaxy_exchange] + galaxy.queues.all_control_queues_for_declare(app.config),
+                             declare=[galaxy.queues.galaxy_exchange] + control_queues,
                              routing_key='control')
     except Exception:
         # This is likely connection refused.
@@ -203,7 +204,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
             # Default to figuring out which control queue to use based on the app config.
             queue = galaxy.queues.control_queue_from_config(app.config)
         self.task_mapping = task_mapping
-        self.declare_queues = galaxy.queues.all_control_queues_for_declare(app.config)
+        self.declare_queues = galaxy.queues.all_control_queues_for_declare(app.config, app.application_stack)
         # TODO we may want to purge the queue at the start to avoid executing
         # stale 'reload_tool', etc messages.  This can happen if, say, a web
         # process goes down and messages get sent before it comes back up.
