@@ -9,7 +9,9 @@ History
 17.5.7.dev0
 ---------------------
 
-    
+* Updates to CWL library functionality for several months worth of CWL tool updates.
+* Allow finding tools by a URI-like strings (e.g. ``file://``, ``http://``, ``dockstore://``).
+* Bring in latest Galaxy updates.
 
 ---------------------
 17.5.6 (2017-03-01)
