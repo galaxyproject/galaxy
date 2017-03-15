@@ -74,7 +74,11 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 				    style: [{
 				        selector: 'node',
 				        style: {
-					    'background-color': '#18e018'
+					    'background-color': '#30c9bc',
+	                                    'height': 20,
+	                                    'width': 20,
+	                                    'opacity': 1,
+	                                    'content': 'data(id)'
 				        }
 				    },
 				    {
@@ -83,8 +87,8 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 					    'curve-style': settings.get( 'curve_style' ),
 					    'haystack-radius': 0,
 					    'width': 5,
-					    'opacity': 1,
-					    'line-color': '#ad1a66'
+					    'opacity': 0.5,
+					    'line-color': '#a8eae5'
 				        }
 				    }],
 	                            elements: data_content
