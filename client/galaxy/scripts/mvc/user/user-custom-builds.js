@@ -36,7 +36,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
             this.collection.each( function( model ) {
                 self.table.add( model.id );
                 self.table.add( model.get( 'name' ) );
-                self.table.add( model.get( 'count' ) );
+                self.table.add( model.get( 'count' ) !== undefined ? model.get( 'count' ) : '-' );
                 self.table.add( ( new Ui.ButtonIcon({
                     icon    : 'fa-trash-o',
                     cls     : 'ui-button-icon-plain',
@@ -111,8 +111,11 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                             if ( !data.id || !data.name ) {
                                 self.message.update({ message: 'All inputs are required.', status: 'danger' });
                             } else {
-                                self.collection.create( form.data.create(), {
+                                self.collection.create( data, {
                                     wait    : true,
+                                    success : function( response ) {
+                                        _.each( form.field_list, function( field ) { field.value( null ) } );
+                                    },
                                     error   : function( response, err ) {
                                         var message = err && err.responseJSON && err.responseJSON.err_msg;
                                         self.message.update({ message: message || 'Failed to create custom build.', status: 'danger' });
