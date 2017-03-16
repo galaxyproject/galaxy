@@ -567,10 +567,10 @@ def populate_api_routes( webapp, app ):
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'add_custom_builds',
-                           '/api/users/{id}/custom_builds',
+                           '/api/users/{id}/custom_builds/{key}',
                            controller='users',
                            action='add_custom_builds',
-                           conditions=dict( method=["POST"] ) )
+                           conditions=dict( method=["PUT"] ) )
 
     webapp.mapper.connect( 'delete_custom_builds',
                            '/api/users/{id}/custom_builds',

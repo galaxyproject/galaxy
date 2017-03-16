@@ -639,8 +639,8 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                         .order_by( model.HistoryDatasetAssociation.hid.desc() )
         return {
             'installed_builds'  : installed_builds,
-            'fasta_hdas'        : [ ( hda.name, hda.hid ) for hda in fasta_hdas ],
-            'len_hdas'          : [ ( hda.name, hda.hid ) for hda in len_hdas ],
+            'fasta_hdas'        : [ { 'label' : hda.name, 'value' : trans.security.encode_id( hda.hid ) } for hda in fasta_hdas ],
+            'len_hdas'          : [ { 'label' : hda.name, 'value' : trans.security.encode_id( hda.hid ) } for hda in len_hdas ],
         }
 
     @expose_api
@@ -675,29 +675,26 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         return dbkey_collection
 
     @expose_api
-    def add_custom_builds(self, trans, id, payload={}, **kwd):
+    def add_custom_builds(self, trans, id, key, payload={}, **kwd):
+        """ Add new custom build. """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
-
-        # Add new custom build.
-        name = kwds.get('name', '')
-        key = kwds.get('key', '')
-
-        # Look for build's chrom info in len_file and len_text.
-        len_file = kwds.get( 'len_file', None )
-        if getattr( len_file, "file", None ):  # Check if it's a FieldStorage object
-            len_text = len_file.file.read()
+        name = payload.get('name')
+        len_type = payload.get('len|type')
+        len_text = None
+        dataset_id = None
+        if len_type == 'file':
+            raise MessageException('Not implemented yet.')
+        elif len_type == 'fasta':
+            dataset_id = payload.get('len|value')
+        elif len_type == 'text':
+            len_text = payload.get('len|value')
         else:
-            len_text = kwds.get( 'len_text', None )
-
-        if not len_text:
-            # Using FASTA from history.
-            dataset_id = kwds.get('dataset_id', '')
-
+            raise MessageException('Please specify a valid data source type.')
         if not name or not key or not ( len_text or dataset_id ):
-            message = "You must specify values for all the fields."
+            raise MessageException('You must specify values for all the fields.')
         elif key in dbkeys:
-            message = "There is already a custom build with that key. Delete it first if you want to replace it."
+            raise MessageException('There is already a custom build with that key. Delete it first if you want to replace it.')
         else:
             # Have everything needed; create new build.
             build_dict = { "name": name }
@@ -713,14 +710,14 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     trans.app.object_store.create( new_len.dataset )
                 except ObjectInvalid:
                     raise Exception( 'Unable to create output dataset: object store is full' )
-
                 trans.sa_session.flush()
                 counter = 0
                 f = open(new_len.file_name, "w")
                 # LEN files have format:
                 #   <chrom_name><tab><chrom_length>
                 for line in len_text.split("\n"):
-                    lst = line.strip().rsplit(None, 1)  # Splits at the last whitespace in the line
+                    # Splits at the last whitespace in the line
+                    lst = line.strip().rsplit(None, 1)
                     if not lst or len(lst) < 2:
                         lines_skipped += 1
                         continue
@@ -730,33 +727,27 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     except ValueError:
                         lines_skipped += 1
                         continue
-
                     if chrom != escape(chrom):
                         message = 'Invalid chromosome(s) with HTML detected and skipped'
                         lines_skipped += 1
                         continue
-
                     counter += 1
                     f.write("%s\t%s\n" % (chrom, length))
                 f.close()
-
                 build_dict.update( { "len": new_len.id, "count": counter } )
             else:
                 dataset_id = trans.security.decode_id( dataset_id )
                 build_dict[ "fasta" ] = dataset_id
             dbkeys[key] = build_dict
-        # Save builds.
-        # TODO: use database table to save builds.
-        user.preferences['dbkeys'] = dumps(dbkeys)
+        user.preferences['dbkeys'] = json.dumps(dbkeys)
         trans.sa_session.flush()
         return {}
 
     @expose_api
-    def delete_custom_builds(self, trans, id, payload={}, **kwd):
-        """ Delete custom builds. """
+    def delete_custom_builds(self, trans, id, key, payload={}, **kwd):
+        """ Delete a custom build. """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
-        key = kwds.get('key')
         if key and key in dbkeys:
             del dbkeys[key]
             user.preferences['dbkeys'] = json.dumps(dbkeys)

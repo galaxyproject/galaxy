@@ -14,11 +14,11 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
             this.table.addHeader( 'Number of chroms/contigs' );
             this.table.addHeader( '' );
             this.table.appendHeader();
-            this.setElement( $( '<div/>' ).append( this.message.$el.addClass( 'ui-margin-bottom' ) )
-                                          .append( $( '<h4/>' ).text( 'Current Custom Builds' ) )
+            this.setElement( $( '<div/>' ).append( $( '<h4/>' ).text( 'Current Custom Builds' ) )
                                           .append( this.table.$el )
                                           .append( $( '<h4/>' ).text( 'Add a Custom Build' ).addClass( 'ui-margin-top' ) )
-                                          .append( this.$form = $( '<div/>' ).addClass( 'ui-margin-bottom' ) ) );
+                                          .append( this.message.$el )
+                                          .append( this.$form = $( '<div/>' ).addClass( 'ui-margin-top' ) ) );
             this.listenTo( this.collection, 'add remove reset', function() { self._renderTable() } );
             this.listenTo( this.model, 'change', function() { self._renderForm() } );
             this.collection.fetch();
@@ -48,10 +48,11 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
         },
 
         _renderForm: function() {
+            var self = this;
             var form = new Form({
                 inputs  : [{
                     type    : 'text',
-                    name    : 'id',
+                    name    : 'name',
                     label   : 'Name',
                     help    : 'Specify a build name e.g. Hamster.'
                 },{
@@ -60,28 +61,43 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                     label   : 'Key',
                     help    : 'Specify a build key e.g. hamster_v1.'
                 },{
-                    name        : 'definition',
+                    name        : 'len',
                     type        : 'conditional',
                     test_param  : {
                         name    : 'type',
                         label   : 'Definition',
                         help    : 'Provide the data source.',
                         type    : 'select',
-                        value   : 'len',
+                        value   : 'file',
                         data    : [ { value : 'fasta',  label : 'FASTA' },
-                                    { value : 'len',    label : 'Len File' },
-                                    { value : 'entry',  label : 'Len Entry' } ]
+                                    { value : 'file',   label : 'Len File' },
+                                    { value : 'text',   label : 'Len Entry' } ]
                     },
-                    cases       : [ { value   : 'fasta' },
-                                    { value   : 'len' },
-                                    { value   : 'entry',
-                                      inputs  : [ {
-                                         type   : 'text',
-                                         area   : true,
-                                         name   : 'value',
-                                         label  : 'Edit/Paste'
-                                      } ]
-                                    } ]
+                    cases       : [ {
+                        value   : 'fasta',
+                        inputs  : [ {
+                            type   : 'select',
+                            name   : 'value',
+                            label  : 'FASTA-file',
+                            data   : this.model.get( 'fasta_hdas' )
+                        } ]
+                    },{
+                        value   : 'file',
+                        inputs  : [ {
+                            type   : 'select',
+                            name   : 'value',
+                            label  : 'Len-file',
+                            data   : this.model.get( 'len_hdas' )
+                        } ]
+                    },{
+                        value   : 'text',
+                        inputs  : [ {
+                            type   : 'text',
+                            area   : true,
+                            name   : 'value',
+                            label  : 'Edit/Paste'
+                        } ]
+                    } ]
                 }],
                 buttons : {
                     save    : new Ui.Button({
@@ -91,7 +107,18 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                         cls      : 'ui-button btn btn-primary',
                         floating : 'clear',
                         onclick  : function() {
-                            alert( 'new' );
+                            var data = form.data.create();
+                            if ( !data.id ) {
+                                self.message.update({ message: 'All inputs are required.', status: 'danger' });
+                            } else {
+                                self.collection.create( form.data.create(), {
+                                    wait    : true,
+                                    error   : function( response, err ) {
+                                        var message = err && err.responseJSON && err.responseJSON.err_msg;
+                                        self.message.update({ message: message || 'Failed to create custom build.', status: 'danger' });
+                                    }
+                                });
+                            }
                         }
                     })
                 }
