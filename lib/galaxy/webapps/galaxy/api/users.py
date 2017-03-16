@@ -675,7 +675,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         for key, attributes in dbkeys.items():
             attributes['id'] = key;
             dbkey_collection.append(attributes)
-        return dbkey_collection
+        return sorted(dbkey_collection, key=lambda k: k['id'])
 
     @expose_api
     def add_custom_builds(self, trans, id, key, payload={}, **kwd):

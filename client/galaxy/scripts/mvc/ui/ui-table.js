@@ -8,6 +8,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                 ondblclick  : null,
                 onconfirm   : null,
                 cls         : 'ui-table',
+                selectable  : true,
                 cls_tr      : ''
             });
             this.setElement( this._template() );
@@ -80,21 +81,23 @@ define( [ 'utils/utils' ], function( Utils ) {
 
         /** Set a value i.e. selects/highlights a particular row by id */
         value: function( new_value ) {
-            this.before = this.$tbody.find( '.current' ).attr( 'id' );
-            if ( new_value !== undefined ) {
-                this.$tbody.find( 'tr' ).removeClass( 'current' );
-                if ( new_value ) {
-                    this.$tbody.find( '#' + new_value ).addClass( 'current' );
+            if ( this.options.selectable ) {
+                this.before = this.$tbody.find( '.current' ).attr( 'id' );
+                if ( new_value !== undefined ) {
+                    this.$tbody.find( 'tr' ).removeClass( 'current' );
+                    if ( new_value ) {
+                        this.$tbody.find( '#' + new_value ).addClass( 'current' );
+                    }
                 }
-            }
-            var after = this.$tbody.find( '.current' ).attr( 'id' );
-            if ( after === undefined ) {
-                return null;
-            } else {
-                if ( after != this.before && this.options.onchange ) {
-                    this.options.onchange( new_value );
+                var after = this.$tbody.find( '.current' ).attr( 'id' );
+                if ( after === undefined ) {
+                    return null;
+                } else {
+                    if ( after != this.before && this.options.onchange ) {
+                        this.options.onchange( new_value );
+                    }
+                    return after;
                 }
-                return after;
             }
         },
 

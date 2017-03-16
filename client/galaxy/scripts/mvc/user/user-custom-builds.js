@@ -8,7 +8,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
             this.collection = new Backbone.Collection();
             this.collection.url = Galaxy.root + 'api/users/' + Galaxy.user.id + '/custom_builds';
             this.message = new Ui.Message({});
-            this.table = new Table.View( { cls: 'grid' } );
+            this.table = new Table.View( { cls: 'grid', selectable: false } );
             this.table.addHeader( 'Name' );
             this.table.addHeader( 'Key' );
             this.table.addHeader( 'Number of chroms/contigs' );
