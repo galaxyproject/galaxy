@@ -4,28 +4,28 @@ define({
 // ---- history-model
 // ---- history-view
 "This history is empty" :
-false,
+"Cette histoire est vide",
 "No matching datasets found" :
-false,
+"Aucun ensemble de données correspondant trouvé",
 "An error occurred while getting updates from the server" :
-false,
+"Une erreur s'est produite lors de l'envoi des mises à jour depuis le serveur",
 "Please contact a Galaxy administrator if the problem persists" :
-false,
+"Veuillez contacter un administrateur Galaxy si le problème persiste.",
 //TODO:
 //"An error was encountered while <% where %>" :
 //false,
 "Search datasets" :
-false,
+"Rechercher des ensembles de données",
 "You are currently viewing a deleted history!" :
-false,
+"Vous consultez actuellement un historique supprimé!",
 "You are over your disk quota" :
-false,
+"Vous avez dépassé votre quota de disque",
 "Tool execution is on hold until your disk usage drops below your allocated quota" :
 false,
 "All" :
 false,
 "None" :
-false,
+"Aucun",
 "For all selected" :
 false,
 
@@ -95,14 +95,14 @@ false,
 false,
 // download button
 "Download" :
-false,
+"Télécharger",
 "Download dataset" :
-false,
+"Téléchargez le jeu de données",
 "Additional files" :
 false,
 // info/show_params
 "View details" :
-false,
+"Voir les détails",
 
 // dataset states
 // state: new
