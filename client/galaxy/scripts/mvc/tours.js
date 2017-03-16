@@ -44,6 +44,9 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 // upload input box
                 step.onShown= function(){
                     $(step.element).val(step.textinsert).trigger("change");
+                    if (step.element === '#tool-search-query'){
+                        $(step.element).trigger("keyup");
+                    }
                 };
             }
         });
