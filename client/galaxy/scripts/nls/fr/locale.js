@@ -2,11 +2,11 @@
 define({
 // ----------------------------------------------------------------------------- masthead
 "Analyze Data":
-    "Analyser les données",
+    "Analyse de données",
 "Workflow":
-    "Flux de travail",
+    "Workflow",
 "Shared Data":
-    "Données partagées",
+    "Partage de données",
 "Data Libraries":
     false,
 "Histories":
@@ -18,7 +18,7 @@ define({
 "Pages":
     false,
 "Visualization":
-    "Visualisation",
+    "Représentation des données",
 "New Track Browser":
     false,
 "Saved Visualizations":
@@ -28,7 +28,7 @@ define({
 "Admin":
     false,
 "Help":
-    "Aidez-moi",
+    "Aide",
 "Support":
     false,
 "Search":
@@ -65,24 +65,24 @@ define({
 // ---- history-model
 // ---- history-view
 "This history is empty" :
-    "Cette histoire est vide",
+    "Cet historique est vide",
 "No matching datasets found" :
-    "Aucun ensemble de données correspondant trouvé",
+    "Aucunes données correspondantes trouvées",
 "An error occurred while getting updates from the server" :
     "Une erreur s'est produite lors de l'envoi des mises à jour depuis le serveur",
 "Please contact a Galaxy administrator if the problem persists" :
-    "Veuillez contacter un administrateur Galaxy si le problème persiste.",
+    "Veuillez contacter un administrateur Galaxy si ce problème persiste.",
 //TODO:
 //"An error was encountered while <% where %>" :
 //false,
 "Search datasets" :
-    "Rechercher des ensembles de données",
+    "Recherche dans l'ensemble des données",
 "You are currently viewing a deleted history!" :
     "Vous consultez actuellement un historique supprimé!",
 "You are over your disk quota" :
-    "Vous avez dépassé votre quota de disque",
+    "Vous avez dépassé votre quota disque",
 "Tool execution is on hold until your disk usage drops below your allocated quota" :
-    "L'exécution de l'outil est en attente jusqu'à ce que votre consommation de disque tombe en dessous de votre quota attribué",
+    "L'exécution de l'outil est en attente tant que votre utilisation d'espace disque n'est pas inférieur à votre quota attribué",
 "All" :
     "Tout",
 "None" :
@@ -158,7 +158,7 @@ define({
 "Download" :
     "Télécharger",
 "Download dataset" :
-    "Téléchargez le jeu de données",
+    "Télécharger le jeu de données",
 // "Additional files" :
 // false,
 // info/show_params
