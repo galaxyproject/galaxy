@@ -652,19 +652,22 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         for key, attributes in dbkeys.items():
             if 'count' not in attributes:
                 fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( attributes[ 'fasta' ] )
-                len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
-                # HACK: need to request dataset again b/c get_converted_dataset()
-                # doesn't return dataset (as it probably should).
-                len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
-                if len_dataset.state != trans.app.model.Job.states.ERROR:
-                    chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
-                    if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
-                        try:
-                            chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
-                            attributes[ 'count' ] = chrom_count
-                            updated = True
-                        except Exception as e:
-                            raise MessageException('Failed to open chrom count dataset: %s.' % e)
+                try:
+                    len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
+                    # HACK: need to request dataset again b/c get_converted_dataset()
+                    # doesn't return dataset (as it probably should).
+                    len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
+                    if len_dataset.state != trans.app.model.Job.states.ERROR:
+                        chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
+                        if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
+                            try:
+                                chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                                attributes[ 'count' ] = chrom_count
+                                updated = True
+                            except Exception as e:
+                                pass
+                except Exception as e:
+                    pass
         if updated:
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()

@@ -41,7 +41,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                     icon    : 'fa-trash-o',
                     cls     : 'ui-button-icon-plain',
                     tooltip : 'Delete custom build.',
-                    onclick : function() { alert( model.id ); }
+                    onclick : function() { model.destroy() }
                 } ) ).$el );
                 self.table.append( model.id );
             });
