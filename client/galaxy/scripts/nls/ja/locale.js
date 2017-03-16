@@ -62,8 +62,6 @@ define({
 // ---- history-view-edit-current
 "This history is empty. Click 'Get Data' on the left tool menu to start" :
 "ヒストリーは空です。解析をはじめるには、左パネルの 'データ取得' をクリック",
-"No matching datasets found" :
-"一致するデータセットが見つかりませんでした",
 "You must be logged in to create histories" :
 "ヒストリーを作成するためにはログインする必要があります",
 //TODO:

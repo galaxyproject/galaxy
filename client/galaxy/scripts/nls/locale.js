@@ -63,8 +63,6 @@ false,
 // ---- history-view-edit-current
 "This history is empty. Click 'Get Data' on the left tool menu to start" :
 false,
-"No matching datasets found" :
-false,
 "You must be logged in to create histories" :
 false,
 //TODO:
@@ -209,14 +207,12 @@ false,
 // ---------------------------------------------------------------------------- misc. MVC
 "Tags" :
 false,
-"Annotation" :
-false,
 "Edit annotation" :
 false,
 
 
 // ----------------------------------------------------------------------------
 },
-    'ja'  : true,
-    'zh'  : true
+    'ja' : true,
+    'zh' : true
 });
