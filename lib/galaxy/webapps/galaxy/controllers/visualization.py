@@ -65,7 +65,7 @@ class HistorySelectionGrid( grids.Grid ):
     datasets_action = 'list_history_datasets'
     datasets_param = "f-history"
     columns = [
-        NameColumn( "History Name", key="name", filterable="standard", inbound=True ),
+        NameColumn( "History Name", key="name", filterable="standard", target="inbound" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago, visible=False ),
         DbKeyPlaceholderColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
@@ -88,7 +88,7 @@ class LibrarySelectionGrid( LibraryListGrid ):
     datasets_action = 'list_library_datasets'
     datasets_param = "f-library"
     columns = [
-        NameColumn( "Library Name", key="name", filterable="standard", inbound=True  )
+        NameColumn( "Library Name", key="name", filterable="standard", target="inbound"  )
     ]
     num_rows_per_page = 10
     use_async = True
@@ -224,12 +224,12 @@ class VisualizationListGrid( grids.Grid ):
             key="free-text-search", visible=False, filterable="standard" )
     )
     global_actions = [
-        grids.GridAction( "Create new visualization", dict( action='create' ), inbound=True )
+        grids.GridAction( "Create new visualization", dict( action='create' ), target="inbound" )
     ]
     operations = [
         grids.GridOperation( "Open", allow_multiple=False, url_args=get_url_args ),
         grids.GridOperation( "Open in Circster", allow_multiple=False, condition=( lambda item: item.type == 'trackster' ), url_args=dict( action='circster' ) ),
-        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit'), inbound=True),
+        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit'), target="inbound" ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted )),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), confirm="Are you sure you want to delete this visualization?" ),
