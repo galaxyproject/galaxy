@@ -51,7 +51,8 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                dataset  = options.dataset,
 	                settings = options.chart.settings,
 	                data_content = null,
-	                cytoscape = null;
+	                cytoscape = null,
+	                self = this;
 	            Utils.get( {
 	                url     : dataset.download_url,
 	                success : function( content ) {
@@ -87,12 +88,29 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 					    'curve-style': settings.get( 'curve_style' ),
 					    'haystack-radius': 0,
 					    'width': 5,
-					    'opacity': 0.5,
-					    'line-color': '#a8eae5',
+					    'opacity': 1,
+					    'line-color': '#ddd',
 	                                    'target-arrow-shape': settings.get( 'directed' )
+				        }
+				    },
+	                            {
+	                                selector: '.bfspath',
+				        style: {
+					    'background-color': '#336699', // #61bffc
+	                                    'line-color': '#336699',
+	                                    'target-arrow-color': '#336699',
+	                                    'transition-property': 'background-color, line-color, target-arrow-color',
+	                                    'transition-duration': '0.75s'
 				        }
 				    }],
 	                            elements: data_content
+	                        });
+	                        
+	                        // Register tap event on graph nodes
+	                        // Right now on tapping on any node, BFS starts from that node
+	                        cytoscape.$('node').on('tap', function( e ) {
+	                            var ele = e.cyTarget;
+	                            self.run_bfs(cytoscape, ele.id());
 	                        });
 	                        
 	                        chart.state( 'ok', 'Chart drawn.' );
@@ -108,6 +126,19 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                    options.process.resolve();
 	                }
 	            });
+	        },
+	        run_bfs: function( cytoscape, root_id ) {
+	            var bfs = cytoscape.elements().bfs('#' + root_id, function(){}, true);
+	            var i = 0, timeOut = 1500;
+	            var selectNextElement = function() {
+	                if( i < bfs.path.length ) {
+	                    // Add css class for the selected edge
+	                    bfs.path[i].addClass('bfspath');
+	                    i++;
+	                    setTimeout(selectNextElement, timeOut);
+	                }
+	            };
+	            selectNextElement();
 	        }
 	    });
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
