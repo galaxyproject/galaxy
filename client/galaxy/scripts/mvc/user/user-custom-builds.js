@@ -108,7 +108,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                         floating : 'clear',
                         onclick  : function() {
                             var data = form.data.create();
-                            if ( !data.id ) {
+                            if ( !data.id || !data.name ) {
                                 self.message.update({ message: 'All inputs are required.', status: 'danger' });
                             } else {
                                 self.collection.create( form.data.create(), {
