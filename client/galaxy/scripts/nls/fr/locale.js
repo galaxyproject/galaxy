@@ -1,5 +1,66 @@
 /** fr localization */
 define({
+// ----------------------------------------------------------------------------- masthead
+"Analyze Data":
+    "Analyser les données",
+"Workflow":
+    "Flux de travail",
+"Shared Data":
+    "Données partagées",
+"Data Libraries":
+    false,
+"Histories":
+    false,
+"Workflows":
+    false,
+"Visualizations":
+    false,
+"Pages":
+    false,
+"Visualization":
+    "Visualisation",
+"New Track Browser":
+    false,
+"Saved Visualizations":
+    false,
+"Interactive Environments":
+    false,
+"Admin":
+    false,
+"Help":
+    "Aidez-moi",
+"Support":
+    false,
+"Search":
+    false,
+"Mailing Lists":
+    false,
+"Videos":
+    false,
+"Wiki":
+    false,
+"How to Cite Galaxy":
+    false,
+"Interactive Tours":
+    false,
+"User":
+    "Utilisateur",
+"Login":
+    false,
+"Register":
+    false,
+"Logged in as":
+    false,
+"Custom Builds":
+    false,
+"Logout":
+    false,
+"Saved Histories":
+    false,
+"Saved Datasets":
+    false,
+"Saved Pages":
+    false,
 // ---------------------------------------------------------------------------- histories
 // ---- history-model
 // ---- history-view

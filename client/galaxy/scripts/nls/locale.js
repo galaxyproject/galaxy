@@ -1,7 +1,67 @@
 /** en/main localization hash - for use with requirejs' i18n plugin */
 define({
     root : {
-
+// ----------------------------------------------------------------------------- masthead
+"Analyze Data":
+    false,
+"Workflow":
+    false,
+"Shared Data":
+    false,
+"Data Libraries":
+    false,
+"Histories":
+    false,
+"Workflows":
+    false,
+"Visualizations":
+    false,
+"Pages":
+    false,
+"Visualization":
+    false,
+"New Track Browser":
+    false,
+"Saved Visualizations":
+    false,
+"Interactive Environments":
+    false,
+"Admin":
+    false,
+"Help":
+    false,
+"Support":
+    false,
+"Search":
+    false,
+"Mailing Lists":
+    false,
+"Videos":
+    false,
+"Wiki":
+    false,
+"How to Cite Galaxy":
+    false,
+"Interactive Tours":
+    false,
+"User":
+    false,
+"Login":
+    false,
+"Register":
+    false,
+"Logged in as":
+    false,
+"Custom Builds":
+    false,
+"Logout":
+    false,
+"Saved Histories":
+    false,
+"Saved Datasets":
+    false,
+"Saved Pages":
+    false,
 // ---------------------------------------------------------------------------- histories
 // ---- history-model
 // ---- history-view
