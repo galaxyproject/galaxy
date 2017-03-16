@@ -58,10 +58,10 @@ Indices and tables
 Building this Documentation
 ===========================
 
-If you have your own copy of the Galaxy source code, you can also generate your own version of this documentation:
+If you have your own copy of the Galaxy source code, you can also generate your own version of this documentation. Run the following command from the Galaxy's root:
 
 ::
 
-    $ make -C doc/ html
+    $ make docs
 
-The generated documentation will be in ``doc/build/html/`` and can be viewed with a web browser.  Note that you will need to install Sphinx and a fair number of module dependencies before this will produce output.
+The generated documentation will be in ``doc/build/html/`` and can be viewed with a web browser. Note that you will need to install Sphinx and a other module dependencies which are listed in the Makefile in the Galaxy root folder.
