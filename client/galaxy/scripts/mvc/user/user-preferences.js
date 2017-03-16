@@ -207,14 +207,11 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 type        : 'PUT',
                 contentType : 'application/json'
             }).done( function( response ) {
-                var updated_values = false;
                 form.data.matchModel( response, function ( input, input_id ) {
                     form.field_list[ input_id ].value( input.value );
-                    updated_values = true;
                 });
                 form.message.update( { message: response.message, status: 'success' } );
             }).fail( function( response ) {
-                window.console.log( response );
                 form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
             });
         }
