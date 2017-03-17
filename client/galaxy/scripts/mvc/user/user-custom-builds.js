@@ -77,7 +77,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                         label   : 'Definition',
                         help    : 'Provide the data source.',
                         type    : 'select',
-                        value   : 'file',
+                        value   : 'fasta',
                         data    : [ { value : 'fasta',  label : 'FASTA-file from history' },
                                     { value : 'file',   label : 'Len-file from disk' },
                                     { value : 'text',   label : 'Len-file by copy/paste' } ]
