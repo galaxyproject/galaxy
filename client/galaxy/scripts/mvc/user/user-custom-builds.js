@@ -93,7 +93,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                     },{
                         value   : 'file',
                         inputs  : [ {
-                            type   : 'select',
+                            type   : 'upload',
                             name   : 'value',
                             label  : 'Len-file',
                             data   : this.model.get( 'len_hdas' )
