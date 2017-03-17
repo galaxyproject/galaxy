@@ -235,9 +235,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     # TODO: move to more basal, common resource than this
     def anon_user_api_value( self, trans ):
-        """
-        Returns data for an anonymous user, truncated to only usage and quota_percent
-        """
+        """Return data for an anonymous user, truncated to only usage and quota_percent"""
         usage = trans.app.quota_agent.get_usage( trans )
         percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
         return {'total_disk_usage': int( usage ),
@@ -246,9 +244,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     @expose_api
     def get_information(self, trans, id, **kwd):
-        '''
-        Returns user details such as public username, type, addresses, etc.
-        '''
+        """Return user details such as username, email, addresses etc."""
         user = self._get_user(trans, id)
         email = user.email
         username = user.username
@@ -319,32 +315,37 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     @expose_api
     def set_information(self, trans, id, payload={}, **kwd):
-        '''
-        Save a user's email address, public username, type, addresses etc.
-        '''
+        """Save a user's email, username, addresses etc."""
         user = self._get_user(trans, id)
         email = payload.get('email')
         username = payload.get('username')
-        verification_needed = False
         if email or username:
             message = self._validate_email_publicname(email, username) or validate_email(trans, email, user)
             if not message and username:
                 message = validate_publicname(trans, username, user)
             if message:
                 raise MessageException(message)
-            # Update user email and user's private role name which must match
             if user.email != email:
-                verification_needed = True
+                # Update user email and user's private role name which must match
                 private_role = trans.app.security_agent.get_private_user_role(user)
                 private_role.name = email
                 private_role.description = 'Private role for ' + email
                 user.email = email
+                trans.sa_session.add(user)
+                trans.sa_session.add(private_role)
+                trans.sa_session.flush()
                 if trans.app.config.user_activation_on:
                     # Deactivate the user if email was changed and activation is on.
                     user.active = False
-                trans.sa_session.add(private_role)
-            # Update public name
+                    if self.send_verification_email(trans, user.email, user.username):
+                        message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
+                    else:
+                        message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                        if trans.app.config.error_email_to is not None:
+                            message += ' Contact: %s' % trans.app.config.error_email_to
+                        raise MessageException(message)
             if user.username != username:
+                # Update public name
                 user.username = username
         # Update user custom form
         user_info_form_id = payload.get('info|form_id')
@@ -390,14 +391,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             trans.sa_session.add(user_address)
         trans.sa_session.add(user)
         trans.sa_session.flush()
-        if trans.app.config.user_activation_on and verification_needed:
-            if self.send_verification_email(trans, user.email, user.username):
-                message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
-            else:
-                message = 'Unable to send activation email, please contact your local Galaxy administrator.'
-                if trans.app.config.error_email_to is not None:
-                    message += ' Contact: %s' % trans.app.config.error_email_to
-                raise MessageException(message)
         trans.log_event('User information added')
         return {'message': 'User information has been saved.'}
 
