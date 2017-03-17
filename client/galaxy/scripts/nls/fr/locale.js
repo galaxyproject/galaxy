@@ -71,18 +71,18 @@ define({
 "No matching datasets found" :
     "Aucunes données correspondantes n'a été trouvées",
 "An error occurred while getting updates from the server" :
-    "Une erreur s'est produite lors de l'envoi des mises à jour depuis le serveur",
+    "Une erreur s'est produite lors de la réception des données depuis le serveur",
 "Please contact a Galaxy administrator if the problem persists" :
     "Veuillez contacter un administrateur de l'instance Galaxy si ce problème persiste",
 //TODO:
 //"An error was encountered while <% where %>" :
 //false,
 "search datasets" :
-    "recherche dans l'ensemble des données",
+    "Rechercher des données",
 "You are currently viewing a deleted history!" :
     "Vous consultez actuellement un historique supprimé!",
 "You are over your disk quota" :
-    "Vous avez dépassé votre quota disque",
+    "Vous avez dépassé votre quota d'espace disque",
 "Tool execution is on hold until your disk usage drops below your allocated quota" :
     "L'exécution de l'outil est en attente tant que votre utilisation d'espace disque dépasse le quota attribué",
 "All" :
