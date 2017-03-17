@@ -9,6 +9,7 @@ import json
 import re
 import os
 
+from markupsafe import escape
 from sqlalchemy import false, true, and_, or_
 
 from galaxy import exceptions, model, util, web
@@ -675,7 +676,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         for key, attributes in dbkeys.items():
             attributes['id'] = key;
             dbkey_collection.append(attributes)
-        return sorted(dbkey_collection, key=lambda k: k['id'])
+        return dbkey_collection
 
     @expose_api
     def add_custom_builds(self, trans, id, key, payload={}, **kwd):
@@ -687,7 +688,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         len_text = None
         dataset_id = None
         if len_type == 'file':
-            raise MessageException('Not implemented yet.')
+            dataset_id = payload.get('len|value')
         elif len_type == 'fasta':
             dataset_id = payload.get('len|value')
         elif len_type == 'text':
@@ -742,9 +743,9 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 dataset_id = trans.security.decode_id( dataset_id )
                 build_dict[ "fasta" ] = dataset_id
             dbkeys[key] = build_dict
-        user.preferences['dbkeys'] = json.dumps(dbkeys)
-        trans.sa_session.flush()
-        return {}
+            user.preferences['dbkeys'] = json.dumps(dbkeys)
+            trans.sa_session.flush()
+            return build_dict
 
     @expose_api
     def delete_custom_builds(self, trans, id, key, payload={}, **kwd):
@@ -755,7 +756,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             del dbkeys[key]
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
-            return { message: 'Deleted %s.' % key }
+            return { 'message': 'Deleted %s.' % key }
         else:
             raise MessageException('Could not find and delete build (%s).' % key)
 

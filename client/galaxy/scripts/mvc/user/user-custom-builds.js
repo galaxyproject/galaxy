@@ -1,11 +1,19 @@
 /** This class renders the chart configuration form. */
 define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-table' ], function( Utils, Ui, Form, Table ) {
+    var Collection = Backbone.Collection.extend({
+        comparator: function( a, b ) {
+            a = a.get( 'name' );
+            b = b.get( 'name' );
+            return a > b ?  1 : a < b ? -1 : 0;
+        }
+    });
+
     var View = Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
             this.model = new Backbone.Model();
             this.model.url = Galaxy.root + 'api/users/' + Galaxy.user.id + '/custom_builds_metadata';
-            this.collection = new Backbone.Collection();
+            this.collection = new Collection();
             this.collection.url = Galaxy.root + 'api/users/' + Galaxy.user.id + '/custom_builds';
             this.message = new Ui.Message({});
             this.table = new Table.View( { cls: 'grid', selectable: false } );
@@ -33,6 +41,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
         _renderTable: function() {
             var self = this;
             this.table.delAll();
+            this.collection.sort();
             this.collection.each( function( model ) {
                 self.table.add( model.id );
                 self.table.add( model.get( 'name' ) );
@@ -69,9 +78,9 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                         help    : 'Provide the data source.',
                         type    : 'select',
                         value   : 'file',
-                        data    : [ { value : 'fasta',  label : 'FASTA' },
-                                    { value : 'file',   label : 'Len File' },
-                                    { value : 'text',   label : 'Len Entry' } ]
+                        data    : [ { value : 'fasta',  label : 'FASTA-file from History' },
+                                    { value : 'file',   label : 'Len-file from History' },
+                                    { value : 'text',   label : 'Len-file by copy/paste' } ]
                     },
                     cases       : [ {
                         value   : 'fasta',
