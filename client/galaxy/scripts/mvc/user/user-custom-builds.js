@@ -78,8 +78,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                         help    : 'Provide the data source.',
                         type    : 'select',
                         value   : 'file',
-                        data    : [ { value : 'fasta',  label : 'FASTA-file from History' },
-                                    { value : 'file',   label : 'Len-file from History' },
+                        data    : [ { value : 'fasta',  label : 'FASTA-file from history' },
+                                    { value : 'file',   label : 'Len-file from history' },
                                     { value : 'text',   label : 'Len-file by copy/paste' } ]
                     },
                     cases       : [ {
@@ -118,16 +118,21 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                         onclick  : function() {
                             var data = form.data.create();
                             if ( !data.id || !data.name ) {
-                                self.message.update({ message: 'All inputs are required.', status: 'danger' });
+                                self.message.update( { message: 'All inputs are required.', status: 'danger' } );
                             } else {
                                 self.collection.create( data, {
                                     wait    : true,
                                     success : function( response ) {
+                                        if ( response.get( 'message' ) ) {
+                                            self.message.update( { message: response.get( 'message' ), status: 'warning' } );
+                                        } else {
+                                            self.message.update( { message: 'Successfully added custom build.', status: 'success' } );
+                                        }
                                         _.each( form.field_list, function( field ) { field.value( null ) } );
                                     },
                                     error   : function( response, err ) {
                                         var message = err && err.responseJSON && err.responseJSON.err_msg;
-                                        self.message.update({ message: message || 'Failed to create custom build.', status: 'danger' });
+                                        self.message.update( { message: message || 'Failed to create custom build.', status: 'danger' } );
                                     }
                                 });
                             }

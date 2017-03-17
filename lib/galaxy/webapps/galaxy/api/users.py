@@ -732,7 +732,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                         lines_skipped += 1
                         continue
                     if chrom != escape(chrom):
-                        message = 'Invalid chromosome(s) with HTML detected and skipped'
+                        build_dict[ 'message' ] = 'Invalid chromosome(s) with HTML detected and skipped'
                         lines_skipped += 1
                         continue
                     counter += 1
