@@ -16,6 +16,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
             this.collection = new Collection();
             this.collection.url = Galaxy.root + 'api/users/' + Galaxy.user.id + '/custom_builds';
             this.message = new Ui.Message({});
+            this.installed_builds = new Ui.Select.View({
+                optional    : true,
+                onchange    : function() { self.installed_builds.value( null ) },
+                empty_text  : 'List of available builds:',
+                error_text  : 'No system installed builds available.'
+            });
             this.table = new Table.View( { cls: 'grid', selectable: false } );
             this.table.addHeader( 'Name' );
             this.table.addHeader( 'Key' );
@@ -24,6 +30,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
             this.table.appendHeader();
             this.setElement( $( '<div/>' ).append( $( '<h4/>' ).text( 'Current Custom Builds' ) )
                                           .append( this.table.$el )
+                                          .append( $( '<h4/>' ).text( 'System Installed Builds' ).addClass( 'ui-margin-top' ) )
+                                          .append( this.installed_builds.$el )
                                           .append( $( '<h4/>' ).text( 'Add a Custom Build' ).addClass( 'ui-margin-top' ) )
                                           .append( this.message.$el )
                                           .append( this.$form = $( '<div/>' ).addClass( 'ui-margin-top' ) ) );
@@ -140,6 +148,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                 }
             });
             this.$form.empty().append( form.$el );
+            this.installed_builds.update( this.model.get( 'installed_builds' ) );
         }
     });
 

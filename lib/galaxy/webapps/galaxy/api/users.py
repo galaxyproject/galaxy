@@ -639,7 +639,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                         .filter_by( history=trans.history, extension="len", deleted=False ) \
                         .order_by( model.HistoryDatasetAssociation.hid.desc() )
         return {
-            'installed_builds'  : installed_builds,
+            'installed_builds'  : [ { 'label' : ins, 'value' : ins } for ins in installed_builds ],
             'fasta_hdas'        : [ { 'label' : hda.name, 'value' : trans.security.encode_id( hda.hid ) } for hda in fasta_hdas ],
             'len_hdas'          : [ { 'label' : hda.name, 'value' : trans.security.encode_id( hda.hid ) } for hda in len_hdas ],
         }
