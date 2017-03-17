@@ -635,13 +635,9 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                         .filter_by( history=trans.history, extension="fasta", deleted=False ) \
                         .order_by( model.HistoryDatasetAssociation.hid.desc() )
-        len_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-                        .filter_by( history=trans.history, extension="len", deleted=False ) \
-                        .order_by( model.HistoryDatasetAssociation.hid.desc() )
         return {
             'installed_builds'  : [ { 'label' : ins, 'value' : ins } for ins in installed_builds ],
             'fasta_hdas'        : [ { 'label' : hda.name, 'value' : trans.security.encode_id( hda.hid ) } for hda in fasta_hdas ],
-            'len_hdas'          : [ { 'label' : hda.name, 'value' : trans.security.encode_id( hda.hid ) } for hda in len_hdas ],
         }
 
     @expose_api
