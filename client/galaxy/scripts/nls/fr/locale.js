@@ -51,6 +51,8 @@ define({
     "Enregistrement",
 "Logged in as":
     "Authentifié en tant que",
+"Preferences":
+    "Préférences",
 "Custom Builds":
     "Mes génomes Builds de référence",
 "Logout":
