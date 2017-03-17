@@ -227,7 +227,7 @@ define({
 "Undelete dataset to edit attributes" :
     "Restaurer le jeu de données pour en éditer les attributs",
 "This dataset must finish uploading before it can be edited" :
-    "Ce jeu de données doit être entièrement téléversé avant avant toute modification",
+    "Ce jeu de données doit être entièrement téléversé avant toute modification",
 "This dataset is not yet editable" :
     "Ce jeu de données n'est pas encore éditable",
 
