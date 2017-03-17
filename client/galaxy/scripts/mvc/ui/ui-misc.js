@@ -165,6 +165,28 @@ define(['utils/utils',
         }
     });
 
+    /** Creates a upload element input field */
+    var Upload = Backbone.View.extend({
+        initialize: function( options ) {
+            this.model = options && options.model || new Backbone.Model( options );
+            this.setElement( $ ( '<div/>' ).append( this.$info = $( '<div/>' ) )
+                                           .append( this.$file = $( '<input/>' ).attr( 'type', 'file' ) ) );
+            this.listenTo( this.model, 'change', this.render, this );
+            this.render();
+        },
+        value: function( new_val ) {
+            new_val !== undefined && this.model.set( 'value', new_val );
+            window.console.log( this.$file.val() );
+            return this.model.get( 'value' );
+        },
+        render: function() {
+            this.$el.attr( 'id', this.model.id );
+            this.$file.val( this.model.get( 'value' ) );
+            this.model.get( 'info' ) ? this.$info.show().html( this.model.get( 'info' ) ) : this.$info.hide();
+            return this;
+        }
+    });
+
     return {
         Button           : Buttons.ButtonDefault,
         ButtonIcon       : Buttons.ButtonIcon,
@@ -175,6 +197,7 @@ define(['utils/utils',
         Label            : Label,
         Message          : Message,
         UnescapedMessage : UnescapedMessage,
+        Upload           : Upload,
         Modal            : Modal,
         RadioButton      : Options.RadioButton,
         Checkbox         : Options.Checkbox,

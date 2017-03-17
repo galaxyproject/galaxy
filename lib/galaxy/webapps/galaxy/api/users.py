@@ -755,7 +755,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             del dbkeys[key]
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
-            return { message: 'Deleted %s.' % key }
+            return { 'message': 'Deleted %s.' % key }
         else:
             raise MessageException('Could not find and delete build (%s).' % key)
 
