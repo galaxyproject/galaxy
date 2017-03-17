@@ -1,4 +1,4 @@
-.. figure:: https://wiki.galaxyproject.org/Images/GalaxyLogo?action=AttachFile&do=get&target=galaxy_project_logo.jpg
+.. figure:: https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo.jpg
    :alt: Galaxy Logo
 
 The latest information about Galaxy is available via `https://galaxyproject.org/ <https://galaxyproject.org/>`__
