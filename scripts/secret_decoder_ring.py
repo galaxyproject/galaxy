@@ -37,6 +37,7 @@ security_helper = SecurityHelper(id_secret=id_secret)
 
 if len(sys.argv) != 3:
     sys.stdout.write("python %s (encode|decode) value\n" % sys.argv[0])
+    sys.exit(1)
 
 action = sys.argv[1]
 value = sys.argv[2]
