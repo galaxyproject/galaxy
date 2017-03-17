@@ -649,29 +649,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         """ Returns collection of custom builds. """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
-        updated = False
-        for key, attributes in dbkeys.items():
-            if 'count' not in attributes:
-                fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( attributes[ 'fasta' ] )
-                try:
-                    len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
-                    # HACK: need to request dataset again b/c get_converted_dataset()
-                    # doesn't return dataset (as it probably should).
-                    len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
-                    if len_dataset.state != trans.app.model.Job.states.ERROR:
-                        chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
-                        if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
-                            try:
-                                chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
-                                attributes[ 'count' ] = chrom_count
-                                updated = True
-                            except Exception as e:
-                                pass
-                except Exception as e:
-                    pass
-        if updated:
-            user.preferences['dbkeys'] = json.dumps(dbkeys)
-            trans.sa_session.flush()
         dbkey_collection = []
         for key, attributes in dbkeys.items():
             attributes['id'] = key;
@@ -685,24 +662,17 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
         name = payload.get('name')
         len_type = payload.get('len|type')
-        len_text = None
-        dataset_id = None
-        if len_type == 'file':
-            dataset_id = payload.get('len|value')
-        elif len_type == 'fasta':
-            dataset_id = payload.get('len|value')
-        elif len_type == 'text':
-            len_text = payload.get('len|value')
-        else:
+        len_value = payload.get('len|value')
+        if len_type not in [ 'file', 'fasta', 'text' ] or not len_value:
             raise MessageException('Please specify a valid data source type.')
-        if not name or not key or not ( len_text or dataset_id ):
+        if not name or not key:
             raise MessageException('You must specify values for all the fields.')
         elif key in dbkeys:
             raise MessageException('There is already a custom build with that key. Delete it first if you want to replace it.')
         else:
             # Have everything needed; create new build.
             build_dict = { "name": name }
-            if len_text:
+            if len_type == 'text':
                 # Create new len file
                 new_len = trans.app.model.HistoryDatasetAssociation( extension="len", create_dataset=True, sa_session=trans.sa_session )
                 trans.sa_session.add( new_len )
@@ -713,13 +683,13 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 try:
                     trans.app.object_store.create( new_len.dataset )
                 except ObjectInvalid:
-                    raise Exception( 'Unable to create output dataset: object store is full' )
+                    raise Exception( 'Unable to create output dataset: object store is full.' )
                 trans.sa_session.flush()
                 counter = 0
                 f = open(new_len.file_name, "w")
                 # LEN files have format:
                 #   <chrom_name><tab><chrom_length>
-                for line in len_text.split("\n"):
+                for line in len_value.split("\n"):
                     # Splits at the last whitespace in the line
                     lst = line.strip().rsplit(None, 1)
                     if not lst or len(lst) < 2:
@@ -732,7 +702,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                         lines_skipped += 1
                         continue
                     if chrom != escape(chrom):
-                        build_dict[ 'message' ] = 'Invalid chromosome(s) with HTML detected and skipped'
+                        build_dict[ 'message' ] = 'Invalid chromosome(s) with HTML detected and skipped.'
                         lines_skipped += 1
                         continue
                     counter += 1
@@ -740,8 +710,26 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 f.close()
                 build_dict.update( { "len": new_len.id, "count": counter } )
             else:
-                dataset_id = trans.security.decode_id( dataset_id )
-                build_dict[ "fasta" ] = dataset_id
+                dataset_id = trans.security.decode_id( len_value )
+                dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
+                if len_type == 'fasta':
+                    try:
+                        len_dataset = dataset.get_converted_dataset( trans, "len" )
+                        # HACK: need to request dataset again b/c get_converted_dataset()
+                        # doesn't return dataset (as it probably should).
+                        len_dataset = dataset.get_converted_dataset( trans, "len" )
+                        if len_dataset.state != trans.app.model.Job.states.ERROR:
+                            chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
+                            if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
+                                try:
+                                    chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                                    build_dict[ 'count' ] = chrom_count
+                                except Exception as e:
+                                    raise Exception( 'Unable to determine chroms/contigs count.' )
+                    except Exception as e:
+                        raise Exception( 'Failed to convert dataset.' )
+                else:
+                    raise Exception( 'Not implemented.' )
             dbkeys[key] = build_dict
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
