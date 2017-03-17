@@ -244,7 +244,7 @@ var Collection = Backbone.Collection.extend({
                 cls             : 'loggedin-only',
                 tooltip         : 'Account and saved data',
                 menu            : [{
-                        title   : _l('Logged in as ') + Galaxy.user.get( 'email' )
+                        title   : _l('Logged in as') + ' ' + Galaxy.user.get( 'email' )
                     },{
                         title   : _l('Preferences'),
                         url     : 'user',
