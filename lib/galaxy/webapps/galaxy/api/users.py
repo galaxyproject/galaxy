@@ -3,9 +3,9 @@ API operations on User objects.
 """
 
 import logging
-import datetime
 import re
 
+from datetime import datetime, timedelta
 from sqlalchemy import false, true, and_, or_
 
 from galaxy import exceptions, util, web
