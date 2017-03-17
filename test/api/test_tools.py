@@ -1,4 +1,4 @@
-# Test tools API.
+"""Test the Galaxy Tool API."""
 import json
 
 from base import api
@@ -11,7 +11,21 @@ from base.populators import (
 from galaxy.tools.verify.test_data import TestDataResolver
 
 
+MINIMAL_TOOL = {
+    'id': "minimal_tool",
+    'name': "Minimal Tool",
+    'class': "GalaxyTool",
+    'version': "1.0.0",
+    'command': "echo 'Hello World' > $output1",
+    'inputs': [],
+    'outputs': dict(
+        output1=dict(format='txt'),
+    )
+}
+
+
 class ToolsTestCase( api.ApiTestCase ):
+    """Test the Galaxy Tool API."""
 
     def setUp( self ):
         super( ToolsTestCase, self ).setUp( )
@@ -210,6 +224,25 @@ class ToolsTestCase( api.ApiTestCase ):
         filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid, wait=False)
         filtered_states = [get_state(_) for _ in filtered_hdca["elements"]]
         assert filtered_states == [u"ok", u"ok"], filtered_states
+
+    def test_filter_0( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["a", "a\nb", "a\nb\nc", "a\nb\nc\nd" ] ).json()["id"]
+        self.dataset_populator.wait_for_history( history_id )
+        inputs = {
+            "input": {"src": "hdca", "id": hdca_id},
+            "expression": "metadata_data_lines % 2 == 0"
+        }
+        response = self._run( "__FILTER__", history_id, inputs, assert_ok=True )
+        output_collections = response["output_collections"]
+        assert len(output_collections) == 1
+
+        filtered_hid = output_collections[0]["hid"]
+        filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid)
+        self.assertEquals(len(filtered_hdca["elements"]), 2)
+        filtered_dataset = filtered_hdca["elements"][0]["object"]
+        filtered_dataset_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=filtered_dataset )
+        self.assertEquals(filtered_dataset_content.strip(), "a\nb")
 
     @skip_without_tool( "multi_select" )
     def test_multi_select_as_list( self ):
@@ -475,6 +508,73 @@ class ToolsTestCase( api.ApiTestCase ):
         assert output_element_0["element_identifier"] == "samp1"
         output_element_hda_0 = output_element_0["object"]
         assert output_element_hda_0["metadata_column_types"] is not None
+
+    def test_nonadmin_users_cannot_create_tools( self ):
+        payload = dict(
+            representation=json.dumps(MINIMAL_TOOL),
+        )
+        create_response = self._post( "dynamic_tools", data=payload, admin=True )
+        self._assert_status_code_is( create_response, 403 )
+
+    def test_dynamic_tool_1( self ):
+        # Create tool.
+        payload = dict(
+            representation=json.dumps(MINIMAL_TOOL),
+        )
+        create_response = self._post( "dynamic_tools", data=payload, admin=True )
+        self._assert_status_code_is( create_response, 200 )
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        inputs = {}
+        create_response = self._run( "minimal_tool", history_id, inputs )
+        self._assert_status_code_is( create_response, 200 )
+
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        output_content = self.dataset_populator.get_history_dataset_content( history_id )
+        self.assertEqual( output_content, "Hello World\n" )
+
+    @skip_without_tool( "expression_forty_two" )
+    def test_galaxy_expression_tool_simplest( self ):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+        }
+        run_response = self._run(
+            "expression_forty_two", history_id, inputs
+        )
+        self._assert_status_code_is( run_response, 200 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        output_content = self.dataset_populator.get_history_dataset_content( history_id )
+        self.assertEqual( output_content, "42" )
+
+    @skip_without_tool( "expression_parse_int" )
+    def test_galaxy_expression_tool_simple( self ):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+            'input1': '7',
+        }
+        run_response = self._run(
+            "expression_parse_int", history_id, inputs
+        )
+        self._assert_status_code_is( run_response, 200 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        output_content = self.dataset_populator.get_history_dataset_content( history_id )
+        self.assertEqual( output_content, "7" )
+
+    @skip_without_tool( "expression_log_line_count" )
+    def test_galaxy_expression_metadata( self ):
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14' )
+        inputs = {
+            'input1': dataset_to_param(new_dataset1),
+        }
+        run_response = self._run(
+            "expression_log_line_count", history_id, inputs
+        )
+        self._assert_status_code_is( run_response, 200 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        output_content = self.dataset_populator.get_history_dataset_content( history_id )
+        self.assertEqual( output_content, "3" )
 
     @skip_without_tool( "cat1" )
     def test_run_cat1_with_two_inputs( self ):
@@ -1212,11 +1312,12 @@ class ToolsTestCase( api.ApiTestCase ):
     def _run_cat1( self, history_id, inputs, assert_ok=False ):
         return self._run( 'cat1', history_id, inputs, assert_ok=assert_ok )
 
-    def _run( self, tool_id, history_id, inputs, assert_ok=False, tool_version=None ):
+    def _run( self, tool_id, history_id, inputs, assert_ok=False, tool_version=None, inputs_representation=None ):
         payload = self.dataset_populator.run_tool_payload(
             tool_id=tool_id,
             inputs=inputs,
             history_id=history_id,
+            inputs_representation=inputs_representation,
         )
         if tool_version is not None:
             payload[ "tool_version" ] = tool_version

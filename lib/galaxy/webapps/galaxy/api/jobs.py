@@ -136,6 +136,8 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         if full_output:
             job_dict.update( dict( stderr=job.stderr, stdout=job.stdout ) )
             if is_admin:
+                job_dict['cwl_command_state'] = job.cwl_command_state
+                job_dict['cwl_command_state_version'] = job.cwl_command_state_version
                 job_dict['user_email'] = job.user.email
 
                 def metric_to_dict(metric):

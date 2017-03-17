@@ -245,6 +245,7 @@ class Configuration( object ):
             log.warn("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             preserve_python_environment = "legacy_only"
         self.preserve_python_environment = preserve_python_environment
+        self.nodejs_path = kwargs.get( "nodejs_path", None )
         self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
@@ -915,6 +916,8 @@ class ConfiguresGalaxyMixin:
         self.tool_cache = ToolCache()
         self.tool_version_cache = ToolVersionCache(self)
 
+        from galaxy.managers.tools import DynamicToolManager
+        self.dynamic_tools_manager = DynamicToolManager( self )
         self._toolbox_lock = threading.RLock()
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs

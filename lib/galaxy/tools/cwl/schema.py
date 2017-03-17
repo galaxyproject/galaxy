@@ -24,11 +24,14 @@ class SchemaLoader(object):
 
     @property
     def raw_document_loader(self):
-        if self._raw_document_loader is None:
-            ensure_cwltool_available()
-            self._raw_document_loader = schema_salad.ref_resolver.Loader({"cwl": "https://w3id.org/cwl/cwl#", "id": "@id"})
+        # TODO: Caching this is broken - it seems to get updated to a newer dev version as part of
+        # and update.
+        # if self._raw_document_loader is None:
+        #    ensure_cwltool_available()
+        #    self._raw_document_loader = schema_salad.ref_resolver.Loader({"cwl": "https://w3id.org/cwl/cwl#", "id": "@id"})
+        # return self._raw_document_loader
 
-        return self._raw_document_loader
+        return schema_salad.ref_resolver.Loader({"cwl": "https://w3id.org/cwl/cwl#", "id": "@id"})
 
     def raw_process_reference(self, path):
         uri = "file://" + os.path.abspath(path)

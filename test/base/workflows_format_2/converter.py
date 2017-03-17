@@ -27,6 +27,7 @@ STEP_TYPE_ALIASES = {
 
 RUN_ACTIONS_TO_STEPS = {
     'GalaxyWorkflow': 'run_workflow_to_step',
+    'GalaxyTool': 'run_tool_to_step',
 }
 
 

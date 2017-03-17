@@ -373,6 +373,7 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
         job.history_id = history.id
     job.tool_id = tool.id
     job.tool_version = tool.version
+    job.tool_hash = tool.tool_hash
     job.set_state( job.states.UPLOAD )
     trans.sa_session.add( job )
     trans.sa_session.flush()

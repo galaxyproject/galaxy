@@ -42,6 +42,7 @@ from galaxy.tools.deps import (
     CachedDependencyManager,
     views
 )
+from galaxy.tools import expressions
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -62,17 +63,21 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
+from galaxy.tools.parameters.wrapped_json import json_wrap
+from galaxy.tools.test import parse_tests
 from galaxy.tools.parser import (
     get_tool_source,
+    get_tool_source_from_representation,
     ToolOutputCollectionPart
 )
+from galaxy.tools.cwl import handle_staging, needs_shell_quoting, shellescape
 from galaxy.tools.parser.xml import XmlPageSource
-from galaxy.tools.test import parse_tests
 from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
     ExecutionTimer,
     listify,
     rst_to_html,
+    safe_makedirs,
     string_as_bool,
     unicodify
 )
@@ -97,6 +102,12 @@ from .loader import (
 )
 
 log = logging.getLogger( __name__ )
+
+REQUIRES_JS_RUNTIME_MESSAGE = ("The tool [%s] requires a nodejs runtime to execute "
+                               "but node nor nodejs could be found on Galaxy's PATH and "
+                               "no runtime was configured using the nodejs_path option in "
+                               "galaxy.ini.")
+
 
 HELP_UNINITIALIZED = threading.Lock()
 MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
@@ -221,6 +232,25 @@ class ToolBox( BaseGalaxyToolBox ):
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
             raise e
+        return self._create_tool_from_source( tool_source, config_file, repository_id=repository_id, guid=guid, **kwds )
+
+    def create_dynamic_tool( self, dynamic_tool, **kwds ):
+        tool_format = dynamic_tool.tool_format
+        tool_representation = dynamic_tool.value
+        tool_source = get_tool_source_from_representation(
+            tool_format=tool_format,
+            tool_representation=tool_representation,
+        )
+        kwds["dynamic"] = True
+        tool = self._create_tool_from_source( tool_source, **kwds )
+        tool.tool_hash = dynamic_tool.tool_hash
+        if not tool.id:
+            tool.id = dynamic_tool.tool_id
+        if not tool.name:
+            tool.name = tool.id
+        return tool
+
+    def _create_tool_from_source( self, tool_source, config_file=None, repository_id=None, guid=None, **kwds ):
         # Allow specifying a different tool subclass to instantiate
         tool_module = tool_source.parse_tool_module()
         if tool_module is not None:
@@ -361,11 +391,16 @@ class Tool( object, Dictifiable ):
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ( 'id', 'name', 'version', 'description', 'labels' )
 
-    def __init__( self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True ):
+    def __init__( self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True, dynamic=False ):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
-        self.config_file = config_file
-        self.tool_dir = os.path.dirname( config_file )
+        if config_file is not None:
+            self.config_file = config_file
+            self.tool_dir = os.path.dirname( config_file )
+        else:
+            self.config_file = None
+            self.tool_dir = None
+
         self.app = app
         self.repository_id = repository_id
         self._allow_code_files = allow_code_files
@@ -385,6 +420,7 @@ class Tool( object, Dictifiable ):
         self.display_interface = True
         self.require_login = False
         self.rerun = False
+        self.tool_hash = None
         # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -412,7 +448,7 @@ class Tool( object, Dictifiable ):
         self.populate_resource_parameters( tool_source )
         # Parse XML element containing configuration
         try:
-            self.parse( tool_source, guid=guid )
+            self.parse( tool_source, guid=guid, dynamic=dynamic )
         except Exception as e:
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
@@ -560,7 +596,7 @@ class Tool( object, Dictifiable ):
             return False
         return True
 
-    def parse( self, tool_source, guid=None ):
+    def parse( self, tool_source, guid=None, dynamic=False ):
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
@@ -571,7 +607,8 @@ class Tool( object, Dictifiable ):
             self.id = self.old_id
         else:
             self.id = guid
-        if not self.id:
+
+        if not dynamic and not self.id:
             raise Exception( "Missing tool 'id' for tool at '%s'" % tool_source )
 
         if self.profile >= 16.04 and VERSION_MAJOR < self.profile:
@@ -581,7 +618,9 @@ class Tool( object, Dictifiable ):
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
-        if not self.name:
+        if not self.name and dynamic:
+            self.name = self.id
+        if not dynamic and not self.name:
             raise Exception( "Missing tool 'name' for tool with id '%s' at '%s'" % (self.id, tool_source) )
 
         self.version = tool_source.parse_version()
@@ -648,10 +687,13 @@ class Tool( object, Dictifiable ):
         # a 'default' will be provided that uses the 'default' handler and
         # 'default' destination.  I thought about moving this to the
         # job_config, but it makes more sense to store here. -nate
-        self_ids = [ self.id.lower() ]
-        if self.old_id != self.id:
-            # Handle toolshed guids
-            self_ids = [ self.id.lower(), self.id.lower().rsplit('/', 1)[0], self.old_id.lower() ]
+        if self.id:
+            self_ids = [ self.id.lower() ]
+            if self.old_id != self.id:
+                # Handle toolshed guids
+                self_ids = [ self.id.lower(), self.id.lower().rsplit('/', 1)[0], self.old_id.lower() ]
+        else:
+            self_ids = []
         self.all_ids = self_ids
 
         # In the toolshed context, there is no job config.
@@ -694,6 +736,10 @@ class Tool( object, Dictifiable ):
             module, cls = action
             mod = __import__( module, globals(), locals(), [cls])
             self.tool_action = getattr( mod, cls )()
+            if getattr(self.tool_action, "requires_js_runtime", False):
+                if expressions.find_engine(self.app.config) is None:
+                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.tool_id
+                    raise Exception(message)
         # Tests
         self.__parse_tests(tool_source)
 
@@ -1519,7 +1565,7 @@ class Tool( object, Dictifiable ):
     def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
         pass
 
-    def exec_after_process( self, app, inp_data, out_data, param_dict, job=None ):
+    def exec_after_process( self, app, inp_data, out_data, param_dict, job=None, **kwds ):
         pass
 
     def job_failed( self, job_wrapper, message, exception=False ):
@@ -1753,7 +1799,7 @@ class Tool( object, Dictifiable ):
         tool_dict[ 'panel_section_id' ], tool_dict[ 'panel_section_name' ] = self.get_panel_section()
 
         tool_class = self.__class__
-        regular_form = tool_class == Tool or isinstance(self, DatabaseOperationTool)
+        regular_form = tool_class == Tool or isinstance(self, DatabaseOperationTool) or tool_class == CwlTool
         tool_dict["form_style"] = "regular" if regular_form else "special"
 
         return tool_dict
@@ -2070,6 +2116,71 @@ class OutputParameterJSONTool( Tool ):
         out.close()
 
 
+class ExpressionTool( Tool ):
+    tool_type = 'expression'
+    EXPRESSION_INPUTS_NAME = "_expression_inputs_.json"
+
+    def parse_command( self, tool_source ):
+        self.command = expressions.EXPRESSION_SCRIPT_CALL
+        self.interpreter = None
+        self._expression = tool_source.parse_expression().strip()
+
+    def parse_outputs( self, tool_source ):
+        # Setup self.outputs and self.output_collections
+        super( ExpressionTool, self ).parse_outputs( tool_source )
+
+        # Validate these outputs for expression tools.
+        if len(self.output_collections) != 0:
+            message = "Expression tools may not declare output collections at this time."
+            raise Exception(message)
+        for output in self.outputs.values():
+            if not hasattr(output, "from_expression"):
+                message = "Expression tools may not declare output datasets at this time."
+                raise Exception(message)
+
+    def exec_before_job( self, app, inp_data, out_data, param_dict=None ):
+        super( ExpressionTool, self ).exec_before_job( app, inp_data, out_data, param_dict=param_dict )
+        local_working_directory = param_dict["__local_working_directory__"]
+        expression_inputs_path = os.path.join(local_working_directory, 'working', ExpressionTool.EXPRESSION_INPUTS_NAME)
+
+        outputs = []
+        for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
+            output_def = self.outputs[ out_name ]
+            wrapped_data = param_dict.get( out_name )
+            file_name = str( wrapped_data )
+
+            outputs.append(dict(
+                name=out_name,
+                from_expression=output_def.from_expression,
+                path=file_name,
+            ))
+
+        if param_dict is None:
+            raise Exception("Internal error - param_dict is empty.")
+
+        job = {}
+        json_wrap(self.inputs, param_dict, job, handle_files='OBJECT')
+        expression_inputs = {
+            'job': job,
+            'script': self._expression,
+            'outputs': outputs,
+        }
+        expressions.write_evalute_script(os.path.join(local_working_directory, 'working'))
+        with open(expression_inputs_path, "w") as f:
+            json.dump( expression_inputs, f )
+
+    def parse_environment_variables( self, tool_source ):
+        """ Setup environment variable for inputs file.
+        """
+        environmnt_variables_raw = super( ExpressionTool, self ).parse_environment_variables( tool_source )
+        expression_script_inputs = dict(
+            name="GALAXY_EXPRESSION_INPUTS",
+            template=ExpressionTool.EXPRESSION_INPUTS_NAME,
+        )
+        environmnt_variables_raw.append(expression_script_inputs)
+        return environmnt_variables_raw
+
+
 class DataSourceTool( OutputParameterJSONTool ):
     """
     Alternate implementation of Tool for data_source tools -- those that
@@ -2154,7 +2265,7 @@ class SetMetadataTool( Tool ):
     tool_type = 'set_metadata'
     requires_setting_metadata = False
 
-    def exec_after_process( self, app, inp_data, out_data, param_dict, job=None ):
+    def exec_after_process( self, app, inp_data, out_data, param_dict, job=None, **kwds ):
         for name, dataset in inp_data.items():
             external_metadata = JobExternalOutputMetadataWrapper( job )
             if external_metadata.external_metadata_set_successfully( dataset, app.model.context ):
@@ -2193,6 +2304,68 @@ class ExportHistoryTool( Tool ):
 
 class ImportHistoryTool( Tool ):
     tool_type = 'import_history'
+
+
+class CwlTool( Tool ):
+    tool_type = 'cwl'
+
+    def exec_before_job( self, app, inp_data, out_data, param_dict=None ):
+        super( CwlTool, self ).exec_before_job( app, inp_data, out_data, param_dict=param_dict )
+        # Working directory on Galaxy server (instead of remote compute).
+        local_working_directory = param_dict["__local_working_directory__"]
+        log.info("exec_before_job for CWL tool")
+        from galaxy.tools.cwl import to_cwl_job
+        input_json = to_cwl_job(self, param_dict, local_working_directory)
+        if param_dict is None:
+            raise Exception("Internal error - param_dict is empty.")
+        output_dict = {}
+        for name, dataset in out_data.items():
+            output_dict[name] = {
+                "id": dataset.dataset.id,
+                "path": dataset.file_name,
+            }
+
+        cwl_job_proxy = self._cwl_tool_proxy.job_proxy(
+            input_json,
+            output_dict,
+            local_working_directory,
+        )
+        # Write representation to disk that can be reloaded at runtime
+        # and outputs collected before Galaxy metadata is gathered.
+        cwl_job_proxy.save_job()
+
+        cwl_command_line = cwl_job_proxy.command_line
+        cwl_stdin = cwl_job_proxy.stdin
+        cwl_stdout = cwl_job_proxy.stdout
+        env = cwl_job_proxy.environment
+
+        command_line = " ".join([shellescape.quote(arg) if needs_shell_quoting(arg) else arg for arg in cwl_command_line])
+        if cwl_stdin:
+            command_line += '< "' + cwl_stdin + '"'
+        if cwl_stdout:
+            command_line += '> "' + cwl_stdout + '"'
+        cwl_job_state = {
+            'args': cwl_command_line,
+            'stdin': cwl_stdin,
+            'stdout': cwl_stdout,
+            'env': env,
+        }
+        tool_working_directory = os.path.join(local_working_directory, 'working')
+        # Move to prepare...
+        safe_makedirs(tool_working_directory)
+        cwl_job_proxy.stage_files()
+
+        param_dict["__cwl_command"] = command_line
+        param_dict["__cwl_command_state"] = cwl_job_state
+        param_dict["__cwl_command_version"] = 1
+        log.info("CwlTool.exec_before_job() generated command_line %s" % command_line)
+
+    def parse( self, tool_source, **kwds ):
+        super( CwlTool, self ).parse( tool_source, **kwds )
+        cwl_tool_proxy = getattr( tool_source, 'tool_proxy', None )
+        if cwl_tool_proxy is None:
+            raise Exception("CwlTool.parse() called on tool source not defining a proxy object to underlying CWL tool.")
+        self._cwl_tool_proxy = cwl_tool_proxy
 
 
 class DataManagerTool( OutputParameterJSONTool ):
@@ -2311,6 +2484,33 @@ class DatabaseOperationTool( Tool ):
 
     def _outputs_dict( self ):
         return odict()
+
+
+class UsesExpressions:
+    requires_js_runtime = True
+
+    def _expression_environment( self, hda ):
+        # TODO: use json_wrap HDA stuff for this for this...
+        raw_as_dict = hda.to_dict()
+        filtered_as_dict = {}
+        # We are more conservative with the API provided to tools
+        # than the API exposed via the web API, so cut down on what
+        # is supplied to the tool. Also, no reason to leak unneeded
+        # data prematurely regardless.
+        for key, value in raw_as_dict.iteritems():
+            include = False
+            if key.startswith("metadata_"):
+                include = True
+            elif key in FilterTool.exposed_hda_keys:
+                include = True
+            if include:
+                filtered_as_dict[key] = value
+        return filtered_as_dict
+
+    def _eval_expression(self, expression, environment_dict):
+        environment = expressions.jshead([], environment_dict)
+        result = expressions.execjs(self.app.config, expression, environment)
+        return result
 
 
 class UnzipCollectionTool( DatabaseOperationTool ):
@@ -2466,6 +2666,28 @@ class FilterFailedDatasetsTool( DatabaseOperationTool ):
         )
 
 
+class FilterTool( DatabaseOperationTool, UsesExpressions ):
+    exposed_hda_keys = ['file_size', 'file_ext', 'genome_build']
+    tool_type = 'filter_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        expression = incoming[ "expression" ]
+        assert hdca.collection.collection_type == "list"
+        new_elements = odict()
+        for dce in hdca.collection.elements:
+            element = dce.element_object
+            environment_dict = self._expression_environment(element)
+            result = self._eval_expression(expression, environment_dict)
+            if result:
+                element_identifier = dce.element_identifier
+                new_elements[element_identifier] = element.copy()
+
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
 class FlattenTool( DatabaseOperationTool ):
     tool_type = 'flatten_collection'
 
@@ -2490,12 +2712,42 @@ class FlattenTool( DatabaseOperationTool ):
         )
 
 
+class GroupTool( DatabaseOperationTool, UsesExpressions ):
+    tool_type = 'group_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        expression = incoming[ "expression" ]
+        new_elements = odict()
+        for dce in hdca.collection.elements:
+            element = dce.element_object
+            environment_dict = self._expression_environment(element)
+            result = str(self._eval_expression(expression, environment_dict))
+            if not result:
+                continue
+
+            if result not in new_elements:
+                result_elements = {}
+                result_elements["src"] = "new_collection"
+                result_elements["collection_type"] = "list"
+                result_elements["elements"] = odict()
+                new_elements[result] = result_elements
+
+            new_elements[result]["elements"][dce.element_identifier] = element.copy()
+
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
+for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool,
                     DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                     UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool,
-                    DataDestinationTool ]:
+                    DataDestinationTool,
+                    CwlTool ]:
+
     tool_types[ tool_class.tool_type ] = tool_class
 
 

@@ -60,6 +60,7 @@
   <tool file="parallelism.xml" />
   <tool file="parallelism_optional.xml" />
   <tool file="implicit_default_conds.xml" />
+  <tool file="optional_data_param.xml" />
   <tool file="multi_data_param.xml" />
   <tool file="multi_data_repeat.xml" />
   <tool file="multi_data_optional.xml" />
@@ -97,8 +98,10 @@
   <tool file="collection_creates_dynamic_nested.xml" />
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="collection_type_source.xml" />
+  <tool file="expression_forty_two.xml" />
+  <tool file="expression_parse_int.xml" />
+  <tool file="expression_log_line_count.xml" />
   <tool file="cheetah_casting.xml" />
-
   <tool file="cheetah_problem_unbound_var.xml" />
   <tool file="cheetah_problem_unbound_var_input.xml" />
   <tool file="cheetah_problem_syntax_error.xml" />
@@ -106,6 +109,33 @@
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
+
+  <tool file="cwl_tools/draft3/null-expression1-tool.cwl" />
+  <tool file="cwl_tools/draft3/null-expression2-tool.cwl" />
+  <tool file="cwl_tools/draft3/params.cwl" />
+  <tool file="cwl_tools/draft3/parseInt-tool.cwl" />
+  <tool file="cwl_tools/draft3_custom/any1.cwl" />
+
+  <!-- CWL Testing -->
+  <tool file="cwl_tools/draft3/cat1-tool.cwl" />
+  <tool file="cwl_tools/draft3/cat2-tool.cwl" />
+  <tool file="cwl_tools/draft3/cat3-tool.cwl" />
+  <tool file="cwl_tools/draft3/cat4-tool.cwl" />
+  <tool file="cwl_tools/draft3/bwa-mem-tool.cwl" />
+  <tool file="cwl_tools/draft3/env-tool1.cwl" />
+  <tool file="cwl_tools/draft3/env-tool2.cwl" />
+  <tool file="cwl_tools/draft3/optional-output.cwl" />
+  <tool file="cwl_tools/draft3/rename.cwl" />
+  <tool file="cwl_tools/draft3/sorttool.cwl" />
+  <tool file="cwl_tools/draft3/wc-tool.cwl" />
+  <tool file="cwl_tools/draft3/wc2-tool.cwl" />
+  <tool file="cwl_tools/draft3/wc3-tool.cwl" />
+  <tool file="cwl_tools/draft3/wc4-tool.cwl" />
+
+  <tool file="cwl_tools/draft3_custom/cat-default.cwl" />
+  <tool file="cwl_tools/draft3_custom/index1.cwl" />
+  <tool file="cwl_tools/draft3_custom/optional-output2.cwl" />
+  <tool file="cwl_tools/draft3_custom/showindex1.cwl" />
 
   <!-- Tools interesting only for building up test workflows. -->
 

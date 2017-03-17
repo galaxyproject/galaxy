@@ -1,0 +1,23 @@
+<tool id="optional_data_param" name="optional_data_param">
+    <description></description>
+    <command>
+        cat $input1 > $out_file1;
+    </command>
+    <inputs>
+        <param name="input1" type="data" label="A File" default="README.txt" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="tool_config_file = test/functional/tools/samples_tool_conf.xml" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

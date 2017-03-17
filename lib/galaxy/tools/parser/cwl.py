@@ -42,6 +42,12 @@ class CwlToolSource(ToolSource):
     def parse_command(self):
         return "$__cwl_command"
 
+    def parse_edam_operations(self):
+        return []
+
+    def parse_edam_topics(self):
+        return []
+
     def parse_environment_variables(self):
         environment_variables = []
         # TODO: Is this even possible from here, should instead this be moved
@@ -95,7 +101,7 @@ class CwlToolSource(ToolSource):
         return "0.0.1"
 
     def parse_description(self):
-        return ""
+        return self.tool_proxy.description()
 
     def parse_input_pages(self):
         page_source = CwlPageSource(self.tool_proxy)
