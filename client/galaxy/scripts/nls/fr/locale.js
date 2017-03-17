@@ -6,61 +6,61 @@ define({
 "Workflow":
     "Workflow",
 "Shared Data":
-    "Partage de données",
+    "Données partagées",
 "Data Libraries":
-    false,
+    "Bibliothèque de données",
 "Histories":
-    false,
+    "Historiques",
 "Workflows":
-    false,
+    "Workflows",
 "Visualizations":
-    false,
+    "Visualisations",
 "Pages":
-    false,
+    "Pages",
 "Visualization":
-    "Représentation des données",
+    "Visualisation",
 "New Track Browser":
-    false,
+    "Nouveau Navigateur de Tracks/Pistes",
 "Saved Visualizations":
-    false,
+    "Visualisations sauvegardés",
 "Interactive Environments":
-    false,
+    "Environnements interactifs",
 "Admin":
-    false,
+    "Admin",
 "Help":
     "Aide",
 "Support":
-    false,
+    "Assistance",
 "Search":
-    false,
+    "Recherche",
 "Mailing Lists":
-    false,
+    "Liste de diffusion",
 "Videos":
-    false,
+    "Vidéos",
 "Wiki":
-    false,
+    "Documentation",
 "How to Cite Galaxy":
-    false,
+    "Comment citer Galaxy",
 "Interactive Tours":
-    false,
+    "Guides interactifs",
 "User":
     "Utilisateur",
 "Login":
-    false,
+    "Authentification",
 "Register":
-    false,
+    "Enregistrement",
 "Logged in as":
-    false,
+    "Authentification en tant que",
 "Custom Builds":
-    false,
+    "Genome Builds personalisés",
 "Logout":
-    false,
+    "Déconnection",
 "Saved Histories":
-    false,
+    "Historiques sauvegardés",
 "Saved Datasets":
-    false,
+    "Données sauvegardés",
 "Saved Pages":
-    false,
+    "Pages sauvegardées",
 // ---------------------------------------------------------------------------- histories
 // ---- history-model
 // ---- history-view
@@ -69,18 +69,18 @@ define({
 "No matching datasets found" :
     "Aucunes données correspondantes trouvées",
 "An error occurred while getting updates from the server" :
-    "Une erreur s'est produite lors de l'envoi des mises à jour depuis le serveur",
+    "Une erreur s'est produite lors de la réception des données depuis le serveur",
 "Please contact a Galaxy administrator if the problem persists" :
-    "Veuillez contacter un administrateur Galaxy si ce problème persiste.",
+    "Veuillez contacter un administrateur de l'instance Galaxy si ce problème persiste.",
 //TODO:
 //"An error was encountered while <% where %>" :
 //false,
 "Search datasets" :
-    "Recherche dans l'ensemble des données",
+    "Rechercher des données",
 "You are currently viewing a deleted history!" :
     "Vous consultez actuellement un historique supprimé!",
 "You are over your disk quota" :
-    "Vous avez dépassé votre quota disque",
+    "Vous avez dépassé votre quota d'espace disque",
 "Tool execution is on hold until your disk usage drops below your allocated quota" :
     "L'exécution de l'outil est en attente tant que votre utilisation d'espace disque n'est pas inférieur à votre quota attribué",
 "All" :
@@ -88,7 +88,7 @@ define({
 "None" :
     "Aucun",
 "For all selected" :
-    "Pour tous les",
+    "Pour tous les selectionnés",
 
 // // ---- history-view-edit
 // "Edit history tags" :
@@ -118,7 +118,7 @@ define({
 // false,
 // "Annotation" :
 // false,
-// 
+//
 // // ---- history-view-edit-current
 // "This history is empty. Click 'Get Data' on the left tool menu to start" :
 // false,
@@ -199,11 +199,11 @@ define({
 // // state: failed_metadata
 // "An error occurred setting the metadata for this dataset" :
 // false,
-// 
+//
 // // ajax error prefix
 // "There was an error getting the data for this dataset" :
 // false,
-// 
+//
 // // purged'd/del'd msg
 // "This dataset has been deleted and removed from disk" :
 // false,
@@ -211,12 +211,12 @@ define({
 // false,
 // "This dataset has been hidden" :
 // false,
-// 
+//
 // "format" :
 // false,
 // "database" :
 // false,
-// 
+//
 // // ---- hda-edit
 // "Edit attributes" :
 // false,
@@ -228,41 +228,41 @@ define({
 // false,
 // "This dataset is not yet editable" :
 // false,
-// 
+//
 // "Delete" :
 // false,
 // "Dataset is already deleted" :
 // false,
-// 
+//
 // "View or report this error" :
 // false,
-// 
+//
 // "Run this job again" :
 // false,
-// 
+//
 // "Visualize" :
 // false,
 // "Visualize in" :
 // false,
-// 
+//
 // "Undelete it" :
 // false,
 // "Permanently remove it from disk" :
 // false,
 // "Unhide it" :
 // false,
-// 
+//
 // "You may be able to" :
 // false,
 // "set it manually or retry auto-detection" :
 // false,
-// 
+//
 // "Edit dataset tags" :
 // false,
 // "Edit dataset annotation" :
 // false,
-// 
-// 
+//
+//
 // // ---------------------------------------------------------------------------- misc. MVC
 // "Tags" :
 // false,
