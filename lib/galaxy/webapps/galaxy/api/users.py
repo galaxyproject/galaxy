@@ -325,6 +325,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         user = self._get_user(trans, id)
         email = payload.get('email')
         username = payload.get('username')
+        verification_needed = False
         if email or username:
             message = self._validate_email_publicname(email, username) or validate_email(trans, email, user)
             if not message and username:
@@ -333,6 +334,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 raise MessageException(message)
             # Update user email and user's private role name which must match
             if user.email != email:
+                verification_needed = True
                 private_role = trans.app.security_agent.get_private_user_role(user)
                 private_role.name = email
                 private_role.description = 'Private role for ' + email
@@ -388,7 +390,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             trans.sa_session.add(user_address)
         trans.sa_session.add(user)
         trans.sa_session.flush()
-        if trans.app.config.user_activation_on:
+        if trans.app.config.user_activation_on and verification_needed:
             if self.send_verification_email(trans, user.email, user.username):
                 message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
             else:
