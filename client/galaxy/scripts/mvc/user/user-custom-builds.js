@@ -34,7 +34,9 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                                           .append( this.installed_builds.$el )
                                           .append( $( '<h4/>' ).text( 'Add a Custom Build' ).addClass( 'ui-margin-top' ) )
                                           .append( this.message.$el )
-                                          .append( this.$form = $( '<div/>' ).addClass( 'ui-margin-top' ) ) );
+                                          .append( $( '<span/>').addClass( 'ui-margin-top' )
+                                                                .append( this.$form = $( '<div/>' ).css( { width: '49%', float: 'left' } ) )
+                                                                .append( this.$help = $( '<div/>' ).css( { width: '49%', float: 'right' } ) ) ) );
             this.listenTo( this.collection, 'add remove reset', function() { self._renderTable() } );
             this.listenTo( this.model, 'change', function() { self._renderForm() } );
             this.collection.fetch();
@@ -66,6 +68,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
 
         _renderForm: function() {
             var self = this;
+            var initial_type = 'fasta';
             var form = new Form({
                 inputs  : [{
                     type    : 'text',
@@ -85,7 +88,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                         label   : 'Definition',
                         help    : 'Provide the data source.',
                         type    : 'select',
-                        value   : 'fasta',
+                        value   : initial_type,
                         data    : [ { value : 'fasta',  label : 'FASTA-file from history' },
                                     { value : 'file',   label : 'Len-file from disk' },
                                     { value : 'text',   label : 'Len-file by copy/paste' } ]
@@ -145,10 +148,24 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                             }
                         }
                     })
+                },
+                onchange: function() {
+                    var input_id = form.data.match( 'len|type' );
+                    if ( input_id ) {
+                        var input_field = form.field_list[ input_id ];
+                        self._renderHelp( input_field.value() );
+                    }
                 }
             });
             this.$form.empty().append( form.$el );
             this.installed_builds.update( this.model.get( 'installed_builds' ) );
+            this._renderHelp( initial_type );
+        },
+
+        _renderHelp: function( len_type ) {
+            window.console.log( len_type);
+            this.$help.empty().addClass( 'infomessagesmall' ).html( 'hallo' );
+
         }
     });
 
