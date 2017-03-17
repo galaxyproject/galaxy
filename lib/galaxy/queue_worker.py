@@ -86,6 +86,7 @@ def reload_tool(app, **kwargs):
 def reload_toolbox(app, **kwargs):
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
+    app.tool_cache.cleanup()
     app.toolbox = _get_new_toolbox(app)
     app.toolbox._reload_count = reload_count + 1
 
