@@ -6,61 +6,61 @@ define({
 "Workflow":
     "Workflow",
 "Shared Data":
-    "Partage de données",
+    "Données partagées",
 "Data Libraries":
-    false,
+    "Bibliothèque de données",
 "Histories":
-    false,
+    "Historiques",
 "Workflows":
-    false,
+    "Workflows",
 "Visualizations":
-    false,
+    "Visualisations",
 "Pages":
-    false,
+    "Pages",
 "Visualization":
-    "Représentation des données",
+    "Visualisation",
 "New Track Browser":
-    false,
+    "Nouveau Navigateur de Tracks/Pistes",
 "Saved Visualizations":
-    false,
+    "Visualisations sauvegardés",
 "Interactive Environments":
-    false,
+    "Environnements interactifs",
 "Admin":
-    false,
+    "Admin",
 "Help":
     "Aide",
 "Support":
-    false,
+    "Assistance",
 "Search":
-    false,
+    "Recherche",
 "Mailing Lists":
-    false,
+    "Liste de diffusion",
 "Videos":
-    false,
+    "Vidéos",
 "Wiki":
-    false,
+    "Documentation",
 "How to Cite Galaxy":
-    false,
+    "Comment citer Galaxy",
 "Interactive Tours":
-    false,
+    "Guides interactifs",
 "User":
     "Utilisateur",
 "Login":
-    false,
+    "Authentification",
 "Register":
-    false,
+    "Enregistrement",
 "Logged in as":
-    false,
+    "Authentification en tant que",
 "Custom Builds":
-    false,
+    "Genome Builds personalisés",
 "Logout":
-    false,
+    "Déconnection",
 "Saved Histories":
-    false,
+    "Historiques sauvegardés",
 "Saved Datasets":
-    false,
+    "Données sauvegardés",
 "Saved Pages":
-    false,
+    "Pages sauvegardées",
 // ---------------------------------------------------------------------------- histories
 // ---- history-model
 // ---- history-view
