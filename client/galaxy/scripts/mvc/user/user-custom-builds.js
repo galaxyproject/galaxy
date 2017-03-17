@@ -126,7 +126,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                                         if ( response.get( 'message' ) ) {
                                             self.message.update( { message: response.get( 'message' ), status: 'warning' } );
                                         } else {
-                                            self.message.update( { message: 'Successfully added custom build.', status: 'success' } );
+                                            self.message.update( { message: 'Successfully added a new custom build.', status: 'success' } );
                                         }
                                         _.each( form.field_list, function( field ) { field.value( null ) } );
                                     },
