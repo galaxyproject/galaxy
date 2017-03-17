@@ -174,10 +174,7 @@ define(['utils/utils',
             this.listenTo( this.model, 'change', this.render, this );
             this.render();
         },
-        value: function( new_val ) {
-            new_val !== undefined && this.model.set( 'value', new_val );
-            window.console.log( this.$file.val() );
-            return this.model.get( 'value' );
+        submit: function( options ) {
         },
         render: function() {
             this.$el.attr( 'id', this.model.id );
