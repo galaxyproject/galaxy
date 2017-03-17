@@ -38,7 +38,7 @@ define({
 "Videos":
     "Vidéos",
 "Wiki":
-    "Documentation",
+    "Documentations",
 "How to Cite Galaxy":
     "Comment citer Galaxy",
 "Interactive Tours":
@@ -50,9 +50,9 @@ define({
 "Register":
     "Enregistrement",
 "Logged in as":
-    "Authentification en tant que",
+    "Authentifié en tant que",
 "Custom Builds":
-    "Genome Builds personalisés",
+    "Mes génomes Builds de référence",
 "Logout":
     "Déconnection",
 "Saved Histories":
@@ -67,11 +67,11 @@ define({
 "This history is empty" :
     "Cet historique est vide",
 "No matching datasets found" :
-    "Aucunes données correspondantes trouvées",
+    "Aucunes données correspondantes n'a été trouvées",
 "An error occurred while getting updates from the server" :
     "Une erreur s'est produite lors de l'envoi des mises à jour depuis le serveur",
 "Please contact a Galaxy administrator if the problem persists" :
-    "Veuillez contacter un administrateur Galaxy si ce problème persiste.",
+    "Veuillez contacter un administrateur de l'instance Galaxy si ce problème persiste",
 //TODO:
 //"An error was encountered while <% where %>" :
 //false,
@@ -82,13 +82,13 @@ define({
 "You are over your disk quota" :
     "Vous avez dépassé votre quota disque",
 "Tool execution is on hold until your disk usage drops below your allocated quota" :
-    "L'exécution de l'outil est en attente tant que votre utilisation d'espace disque n'est pas inférieur à votre quota attribué",
+    "L'exécution de l'outil est en attente tant que votre utilisation d'espace disque dépasse le quota attribué",
 "All" :
     "Tout",
 "None" :
     "Aucun",
 "For all selected" :
-    "Pour tous les",
+    "Pour toute la sélection",
 
 // // ---- history-view-edit
 "Edit history tags" :
