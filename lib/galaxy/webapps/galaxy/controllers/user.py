@@ -1069,15 +1069,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         # Display custom builds page.
         #
 
-        for key, attributes in dbkeys.items():
-            print key
-            print attributes
-            if key and key in dbkeys:
-                del dbkeys[key]
-            user.preferences['dbkeys'] = dumps(dbkeys)
-            trans.sa_session.flush()
-
-
         # Add chrom/contig count to dbkeys dict.
         updated = False
         for key, attributes in dbkeys.items():

@@ -672,7 +672,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         else:
             # Have everything needed; create new build.
             build_dict = { "name": name }
-            if len_type == 'text':
+            if len_type in [ 'text', 'file' ]:
                 # Create new len file
                 new_len = trans.app.model.HistoryDatasetAssociation( extension="len", create_dataset=True, sa_session=trans.sa_session )
                 trans.sa_session.add( new_len )
@@ -683,9 +683,10 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 try:
                     trans.app.object_store.create( new_len.dataset )
                 except ObjectInvalid:
-                    raise Exception( 'Unable to create output dataset: object store is full.' )
+                    raise MessageException( 'Unable to create output dataset: object store is full.' )
                 trans.sa_session.flush()
                 counter = 0
+                lines_skipped = 0
                 f = open(new_len.file_name, "w")
                 # LEN files have format:
                 #   <chrom_name><tab><chrom_length>
@@ -712,24 +713,21 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             else:
                 dataset_id = trans.security.decode_id( len_value )
                 dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
-                if len_type == 'fasta':
-                    try:
-                        len_dataset = dataset.get_converted_dataset( trans, "len" )
-                        # HACK: need to request dataset again b/c get_converted_dataset()
-                        # doesn't return dataset (as it probably should).
-                        len_dataset = dataset.get_converted_dataset( trans, "len" )
-                        if len_dataset.state != trans.app.model.Job.states.ERROR:
-                            chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
-                            if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
-                                try:
-                                    chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
-                                    build_dict[ 'count' ] = chrom_count
-                                except Exception as e:
-                                    raise Exception( 'Unable to determine chroms/contigs count.' )
-                    except Exception as e:
-                        raise Exception( 'Failed to convert dataset.' )
-                else:
-                    raise Exception( 'Not implemented.' )
+                try:
+                    len_dataset = dataset.get_converted_dataset( trans, "len" )
+                    # HACK: need to request dataset again b/c get_converted_dataset()
+                    # doesn't return dataset (as it probably should).
+                    len_dataset = dataset.get_converted_dataset( trans, "len" )
+                    if len_dataset.state != trans.app.model.Job.states.ERROR:
+                        chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
+                        if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
+                            try:
+                                chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                                build_dict[ 'count' ] = chrom_count
+                            except:
+                                raise MessageException( 'Unable to determine chroms/contigs count.' )
+                except:
+                    raise MessageException( 'Failed to convert dataset.' )
             dbkeys[key] = build_dict
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()

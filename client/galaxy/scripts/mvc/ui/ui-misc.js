@@ -195,9 +195,9 @@ define(['utils/utils',
             if ( file ) {
                 var reader = new FileReader();
                 reader.onload = function() {
-                    self.model.set({ wait: false, value: this.result });
+                    self.model.set( { wait: false, value: this.result } );
                 }
-                this.model.set({ wait: true, value: null });
+                this.model.set( { wait: true, value: null } );
                 reader.readAsText( file );
             }
         }

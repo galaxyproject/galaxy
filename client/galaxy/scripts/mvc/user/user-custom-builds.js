@@ -79,7 +79,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                         type    : 'select',
                         value   : 'file',
                         data    : [ { value : 'fasta',  label : 'FASTA-file from history' },
-                                    { value : 'file',   label : 'Len-file from history' },
+                                    { value : 'file',   label : 'Len-file from disk' },
                                     { value : 'text',   label : 'Len-file by copy/paste' } ]
                     },
                     cases       : [ {
@@ -128,7 +128,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                                         } else {
                                             self.message.update( { message: 'Successfully added a new custom build.', status: 'success' } );
                                         }
-                                        _.each( form.field_list, function( field ) { field.value( null ) } );
                                     },
                                     error   : function( response, err ) {
                                         var message = err && err.responseJSON && err.responseJSON.err_msg;
