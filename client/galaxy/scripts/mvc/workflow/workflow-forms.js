@@ -151,7 +151,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                     type        : 'text',
                     value       : '',
                     ignore      : '',
-                    help        : 'This action will rename the output dataset. Click <a href="https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables">here</a> for more information. Valid inputs are: <strong>' + input_terminal_names.join(', ') + '</strong>.'
+                    help        : 'This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables-edit/">here</a> for more information. Valid inputs are: <strong>' + input_terminal_names.join(', ') + '</strong>.'
                 },{
                     action      : 'ChangeDatatypeAction',
                     pja_arg     : 'newtype',
