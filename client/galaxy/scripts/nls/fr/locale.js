@@ -77,8 +77,8 @@ define({
 //TODO:
 //"An error was encountered while <% where %>" :
 //false,
-"Search datasets" :
-    "Recherche dans l'ensemble des données",
+"search datasets" :
+    "recherche dans l'ensemble des données",
 "You are currently viewing a deleted history!" :
     "Vous consultez actuellement un historique supprimé!",
 "You are over your disk quota" :

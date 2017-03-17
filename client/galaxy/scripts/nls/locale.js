@@ -52,6 +52,8 @@ define({
     false,
 "Logged in as":
     false,
+"Preferences":
+    false,
 "Custom Builds":
     false,
 "Logout":
@@ -76,7 +78,7 @@ define({
 //TODO:
 //"An error was encountered while <% where %>" :
 //false,
-"Search datasets" :
+"search datasets" :
     false,
 "You are currently viewing a deleted history!" :
     false,
