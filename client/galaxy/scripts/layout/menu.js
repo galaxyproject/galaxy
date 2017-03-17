@@ -224,7 +224,7 @@ var Collection = Backbone.Collection.extend({
                 cls             : 'loggedout-only',
                 tooltip         : 'Account registration or login',
                 menu            : [{
-                    title           : 'Login',
+                    title           : _l('Login'),
                     url             : 'user/login',
                     target          : 'galaxy_main',
                     noscratchbook   : true
