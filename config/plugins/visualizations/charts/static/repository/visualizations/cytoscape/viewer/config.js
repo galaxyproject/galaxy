@@ -42,6 +42,17 @@ define( [], function() {
                             { label : 'Undirected', value : '' } ]
 
             },
+            search_algorithm : {
+                label   : 'Graph search algorithm',
+                help    : 'Select a search algorithm.',
+                type    : 'select',
+                display : 'radio',
+                value   : '',
+                data    : [ { label : 'Breadth First Search', value : 'bfs' },
+                            { label : 'Depth First Search', value : 'dfs' },
+                            { label : 'None', value : '' } ]
+
+            },
             min_zoom : {
                 name  : 'min_zoom',
                 label : 'Minimum zoom',

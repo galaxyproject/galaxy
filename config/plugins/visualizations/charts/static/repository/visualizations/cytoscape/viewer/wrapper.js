@@ -48,9 +48,9 @@ define( [ 'utilities/utils', 'utilities/sifjson', 'plugins/cytoscape/cytoscape' 
 			        }
 			    },
                             {
-                                selector: '.bfspath',
+                                selector: '.searchpath',
 			        style: {
-				    'background-color': '#336699', // #61bffc
+				    'background-color': '#336699',
                                     'line-color': '#336699',
                                     'target-arrow-color': '#336699',
                                     'transition-property': 'background-color, line-color, target-arrow-color',
@@ -62,9 +62,10 @@ define( [ 'utilities/utils', 'utilities/sifjson', 'plugins/cytoscape/cytoscape' 
                         
                         // Register tap event on graph nodes
                         // Right now on tapping on any node, BFS starts from that node
-                        cytoscape.$('node').on('tap', function( e ) {
-                            var ele = e.cyTarget;
-                            self.run_bfs(cytoscape, ele.id());
+                        cytoscape.$( 'node' ).on('tap', function( e ) {
+                            var ele = e.cyTarget,
+                                search_algorithm = settings.get( 'search_algorithm' );
+                            self.run_search_algorithm(cytoscape, ele.id(), search_algorithm);
                         });
                         
                         chart.state( 'ok', 'Chart drawn.' );
@@ -81,13 +82,21 @@ define( [ 'utilities/utils', 'utilities/sifjson', 'plugins/cytoscape/cytoscape' 
                 }
             });
         },
-        run_bfs: function( cytoscape, root_id ) {
-            var bfs = cytoscape.elements().bfs('#' + root_id, function(){}, true);
-            var i = 0, timeOut = 1500;
+        run_search_algorithm: function( cytoscape, root_id, type ) {
+            var algorithm = "", i = 0, timeOut = 1500;
+            if( type === "bfs" ) {
+                algorithm = cytoscape.elements().bfs('#' + root_id, function(){}, true);
+            }
+            else if( type === "dfs" ) {
+                algorithm = cytoscape.elements().dfs('#' + root_id, function(){}, true);
+            }
+            else {
+                return;
+            }
             var selectNextElement = function() {
-                if( i < bfs.path.length ) {
+                if( i < algorithm.path.length ) {
                     // Add css class for the selected edge
-                    bfs.path[i].addClass('bfspath');
+                    algorithm.path[i].addClass('searchpath');
                     i++;
                     setTimeout(selectNextElement, timeOut);
                 }
