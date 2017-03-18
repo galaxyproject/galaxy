@@ -163,9 +163,49 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
         },
 
         _renderHelp: function( len_type ) {
-            window.console.log( len_type);
-            this.$help.empty().addClass( 'infomessagesmall' ).html( 'hallo' );
+            this.$help.empty()
+                      .addClass( 'alert alert-info' )
+                      .html( len_type == 'fasta' ? this._templateFasta() : this._templateLen() );
+        },
 
+        _templateLen: function() {
+            return  '<h4>Length Format</h4>' +
+                    '<p>' +
+                        'The length format is two-column, separated by whitespace, of the form:' +
+                        '<pre>chrom/contig   length of chrom/contig</pre>' +
+                    '</p>' +
+                    '<p>' +
+                        'For example, the first few entries of <em>mm9.len</em> are as follows:' +
+                        '<pre>' +
+                            'chr1    197195432\n' +
+                            'chr2    181748087\n' +
+                            'chr3    159599783\n' +
+                            'chr4    155630120\n' +
+                            'chr5    152537259' +
+                        '</pre>' +
+                    '</p>' +
+                    '<p>Trackster uses this information to populate the select box for chrom/contig, and' +
+                    'to set the maximum basepair of the track browser. You may either upload a .len file' +
+                    'of this format (Len File option), or directly enter the information into the box ' +
+                    '(Len Entry option).</p>';
+        },
+
+        _templateFasta: function() {
+            return  '<h4>FASTA format</h4>' +
+                    '<p>' +
+                        'This is a multi-fasta file from your current history that provides the genome' +
+                        'sequences for each chromosome/contig in your build.' +
+                    '</p>' +
+                    '<p>' +
+                        'Here is a snippet from an example multi-fasta file:' +
+                        '<pre>' +
+                            '>chr1\n' +
+                            'ATTATATATAAGACCACAGAGAGAATATTTTGCCCGG...\n\n' +
+                            '>chr2\n' +
+                            'GGCGGCCGCGGCGATATAGAACTACTCATTATATATA...\n\n' +
+                            '...' +
+                        '</pre>' +
+                    '</p>';
         }
     });
 
