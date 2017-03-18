@@ -968,7 +968,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if trans.user:
             trans.log_action( trans.get_user(), action, context, params )
 
-
     def __get_redirect_url( self, redirect ):
         root_url = url_for( '/', qualified=True )
         # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
