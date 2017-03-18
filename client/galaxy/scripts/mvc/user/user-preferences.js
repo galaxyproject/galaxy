@@ -62,8 +62,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     description     : 'Add or remove custom builds using history datasets.',
                     icon            : 'fa-cubes',
                     onclick         : function() {
-                        //url             : 'api/users/' + options.user_id + '/custom_builds/inputs',
-                        //window.location.href = Galaxy.root + 'user/openid_manage?cntrller=user&use_panels=True';
+                        window.location.href = Galaxy.root + 'custom_builds';
                     }
                 },
                 'logout': {

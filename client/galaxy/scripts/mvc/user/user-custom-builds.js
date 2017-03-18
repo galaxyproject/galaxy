@@ -30,8 +30,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
             this.table.appendHeader();
             this.setElement( $( '<div/>' ).append( $( '<h4/>' ).text( 'Current Custom Builds' ) )
                                           .append( this.table.$el )
-                                          .append( $( '<h4/>' ).text( 'System Installed Builds' ).addClass( 'ui-margin-top' ) )
-                                          .append( this.installed_builds.$el )
+                                          .append( this.$installed = $( '<div/>' ).append( $( '<h4/>' ).text( 'System Installed Builds' ).addClass( 'ui-margin-top' ) )
+                                                                                  .append( this.installed_builds.$el ) )
                                           .append( $( '<h4/>' ).text( 'Add a Custom Build' ).addClass( 'ui-margin-top' ) )
                                           .append( $( '<span/>').append( $( '<div/>' ).css( { width: '49%', float: 'left' } )
                                                                                       .append( this.message.$el )
@@ -158,7 +158,13 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                 }
             });
             this.$form.empty().append( form.$el );
-            this.installed_builds.update( this.model.get( 'installed_builds' ) );
+            var installed_builds = this.model.get( 'installed_builds' );
+            if ( installed_builds && installed_builds.length ) {
+                this.$installed.show();
+                this.installed_builds.update( this.model.get( 'installed_builds' ) );
+            } else {
+                this.$installed.hide();
+            }
             this._renderHelp( initial_type );
         },
 
