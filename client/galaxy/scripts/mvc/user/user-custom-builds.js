@@ -33,10 +33,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                                           .append( $( '<h4/>' ).text( 'System Installed Builds' ).addClass( 'ui-margin-top' ) )
                                           .append( this.installed_builds.$el )
                                           .append( $( '<h4/>' ).text( 'Add a Custom Build' ).addClass( 'ui-margin-top' ) )
-                                          .append( this.message.$el )
-                                          .append( $( '<span/>').addClass( 'ui-margin-top' )
-                                                                .append( this.$form = $( '<div/>' ).css( { width: '49%', float: 'left' } ) )
-                                                                .append( this.$help = $( '<div/>' ).css( { width: '49%', float: 'right' } ) ) ) );
+                                          .append( $( '<span/>').append( $( '<div/>' ).css( { width: '49%', float: 'left' } )
+                                                                                      .append( this.message.$el )
+                                                                                      .append( this.$form = $( '<div/>' ).addClass( 'ui-margin-top' ) ) )
+                                                                .append( this.$help = $( '<div/>' ).css( { width: '49%', float: 'right', 'margin-top': '5px' } ) ) ) );
             this.listenTo( this.collection, 'add remove reset', function() { self._renderTable() } );
             this.listenTo( this.model, 'change', function() { self._renderForm() } );
             this.collection.fetch();
