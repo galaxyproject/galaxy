@@ -52,7 +52,16 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                settings = options.chart.settings,
 	                data_content = null,
 	                cytoscape = null,
-	                self = this;
+	                self = this,
+	                rgb = [],
+	                hex_color = "";
+	
+	            // Get hex color for the highlighted edges
+	            rgb.push( parseInt( settings.get( 'choose_red' ) ) );
+	            rgb.push( parseInt( settings.get( 'choose_green' ) ) );
+	            rgb.push( parseInt( settings.get( 'choose_blue' ) ) );
+	            hex_color = Utils.toHexColor( rgb );
+	
 	            Utils.get( {
 	                url     : dataset.download_url,
 	                success : function( content ) {
@@ -96,9 +105,9 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                            {
 	                                selector: '.searchpath',
 				        style: {
-					    'background-color': '#336699',
-	                                    'line-color': '#336699',
-	                                    'target-arrow-color': '#336699',
+					    'background-color': hex_color,
+	                                    'line-color': hex_color,
+	                                    'target-arrow-color': hex_color,
 	                                    'transition-property': 'background-color, line-color, target-arrow-color',
 	                                    'transition-duration': '0.75s'
 				        }
@@ -106,6 +115,12 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                            elements: data_content
 	                        });
 	                        
+	                        // Highlight the minimum spanning tree found using Kruskal algorithm
+	                        if( settings.get( 'search_algorithm' ) === "kruskal" ) {
+	                            var kruskal = cytoscape.elements().kruskal();
+	                            kruskal.edges().addClass('searchpath');
+	                        }
+	
 	                        // Register tap event on graph nodes
 	                        // Right now on tapping on any node, BFS starts from that node
 	                        cytoscape.$( 'node' ).on('tap', function( e ) {
@@ -113,7 +128,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                                search_algorithm = settings.get( 'search_algorithm' );
 	                            self.run_search_algorithm(cytoscape, ele.id(), search_algorithm);
 	                        });
-	                        
+	
 	                        chart.state( 'ok', 'Chart drawn.' );
 	                        // Re-renders the graph view when window is resized
 	                        $( window ).resize( function() { cytoscape.layout(); } );
@@ -271,15 +286,29 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	        return 'uid-' + top.__utils__uid__++;
 	    };
 	
+	    /** Create Hex code from RGB color  */
+	    function toHexColor( rgb ) {
+	        var red = rgb[0].toString(16),
+	            green = rgb[1].toString(16),
+	            blue = rgb[2].toString(16);
+	        red = ( red.length == 1 ? "0" + red : red );
+	        green = ( green.length == 1 ? "0" + green : green );
+	        blue = ( blue.length == 1 ? "0" + blue : blue );
+	
+	        return "#" + red + green + blue;
+	    };
+	
 	    return {
 	        get     : get,
 	        merge   : merge,
 	        uid     : uid,
 	        request : request,
 	        clone   : clone,
-	        isJSON  : isJSON
+	        isJSON  : isJSON,
+	        toHexColor  : toHexColor
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
 
 /***/ },
 /* 2 */

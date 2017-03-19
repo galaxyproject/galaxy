@@ -863,14 +863,45 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	
 	            },
 	            search_algorithm : {
-	                label   : 'Graph search algorithm',
+	                label   : 'Graph algorithms',
 	                help    : 'Select a search algorithm.',
 	                type    : 'select',
 	                display : 'radio',
 	                value   : '',
 	                data    : [ { label : 'Breadth First Search', value : 'bfs' },
 	                            { label : 'Depth First Search', value : 'dfs' },
+	                            { label : 'Minimum Spanning Tree (Kruskal)', value : 'kruskal' },
 	                            { label : 'None', value : '' } ]
+	
+	            },
+	            choose_red : {
+	                name  : 'choose_red',
+	                label : 'Red',
+	                help  : 'Select red component for highlighted edges',
+	                type  : 'integer',
+	                min   : 0,
+	                max   : 255,
+	                value : 51
+	
+	            },
+	            choose_green : {
+	                name  : 'choose_green',
+	                label : 'Green',
+	                help  : 'Select green component for highlighted edges',
+	                type  : 'integer',
+	                min   : 0,
+	                max   : 255,
+	                value : 102
+	
+	            },
+	            choose_blue : {
+	                name  : 'choose_blue',
+	                label : 'Blue',
+	                help  : 'Select blue component for highlighted edges',
+	                type  : 'integer',
+	                min   : 0,
+	                max   : 255,
+	                value : 153
 	
 	            },
 	            min_zoom : {
