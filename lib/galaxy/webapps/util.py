@@ -8,6 +8,10 @@ import mako.exceptions
 log = logging.getLogger(__name__)
 
 
+class MiddlewareWrapUnsupported(Exception):
+    pass
+
+
 def build_template_error_formatters():
     """
     Build a list of template error formatters for WebError. When an error
@@ -26,8 +30,26 @@ def build_template_error_formatters():
     return formatters
 
 
-def wrap_if_allowed(app, stack, wrap, name=None, args=None, kwargs=None,
-                    alt_wrap=None, alt_name=None, alt_args=None, alt_kwargs=None):
+def wrap_if_allowed_or_fail(app, stack, wrap, name=None, args=None, kwargs=None):
+    """
+    Wrap the application with the given method if the application stack allows for it.
+
+    Arguments are the same as for :func:`wrap_if_allowed`.
+
+    Raises :exception:`MiddlewareWrapUnsupported` if the stack does not allow the middleware.
+    """
+    name = name or wrap.__name__
+    if not stack.allowed_middleware(wrap):
+        raise MiddlewareWrapUnsupported(
+            "'%s' is enabled in your configuration but the %s application stack does not support it, this "
+            "middleware has been disabled" % (name, stack.name))
+    args = args or []
+    kwargs = kwargs or {}
+    log.debug("Enabling '%s' middleware", name)
+    return wrap(app, *args, **kwargs)
+
+
+def wrap_if_allowed(app, stack, wrap, name=None, args=None, kwargs=None):
     """
     Wrap the application with the given method if the application stack allows for it.
 
@@ -43,16 +65,11 @@ def wrap_if_allowed(app, stack, wrap, name=None, args=None, kwargs=None,
     :param  args:   arguments to pass to `wrap` (not including `app` itself)
     :type   kwargs: dict
     :param  kwargs: keyword arguments to pass to `wrap`
+
+    Returns `app` unmodified if the stack does not allow the middleware.
     """
-    name = name or wrap.__name__
-    if stack.allowed_middleware(wrap):
-        args = args or []
-        kwargs = kwargs or {}
-        log.debug("Enabling '%s' middleware", name)
-        return wrap(app, *args, **kwargs)
-    else:
-        log.warning("'%s' is enabled in your configuration but the %s application stack does not support it, this "
-                    "middleware has been disabled", name, stack.name)
-        if alt_wrap:
-            app = wrap_if_allowed(app, stack, alt_wrap, name=alt_name, args=alt_args, kwargs=alt_kwargs)
+    try:
+        return wrap_if_allowed_or_fail(app, stack, wrap, name=name, args=args, kwargs=kwargs)
+    except MiddlewareWrapUnsupported as exc:
+        log.warning(str(exc))
         return app

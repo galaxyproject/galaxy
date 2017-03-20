@@ -11,8 +11,12 @@ from inspect import isclass
 from paste import httpexceptions
 
 from galaxy.util import asbool
-from galaxy.webapps.util import build_template_error_formatters, wrap_if_allowed
-
+from galaxy.webapps.util import (
+    MiddlewareWrapUnsupported,
+    build_template_error_formatters,
+    wrap_if_allowed,
+    wrap_if_allowed_or_fail
+)
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework.webapp
@@ -119,13 +123,15 @@ def wrap_in_middleware( app, global_conf, application_stack, **local_conf ):
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
-        from weberror import evalexception
-        import galaxy.web.framework.middleware.error
-        app = wrap_if_allowed( app, stack, evalexception.EvalException,
-                               args=(conf,),
-                               kwargs=dict(templating_formatters=build_template_error_formatters()),
-                               alt_wrap=galaxy.web.framework.middleware.error.ErrorMiddleware,
-                               alt_args=(conf,) )
+        try:
+            from weberror import evalexception
+            app = wrap_if_allowed_or_fail( app, stack, evalexception.EvalException,
+                                           args=(conf,),
+                                           kwargs=dict(templating_formatters=build_template_error_formatters()) )
+        except MiddlewareWrapUnsupported as exc:
+            log.warning(str(exc))
+            import galaxy.web.framework.middleware.error
+            app = wrap_if_allowed( app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,) )
     else:
         # Not in interactive debug mode, just use the regular error middleware
         import galaxy.web.framework.middleware.error
