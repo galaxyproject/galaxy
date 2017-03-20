@@ -2516,10 +2516,22 @@ class RelabelFromFileTool( DatabaseOperationTool ):
         log.info(new_labels_dataset_assoc)
         new_labels_path = new_labels_dataset_assoc.file_name
         new_labels = open(new_labels_path, "r").readlines(1024 * 1000000)
+        if new_labels_dataset_assoc.ext == 'tabular' and new_labels_dataset_assoc.metadata.get('columns') == 2:
+            # We have a tabular file, where the first column is an existing element identifier,
+            # and the second column is the new element identifier.
+            source_new_label = (line.strip().split('\t') for line in new_labels)
+            new_labels_dict = {source: new_label for source, new_label in source_new_label}
+            for i, dce in enumerate(hdca.collection.elements):
+                dce_object = dce.element_object
+                element_identifier = dce.element_identifier
+                new_label = new_labels_dict.get(element_identifier, element_identifier)
+                new_elements[new_label] = dce_object.copy()
 
-        for i, dce in enumerate(hdca.collection.elements):
-            dce_object = dce.element_object
-            new_elements[new_labels[i].strip()] = dce_object.copy()
+        else:
+            # If new_labels_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
+            for i, dce in enumerate(hdca.collection.elements):
+                dce_object = dce.element_object
+                new_elements[new_labels[i].strip()] = dce_object.copy()
 
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements

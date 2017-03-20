@@ -8,7 +8,7 @@
             class="ModelOperationToolAction"/>
     <inputs>
         <param type="data_collection" name="input" label="Input Collection" help="A list whose identifiers will be relabelled."/>
-        <param type="data" name="labels" format="txt" label="New Identifiers" />
+        <param type="data" name="labels" format="txt,tabular" label="New Identifiers" />
     </inputs>
     <outputs>
         <collection name="output" format_source="input" type_source="input" label="${on_string} (relabelled)" >
@@ -42,10 +42,45 @@
               </element>
             </output_collection>
         </test>
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="i1">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <param name="labels" value="new_labels_2.txt" ftype="txt" />
+            <output_collection name="output" type="list:paired">
+              <element name="new_i1">
+                <element name="forward">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+                <element name="reverse">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a different line of text.\n$" />
+                  </assert_contents>
+                </element>
+              </element>
+            </output_collection>
+        </test>
     </tests>
     <help>
         This tool will take an input list and a text file with new identifiers
         and build a new list with the same datasets but these new identifiers.
+        The order and number of entries in the text file must match the order
+        of the items you want to rename in your dataset collection.
+
+        Alternatively a tabular file may be supplied, where the first column
+        if the current identifier that should be renamed, and the second column
+        contains the new label. This file may contain less entries than items
+        in the collection. In that case only matching list identifiers will be
+        relabeled.
 
         This tool will create new history datasets from your collection
         but your quota usage will not increase.
