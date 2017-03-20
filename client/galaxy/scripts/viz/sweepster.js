@@ -604,7 +604,7 @@ var ToolParameterTreeView = Backbone.View.extend({
         _.each(tree_params, function(param, index) {
             var x = param_depths[index+1],
                 center_left = $('#center').position().left;
-            self.$el.append( $('<div>').addClass('label')
+            self.$el.append( $('<div>').addClass('label-text')
                                        .text(param.get('label'))
                                        .css('left', x + center_left) );
         });
