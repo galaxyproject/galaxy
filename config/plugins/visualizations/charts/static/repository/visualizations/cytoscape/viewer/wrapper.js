@@ -74,11 +74,6 @@ define( [ 'utilities/utils', 'utilities/sifjson', 'plugins/cytoscape/cytoscape' 
                             var kruskal = cytoscape.elements().kruskal();
                             kruskal.edges().addClass('searchpath');
                         }
-
-                        if ( settings.get( 'graph_traversal' ) !== "" ) {
-
-                        }
-
                         // Register tap event on graph nodes
                         // Right now on tapping on any node, BFS starts from that node
                         cytoscape.$( 'node' ).on('tap', function( e ) {
