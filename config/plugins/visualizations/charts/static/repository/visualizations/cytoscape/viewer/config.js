@@ -40,7 +40,6 @@ define( [], function() {
                 value   : '',
                 data    : [ { label : 'Directed', value : 'triangle' },
                             { label : 'Undirected', value : '' } ]
-
             },
             search_algorithm : {
                 label   : 'Graph algorithms',
@@ -52,7 +51,20 @@ define( [], function() {
                             { label : 'Depth First Search', value : 'dfs' },
                             { label : 'Minimum Spanning Tree (Kruskal)', value : 'kruskal' },
                             { label : 'None', value : '' } ]
-
+            },
+            graph_traversal: {
+                label   : 'Graph traversal',
+                help    : 'Select a graph traversal type.',
+                type    : 'select',
+                display : 'radio',
+                value   : '',
+                data    : [ { label : 'Successors', value : 'successors' },
+                            { label : 'Predecessors', value : 'predecessors' },
+                            { label : 'Outgoers', value : 'outgoers' },
+                            { label : 'Incomers', value : 'incomers' },
+                            { label : 'Roots', value : 'roots' },
+                            { label : 'Leaves', value : 'leaves' },
+                            { label : 'None', value : '' } ]
             },
             choose_red : {
                 name  : 'choose_red',
@@ -62,7 +74,6 @@ define( [], function() {
                 min   : 0,
                 max   : 255,
                 value : 51
-
             },
             choose_green : {
                 name  : 'choose_green',
@@ -72,7 +83,6 @@ define( [], function() {
                 min   : 0,
                 max   : 255,
                 value : 102
-
             },
             choose_blue : {
                 name  : 'choose_blue',
@@ -82,7 +92,6 @@ define( [], function() {
                 min   : 0,
                 max   : 255,
                 value : 153
-
             },
             min_zoom : {
                 name  : 'min_zoom',

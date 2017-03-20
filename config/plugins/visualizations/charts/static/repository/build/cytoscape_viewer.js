@@ -121,12 +121,24 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                            kruskal.edges().addClass('searchpath');
 	                        }
 	
+	                        if ( settings.get( 'graph_traversal' ) !== "" ) {
+	
+	                        }
+	
 	                        // Register tap event on graph nodes
 	                        // Right now on tapping on any node, BFS starts from that node
 	                        cytoscape.$( 'node' ).on('tap', function( e ) {
 	                            var ele = e.cyTarget,
-	                                search_algorithm = settings.get( 'search_algorithm' );
-	                            self.run_search_algorithm(cytoscape, ele.id(), search_algorithm);
+	                                search_algorithm = settings.get( 'search_algorithm' ), 
+	                                traversal_type = settings.get( 'graph_traversal' );
+	                            // If search algorithm and traversal both are chosen together,
+	                            // search algorithm chosen will take preferencel
+	                            if( settings.get( 'search_algorithm' ) !== "" ) {
+	                                self.run_search_algorithm(cytoscape, ele.id(), search_algorithm);
+	                            }
+	                            else if( settings.get( 'graph_traversal' ) !== "" ) {
+	                                self.run_traversal_type( cytoscape, ele.id(), traversal_type );
+	                            }
 	                        });
 	
 	                        chart.state( 'ok', 'Chart drawn.' );
@@ -163,6 +175,31 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                }
 	            };
 	            selectNextElement();
+	        },
+	        run_traversal_type: function( cytoscape, root_id, type ) {
+	            var node_collection;
+	            switch( type ) {
+	                case "predecessors":
+	                     node_collection = cytoscape.$( '#' + root_id ).predecessors();
+	                     break;
+	                case "successors":
+	                     node_collection = cytoscape.$( '#' + root_id ).successors();
+	                     break;
+	                case "outgoers":
+	                     node_collection = cytoscape.$( '#' + root_id ).outgoers();
+	                     break;
+	                case "incomers":
+	                     node_collection = cytoscape.$( '#' + root_id ).incomers();
+	                     break;
+	                case "roots":
+	                     node_collection = cytoscape.$( '#' + root_id ).roots();
+	                     break;
+	                case "leaves":
+	                     node_collection = cytoscape.$( '#' + root_id ).leaves();
+	                     break;
+	            }
+	            node_collection.edges().addClass( 'searchpath' );
+	            node_collection.nodes().addClass( 'searchpath' );
 	        }
 	    });
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
