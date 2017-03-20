@@ -4,7 +4,7 @@ set -e
 echo "Deleting galaxy user - it may not exist and this is fine."
 deluser galaxy | true
 
-GALAXY_TEST_UID=${GALAXY_TEST_UID:-"1"}
+: ${GALAXY_TEST_UID:-"1"}
 
 echo "Creating galaxy group with gid $GALAXY_TEST_UID - it may already exist and this is fine."
 groupadd -r galaxy -g "$GALAXY_TEST_UID" | true
@@ -14,7 +14,7 @@ echo "Setting galaxy user password - the operation may fail."
 echo "galaxy:galaxy" | chpasswd | true
 chown -R "$GALAXY_TEST_UID:$GALAXY_TEST_UID" /galaxy_venv
 
-GALAXY_TEST_DATABASE_TYPE=${GALAXY_TEST_DATABASE_TYPE:-"postgres"}
+: ${GALAXY_TEST_DATABASE_TYPE:-"postgres"}
 if [ "$GALAXY_TEST_DATABASE_TYPE" = "postgres" ];
 then
     su -c '/usr/lib/postgresql/9.3/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres
