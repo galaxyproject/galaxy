@@ -4,6 +4,8 @@ set -e
 echo "Deleting galaxy user - it may not exist and this is fine."
 deluser galaxy | true
 
+: ${GALAXY_TEST_UID:-"1"}
+
 echo "Creating galaxy group with gid $GALAXY_TEST_UID - it may already exist and this is fine."
 groupadd -r galaxy -g "$GALAXY_TEST_UID" | true
 echo "Creating galaxy user with uid $GALAXY_TEST_UID - it may already exist and this is fine."
@@ -12,7 +14,7 @@ echo "Setting galaxy user password - the operation may fail."
 echo "galaxy:galaxy" | chpasswd | true
 chown -R "$GALAXY_TEST_UID:$GALAXY_TEST_UID" /galaxy_venv
 
-GALAXY_TEST_DATABASE_TYPE=${GALAXY_TEST_DATABASE_TYPE:-"postgres"}
+: ${GALAXY_TEST_DATABASE_TYPE:-"postgres"}
 if [ "$GALAXY_TEST_DATABASE_TYPE" = "postgres" ];
 then
     su -c '/usr/lib/postgresql/9.3/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres
@@ -48,10 +50,11 @@ export TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 
+HOME=/galaxy
 sudo -E -u "#${GALAXY_TEST_UID}" ./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; }
 
 dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt
-[ -f $dev_requirements ] && $GALAXY_VIRTUAL_ENV/bin/pip install -r $dev_requirements
+[ -f $dev_requirements ] && sudo -E -u "#${GALAXY_TEST_UID}" $GALAXY_VIRTUAL_ENV/bin/pip install -r $dev_requirements
 
 echo "Upgrading test database..."
 sudo -E -u "#${GALAXY_TEST_UID}" sh manage_db.sh upgrade
