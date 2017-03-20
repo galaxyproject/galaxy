@@ -198,7 +198,7 @@ class WebApplication( object ):
             controller_name, controller, action, method = self._resolve_map_match( map_match, path_info, controllers, use_default=use_default)
         except httpexceptions.HTTPNotFound:
             # Failed, let's check client routes
-            if not environ[ 'is_api_request' ]:
+            if not environ[ 'is_api_request' ] and client_match is not None:
                 controller_name, controller, action, method = self._resolve_map_match( client_match, path_info, controllers )
             else:
                 raise
