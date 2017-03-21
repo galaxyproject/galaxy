@@ -1,72 +1,130 @@
 /** en/main localization hash - for use with requirejs' i18n plugin */
 define({
     root : {
-
+// ----------------------------------------------------------------------------- masthead
+"Analyze Data":
+    false,
+"Workflow":
+    false,
+"Shared Data":
+    false,
+"Data Libraries":
+    false,
+"Histories":
+    false,
+"Workflows":
+    false,
+"Visualizations":
+    false,
+"Pages":
+    false,
+"Visualization":
+    false,
+"New Track Browser":
+    false,
+"Saved Visualizations":
+    false,
+"Interactive Environments":
+    false,
+"Admin":
+    false,
+"Help":
+    false,
+"Support":
+    false,
+"Search":
+    false,
+"Mailing Lists":
+    false,
+"Videos":
+    false,
+"Wiki":
+    false,
+"How to Cite Galaxy":
+    false,
+"Interactive Tours":
+    false,
+"User":
+    false,
+"Login":
+    false,
+"Register":
+    false,
+"Logged in as":
+    false,
+"Custom Builds":
+    false,
+"Logout":
+    false,
+"Saved Histories":
+    false,
+"Saved Datasets":
+    false,
+"Saved Pages":
+    false,
 // ---------------------------------------------------------------------------- histories
 // ---- history-model
 // ---- history-view
 "This history is empty" :
-false,
+    false,
 "No matching datasets found" :
-false,
+    false,
 "An error occurred while getting updates from the server" :
-false,
+    false,
 "Please contact a Galaxy administrator if the problem persists" :
-false,
+    false,
 //TODO:
 //"An error was encountered while <% where %>" :
 //false,
 "Search datasets" :
-false,
+    false,
 "You are currently viewing a deleted history!" :
-false,
+    false,
 "You are over your disk quota" :
-false,
+    false,
 "Tool execution is on hold until your disk usage drops below your allocated quota" :
-false,
+    false,
 "All" :
-false,
+    false,
 "None" :
-false,
+    false,
 "For all selected" :
-false,
+    false,
 
 // ---- history-view-edit
 "Edit history tags" :
-false,
+    false,
 "Edit history Annotation" :
-false,
+    false,
 "Click to rename history" :
-false,
+    false,
 // multi operations
 "Operations on multiple datasets" :
-false,
+    false,
 "Hide datasets" :
-false,
+    false,
 "Unhide datasets" :
-false,
+    false,
 "Delete datasets" :
-false,
+    false,
 "Undelete datasets" :
-false,
+    false,
 "Permanently delete datasets" :
-false,
+    false,
 "This will permanently remove the data in your datasets. Are you sure?" :
-false,
+    false,
 
 // ---- history-view-annotated
 "Dataset" :
-false,
+    false,
 "Annotation" :
 false,
 
 // ---- history-view-edit-current
 "This history is empty. Click 'Get Data' on the left tool menu to start" :
-false,
-"No matching datasets found" :
-false,
+    false,
 "You must be logged in to create histories" :
-false,
+    false,
 //TODO:
 //"You can <% loadYourOwn %> or <% externalSource %>" :
 //false,
@@ -85,138 +143,137 @@ false,
 // ---------------------------------------------------------------------------- datasets
 // ---- hda-model
 "Unable to purge dataset" :
-false,
+    false,
 
 // ---- hda-base
 // display button
 "Cannot display datasets removed from disk" :
-false,
+    false,
 "This dataset must finish uploading before it can be viewed" :
-false,
+    false,
 "This dataset is not yet viewable" :
-false,
+    false,
 "View data" :
-false,
+    false,
 // download button
 "Download" :
-false,
+    false,
 "Download dataset" :
-false,
+    false,
 "Additional files" :
-false,
+    false,
 // info/show_params
 "View details" :
-false,
+    false,
 
 // dataset states
 // state: new
 "This is a new dataset and not all of its data are available yet" :
-false,
+    false,
 // state: noPermission
 "You do not have permission to view this dataset" :
-false,
+    false,
 // state: discarded
 "The job creating this dataset was cancelled before completion" :
-false,
+    false,
 // state: queued
 "This job is waiting to run" :
-false,
+    false,
 // state: upload
 "This dataset is currently uploading" :
-false,
+    false,
 // state: setting_metadata
 "Metadata is being auto-detected" :
-false,
+    false,
 // state: running
 "This job is currently running" :
-false,
+    false,
 // state: paused
 "This job is paused. Use the \"Resume Paused Jobs\" in the history menu to resume" :
-false,
+    false,
 // state: error
 "An error occurred with this dataset" :
-false,
+    false,
 // state: empty
 "No data" :
-false,
+    false,
 // state: failed_metadata
 "An error occurred setting the metadata for this dataset" :
-false,
+    false,
 
 // ajax error prefix
 "There was an error getting the data for this dataset" :
-false,
+    false,
 
 // purged'd/del'd msg
 "This dataset has been deleted and removed from disk" :
-false,
+    false,
 "This dataset has been deleted" :
-false,
+    false,
 "This dataset has been hidden" :
-false,
+    false,
 
 "format" :
-false,
+    false,
 "database" :
-false,
+    false,
 
 // ---- hda-edit
 "Edit attributes" :
-false,
+    false,
 "Cannot edit attributes of datasets removed from disk" :
-false,
+    false,
 "Undelete dataset to edit attributes" :
-false,
+    false,
 "This dataset must finish uploading before it can be edited" :
-false,
+    false,
 "This dataset is not yet editable" :
-false,
+    false,
 
 "Delete" :
-false,
+    false,
 "Dataset is already deleted" :
-false,
+    false,
 
 "View or report this error" :
-false,
+    false,
 
 "Run this job again" :
-false,
+    false,
 
 "Visualize" :
-false,
+    false,
 "Visualize in" :
-false,
+    false,
 
 "Undelete it" :
-false,
+    false,
 "Permanently remove it from disk" :
-false,
+    false,
 "Unhide it" :
-false,
+    false,
 
 "You may be able to" :
-false,
+    false,
 "set it manually or retry auto-detection" :
-false,
+    false,
 
 "Edit dataset tags" :
-false,
+    false,
 "Edit dataset annotation" :
-false,
+    false,
 
 
 // ---------------------------------------------------------------------------- misc. MVC
 "Tags" :
-false,
-"Annotation" :
-false,
+    false,
 "Edit annotation" :
-false,
+    false,
 
 
 // ----------------------------------------------------------------------------
 },
-    'ja'  : true,
-    'zh'  : true
+    'ja' : true,
+    'fr' : true,
+    'zh' : true
 });
