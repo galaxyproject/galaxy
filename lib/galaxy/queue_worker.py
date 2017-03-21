@@ -9,7 +9,6 @@ import time
 
 import galaxy.queues
 from galaxy import util
-from galaxy.model.util import pgcalc
 
 from kombu import Connection
 from kombu.mixins import ConsumerMixin
@@ -52,8 +51,9 @@ def send_control_task(app, task, noop_self=False, kwargs={}):
     try:
         c = Connection(app.config.amqp_internal_connection)
         with producers[c].acquire(block=True) as producer:
+            control_queues = galaxy.queues.all_control_queues_for_declare(app.config, app.application_stack)
             producer.publish(payload, exchange=galaxy.queues.galaxy_exchange,
-                             declare=[galaxy.queues.galaxy_exchange] + galaxy.queues.all_control_queues_for_declare(app.config),
+                             declare=[galaxy.queues.galaxy_exchange] + control_queues,
                              routing_key='control')
     except Exception:
         # This is likely connection refused.
@@ -87,6 +87,7 @@ def reload_tool(app, **kwargs):
 def reload_toolbox(app, **kwargs):
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
+    app.tool_cache.cleanup()
     app.toolbox = _get_new_toolbox(app)
     app.toolbox._reload_count = reload_count + 1
 
@@ -143,13 +144,11 @@ def recalculate_user_disk_usage(app, **kwargs):
     if user_id:
         user = sa_session.query( app.model.User ).get( app.security.decode_id( user_id ) )
         if user:
-            if sa_session.get_bind().dialect.name not in ( 'postgres', 'postgresql' ):
-                new = user.calculate_disk_usage()
-            else:
-                new = pgcalc(sa_session, user.id)
-            user.set_disk_usage(new)
-            sa_session.add(user)
-            sa_session.flush()
+            user.calculate_and_set_disk_usage()
+        else:
+            log.error("Recalculate user disk usage task failed, user %s not found" % user_id)
+    else:
+        log.error("Recalculate user disk usage task received without user_id.")
 
 
 def reload_tool_data_tables(app, **kwargs):
@@ -206,7 +205,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
             # Default to figuring out which control queue to use based on the app config.
             queue = galaxy.queues.control_queue_from_config(app.config)
         self.task_mapping = task_mapping
-        self.declare_queues = galaxy.queues.all_control_queues_for_declare(app.config)
+        self.declare_queues = galaxy.queues.all_control_queues_for_declare(app.config, app.application_stack)
         # TODO we may want to purge the queue at the start to avoid executing
         # stale 'reload_tool', etc messages.  This can happen if, say, a web
         # process goes down and messages get sent before it comes back up.
@@ -226,13 +225,13 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
             if body.get('noop', None) != self.app.config.server_name:
                 try:
                     f = self.task_mapping[body['task']]
-                    log.info("Instance '%s' recieved '%s' task, executing now.", self.app.config.server_name, body['task'])
+                    log.info("Instance '%s' received '%s' task, executing now.", self.app.config.server_name, body['task'])
                     f(self.app, **body['kwargs'])
                 except Exception:
                     # this shouldn't ever throw an exception, but...
                     log.exception("Error running control task type: %s" % body['task'])
         else:
-            log.warning("Recieved a malformed task message:\n%s" % body)
+            log.warning("Received a malformed task message:\n%s" % body)
         message.ack()
 
     def shutdown(self):

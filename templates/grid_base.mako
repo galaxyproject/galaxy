@@ -158,6 +158,7 @@
             'sortable'          : column.sortable,
             'label'             : column.label,
             'filterable'        : column.filterable,
+            'target'            : column.target,
             'is_text'           : isinstance(column, TextColumn),
             'href'              : href,
             'extra'             : extra
@@ -172,7 +173,6 @@
             'target'                : operation.target,
             'label'                 : operation.label,
             'confirm'               : operation.confirm,
-            'inbound'               : operation.inbound,
             'global_operation'      : False
         })
         if operation.allow_multiple:
@@ -187,7 +187,7 @@
         self.grid_config['global_actions'].append({
             'url_args'  : url(**action.url_args),
             'label'     : action.label,
-            'inbound'   : action.inbound
+            'target'    : action.target
         })
     endfor
 
@@ -224,8 +224,8 @@
                     link = None
                 endif
 
-                ## inbound
-                inbound = column.inbound
+                ## target
+                target = column.target
 
                 ## get value
                 value = column.get_value( trans, grid, item )
@@ -240,7 +240,7 @@
                 item_dict['column_config'][column.label] = {
                     'link'      : link,
                     'value'     : value,
-                    'inbound'   : inbound
+                    'target'    : target
                 }
             endif
         endfor

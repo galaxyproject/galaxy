@@ -47,6 +47,8 @@ lib/galaxy/tours/
 lib/galaxy/util/
 lib/galaxy/visualization/
 lib/galaxy/web/buildapp.py
+lib/galaxy/web/framework/base.py
+lib/galaxy/web/framework/decorators.py
 lib/galaxy/web/framework/__init__.py
 lib/galaxy/web/framework/middleware/error.py
 lib/galaxy/web/framework/middleware/static.py

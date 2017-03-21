@@ -209,23 +209,14 @@ return Backbone.View.extend({
         //
         // add inbound/outbound events
         //
-        this.$el.find('.use-inbound').each( function() {
+        this.$el.find('.use-target').each( function() {
             $(this).click( function(e) {
                 self.execute({
                     href : $(this).attr('href'),
-                    inbound : true
+                    target : $(this).attr('target')
                 });
                 return false;
 
-            });
-        });
-
-        this.$el.find('.use-outbound').each( function() {
-            $(this).click( function(e) {
-                self.execute({
-                    href : $(this).attr('href')
-                });
-                return false;
             });
         });
 
@@ -266,8 +257,7 @@ return Backbone.View.extend({
                         html : operation['label'],
                         href : operation_settings['url_args'],
                         target : operation_settings['target'],
-                        confirmation_text : operation['confirm'],
-                        inbound : operation['inbound']
+                        confirmation_text : operation['confirm']
                     };
 
                     // add popup function
@@ -506,17 +496,16 @@ return Backbone.View.extend({
         var href = null;
         var operation = null;
         var confirmation_text = null;
-        var inbound = null;
+        var target = null;
 
         // check for options
-        if (options)
-        {
+        if (options) {
             // get options
             href = options.href;
             operation = options.operation;
             id = options.id;
             confirmation_text = options.confirmation_text;
-            inbound = options.inbound;
+            target = options.target;
 
             // check if input contains the operation tag
             if (href !== undefined && href.indexOf('operation=') != -1) {
@@ -559,7 +548,7 @@ return Backbone.View.extend({
             if (this.grid.can_async_op(operation)) {
                 this.update_grid();
             } else {
-                this.go_to(inbound, href);
+                this.go_to(target, href);
             }
 
             // done
@@ -568,7 +557,7 @@ return Backbone.View.extend({
 
         // refresh grid
         if (href) {
-            this.go_to(inbound, href);
+            this.go_to(target, href);
             return false;
         }
 
@@ -576,7 +565,7 @@ return Backbone.View.extend({
         if (this.grid.get('async')) {
             this.update_grid();
         } else {
-            this.go_to(inbound, href);
+            this.go_to(target, href);
         }
 
         // done
@@ -584,7 +573,7 @@ return Backbone.View.extend({
     },
 
     // go to url
-    go_to: function (inbound, href) {
+    go_to: function (target, href) {
         // get aysnc status
         var async = this.grid.get('async');
         this.grid.set('async', false);
@@ -604,17 +593,21 @@ return Backbone.View.extend({
             item_ids: undefined,
             async: async
         });
-
-        if (inbound) {
-            // this currently assumes that there is only a single grid shown at a time
-            var $div = $('.grid-header').closest('.inbound');
-            if ($div.length !== 0) {
-                $div.load(href);
-                return;
-            }
+        switch (target) {
+            case 'inbound':
+                // this currently assumes that there is only a single grid shown at a time
+                var $div = $('.grid-header').closest('.inbound');
+                if ($div.length !== 0) {
+                    $div.load(href);
+                    return;
+                }
+                break;
+            case 'top':
+                window.top.location = href;
+                break;
+            default:
+                window.location = href;
         }
-
-        window.location = href;
     },
 
     // Update grid.
