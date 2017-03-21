@@ -260,10 +260,8 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         if( element.history_content_type !== 'dataset' ){
             return _l( "is not a dataset" );
         }
-        if( element.state !== STATES.OK ){
-            if( _.contains( STATES.NOT_READY_STATES, element.state ) ){
-                return _l( "hasn't finished running yet" );
-            }
+        var validState = element.state === STATES.OK || _.contains( STATES.NOT_READY_STATES, element.state );
+        if( ! validState ){
             return _l( "has errored, is paused, or is not accessible" );
         }
         if( element.deleted || element.purged ){
