@@ -18,6 +18,7 @@ from galaxy.managers import (
     workflows
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.tools.parameters import populate_state
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import (
@@ -341,11 +342,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     if (trans.security.decode_id(id) in entries):
                         trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
 
-            workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
-                trans,
-                stored_workflow,
-                payload['workflow'],
-            )
+            try:
+                workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
+                    trans,
+                    stored_workflow,
+                    payload[ 'workflow' ],
+                )
+            except workflows.MissingToolsException:
+                raise exceptions.MessageException( "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed." )
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
             raise exceptions.RequestParameterInvalidException( message )
@@ -355,48 +359,23 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def build_module( self, trans, payload={} ):
         """
         POST /api/workflows/build_module
-        Builds module details including a tool model for the workflow editor.
+        Builds module models for the workflow editor.
         """
-        type = payload.get( 'type' )
         inputs = payload.get( 'inputs', {} )
-        annotation = inputs.get( 'annotation', '' )
-        label = inputs.get( 'label', '' )
-        tool_id = payload.get( 'tool_id' )
-        content_id = payload.get( 'content_id' )
-        if tool_id:
-            tool_version = payload.get( 'tool_version' )
-            tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
-            module = module_factory.from_dict( trans, {
-                'type'              : 'tool',
-                'tool_id'           : tool.id,
-                'tool_state'        : None
-            } )
-            tool_model = module.tool.to_json( trans, inputs, workflow_building_mode=True )
-            module.recover_state( tool_model[ 'state_inputs' ] )
-            return {
-                'tool_model'        : tool_model,
-                'tool_state'        : module.get_state(),
-                'data_inputs'       : module.get_data_inputs(),
-                'data_outputs'      : module.get_data_outputs(),
-                'config_form'       : module.get_config_form(),
-                'annotation'        : annotation,
-                'post_job_actions'  : module.get_post_job_actions(inputs)
-            }
-        else:
-            module = module_factory.from_dict( trans, {
-                'type'              : type,
-                'label'             : label,
-                'content_id'        : content_id
-            } )
-            module.recover_state( inputs )
-            return {
-                'label'             : module.label,
-                'tool_state'        : module.get_state(),
-                'data_inputs'       : module.get_data_inputs(),
-                'data_outputs'      : module.get_data_outputs(),
-                'config_form'       : module.get_config_form(),
-                'annotation'        : annotation
-            }
+        module = module_factory.from_dict( trans, payload )
+        module_state = {}
+        populate_state( trans, module.get_inputs(), inputs, module_state, check=False )
+        module.recover_state( module_state )
+        return {
+            'label'             : inputs.get( '__label', '' ),
+            'annotation'        : inputs.get( '__annotation', '' ),
+            'name'              : module.get_name(),
+            'tool_state'        : module.get_state(),
+            'data_inputs'       : module.get_data_inputs(),
+            'data_outputs'      : module.get_data_outputs(),
+            'config_form'       : module.get_config_form(),
+            'post_job_actions'  : module.get_post_job_actions( inputs )
+        }
 
     #
     # -- Helper methods --

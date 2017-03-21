@@ -3,7 +3,6 @@ Add a state column to the history_dataset_association and library_dataset_datase
 """
 from __future__ import print_function
 
-import datetime
 import logging
 import sys
 
@@ -12,7 +11,6 @@ from sqlalchemy.exc import NoSuchTableError
 
 from galaxy.model.custom_types import TrimmedString
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -43,8 +41,8 @@ def upgrade(migrate_engine):
                 col = Column( "state", TrimmedString( 64 ), index=True, nullable=True )
                 col.create( dataset_instance_table, index_name=index_name)
                 assert col is dataset_instance_table.c.state
-            except Exception as e:
-                log.debug( "Adding column 'state' to %s table failed: %s" % ( table_name, str( e ) ) )
+            except Exception:
+                log.exception("Adding column 'state' to %s table failed." % table_name)
 
 
 def downgrade(migrate_engine):
@@ -61,5 +59,5 @@ def downgrade(migrate_engine):
             try:
                 col = dataset_instance_table.c.state
                 col.drop()
-            except Exception as e:
-                log.debug( "Dropping column 'state' from %s table failed: %s" % ( table_name, str( e ) ) )
+            except Exception:
+                log.exception("Dropping column 'state' from %s table failed." % table_name)

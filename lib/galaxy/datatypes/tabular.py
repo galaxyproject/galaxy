@@ -407,7 +407,7 @@ class Taxonomy( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super(Taxonomy, self).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
 
 @dataproviders.decorators.has_dataproviders
@@ -427,7 +427,7 @@ class Sam( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Sam, self ).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def sniff( self, filename ):
         """
@@ -613,7 +613,7 @@ class Pileup( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Pileup, self ).make_html_table( dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'baseCol': 'Base'} )
+        return self.make_html_table( dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'baseCol': 'Base'} )
 
     def repair_methods( self, dataset ):
         """Return options for removing errors along with a description"""
@@ -690,7 +690,7 @@ class Vcf( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Vcf, self ).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def set_meta( self, dataset, **kwd ):
         super( Vcf, self ).set_meta( dataset, **kwd )

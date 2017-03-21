@@ -34,6 +34,7 @@ DEFAULT_EXTRA_CHANNELS = ["conda-forge", "r"]
 DEFAULT_CHANNELS = [DEFAULT_CHANNEL] + DEFAULT_EXTRA_CHANNELS
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
+DEFAULT_WORKING_DIR = '/source/'
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 
@@ -113,9 +114,9 @@ def conda_versions(pkg_name, file_name):
 def mull_targets(
     targets, involucro_context=None,
     command="build", channels=DEFAULT_CHANNELS, namespace="mulled",
-    test='true', image_build=None, name_override=None,
+    test='true', test_files=None, image_build=None, name_override=None,
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
-    binds=DEFAULT_BINDS
+    conda_version=None, verbose=False, binds=DEFAULT_BINDS
 ):
     targets = list(targets)
     if involucro_context is None:
@@ -142,8 +143,25 @@ def mull_targets(
         '-set', "TARGETS='%s'" % target_str,
         '-set', "REPO='%s'" % repo,
         '-set', "BINDS='%s'" % bind_str,
-        command,
     ]
+    if verbose:
+        involucro_args.extend(["-set", "VERBOSE='1'"])
+    if conda_version is not None:
+        verbose = "--verbose" if verbose else "--quiet"
+        involucro_args.extend(["-set", "PREINSTALL='conda install %s --yes conda=%s'" % (verbose, conda_version)])
+    involucro_args.append(command)
+    if test_files:
+        test_bind = []
+        for test_file in test_files:
+            if ':' not in test_file:
+                if os.path.exists(test_file):
+                    test_bind.append("%s:%s/%s" % (test_file, DEFAULT_WORKING_DIR, test_file))
+            else:
+                if os.path.exists(test_file.split(':')[0]):
+                    test_bind.append(test_file)
+        if test_bind:
+            involucro_args.insert(6, '-set')
+            involucro_args.insert(7, "TEST_BINDS='%s'" % ",".join(test_bind))
     print(" ".join(involucro_context.build_command(involucro_args)))
     if not dry_run:
         ensure_installed(involucro_context, True)
@@ -152,7 +170,8 @@ def mull_targets(
 
 
 def context_from_args(args):
-    return InvolucroContext(involucro_bin=args.involucro_path)
+    verbose = "2" if not args.verbose else "3"
+    return InvolucroContext(involucro_bin=args.involucro_path, verbose=verbose)
 
 
 class InvolucroContext(installable.InstallableContext):
@@ -207,6 +226,8 @@ def add_build_arguments(parser):
                         help="Rebuild package even if already published.")
     parser.add_argument('--dry-run', dest='dry_run', action="store_true",
                         help='Just print commands instead of executing them.')
+    parser.add_argument('--verbose', dest='verbose', action="store_true",
+                        help='Cause process to be verbose.')
     parser.add_argument('-n', '--namespace', dest='namespace', default="mulled",
                         help='quay.io namespace.')
     parser.add_argument('-r', '--repository_template', dest='repository_template', default=DEFAULT_REPOSITORY_TEMPLATE,
@@ -215,6 +236,8 @@ def add_build_arguments(parser):
                         help='Target conda channel')
     parser.add_argument('--extra-channels', dest='extra_channels', default=",".join(DEFAULT_EXTRA_CHANNELS),
                         help='Dependent conda channels.')
+    parser.add_argument('--conda-version', dest="conda_version", default=None,
+                        help="Change to specified version of Conda before installing packages.")
 
 
 def add_single_image_arguments(parser):
@@ -252,6 +275,9 @@ def args_to_mull_targets_kwds(args):
         kwds["dry_run"] = args.dry_run
     if hasattr(args, "test"):
         kwds["test"] = args.test
+    if hasattr(args, "test_files"):
+        if args.test_files:
+            kwds["test_files"] = args.test_files.split(",")
     if hasattr(args, "channel"):
         channels = [args.channel]
         if hasattr(args, "extra_channels"):
@@ -261,6 +287,8 @@ def args_to_mull_targets_kwds(args):
         kwds["command"] = args.command
     if hasattr(args, "repository_template"):
         kwds["repository_template"] = args.repository_template
+    if hasattr(args, "conda_version"):
+        kwds["conda_version"] = args.conda_version
 
     kwds["involucro_context"] = context_from_args(args)
 
@@ -276,6 +304,8 @@ def main(argv=None):
     parser.add_argument('targets', metavar="TARGETS", default=None, help="Build a single container with specific package(s).")
     parser.add_argument('--repository-name', dest="repository_name", default=None, help="Name of mulled container (leave blank to auto-generate based on packages - recommended).")
     parser.add_argument('--test', help='Provide a test command for the container.')
+    parser.add_argument('--test-files', help='Provide test-files that may be required to run the test command. Individual mounts are separated by comma.'
+                                             'The source:dest docker syntax is respected. If relative file paths are given, files will be mounted in /source/<relative_file_path>')
     args = parser.parse_args()
     targets = target_str_to_targets(args.targets)
     sys.exit(mull_targets(targets, **args_to_mull_targets_kwds(args)))

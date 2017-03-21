@@ -11,6 +11,7 @@ import tempfile
 import threading
 from cgi import FieldStorage
 from datetime import datetime
+from distutils.version import LooseVersion
 from xml.etree import ElementTree
 
 from mako.template import Template
@@ -41,11 +42,13 @@ from galaxy.tools.deps import (
     CachedDependencyManager,
     views
 )
+from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
     params_to_incoming,
     params_to_strings,
+    populate_state,
     visit_input_values
 )
 from galaxy.tools.parameters import output_collect
@@ -99,7 +102,7 @@ log = logging.getLogger( __name__ )
 HELP_UNINITIALIZED = threading.Lock()
 MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
 # Tools that require Galaxy's Python environment to be preserved.
-GALAXY_LIB_TOOLS = [
+GALAXY_LIB_TOOLS_UNVERSIONED = [
     "upload1",
     # Legacy tools bundled with Galaxy.
     "vcf_to_maf_customtrack1",
@@ -135,17 +138,14 @@ GALAXY_LIB_TOOLS = [
     "sam_pileup",
     "find_diag_hits",
     "cufflinks",
-    "sam_to_bam",  # This was fixed with version 1.1.3 of the tool - TODO add Galaxy to PYTHONPATH only for older versions
     # Tools improperly migrated to the tool shed (iuc)
     "tabular_to_dbnsfp",
-    # From peterjc and others seq utils
-    "venn_list",
-    "seq_rename",
-    "seq_primer_clip",
-    "fastq_groomer_parallel",
-    "fasta_filter_by_id",
-    "fastq_filter_by_id",
 ]
+# Tools that needed galaxy on the PATH in the past but no longer do along
+# with the version at which they were fixed.
+GALAXY_LIB_TOOLS_VERSIONED = {
+    "sam_to_bam": LooseVersion("1.1.3"),
+}
 
 
 class ToolErrorLog:
@@ -182,6 +182,7 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
         self._reload_count = 0
+        self.tool_location_fetcher = ToolLocationFetcher()
         super( ToolBox, self ).__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
@@ -217,7 +218,11 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         try:
-            tool_source = get_tool_source( config_file, enable_beta_formats=getattr( self.app.config, "enable_beta_tool_formats", False ) )
+            tool_source = get_tool_source(
+                config_file,
+                enable_beta_formats=getattr( self.app.config, "enable_beta_tool_formats", False ),
+                tool_location_fetcher=self.tool_location_fetcher,
+            )
         except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
@@ -323,14 +328,14 @@ class DefaultToolState( object ):
         for input in tool.inputs.itervalues():
             self.inputs[ input.name ] = input.get_initial_value( trans, context )
 
-    def encode( self, tool, app ):
+    def encode( self, tool, app, nested=False ):
         """
         Convert the data to a string
         """
-        value = params_to_strings( tool.inputs, self.inputs, app )
+        value = params_to_strings( tool.inputs, self.inputs, app, nested=nested )
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
-        return json.dumps( value )
+        return value
 
     def decode( self, values, tool, app ):
         """
@@ -421,6 +426,10 @@ class Tool( object, Dictifiable ):
         self._view = views.DependencyResolversView(app)
 
     @property
+    def version_object(self):
+        return LooseVersion(self.version)
+
+    @property
     def sa_session( self ):
         """Returns a SQLAlchemy session"""
         return self.app.model.context
@@ -492,7 +501,11 @@ class Tool( object, Dictifiable ):
         elif preserve_python_environment == "legacy_and_local" and self.repository_id is None:
             return True
         else:
-            return self.old_id in GALAXY_LIB_TOOLS
+            unversioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_UNVERSIONED
+            versioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_VERSIONED
+            legacy_tool = unversioned_legacy_tool or \
+                (versioned_legacy_tool and self.version_object < GALAXY_LIB_TOOLS_VERSIONED[self.old_id])
+            return legacy_tool
 
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
@@ -1245,7 +1258,7 @@ class Tool( object, Dictifiable ):
             else:
                 # Update state for all inputs on the current page taking new
                 # values from `incoming`.
-                self.populate_state( request_context, self.inputs, expanded_incoming, params, errors )
+                populate_state( request_context, self.inputs, expanded_incoming, params, errors )
 
                 # If the tool provides a `validate_input` hook, call it.
                 validate_input = self.get_hook( 'validate_input' )
@@ -1798,7 +1811,7 @@ class Tool( object, Dictifiable ):
                     tool_dict = input.to_dict( request_context )
                     group_cache = tool_dict[ 'cache' ] = {}
                     for i in range( len( group_state ) ):
-                        group_cache[ i ] = {}
+                        group_cache[ i ] = []
                         populate_model( input.inputs, group_state[ i ], group_cache[ i ], other_values )
                 elif input.type == 'conditional':
                     tool_dict = input.to_dict( request_context )
@@ -1823,7 +1836,10 @@ class Tool( object, Dictifiable ):
                         tool_dict = input.to_dict( request_context )
                         log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )
                         pass
-                group_inputs[ input_index ] = tool_dict
+                if input_index >= len( group_inputs ):
+                    group_inputs.append( tool_dict )
+                else:
+                    group_inputs[ input_index ] = tool_dict
 
         # expand incoming parameters (parameters might trigger multiple tool executions,
         # here we select the first execution only in order to resolve dynamic parameters)
@@ -1838,11 +1854,11 @@ class Tool( object, Dictifiable ):
         # create tool state
         state_inputs = {}
         state_errors = {}
-        self.populate_state( request_context, self.inputs, params.__dict__, state_inputs, state_errors )
+        populate_state( request_context, self.inputs, params.__dict__, state_inputs, state_errors )
 
         # create tool model
         tool_model = self.to_dict( request_context )
-        tool_model[ 'inputs' ] = {}
+        tool_model[ 'inputs' ] = []
         populate_model( self.inputs, state_inputs, tool_model[ 'inputs' ] )
 
         # create tool help
@@ -1880,82 +1896,6 @@ class Tool( object, Dictifiable ):
             'enctype'       : self.enctype
         })
         return tool_model
-
-    # populates state from incoming parameters
-    def populate_state( self, request_context, inputs, incoming, state, errors={}, prefix='', context=None ):
-        context = ExpressionContext( state, context )
-        for input in inputs.values():
-            state[ input.name ] = input.get_initial_value( request_context, context )
-            key = prefix + input.name
-            group_state = state[ input.name ]
-            group_prefix = '%s|' % ( key )
-            if input.type == 'repeat':
-                rep_index = 0
-                del group_state[:]
-                while True:
-                    rep_prefix = '%s_%d' % ( key, rep_index )
-                    if not any( incoming_key.startswith( rep_prefix ) for incoming_key in incoming.keys() ) and rep_index >= input.min:
-                        break
-                    if rep_index < input.max:
-                        new_state = { '__index__' : rep_index }
-                        group_state.append( new_state )
-                        self.populate_state( request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context )
-                    rep_index += 1
-            elif input.type == 'conditional':
-                if input.value_ref and not input.value_ref_in_group:
-                    test_param_key = prefix + input.test_param.name
-                else:
-                    test_param_key = group_prefix + input.test_param.name
-                test_param_value = incoming.get( test_param_key, group_state.get( input.test_param.name ) )
-                value, error = check_param( request_context, input.test_param, test_param_value, context )
-                if error:
-                    errors[ test_param_key ] = error
-                else:
-                    try:
-                        current_case = input.get_current_case( value )
-                        group_state = state[ input.name ] = {}
-                        self.populate_state( request_context, input.cases[ current_case ].inputs, incoming, group_state, errors, prefix=group_prefix, context=context )
-                        group_state[ '__current_case__' ] = current_case
-                    except Exception:
-                        errors[ test_param_key ] = 'The selected case is unavailable/invalid.'
-                        pass
-                group_state[ input.test_param.name ] = value
-            elif input.type == 'section':
-                self.populate_state( request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context )
-            elif input.type == 'upload_dataset':
-                d_type = input.get_datatype( request_context, context=context )
-                writable_files = d_type.writable_files
-                while len( group_state ) > len( writable_files ):
-                    del group_state[ -1 ]
-                while len( writable_files ) > len( group_state ):
-                    new_state = { '__index__' : len( group_state ) }
-                    for upload_item in input.inputs.values():
-                        new_state[ upload_item.name ] = upload_item.get_initial_value( request_context, context )
-                    group_state.append( new_state )
-                for i, rep_state in enumerate( group_state ):
-                    rep_index = rep_state[ '__index__' ]
-                    rep_prefix = '%s_%d|' % ( key, rep_index )
-                    self.populate_state( request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context )
-            else:
-                param_value = self._get_incoming_value( incoming, key, state.get( input.name ) )
-                value, error = check_param( request_context, input, param_value, context )
-                if error:
-                    errors[ key ] = error
-                state[ input.name ] = value
-
-    def _get_incoming_value( self, incoming, key, default ):
-        """
-        Fetch value from incoming dict directly or check special nginx upload
-        created variants of this key.
-        """
-        if '__' + key + '__is_composite' in incoming:
-            composite_keys = incoming[ '__' + key + '__keys' ].split()
-            value = dict()
-            for composite_key in composite_keys:
-                value[ composite_key ] = incoming[ key + '_' + composite_key ]
-            return value
-        else:
-            return incoming.get( key, default )
 
     def _get_job_remap( self, job):
         if job:

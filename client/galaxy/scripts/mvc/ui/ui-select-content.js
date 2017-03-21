@@ -221,7 +221,8 @@ var View = Backbone.View.extend({
                     hid  : item.hid,
                     keep : item.keep,
                     label: item.hid + ': ' + item.name,
-                    value: item.id
+                    value: item.id,
+                    tags : item.tags
                 });
                 self.history[ item.id + '_' + src ] = item;
             });

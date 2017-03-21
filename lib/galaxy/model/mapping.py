@@ -2564,7 +2564,8 @@ model.WorkflowInvocation.update = _workflow_invocation_update
 
 
 def init( file_path, url, engine_options={}, create_tables=False, map_install_models=False,
-        database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True ):
+        database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
+        slow_query_log_threshold=0):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     model.Dataset.file_path = file_path
@@ -2573,7 +2574,7 @@ def init( file_path, url, engine_options={}, create_tables=False, map_install_mo
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
-    engine = build_engine( url, engine_options, database_query_profiling_proxy, trace_logger )
+    engine = build_engine( url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold )
 
     # Connect the metadata to the database.
     metadata.bind = engine

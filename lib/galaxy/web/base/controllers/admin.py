@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
-from six import string_types
+import six
 from string import punctuation as PUNCTUATION
 
 from sqlalchemy import and_, false, func, or_
@@ -99,7 +99,7 @@ class Admin( object ):
         if params.get( 'reload_tool_button', False ):
             tool_id = kwd.get( 'tool_id', None )
             galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id} )
-            message, status = trans.app.toolbox.reload_tool_by_id( tool_id)
+            message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
         return trans.fill_template( '/admin/reload_tool.mako',
                                     tool_id=tool_id,
                                     toolbox=toolbox,
@@ -931,10 +931,7 @@ class Admin( object ):
                     kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received" % str( user_id ) )
                     kwd[ 'status' ] = 'error'
                 else:
-                    return trans.response.send_redirect( web.url_for( controller='user',
-                                                                      action='manage_user_info',
-                                                                      cntrller='admin',
-                                                                      **kwd ) )
+                    return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwd )
         if trans.app.config.allow_user_deletion:
@@ -1125,12 +1122,41 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
+    def manage_tool_dependencies( self, trans, install_dependencies=False, uninstall_dependencies=False, selected_tool_ids=None, viewkey='View tool-centric dependencies'):
+        if not selected_tool_ids:
+            selected_tool_ids = []
+        tools_by_id = trans.app.toolbox.tools_by_id
+        view = six.next(six.itervalues(trans.app.toolbox.tools_by_id))._view
+        if selected_tool_ids:
+            # install the dependencies for the tools in the selected_tool_ids list
+            if not isinstance(selected_tool_ids, list):
+                selected_tool_ids = [selected_tool_ids]
+            requirements = set([tools_by_id[tid].tool_requirements for tid in selected_tool_ids])
+            if install_dependencies:
+                [view.install_dependencies(r) for r in requirements]
+            elif uninstall_dependencies:
+                [view.uninstall_dependencies(index=None, requirements=r) for r in requirements]
+        tool_ids_by_requirements = {}
+        for tid, tool in trans.app.toolbox.tools_by_id.items():
+            if tool.tool_requirements not in tool_ids_by_requirements:
+                tool_ids_by_requirements[tool.tool_requirements] = [tid]
+            else:
+                tool_ids_by_requirements[tool.tool_requirements].append(tid)
+        requirements_status = {r: view.get_requirements_status({tid: r}, tools_by_id[tids[0]].installed_tool_dependencies) for r, tids in tool_ids_by_requirements.items()}
+        return trans.fill_template( '/webapps/galaxy/admin/manage_dependencies.mako',
+                                    tools=tools_by_id,
+                                    requirements_status=requirements_status,
+                                    tool_ids_by_requirements=tool_ids_by_requirements,
+                                    viewkey=viewkey )
+
+    @web.expose
+    @web.require_admin
     def sanitize_whitelist( self, trans, submit_whitelist=False, tools_to_whitelist=[]):
         if submit_whitelist:
             # write the configured sanitize_whitelist_file with new whitelist
             # and update in-memory list.
             with open(trans.app.config.sanitize_whitelist_file, 'wt') as f:
-                if isinstance(tools_to_whitelist, string_types):
+                if isinstance(tools_to_whitelist, six.string_types):
                     tools_to_whitelist = [tools_to_whitelist]
                 new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))

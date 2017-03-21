@@ -4,6 +4,7 @@ import time
 
 import galaxy.model
 from galaxy.web import security
+from galaxy.web.stack import application_stack_instance
 import logging
 log = logging.getLogger( __name__ )
 
@@ -17,6 +18,7 @@ class UniverseApplication( object ):
         self.config = config.Configuration( **kwargs )
         self.config.check()
         config.configure_logging( self.config )
+        self.application_stack = application_stack_instance()
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection

@@ -605,3 +605,50 @@ class Smat(Text):
                     if re.match(r"[-+]?\d+$", item) is None:
                         return False
         return True
+
+
+class PlantTribesOrtho(Html):
+    """
+    PlantTribes sequences classified into precomputed, orthologous gene family
+    clusters.
+    """
+    file_ext = "ptortho"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesOrtho, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes gene family clusters: %d files" % dataset.metadata.data_lines
+
+
+class PlantTribesOrthoCodingSequence(Html):
+    """
+    PlantTribes sequences classified into precomputed, orthologous gene family
+    clusters and corresponding coding sequences.
+    """
+    file_ext = "ptorthocs"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesOrthoCodingSequence, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes gene family clusters with corresponding coding sequences: %d files" % dataset.metadata.data_lines
+
+
+class PlantTribesPhylogeneticTree(Html):
+    """
+    PlantTribes multiple sequence alignments and inferred maximum likelihood
+    phylogenies for orthogroups.
+    """
+    file_ext = "pttree"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesPhylogeneticTree, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes phylogenetic trees: %d files" % dataset.metadata.data_lines
+
+
+class PlantTribesMultipleSequenceAlignment(Html):
+    """
+    PlantTribes multiple sequence alignments for orthogroups.
+    """
+    file_ext = "ptalign"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesMultipleSequenceAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes multiple sequence alignments: %d files" % dataset.metadata.data_lines

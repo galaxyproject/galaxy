@@ -6,15 +6,21 @@ import yaml
 import stat
 import random
 import tempfile
+import uuid
 from subprocess import Popen, PIPE
 
+from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
+from galaxy.container import docker_swarm
 from galaxy import web, model
 from galaxy.managers import api_keys
 from galaxy.tools.deps.docker_util import DockerVolume
 
 import logging
 log = logging.getLogger(__name__)
+
+
+CONTAINER_NAME_PREFIX = 'galaxy_gie_'
 
 
 class InteractiveEnvironmentRequest(object):
@@ -43,6 +49,11 @@ class InteractiveEnvironmentRequest(object):
         self.load_allowed_images()
         self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
         self.attr.docker_connect_port = self.attr.viz_config.get("docker", "docker_connect_port") or None
+
+        if string_as_bool_or_none(self.attr.viz_config.get("docker", "swarm_mode")) is not None:
+            self.attr.swarm_mode = string_as_bool_or_none(self.attr.viz_config.get("docker", "swarm_mode"))
+        else:
+            self.attr.swarm_mode = trans.app.config.gie_swarm_mode
 
         # Generate per-request passwords the IE plugin can use to configure
         # the destination container.
@@ -78,6 +89,10 @@ class InteractiveEnvironmentRequest(object):
         if self.attr.proxy_prefix.startswith('/'):
             self.attr.proxy_prefix = '/' + self.attr.proxy_prefix.lstrip('/')
 
+        assert not self.attr.swarm_mode or (self.attr.swarm_mode and
+                                            self.attr.docker_connect_port is not None), \
+            "Error: Docker swarm mode enabled but docker_connect_port is not set"
+
     def load_allowed_images(self):
         if os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.yml')):
             fn = os.path.join(self.attr.our_config_dir, 'allowed_images.yml')
@@ -108,10 +123,12 @@ class InteractiveEnvironmentRequest(object):
         # their defaults dictionary instead.
         default_dict = {
             'command': 'docker {docker_args}',
-            'command_inject': '--sig-proxy=true -e DEBUG=false',
+            'command_inject': '-e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=120',
             'docker_hostname': 'localhost',
             'wx_tempdir': 'False',
-            'docker_galaxy_temp_dir': None
+            'docker_galaxy_temp_dir': None,
+            'docker_connect_port': None,
+            'swarm_mode': None,
         }
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
@@ -210,32 +227,72 @@ class InteractiveEnvironmentRequest(object):
     def volume(self, host_path, container_path, **kwds):
         return DockerVolume(host_path, container_path, **kwds)
 
-    def docker_cmd(self, image, env_override={}, volumes=[]):
+    def docker_cmd(self, image, env_override=None, volumes=None):
         """
             Generate and return the docker command to execute
         """
+        if env_override is None:
+            env_override = {}
+        if volumes is None:
+            volumes = []
         temp_dir = self.temp_dir
         conf = self.get_conf_dict()
         conf.update(env_override)
         env_str = ' '.join(['-e "%s=%s"' % (key.upper(), item) for key, item in conf.items()])
         volume_str = ' '.join(['-v "%s"' % volume for volume in volumes])
         import_volume_str = '-v "{temp_dir}:/import/"'.format(temp_dir=temp_dir) if self.attr.import_volume else ''
+        name = None
         # This is the basic docker command such as "sudo -u docker docker {docker_args}"
         # or just "docker {docker_args}"
         command = self.attr.viz_config.get("docker", "command")
         # Then we format in the entire docker command in place of
         # {docker_args}, so as to let the admin not worry about which args are
         # getting passed
-        command = command.format(docker_args='run {command_inject} {environment} -d -P {import_volume_str} {volume_str} {image}')
+        command_inject = self.attr.viz_config.get("docker", "command_inject")
+        # --name should really not be set, but we'll try to honor it anyway
+        if '--name' not in command_inject:
+            name = CONTAINER_NAME_PREFIX + uuid.uuid4().hex
+        if not self.attr.swarm_mode:
+            command = command.format(docker_args='run {command_inject} {name} {environment} -d -P {import_volume_str} {volume_str} {image}')
+            # --sig-proxy is not valid in the swarm mode context
+            if '--sig-proxy=' not in command_inject:
+                command_inject = '--sig-proxy=true ' + command_inject
+        else:
+            command = command.format(docker_args='service create --replicas 1 --restart-condition none {command_inject} {name} -p {docker_connect_port} {environment} {image}')
+
         # Once that's available, we format again with all of our arguments
         command = command.format(
-            command_inject=self.attr.viz_config.get("docker", "command_inject"),
+            command_inject=command_inject,
+            name='--name=%s' % name if name is not None else '',
             environment=env_str,
             import_volume_str=import_volume_str,
             volume_str=volume_str,
             image=image,
+            docker_connect_port=self.attr.docker_connect_port,
         )
         return command
+
+    def get_digest_image(self, image):
+        """Get the digest image string for an image.
+
+        :type image: str
+        :param image: image name and optionally, tag
+
+        :returns: digest string, having the format `<name>@<hash_alg>:<digest>`, e.g.:
+                  `'bgruening/docker-jupyter-notebook@sha256:3ec0bc9abc9d511aa602ee4fff2534d80dd9b1564482de52cb5de36cce6debae'`
+        """
+        command = self.attr.viz_config.get("docker", "command")
+        command = command.format(docker_args="image inspect --format '{{{{(index .RepoDigests 0)}}}}' {image}".format(image=image))
+        p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        stdout, stderr = p.communicate()
+        digest = None
+        if p.returncode == 0:
+            digest = stdout.strip()
+        elif p.returncode == 1 and stderr.strip() == 'Error: No such image: {image}'.format(image=image):
+            log.warning("%s not pulled, cannot get digest", image)
+        else:
+            log.error( "%s\n%s" % (stdout, stderr) )
+        return digest or image
 
     def _idsToVolumes(self, ids):
         if len(ids.strip()) == 0:
@@ -285,6 +342,11 @@ class InteractiveEnvironmentRequest(object):
             raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]"
                             % (image, ', '.join(self.allowed_images)))
 
+        # The digest image is necessary if using swarm mode and the image's
+        # registry (e.g. docker hub, quay.io) is down. See:
+        # https://github.com/docker/docker/issues/31427
+        image = self.get_digest_image(image)
+
         if additional_ids is not None:
             volumes += self._idsToVolumes(additional_ids)
 
@@ -309,6 +371,9 @@ class InteractiveEnvironmentRequest(object):
             log.debug( "Container host: %s", self.attr.docker_hostname )
             host_port = None
 
+            if self.attr.swarm_mode:
+                docker_swarm.main(argv=['-c', self.trans.app.config.config_file], fork=True)
+
             if len(port_mappings) > 1:
                 if self.attr.docker_connect_port is not None:
                     for _service, _host_ip, _host_port in port_mappings:
@@ -332,7 +397,9 @@ class InteractiveEnvironmentRequest(object):
                 port=host_port,
                 proxy_prefix=self.attr.proxy_prefix,
                 route_name=self.attr.viz_id,
-                container_ids=[container_id],
+                container_ids=[container_id] if not self.attr.swarm_mode else [],
+                service_ids=[container_id] if self.attr.swarm_mode else [],
+                docker_command=self.attr.viz_config.get("docker", "command"),
             )
             # These variables then become available for use in templating URLs
             self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
@@ -354,7 +421,10 @@ class InteractiveEnvironmentRequest(object):
         :returns: inspect_data, a dict of docker inspect output
         """
         command = self.attr.viz_config.get("docker", "command")
-        command = command.format(docker_args="inspect %s" % container_id)
+        if not self.attr.swarm_mode:
+            command = command.format(docker_args="inspect %s" % container_id)
+        else:
+            command = command.format(docker_args="service inspect %s" % container_id)
         log.info("Inspecting docker container {0} with command [{1}]".format(
             container_id,
             command
@@ -367,15 +437,6 @@ class InteractiveEnvironmentRequest(object):
             return None
 
         inspect_data = json.loads(stdout)
-        # [{
-        #     "NetworkSettings" : {
-        #         "Ports" : {
-        #             "3306/tcp" : [
-        #                 {
-        #                     "HostIp" : "127.0.0.1",
-        #                     "HostPort" : "3306"
-        #                 }
-        #             ]
         return inspect_data
 
     def get_container_host(self, inspect_data):
@@ -409,13 +470,43 @@ class InteractiveEnvironmentRequest(object):
         Someday code that calls this should be refactored whenever we get
         containers with multiple ports working.
         """
+        # non-swarm:
+        # [{
+        #     "NetworkSettings" : {
+        #         "Ports" : {
+        #             "3306/tcp" : [
+        #                 {
+        #                     "HostIp" : "127.0.0.1",
+        #                     "HostPort" : "3306"
+        #                 }
+        #             ]
+        # swarm:
+        # [{
+        #     "Endpoint": {
+        #         "Ports": [
+        #             {
+        #                 "Protocol": "tcp",
+        #                 "TargetPort": 8888,
+        #                 "PublishedPort": 30000,
+        #                 "PublishMode": "ingress"
+        #             }
+        #         ]
         mappings = []
-        port_mappings = inspect_data[0]['NetworkSettings']['Ports']
-        for port_name in port_mappings:
-            for binding in port_mappings[port_name]:
+        if not self.attr.swarm_mode:
+            port_mappings = inspect_data[0]['NetworkSettings']['Ports']
+            for port_name in port_mappings:
+                for binding in port_mappings[port_name]:
+                    mappings.append((
+                        port_name.replace('/tcp', '').replace('/udp', ''),
+                        binding['HostIp'],
+                        binding['HostPort']
+                    ))
+        else:
+            port_mappings = inspect_data[0]['Endpoint']['Ports']
+            for binding in port_mappings:
                 mappings.append((
-                    port_name.replace('/tcp', '').replace('/udp', ''),
-                    binding['HostIp'],
-                    binding['HostPort']
+                    binding['TargetPort'],
+                    '127.0.0.1',                # use the routing mesh
+                    binding['PublishedPort']
                 ))
         return mappings

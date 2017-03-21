@@ -25,8 +25,8 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.util.postfork import register_postfork_function
 from galaxy.web.formatting import expand_pretty_datetime_format
+from galaxy.web.stack import register_postfork_function
 from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
@@ -52,6 +52,7 @@ PATH_DEFAULTS = dict(
     workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
     modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
     local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
+    swarm_manager_config_file=['config/swarm_manager_conf.yml', 'config/swarm_manager_conf.yml.sample'],
 )
 
 PATH_LIST_DEFAULTS = dict(
@@ -124,6 +125,7 @@ class Configuration( object ):
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         self.database_query_profiling_proxy = string_as_bool( kwargs.get( "database_query_profiling_proxy", "False" ) )
+        self.slow_query_log_threshold = float( kwargs.get( "slow_query_log_threshold", 0) )
 
         # Don't set this to true for production databases, but probably should
         # default to True for sqlite databases.
@@ -380,6 +382,7 @@ class Configuration( object ):
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
         self.watch_tools = kwargs.get( 'watch_tools', 'false' )
+        self.watch_tool_data_dir = kwargs.get( 'watch_tool_data_dir', 'false' )
         # On can mildly speed up Galaxy startup time by disabling index of help,
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool( kwargs.get( "index_tool_help", True ) )
@@ -574,6 +577,8 @@ class Configuration( object ):
             self.visualization_plugins_directory = ie_dirs
         elif ie_dirs:
             self.visualization_plugins_directory += ",%s" % ie_dirs
+
+        self.gie_swarm_mode = string_as_bool( kwargs.get( 'interactive_environment_swarm_mode', False ) )
 
         self.proxy_session_map = self.resolve_path( kwargs.get( "dynamic_proxy_session_map", "database/session_map.sqlite" ) )
         self.manage_dynamic_proxy = string_as_bool( kwargs.get( "dynamic_proxy_manage", "True" ) )  # Set to false if being launched externally
@@ -899,34 +904,25 @@ class ConfiguresGalaxyMixin:
 
             time.sleep(1)
 
-    def reload_toolbox(self):
-        # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
-
-        tool_configs = self.config.tool_configs
-        if self.config.migrated_tools_config not in tool_configs:
-            tool_configs.append( self.config.migrated_tools_config )
-
-        from galaxy import tools
-        old_toolbox = self.toolbox
-        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-        self.reindex_tool_search()
-        if old_toolbox:
-            old_toolbox.shutdown()
-
     def _configure_toolbox( self ):
+        from galaxy import tools
         from galaxy.managers.citations import CitationsManager
-        self.citations_manager = CitationsManager( self )
-
+        from galaxy.tools.deps import containers
         from galaxy.tools.toolbox.cache import ToolCache
         from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
+
+        self.citations_manager = CitationsManager( self )
         self.tool_cache = ToolCache()
         self.tool_version_cache = ToolVersionCache(self)
 
         self._toolbox_lock = threading.RLock()
-        self.toolbox = None
-        self.reload_toolbox()
+        # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
+        tool_configs = self.config.tool_configs
+        if self.config.migrated_tools_config not in tool_configs:
+            tool_configs.append( self.config.migrated_tools_config )
+        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
+        self.reindex_tool_search()
 
-        from galaxy.tools.deps import containers
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
         app_info = containers.AppInfo(
@@ -1038,7 +1034,8 @@ class ConfiguresGalaxyMixin:
                                    database_query_profiling_proxy=self.config.database_query_profiling_proxy,
                                    object_store=self.object_store,
                                    trace_logger=getattr(self, "trace_logger", None),
-                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ) )
+                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ),
+                                   slow_query_log_threshold=self.config.slow_query_log_threshold )
 
         if combined_install_database:
             log.info("Install database targetting Galaxy's database configuration.")

@@ -36,6 +36,12 @@ docker-compose down | true
 docker-compose build galaxy
 docker-compose up -d
 
+function tear_down {
+    docker-compose down
+}
+
+trap tear_down EXIT
+
 for service_name in postgres galaxy selenium
 do
     echo "Waiting on service ${service_name}"
@@ -79,7 +85,6 @@ do
                 docker logs "${container_id}"
                 echo "---"
             done
-            docker-compose down | true
             exit 1
         fi
     done
@@ -104,7 +109,5 @@ cd ../../..
 exit_code=$?
 
 cd $TEST_DIRECTORY
-
-docker-compose down
 
 exit $exit_code

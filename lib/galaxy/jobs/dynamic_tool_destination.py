@@ -1301,7 +1301,7 @@ def map_tool_to_destination(
                                         matched = False
                                         if verbose:
                                             error = "Argument '" + str(arg)
-                                            error = + "' not recognized!"
+                                            error += "' not recognized!"
                                             log.debug(error)
 
                             # if we matched a rule
