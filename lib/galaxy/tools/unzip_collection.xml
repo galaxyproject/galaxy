@@ -20,7 +20,7 @@ This tool takes a paired dataset collection and builds two datasets from it. If 
 
 **Example**
 
-If a collection consists of two forward and two reverse datasets (e.g., forward and reverse reads from a sequencing experiment) this tool will output two collection: one consisting of forward reads and one of reverse.
+If a collection consists of two forward and two reverse datasets (e.g., forward and reverse reads from a sequencing experiment) this tool will output two collections: one consisting of forward reads and one of reverse reads.
 
 .. class:: infomark
 
