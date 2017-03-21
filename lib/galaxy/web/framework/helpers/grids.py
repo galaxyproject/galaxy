@@ -565,7 +565,7 @@ class OwnerAnnotationColumn( TextColumn, UsesAnnotations ):
                 ann_snippet += "..."
         else:
             ann_snippet = ""
-        return ann_snippet
+        return ann_snippet.replace('&', '&amp;').replace('>', '&gt;').replace('<', '&lt;').replace('"', '&quot;').replace("'", '&#x27;').replace("/", '&#x2F;')
 
     def get_single_filter( self, user, a_filter ):
         """ Filter by annotation and annotation owner. """
