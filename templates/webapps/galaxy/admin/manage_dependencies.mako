@@ -22,6 +22,37 @@
     %endfor
 </%def>
 
+<%def name="render_tool_centric_table( tools, requirements_status)">
+     <tr>
+         <th bgcolor="#D8D8D8">Select</th>
+         <th bgcolor="#D8D8D8">Name</th>
+         <th bgcolor="#D8D8D8">ID</th>
+         <th bgcolor="#D8D8D8">Requirement</th>
+         <th bgcolor="#D8D8D8">Version</th>
+         <th bgcolor="#D8D8D8">Resolver</th>
+         <th bgcolor="#D8D8D8">Exact</th>
+         <th bgcolor="#D8D8D8"></th>
+     </tr>
+     <% ctr = 0 %>
+     %for tool in tools.values():
+         %if tool.tool_requirements:
+             %if ctr % 2 == 1:
+                 <tr class="odd_row">
+             %else:
+                 <tr class="tr">
+             %endif
+             <td>
+                 <input type="checkbox" name="selected_tool_ids" value="${tool.id}"/>
+             </td>
+             <td>${ tool.name | h }</td>
+             <td>${ tool.id | h }</td>
+             ${render_tool_dependencies( requirements_status[tool.tool_requirements], ctr=ctr) }
+             </tr>
+         <% ctr += 1 %>
+         %endif
+     %endfor
+ </%def>
+
 <%def name="render_unused_dependencies(unused_environments)">
     <tr>
         <th bgcolor="#D8D8D8">Select</th>
