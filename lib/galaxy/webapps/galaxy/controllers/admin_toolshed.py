@@ -200,7 +200,7 @@ class AdminToolshed( AdminGalaxy ):
         }
         return trans.fill_template( 'galaxy.panels.mako',
                                     config={
-                                        'title': 'Galaxy ToolSheds',
+                                        'title': 'Galaxy Tool Sheds',
                                         'app': app } )
 
     @web.expose

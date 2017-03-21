@@ -19,7 +19,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         render: function(options) {
             this.options = _.defaults(this.options || {}, options, this.defaults);
             var toolshed_list_template = this.templateToolshedList;
-            this.$el.html(toolshed_list_template({title: 'Accessible Galaxy ToolSheds', tool_sheds: this.model.models, queue: toolshed_util.queueLength()}));
+            this.$el.html(toolshed_list_template({title: 'Configured Galaxy Tool Sheds', tool_sheds: this.model.models, queue: toolshed_util.queueLength()}));
         },
 
         reDraw: function(options){
