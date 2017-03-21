@@ -75,21 +75,30 @@ class DependencyResolversView(object):
     def unused_dependency_paths(self):
         """List dependencies that are not currently installed."""
         unused_dependencies = []
+        toolbox_requirements_status = self.toolbox_requirements_status
         for resolver in self._dependency_resolvers:
             if hasattr(resolver, 'unused_dependency_paths'):
-                unused_dependencies.extend(resolver.unused_dependency_paths(self.toolbox_requirements_status))
+                unused_dependencies.extend(resolver.unused_dependency_paths(toolbox_requirements_status))
         return set(unused_dependencies)
 
     def remove_unused_dependency_paths(self, envs):
-        """Remove dependencies that are not currently used."""
+        """
+        Remove dependencies that are not currently used.
+
+        Returns a list of all environments that have been successfully removed.
+        """
         envs_to_remove = set(envs)
+        toolbox_requirements_status = self.toolbox_requirements_status
+        removed_environments = set()
         for resolver in self._dependency_resolvers:
             if hasattr(resolver, 'unused_dependency_paths') and hasattr(resolver, 'uninstall_environments'):
-                unused_dependencies = resolver.unused_dependency_paths(self.toolbox_requirements_status)
+                unused_dependencies = resolver.unused_dependency_paths(toolbox_requirements_status)
                 can_remove = envs_to_remove & set(unused_dependencies)
                 exit_code = resolver.uninstall_environments(can_remove)
                 if exit_code == 0:
+                    removed_environments = removed_environments.union(can_remove)
                     envs_to_remove = envs_to_remove.difference(can_remove)
+        return list(removed_environments)
 
     def install_dependencies(self, requirements):
         return self._dependency_manager._requirements_to_dependencies_dict(requirements, **{'install': True})
