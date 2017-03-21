@@ -180,7 +180,7 @@ define({
 
 // ---- history-view-edit-current
 "This history is empty. Click 'Get Data' on the left tool menu to start" :
-    "Cet historique est vide. Cliquer sur 'Téléverser des données' au niveau du menu d'outils à gauche pour démarrer",
+    "Cet historique est vide. Cliquer sur 'Get Data' au niveau du menu d'outils à gauche pour démarrer",
 "You must be logged in to create histories" :
     "Vous devez être connecté pour créer un historique",
 //TODO:
