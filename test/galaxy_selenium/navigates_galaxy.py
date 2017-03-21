@@ -9,7 +9,7 @@ import random
 import string
 import time
 
-from functools import wraps
+from functools import partial, wraps
 
 import requests
 import yaml
@@ -28,23 +28,27 @@ class NullTourCallback(object):
         pass
 
 
+def retry_call_during_transitions(f, attempts=5, sleep=.1):
+    previous_attempts = 0
+    while True:
+        try:
+            return f()
+        except Exception as e:
+            if previous_attempts > attempts:
+                raise
+
+            if not exception_indicates_stale_element(e):
+                raise
+
+            time.sleep(sleep)
+            previous_attempts += 1
+
+
 def retry_during_transitions(f, attempts=5, sleep=.1):
 
     @wraps(f)
     def _retry(*args, **kwds):
-        previous_attempts = 0
-        while True:
-            try:
-                return f(*args, **kwds)
-            except Exception as e:
-                if previous_attempts > attempts:
-                    raise
-
-                if not exception_indicates_stale_element(e):
-                    raise
-
-                time.sleep(sleep)
-                previous_attempts += 1
+        retry_call_during_transitions(partial(f, *args, **kwds), attempts=attempts, sleep=sleep)
 
     return _retry
 
