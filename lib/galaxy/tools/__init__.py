@@ -42,6 +42,7 @@ from galaxy.tools.deps import (
     CachedDependencyManager,
     views
 )
+from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -181,6 +182,7 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
         self._reload_count = 0
+        self.tool_location_fetcher = ToolLocationFetcher()
         super( ToolBox, self ).__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
@@ -216,7 +218,11 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         try:
-            tool_source = get_tool_source( config_file, enable_beta_formats=getattr( self.app.config, "enable_beta_tool_formats", False ) )
+            tool_source = get_tool_source(
+                config_file,
+                enable_beta_formats=getattr( self.app.config, "enable_beta_tool_formats", False ),
+                tool_location_fetcher=self.tool_location_fetcher,
+            )
         except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)

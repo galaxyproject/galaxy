@@ -18,16 +18,17 @@ log = logging.getLogger(__name__)
 
 class CwlToolSource(ToolSource):
 
-    def __init__(self, tool_file):
+    def __init__(self, tool_file, strict_cwl_validation=True):
         self._cwl_tool_file = tool_file
         self._id, _ = os.path.splitext(os.path.basename(tool_file))
         self._tool_proxy = None
         self._source_path = tool_file
+        self._strict_cwl_validation = strict_cwl_validation
 
     @property
     def tool_proxy(self):
         if self._tool_proxy is None:
-            self._tool_proxy = tool_proxy(self._source_path)
+            self._tool_proxy = tool_proxy(self._source_path, strict_cwl_validation=self._strict_cwl_validation)
         return self._tool_proxy
 
     def parse_tool_type(self):
@@ -95,7 +96,7 @@ class CwlToolSource(ToolSource):
         return "0.0.1"
 
     def parse_description(self):
-        return ""
+        return self.tool_proxy.description()
 
     def parse_input_pages(self):
         page_source = CwlPageSource(self.tool_proxy)
