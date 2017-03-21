@@ -64,6 +64,60 @@ define({
 "Saved Pages":
     "Pages sauvegardées",
 // ---------------------------------------------------------------------------- histories
+// ---- history/options-menu
+"History Lists":
+    false,
+// Saved histories is defined above.
+// "Saved Histories":
+//     false,
+"Histories Shared with Me":
+    false,
+"Current History":
+    false,
+"Create New":
+    false,
+"Copy History":
+    false,
+"Share or Publish":
+    false,
+"Show Structure":
+    false,
+"Extract Workflow":
+    false,
+// Delete is defined elsewhere, but is also in this menu.
+// "Delete":
+//     false,
+"Delete Permanently":
+    false,
+"Dataset Actions":
+    false,
+"Copy Datasets":
+    false,
+"Dataset Security":
+    false,
+"Resume Paused Jobs":
+    false,
+"Collapse Expanded Datasets":
+    false,
+"Unhide Hidden Datasets":
+    false,
+"Delete Hidden Datasets":
+    false,
+"Purge Deleted Datasets":
+    false,
+"Downloads":
+    false,
+"Export Tool Citations":
+    false,
+"Export History to File":
+    false,
+"Other Actions":
+    false,
+"Import from File":
+    false,
+"Webhooks":
+    false,
+
 // ---- history-model
 // ---- history-view
 "This history is empty" :
@@ -114,6 +168,9 @@ define({
     "Supprimer définitivement les jeux de données",
 "This will permanently remove the data in your datasets. Are you sure?" :
     "Cela supprimera de manière permanente les données de votre historique. Êtes-vous certain?",
+
+// menu operations
+
 
 // // ---- history-view-annotated
 "Dataset" :
