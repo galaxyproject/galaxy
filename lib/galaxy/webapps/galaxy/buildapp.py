@@ -30,7 +30,6 @@ from galaxy.webapps.util import (
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
-from galaxy.webapps.util import build_template_error_formatters
 
 
 log = logging.getLogger( __name__ )
