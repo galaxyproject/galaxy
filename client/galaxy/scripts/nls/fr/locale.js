@@ -105,7 +105,7 @@ define({
 "Hide datasets" :
     "Cacher les jeux de données",
 "Unhide datasets" :
-    "Restaurer les jeux de données cachés",
+    "Afficher les jeux de données cachés",
 "Delete datasets" :
     "Supprimer les jeux de données",
 "Undelete datasets" :
@@ -113,7 +113,7 @@ define({
 "Permanently delete datasets" :
     "Supprimer définitivement les jeux de données",
 "This will permanently remove the data in your datasets. Are you sure?" :
-    "Cela supprimera de manière permanente les données de votre historique. Êtes-vous certains?",
+    "Cela supprimera de manière permanente les données de votre historique. Êtes-vous certain?",
 
 // // ---- history-view-annotated
 "Dataset" :
@@ -176,7 +176,7 @@ define({
     "Vous n'avez pas la permission de voir ce jeu de données",
 // state: discarded
 "The job creating this dataset was cancelled before completion" :
-    "Le calcul ayant créé ce jeu de données a été annulé prématurément",
+    "Le processus à l'origine de ce jeu de données a été annulé prématurément",
 // state: queued
 "This job is waiting to run" :
     "Ce calcul est en attente de traitement",
