@@ -151,6 +151,14 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_selector_visible(history_item_selector)
         return history_item_selector
 
+    def history_panel_wait_for_hid_hidden(self, hid, timeout=60):
+        current_history_id = self.current_history_id()
+        contents = self.api_get("histories/%s/contents" % current_history_id)
+        history_item = [d for d in contents if d["hid"] == hid][0]
+        history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
+        self.wait_for_selector_absent(history_item_selector)
+        return history_item_selector
+
     def history_panel_wait_for_hid_state(self, hid, state, timeout=60):
         history_item_selector = self.history_panel_wait_for_hid_visible(hid, timeout=timeout)
         history_item_selector_state = "%s.state-%s" % (history_item_selector, state)
@@ -364,6 +372,11 @@ class NavigatesGalaxy(HasDriver):
         menu_selector = self.test_data["historyOptions"]["selectors"]["menu"]
         return menu_selector
 
+    @retry_during_transitions
+    def history_panel_refresh_click(self):
+        refresh_item = self.wait_for_selector_clickable("#history-refresh-button")
+        refresh_item.click()
+
     def history_panel_multi_operations_selector(self):
         return self.test_data["historyPanel"]["selectors"]["history"]["multiOperationsIcon"]
 
@@ -444,6 +457,18 @@ class NavigatesGalaxy(HasDriver):
     def click_hda_title(self, hda_id, wait=False):
         # TODO: Replace with calls to history_panel_click_item_title.
         return self.history_panel_click_item_title(hda_id=hda_id, wait=wait)
+
+    def collection_builder_set_name(self, name):
+        name_element = self.wait_for_selector_visible("input.collection-name")
+        name_element.send_keys(name)
+
+    def collection_builder_hide_originals(self):
+        hide_element = self.wait_for_selector_clickable("input.hide-originals")
+        hide_element.click()
+
+    def collection_builder_create(self):
+        create_element = self.wait_for_selector_clickable("button.create-collection")
+        create_element.click()
 
     def logout_if_needed(self):
         if self.is_logged_in():
