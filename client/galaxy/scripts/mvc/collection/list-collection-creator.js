@@ -743,7 +743,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
     //TODO: underscore currently unnecc. bc no vars are used
     //TODO: better way of localizing text-nodes in long strings
     /** underscore template fns attached to class */
-    templates : _.extend(baseCreator.CollectionCreatorMixin._creatorTemplates, {
+    templates : _.extend({}, baseCreator.CollectionCreatorMixin._creatorTemplates, {
 
         /** the header (not including help text) */
         header : _.template([
