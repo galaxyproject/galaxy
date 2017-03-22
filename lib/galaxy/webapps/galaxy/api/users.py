@@ -709,21 +709,21 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             else:
                 dataset_id = trans.security.decode_id( len_value )
                 dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
-                try:
-                    len_dataset = dataset.get_converted_dataset( trans, "len" )
-                    # HACK: need to request dataset again b/c get_converted_dataset()
-                    # doesn't return dataset (as it probably should).
-                    len_dataset = dataset.get_converted_dataset( trans, "len" )
-                    if len_dataset.state != trans.app.model.Job.states.ERROR:
-                        chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
-                        if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
-                            try:
-                                chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
-                                build_dict[ 'count' ] = chrom_count
-                            except:
-                                raise MessageException( 'Unable to determine chroms/contigs count.' )
-                except:
-                    raise MessageException( 'Failed to convert dataset.' )
+                #try:
+                len_dataset = dataset.get_converted_dataset( trans, "len" )
+                # HACK: need to request dataset again b/c get_converted_dataset()
+                # doesn't return dataset (as it probably should).
+                len_dataset = dataset.get_converted_dataset( trans, "len" )
+                if len_dataset.state != trans.app.model.Job.states.ERROR:
+                    chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
+                    if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
+                        try:
+                            chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                            build_dict[ 'count' ] = chrom_count
+                        except:
+                            raise MessageException( 'Unable to determine chroms/contigs count.' )
+                #except:
+                #    raise MessageException( 'Failed to convert dataset.' )
             dbkeys[key] = build_dict
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
