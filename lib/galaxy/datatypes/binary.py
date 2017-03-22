@@ -1148,7 +1148,7 @@ Binary.register_sniffable_binary_format('sra', 'sra', Sra)
 
 class RData( Binary ):
     """Generic R Data file datatype implementation"""
-    file_ext = 'RData'
+    file_ext = 'rdata'
 
     def sniff( self, filename ):
         rdata_header = b'RDX2\nX\n'

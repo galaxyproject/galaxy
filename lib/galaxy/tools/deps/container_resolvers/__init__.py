@@ -11,6 +11,7 @@ from galaxy.util.dictifiable import Dictifiable
 
 
 @six.add_metaclass(ABCMeta)
+@six.python_2_unicode_compatible
 class ContainerResolver(Dictifiable, object):
     """Description of a technique for resolving container images for tool execution."""
 
@@ -49,3 +50,6 @@ class ContainerResolver(Dictifiable, object):
     def _container_type_enabled(self, container_description, enabled_container_types):
         """Return a boolean indicating if the specified container type is enabled."""
         return container_description.type in enabled_container_types
+
+    def __str__(self):
+        return "%s[]" % self.__class__.__name__

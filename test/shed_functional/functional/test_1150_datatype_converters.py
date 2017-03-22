@@ -64,7 +64,7 @@ class TestDatatypeConverters( ShedTwillTestCase ):
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         preview_strings_displayed = [ repository.name, self.get_repository_tip( repository ) ]
-        strings_displayed = [ 'Choose the configuration file' ]
+        strings_displayed = [ 'Your Galaxy instance is configured with', 'shed-related tool configuration file' ]
         strings_not_displayed = [ 'tool panel section' ]
         self.install_repository( repository_name,
                                  common.test_user_1_name,
