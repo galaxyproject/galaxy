@@ -1418,7 +1418,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 //TODO: underscore currently unnecc. bc no vars are used
 //TODO: better way of localizing text-nodes in long strings
 /** underscore template fns attached to class */
-PairedCollectionCreator.templates = PairedCollectionCreator.templates || _.extend(baseCreator.CollectionCreatorMixin._creatorTemplates, {
+PairedCollectionCreator.templates = _.extend(PairedCollectionCreator.templates || {}, baseCreator.CollectionCreatorMixin._creatorTemplates, {
 
     /** the header (not including help text) */
     header : _.template([
