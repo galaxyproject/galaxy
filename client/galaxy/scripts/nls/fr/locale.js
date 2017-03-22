@@ -66,55 +66,55 @@ define({
 // ---------------------------------------------------------------------------- histories
 // ---- history/options-menu
 "History Lists":
-    false,
+    "L'historique",
 // Saved histories is defined above.
 // "Saved Histories":
 //     false,
 "Histories Shared with Me":
-    false,
+    "Historiques partagés avec moi",
 "Current History":
-    false,
+    "Historique actuel",
 "Create New":
-    false,
+    "Nouvel historique",
 "Copy History":
-    false,
+    "Copier historique",
 "Share or Publish":
-    false,
+    "Partager ou publier",
 "Show Structure":
-    false,
+    "Afficher la structure",
 "Extract Workflow":
-    false,
+    "Extraire le workflow",
 // Delete is defined elsewhere, but is also in this menu.
 // "Delete":
 //     false,
 "Delete Permanently":
-    false,
+    "Supprimer définitivement les jeux de données",
 "Dataset Actions":
-    false,
+    "Actions des jeux de données",
 "Copy Datasets":
-    false,
+    "Copier jeu de données" ,
 "Dataset Security":
-    false,
+    "Securitée des jeux de données",
 "Resume Paused Jobs":
-    false,
+    "Reprendre les tâches arretées",
 "Collapse Expanded Datasets":
-    false,
+    "Réduire les jeux de données affichés",
 "Unhide Hidden Datasets":
-    false,
+    "Afficher les jeux de données cachés",
 "Delete Hidden Datasets":
-    false,
+    "Supprimer les jeux de données",
 "Purge Deleted Datasets":
-    false,
+    "Purger les jeux de données supprimés",
 "Downloads":
-    false,
+    "Téléchargements",
 "Export Tool Citations":
-    false,
+    "Exporter citations outils",
 "Export History to File":
-    false,
+    "Enregistrer l'historique dans un fichier",
 "Other Actions":
-    false,
+    "Autres actions",
 "Import from File":
-    false,
+    "Importer depuis un fichier",
 "Webhooks":
     false,
 
