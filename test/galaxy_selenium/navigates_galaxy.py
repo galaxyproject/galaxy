@@ -9,11 +9,13 @@ import random
 import string
 import time
 
+from functools import wraps
+
 import requests
 import yaml
 
 from .data import NAVIGATION_DATA
-from .has_driver import HasDriver
+from .has_driver import exception_indicates_stale_element, HasDriver
 from . import sizzle
 
 # Test case data
@@ -24,6 +26,27 @@ class NullTourCallback(object):
 
     def handle_step(self, step, step_index):
         pass
+
+
+def retry_during_transitions(f, attempts=5, sleep=.1):
+
+    @wraps(f)
+    def _retry(*args, **kwds):
+        previous_attempts = 0
+        while True:
+            try:
+                return f(*args, **kwds)
+            except Exception as e:
+                if previous_attempts > attempts:
+                    raise
+
+                if not exception_indicates_stale_element(e):
+                    raise
+
+                time.sleep(sleep)
+                previous_attempts += 1
+
+    return _retry
 
 
 class NavigatesGalaxy(HasDriver):
@@ -110,7 +133,7 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_wait_for_hid_ok(self, hid, timeout=60):
         self.history_panel_wait_for_hid_state(hid, 'ok', timeout=timeout)
 
-    def history_panel_wait_for_hid_state(self, hid, state, timeout=60):
+    def history_panel_wait_for_hid_visible(self, hid, timeout=60):
         current_history_id = self.current_history_id()
 
         def history_has_hid(driver):
@@ -122,6 +145,10 @@ class NavigatesGalaxy(HasDriver):
         history_item = [d for d in contents if d["hid"] == hid][0]
         history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
         self.wait_for_selector_visible(history_item_selector)
+        return history_item_selector
+
+    def history_panel_wait_for_hid_state(self, hid, state, timeout=60):
+        history_item_selector = self.history_panel_wait_for_hid_visible(hid, timeout=timeout)
         history_item_selector_state = "%s.state-%s" % (history_item_selector, state)
         try:
             self.wait_for_selector_visible(history_item_selector_state)
@@ -325,6 +352,7 @@ class NavigatesGalaxy(HasDriver):
         operations_element = self.wait_for_selector_clickable(operations_selector)
         operations_element.click()
 
+    @retry_during_transitions
     def history_panel_muli_operation_select_hid(self, hid):
         item_selector = self.history_panel_item_selector(hid, wait=True)
         operation_radio_selector = "%s .selector" % item_selector
