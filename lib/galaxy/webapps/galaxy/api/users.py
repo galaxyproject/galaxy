@@ -699,6 +699,27 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         """ Returns collection of custom builds. """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
+        update = False
+        for key in dbkeys:
+            dbkey = dbkeys[ key ]
+            if 'count' not in dbkey and 'fasta' in dbkey:
+                dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey[ 'fasta' ] )
+                try:
+                    new_len = dataset.get_converted_dataset( trans, 'len' )
+                    # HACK: need to request dataset again b/c get_converted_dataset()
+                    # doesn't return dataset (as it probably should).
+                    new_len = dataset.get_converted_dataset( trans, 'len' )
+                    if new_len.state != trans.app.model.Job.states.ERROR:
+                        dbkey[ 'len' ] = new_len.id
+                        chrom_count_dataset = new_len.get_converted_dataset( trans, 'linecount' )
+                        if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
+                            chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                            dbkey[ 'count' ] = chrom_count
+                            update = True
+                except:
+                    pass
+        if update:
+            user.preferences['dbkeys'] = json.dumps(dbkeys)
         dbkey_collection = []
         for key, attributes in dbkeys.items():
             attributes['id'] = key
@@ -761,28 +782,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 f.close()
                 build_dict.update( { 'len': new_len.id, 'count': counter } )
             else:
-                dataset_id = trans.security.decode_id( len_value )
-                dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
-                try:
-                    new_len = dataset.get_converted_dataset( trans, 'len' )
-                    # HACK: need to request dataset again b/c get_converted_dataset()
-                    # doesn't return dataset (as it probably should).
-                    new_len = dataset.get_converted_dataset( trans, 'len' )
-                    if new_len.state != trans.app.model.Job.states.ERROR:
-                        build_dict[ 'len' ] = new_len.id
-                        chrom_count_dataset = new_len.get_converted_dataset( trans, 'linecount' )
-                        if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
-                            try:
-                                chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
-                                build_dict[ 'count' ] = chrom_count
-                            except:
-                                raise MessageException( 'Unable to determine chroms/contigs count.' )
-                        else:
-                            raise MessageException( 'Line count dataset failed.' )
-                    else:
-                        raise MessageException( 'Converted dataset in error state.' )
-                except Exception as e:
-                    raise MessageException( str( e ) )
+                build_dict[ 'fasta' ] = trans.security.decode_id( len_value )
             dbkeys[key] = build_dict
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
