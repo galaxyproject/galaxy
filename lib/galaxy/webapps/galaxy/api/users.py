@@ -637,7 +637,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                         .order_by( model.HistoryDatasetAssociation.hid.desc() )
         return {
             'installed_builds'  : [ { 'label' : ins, 'value' : ins } for ins in installed_builds ],
-            'fasta_hdas'        : [ { 'label' : '%s: %s' % ( hda.hid, hda.name ), 'value' : trans.security.encode_id( hda.id ) } for hda in fasta_hdas ],
+            'fasta_hdas'        : [ { 'label' : '%s: %s' % ( hda.hid, hda.name ), 'value' : trans.security.encode_id( hda.hid ) } for hda in fasta_hdas ],
         }
 
     @expose_api
@@ -723,8 +723,12 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                                 build_dict[ 'count' ] = chrom_count
                             except:
                                 raise MessageException( 'Unable to determine chroms/contigs count.' )
-                except:
-                    raise MessageException( 'Failed to convert dataset.' )
+                        else:
+                            raise MessageException( 'Line count dataset failed.' )
+                    else:
+                        raise MessageException( 'Converted dataset in error state.' )
+                except Exception as e:
+                    raise MessageException( str( e ) )
             dbkeys[key] = build_dict
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
