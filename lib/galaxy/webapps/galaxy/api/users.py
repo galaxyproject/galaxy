@@ -667,15 +667,15 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             raise MessageException('There is already a custom build with that key. Delete it first if you want to replace it.')
         else:
             # Have everything needed; create new build.
-            build_dict = { "name": name }
+            build_dict = { 'name': name }
             if len_type in [ 'text', 'file' ]:
                 # Create new len file
-                new_len = trans.app.model.HistoryDatasetAssociation( extension="len", create_dataset=True, sa_session=trans.sa_session )
+                new_len = trans.app.model.HistoryDatasetAssociation( extension='len', create_dataset=True, sa_session=trans.sa_session )
                 trans.sa_session.add( new_len )
                 new_len.name = name
                 new_len.visible = False
                 new_len.state = trans.app.model.Job.states.OK
-                new_len.info = "custom build .len file"
+                new_len.info = 'custom build .len file'
                 try:
                     trans.app.object_store.create( new_len.dataset )
                 except ObjectInvalid:
@@ -683,10 +683,10 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 trans.sa_session.flush()
                 counter = 0
                 lines_skipped = 0
-                f = open(new_len.file_name, "w")
+                f = open(new_len.file_name, 'w')
                 # LEN files have format:
                 #   <chrom_name><tab><chrom_length>
-                for line in len_value.split("\n"):
+                for line in len_value.split('\n'):
                     # Splits at the last whitespace in the line
                     lst = line.strip().rsplit(None, 1)
                     if not lst or len(lst) < 2:
@@ -703,19 +703,20 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                         lines_skipped += 1
                         continue
                     counter += 1
-                    f.write("%s\t%s\n" % (chrom, length))
+                    f.write( '%s\t%s\n' % (chrom, length) )
                 f.close()
-                build_dict.update( { "len": new_len.id, "count": counter } )
+                build_dict.update( { 'len': new_len.id, 'count': counter } )
             else:
                 dataset_id = trans.security.decode_id( len_value )
                 dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
                 try:
-                    len_dataset = dataset.get_converted_dataset( trans, "len" )
+                    new_len = dataset.get_converted_dataset( trans, 'len' )
                     # HACK: need to request dataset again b/c get_converted_dataset()
                     # doesn't return dataset (as it probably should).
-                    len_dataset = dataset.get_converted_dataset( trans, "len" )
-                    if len_dataset.state != trans.app.model.Job.states.ERROR:
-                        chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
+                    new_len = dataset.get_converted_dataset( trans, 'len' )
+                    if new_len.state != trans.app.model.Job.states.ERROR:
+                        build_dict[ 'len' ] = new_len.id
+                        chrom_count_dataset = new_len.get_converted_dataset( trans, 'linecount' )
                         if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
                             try:
                                 chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
