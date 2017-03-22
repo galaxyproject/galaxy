@@ -60,63 +60,63 @@ define({
 "Saved Histories":
     "Historiques sauvegardés",
 "Saved Datasets":
-    "Données sauvegardés",
+    "Jeux de données sauvegardés",
 "Saved Pages":
     "Pages sauvegardées",
 // ---------------------------------------------------------------------------- histories
 // ---- history/options-menu
 "History Lists":
-    false,
+    "Tableaux des historiques",
 // Saved histories is defined above.
 // "Saved Histories":
 //     false,
 "Histories Shared with Me":
-    false,
+    "Historiques partagés avec moi",
 "Current History":
-    false,
+    "Cet Historique",
 "Create New":
-    false,
+    "Créer un nouveau",
 "Copy History":
-    false,
+    "Copier l'Historique",
 "Share or Publish":
-    false,
+    "Partager et publier",
 "Show Structure":
-    false,
+    "Montrer la structure",
 "Extract Workflow":
-    false,
+    "Extraire un Workflow",
 // Delete is defined elsewhere, but is also in this menu.
 // "Delete":
 //     false,
 "Delete Permanently":
-    false,
+    "Supprimer définitivement",
 "Dataset Actions":
-    false,
+    "Actions sur les jeux de données",
 "Copy Datasets":
-    false,
+    "Copier des jeux de données",
 "Dataset Security":
-    false,
+    "Permissions/Sécurité",
 "Resume Paused Jobs":
-    false,
+    "Reprendre les processus en pause",
 "Collapse Expanded Datasets":
-    false,
+    "Réduire les données étendus",
 "Unhide Hidden Datasets":
-    false,
+    "Afficher les données cachés",
 "Delete Hidden Datasets":
-    false,
+    "Supprimer les données cachés",
 "Purge Deleted Datasets":
-    false,
+    "Purger les données supprimer",
 "Downloads":
-    false,
+    "Télécharger",
 "Export Tool Citations":
-    false,
+    "Exporter les citations des outils",
 "Export History to File":
-    false,
+    "Exporter l'Historique dans un fichier",
 "Other Actions":
-    false,
+    "Autres actions",
 "Import from File":
-    false,
+    "Importer depuis un fichier",
 "Webhooks":
-    false,
+    "Webhooks",
 
 // ---- history-model
 // ---- history-view
