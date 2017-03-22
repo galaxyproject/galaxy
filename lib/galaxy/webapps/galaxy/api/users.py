@@ -15,7 +15,7 @@ from markupsafe import escape
 from sqlalchemy import false, true, and_, or_
 
 from galaxy import exceptions, model, util, web
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import MessageException, ObjectInvalid
 from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_password
@@ -682,13 +682,13 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
     @expose_api
     def get_custom_builds_metadata(self, trans, id, payload={}, **kwd):
         """ Returns meta data for custom builds. """
-        user = self._get_user(trans, id)
+        self._get_user(trans, id)
         installed_builds = []
         for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
             installed_builds.append( os.path.basename(build).split(".len")[0] )
         fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-                        .filter_by( history=trans.history, extension="fasta", deleted=False ) \
-                        .order_by( model.HistoryDatasetAssociation.hid.desc() )
+            .filter_by( history=trans.history, extension="fasta", deleted=False ) \
+            .order_by( model.HistoryDatasetAssociation.hid.desc() )
         return {
             'installed_builds'  : [ { 'label' : ins, 'value' : ins } for ins in installed_builds ],
             'fasta_hdas'        : [ { 'label' : '%s: %s' % ( hda.hid, hda.name ), 'value' : trans.security.encode_id( hda.id ) } for hda in fasta_hdas ],
@@ -701,7 +701,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
         dbkey_collection = []
         for key, attributes in dbkeys.items():
-            attributes['id'] = key;
+            attributes['id'] = key
             dbkey_collection.append(attributes)
         return dbkey_collection
 

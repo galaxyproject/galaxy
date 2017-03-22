@@ -2,21 +2,17 @@
 Contains the user interface in the Universe class
 """
 
-import glob
 import logging
-import os
 import random
 import socket
 import urllib
 from datetime import datetime, timedelta
-from json import dumps, loads
 
 from markupsafe import escape
 from sqlalchemy import and_, or_, func, true
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy.exceptions import ObjectInvalid
 from galaxy.queue_worker import send_local_control_task
 from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
