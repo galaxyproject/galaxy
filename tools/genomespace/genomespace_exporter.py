@@ -1,6 +1,6 @@
 import argparse
-import sys
 import binascii
+import sys
 
 from genomespaceclient import GenomeSpaceClient
 

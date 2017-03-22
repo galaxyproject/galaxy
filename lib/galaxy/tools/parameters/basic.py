@@ -631,21 +631,12 @@ class GenomespaceFileToolParameter(ToolParameter):
     Parameter that takes one of two values.
     """
 
-    def __init__(self, tool, elem):
-        ToolParameter.__init__(self, tool, elem)
-        self.value = elem.get('value')
+    def __init__(self, tool, input_source):
+        input_source = ensure_input_source( input_source )
+        ToolParameter.__init__(self, tool, input_source)
+        self.value = input_source.get('value')
 
-    def get_html_field(self, trans=None, value=None, other_values={}):
-        return form_builder.GenomespaceFileField(self.name, value)
-
-    def to_string(self, value, app):
-        """Convert a value to a string representation suitable for persisting"""
-        if value is None:
-            return ''
-        else:
-            return str(value)
-
-    def get_initial_value(self, trans, context, history=None):
+    def get_initial_value(self, trans, other_values):
         return self.value
 
 
