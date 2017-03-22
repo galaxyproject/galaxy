@@ -565,7 +565,7 @@ class OwnerAnnotationColumn( TextColumn, UsesAnnotations ):
                 ann_snippet += "..."
         else:
             ann_snippet = ""
-        return ann_snippet
+        return escape( ann_snippet )
 
     def get_single_filter( self, user, a_filter ):
         """ Filter by annotation and annotation owner. """
@@ -603,7 +603,7 @@ class CommunityTagsColumn( TextColumn ):
                 column_filter = ",".join( column_filter )
             raw_tags = trans.app.tag_handler.parse_tags( column_filter.encode( "utf-8" ) )
             clause_list = []
-            for name, value in raw_tags.items():
+            for name, value in raw_tags:
                 if name:
                     # Filter by all tags.
                     clause_list.append( self.model_class.tags.any( func.lower( self.model_tag_association_class.user_tname ).like( "%" + name.lower() + "%" ) ) )
@@ -633,7 +633,7 @@ class IndividualTagsColumn( CommunityTagsColumn ):
                 column_filter = ",".join( column_filter )
             raw_tags = trans.app.tag_handler.parse_tags( column_filter.encode( "utf-8" ) )
             clause_list = []
-            for name, value in raw_tags.items():
+            for name, value in raw_tags:
                 if name:
                     # Filter by individual's tag names.
                     clause_list.append( self.model_class.tags.any( and_( func.lower( self.model_tag_association_class.user_tname ).like( "%" + name.lower() + "%" ), self.model_tag_association_class.user == user ) ) )

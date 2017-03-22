@@ -1,11 +1,11 @@
 define([
     "utils/levenshtein",
     "utils/natural-sort",
-    "mvc/collection/list-collection-creator",
+    "mvc/collection/base-creator",
     "mvc/base-mvc",
     "utils/localization",
     "ui/hoverhighlight"
-], function( levenshteinDistance, naturalSort, LIST_COLLECTION_CREATOR, baseMVC, _l ){
+], function( levenshteinDistance, naturalSort, baseCreator, baseMVC, _l ){
 
 'use strict';
 
@@ -190,7 +190,7 @@ function autoPairFnBuilder( options ){
 // ============================================================================
 /** An interface for building collections of paired datasets.
  */
-var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
+var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).extend( baseCreator.CollectionCreatorMixin ).extend({
     _logNamespace : logNamespace,
 
     className: 'list-of-pairs-collection-creator collection-creator flex-row-container',
@@ -942,6 +942,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         // header
         'click .more-help'                          : '_clickMoreHelp',
         'click .less-help'                          : '_clickLessHelp',
+        'click .main-help'                          : '_toggleHelp',
         'click .header .alert button'               : '_hideAlert',
         'click .forward-column .column-title'       : '_clickShowOnlyUnpaired',
         'click .reverse-column .column-title'       : '_clickShowOnlyUnpaired',
@@ -981,37 +982,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         'change .remove-extensions'                 : function( ev ){ this.toggleExtensions(); },
         'change .collection-name'                   : '_changeName',
         'keydown .collection-name'                  : '_nameCheckForEnter',
-        'click .cancel-create'                      : function( ev ){
-            if( typeof this.oncancel === 'function' ){
-                this.oncancel.call( this );
-            }
-        },
+        'click .cancel-create'                      : '_cancelCreate',
         'click .create-collection'                  : '_clickCreate'//,
-    },
-
-    // ........................................................................ header
-    /** expand help */
-    _clickMoreHelp : function( ev ){
-        this.$( '.main-help' ).addClass( 'expanded' );
-        this.$( '.more-help' ).hide();
-    },
-    /** collapse help */
-    _clickLessHelp : function( ev ){
-        this.$( '.main-help' ).removeClass( 'expanded' );
-        this.$( '.more-help' ).show();
-    },
-
-    /** show an alert on the top of the interface containing message (alertClass is bootstrap's alert-*)*/
-    _showAlert : function( message, alertClass ){
-        alertClass = alertClass || 'alert-danger';
-        this.$( '.main-help' ).hide();
-        this.$( '.header .alert' ).attr( 'class', 'alert alert-dismissable' ).addClass( alertClass ).show()
-            .find( '.alert-message' ).html( message );
-    },
-    /** hide the alerts at the top */
-    _hideAlert : function( message ){
-        this.$( '.main-help' ).show();
-        this.$( '.header .alert' ).hide();
     },
 
     /** toggle between showing only unpaired and split view */
@@ -1419,33 +1391,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         creator._renderFooter();
     },
 
-    /** handle a collection name change */
-    _changeName : function( ev ){
-        this._validationWarning( 'name', !!this._getName() );
-    },
-
-    /** check for enter key press when in the collection name and submit */
-    _nameCheckForEnter : function( ev ){
-        if( ev.keyCode === 13 && !this.blocking ){
-            this._clickCreate();
-        }
-    },
-
-    /** get the current collection name */
-    _getName : function(){
-        return _.escape( this.$( '.collection-name' ).val() );
-    },
-
-    /** attempt to create the current collection */
-    _clickCreate : function( ev ){
-        var name = this._getName();
-        if( !name ){
-            this._validationWarning( 'name' );
-        } else if( !this.blocking ){
-            this.createList();
-        }
-    },
-
     // ------------------------------------------------------------------------ misc
     /** debug a dataset list */
     _printList : function( list ){
@@ -1473,14 +1418,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 //TODO: underscore currently unnecc. bc no vars are used
 //TODO: better way of localizing text-nodes in long strings
 /** underscore template fns attached to class */
-PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
-
-    /** the skeleton */
-    main : _.template([
-        '<div class="header flex-row no-flex"></div>',
-        '<div class="middle flex-row flex-row-container"></div>',
-        '<div class="footer flex-row no-flex">'
-    ].join('')),
+PairedCollectionCreator.templates = _.extend(PairedCollectionCreator.templates || {}, baseCreator.CollectionCreatorMixin._creatorTemplates, {
 
     /** the header (not including help text) */
     header : _.template([
@@ -1665,7 +1603,7 @@ PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
             '(Note: you do not have to pair all unpaired datasets to finish.)'
         ].join( '' )), '</p>'
     ].join(''))
-};
+});
 
 
 //=============================================================================
