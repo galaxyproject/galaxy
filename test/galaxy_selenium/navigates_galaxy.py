@@ -211,22 +211,38 @@ class NavigatesGalaxy(HasDriver):
         center_element = self.driver.find_element_by_css_selector("#center")
         action_chains.move_to_element(center_element).click().perform()
 
-    def perform_upload(self, test_path):
+    def perform_upload(self, test_path, ext=None, genome=None, ext_all=None, genome_all=None):
         self.home()
 
-        upload_button = self.wait_for_selector(".upload-button")
+        upload_button = self.wait_for_selector_clickable(".upload-button")
         upload_button.click()
 
-        local_upload_button = self.wait_for_selector("button#btn-local")
+        if ext_all is not None:
+            self.wait_for_selector_visible('.upload-footer-extension')
+            self.select2_set_value(".upload-footer-extension", ext_all)
+
+        if genome_all is not None:
+            self.wait_for_selector_visible('.upload-footer-genome')
+            self.select2_set_value(".upload-footer-genome", genome_all)
+
+        local_upload_button = self.wait_for_selector_clickable("button#btn-local")
         local_upload_button.click()
 
         file_upload = self.wait_for_selector('input[type="file"]')
         file_upload.send_keys(test_path)
 
-        start_button = self.wait_for_selector("button#btn-start")
+        if ext is not None:
+            self.wait_for_selector_visible('.upload-extension')
+            self.select2_set_value(".upload-extension", ext)
+
+        if genome is not None:
+            self.wait_for_selector_visible('.upload-genome')
+            self.select2_set_value(".upload-genome", genome)
+
+        start_button = self.wait_for_selector_clickable("button#btn-start")
         start_button.click()
 
-        close_button = self.wait_for_selector("button#btn-close")
+        close_button = self.wait_for_selector_clickable("button#btn-close")
         close_button.click()
 
     def workflow_index_open(self):
