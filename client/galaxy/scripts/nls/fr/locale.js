@@ -291,7 +291,7 @@ define({
 "Delete" :
     "Supprimer",
 "Dataset is already deleted" :
-    "Pov' tâche, le jeu de données est déjà supprimé ;)",
+    "Le jeu de données est déjà supprimé",
 
 "View or report this error" :
     "Voir ou remonter cette erreur",
