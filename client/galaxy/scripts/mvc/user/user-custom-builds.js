@@ -56,7 +56,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
             this.collection.each( function( model ) {
                 self.table.add( model.id );
                 self.table.add( model.get( 'name' ) );
-                self.table.add( model.get( 'count' ) !== undefined ? model.get( 'count' ) : '-' );
+                self.table.add( model.get( 'count' ) !== undefined ? model.get( 'count' ) : 'Processing...' );
                 self.table.add( ( new Ui.ButtonIcon({
                     icon    : 'fa-trash-o',
                     cls     : 'ui-button-icon-plain',

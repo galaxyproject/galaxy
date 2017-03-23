@@ -702,22 +702,12 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         update = False
         for key in dbkeys:
             dbkey = dbkeys[ key ]
-            if 'count' not in dbkey and 'fasta' in dbkey:
-                dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey[ 'fasta' ] )
-                try:
-                    new_len = dataset.get_converted_dataset( trans, 'len' )
-                    # HACK: need to request dataset again b/c get_converted_dataset()
-                    # doesn't return dataset (as it probably should).
-                    new_len = dataset.get_converted_dataset( trans, 'len' )
-                    if new_len.state != trans.app.model.Job.states.ERROR:
-                        dbkey[ 'len' ] = new_len.id
-                        chrom_count_dataset = new_len.get_converted_dataset( trans, 'linecount' )
-                        if chrom_count_dataset and chrom_count_dataset.state == trans.app.model.Job.states.OK:
-                            chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
-                            dbkey[ 'count' ] = chrom_count
-                            update = True
-                except:
-                    pass
+            if 'count' not in dbkey and 'linecount' in dbkey:
+                chrom_count_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey[ 'linecount' ] )
+                if chrom_count_dataset.state == trans.app.model.Job.states.OK:
+                    chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                    dbkey[ 'count' ] = chrom_count
+                    update = True
         if update:
             user.preferences['dbkeys'] = json.dumps(dbkeys)
         dbkey_collection = []
@@ -780,9 +770,18 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     counter += 1
                     f.write( '%s\t%s\n' % (chrom, length) )
                 f.close()
-                build_dict.update( { 'len': new_len.id, 'count': counter } )
+                build_dict[ 'len' ] = new_len.id
+                build_dict[ 'count' ] = counter
             else:
                 build_dict[ 'fasta' ] = trans.security.decode_id( len_value )
+                dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( build_dict[ 'fasta' ] )
+                try:
+                    new_len = dataset.get_converted_dataset( trans, 'len' )
+                    new_linecount = new_len.get_converted_dataset( trans, 'linecount' )
+                    build_dict[ 'len' ] = new_len.id
+                    build_dict[ 'linecount' ] = new_linecount.id
+                except:
+                    raise MessageException( 'Failed to convert dataset.' )
             dbkeys[key] = build_dict
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
