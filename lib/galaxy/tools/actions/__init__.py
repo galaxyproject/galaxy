@@ -679,6 +679,17 @@ class OutputCollections(object):
 
             collection_type = input_collections[collection_type_source].collection.collection_type
 
+        if "elements" in element_kwds:
+            elements = element_kwds["elements"]
+            if hasattr(elements, "items"):  # else it is ELEMENTS_UNINITIALIZED object.
+                for key, value in elements.items():
+                    # Either a HDA (if) or a DatasetCollection (the else)
+                    if getattr(value, "history_content_type", None) == "dataset":
+                        assert value.history is not None
+                    else:
+                        for dataset in value.dataset_instances:
+                            assert dataset.history is not None
+
         if self.mapping_over_collection:
             dc = collections_manager.create_dataset_collection(
                 self.trans,

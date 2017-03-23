@@ -2358,6 +2358,8 @@ class ZipCollectionTool( DatabaseOperationTool ):
         new_elements = odict()
         new_elements["forward"] = forward
         new_elements["reverse"] = reverse
+        history.add_dataset( forward, set_hid=False )
+        history.add_dataset( reverse, set_hid=False )
 
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
@@ -2436,7 +2438,10 @@ class MergeCollectionTool( DatabaseOperationTool ):
         # Don't copy until we know everything is fine and we have the structure of the list ready to go.
         new_elements = odict()
         for key, value in new_element_structure.items():
-            new_elements[key] = value.copy()
+            copied_value = value.copy()
+            if getattr(copied_value, "history_content_type", None) == "dataset":
+                history.add_dataset(copied_value, set_hid=False)
+            new_elements[key] = copied_value
 
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
@@ -2471,7 +2476,10 @@ class FilterFailedDatasetsTool( DatabaseOperationTool ):
 
             if valid:
                 element_identifier = dce.element_identifier
-                new_elements[element_identifier] = element.copy()
+                copied_value = element.copy()
+                if getattr(copied_value, "history_content_type", None) == "dataset":
+                    history.add_dataset(copied_value, set_hid=False)
+                new_elements[element_identifier] = copied_value
 
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
@@ -2494,8 +2502,9 @@ class FlattenTool( DatabaseOperationTool ):
                 if dce.is_collection:
                     add_elements(dce_object, prefix=identifier)
                 else:
-                    new_elements[identifier] = dce_object.copy()
-
+                    copied_dataset = dce_object.copy()
+                    history.add_dataset(copied_dataset, set_hid=False)
+                    new_elements[identifier] = copied_dataset
         add_elements(hdca.collection)
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
