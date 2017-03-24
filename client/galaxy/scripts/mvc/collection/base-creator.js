@@ -21,6 +21,10 @@ var CollectionCreatorMixin = {
         }
     },
 
+    _changeHideOriginals: function( ev ) {
+        this.hideOriginals = this.$( '.hide-originals' ).prop("checked");
+    },
+
     // ........................................................................ footer
     /** handle a collection name change */
     _changeName : function( ev ){
@@ -87,6 +91,23 @@ var CollectionCreatorMixin = {
         } else if( !this.blocking ){
             this.createList( name );
         }
+    },
+
+    _setUpCommonSettings : function( ) {
+        this.hideOriginals = false;
+    },
+
+    /** render the footer, completion controls, and cancel controls */
+    _renderFooter : function( speed, callback ){
+        var instance = this;
+        var $footer = this.$( '.footer' ).empty().html( this.templates.footer() );
+        _.each( this.footerSettings, function( property, selector ) {
+            this.$( selector ).prop( 'checked', instance[ property ] );
+        });
+        if( typeof this.oncancel === 'function' ){
+            this.$( '.cancel-create.btn' ).show();
+        }
+        return $footer;
     },
 
     _creatorTemplates: {

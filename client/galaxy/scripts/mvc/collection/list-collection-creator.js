@@ -179,6 +179,10 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         highlightClr    : 'rgba( 64, 255, 255, 1.0 )'
     },
 
+    footerSettings : {
+        '.hide-originals': 'hideOriginals'
+    },
+
     /** set up initial options, instance vars, behaviors */
     initialize : function( attributes ){
         this.metric( 'ListCollectionCreator.initialize', attributes );
@@ -191,6 +195,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         /** unordered, original list - cache to allow reversal */
         creator.initialElements = attributes.elements || [];
 
+        this._setUpCommonSettings();
         this._instanceSetUp();
         this._elementsSetUp();
         this._setUpBehaviors();
@@ -346,15 +351,6 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         var $middle = this.$( '.middle' ).empty().html( this.templates.middle() );
         this._renderList( speed );
         return $middle;
-    },
-
-    /** render the footer, completion controls, and cancel controls */
-    _renderFooter : function( speed, callback ){
-        var $footer = this.$( '.footer' ).empty().html( this.templates.footer() );
-        if( typeof this.oncancel === 'function' ){
-            this.$( '.cancel-create.btn' ).show();
-        }
-        return $footer;
     },
 
     /** add any jQuery/bootstrap/custom plugins to elements rendered */
@@ -513,7 +509,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
             });
 
         creator.blocking = true;
-        return creator.creationFn( elements, name )
+        return creator.creationFn( elements, name, creator.hideOriginals )
             .always( function(){
                 creator.blocking = false;
             })
@@ -609,6 +605,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         // footer
         'change .collection-name'       : '_changeName',
         'keydown .collection-name'      : '_nameCheckForEnter',
+        'change .hide-originals'        : '_changeHideOriginals',
         'click .cancel-create'          : '_cancelCreate',
         'click .create-collection'      : '_clickCreate'//,
     },
@@ -777,6 +774,12 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         /** creation and cancel controls */
         footer : _.template([
             '<div class="attributes clear">',
+                '<div class="clear">',
+                    '<label class="setting-prompt pull-right">',
+                        _l( 'Hide original elements' ), '?',
+                        '<input class="hide-originals pull-right" type="checkbox" />',
+                    '</label>',
+                '</div>',
                 '<div class="clear">',
                     '<input class="collection-name form-control pull-right" ',
                         'placeholder="', _l( 'Enter a name for your new collection' ), '" />',
@@ -948,7 +951,7 @@ var listCollectionCreatorModal = function _listCollectionCreatorModal( elements,
 function createListCollection( contents ){
     var elements = contents.toJSON(),
         promise = listCollectionCreatorModal( elements, {
-            creationFn : function( elements, name ){
+            creationFn : function( elements, name, hideSourceItems ){
                 elements = elements.map( function( element ){
                     return {
                         id      : element.id,
@@ -957,7 +960,7 @@ function createListCollection( contents ){
                         src     : ( element.history_content_type === 'dataset'? 'hda' : 'hdca' )
                     };
                 });
-                return contents.createHDCA( elements, 'list', name );
+                return contents.createHDCA( elements, 'list', name, hideSourceItems );
             }
         });
     return promise;
