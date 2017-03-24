@@ -79,7 +79,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         if tool_conf_watcher:
             self._tool_conf_watcher = tool_conf_watcher  # Avoids (re-)starting threads in uwsgi
         else:
-            self._tool_conf_watcher = get_tool_conf_watcher(lambda: self.handle_reload_toolbox())
+            self._tool_conf_watcher = get_tool_conf_watcher(reload_callback=lambda: self.handle_reload_toolbox(), tool_cache=self.app.tool_cache)
         self._filter_factory = FilterFactory( self )
         self._tool_tag_manager = tool_tag_manager( app )
         self._init_tools_from_configs( config_filenames )

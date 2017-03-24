@@ -57,6 +57,7 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
         self.reindexed = False
         self.setup_app( mock_model=False )
         install_model = mapping.init( "sqlite:///:memory:", create_tables=True )
+        self.app.tool_cache = None
         self.app.install_model = install_model
         self.app.reindex_tool_search = self.__reindex
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
