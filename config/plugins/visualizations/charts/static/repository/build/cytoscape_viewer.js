@@ -54,7 +54,9 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                cytoscape = null,
 	                self = this,
 	                rgb = [],
-	                hex_color = "";
+	                hex_color = "",
+	                astar_root = "",
+	                astar_destination = "";
 	
 	            // Get hex color for the highlighted edges
 	            rgb.push( parseInt( settings.get( 'choose_red' ) ) );
@@ -120,6 +122,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                            var kruskal = cytoscape.elements().kruskal();
 	                            kruskal.edges().addClass('searchpath');
 	                        }
+	                        
 	                        // Register tap event on graph nodes
 	                        // Right now on tapping on any node, BFS starts from that node
 	                        cytoscape.$( 'node' ).on('tap', function( e ) {
@@ -129,7 +132,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                            // If search algorithm and traversal both are chosen together,
 	                            // search algorithm chosen will take preferencel
 	                            if( settings.get( 'search_algorithm' ) !== "" ) {
-	                                self.run_search_algorithm(cytoscape, ele.id(), search_algorithm);
+	                                self.run_search_algorithm( cytoscape, ele.id(), search_algorithm, self );
 	                            }
 	                            else if( settings.get( 'graph_traversal' ) !== "" ) {
 	                                self.run_traversal_type( cytoscape, ele.id(), traversal_type );
@@ -150,26 +153,39 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                }
 	            });
 	        },
-	        run_search_algorithm: function( cytoscape, root_id, type ) {
+	        run_search_algorithm: function( cytoscape, root_id, type, self ) {
 	            var algorithm = "", i = 0, timeOut = 1500;
-	            if( type === "bfs" ) {
-	                algorithm = cytoscape.elements().bfs('#' + root_id, function(){}, true);
-	            }
-	            else if( type === "dfs" ) {
-	                algorithm = cytoscape.elements().dfs('#' + root_id, function(){}, true);
-	            }
-	            else {
-	                return;
-	            }
 	            var selectNextElement = function() {
 	                if( i < algorithm.path.length ) {
-	                    // Add css class for the selected edge
+	                    // Add css class for the selected edge(s)
 	                    algorithm.path[i].addClass('searchpath');
 	                    i++;
 	                    setTimeout(selectNextElement, timeOut);
 	                }
 	            };
-	            selectNextElement();
+	            switch( type ) {
+	                case "bfs":
+	                    algorithm = cytoscape.elements().bfs('#' + root_id, function() { }, true);
+	                    selectNextElement();
+	                    break;
+	                case "dfs":
+	                    algorithm = cytoscape.elements().dfs('#' + root_id, function() { }, true);
+	                    selectNextElement();
+	                    break;
+	                case "astar":
+	                    if( !self.astar_root ) {
+	                        self.astar_root = root_id;
+	                    }
+	                    else {
+	                        self.astar_destination = root_id;
+	                    }
+	                    if( self.astar_root && self.astar_destination ) {
+	                        algorithm = cytoscape.elements().aStar({ root: "#"+self.astar_root, goal: "#"+self.astar_destination },function() {}, true);
+	                        selectNextElement();
+	                    }
+	                 default:
+	                    return;
+	            }
 	        },
 	        run_traversal_type: function( cytoscape, root_id, type ) {
 	            var node_collection;

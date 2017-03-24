@@ -50,6 +50,7 @@ define( [], function() {
                 data    : [ { label : 'Breadth First Search', value : 'bfs' },
                             { label : 'Depth First Search', value : 'dfs' },
                             { label : 'Minimum Spanning Tree (Kruskal)', value : 'kruskal' },
+                            { label : 'A*', value : 'astar' },
                             { label : 'None', value : '' } ]
             },
             graph_traversal: {
@@ -64,6 +65,7 @@ define( [], function() {
                             { label : 'Incomers', value : 'incomers' },
                             { label : 'Roots', value : 'roots' },
                             { label : 'Leaves', value : 'leaves' },
+                            
                             { label : 'None', value : '' } ]
             },
             choose_red : {
