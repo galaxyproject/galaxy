@@ -93,8 +93,8 @@ var CollectionCreatorMixin = {
         }
     },
 
-    _setUpCommonSettings : function( ) {
-        this.hideOriginals = false;
+    _setUpCommonSettings : function( attributes ) {
+        this.hideOriginals = attributes.defaultHideSourceItems || false;
     },
 
     /** render the footer, completion controls, and cancel controls */

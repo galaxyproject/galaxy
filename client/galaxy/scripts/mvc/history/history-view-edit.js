@@ -295,9 +295,10 @@ var HistoryViewEdit = _super.extend(
         ];
     },
 
-    buildCollection : function( collectionType, selection ) {
+    buildCollection : function( collectionType, selection, hideSourceItems ) {
         var panel = this;
         var selection = selection || panel.getSelectedModels();
+        var hideSourceItems = hideSourceItems || false;
         var createFunc;
         if( collectionType == "list" ) {
             createFunc = LIST_COLLECTION_CREATOR.createListCollection;
@@ -308,7 +309,7 @@ var HistoryViewEdit = _super.extend(
         } else {
             console.warn( "Unknown collectionType encountered " + collectionType );
         }
-        createFunc( selection ).done( function() { panel.model.refresh() } );
+        createFunc( selection, hideSourceItems ).done( function() { panel.model.refresh() } );
     },
 
     // ------------------------------------------------------------------------ sub-views
