@@ -134,3 +134,7 @@ class HasDriver:
             screen=timeout_exception.screen,
             stacktrace=timeout_exception.stacktrace,
         )
+
+
+def exception_indicates_stale_element(exception):
+    return "stale" in str(exception)

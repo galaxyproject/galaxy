@@ -25,8 +25,8 @@ class CollectionBuildersTestCase(SeleniumTestCase):
     def test_build_pair_simple(self):
         self.perform_upload(self.get_filename("1.tabular"))
         self.perform_upload(self.get_filename("2.tabular"))
-        self.history_panel_wait_for_hid_ok(1)
-        self.history_panel_wait_for_hid_ok(2)
+        self.history_panel_wait_for_hid_visible(1)
+        self.history_panel_wait_for_hid_visible(2)
         self.history_panel_multi_operations_show()
         self.history_panel_muli_operation_select_hid(1)
         self.history_panel_muli_operation_select_hid(2)
