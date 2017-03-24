@@ -430,6 +430,7 @@ class SimplifiedToolBox( ToolBox ):
     def __init__( self, test_case ):
         app = test_case.app
         # Handle app/config stuff needed by toolbox but not by tools.
+        app.tool_cache = None
         app.job_config.get_tool_resource_parameters = lambda tool_id: None
         app.config.update_integrated_tool_panel = True
         config_files = test_case.config_files
