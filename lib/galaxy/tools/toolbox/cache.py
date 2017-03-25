@@ -1,5 +1,4 @@
 import os
-import time
 
 from galaxy.util.hash_util import md5_hash_file
 
@@ -22,28 +21,28 @@ class ToolCache(object):
 
         Returns list of tool_ids that have been removed.
         """
+        removed_tool_ids = []
         try:
             paths_to_cleanup = {path: tool.all_ids for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
-            removed_tool_ids = []
             for config_filename, tool_ids in paths_to_cleanup.items():
-                removed_tool_ids.extend(tool_ids)
                 del self._hash_by_tool_paths[config_filename]
                 del self._tools_by_path[config_filename]
                 for tool_id in tool_ids:
                     if tool_id in self._tool_paths_by_id:
                         del self._tool_paths_by_id[tool_id]
-            return removed_tool_ids
+                removed_tool_ids.extend(tool_ids)
         except Exception:
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
-            return []
+            pass
+        return removed_tool_ids
 
     def _should_cleanup(self, config_filename):
-        """Return True of `config_filename` does not exist or if modtime and hash have changes, else return False."""
+        """Return True if `config_filename` does not exist or if modtime and hash have changes, else return False."""
         if not os.path.exists(config_filename):
             return True
-        new_mtime = time.ctime(os.path.getmtime(config_filename))
-        if self._mod_time_by_path.get(config_filename) != new_mtime:
+        new_mtime = os.path.getmtime(config_filename)
+        if self._mod_time_by_path.get(config_filename) < new_mtime:
             if md5_hash_file(config_filename) != self._hash_by_tool_paths.get(config_filename):
                 return True
         return False
@@ -65,6 +64,6 @@ class ToolCache(object):
         tool_hash = md5_hash_file(config_filename)
         tool_id = str( tool.id )
         self._hash_by_tool_paths[config_filename] = tool_hash
-        self._mod_time_by_path[config_filename] = time.ctime(os.path.getmtime(config_filename))
+        self._mod_time_by_path[config_filename] = os.path.getmtime(config_filename)
         self._tool_paths_by_id[tool_id] = config_filename
         self._tools_by_path[config_filename] = tool
