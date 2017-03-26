@@ -47,16 +47,17 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(1), __webpack_require__(2), __webpack_require__(3) ], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils, SIF, Cytoscape ) {
 	    return Backbone.Model.extend({
 	        initialize: function( options ) {
-	            var chart    = options.chart,
+	            var self = this,
+	                chart    = options.chart,
 	                dataset  = options.dataset,
 	                settings = options.chart.settings,
 	                data_content = null,
 	                cytoscape = null,
-	                self = this,
 	                rgb = [],
 	                hex_color = "",
 	                astar_root = "",
-	                astar_destination = "";
+	                astar_destination = "",
+	                sif_file_ext = "sif";
 	
 	            // Get hex color for the highlighted edges
 	            rgb.push( parseInt( settings.get( 'choose_red' ) ) );
@@ -67,7 +68,8 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	            Utils.get( {
 	                url     : dataset.download_url,
 	                success : function( content ) {
-	                    if( dataset.file_ext === "sif" ) {
+	                    // Select data for the graph
+	                    if( dataset.file_ext === sif_file_ext ) {
 	                        data_content = SIF.SIFJS.parse( content ).content;
 	                    }
 	                    else {
@@ -75,62 +77,59 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                    }
 	                    try {
 	                        cytoscape = Cytoscape({
-				    container: document.getElementById( options.targets[ 0 ] ),
-				    boxSelectionEnabled: false,
-				    autounselectify: true,
-				    layout: {
-				        name: settings.get( 'layout_name' )
-				    },
+	                            container: document.getElementById( options.targets[ 0 ] ),
+	                            layout: {
+	                                name: settings.get( 'layout_name' )
+	                            },
 	                            minZoom: parseFloat( settings.get( 'min_zoom' ) ),
 	                            maxZoom: parseFloat( settings.get( 'max_zoom' ) ),
-				    style: [{
-				        selector: 'node',
-				        style: {
-					    'background-color': '#30c9bc',
+	                            style: [{
+	                                selector: 'node',
+	                                style: {
+	                                    'background-color': '#30c9bc',
 	                                    'height': 20,
 	                                    'width': 20,
 	                                    'opacity': 1,
 	                                    'content': 'data(id)'
-				        }
-				    },
-				    {
-				        selector: 'edge',
-				        style: {
-					    'curve-style': settings.get( 'curve_style' ),
-					    'haystack-radius': 0,
-					    'width': 5,
-					    'opacity': 1,
-					    'line-color': '#ddd',
+	                                }
+	                           },
+	                           {
+	                                selector: 'edge',
+	                                style: {
+	                                    'curve-style': settings.get( 'curve_style' ),
+	                                    'haystack-radius': 0,
+	                                    'width': 5,
+	                                    'opacity': 1,
+	                                    'line-color': '#ddd',
 	                                    'target-arrow-shape': settings.get( 'directed' )
-				        }
-				    },
+	                                }
+	                            },
 	                            {
 	                                selector: '.searchpath',
-				        style: {
-					    'background-color': hex_color,
+	                                style: {
+	                                    'background-color': hex_color,
 	                                    'line-color': hex_color,
 	                                    'target-arrow-color': hex_color,
 	                                    'transition-property': 'background-color, line-color, target-arrow-color',
-	                                    'transition-duration': '0.75s'
-				        }
-				    }],
-	                            elements: data_content
+	                                    'transition-duration': '0.5s'
+	                            }
+	                            }],
+	                            elements: data_content // Set the JSON data for viewing
 	                        });
 	                        
 	                        // Highlight the minimum spanning tree found using Kruskal algorithm
 	                        if( settings.get( 'search_algorithm' ) === "kruskal" ) {
 	                            var kruskal = cytoscape.elements().kruskal();
-	                            kruskal.edges().addClass('searchpath');
+	                            kruskal.edges().addClass( 'searchpath' );
 	                        }
-	                        
-	                        // Register tap event on graph nodes
-	                        // Right now on tapping on any node, BFS starts from that node
+	                        // Register tap (clicking a node) event on graph nodes
+	                        // On tapping any node, BFS or DFS start from that node
 	                        cytoscape.$( 'node' ).on('tap', function( e ) {
 	                            var ele = e.cyTarget,
 	                                search_algorithm = settings.get( 'search_algorithm' ), 
 	                                traversal_type = settings.get( 'graph_traversal' );
-	                            // If search algorithm and traversal both are chosen together,
-	                            // search algorithm chosen will take preferencel
+	                            // If search algorithm and traversal both are chosen,
+	                            // search algorithm will take preference
 	                            if( settings.get( 'search_algorithm' ) !== "" ) {
 	                                self.run_search_algorithm( cytoscape, ele.id(), search_algorithm, self );
 	                            }
@@ -138,7 +137,6 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                                self.run_traversal_type( cytoscape, ele.id(), traversal_type );
 	                            }
 	                        });
-	
 	                        chart.state( 'ok', 'Chart drawn.' );
 	                        // Re-renders the graph view when window is resized
 	                        $( window ).resize( function() { cytoscape.layout(); } );
@@ -154,25 +152,31 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	            });
 	        },
 	        run_search_algorithm: function( cytoscape, root_id, type, self ) {
-	            var algorithm = "", i = 0, timeOut = 1500;
+	            var algorithm = "", i = 0;
 	            var selectNextElement = function() {
 	                if( i < algorithm.path.length ) {
 	                    // Add css class for the selected edge(s)
-	                    algorithm.path[i].addClass('searchpath');
+	                    algorithm.path[i].addClass( 'searchpath' );
 	                    i++;
-	                    setTimeout(selectNextElement, timeOut);
+	                    // Animate the edges and nodes coloring 
+	                    // of the path with a delay of 500ms
+	                    setTimeout( selectNextElement, 500 );
 	                }
 	            };
 	            switch( type ) {
+	                // Breadth First Search
 	                case "bfs":
-	                    algorithm = cytoscape.elements().bfs('#' + root_id, function() { }, true);
+	                    algorithm = cytoscape.elements().bfs( '#' + root_id, function() { }, true );
 	                    selectNextElement();
 	                    break;
+	                // Depth First Search
 	                case "dfs":
-	                    algorithm = cytoscape.elements().dfs('#' + root_id, function() { }, true);
+	                    algorithm = cytoscape.elements().dfs( '#' + root_id, function() { }, true );
 	                    selectNextElement();
 	                    break;
+	                // A* search
 	                case "astar":
+	                    // Choose root and destination for performing A*
 	                    if( !self.astar_root ) {
 	                        self.astar_root = root_id;
 	                    }
@@ -180,7 +184,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                        self.astar_destination = root_id;
 	                    }
 	                    if( self.astar_root && self.astar_destination ) {
-	                        algorithm = cytoscape.elements().aStar({ root: "#"+self.astar_root, goal: "#"+self.astar_destination },function() {}, true);
+	                        algorithm = cytoscape.elements().aStar({ root: "#" + self.astar_root, goal: "#" + self.astar_destination },function() {}, true);
 	                        selectNextElement();
 	                    }
 	                 default:
@@ -190,25 +194,34 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	        run_traversal_type: function( cytoscape, root_id, type ) {
 	            var node_collection;
 	            switch( type ) {
+	                // Recursively get edges (and their sources) coming into the nodes in a collection
 	                case "predecessors":
 	                     node_collection = cytoscape.$( '#' + root_id ).predecessors();
 	                     break;
+	                // Recursively get edges (and their targets) coming out of the nodes in a collection
 	                case "successors":
 	                     node_collection = cytoscape.$( '#' + root_id ).successors();
 	                     break;
+	                // Get edges (and their targets) coming out of the nodes in a collection.
 	                case "outgoers":
 	                     node_collection = cytoscape.$( '#' + root_id ).outgoers();
 	                     break;
+	                // Get edges (and their sources) coming into the nodes in a collection.
 	                case "incomers":
 	                     node_collection = cytoscape.$( '#' + root_id ).incomers();
 	                     break;
+	                // From the set of calling nodes, get the nodes which are roots
 	                case "roots":
 	                     node_collection = cytoscape.$( '#' + root_id ).roots();
 	                     break;
+	                // From the set of calling nodes, get the nodes which are leaves
 	                case "leaves":
 	                     node_collection = cytoscape.$( '#' + root_id ).leaves();
 	                     break;
+	                default:
+	                     return;
 	            }
+	            // Add CSS class for selected nodes and edges
 	            node_collection.edges().addClass( 'searchpath' );
 	            node_collection.nodes().addClass( 'searchpath' );
 	        }
@@ -362,64 +375,87 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/** SIF to JSON */
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/** Convert SIF files to JSON in a format required by Cytoscape
+	    for rendering the graph */
 	/** Inspired from https://www.npmjs.com/package/sif.js */
 	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() {
 	
 	    function SIFJS() {};
 	
+	    // Private variables and methods
 	    var nodes = {}, links = {}, content = [];
 	    
+	    // Add a node
 	    var _getNode = function( id ) {
-	        if(!nodes[id]) nodes[id] = {id: id};
+	        if(!nodes[id]) {
+	            nodes[id] = {id: id};
+	        }
 	        return nodes[id];
 	    };
 	
+	    // Parse each line of the SIF file
 	    var _parse = function( line, i ) {
-	        line = (line.split('\t').length > 1) ? line.split('\t') : line.split(' ');
+	        var source = _getNode( line[0] ), interaction = ( line[1] ? line[1] : "" ), j, length;
+	        line = ( line.split('\t').length > 1 ) ? line.split('\t') : line.split(' ');
 	        if( line.length && line.length > 0 && line[0] !== "" ) {
-	            var source = _getNode( line[0] ), intType = ( line[1] ? line[1] : "" ), j, length;
-	            if( intType !== "" ) {
-	                for (j = 2, length = line.length; j < length; j++) {
+	            if( interaction !== "" ) {
+	                // Get all the target nodes for a source
+	                for ( j = 2, length = line.length; j < length; j++ ) {
 	                    if( line[j] !== "" ) {
-	                        var target = _getNode(line[j]),
-	                        relObj = {target: target.id,
+	                        // Create an object for each target for the source
+	                        var target = _getNode( line[j] ),
+	                        relation_object = {target: target.id,
 	                            source: source.id,
 	                            id: source.id + target.id,
-	                            relation: intType.replace(/[''""]+/g, '') };
-		                if(source < target) {
-		                    links[ source.id + target.id + intType ] = relObj;
-		                } else {
-		                    links[ target.id + source.id + intType ] = relObj;
-		                }
-	                    }	            
+	                            relation: interaction.replace(/[''""]+/g, '') }; // Replace quotes in relation
+	                        if( source < target ) {
+	                            links[ source.id + target.id + interaction ] = relation_object;
+	                        } else {
+	                            links[ target.id + source.id + interaction ] = relation_object;
+	                        }
+	                    }
 	                }
 	            }
+	            // Handle the case of single node i.e. no relation with any other node
+	            // and only the source exists
 	            else {
 	                links[ source.id ] = { target: "", source: source.id, id: source.id, relation: "" };
 	            }
-	        }      
+	        }
 	    };
 	
+	    // Convert to array from objects
 	    var _toArr = function( obj ) {
 	        var arr = [];
-	        for (var key in obj) arr.push( obj[key] );
+	        for (var key in obj) {
+	            arr.push( obj[key] );
+	        }
 	        return arr;
 	    };
 	
+	    // Make content from list of nodes and links
 	    var _toDataArr = function( nodes, links ) {
-	        var content = [];
-	        for(var i = 0; i < nodes.length; i++) content.push( { 'data': nodes[i] } );
-	        for(var i = 0; i < links.length; i++) content.push( { 'data': links[i] } );
+	        var content = [], node_length, links_length;
+	        // Make a list of all nodes
+	        for(var i = 0, node_length = nodes.length; i < node_length; i++) {
+	            content.push( { 'data': nodes[i] } );
+	        }
+	        // Make a list of all relationships among nodes
+	        for(var i = 0, links_length = links.length; i < links_length; i++) {
+	            content.push( { 'data': links[i] } );
+	        }
 	        return content;
 	    };
 	
+	    // Public method. Return graph data as JSON
 	    SIFJS.parse = function( text ) {
 	        var lines = text.split('\n'), i, length, nodesarr, linksarr;
-	        for ( i = 0, length = lines.length; i < length; i++ ) _parse(lines[i], i);
-	        nodesarr = _toArr(nodes);
-	        linksarr = _toArr(links);
-	        return {nodes: nodesarr, links: linksarr, content: _toDataArr( nodesarr, linksarr ) };
+	        for ( i = 0, length = lines.length; i < length; i++ ) {
+	            _parse( lines[i], i );
+	        }
+	        nodesarr = _toArr( nodes );
+	        linksarr = _toArr( links );
+	        return { content: _toDataArr( nodesarr, linksarr ) };
 	    };
 	
 	    return {

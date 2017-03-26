@@ -863,7 +863,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	            },
 	            search_algorithm : {
 	                label   : 'Graph algorithms',
-	                help    : 'Select a search algorithm.',
+	                help    : 'Select a search algorithm. For Breadth First Search and Depth First Search, please click on any node of the graph. For A*, please click on two nodes, one for the root and another for the destination.',
 	                type    : 'select',
 	                display : 'radio',
 	                value   : '',
@@ -875,7 +875,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	            },
 	            graph_traversal: {
 	                label   : 'Graph traversal',
-	                help    : 'Select a graph traversal type.',
+	                help    : 'To select a graph traversal type, please click on any node of the graph',
 	                type    : 'select',
 	                display : 'radio',
 	                value   : '',
@@ -885,7 +885,6 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                            { label : 'Incomers', value : 'incomers' },
 	                            { label : 'Roots', value : 'roots' },
 	                            { label : 'Leaves', value : 'leaves' },
-	                            
 	                            { label : 'None', value : '' } ]
 	            },
 	            choose_red : {
