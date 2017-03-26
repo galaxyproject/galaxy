@@ -1,4 +1,4 @@
-Galaxy webhooks
+Galaxy Webhooks
 ===============
 
 Tiny plugin interface to extend the Galaxy client.

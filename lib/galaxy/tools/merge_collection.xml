@@ -270,10 +270,13 @@
       </output_collection>
     </test>
   </tests>
-  <help>
-    This tool takes two list and creates a single unified list.
+  <help><![CDATA[
+
+This tool takes two lists and creates a single unified list.
     
-    This tool will create new history datasets for your collection
-    but your quota usage will not increase.
-  </help>
+.. class:: infomark
+
+This tool will create new history datasets for your collection but your quota usage will not increase.
+
+  ]]></help>
 </tool>

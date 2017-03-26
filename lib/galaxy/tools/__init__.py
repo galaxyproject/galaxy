@@ -42,6 +42,7 @@ from galaxy.tools.deps import (
     CachedDependencyManager,
     views
 )
+from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -124,6 +125,12 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "maf_limit_size1",
     "maf_by_block_number1",
     "wiggle2simple1",
+    # Converters
+    "CONVERTER_fastq_to_fqtoc0",
+    "CONVERTER_gff_to_interval_index_0",
+    "CONVERTER_maf_to_fasta_0",
+    "CONVERTER_maf_to_interval_0",
+    "CONVERTER_wiggle_to_interval_0",
     # Tools improperly migrated to the tool shed (devteam)
     "lastz_wrapper_2",
     "qualityFilter",
@@ -181,6 +188,7 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
         self._reload_count = 0
+        self.tool_location_fetcher = ToolLocationFetcher()
         super( ToolBox, self ).__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
@@ -216,7 +224,11 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         try:
-            tool_source = get_tool_source( config_file, enable_beta_formats=getattr( self.app.config, "enable_beta_tool_formats", False ) )
+            tool_source = get_tool_source(
+                config_file,
+                enable_beta_formats=getattr( self.app.config, "enable_beta_tool_formats", False ),
+                tool_location_fetcher=self.tool_location_fetcher,
+            )
         except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
@@ -2346,6 +2358,8 @@ class ZipCollectionTool( DatabaseOperationTool ):
         new_elements = odict()
         new_elements["forward"] = forward
         new_elements["reverse"] = reverse
+        history.add_dataset( forward, set_hid=False )
+        history.add_dataset( reverse, set_hid=False )
 
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
@@ -2424,7 +2438,10 @@ class MergeCollectionTool( DatabaseOperationTool ):
         # Don't copy until we know everything is fine and we have the structure of the list ready to go.
         new_elements = odict()
         for key, value in new_element_structure.items():
-            new_elements[key] = value.copy()
+            copied_value = value.copy()
+            if getattr(copied_value, "history_content_type", None) == "dataset":
+                history.add_dataset(copied_value, set_hid=False)
+            new_elements[key] = copied_value
 
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
@@ -2459,7 +2476,10 @@ class FilterFailedDatasetsTool( DatabaseOperationTool ):
 
             if valid:
                 element_identifier = dce.element_identifier
-                new_elements[element_identifier] = element.copy()
+                copied_value = element.copy()
+                if getattr(copied_value, "history_content_type", None) == "dataset":
+                    history.add_dataset(copied_value, set_hid=False)
+                new_elements[element_identifier] = copied_value
 
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
@@ -2482,8 +2502,9 @@ class FlattenTool( DatabaseOperationTool ):
                 if dce.is_collection:
                     add_elements(dce_object, prefix=identifier)
                 else:
-                    new_elements[identifier] = dce_object.copy()
-
+                    copied_dataset = dce_object.copy()
+                    history.add_dataset(copied_dataset, set_hid=False)
+                    new_elements[identifier] = copied_dataset
         add_elements(hdca.collection)
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements

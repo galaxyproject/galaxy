@@ -1,12 +1,18 @@
-/** This is the workflow tool form. */
-define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
-    function( Utils, ToolFormBase ) {
-    var View = Backbone.View.extend({
+define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], function( Utils, Form, ToolFormBase ) {
+
+    /** Default form wrapper for non-tool modules in the workflow editor. */
+    var Default = Backbone.View.extend({
+        initialize: function( options ) {
+            this.form = new Form( options );
+        }
+    });
+
+    /** Tool form wrapper for the workflow editor. */
+    var Tool = Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
             this.workflow = options.workflow;
             this.node     = options.node;
-            this.setElement( '<div/>' );
             if ( this.node ) {
                 this.post_job_actions = this.node.post_job_actions || {};
                 Utils.deepeach( options.inputs, function( input ) {
@@ -15,7 +21,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                             input.type = 'hidden';
                             input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions ) + ')';
                             input.value = { '__class__': 'RuntimeValue' };
-                        } else {
+                        } else if ( !input.fixed ) {
                             input.collapsible_value = { '__class__': 'RuntimeValue' };
                             input.is_workflow = ( input.options && input.options.length == 0 ) ||
                                                 ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );
@@ -64,7 +70,6 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                         });
                     },
                 }));
-                this.$el.append( this.form.$el );
             } else {
                 Galaxy.emit.debug('tool-form-workflow::initialize()', 'Node not found in workflow.');
             }
@@ -74,14 +79,6 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
         _makeSections: function( options ){
             var inputs = options.inputs;
             var datatypes = options.datatypes;
-            inputs.push({
-                label   : 'Annotation / Notes',
-                name    : '__annotation',
-                type    : 'text',
-                area    : true,
-                help    : 'Add an annotation or note for this step. It will be shown with the workflow.',
-                value   : this.node.annotation
-            });
             var output_id = this.node.output_terminals && Object.keys( this.node.output_terminals )[ 0 ];
             if ( output_id ) {
                 inputs.push({
@@ -256,6 +253,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
     });
 
     return {
-        View: View
+        Default: Default,
+        Tool: Tool
     };
 });

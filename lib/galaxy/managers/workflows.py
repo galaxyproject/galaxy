@@ -13,6 +13,7 @@ from galaxy import model
 from galaxy import util
 from galaxy import exceptions
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.util.json import safe_loads
 from galaxy.workflow import modules
 from .base import decode_id
 
@@ -412,8 +413,6 @@ class WorkflowContentsManager(UsesAnnotations):
         }
 
     def _workflow_to_dict_editor(self, trans, stored):
-        """
-        """
         workflow = stored.latest_workflow
         # Pack workflow data into a dictionary and return
         data = {}
@@ -426,6 +425,8 @@ class WorkflowContentsManager(UsesAnnotations):
             module = module_factory.from_workflow_step( trans, step )
             if not module:
                 raise exceptions.MessageException( 'Unrecognized step type: %s' % step.type )
+            # Load label from state of data input modules, necessary for backward compatibility
+            self.__set_default_label( step, module, step.tool_inputs )
             # Fix any missing parameters
             upgrade_message = module.check_and_update_state()
             if upgrade_message:
@@ -745,9 +746,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 del step_dict['tool_id']
                 del step_dict['tool_version']
                 del step_dict['tool_inputs']
-                workflow = step.subworkflow
-                step_dict['stored_workflow_id'] = encode(workflow.stored_workflow.id)
-                step_dict['workflow_id'] = encode(workflow.id)
+                step_dict['workflow_id'] = encode(step.subworkflow.id)
 
             for conn in step.input_connections:
                 step_id = step.id if legacy else step.order_index
@@ -835,6 +834,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict["subworkflow"] = subworkflow
 
         module = module_factory.from_dict( trans, step_dict, **kwds )
+        self.__set_default_label( step, module, step_dict.get( 'tool_state' ) )
         module.save_to_step( step )
 
         annotation = step_dict[ 'annotation' ]
@@ -923,6 +923,16 @@ class WorkflowContentsManager(UsesAnnotations):
                         conn.input_subworkflow_step = step.subworkflow.step_by_index(input_subworkflow_step_index)
 
             del step.temp_input_connections
+
+    def __set_default_label( self, step, module, state ):
+        """ Previously data input modules had a `name` attribute to rename individual steps. Here, this value is transferred
+        to the actual `label` attribute which is available for all module types, unique, and mapped to its own database column.
+        """
+        if not module.label and module.type in [ 'data_input', 'data_collection_input' ]:
+            new_state = safe_loads( state )
+            default_label = new_state.get( 'name' )
+            if str( default_label ).lower() not in [ 'input dataset', 'input dataset collection' ]:
+                step.label = module.label = default_label
 
 
 class MissingToolsException(exceptions.MessageException):

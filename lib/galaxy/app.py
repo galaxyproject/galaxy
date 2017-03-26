@@ -23,9 +23,9 @@ from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.jobs import metrics as job_metrics
 from galaxy.web.proxy import ProxyManager
+from galaxy.web.stack import application_stack_instance
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.util import heartbeat
-from galaxy.util.postfork import register_postfork_function
 from tool_shed.galaxy_install import update_repository_manager
 
 
@@ -44,6 +44,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         log.debug( "python path is: %s", ", ".join( sys.path ) )
         self.name = 'galaxy'
         self.new_installation = False
+        self.application_stack = application_stack_instance()
         # Read config file and check for errors
         self.config = config.Configuration( **kwargs )
         self.config.check()
@@ -151,7 +152,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
                     fname=self.config.heartbeat_log
                 )
                 self.heartbeat.daemon = True
-                register_postfork_function(self.heartbeat.start)
+                self.application_stack.register_postfork_function(self.heartbeat.start)
         self.sentry_client = None
         if self.config.sentry_dsn:
 
@@ -159,7 +160,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
                 import raven
                 self.sentry_client = raven.Client(self.config.sentry_dsn)
 
-            register_postfork_function(postfork_sentry_client)
+            self.application_stack.register_postfork_function(postfork_sentry_client)
 
         # Transfer manager client
         if self.config.get_bool( 'enable_beta_job_managers', False ):

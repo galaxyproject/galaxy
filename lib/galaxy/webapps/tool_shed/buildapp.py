@@ -14,9 +14,13 @@ from galaxy.util import asbool
 import galaxy.webapps.tool_shed.model
 import galaxy.webapps.tool_shed.model.mapping
 import galaxy.web.framework.webapp
-from galaxy.webapps.util import build_template_error_formatters
+from galaxy.webapps.util import (
+    MiddlewareWrapUnsupported,
+    build_template_error_formatters,
+    wrap_if_allowed,
+    wrap_if_allowed_or_fail
+)
 from galaxy import util
-from galaxy.util.postfork import process_is_uwsgi
 from galaxy.util.properties import load_app_properties
 from routes.middleware import RoutesMiddleware
 
@@ -186,12 +190,11 @@ def app_factory( global_conf, **kwargs ):
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
-        webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
+        webapp = wrap_in_middleware(webapp, global_conf, app.application_stack, **kwargs)
     if asbool( kwargs.get( 'static_enabled', True) ):
-        if process_is_uwsgi:
-            log.error("Static middleware is enabled in your configuration but this is a uwsgi process.  Refusing to wrap in static middleware.")
-        else:
-            webapp = wrap_in_static( webapp, global_conf, **kwargs )
+        webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
+                                 args=(global_conf,),
+                                 kwargs=kwargs)
     # Close any pooled database connections before forking
     try:
         galaxy.webapps.tool_shed.model.mapping.metadata.bind.dispose()
@@ -201,8 +204,9 @@ def app_factory( global_conf, **kwargs ):
     return webapp
 
 
-def wrap_in_middleware( app, global_conf, **local_conf ):
+def wrap_in_middleware( app, global_conf, application_stack, **local_conf ):
     """Based on the configuration wrap `app` in a set of common and useful middleware."""
+    stack = application_stack
     # Merge the global and local configurations
     conf = global_conf.copy()
     conf.update( local_conf )
@@ -210,63 +214,62 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # First put into place httpexceptions, which must be most closely
     # wrapped around the application (it can interact poorly with
     # other middleware):
-    app = httpexceptions.make_middleware( app, conf )
-    log.debug( "Enabling 'httpexceptions' middleware" )
+    app = wrap_if_allowed( app, stack, httpexceptions.make_middleware, name='paste.httpexceptions', args=(conf,) )
     # Create a separate mapper for redirects to prevent conflicts.
     redirect_mapper = routes.Mapper()
     redirect_mapper = _map_redirects( redirect_mapper )
     # Load the Routes middleware which we use for redirecting
-    app = RoutesMiddleware( app, redirect_mapper )
-    log.debug( "Enabling 'routes' middleware" )
+    app = wrap_if_allowed( app, stack, RoutesMiddleware, args=(redirect_mapper,) )
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
     if asbool(conf.get( 'use_remote_user', False )):
         from galaxy.webapps.tool_shed.framework.middleware.remoteuser import RemoteUser
-        app = RemoteUser( app, maildomain=conf.get( 'remote_user_maildomain', None ),
-                          display_servers=util.listify( conf.get( 'display_servers', '' ) ),
-                          admin_users=conf.get( 'admin_users', '' ).split( ',' ),
-                          remote_user_secret_header=conf.get('remote_user_secret', None) )
-        log.debug( "Enabling 'remote user' middleware" )
+        app = wrap_if_allowed( app, stack, RemoteUser,
+                               kwargs=dict(
+                                   maildomain=conf.get('remote_user_maildomain', None),
+                                   display_servers=util.listify( conf.get('display_servers', '')),
+                                   admin_users=conf.get('admin_users', '').split(','),
+                                   remote_user_header=conf.get('remote_user_header', 'HTTP_REMOTE_USER'),
+                                   remote_user_secret_header=conf.get('remote_user_secret', None),
+                                   normalize_remote_user_email=conf.get('normalize_remote_user_email', False)) )
     # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
         from paste import recursive
-        app = recursive.RecursiveMiddleware( app, conf )
-        log.debug( "Enabling 'recursive' middleware" )
-    if debug and asbool( conf.get( 'use_interactive', False ) ) and not process_is_uwsgi:
+        app = wrap_if_allowed( app, stack, recursive.RecursiveMiddleware, args=(conf,) )
+    if debug and asbool( conf.get( 'use_interactive', False ) ):
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
-        from weberror import evalexception
-        app = evalexception.EvalException( app, conf,
-                                           templating_formatters=build_template_error_formatters() )
-        log.debug( "Enabling 'eval exceptions' middleware" )
+        try:
+            from weberror import evalexception
+            app = wrap_if_allowed_or_fail( app, stack, evalexception.EvalException,
+                                           args=(conf,),
+                                           kwargs=dict(templating_formatters=build_template_error_formatters()) )
+        except MiddlewareWrapUnsupported as exc:
+            log.warning(str(exc))
+            import galaxy.web.framework.middleware.error
+            app = wrap_if_allowed( app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,) )
+
     else:
-        if debug and asbool( conf.get( 'use_interactive', False ) ) and process_is_uwsgi:
-            log.error("Interactive debugging middleware is enabled in your configuration "
-                      "but this is a uwsgi process.  Refusing to wrap in interactive error middleware.")
         # Not in interactive debug mode, just use the regular error middleware
         import galaxy.web.framework.middleware.error
-        app = galaxy.web.framework.middleware.error.ErrorMiddleware( app, conf )
-        log.debug( "Enabling 'error' middleware" )
+        app = wrap_if_allowed( app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,) )
     # Transaction logging (apache access.log style)
     if asbool( conf.get( 'use_translogger', True ) ):
         from paste.translogger import TransLogger
-        app = TransLogger( app )
-        log.debug( "Enabling 'trans logger' middleware" )
+        app = wrap_if_allowed( app, stack, TransLogger )
     # If sentry logging is enabled, log here before propogating up to
     # the error middleware
     # TODO sentry config is duplicated between tool_shed/galaxy, refactor this.
     sentry_dsn = conf.get( 'sentry_dsn', None )
     if sentry_dsn:
         from galaxy.web.framework.middleware.sentry import Sentry
-        log.debug( "Enabling 'sentry' middleware" )
-        app = Sentry( app, sentry_dsn )
+        app = wrap_if_allowed( app, stack, Sentry, args=(sentry_dsn,) )
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
-    app = XForwardedHostMiddleware( app )
-    log.debug( "Enabling 'x-forwarded-host' middleware" )
+    app = wrap_if_allowed( app, stack, XForwardedHostMiddleware )
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance. The print debug middleware needs to be loaded last,
@@ -276,19 +279,16 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         # Middleware to check for WSGI compliance
         if asbool( conf.get( 'use_lint', True ) ):
             from paste import lint
-            app = lint.make_middleware( app, conf )
-            log.debug( "Enabling 'lint' middleware" )
+            app = wrap_if_allowed( app, stack, lint.make_middleware, name='paste.lint', args=(conf,) )
         # Middleware to run the python profiler on each request
         if asbool( conf.get( 'use_profile', False ) ):
             import profile
-            app = profile.ProfileMiddleware( app, conf )
-            log.debug( "Enabling 'profile' middleware" )
+            app = wrap_if_allowed( app, stack, profile.ProfileMiddleware, args=(conf,) )
         # Middleware that intercepts print statements and shows them on the
         # returned page
         if asbool( conf.get( 'use_printdebug', True ) ):
             from paste.debug import prints
-            app = prints.PrintDebugMiddleware( app, conf )
-            log.debug( "Enabling 'print debug' middleware" )
+            app = wrap_if_allowed( app, stack, prints.PrintDebugMiddleware, args=(conf,) )
     return app
 
 

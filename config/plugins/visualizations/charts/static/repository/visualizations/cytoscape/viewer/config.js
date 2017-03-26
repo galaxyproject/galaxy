@@ -65,7 +65,6 @@ define( [], function() {
                             { label : 'Incomers', value : 'incomers' },
                             { label : 'Roots', value : 'roots' },
                             { label : 'Leaves', value : 'leaves' },
-                            
                             { label : 'None', value : '' } ]
             },
             choose_red : {
