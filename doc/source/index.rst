@@ -31,7 +31,7 @@ For more information on the Galaxy Project, please visit the https://galaxyproje
 .. _dev-docs:
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Developer Documentation
 
    Development <dev/index>
@@ -53,7 +53,6 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
 
 Building this Documentation
 ===========================
