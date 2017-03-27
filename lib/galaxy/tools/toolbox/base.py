@@ -34,7 +34,6 @@ from .panel import (
 from .parser import ensure_tool_conf_item, get_toolbox_parser
 from .tags import tool_tag_manager
 from .watcher import (
-    get_tool_conf_watcher,
     get_tool_watcher
 )
 
@@ -47,11 +46,10 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
     workflows optionally in labelled sections.
     """
 
-    def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
+    def __init__( self, config_filenames, tool_root_dir, app ):
         """
         Create a toolbox from the config files named by `config_filenames`, using
         `tool_root_dir` as the base directory for finding individual tool config files.
-        When reloading the toolbox, tool_conf_watcher will be provided.
         """
         # The _dynamic_tool_confs list contains dictionaries storing
         # information about the tools defined in each shed-related
@@ -76,16 +74,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         self._tool_root_dir = tool_root_dir
         self.app = app
         self._tool_watcher = get_tool_watcher( self, app.config )
-        if tool_conf_watcher:
-            self._tool_conf_watcher = tool_conf_watcher  # Avoids (re-)starting threads in uwsgi
-        else:
-            if hasattr(self.app, 'tool_cache'):
-                # Normal galaxy instances should have a tool_cache,
-                # but the toolshed does not.
-                tool_cache = self.app.tool_cache
-            else:
-                tool_cache = None
-            self._tool_conf_watcher = get_tool_conf_watcher(reload_callback=lambda: self.handle_reload_toolbox(), tool_cache=tool_cache)
         self._filter_factory = FilterFactory( self )
         self._tool_tag_manager = tool_tag_manager( app )
         self._init_tools_from_configs( config_filenames )
@@ -93,13 +81,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # Load self._tool_panel based on the order in self._integrated_tool_panel.
             self._load_tool_panel()
         self._save_integrated_tool_panel()
-
-    def handle_reload_toolbox(self):
-        """Extension-point for Galaxy-app specific reload logic.
-
-        This abstract representation of the toolbox shouldn't have details about
-        interacting with the rest of the Galaxy app or message queues, etc....
-        """
 
     def handle_panel_update(self, section_dict):
         """Extension-point for Galaxy-app specific reload logic.
@@ -188,10 +169,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                                         tool_path=tool_path,
                                         config_elems=config_elems )
             self._dynamic_tool_confs.append( shed_tool_conf_dict )
-            # This explicitly monitors shed_tool_confs, otherwise need to add <toolbox monitor="true">>
-            self._tool_conf_watcher.watch_file(config_filename)
-        if tool_conf_source.parse_monitor():
-            self._tool_conf_watcher.watch_file(config_filename)
 
     def load_item( self, item, tool_path, panel_dict=None, integrated_panel_dict=None, load_panel_dict=True, guid=None, index=None, internal=False ):
         with self.app._toolbox_lock:
@@ -948,11 +925,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         except Exception as e:
             exception = e
 
-        try:
-            self._tool_conf_watcher.shutdown()
-        except Exception as e:
-            exception = exception or e
-
         if exception:
             raise exception
 
@@ -1066,8 +1038,8 @@ class BaseGalaxyToolBox(AbstractToolBox):
     shouldn't really depend on.
     """
 
-    def __init__(self, config_filenames, tool_root_dir, app, tool_conf_watcher=None):
-        super(BaseGalaxyToolBox, self).__init__(config_filenames, tool_root_dir, app, tool_conf_watcher=tool_conf_watcher)
+    def __init__(self, config_filenames, tool_root_dir, app):
+        super(BaseGalaxyToolBox, self).__init__(config_filenames, tool_root_dir, app)
         self._init_dependency_manager()
 
     @property

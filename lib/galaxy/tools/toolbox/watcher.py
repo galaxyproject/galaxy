@@ -14,6 +14,10 @@ except ImportError:
     PollingObserver = None
     can_watch = False
 
+from galaxy.queue_worker import (
+    reload_data_managers,
+    reload_toolbox,
+)
 from galaxy.util.hash_util import md5_hash_file
 from galaxy.web.stack import register_postfork_function
 
@@ -71,6 +75,45 @@ def get_tool_watcher(toolbox, config):
         return NullWatcher()
 
 
+class ConfigWatchers(object):
+    """Contains ToolConfWatcher, ToolWatcher and ToolDataWatcher objects."""
+
+    def __init__(self, app):
+        self.app = app
+        self.tool_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_toolbox(self.app), tool_cache=self.app.tool_cache)
+        self.data_manager_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_data_managers(self.app), tool_cache=self.app.tool_cache)
+        self.tool_data_watcher = get_tool_data_dir_watcher(self.app.tool_data_tables, config=self.app.config)
+        self.start()
+
+    def start(self):
+        [self.tool_config_watcher.watch_file(config) for config in self.tool_config_paths]
+        [self.data_manager_config_watcher.watch_file(config) for config in self.data_manager_configs]
+        [self.tool_data_watcher.watch_directory(tool_data_path) for tool_data_path in self.tool_data_paths]
+
+    @property
+    def data_manager_configs(self):
+        data_manager_configs = []
+        data_manager_configs.append(self.app.config.data_manager_config_file)
+        if self.app.config.shed_data_manager_config_file:
+            data_manager_configs.append(self.app.config.shed_data_manager_config_file)
+        return data_manager_configs
+
+    @property
+    def tool_data_paths(self):
+        tool_data_paths = []
+        tool_data_paths.append(self.app.config.tool_data_path)
+        if self.app.config.shed_tool_data_path:
+            tool_data_paths.append(self.app.config.shed_tool_data_path)
+        return tool_data_paths
+
+    @property
+    def tool_config_paths(self):
+        tool_config_paths = self.app.config.tool_configs
+        if self.app.config.migrated_tools_config not in tool_config_paths:
+            tool_config_paths.append( self.app.config.migrated_tools_config )
+        return tool_config_paths
+
+
 class ToolConfWatcher(object):
 
     def __init__(self, reload_callback, tool_cache=None):
@@ -80,7 +123,7 @@ class ToolConfWatcher(object):
         self._lock = threading.Lock()
         self.thread = threading.Thread(target=self.check, name="ToolConfWatcher.thread")
         self.thread.daemon = True
-        self.event_handler = ToolConfFileEventHandler(reload_callback)
+        self.reload_callback = reload_callback
 
     def start(self):
         if not self._active:
@@ -107,8 +150,8 @@ class ToolConfWatcher(object):
                     hashes[path] = md5_hash_file(path)
                 new_mod_time = None
                 if os.path.exists(path):
-                    new_mod_time = time.ctime(os.path.getmtime(path))
-                if new_mod_time != mod_time:
+                    new_mod_time = os.path.getmtime(path)
+                if new_mod_time > mod_time:
                     new_hash = md5_hash_file(path)
                     if hashes[path] != new_hash:
                         self.paths[path] = new_mod_time
@@ -120,23 +163,22 @@ class ToolConfWatcher(object):
                 if removed_ids:
                     do_reload = True
             if do_reload:
-                with self._lock:
-                    t = threading.Thread(target=self.event_handler.on_any_event)
-                    t.daemon = True
-                    t.start()
+                self.reload_callback()
             time.sleep(1)
 
     def monitor(self, path):
         mod_time = None
         if os.path.exists(path):
-            mod_time = time.ctime(os.path.getmtime(path))
+            mod_time = os.path.getmtime(path)
         with self._lock:
             self.paths[path] = mod_time
-        self.start()
+        if not self._active:
+            self.start()
 
     def watch_file(self, tool_conf_file):
         self.monitor(tool_conf_file)
-        self.start()
+        if not self._active:
+            self.start()
 
 
 class NullToolConfWatcher(object):
@@ -152,18 +194,6 @@ class NullToolConfWatcher(object):
 
     def watch_file(self, tool_file, tool_id):
         pass
-
-
-class ToolConfFileEventHandler(FileSystemEventHandler):
-
-    def __init__(self, reload_callback):
-        self.reload_callback = reload_callback
-
-    def on_any_event(self, event=None):
-        self._handle(event)
-
-    def _handle(self, event):
-        self.reload_callback()
 
 
 class ToolWatcher(object):

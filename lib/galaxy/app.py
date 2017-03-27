@@ -16,6 +16,7 @@ from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.tools.special_tools import load_lib_tools
+from galaxy.tools.toolbox.watcher import ConfigWatchers
 from galaxy.tours import ToursRegistry
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.sample_tracking import external_service_types
@@ -112,6 +113,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
         # Load history import/export tools.
         load_lib_tools( self.toolbox )
+        # Watch various config files for immediate reload
+        self.watchers = ConfigWatchers(self)
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = VisualizationsRegistry(
             self,
