@@ -125,6 +125,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     # Converters
     "CONVERTER_bed_to_fli_0",
     "CONVERTER_fastq_to_fqtoc0",
+    "CONVERTER_gff_to_fli_0",
     "CONVERTER_gff_to_interval_index_0",
     "CONVERTER_maf_to_fasta_0",
     "CONVERTER_maf_to_interval_0",
