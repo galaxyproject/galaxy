@@ -131,6 +131,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "CONVERTER_maf_to_fasta_0",
     "CONVERTER_maf_to_interval_0",
     "CONVERTER_wiggle_to_interval_0",
+    "CONVERTER_bed_to_fli_0",
     # Tools improperly migrated to the tool shed (devteam)
     "lastz_wrapper_2",
     "qualityFilter",
