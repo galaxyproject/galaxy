@@ -53,17 +53,10 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                settings = options.chart.settings,
 	                data_content = null,
 	                cytoscape = null,
-	                rgb = [],
-	                hex_color = "",
 	                astar_root = "",
 	                astar_destination = "",
-	                sif_file_ext = "sif";
-	
-	            // Get hex color for the highlighted edges
-	            rgb.push( parseInt( settings.get( 'choose_red' ) ) );
-	            rgb.push( parseInt( settings.get( 'choose_green' ) ) );
-	            rgb.push( parseInt( settings.get( 'choose_blue' ) ) );
-	            hex_color = Utils.toHexColor( rgb );
+	                sif_file_ext = "sif",
+	                highlighted_color = settings.get( 'color_picker_highlighted' );
 	
 	            Utils.get( {
 	                url     : dataset.download_url,
@@ -81,12 +74,12 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                            layout: {
 	                                name: settings.get( 'layout_name' )
 	                            },
-	                            minZoom: parseFloat( settings.get( 'min_zoom' ) ),
-	                            maxZoom: parseFloat( settings.get( 'max_zoom' ) ),
+	                            minZoom: 0.1,
+	                            maxZoom: 20,
 	                            style: [{
 	                                selector: 'node',
 	                                style: {
-	                                    'background-color': '#30c9bc',
+	                                    'background-color': settings.get( 'color_picker_nodes' ),
 	                                    'height': 20,
 	                                    'width': 20,
 	                                    'opacity': 1,
@@ -100,16 +93,16 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                                    'haystack-radius': 0,
 	                                    'width': 5,
 	                                    'opacity': 1,
-	                                    'line-color': '#ddd',
+	                                    'line-color': settings.get( 'color_picker_edges' ),
 	                                    'target-arrow-shape': settings.get( 'directed' )
 	                                }
 	                            },
 	                            {
 	                                selector: '.searchpath',
 	                                style: {
-	                                    'background-color': hex_color,
-	                                    'line-color': hex_color,
-	                                    'target-arrow-color': hex_color,
+	                                    'background-color': highlighted_color,
+	                                    'line-color': highlighted_color,
+	                                    'target-arrow-color': highlighted_color,
 	                                    'transition-property': 'background-color, line-color, target-arrow-color',
 	                                    'transition-duration': '0.5s'
 	                            }

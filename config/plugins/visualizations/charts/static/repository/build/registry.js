@@ -887,50 +887,20 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                            { label : 'Leaves', value : 'leaves' },
 	                            { label : 'None', value : '' } ]
 	            },
-	            choose_red : {
-	                name  : 'choose_red',
-	                label : 'Red',
-	                help  : 'Select red component for highlighted edges',
-	                type  : 'integer',
-	                min   : 0,
-	                max   : 255,
-	                value : 51
+	            color_picker_nodes : {
+	                label : 'Select a color for nodes',
+	                type  : 'color',
+	                value : '#30c9bc'
 	            },
-	            choose_green : {
-	                name  : 'choose_green',
-	                label : 'Green',
-	                help  : 'Select green component for highlighted edges',
-	                type  : 'integer',
-	                min   : 0,
-	                max   : 255,
-	                value : 102
+	            color_picker_edges : {
+	                label : 'Select a color for edges',
+	                type  : 'color',
+	                value : '#ddd'
 	            },
-	            choose_blue : {
-	                name  : 'choose_blue',
-	                label : 'Blue',
-	                help  : 'Select blue component for highlighted edges',
-	                type  : 'integer',
-	                min   : 0,
-	                max   : 255,
-	                value : 153
-	            },
-	            min_zoom : {
-	                name  : 'min_zoom',
-	                label : 'Minimum zoom',
-	                help  : 'Select minimum zoom for the display.',
-	                type  : 'float',
-	                min   : 1/10,
-	                max   : 1,
-	                value : 1/2
-	            },
-	            max_zoom : {
-	                name  : 'max_zoom',
-	                label : 'Maximum zoom',
-	                help  : 'Select maximum zoom for the display.',
-	                type  : 'float',
-	                min   : 2,
-	                max   : 20,
-	                value : 5
+	            color_picker_highlighted : {
+	                label : 'Select a color for highlighted nodes and edges',
+	                type  : 'color',
+	                value : '#330a9b'
 	            }
 	        }
 	    }

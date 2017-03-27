@@ -112,25 +112,12 @@ define( [], function() {
         return 'uid-' + top.__utils__uid__++;
     };
 
-    /** Create Hex code from RGB color  */
-    function toHexColor( rgb ) {
-        var red = rgb[0].toString(16),
-            green = rgb[1].toString(16),
-            blue = rgb[2].toString(16);
-        red = ( red.length == 1 ? "0" + red : red );
-        green = ( green.length == 1 ? "0" + green : green );
-        blue = ( blue.length == 1 ? "0" + blue : blue );
-
-        return "#" + red + green + blue;
-    };
-
     return {
         get     : get,
         merge   : merge,
         uid     : uid,
         request : request,
         clone   : clone,
-        isJSON  : isJSON,
-        toHexColor  : toHexColor
+        isJSON  : isJSON
     };
 });
