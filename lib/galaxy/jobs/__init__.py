@@ -608,27 +608,31 @@ class JobConfiguration( object ):
             rval.append(self.default_job_tool_configuration)
         return rval
 
-    def __get_single_item(self, collection):
+    def __get_single_item(self, collection, index=None):
         """Given a collection of handlers or destinations, return one item from the collection at random.
         """
         # Done like this to avoid random under the assumption it's faster to avoid it
         if len(collection) == 1:
             return collection[0]
-        else:
+        elif index is None:
             return random.choice(collection)
+        else:
+            return collection[index % len(collection)]
 
     # This is called by Tool.get_job_handler()
-    def get_handler(self, id_or_tag):
-        """Given a handler ID or tag, return the provided ID or an ID matching the provided tag
+    def get_handler(self, id_or_tag, index=None):
+        """Given a handler ID or tag, return a handler matching it.
 
         :param id_or_tag: A handler ID or tag.
         :type id_or_tag: str
+        :param index: Generate "consistent" "random" handlers with this index if specified.
+        :type index: int
 
         :returns: str -- A valid job handler ID.
         """
         if id_or_tag is None:
             id_or_tag = self.default_handler_id
-        return self.__get_single_item(self.handlers[id_or_tag])
+        return self.__get_single_item(self.handlers[id_or_tag], index=index)
 
     def get_destination(self, id_or_tag):
         """Given a destination ID or tag, return the JobDestination matching the provided ID or tag

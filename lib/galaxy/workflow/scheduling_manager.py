@@ -54,8 +54,13 @@ class WorkflowSchedulingManager( object ):
     def _is_workflow_handler( self ):
         return self.app.is_job_handler()
 
-    def _get_handler( self ):
-        return self.__job_config.get_handler( None )
+    def _get_handler( self, history_id ):
+        # Use random-ish integer history_id to produce a consistent index to pick
+        # job handler with.
+        random_index = history_id
+        if self.app.config.parallelize_workflow_scheduling_within_histories:
+            random_index = None
+        return self.__job_config.get_handler( None, index=random_index )
 
     def shutdown( self ):
         for workflow_scheduler in self.workflow_schedulers.itervalues():
@@ -72,7 +77,7 @@ class WorkflowSchedulingManager( object ):
     def queue( self, workflow_invocation, request_params ):
         workflow_invocation.state = model.WorkflowInvocation.states.NEW
         scheduler = request_params.get( "scheduler", None ) or self.default_scheduler_id
-        handler = self._get_handler()
+        handler = self._get_handler( workflow_invocation.history.id )
         log.info("Queueing workflow invocation for handler [%s]" % handler)
 
         workflow_invocation.scheduler = scheduler
