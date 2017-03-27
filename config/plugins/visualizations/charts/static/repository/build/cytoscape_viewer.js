@@ -66,7 +66,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                        data_content = SIF.SIFJS.parse( content ).content;
 	                    }
 	                    else {
-	                        data_content = content;
+	                        data_content = content.elements ? content.elements : content;
 	                    }
 	                    try {
 	                        cytoscape = Cytoscape({

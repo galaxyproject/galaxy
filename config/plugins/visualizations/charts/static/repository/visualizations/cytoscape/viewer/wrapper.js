@@ -20,7 +20,7 @@ define( [ 'utilities/utils', 'utilities/sifjson', 'plugins/cytoscape/cytoscape' 
                         data_content = SIF.SIFJS.parse( content ).content;
                     }
                     else {
-                        data_content = content;
+                        data_content = content.elements ? content.elements : content;
                     }
                     try {
                         cytoscape = Cytoscape({
