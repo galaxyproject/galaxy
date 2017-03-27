@@ -94,17 +94,29 @@ window.app = function app( options, bootstrapped ){
             var queryObj = QUERY_STRING.parse( args.pop() );
             args.push( queryObj );
             if( callback ){
-                callback.apply( this, args );
+                if ( this.authenticate( args, name ) ) {
+                    callback.apply( this, args );
+                } else {
+                    top.location.href = Galaxy.root;
+                }
             }
         },
 
         routes : {
             '(/)' : 'home',
-            // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
             '(/)tours(/)(:tour_id)' : 'show_tours',
             '(/)user(/)' : 'show_user',
             '(/)user(/)(:form_id)' : 'show_user_form',
+        },
+
+        require_login: [
+            'show_user',
+            'show_user_form'
+        ],
+
+        authenticate: function( args, name ) {
+            return ( Galaxy.user && Galaxy.user.id ) || this.require_login.indexOf( name ) == -1;
         },
 
         show_tours : function( tour_id ){
