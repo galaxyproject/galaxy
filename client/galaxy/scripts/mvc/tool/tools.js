@@ -621,6 +621,7 @@ var ToolSearchView = Backbone.View.extend({
     events: {
         'click': 'focus_and_select',
         'keyup :input': 'query_changed',
+        'change :input': 'query_changed',
         'click #search-clear-btn': 'clear'
     },
 

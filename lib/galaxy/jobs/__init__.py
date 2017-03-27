@@ -1091,9 +1091,7 @@ class JobWrapper( object, HasResourceParameters ):
                 dataset.mark_unhidden()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
-                # Update (non-library) job output datasets through the object store
-                if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file(dataset.dataset, create=True)
+                self.__update_output(job, dataset)
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause( dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state." )
@@ -1111,6 +1109,13 @@ class JobWrapper( object, HasResourceParameters ):
 
             self.sa_session.add( job )
             self.sa_session.flush()
+        else:
+            for dataset_assoc in job.output_datasets:
+                dataset = dataset_assoc.dataset
+                # Any reason for clean_only here? We should probably be more consistent and transfer
+                # the partial files to the object store regardless of whether job.state == DELETED
+                self.__update_output(job, dataset, clean_only=True)
+
         self._report_error_to_sentry()
         # Perform email action even on failure.
         for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
@@ -1298,17 +1303,19 @@ class JobWrapper( object, HasResourceParameters ):
             # lets not allow this to occur
             # need to update all associated output hdas, i.e. history was shared with job running
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
-                trynum = 0
-                while trynum < self.app.config.retry_job_output_collection:
-                    try:
-                        # Attempt to short circuit NFS attribute caching
-                        os.stat( dataset.dataset.file_name )
-                        os.chown( dataset.dataset.file_name, os.getuid(), -1 )
-                        trynum = self.app.config.retry_job_output_collection
-                    except ( OSError, ObjectNotFound ) as e:
-                        trynum += 1
-                        log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
-                        time.sleep( 2 )
+                purged = dataset.dataset.purged
+                if not purged:
+                    trynum = 0
+                    while trynum < self.app.config.retry_job_output_collection:
+                        try:
+                            # Attempt to short circuit NFS attribute caching
+                            os.stat( dataset.dataset.file_name )
+                            os.chown( dataset.dataset.file_name, os.getuid(), -1 )
+                            trynum = self.app.config.retry_job_output_collection
+                        except ( OSError, ObjectNotFound ) as e:
+                            trynum += 1
+                            log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
+                            time.sleep( 2 )
                 if getattr( dataset, "hidden_beneath_collection_instance", None ):
                     dataset.visible = False
                 dataset.blurb = 'done'
@@ -1327,7 +1334,9 @@ class JobWrapper( object, HasResourceParameters ):
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
                     self.app.object_store.update_from_file(dataset.dataset, create=True)
-                self._collect_extra_files(dataset.dataset, self.working_directory)
+                self.__update_output(job, dataset)
+                if not purged:
+                    self._collect_extra_files(dataset.dataset, self.working_directory)
                 # Handle composite datatypes of auto_primary_file type
                 if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data():
                     try:
@@ -1341,7 +1350,7 @@ class JobWrapper( object, HasResourceParameters ):
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()
-                elif dataset.has_data():
+                elif not purged and dataset.has_data():
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
                         dataset.extension = context.get( 'ext', 'data' )
@@ -1485,8 +1494,9 @@ class JobWrapper( object, HasResourceParameters ):
         collected_bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
-            dataset_assoc.dataset.dataset.set_total_size()
-            collected_bytes += dataset_assoc.dataset.dataset.get_total_size()
+            if not dataset_assoc.dataset.dataset.purged:
+                dataset_assoc.dataset.dataset.set_total_size()
+                collected_bytes += dataset_assoc.dataset.dataset.get_total_size()
 
         if job.user:
             job.user.adjust_total_disk_usage(collected_bytes)
@@ -1503,7 +1513,8 @@ class JobWrapper( object, HasResourceParameters ):
 
         # fix permissions
         for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:
-            util.umask_fix_perms( path, self.app.config.umask, 0o666, self.app.config.gid )
+            if os.path.exists(path):
+                util.umask_fix_perms( path, self.app.config.umask, 0o666, self.app.config.gid )
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
@@ -1799,6 +1810,27 @@ class JobWrapper( object, HasResourceParameters ):
             return 'anonymous@' + job.galaxy_session.remote_addr.split()[-1]
         else:
             return 'anonymous@unknown'
+
+    def __update_output(self, job, dataset, clean_only=False):
+        """Handle writing outputs to the object store.
+
+        This should be called regardless of whether the job was failed or not so
+        that writing of partial results happens and so that the object store is
+        cleaned up if the dataset has been purged.
+        """
+        dataset = dataset.dataset
+        if dataset not in job.output_library_datasets:
+            purged = dataset.purged
+            if not purged and not clean_only:
+                self.app.object_store.update_from_file(dataset, create=True)
+            else:
+                # If the dataset is purged and Galaxy is configured to write directly
+                # to the object store from jobs - be sure that file is cleaned up. This
+                # is a bit of hack - our object store abstractions would be stronger
+                # and more consistent if tools weren't writing there directly.
+                target = dataset.file_name
+                if os.path.exists( target ):
+                    os.remove( target )
 
     def __link_file_check( self ):
         """ outputs_to_working_directory breaks library uploads where data is
