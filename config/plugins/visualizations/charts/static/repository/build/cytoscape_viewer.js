@@ -72,7 +72,9 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                        cytoscape = Cytoscape({
 	                            container: document.getElementById( options.targets[ 0 ] ),
 	                            layout: {
-	                                name: settings.get( 'layout_name' )
+	                                name: settings.get( 'layout_name' ),
+	                                idealEdgeLength: 100,
+	                                nodeOverlap: 20
 	                            },
 	                            minZoom: 0.1,
 	                            maxZoom: 20,
@@ -80,21 +82,39 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                                selector: 'node',
 	                                style: {
 	                                    'background-color': settings.get( 'color_picker_nodes' ),
-	                                    'height': 20,
-	                                    'width': 20,
 	                                    'opacity': 1,
-	                                    'content': 'data(id)'
+	                                    'content': 'data(id)',
+	                                    'text-valign': 'center',
 	                                }
+	                           },
+	                           {
+	                                selector: 'core',
+	                                style: {
+	                                     'selection-box-color':'#AAD8FF',
+	                                     'selection-box-border-color':'#8BB0D0',
+	                                     'selection-box-opacity':'0.5'
+	                               }
 	                           },
 	                           {
 	                                selector: 'edge',
 	                                style: {
 	                                    'curve-style': settings.get( 'curve_style' ),
 	                                    'haystack-radius': 0,
-	                                    'width': 5,
+	                                    'width': 3,
 	                                    'opacity': 1,
 	                                    'line-color': settings.get( 'color_picker_edges' ),
-	                                    'target-arrow-shape': settings.get( 'directed' )
+	                                    'target-arrow-shape': settings.get( 'directed' ),
+	                                    "overlay-padding":"3px"
+	                                }
+	                            },
+	                            {
+	                                selector:'node:selected',
+	                                style: {
+	                                    "border-width": "6px",
+	                                    "border-color": "#AAD8FF",
+	                                    "border-opacity": "0.5",
+	                                    "background-color": "#77828C",
+	                                    "text-outline-color": "#77828C"
 	                                }
 	                            },
 	                            {

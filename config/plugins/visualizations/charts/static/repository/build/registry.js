@@ -890,17 +890,17 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	            color_picker_nodes : {
 	                label : 'Select a color for nodes',
 	                type  : 'color',
-	                value : '#30c9bc'
+	                value : '#548DB8'
 	            },
 	            color_picker_edges : {
 	                label : 'Select a color for edges',
 	                type  : 'color',
-	                value : '#ddd'
+	                value : '#A5A5A5'
 	            },
 	            color_picker_highlighted : {
 	                label : 'Select a color for highlighted nodes and edges',
 	                type  : 'color',
-	                value : '#330a9b'
+	                value : '#C00000'
 	            }
 	        }
 	    }
