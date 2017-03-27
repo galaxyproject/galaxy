@@ -177,6 +177,7 @@ def setup_galaxy_config(
         cleanup_job='onsuccess',
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
+        expose_dataset_path=True,
         file_path=file_path,
         galaxy_data_manager_data_path=galaxy_data_manager_data_path,
         id_secret='changethisinproductiontoo',
