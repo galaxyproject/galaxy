@@ -36,7 +36,7 @@ class DatasetCollectionManager( object ):
 
         self.hda_manager = hdas.HDAManager( app )
         self.history_manager = histories.HistoryManager( app )
-        self.tag_manager = tags.TagManager( app )
+        self.tag_manager = tags.GalaxyTagManager( app )
         self.ldda_manager = lddas.LDDAManager( app )
 
     def create(
@@ -205,6 +205,7 @@ class DatasetCollectionManager( object ):
             dataset_collection_instance.add_item_annotation( trans.sa_session, trans.get_user(), dataset_collection_instance, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
         if 'tags' in new_data.keys() and trans.get_user():
+            # set_tags_from_list will flush on its own, no need to add to 'changed' here and incur a second flush.
             self.tag_manager.set_tags_from_list( trans.get_user(), dataset_collection_instance, new_data[ 'tags' ] )
 
         if changed.keys():
