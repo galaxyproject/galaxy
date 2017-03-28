@@ -55,16 +55,45 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                url     : dataset.download_url,
 	                success : function( content ) {
 	                    try {
-	                        var tree = Phylocanvas.default.createTree( options.targets[ 0 ] );
-	                        console.log(tree);
+	                        var tree = Phylocanvas.default.createTree( options.targets[ 0 ] ),
+	                            node_size = 20,
+	                            text_size = 20,
+	                            line_width = 2;
 	                        // Set different properties of the tree
 	                        tree.setTreeType( settings.get( 'tree_type' ) );
 	                        tree.branchColour = settings.get( 'edge_color' );
-	                        tree.showLabels = settings.get( 'show_label' ) === "true" ? true : false;
+	                        tree.showLabels = settings.get( 'show_labels' ) === "true" ? true : false;
+	                        tree.alignLabels = settings.get( 'align_labels' ) === "true" ? true : false;
+	                        tree.highlightColour = settings.get( 'highlighted_color' );
+	                        tree.selectedColour = settings.get( 'selected_color' );
+	                        tree.setNodeSize( node_size );
+	                        tree.setTextSize( text_size );
+	                        tree.lineWidth = line_width;
+	
+	                        // Register click event on tree
+	                        tree.on('click', function (e) {
+	                            var node = tree.getNodeAtMousePosition( e );
+	                            // Here collapse action is taking preference.
+	                            // Whenver collapse and prune both are selected true,
+	                            // collapse action will be performed
+	                            // Collapse the selected branch
+	                            if( settings.get( 'collapse_branch' ) === "true" ) {
+	                                tree.branches[ node.id ].collapsed = true;
+	                                tree.draw();
+	                            }// Prune the selected branch
+	                            else if( settings.get( 'prune_branch' ) === "true" ) {
+	                                tree.branches[ node.id ].pruned = true;
+	                                tree.draw();
+	                            }
+	                        });
 	                        // Draw the phylogenetic tree
 	                        tree.load( content );
 	                        chart.state( 'ok', 'Done.' );
 	                        options.process.resolve();
+	                        // Adjust the size of tree on window resize
+	                        $( window ).resize( function() {
+	                            tree.fitInPanel( tree.leaves ); tree.draw();
+	                        } );
 	                    } catch( err ) {
 	                        chart.state( 'failed', err );
 	                    }

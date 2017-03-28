@@ -11,7 +11,7 @@ define( [], function() {
                 help    : 'Select a tree type.',
                 type    : 'select',
                 display : 'radio',
-                value   : 'radial',
+                value   : 'rectangular',
                 data    : [ { label : 'Circular', value : 'circular' },
                             { label : 'Diagonal', value: 'diagonal' },
                             { label : 'Hierarchial', value : 'hierarchical' },
@@ -23,9 +23,46 @@ define( [], function() {
                 type  : 'color',
                 value : '#548DB8'
             },
-            show_label: {
+            highlighted_color: {
+                label : 'Select a color for the highlighted branch of tree',
+                type  : 'color',
+                value : '#ff0000'
+            },
+            selected_color: {
+                label : 'Select a color for the selected branch of tree',
+                type  : 'color',
+                value : '#00b050'
+            },
+            collapse_branch : {
+                label   : 'Collapse the selected branch',
+                help    : 'Select true to collapse the selected branch.',
+                type    : 'select',
+                display : 'radio',
+                value   : 'false',
+                data    : [ { label : 'True', value : 'true' },
+                            { label : 'False', value : 'false' } ]
+            },
+            prune_branch : {
+                label   : 'Prune the selected branch',
+                help    : 'Select true to prune the selected branch.',
+                type    : 'select',
+                display : 'radio',
+                value   : 'false',
+                data    : [ { label : 'True', value : 'true' },
+                            { label : 'False', value : 'false' } ]
+            },
+            show_labels: {
                 label   : 'Show/Hide labels',
-                help    : 'Select false to hide labels',
+                help    : 'Select false to hide labels.',
+                type    : 'select',
+                display : 'radio',
+                value   : 'true',
+                data    : [ { label : 'True', value : 'true' },
+                            { label : 'False', value : 'false' } ]
+            },
+            align_labels: {
+                label   : 'Align labels',
+                help    : 'Select to align the labels of tree. Supported with rectangular, circular, and hierarchical tree types.',
                 type    : 'select',
                 display : 'radio',
                 value   : 'true',
