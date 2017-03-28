@@ -347,6 +347,29 @@ def parse_gff_attributes( attr_str ):
     return attributes
 
 
+def parse_gff3_attributes( attr_str ):
+    """
+    Parses a GFF3 attribute string and returns a dictionary of name-value
+    pairs. The general format for a GFF3 attributes string is
+
+        name1=value1;name2=value2
+    """
+    attributes_list = attr_str.split(";")
+    attributes = {}
+    for tag_value_pair in attributes_list:
+        pair = tag_value_pair.strip().split("=")
+        if len(pair) == 1:
+            raise Exception("Attribute '%s' does not contain a '='" % tag_value_pair)
+        if pair == '':
+            continue
+        tag = pair[0].strip()
+        if tag == '':
+            raise Exception("Empty tag in attribute '%s'" % tag_value_pair)
+        value = pair[1].strip()
+        attributes[tag] = value
+    return attributes
+
+
 def gff_attributes_to_str( attrs, gff_format ):
     """
     Convert GFF attributes to string. Supported formats are GFF3, GTF.
