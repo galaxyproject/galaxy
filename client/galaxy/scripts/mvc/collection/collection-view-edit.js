@@ -72,28 +72,12 @@ var CollectionViewEdit = _super.extend(
                     }
                 }
             });
-        // Decide if we want this here permanently and then break it out into rendering tags
-        this._renderTags( $where );
-    },
-
-    /** Render the tags list/control */
-    _renderTags : function( $where ){
-        if( !this.hasUser ){ return; }
-        var view = this;
         this.tagsEditor = new TAGS.TagsEditor({
             model           : this.model,
             el              : $where.find( '.tags-display' ),
             onshowFirstTime : function(){ this.render(); },
-            // persist state on the hda view (and not the editor) since these are currently re-created each time
-            onshow          : function(){ view.tagsEditorShown = true; },
-            onhide          : function(){ view.tagsEditorShown = false; },
-            $activator      : faIconButton({
-                title   : _l( 'Edit dataset tags' ),
-                classes : 'tag-btn',
-                faIcon  : 'fa-tags'
-            }).appendTo( $where.find( '.actions .right' ) )
         });
-        if( this.tagsEditorShown ){ this.tagsEditor.toggle( true ); }
+        this.tagsEditor.toggle( true );
     },
 
     // ........................................................................ misc
