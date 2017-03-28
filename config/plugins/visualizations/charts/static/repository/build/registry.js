@@ -718,11 +718,11 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() {
 	    return {
-	        title       : 'Phylogenetic tree visualization',
+	        title       : 'Phylogenetic Tree Visualization',
 	        library     : 'BioJS',
 	        datatypes   : [ 'txt', 'nwk' ],
 	        keywords    : 'biojs phylogenetic tree',
-	        description : 'A performant, reusable, and extensible tree visualisation library for the web at: http://biojs.io/d/phylocanvas',
+	        description : 'A performant, reusable, and extensible tree visualisation library for the web hosted at: http://biojs.io/d/phylocanvas',
 	        settings    : {
 	           tree_type : {
 	                label   : 'Tree types',
@@ -744,7 +744,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	            highlighted_color: {
 	                label : 'Select a color for the highlighted branch of tree',
 	                type  : 'color',
-	                value : '#ff0000'
+	                value : '#548DB8'
 	            },
 	            selected_color: {
 	                label : 'Select a color for the selected branch of tree',
@@ -787,6 +787,17 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	                data    : [ { label : 'True', value : 'true' },
 	                            { label : 'False', value : 'false' } ]
 	            },
+	            node_shape : {
+	                label   : 'Node shapes for leaves',
+	                help    : 'Select a node shape for leaves.',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : 'circle',
+	                data    : [ { label : 'Circle', value : 'circle' },
+	                            { label : 'Square', value: 'square' },
+	                            { label : 'Star', value : 'star' },
+	                            { label : 'Triangle', value : 'triangle' } ]
+	            }
 	        }
 	    }
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));

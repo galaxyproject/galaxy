@@ -13,19 +13,22 @@ define( [ 'utilities/utils', 'plugins/biojs/phylocanvas/phylocanvas' ], function
                             node_size = 20,
                             text_size = 20,
                             line_width = 2;
+
                         // Set different properties of the tree
                         tree.setTreeType( settings.get( 'tree_type' ) );
-                        tree.branchColour = settings.get( 'edge_color' );
+                        // Set properties related to labels
                         tree.showLabels = settings.get( 'show_labels' ) === "true" ? true : false;
                         tree.alignLabels = settings.get( 'align_labels' ) === "true" ? true : false;
+                        // Set properties related to colors
+                        tree.branchColour = settings.get( 'edge_color' );
                         tree.highlightColour = settings.get( 'highlighted_color' );
                         tree.selectedColour = settings.get( 'selected_color' );
+                        // Set properties related to size
                         tree.setNodeSize( node_size );
                         tree.setTextSize( text_size );
                         tree.lineWidth = line_width;
-
                         // Register click event on tree
-                        tree.on('click', function (e) {
+                        tree.on( 'click', function ( e ) {
                             var node = tree.getNodeAtMousePosition( e );
                             // Here collapse action is taking preference.
                             // Whenver collapse and prune both are selected true,
@@ -42,6 +45,11 @@ define( [ 'utilities/utils', 'plugins/biojs/phylocanvas/phylocanvas' ], function
                         });
                         // Draw the phylogenetic tree
                         tree.load( content );
+                        // Set node shape
+                        for(var j = 0, length = tree.leaves.length; j < length; j++) {
+                            tree.leaves[ j ].nodeShape = settings.get( 'node_shape' );
+                        }
+                        tree.draw();
                         chart.state( 'ok', 'Done.' );
                         options.process.resolve();
                         // Adjust the size of tree on window resize
