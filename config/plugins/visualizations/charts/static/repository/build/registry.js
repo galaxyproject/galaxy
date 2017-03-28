@@ -44,7 +44,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() { return {nvd3_bar:__webpack_require__( 3 ), nvd3_bar_horizontal:__webpack_require__( 6 ), nvd3_bar_horizontal_stacked:__webpack_require__( 7 ), nvd3_bar_stacked:__webpack_require__( 8 ), nvd3_line:__webpack_require__( 9 ), nvd3_line_focus:__webpack_require__( 10 ), nvd3_scatter:__webpack_require__( 11 ), nvd3_stackedarea:__webpack_require__( 12 ), nvd3_stackedarea_full:__webpack_require__( 13 ), nvd3_stackedarea_stream:__webpack_require__( 14 ), nvd3_pie:__webpack_require__( 15 ), nvd3_histogram:__webpack_require__( 16 ), nvd3_histogram_discrete:__webpack_require__( 17 ), jqplot_bar:__webpack_require__( 18 ), jqplot_boxplot:__webpack_require__( 20 ), jqplot_histogram_discrete:__webpack_require__( 21 ), jqplot_line:__webpack_require__( 22 ), jqplot_scatter:__webpack_require__( 23 ), biojs_msa:__webpack_require__( 24 ), biojs_drawrnajs:__webpack_require__( 25 ), biojs_phylocanvas:__webpack_require__( 26 ), others_example:__webpack_require__( 27 ), others_heatmap:__webpack_require__( 28 ), others_heatmap_cluster:__webpack_require__( 29 ), cytoscape_basic:__webpack_require__( 30 ), pv_viewer:__webpack_require__( 31 ), benfred_venn:__webpack_require__( 32 ), ngl_viewer:__webpack_require__( 33 ),} }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() { return {nvd3_bar:__webpack_require__( 3 ), nvd3_bar_horizontal:__webpack_require__( 6 ), nvd3_bar_horizontal_stacked:__webpack_require__( 7 ), nvd3_bar_stacked:__webpack_require__( 8 ), nvd3_line:__webpack_require__( 9 ), nvd3_line_focus:__webpack_require__( 10 ), nvd3_scatter:__webpack_require__( 11 ), nvd3_stackedarea:__webpack_require__( 12 ), nvd3_stackedarea_full:__webpack_require__( 13 ), nvd3_stackedarea_stream:__webpack_require__( 14 ), nvd3_pie:__webpack_require__( 15 ), nvd3_histogram:__webpack_require__( 16 ), nvd3_histogram_discrete:__webpack_require__( 17 ), jqplot_bar:__webpack_require__( 18 ), jqplot_boxplot:__webpack_require__( 20 ), jqplot_histogram_discrete:__webpack_require__( 21 ), jqplot_line:__webpack_require__( 22 ), jqplot_scatter:__webpack_require__( 23 ), biojs_msa:__webpack_require__( 24 ), biojs_drawrnajs:__webpack_require__( 25 ), biojs_phylocanvas:__webpack_require__( 26 ), others_example:__webpack_require__( 27 ), others_heatmap:__webpack_require__( 28 ), others_heatmap_cluster:__webpack_require__( 29 ), cytoscape_viewer:__webpack_require__( 30 ), pv_viewer:__webpack_require__( 31 ), benfred_venn:__webpack_require__( 32 ), ngl_viewer:__webpack_require__( 33 ),} }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ },
 /* 1 */,
@@ -897,13 +897,92 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() {
 	    return {
-	        title       : 'Cytoscape (Default)',
+	        title       : 'Cytoscape',
 	        library     : 'Cytoscape',
-	        datatypes   : [ 'json' ],
+	        datatypes   : [ 'sif', 'json' ],
 	        keywords    : 'cytoscape graph nodes edges',
-	        description : 'Basic Cytoscape viewer for connected graphs hosted at http://js.cytoscape.org.'
+	        description : 'A viewer based on graph theory/ network library for analysis and visualisation hosted at http://js.cytoscape.org.',
+	        settings    : {
+	            curve_style : {
+	                label   : 'Curve style',
+	                help    : 'Select a curving method used to separate two or more edges between two nodes.',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : 'haystack',
+	                data    : [ { label : 'Haystack', value : 'haystack' },
+	                            { label : 'Bezier', value : 'bezier' },
+	                            { label : 'Unbundled bezier', value : 'unbundled-bezier' },
+	                            { label : 'Segments', value: 'segments' } ]
+	            },
+	            layout_name : {
+	                label   : 'Layout name',
+	                help    : 'Select a kind of position of nodes in graph.',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : 'haystack',
+	                data    : [ { label : 'Breadth First', value : 'breadthfirst' },
+	                            { label : 'Circle', value : 'circle' },
+	                            { label : 'Concentric', value : 'concentric' },
+	                            { label : 'Cose', value : 'cose' },
+	                            { label : 'Grid', value : 'grid' },
+	                            { label : 'Null', value: 'null' },
+	                            { label : 'Preset', value : 'preset' },
+	                            { label : 'Random', value : 'random' } ]
+	            },
+	            directed : {
+	                label   : 'Directed/Undirected',
+	                help    : 'Select a kind of edge.',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : '',
+	                data    : [ { label : 'Directed', value : 'triangle' },
+	                            { label : 'Undirected', value : '' } ]
+	            },
+	            search_algorithm : {
+	                label   : 'Graph algorithms',
+	                help    : 'Select a search algorithm. For Breadth First Search and Depth First Search, please click on any node of the graph. For A*, please click on two nodes, one for the root and another for the destination.',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : '',
+	                data    : [ { label : 'Breadth First Search', value : 'bfs' },
+	                            { label : 'Depth First Search', value : 'dfs' },
+	                            { label : 'Minimum Spanning Tree (Kruskal)', value : 'kruskal' },
+	                            { label : 'A*', value : 'astar' },
+	                            { label : 'None', value : '' } ]
+	            },
+	            graph_traversal: {
+	                label   : 'Graph traversal',
+	                help    : 'To select a graph traversal type, please click on any node of the graph',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : '',
+	                data    : [ { label : 'Successors', value : 'successors' },
+	                            { label : 'Predecessors', value : 'predecessors' },
+	                            { label : 'Outgoers', value : 'outgoers' },
+	                            { label : 'Incomers', value : 'incomers' },
+	                            { label : 'Roots', value : 'roots' },
+	                            { label : 'Leaves', value : 'leaves' },
+	                            { label : 'None', value : '' } ]
+	            },
+	            color_picker_nodes : {
+	                label : 'Select a color for nodes',
+	                type  : 'color',
+	                value : '#548DB8'
+	            },
+	            color_picker_edges : {
+	                label : 'Select a color for edges',
+	                type  : 'color',
+	                value : '#A5A5A5'
+	            },
+	            color_picker_highlighted : {
+	                label : 'Select a color for highlighted nodes and edges',
+	                type  : 'color',
+	                value : '#C00000'
+	            }
+	        }
 	    }
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
 
 /***/ },
 /* 31 */

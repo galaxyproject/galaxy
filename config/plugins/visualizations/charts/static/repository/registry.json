@@ -3,7 +3,7 @@
     "jqplot"    : [ "bar", "boxplot", "histogram_discrete", "line", "scatter" ],
     "biojs"     : [ "msa", "drawrnajs", "phylocanvas" ],
     "others"    : [ "example", "heatmap", "heatmap_cluster" ],
-    "cytoscape" : [ "basic" ],
+    "cytoscape" : [ "viewer" ],
     "pv"        : [ "viewer" ],
     "benfred"   : [ "venn" ],
     "ngl"       : [ "viewer" ]
