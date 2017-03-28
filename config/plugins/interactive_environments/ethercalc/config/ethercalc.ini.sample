@@ -12,9 +12,6 @@
 # usual group/sudo changes.
 #command = docker {docker_args}
 
-# The docker image name that should be started.
-image = shiltemann/ethercalc-galaxy-ie:17.05
-
 # Additional arguments that are passed to the `docker run` command.
 #command_inject = --sig-proxy=true -e DEBUG=false
 
