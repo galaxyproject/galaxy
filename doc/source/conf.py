@@ -46,8 +46,10 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo', 'sp
 templates_path = ['_templates']
 
 # Configure default autodoc's action
-autodoc_default_flags = [ 'members', 'undoc-members', 'show-inheritance' ]
+autodoc_default_flags = [ 'members', 'undoc-members' ]
 
+# Prevent alphabetical reordering of module members.
+autodoc_member_order = 'bysource'
 
 def dont_skip_init(app, what, name, obj, skip, options):
     if name == "__init__":
