@@ -1062,6 +1062,9 @@ use_interactive = True
 # via the API. Admin menu will list both if enabled.
 #enable_beta_ts_api_install = False
 
+# Enable the new container interface for Interactive Environments
+#enable_beta_containers_interface = False
+
 # Set the following to a number of threads greater than 1 to spawn
 # a Python task queue for dealing with large tool submissions (either
 # through the tool form or as part of an individual workflow step across
