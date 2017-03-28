@@ -168,6 +168,7 @@ CollectionView.prototype.templates = (function(){
                         _l( 'a list of dataset lists' ),
                     '<% } %>',
                 '</div>',
+                '<div class="tags-display"></div>',
             '</div>',
         '</div>'
     ], 'collection' );

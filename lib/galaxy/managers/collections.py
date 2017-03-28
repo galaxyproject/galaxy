@@ -39,20 +39,11 @@ class DatasetCollectionManager( object ):
         self.tag_manager = tags.GalaxyTagManager( app )
         self.ldda_manager = lddas.LDDAManager( app )
 
-    def create(
-        self,
-        trans,
-        parent,
-        # PRECONDITION: security checks on ability to add to parent
-        # occurred during load.
-        name,
-        collection_type,
-        element_identifiers=None,
-        elements=None,
-        implicit_collection_info=None,
-        trusted_identifiers=None,  # Trust preloaded element objects
-    ):
+    def create( self, trans, parent, name, collection_type, element_identifiers=None,
+                elements=None, implicit_collection_info=None, trusted_identifiers=None):
         """
+        PRECONDITION: security checks on ability to add to parent
+        occurred during load.
         """
         # Trust embedded, newly created objects created by tool subsystem.
         if trusted_identifiers is None:
@@ -108,13 +99,7 @@ class DatasetCollectionManager( object ):
 
         return self.__persist( dataset_collection_instance )
 
-    def create_dataset_collection(
-        self,
-        trans,
-        collection_type,
-        element_identifiers=None,
-        elements=None,
-    ):
+    def create_dataset_collection( self, trans, collection_type, element_identifiers=None, elements=None ):
         if element_identifiers is None and elements is None:
             raise RequestParameterInvalidException( ERROR_INVALID_ELEMENTS_SPECIFICATION )
         if not collection_type:
@@ -180,15 +165,11 @@ class DatasetCollectionManager( object ):
         changed = self._set_from_dict( trans, dataset_collection_instance, payload )
         return changed
 
-    def copy(
-        self,
-        trans,
-        parent,
-        # PRECONDITION: security checks on ability to add to parent
-        # occurred during load.
-        source,
-        encoded_source_id,
-    ):
+    def copy( self, trans, parent, source, encoded_source_id ):
+        """
+        PRECONDITION: security checks on ability to add to parent occurred
+        during load.
+        """
         assert source == "hdca"  # for now
         source_hdca = self.__get_history_collection_instance( trans, encoded_source_id )
         new_hdca = source_hdca.copy()

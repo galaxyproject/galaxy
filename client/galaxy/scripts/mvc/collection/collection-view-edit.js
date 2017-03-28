@@ -3,9 +3,11 @@ define([
     "mvc/collection/collection-model",
     "mvc/collection/collection-li-edit",
     "mvc/base-mvc",
+    "mvc/tag",
+    "ui/fa-icon-button",
     "utils/localization",
     "ui/editable-text",
-], function( DC_VIEW, DC_MODEL, DC_EDIT, BASE_MVC, _l ){
+], function( DC_VIEW, DC_MODEL, DC_EDIT, BASE_MVC, TAGS, faIconButton, _l ){
 
 'use strict';
 /* =============================================================================
@@ -33,6 +35,7 @@ var CollectionViewEdit = _super.extend(
      */
     initialize : function( attributes ){
         _super.prototype.initialize.call( this, attributes );
+        // this.tagsEditorShown = attributes.tagsEditorShown || false;
     },
 
     /** In this override, make the collection name editable
@@ -46,6 +49,8 @@ var CollectionViewEdit = _super.extend(
         if( !Galaxy.user || Galaxy.user.isAnonymous() ){
             return;
         }
+
+        this.tagsEditorShown = true;
 
         //TODO: extract
         var panel = this,
@@ -67,6 +72,28 @@ var CollectionViewEdit = _super.extend(
                     }
                 }
             });
+        // Decide if we want this here permanently and then break it out into rendering tags
+        this._renderTags( $where );
+    },
+
+    /** Render the tags list/control */
+    _renderTags : function( $where ){
+        if( !this.hasUser ){ return; }
+        var view = this;
+        this.tagsEditor = new TAGS.TagsEditor({
+            model           : this.model,
+            el              : $where.find( '.tags-display' ),
+            onshowFirstTime : function(){ this.render(); },
+            // persist state on the hda view (and not the editor) since these are currently re-created each time
+            onshow          : function(){ view.tagsEditorShown = true; },
+            onhide          : function(){ view.tagsEditorShown = false; },
+            $activator      : faIconButton({
+                title   : _l( 'Edit dataset tags' ),
+                classes : 'tag-btn',
+                faIcon  : 'fa-tags'
+            }).appendTo( $where.find( '.actions .right' ) )
+        });
+        if( this.tagsEditorShown ){ this.tagsEditor.toggle( true ); }
     },
 
     // ........................................................................ misc
