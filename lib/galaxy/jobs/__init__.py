@@ -6,7 +6,6 @@ import datetime
 import logging
 import os
 import pwd
-import random
 import shutil
 import string
 import subprocess
@@ -30,6 +29,7 @@ from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
+from galaxy.util.handlers import ConfiguresHandlers
 from galaxy.util.xml_macros import load
 
 from .datasets import (DatasetPath, NullDatasetPathRewriter,
@@ -105,7 +105,7 @@ def config_exception(e, file):
     return Exception(message)
 
 
-class JobConfiguration( object ):
+class JobConfiguration( object, ConfiguresHandlers ):
     """A parser and interface to advanced job management features.
 
     These features are configured in the job configuration, by default, ``job_conf.xml``
@@ -176,7 +176,7 @@ class JobConfiguration( object ):
         # Parse job plugins
         plugins = root.find('plugins')
         if plugins is not None:
-            for plugin in self.__findall_with_required(plugins, 'plugin', ('id', 'type', 'load')):
+            for plugin in self._findall_with_required(plugins, 'plugin', ('id', 'type', 'load')):
                 if plugin.get('type') == 'runner':
                     workers = plugin.get('workers', plugins.get('workers', JobConfiguration.DEFAULT_NWORKERS))
                     runner_kwds = self.__get_params(plugin)
@@ -187,7 +187,7 @@ class JobConfiguration( object ):
                     self.runner_plugins.append(runner_info)
                 else:
                     log.error('Unknown plugin type: %s' % plugin.get('type'))
-            for plugin in self.__findall_with_required(plugins, 'plugin', ('id', 'type')):
+            for plugin in self._findall_with_required(plugins, 'plugin', ('id', 'type')):
                 if plugin.get('id') == 'dynamic' and plugin.get('type') == 'runner':
                     self.dynamic_params = self.__get_params(plugin)
 
@@ -196,36 +196,19 @@ class JobConfiguration( object ):
             self.runner_plugins.append(dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers))
 
         # Parse handlers
-        handlers = root.find('handlers')
-        if handlers is not None:
-            for handler in self.__findall_with_required(handlers, 'handler'):
-                id = handler.get('id')
-                if id in self.handlers:
-                    log.error("Handler '%s' overlaps handler with the same name, ignoring" % id)
-                else:
-                    log.debug("Read definition for handler '%s'" % id)
-                    self.handlers[id] = (id,)
-                    for plugin in handler.findall('plugin'):
-                        if id not in self.handler_runner_plugins:
-                            self.handler_runner_plugins[id] = []
-                        self.handler_runner_plugins[id].append( plugin.get('id') )
-                    if handler.get('tags', None) is not None:
-                        for tag in [ x.strip() for x in handler.get('tags').split(',') ]:
-                            if tag in self.handlers:
-                                self.handlers[tag].append(id)
-                            else:
-                                self.handlers[tag] = [id]
+        handlers_conf = root.find('handlers')
+        self._init_handlers(handlers_conf)
 
         # Must define at least one handler to have a default.
         if not self.handlers:
             raise ValueError("Job configuration file defines no valid handler elements.")
         # Determine the default handler(s)
-        self.default_handler_id = self.__get_default(handlers, list(self.handlers.keys()))
+        self.default_handler_id = self._get_default(self.app, handlers_conf, list(self.handlers.keys()))
 
         # Parse destinations
         destinations = root.find('destinations')
         job_metrics = self.app.job_metrics
-        for destination in self.__findall_with_required(destinations, 'destination', ('id', 'runner')):
+        for destination in self._findall_with_required(destinations, 'destination', ('id', 'runner')):
             id = destination.get('id')
             destination_metrics = destination.get( "metrics", None )
             if destination_metrics:
@@ -236,7 +219,7 @@ class JobConfiguration( object ):
                     metrics_conf_path = self.app.config.resolve_path( destination_metrics )
                     job_metrics.set_destination_conf_file( id, metrics_conf_path )
             else:
-                metrics_elements = self.__findall_with_required( destination, 'job_metrics', () )
+                metrics_elements = self._findall_with_required( destination, 'job_metrics', () )
                 if metrics_elements:
                     job_metrics.set_destination_conf_element( id, metrics_elements[ 0 ] )
             job_destination = JobDestination(**dict(destination.items()))
@@ -257,13 +240,13 @@ class JobConfiguration( object ):
                     self.destinations[tag].append(job_destination)
 
         # Determine the default destination
-        self.default_destination_id = self.__get_default(destinations, list(self.destinations.keys()))
+        self.default_destination_id = self._get_default(self.app, destinations, list(self.destinations.keys()))
 
         # Parse resources...
         resources = root.find('resources')
         if resources is not None:
             self.default_resource_group = resources.get( "default", None )
-            for group in self.__findall_with_required(resources, 'group'):
+            for group in self._findall_with_required(resources, 'group'):
                 id = group.get('id')
                 fields_str = group.get('fields', None) or group.text or ''
                 fields = [ f for f in fields_str.split(",") if f ]
@@ -272,7 +255,7 @@ class JobConfiguration( object ):
         # Parse tool mappings
         tools = root.find('tools')
         if tools is not None:
-            for tool in self.__findall_with_required(tools, 'tool'):
+            for tool in self._findall_with_required(tools, 'tool'):
                 # There can be multiple definitions with identical ids, but different params
                 id = tool.get('id').lower().rstrip('/')
                 if id not in self.tools:
@@ -298,7 +281,7 @@ class JobConfiguration( object ):
         # Parse job limits
         limits = root.find('limits')
         if limits is not None:
-            for limit in self.__findall_with_required(limits, 'limit', ('type',)):
+            for limit in self._findall_with_required(limits, 'limit', ('type',)):
                 type = limit.get('type')
                 # concurrent_jobs renamed to destination_user_concurrent_jobs in job_conf.xml
                 if type in ( 'destination_user_concurrent_jobs', 'concurrent_jobs', 'destination_total_concurrent_jobs' ):
@@ -329,6 +312,12 @@ class JobConfiguration( object ):
             )
 
         log.debug('Done loading job configuration')
+
+    def _parse_handler(self, handler_element):
+        for plugin in handler_element.findall('plugin'):
+            if id not in self.handler_runner_plugins:
+                self.handler_runner_plugins[id] = []
+            self.handler_runner_plugins[id].append( plugin.get('id') )
 
     def __parse_job_conf_legacy(self):
         """Loads the old-style job configuration from options in the galaxy config file (by default, config/galaxy.ini).
@@ -435,64 +424,6 @@ class JobConfiguration( object ):
             for parameter_elem in resource_definitions_root.findall( "param" ):
                 name = parameter_elem.get( "name" )
                 self.resource_parameters[ name ] = parameter_elem
-
-    def __get_default(self, parent, names):
-        """
-        Returns the default attribute set in a parent tag like <handlers> or
-        <destinations>, or return the ID of the child, if there is no explicit
-        default and only one child.
-
-        :param parent: Object representing a tag that may or may not have a 'default' attribute.
-        :type parent: ``xml.etree.ElementTree.Element``
-        :param names: The list of destination or handler IDs or tags that were loaded.
-        :type names: list of str
-
-        :returns: str -- id or tag representing the default.
-        """
-
-        rval = parent.get('default')
-        if 'default_from_environ' in parent.attrib:
-            environ_var = parent.attrib['default_from_environ']
-            rval = os.environ.get(environ_var, rval)
-        elif 'default_from_config' in parent.attrib:
-            config_val = parent.attrib['default_from_config']
-            rval = self.app.config.config_dict.get(config_val, rval)
-
-        if rval is not None:
-            # If the parent element has a 'default' attribute, use the id or tag in that attribute
-            if rval not in names:
-                raise Exception("<%s> default attribute '%s' does not match a defined id or tag in a child element" % (parent.tag, rval))
-            log.debug("<%s> default set to child with id or tag '%s'" % (parent.tag, rval))
-        elif len(names) == 1:
-            log.info("Setting <%s> default to child with id '%s'" % (parent.tag, names[0]))
-            rval = names[0]
-        else:
-            raise Exception("No <%s> default specified, please specify a valid id or tag with the 'default' attribute" % parent.tag)
-        return rval
-
-    def __findall_with_required(self, parent, match, attribs=None):
-        """Like ``xml.etree.ElementTree.Element.findall()``, except only returns children that have the specified attribs.
-
-        :param parent: Parent element in which to find.
-        :type parent: ``xml.etree.ElementTree.Element``
-        :param match: Name of child elements to find.
-        :type match: str
-        :param attribs: List of required attributes in children elements.
-        :type attribs: list of str
-
-        :returns: list of ``xml.etree.ElementTree.Element``
-        """
-        rval = []
-        if attribs is None:
-            attribs = ('id',)
-        for elem in parent.findall(match):
-            for attrib in attribs:
-                if attrib not in elem.attrib:
-                    log.warning("required '%s' attribute is missing from <%s> element" % (attrib, match))
-                    break
-            else:
-                rval.append(elem)
-        return rval
 
     def __get_params(self, parent):
         """Parses any child <param> tags in to a dictionary suitable for persistence.
@@ -609,32 +540,6 @@ class JobConfiguration( object ):
             rval.append(self.default_job_tool_configuration)
         return rval
 
-    def __get_single_item(self, collection, index=None):
-        """Given a collection of handlers or destinations, return one item from the collection at random.
-        """
-        # Done like this to avoid random under the assumption it's faster to avoid it
-        if len(collection) == 1:
-            return collection[0]
-        elif index is None:
-            return random.choice(collection)
-        else:
-            return collection[index % len(collection)]
-
-    # This is called by Tool.get_job_handler()
-    def get_handler(self, id_or_tag, index=None):
-        """Given a handler ID or tag, return a handler matching it.
-
-        :param id_or_tag: A handler ID or tag.
-        :type id_or_tag: str
-        :param index: Generate "consistent" "random" handlers with this index if specified.
-        :type index: int
-
-        :returns: str -- A valid job handler ID.
-        """
-        if id_or_tag is None:
-            id_or_tag = self.default_handler_id
-        return self.__get_single_item(self.handlers[id_or_tag], index=index)
-
     def get_destination(self, id_or_tag):
         """Given a destination ID or tag, return the JobDestination matching the provided ID or tag
 
@@ -648,7 +553,7 @@ class JobConfiguration( object ):
         """
         if id_or_tag is None:
             id_or_tag = self.default_destination_id
-        return copy.deepcopy(self.__get_single_item(self.destinations[id_or_tag]))
+        return copy.deepcopy(self._get_single_item(self.destinations[id_or_tag]))
 
     def get_destinations(self, id_or_tag):
         """Given a destination ID or tag, return all JobDestinations matching the provided ID or tag
@@ -751,19 +656,6 @@ class JobConfiguration( object ):
         :returns: bool
         """
         return type(collection) == list
-
-    def is_handler(self, server_name):
-        """Given a server name, indicate whether the server is a job handler
-
-        :param server_name: The name to check
-        :type server_name: str
-
-        :return: bool
-        """
-        for collection in self.handlers.values():
-            if server_name in collection:
-                return True
-        return False
 
     def convert_legacy_destinations(self, job_runners):
         """Converts legacy (from a URL) destinations to contain the appropriate runner params defined in the URL.
