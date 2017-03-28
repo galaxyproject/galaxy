@@ -3,8 +3,8 @@ Provides utilities for working with GFF files.
 """
 import copy
 
-from bx.intervals.io import GenomicInterval, MissingFieldError, NiceReaderWrapper, ParseError, GenomicIntervalReader
-from bx.tabular.io import Header, Comment
+from bx.intervals.io import GenomicInterval, GenomicIntervalReader, MissingFieldError, NiceReaderWrapper, ParseError
+from bx.tabular.io import Comment, Header
 
 from galaxy.util.odict import odict
 
