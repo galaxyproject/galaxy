@@ -306,6 +306,10 @@ class GalaxyTagManager( TagManager ):
             ItemTagAssocInfo( model.HistoryDatasetAssociation,
                               model.HistoryDatasetAssociationTagAssociation,
                               model.HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id )
+        self.item_tag_assoc_info["HistoryDatasetCollectionAssociation"] = \
+            ItemTagAssocInfo( model.HistoryDatasetCollectionAssociation,
+                              model.HistoryDatasetCollectionTagAssociation,
+                              model.HistoryDatasetCollectionTagAssociation.table.c.history_dataset_collection_id )
         self.item_tag_assoc_info["Page"] = ItemTagAssocInfo( model.Page,
                                                              model.PageTagAssociation,
                                                              model.PageTagAssociation.table.c.page_id )
