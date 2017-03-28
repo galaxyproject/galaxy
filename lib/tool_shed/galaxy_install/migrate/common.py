@@ -6,8 +6,8 @@ import sys
 from six.moves import configparser
 
 import galaxy.config
-from tool_shed.galaxy_install import installed_repository_manager, tool_migration_manager
 from galaxy.util.dbkeys import GenomeBuilds
+from tool_shed.galaxy_install import installed_repository_manager, tool_migration_manager
 
 
 class MigrateToolsApplication( object, galaxy.config.ConfiguresGalaxyMixin ):
