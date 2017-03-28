@@ -9,8 +9,6 @@ from tool_shed.util import encoding_util, xml_util
 
 log = logging.getLogger( __name__ )
 
-REPOSITORY_OWNER = 'devteam'
-
 
 def accumulate_tool_dependencies( tool_shed_accessible, tool_dependencies, all_tool_dependencies ):
     if tool_shed_accessible:
@@ -42,10 +40,11 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
                 all_tool_dependencies = []
                 repository_name = elem.get( 'name' )
                 changeset_revision = elem.get( 'changeset_revision' )
+                repository_owner = elem.get( 'owner' )
                 tool_shed_accessible, repository_dependencies_dict = get_repository_dependencies( app,
                                                                                                   tool_shed_url,
                                                                                                   repository_name,
-                                                                                                  REPOSITORY_OWNER,
+                                                                                                  repository_owner,
                                                                                                   changeset_revision )
                 if tool_shed_accessible:
                     # Accumulate all tool dependencies defined for repository dependencies for display to the user.
@@ -64,7 +63,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
                     tool_shed_accessible, tool_dependencies = get_tool_dependencies( app,
                                                                                      tool_shed_url,
                                                                                      repository_name,
-                                                                                     REPOSITORY_OWNER,
+                                                                                     repository_owner,
                                                                                      changeset_revision )
                     all_tool_dependencies = accumulate_tool_dependencies( tool_shed_accessible, tool_dependencies, all_tool_dependencies )
                     for tool_elem in elem.findall( 'tool' ):

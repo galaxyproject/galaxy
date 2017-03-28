@@ -7,6 +7,7 @@ from six.moves import configparser
 
 import galaxy.config
 from tool_shed.galaxy_install import installed_repository_manager, tool_migration_manager
+from galaxy.util.dbkeys import GenomeBuilds
 
 
 class MigrateToolsApplication( object, galaxy.config.ConfiguresGalaxyMixin ):
@@ -14,7 +15,7 @@ class MigrateToolsApplication( object, galaxy.config.ConfiguresGalaxyMixin ):
 
     def __init__( self, tools_migration_config ):
         install_dependencies = 'install_dependencies' in sys.argv
-        galaxy_config_file = 'galaxy.ini'
+        galaxy_config_file = 'config/galaxy.ini'
         self.name = 'galaxy'
         if '-c' in sys.argv:
             pos = sys.argv.index( '-c' )
@@ -48,6 +49,7 @@ class MigrateToolsApplication( object, galaxy.config.ConfiguresGalaxyMixin ):
 
         self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager( self )
 
+        self.genome_builds = GenomeBuilds( self )
         # Get the latest tool migration script number to send to the Install manager.
         latest_migration_script_number = int( tools_migration_config.split( '_' )[ 0 ] )
         # The value of migrated_tools_config is migrated_tools_conf.xml, and is reserved for

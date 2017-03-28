@@ -79,7 +79,6 @@ class ToolMigrationManager( object ):
                 defined_tool_shed_url = root.get( 'name' )
                 self.tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, defined_tool_shed_url )
                 self.tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( self.tool_shed_url )
-                self.repository_owner = common_util.REPOSITORY_OWNER
                 self.shed_config_dict = self.tpm.get_shed_tool_conf_dict( self.migrated_tools_config )
                 # Since tool migration scripts can be executed any number of times, we need to
                 # make sure the appropriate tools are defined in tool_conf.xml.  If no tools
@@ -124,6 +123,7 @@ class ToolMigrationManager( object ):
                                 # the Galaxy tool panel (e.g., tool dependency definitions, custom datatypes,
                                 # etc).  This restriction must be followed down the entire dependency hierarchy.
                                 name = repository_elem.get( 'name' )
+                                self.repository_owner = repository_elem.get( 'owner' )
                                 changeset_revision = repository_elem.get( 'changeset_revision' )
                                 tool_shed_accessible, repository_dependencies_dict = \
                                     common_util.get_repository_dependencies( app,
