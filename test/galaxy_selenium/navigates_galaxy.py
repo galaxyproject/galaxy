@@ -233,11 +233,22 @@ class NavigatesGalaxy(HasDriver):
                 confirm=confirm
             ))
             self.click_xpath(self.navigation_data["selectors"]["registrationPage"]["submit_xpath"])
+            # Give the browser a bit of time to submit the request.
+            time.sleep(.25)
 
         if assert_valid:
             self.home()
             self.click_masthead_user()
-            user_email_element = self.wait_for_xpath_visible(self.navigation_data["selectors"]["masthead"]["userMenu"]["userEmail_xpath"])
+            # Make sure the user menu was dropped down
+            user_menu = self.wait_for_selector_visible("ul.nav#user .dropdown-menu")
+            try:
+                user_email_element = self.wait_for_xpath_visible(self.navigation_data["selectors"]["masthead"]["userMenu"]["userEmail_xpath"])
+            except self.TimeoutException as e:
+                menu_items = user_menu.find_elements_by_css_selector("li a")
+                menu_text = [mi.text for mi in menu_items]
+                message = "Failed to find logged in message in menu items %s" % ", ".join(menu_text)
+                raise self.prepend_timeout_message(e, message)
+
             text = user_email_element.text
             assert email in text
             assert self.get_logged_in_user()["email"] == email
@@ -429,6 +440,14 @@ class NavigatesGalaxy(HasDriver):
     def click_button_new_workflow(self):
         self.click_selector(self.navigation_data["selectors"]["workflows"]["new_button"])
 
+    def wait_for_sizzle_selector_clickable(self, selector):
+        element = self._wait_on(
+            sizzle.sizzle_selector_clickable(selector),
+            "sizzle/jQuery selector [%s] to become clickable" % selector,
+        )
+        return element
+
+    @retry_during_transitions
     def click_history_options(self):
         history_options_button_selector = self.test_data["historyOptions"]["selectors"]["button"]
         history_options_element = self.wait_for_selector(history_options_button_selector)
@@ -446,8 +465,9 @@ class NavigatesGalaxy(HasDriver):
 
         # Click labelled option
         menu_selector = self.history_options_menu_selector()
-        menu_element = self.wait_for_selector(menu_selector)
-        menu_selection_element = menu_element.find_element_by_xpath('//ul[@id="history-options-button-menu"]/li/a[text()[contains(.,"%s")]]' % option_label)
+        self.wait_for_selector_visible(menu_selector)
+        menu_item_sizzle_selector = '#history-options-button-menu > li > a:contains("%s")' % option_label
+        menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
 
     def history_options_menu_selector(self):
