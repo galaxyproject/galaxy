@@ -24,7 +24,7 @@ def send_local_control_task(app, task, kwargs={}):
     This sends a message to the process-local control worker, which is useful
     for one-time asynchronous tasks like recalculating user disk usage.
     """
-    log.info("Queuing async task %s." % task)
+    log.info("Queuing async task %s for %s." % (task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
     try:
@@ -33,7 +33,7 @@ def send_local_control_task(app, task, kwargs={}):
             producer.publish(payload,
                              exchange=galaxy.queues.galaxy_exchange,
                              declare=[galaxy.queues.galaxy_exchange] + [galaxy.queues.control_queue_from_config(app.config)],
-                             routing_key='control')
+                             routing_key='control.%s' % app.config.server_name)
     except Exception:
         log.exception("Error queueing async task: %s." % payload)
 
