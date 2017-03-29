@@ -97,7 +97,7 @@ window.app = function app( options, bootstrapped ){
                 if ( this.authenticate( args, name ) ) {
                     callback.apply( this, args );
                 } else {
-                    top.location.href = Galaxy.root;
+                    this.push( Galaxy.root );
                 }
             }
         },
