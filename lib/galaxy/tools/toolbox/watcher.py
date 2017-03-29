@@ -48,8 +48,8 @@ def get_observer_class(config_value, default, monitor_what_str):
     return observer_class
 
 
-def get_tool_conf_watcher(reload_callback):
-    return ToolConfWatcher(reload_callback)
+def get_tool_conf_watcher(reload_callback, tool_cache=None):
+    return ToolConfWatcher(reload_callback=reload_callback, tool_cache=tool_cache)
 
 
 def get_tool_data_dir_watcher(tool_data_tables, config):
@@ -73,8 +73,9 @@ def get_tool_watcher(toolbox, config):
 
 class ToolConfWatcher(object):
 
-    def __init__(self, reload_callback):
+    def __init__(self, reload_callback, tool_cache=None):
         self.paths = {}
+        self.cache = tool_cache
         self._active = False
         self._lock = threading.Lock()
         self.thread = threading.Thread(target=self.check, name="ToolConfWatcher.thread")
@@ -92,6 +93,7 @@ class ToolConfWatcher(object):
             self.thread.join()
 
     def check(self):
+        """Check for changes in self.paths or self.cache and call the event handler."""
         hashes = { key: None for key in self.paths.keys() }
         while self._active:
             do_reload = False
@@ -113,7 +115,10 @@ class ToolConfWatcher(object):
                         hashes[path] = new_hash
                         log.debug("The file '%s' has changes.", path)
                         do_reload = True
-
+            if not do_reload and self.cache:
+                removed_ids = self.cache.cleanup()
+                if removed_ids:
+                    do_reload = True
             if do_reload:
                 with self._lock:
                     t = threading.Thread(target=self.event_handler.on_any_event)

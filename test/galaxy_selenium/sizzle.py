@@ -5,6 +5,8 @@ import re
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 
+from .has_driver import exception_indicates_stale_element
+
 SIZZLE_LOAD_TIMEOUT = 5
 SIZZLE_URL = "//cdnjs.cloudflare.com/ajax/libs/sizzle/1.10.18/sizzle.js"
 
@@ -25,7 +27,7 @@ def sizzle_selector_clickable(selector):
             # non-custom selectors I believe this all happens on the Selenium
             # server and so there is likely no need to handle this case - they
             # are effectively atomic.
-            if _exception_indicates_stale_element(e):
+            if exception_indicates_stale_element(e):
                 return None
 
             raise
@@ -47,7 +49,7 @@ def sizzle_presence_of_selector(selector):
             displayed = element.is_displayed()
         except Exception as e:
             # See note above insizzle_selector_clickable about this exception.
-            if _exception_indicates_stale_element(e):
+            if exception_indicates_stale_element(e):
                 return None
 
             raise
@@ -58,10 +60,6 @@ def sizzle_presence_of_selector(selector):
             return None
 
     return ec
-
-
-def _exception_indicates_stale_element(exception):
-    return "stale" in str(exception)
 
 
 def find_element_by_sizzle(driver, sizzle_selector):

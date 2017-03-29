@@ -421,7 +421,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     /** create a new HDCA in this collection */
-    createHDCA : function( elementIdentifiers, collectionType, name, options ){
+    createHDCA : function( elementIdentifiers, collectionType, name, hideSourceItems, options ){
         // normally collection.create returns the new model, but we need the promise from the ajax, so we fake create
         //precondition: elementIdentifiers is an array of plain js objects
         //  in the proper form to create the collectionType
@@ -430,6 +430,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
             collection_type     : collectionType,
             history_id          : this.historyId,
             name                : name,
+            hide_source_items   : hideSourceItems || false,
             // should probably be able to just send in a bunch of json here and restruct per class
             // note: element_identifiers is now (incorrectly) an attribute
             element_identifiers : elementIdentifiers

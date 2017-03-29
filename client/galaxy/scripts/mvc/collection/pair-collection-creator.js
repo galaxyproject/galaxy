@@ -233,12 +233,12 @@ var pairCollectionCreatorModal = function _pairCollectionCreatorModal( elements,
 function createPairCollection( contents ){
     var elements = contents.toJSON(),
         promise = pairCollectionCreatorModal( elements, {
-            creationFn : function( elements, name ){
+            creationFn : function( elements, name, hideSourceItems ){
                 elements = [
                     { name: "forward", src: "hda", id: elements[0].id },
                     { name: "reverse", src: "hda", id: elements[1].id }
                 ];
-                return contents.createHDCA( elements, 'paired', name );
+                return contents.createHDCA( elements, 'paired', name, hideSourceItems );
             }
         });
     return promise;

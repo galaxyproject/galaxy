@@ -9,11 +9,13 @@ import random
 import string
 import time
 
+from functools import partial, wraps
+
 import requests
 import yaml
 
 from .data import NAVIGATION_DATA
-from .has_driver import HasDriver
+from .has_driver import exception_indicates_stale_element, HasDriver
 from . import sizzle
 
 # Test case data
@@ -24,6 +26,31 @@ class NullTourCallback(object):
 
     def handle_step(self, step, step_index):
         pass
+
+
+def retry_call_during_transitions(f, attempts=5, sleep=.1):
+    previous_attempts = 0
+    while True:
+        try:
+            return f()
+        except Exception as e:
+            if previous_attempts > attempts:
+                raise
+
+            if not exception_indicates_stale_element(e):
+                raise
+
+            time.sleep(sleep)
+            previous_attempts += 1
+
+
+def retry_during_transitions(f, attempts=5, sleep=.1):
+
+    @wraps(f)
+    def _retry(*args, **kwds):
+        retry_call_during_transitions(partial(f, *args, **kwds), attempts=attempts, sleep=sleep)
+
+    return _retry
 
 
 class NavigatesGalaxy(HasDriver):
@@ -110,7 +137,7 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_wait_for_hid_ok(self, hid, timeout=60):
         self.history_panel_wait_for_hid_state(hid, 'ok', timeout=timeout)
 
-    def history_panel_wait_for_hid_state(self, hid, state, timeout=60):
+    def history_panel_wait_for_hid_visible(self, hid, timeout=60):
         current_history_id = self.current_history_id()
 
         def history_has_hid(driver):
@@ -122,6 +149,18 @@ class NavigatesGalaxy(HasDriver):
         history_item = [d for d in contents if d["hid"] == hid][0]
         history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
         self.wait_for_selector_visible(history_item_selector)
+        return history_item_selector
+
+    def history_panel_wait_for_hid_hidden(self, hid, timeout=60):
+        current_history_id = self.current_history_id()
+        contents = self.api_get("histories/%s/contents" % current_history_id)
+        history_item = [d for d in contents if d["hid"] == hid][0]
+        history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
+        self.wait_for_selector_absent(history_item_selector)
+        return history_item_selector
+
+    def history_panel_wait_for_hid_state(self, hid, state, timeout=60):
+        history_item_selector = self.history_panel_wait_for_hid_visible(hid, timeout=timeout)
         history_item_selector_state = "%s.state-%s" % (history_item_selector, state)
         try:
             self.wait_for_selector_visible(history_item_selector_state)
@@ -211,22 +250,38 @@ class NavigatesGalaxy(HasDriver):
         center_element = self.driver.find_element_by_css_selector("#center")
         action_chains.move_to_element(center_element).click().perform()
 
-    def perform_upload(self, test_path):
+    def perform_upload(self, test_path, ext=None, genome=None, ext_all=None, genome_all=None):
         self.home()
 
-        upload_button = self.wait_for_selector(".upload-button")
+        upload_button = self.wait_for_selector_clickable(".upload-button")
         upload_button.click()
 
-        local_upload_button = self.wait_for_selector("button#btn-local")
+        if ext_all is not None:
+            self.wait_for_selector_visible('.upload-footer-extension')
+            self.select2_set_value(".upload-footer-extension", ext_all)
+
+        if genome_all is not None:
+            self.wait_for_selector_visible('.upload-footer-genome')
+            self.select2_set_value(".upload-footer-genome", genome_all)
+
+        local_upload_button = self.wait_for_selector_clickable("button#btn-local")
         local_upload_button.click()
 
         file_upload = self.wait_for_selector('input[type="file"]')
         file_upload.send_keys(test_path)
 
-        start_button = self.wait_for_selector("button#btn-start")
+        if ext is not None:
+            self.wait_for_selector_visible('.upload-extension')
+            self.select2_set_value(".upload-extension", ext)
+
+        if genome is not None:
+            self.wait_for_selector_visible('.upload-genome')
+            self.select2_set_value(".upload-genome", genome)
+
+        start_button = self.wait_for_selector_clickable("button#btn-start")
         start_button.click()
 
-        close_button = self.wait_for_selector("button#btn-close")
+        close_button = self.wait_for_selector_clickable("button#btn-close")
         close_button.click()
 
     def workflow_index_open(self):
@@ -317,6 +372,11 @@ class NavigatesGalaxy(HasDriver):
         menu_selector = self.test_data["historyOptions"]["selectors"]["menu"]
         return menu_selector
 
+    @retry_during_transitions
+    def history_panel_refresh_click(self):
+        refresh_item = self.wait_for_selector_clickable("#history-refresh-button")
+        refresh_item.click()
+
     def history_panel_multi_operations_selector(self):
         return self.test_data["historyPanel"]["selectors"]["history"]["multiOperationsIcon"]
 
@@ -325,6 +385,7 @@ class NavigatesGalaxy(HasDriver):
         operations_element = self.wait_for_selector_clickable(operations_selector)
         operations_element.click()
 
+    @retry_during_transitions
     def history_panel_muli_operation_select_hid(self, hid):
         item_selector = self.history_panel_item_selector(hid, wait=True)
         operation_radio_selector = "%s .selector" % item_selector
@@ -396,6 +457,18 @@ class NavigatesGalaxy(HasDriver):
     def click_hda_title(self, hda_id, wait=False):
         # TODO: Replace with calls to history_panel_click_item_title.
         return self.history_panel_click_item_title(hda_id=hda_id, wait=wait)
+
+    def collection_builder_set_name(self, name):
+        name_element = self.wait_for_selector_visible("input.collection-name")
+        name_element.send_keys(name)
+
+    def collection_builder_hide_originals(self):
+        hide_element = self.wait_for_selector_clickable("input.hide-originals")
+        hide_element.click()
+
+    def collection_builder_create(self):
+        create_element = self.wait_for_selector_clickable("button.create-collection")
+        create_element.click()
 
     def logout_if_needed(self):
         if self.is_logged_in():

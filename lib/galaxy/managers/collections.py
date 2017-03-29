@@ -51,6 +51,7 @@ class DatasetCollectionManager( object ):
         elements=None,
         implicit_collection_info=None,
         trusted_identifiers=None,  # Trust preloaded element objects
+        hide_source_items=False,
     ):
         """
         """
@@ -66,6 +67,7 @@ class DatasetCollectionManager( object ):
             collection_type=collection_type,
             element_identifiers=element_identifiers,
             elements=elements,
+            hide_source_items=hide_source_items,
         )
 
         if isinstance( parent, model.History ):
@@ -114,6 +116,7 @@ class DatasetCollectionManager( object ):
         collection_type,
         element_identifiers=None,
         elements=None,
+        hide_source_items=False,
     ):
         if element_identifiers is None and elements is None:
             raise RequestParameterInvalidException( ERROR_INVALID_ELEMENTS_SPECIFICATION )
@@ -133,11 +136,16 @@ class DatasetCollectionManager( object ):
                     elements = self.__load_elements(trans, element_identifier['element_identifiers'])
             if not new_collection:
                 elements = self.__load_elements( trans, element_identifiers )
+
         # else if elements is set, it better be an ordered dict!
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
             type_plugin = collection_type_description.rank_type_plugin()
             dataset_collection = builder.build_collection( type_plugin, elements )
+            if hide_source_items:
+                log.debug("Hiding source items during dataset collection creation")
+                for dataset in dataset_collection.dataset_instances:
+                    dataset.visible = False
         else:
             dataset_collection = model.DatasetCollection( populated=False )
         dataset_collection.collection_type = collection_type
