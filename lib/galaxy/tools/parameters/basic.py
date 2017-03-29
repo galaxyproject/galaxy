@@ -1773,23 +1773,23 @@ class DataToolParameter( BaseDataToolParameter ):
                                   'keep' : keep } )
 
         # add datasets
-        visible_hda = other_values.get( self.name )
-        has_matched = False
+        hda_list = util.listify( other_values.get( self.name ) )
         for hda in history.active_datasets_and_roles:
             match = dataset_matcher.hda_match( hda, check_security=False )
             if match:
                 m = match.hda
-                has_matched = has_matched or visible_hda == m or visible_hda == hda
+                hda_list = [ h for h in hda_list if h != m and h != hda ]
                 m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
                 append( d[ 'options' ][ 'hda' ], m, m_name, 'hda' )
-        if not has_matched and hasattr( visible_hda, 'hid' ):
-            if visible_hda.deleted:
-                hda_state = 'deleted'
-            elif not visible_hda.visible:
-                hda_state = 'hidden'
-            else:
-                hda_state = 'unavailable'
-            append( d[ 'options' ][ 'hda' ], visible_hda, '(%s) %s' % ( hda_state, visible_hda.name ), 'hda', True )
+        for hda in hda_list:
+            if hasattr( hda, 'hid' ):
+                if hda.deleted:
+                    hda_state = 'deleted'
+                elif not hda.visible:
+                    hda_state = 'hidden'
+                else:
+                    hda_state = 'unavailable'
+                append( d[ 'options' ][ 'hda' ], hda, '(%s) %s' % ( hda_state, hda.name ), 'hda', True )
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
