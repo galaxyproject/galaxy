@@ -4063,6 +4063,11 @@ class WorkflowInvocation( object, Dictifiable ):
                 return True
         return False
 
+    @property
+    def seconds_since_created( self ):
+        create_time = self.create_time or galaxy.model.orm.now.now()  # In case not flushed yet
+        return (galaxy.model.orm.now.now() - create_time).total_seconds()
+
 
 class WorkflowInvocationToSubworkflowInvocationAssociation( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id' )

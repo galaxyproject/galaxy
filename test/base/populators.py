@@ -9,6 +9,10 @@ from pkg_resources import resource_string
 from six import StringIO
 
 from base import api_asserts
+from base.workflows_format_2 import (
+    convert_and_import_workflow,
+    ImporterGalaxyInterface,
+)
 
 # Simple workflow that takes an input and call cat wrapper on it.
 workflow_str = resource_string( __name__, "data/test_workflow_1.ga" )
@@ -253,6 +257,10 @@ class BaseWorkflowPopulator( object ):
         upload_response = self._post( "workflows/upload", data=data )
         return upload_response
 
+    def upload_yaml_workflow(self, has_yaml, **kwds):
+        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
+        return workflow[ "id" ]
+
     def wait_for_invocation( self, workflow_id, invocation_id, timeout=DEFAULT_TIMEOUT ):
         url = "workflows/%s/usage/%s" % ( workflow_id, invocation_id )
         return wait_on_state( lambda: self._get( url ), timeout=timeout  )
@@ -264,7 +272,7 @@ class BaseWorkflowPopulator( object ):
         self.dataset_populator.wait_for_history( history_id, assert_ok=assert_ok, timeout=timeout )
 
 
-class WorkflowPopulator( BaseWorkflowPopulator ):
+class WorkflowPopulator( BaseWorkflowPopulator, ImporterGalaxyInterface ):
 
     def __init__( self, galaxy_interactor ):
         self.galaxy_interactor = galaxy_interactor
@@ -275,6 +283,18 @@ class WorkflowPopulator( BaseWorkflowPopulator ):
 
     def _get( self, route ):
         return self.galaxy_interactor.get( route )
+
+    # Required for ImporterGalaxyInterface interface - so we can recurisvely import
+    # nested workflows.
+    def import_workflow(self, workflow, **kwds):
+        workflow_str = json.dumps(workflow, indent=4)
+        data = {
+            'workflow': workflow_str,
+        }
+        data.update(**kwds)
+        upload_response = self._post( "workflows", data=data )
+        assert upload_response.status_code == 200, upload_response
+        return upload_response.json()
 
 
 class LibraryPopulator( object ):
