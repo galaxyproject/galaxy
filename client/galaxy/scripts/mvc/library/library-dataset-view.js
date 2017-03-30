@@ -25,13 +25,11 @@ var LibraryDatasetView = Backbone.View.extend({
     "click .toolbtn_cancel_modifications" :   "render",
     "click .toolbtn-download-dataset"     :   "downloadDataset",
     "click .toolbtn-import-dataset"       :   "importIntoHistory",
-    "click .toolbtn-share-dataset"        :   "shareDataset",
     "click .btn-copy-link-to-clipboard"   :   "copyToClipboard",
     "click .btn-make-private"             :   "makeDatasetPrivate",
     "click .btn-remove-restrictions"      :   "removeDatasetRestrictions",
     "click .toolbtn_save_permissions"     :   "savePermissions",
-    "click .toolbtn_save_modifications"   :   "comingSoon",
-
+    "click .toolbtn_save_modifications"   :   "saveModifications"
   },
 
   // genome select
@@ -245,10 +243,6 @@ var LibraryDatasetView = Backbone.View.extend({
       });
   },
 
-  shareDataset: function(){
-    mod_toastr.info('Feature coming soon.');
-  },
-
   goBack: function(){
     Galaxy.libraries.library_router.back();
   },
@@ -457,8 +451,11 @@ var LibraryDatasetView = Backbone.View.extend({
     }
   },
 
-  comingSoon: function(){
-    mod_toastr.warning('Feature coming soon.');
+  /**
+   * Save the changes made to the dataset.
+   */
+  saveModifications: function(){
+
   },
 
   copyToClipboard: function(){
@@ -711,13 +708,13 @@ var LibraryDatasetView = Backbone.View.extend({
         '<% } %>',
         '<% if (item.get("misc_blurb")) { %>',
           '<tr>',
-            '<th scope="row">Miscellaneous blurb</th>',
+            '<th scope="row">Misc. blurb</th>',
             '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
           '</tr>',
         '<% } %>',
         '<% if (item.get("misc_info")) { %>',
           '<tr>',
-            '<th scope="row">Miscellaneous information</th>',
+            '<th scope="row">Misc. info</th>',
             '<td scope="row"><%= _.escape(item.get("misc_info")) %></td>',
           '</tr>',
         '<% } %>',
@@ -902,7 +899,6 @@ var LibraryDatasetView = Backbone.View.extend({
       '</ol>',
 
       '<div class="dataset_table">',
-        '<p>For full editing options please import the dataset to history and use "Edit attributes" on it.</p>',
         '<table class="grid table table-striped table-condensed">',
           '<tr>',
             '<th class="dataset-first-column" scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
@@ -956,12 +952,12 @@ var LibraryDatasetView = Backbone.View.extend({
             '<td scope="row"><%= _.escape(item.get("message")) %></td>',
           '</tr>',
           '<tr>',
-            '<th scope="row">Miscellaneous information</th>',
-            '<td scope="row"><%= _.escape(item.get("misc_info")) %></td>',
+            '<th scope="row">Misc. blurb</th>',
+            '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
           '</tr>',
           '<tr>',
-            '<th scope="row">Miscellaneous blurb</th>',
-            '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
+            '<th scope="row">Misc. information</th>',
+            '<td><input class="input_dataset_misc_info form-control" type="text" placeholder="info" value="<%= _.escape(item.get("misc_info")) %>"></td>',
           '</tr>',
           //TODO: add functionality to modify tags here
           '<% if (item.get("tags")) { %>',
