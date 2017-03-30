@@ -29,9 +29,15 @@ from galaxy.web import url_for
 log = logging.getLogger(__name__)
 
 
+<<<<<<< HEAD
 class WorkflowsManager(object):
     """ Handle CRUD type operaitons related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
+=======
+class WorkflowsManager( object ):
+    """Handle CRUD type operations related to workflows. More interesting
+    stuff regarding workflow execution, step sorting, etc. can be found in
+>>>>>>> e4125bef2f... fix typo
     the galaxy.workflow module.
     """
 
