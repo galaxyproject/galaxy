@@ -869,8 +869,6 @@ test_data:
     @skip_without_tool( "cat1" )
     @skip_without_tool( "collection_paired_test" )
     def test_workflow_run_zip_collections( self ):
-        # A more advanced output collection workflow, testing regression of
-        # https://github.com/galaxyproject/galaxy/issues/776
         history_id = self.dataset_populator.new_history()
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
