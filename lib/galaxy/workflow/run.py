@@ -147,7 +147,6 @@ class WorkflowInvoker( object ):
         workflow_invocation = self.workflow_invocation
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
-        more_info = ""
         for step in remaining_steps:
             step_delayed = False
             step_timer = ExecutionTimer()
@@ -168,8 +167,7 @@ class WorkflowInvoker( object ):
                         workflow_invocation_step.job_id = job.id
             except modules.DelayedWorkflowEvaluation as de:
                 step_delayed = delayed_steps = True
-                more_info = "(%s)" % de.why
-                self.progress.mark_step_outputs_delayed( step )
+                self.progress.mark_step_outputs_delayed( step, why=de.why )
             except Exception:
                 log.exception(
                     "Failed to schedule %s, problem occurred on %s.",
@@ -178,9 +176,8 @@ class WorkflowInvoker( object ):
                 )
                 raise
 
-            step_verb = "invoked" if not step_delayed else "delayed"
-            status = step_verb + (" %s" % more_info if more_info else "")
-            log.debug("Workflow step %s of invocation %s %s %s" % (step.id, workflow_invocation.id, status, step_timer))
+            if not step_delayed:
+                log.debug("Workflow step %s of invocation %s invoked %s" % (step.id, workflow_invocation.id, step_timer))
 
         if delayed_steps:
             state = model.WorkflowInvocation.states.READY
@@ -347,7 +344,7 @@ class WorkflowProgress( object ):
 
     def mark_step_outputs_delayed(self, step, why=None):
         if why:
-            message = "Marking step %s outputs delayed (%s)" % (step.id, why)
+            message = "Marking step %s outputs of invocation %s delayed (%s)" % (step.id, self.workflow_invocation.id, why)
             log.debug(message)
         self.outputs[ step.id ] = STEP_OUTPUT_DELAYED
 
