@@ -247,7 +247,13 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     @expose_api
     def get_information(self, trans, id, **kwd):
-        """Return user details such as username, email, addresses etc."""
+        """
+        GET /api/users/{id}/information
+        Return user details such as username, email, addresses etc.
+
+        :param id: the encoded id of the user
+        :type  id: str
+        """
         user = self._get_user(trans, id)
         email = user.email
         username = user.username
@@ -318,7 +324,16 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     @expose_api
     def set_information(self, trans, id, payload={}, **kwd):
-        """Save a user's email, username, addresses etc."""
+        """
+        POST /api/users/{id}/information
+        Save a user's email, username, addresses etc.
+
+        :param id: the encoded id of the user
+        :type  id: str
+
+        :param payload: data with new settings
+        :type  payload: dict
+        """
         user = self._get_user(trans, id)
         email = payload.get('email')
         username = payload.get('username')
@@ -681,7 +696,13 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     @expose_api
     def get_custom_builds_metadata(self, trans, id, payload={}, **kwd):
-        """ Returns meta data for custom builds. """
+        """
+        GET /api/users/{id}/custom_builds_metadata
+        Returns meta data for custom builds.
+
+        :param id: the encoded id of the user
+        :type  id: str
+        """
         self._get_user(trans, id)
         installed_builds = []
         for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
@@ -696,7 +717,13 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     @expose_api
     def get_custom_builds(self, trans, id, payload={}, **kwd):
-        """ Returns collection of custom builds. """
+        """
+        GET /api/users/{id}/custom_builds
+        Returns collection of custom builds.
+
+        :param id: the encoded id of the user
+        :type  id: str
+        """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
         update = False
@@ -718,7 +745,19 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     @expose_api
     def add_custom_builds(self, trans, id, key, payload={}, **kwd):
-        """ Add new custom build. """
+        """
+        PUT /api/users/{id}/custom_builds/{key}
+        Add new custom build.
+
+        :param id: the encoded id of the user
+        :type  id: str
+
+        :param id: custom build key
+        :type  id: str
+
+        :param payload: data with new build details
+        :type  payload: dict
+        """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
         name = payload.get('name')
@@ -789,7 +828,16 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     @expose_api
     def delete_custom_builds(self, trans, id, key, payload={}, **kwd):
-        """ Delete a custom build. """
+        """
+        DELETE /api/users/{id}/custom_builds/{key}
+        Delete a custom build.
+
+        :param id: the encoded id of the user
+        :type  id: str
+
+        :param id: custom build key to be deleted
+        :type  id: str
+        """
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
         if key and key in dbkeys:
