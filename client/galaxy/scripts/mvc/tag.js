@@ -18,6 +18,11 @@ var TagsEditor = Backbone.View
     initialize : function( options ){
         //console.debug( this, options );
         // only listen to the model only for changes to tags - re-render
+        if (options.usePrompt === false) {
+            this.label = '';
+        } else {
+            this.label = '<label class="prompt">' + _l( 'Tags' ) + '</label>';
+        }
         this.listenTo( this.model, 'change:tags', function(){
             this.render();
         });
@@ -26,7 +31,7 @@ var TagsEditor = Backbone.View
 
     /** Build the DOM elements, call select to on the created input, and set up behaviors */
     render : function(){
-        var view = this;
+        var self = this;
         this.$el.html( this._template() );
 
         this.$input().select2({
@@ -34,7 +39,7 @@ var TagsEditor = Backbone.View
             width       : '100%',
             tags : function(){
                 // initialize possible tags in the dropdown based on all the tags the user has used so far
-                return view._getTagsUsed();
+                return self._getTagsUsed();
             }
         });
 
@@ -45,8 +50,7 @@ var TagsEditor = Backbone.View
     /** @returns {String} the html text used to build the view's DOM */
     _template : function(){
         return [
-            //TODO: make prompt optional
-            '<label class="prompt">', _l( 'Tags' ), '</label>',
+            this.label,
             // set up initial tags by adding as CSV to input vals (necc. to init select2)
             '<input class="tags-input" value="', this.tagsToCSV(), '" />'
         ].join( '' );
