@@ -230,9 +230,10 @@ var pairCollectionCreatorModal = function _pairCollectionCreatorModal( elements,
 /** Use a modal to create a pair collection, then add it to the given history contents.
  *  @returns {Deferred} resolved when the collection is added to the history.
  */
-function createPairCollection( contents ){
+function createPairCollection( contents, defaultHideSourceItems ){
     var elements = contents.toJSON(),
         promise = pairCollectionCreatorModal( elements, {
+            defaultHideSourceItems: defaultHideSourceItems,
             creationFn : function( elements, name, hideSourceItems ){
                 elements = [
                     { name: "forward", src: "hda", id: elements[0].id },

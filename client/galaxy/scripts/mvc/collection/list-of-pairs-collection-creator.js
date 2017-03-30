@@ -259,7 +259,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         /** Used for blocking UI events during ajax/operations (don't post twice) */
         this.blocking = false;
 
-        this._setUpCommonSettings();
+        this._setUpCommonSettings( attributes );
         this._setUpBehaviors();
         this._dataSetUp();
     },
@@ -1642,11 +1642,12 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datas
 
 
 //=============================================================================
-function createListOfPairsCollection( collection ){
+function createListOfPairsCollection( collection, defaultHideSourceItems ){
     var elements = collection.toJSON();
 //TODO: validate elements
     return pairedCollectionCreatorModal( elements, {
-        historyId : collection.historyId
+        historyId : collection.historyId,
+        defaultHideSourceItems: defaultHideSourceItems
     });
 }
 
