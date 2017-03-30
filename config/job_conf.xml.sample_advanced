@@ -204,6 +204,30 @@
                  This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed) -->
+            <param id="k8s_supplemental_group_id">0</param>
+            <!-- If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access
+                 to a DEFINED user/group, this variable sets the group id that Pods need to use to be able to read and
+                 write from that mount. If left to zero or deleted, this parameter is neglected. Integer values
+                 above zero trigger the addition of a security context on each Pod created to dispatch jobs:
+
+                 securityContext:
+                    supplementalGroups: [value-set-goes-here]
+
+                 inside the Pod spec, applicable for all containers on the pod.
+
+                 Using this requires that the Kubernetes cluster is not running the admission controller
+                 "SecurityContextDeny". To check this, look at the --admission-control= variable setup for the
+                 api-server pod definition (normally in /etc/kubernetes/manifests/kube-apiserver.manifest), it shouldn't
+                 have the mentioned admission controller. Pods with the securityContext set will fail if such admission
+                 controller is present. Removing that admission controller from the manifest should provoke kubelet
+                 to restart the api-server pod running on that machine (although this might vary on your Kubernetes
+                 installation).
+
+                 For more information see point 21.2.4.1 Group IDs on:
+                 https://access.redhat.com/documentation/en-us/openshift_container_platform/3.4/html/
+                 installation_and_configuration/configuring-persistent-storage
+
+                 -->
         </plugin>
         <plugin id="godocker" type="runner" load="galaxy.jobs.runners.godocker:GodockerJobRunner">
             <!-- Go-Docker is a batch computing/cluster management tool using Docker

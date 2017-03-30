@@ -47,6 +47,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_persistent_volume_claim_name=dict(map=str),
             k8s_persistent_volume_claim_mount_path=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
+            k8s_supplemental_group_id=dict(map=str),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
 
         if 'runner_param_specs' not in kwargs:
@@ -139,6 +140,11 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         }
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
+
+        if "k8s_supplemental_group_id" in self.runner_params:
+            supp_group = self.runner_params["k8s_supplemental_group_id"]
+            if isinstance(supp_group, (int, long)) and supp_group > 0:
+                k8s_spec_template["spec"]["securityContext"] = dict(supplementalGroups="[{0}]".format(str(supp_group)))
 
         return k8s_spec_template
 
