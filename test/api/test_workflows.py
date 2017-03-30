@@ -899,6 +899,50 @@ steps:
         content = self.dataset_populator.get_history_dataset_content( history_id )
         self.assertEqual(content.strip(), "samp1\t10.0\nsamp2\t20.0\nsamp1\t20.0\nsamp2\t40.0")
 
+    def test_filter_failed_mapping( self ):
+        history_id = self.dataset_populator.new_history()
+        summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - type: collection
+    label: input_c
+steps:
+  - label: mixed_collection
+    tool_id: exit_code_from_file
+    state:
+       input:
+         $link: input_c
+
+  - label: filtered_collection
+    tool_id: "__FILTER_FAILED_DATASETS__"
+    state:
+      input:
+        $link: mixed_collection#out_file1
+
+  - tool_id: cat1
+    state:
+      input1:
+        $link: filtered_collection
+test_data:
+  input_c:
+    type: list
+    elements:
+      - identifier: i1
+        content: "0"
+      - identifier: i2
+        content: "1"
+""", history_id=history_id, wait=True, assert_ok=False)
+        jobs = summary.jobs
+
+        def filter_jobs_by_tool(tool_id):
+            return [j for j in summary.jobs if j["tool_id"] == tool_id]
+
+        assert len(filter_jobs_by_tool("upload1")) == 2, jobs
+        assert len(filter_jobs_by_tool("exit_code_from_file")) == 2, jobs
+        assert len(filter_jobs_by_tool("__FILTER_FAILED_DATASETS__")) == 1, jobs
+        # Follow proves one job was filtered out of the result of cat1
+        assert len(filter_jobs_by_tool("cat1")) == 1, jobs
+
     def test_workflow_request( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_queue" )
         workflow_request, history_id = self._setup_workflow_run( workflow )
