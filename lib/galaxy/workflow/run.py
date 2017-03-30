@@ -145,6 +145,17 @@ class WorkflowInvoker( object ):
 
     def invoke( self ):
         workflow_invocation = self.workflow_invocation
+        maximum_duration = getattr( self.trans.app.config, "maximum_workflow_invocation_duration", -1 )
+        if maximum_duration > 0 and workflow_invocation.seconds_since_created > maximum_duration:
+            log.debug("Workflow invocation [%s] exceeded maximum number of seconds allowed for scheduling [%s], failing." % (workflow_invocation.id, maximum_duration))
+            workflow_invocation.state = model.WorkflowInvocation.states.FAILED
+            # All jobs ran successfully, so we can save now
+            self.trans.sa_session.add( workflow_invocation )
+
+            # Not flushing in here, because web controller may create multiple
+            # invocations.
+            return self.progress.outputs
+
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
         for step in remaining_steps:

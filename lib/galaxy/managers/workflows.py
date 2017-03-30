@@ -398,8 +398,12 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_model["name"] = step_title(step, step_model.get("name"))
             else:
                 inputs = step.module.get_runtime_inputs( connections=step.output_connections )
+                step_name = step.module.name
+                if hasattr( step, 'tool_inputs' ):
+                    if isinstance( step.tool_inputs, dict ):
+                        step_name = step.tool_inputs.get( 'name' ) or step_name
                 step_model = {
-                    'name'   : step_title(step, step.module.name),
+                    'name'   : step_title(step, step_name),
                     'inputs' : [ input.to_dict( trans ) for input in inputs.itervalues() ]
                 }
             step_model[ 'step_type' ] = step.type
