@@ -195,7 +195,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         /** unordered, original list - cache to allow reversal */
         creator.initialElements = attributes.elements || [];
 
-        this._setUpCommonSettings();
+        this._setUpCommonSettings( attributes );
         this._instanceSetUp();
         this._elementsSetUp();
         this._setUpBehaviors();
@@ -948,9 +948,10 @@ var listCollectionCreatorModal = function _listCollectionCreatorModal( elements,
 /** Use a modal to create a list collection, then add it to the given history contents.
  *  @returns {Deferred} resolved when the collection is added to the history.
  */
-function createListCollection( contents ){
+function createListCollection( contents, defaultHideSourceItems ){
     var elements = contents.toJSON(),
         promise = listCollectionCreatorModal( elements, {
+            defaultHideSourceItems: defaultHideSourceItems,
             creationFn : function( elements, name, hideSourceItems ){
                 elements = elements.map( function( element ){
                     return {

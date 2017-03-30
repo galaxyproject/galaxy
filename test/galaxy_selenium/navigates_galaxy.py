@@ -233,11 +233,22 @@ class NavigatesGalaxy(HasDriver):
                 confirm=confirm
             ))
             self.click_xpath(self.navigation_data["selectors"]["registrationPage"]["submit_xpath"])
+            # Give the browser a bit of time to submit the request.
+            time.sleep(.25)
 
         if assert_valid:
             self.home()
             self.click_masthead_user()
-            user_email_element = self.wait_for_xpath_visible(self.navigation_data["selectors"]["masthead"]["userMenu"]["userEmail_xpath"])
+            # Make sure the user menu was dropped down
+            user_menu = self.wait_for_selector_visible("ul.nav#user .dropdown-menu")
+            try:
+                user_email_element = self.wait_for_xpath_visible(self.navigation_data["selectors"]["masthead"]["userMenu"]["userEmail_xpath"])
+            except self.TimeoutException as e:
+                menu_items = user_menu.find_elements_by_css_selector("li a")
+                menu_text = [mi.text for mi in menu_items]
+                message = "Failed to find logged in message in menu items %s" % ", ".join(menu_text)
+                raise self.prepend_timeout_message(e, message)
+
             text = user_email_element.text
             assert email in text
             assert self.get_logged_in_user()["email"] == email
@@ -252,23 +263,12 @@ class NavigatesGalaxy(HasDriver):
 
     def perform_upload(self, test_path, ext=None, genome=None, ext_all=None, genome_all=None):
         self.home()
+        self.upload_start_click()
 
-        upload_button = self.wait_for_selector_clickable(".upload-button")
-        upload_button.click()
+        self.upload_set_footer_extension(ext_all)
+        self.upload_set_footer_genome(genome_all)
 
-        if ext_all is not None:
-            self.wait_for_selector_visible('.upload-footer-extension')
-            self.select2_set_value(".upload-footer-extension", ext_all)
-
-        if genome_all is not None:
-            self.wait_for_selector_visible('.upload-footer-genome')
-            self.select2_set_value(".upload-footer-genome", genome_all)
-
-        local_upload_button = self.wait_for_selector_clickable("button#btn-local")
-        local_upload_button.click()
-
-        file_upload = self.wait_for_selector('input[type="file"]')
-        file_upload.send_keys(test_path)
+        self.upload_queue_local_file(test_path)
 
         if ext is not None:
             self.wait_for_selector_visible('.upload-extension')
@@ -278,11 +278,104 @@ class NavigatesGalaxy(HasDriver):
             self.wait_for_selector_visible('.upload-genome')
             self.select2_set_value(".upload-genome", genome)
 
-        start_button = self.wait_for_selector_clickable("button#btn-start")
-        start_button.click()
+        self.upload_start()
 
         close_button = self.wait_for_selector_clickable("button#btn-close")
         close_button.click()
+
+    def upload_list(self, test_paths, name="test", ext=None, genome=None, hide_source_items=True):
+        self._collection_upload_start(test_paths, ext, genome, "List")
+        if not hide_source_items:
+            self.collection_builder_hide_originals()
+
+        self.collection_builder_set_name(name)
+        self.collection_builder_create()
+
+    def upload_pair(self, test_paths, name="test", ext=None, genome=None, hide_source_items=True):
+        self._collection_upload_start(test_paths, ext, genome, "Pair")
+        if not hide_source_items:
+            self.collection_builder_hide_originals()
+
+        self.collection_builder_set_name(name)
+        self.collection_builder_create()
+
+    def upload_paired_list(self, test_paths, name="test", ext=None, genome=None, hide_source_items=True):
+        self._collection_upload_start(test_paths, ext, genome, "List of Pairs")
+        if not hide_source_items:
+            self.collection_builder_hide_originals()
+
+        self.collection_builder_clear_filters()
+        # TODO: generalize and loop these clicks so we don't need the assert
+        assert len(test_paths) == 2
+        self.collection_builder_click_paired_item("forward", 0)
+        self.collection_builder_click_paired_item("reverse", 1)
+
+        self.collection_builder_set_name(name)
+        self.collection_builder_create()
+
+    def _collection_upload_start(self, test_paths, ext, genome, collection_type):
+        # Perform upload of files and open the collection builder for specified
+        # type.
+        self.home()
+        self.upload_start_click()
+        self.upload_tab_click("collection")
+
+        self.upload_set_footer_extension(ext, tab_id="collection")
+        self.upload_set_footer_genome(genome, tab_id="collection")
+        self.upload_set_collection_type(collection_type)
+
+        for test_path in test_paths:
+            self.upload_queue_local_file(test_path, tab_id="collection")
+
+        self.upload_start(tab_id="collection")
+        self.upload_build()
+
+    @retry_during_transitions
+    def upload_tab_click(self, tab):
+        tab_tag_id = "#tab-title-link-%s" % tab
+        tab_element = self.wait_for_selector_clickable(tab_tag_id)
+        tab_element.click()
+
+    @retry_during_transitions
+    def upload_start_click(self):
+        upload_button = self.wait_for_selector_clickable(".upload-button")
+        upload_button.click()
+
+    @retry_during_transitions
+    def upload_set_footer_extension(self, ext, tab_id="regular"):
+        if ext is not None:
+            selector = 'div#%s .upload-footer-extension' % tab_id
+            self.wait_for_selector_visible(selector)
+            self.select2_set_value(selector, ext)
+
+    @retry_during_transitions
+    def upload_set_footer_genome(self, genome, tab_id="regular"):
+        if genome is not None:
+            selector = 'div#%s .upload-footer-genome' % tab_id
+            self.wait_for_selector_visible(selector)
+            self.select2_set_value(selector, genome)
+
+    @retry_during_transitions
+    def upload_set_collection_type(self, collection_type):
+        self.wait_for_selector_visible(".upload-footer-collection-type")
+        self.select2_set_value(".upload-footer-collection-type", collection_type)
+
+    @retry_during_transitions
+    def upload_start(self, tab_id="regular"):
+        start_button = self.wait_for_selector_clickable("div#%s button#btn-start" % tab_id)
+        start_button.click()
+
+    @retry_during_transitions
+    def upload_build(self):
+        start_button = self.wait_for_selector_clickable("div#collection button#btn-build")
+        start_button.click()
+
+    def upload_queue_local_file(self, test_path, tab_id="regular"):
+        local_upload_button = self.wait_for_selector_clickable("div#%s button#btn-local" % tab_id)
+        local_upload_button.click()
+
+        file_upload = self.wait_for_selector('div#%s input[type="file"]' % tab_id)
+        file_upload.send_keys(test_path)
 
     def workflow_index_open(self):
         self.home()
@@ -347,6 +440,14 @@ class NavigatesGalaxy(HasDriver):
     def click_button_new_workflow(self):
         self.click_selector(self.navigation_data["selectors"]["workflows"]["new_button"])
 
+    def wait_for_sizzle_selector_clickable(self, selector):
+        element = self._wait_on(
+            sizzle.sizzle_selector_clickable(selector),
+            "sizzle/jQuery selector [%s] to become clickable" % selector,
+        )
+        return element
+
+    @retry_during_transitions
     def click_history_options(self):
         history_options_button_selector = self.test_data["historyOptions"]["selectors"]["button"]
         history_options_element = self.wait_for_selector(history_options_button_selector)
@@ -364,8 +465,9 @@ class NavigatesGalaxy(HasDriver):
 
         # Click labelled option
         menu_selector = self.history_options_menu_selector()
-        menu_element = self.wait_for_selector(menu_selector)
-        menu_selection_element = menu_element.find_element_by_xpath('//ul[@id="history-options-button-menu"]/li/a[text()[contains(.,"%s")]]' % option_label)
+        self.wait_for_selector_visible(menu_selector)
+        menu_item_sizzle_selector = '#history-options-button-menu > li > a:contains("%s")' % option_label
+        menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
 
     def history_options_menu_selector(self):
@@ -469,6 +571,17 @@ class NavigatesGalaxy(HasDriver):
     def collection_builder_create(self):
         create_element = self.wait_for_selector_clickable("button.create-collection")
         create_element.click()
+
+    @retry_during_transitions
+    def collection_builder_clear_filters(self):
+        clear_filter_link = self.wait_for_selector_visible("a.clear-filters-link")
+        clear_filter_link.click()
+
+    def collection_builder_click_paired_item(self, forward_or_reverse, item):
+        assert forward_or_reverse in ["forward", "reverse"]
+        forward_column = self.wait_for_selector_visible(".%s-column .column-datasets" % forward_or_reverse)
+        first_datset_forward = forward_column.find_elements_by_css_selector("li")[item]
+        first_datset_forward.click()
 
     def logout_if_needed(self):
         if self.is_logged_in():

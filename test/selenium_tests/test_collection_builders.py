@@ -61,17 +61,9 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.history_panel_muli_operation_select_hid(2)
         self.history_panel_multi_operation_action_click("Build List of Dataset Pairs")
 
-        clear_filter_link = self.wait_for_selector_visible("a.clear-filters-link")
-        clear_filter_link.click()
-
-        forward_column = self.wait_for_selector_visible(".forward-column .column-datasets")
-        first_datset_forward = forward_column.find_elements_by_css_selector("li")[0]
-        first_datset_forward.click()
-
-        reverse_column = self.wait_for_selector_visible(".reverse-column .column-datasets")
-        second_dataset_reverse = reverse_column.find_elements_by_css_selector("li")[1]
-        second_dataset_reverse.click()
-
+        self.collection_builder_clear_filters()
+        self.collection_builder_click_paired_item("forward", 0)
+        self.collection_builder_click_paired_item("reverse", 1)
         self.collection_builder_set_name("my awesome paired list")
 
         self.collection_builder_create()
