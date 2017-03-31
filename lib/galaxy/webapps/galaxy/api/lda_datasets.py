@@ -14,8 +14,8 @@ from galaxy import exceptions
 from galaxy import util
 from galaxy import web
 from galaxy.exceptions import ObjectNotFound
-from galaxy.managers import folders, roles, tags
 from galaxy.managers import base as managers_base
+from galaxy.managers import folders, roles, tags, library_datasets
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.streamball import StreamBall
@@ -33,57 +33,53 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         self.app = app
         self.folder_manager = folders.FolderManager()
         self.role_manager = roles.RoleManager(app)
+        self.ld_manager = library_datasets.LibraryDatasetsManager(app)
 
     @expose_api_anonymous
     def show(self, trans, id, **kwd):
         """
-        show( self, trans, id, **kwd )
+        Show the details of a library dataset.
+
         * GET /api/libraries/datasets/{encoded_dataset_id}
-            Displays information about the dataset identified by the encoded ID.
 
         :param  id:      the encoded id of the dataset to query
         :type   id:      an encoded id string
 
         :returns:   detailed dataset information from base controller
         :rtype:     dictionary
-
-        .. seealso:: :attr:`galaxy.web.base.controller.UsesLibraryMixinItems.get_library_dataset`
         """
-        try:
-            library_dataset = self.get_library_dataset(trans, id=id, check_ownership=False, check_accessible=True)
-        except Exception:
-            raise exceptions.ObjectNotFound('Requested library_dataset was not found.')
-
         current_user_roles = trans.get_current_user_roles()
+
+        ld = self.ld_manager.get( trans, managers_base.decode_id( self.app, id ) )
 
         tag_manager = tags.GalaxyTagManager(trans.sa_session)
 
         # Build the full path for breadcrumb purposes.
-        full_path = self._build_path(trans, library_dataset.folder)
-        dataset_item = (trans.security.encode_id(library_dataset.id), library_dataset.name)
+        full_path = self._build_path(trans, ld.folder)
+        dataset_item = (id, ld.name)
         full_path.insert(0, dataset_item)
         full_path = full_path[::-1]
 
         # Find expired versions of the library dataset
         expired_ldda_versions = []
-        for expired_ldda in library_dataset.expired_datasets:
+        for expired_ldda in ld.expired_datasets:
             expired_ldda_versions.append((trans.security.encode_id(expired_ldda.id), expired_ldda.name))
 
-        rval = trans.security.encode_all_ids(library_dataset.to_dict())
+        rval = trans.security.encode_all_ids(ld.to_dict())
         if len(expired_ldda_versions) > 0:
             rval['has_versions'] = True
             rval['expired_versions'] = expired_ldda_versions
-        rval['deleted'] = library_dataset.deleted
+        rval['deleted'] = ld.deleted
         rval['folder_id'] = 'F' + rval['folder_id']
         rval['full_path'] = full_path
-        rval['file_size'] = util.nice_size(int(library_dataset.library_dataset_dataset_association.get_size()))
-        rval['date_uploaded'] = library_dataset.library_dataset_dataset_association.create_time.strftime("%Y-%m-%d %I:%M %p")
-        rval['can_user_modify'] = trans.app.security_agent.can_modify_library_item(current_user_roles, library_dataset) or trans.user_is_admin()
-        rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(library_dataset.library_dataset_dataset_association.dataset)
-        rval['tags'] = tag_manager.get_tags_str(library_dataset.library_dataset_dataset_association.tags)
+        rval['file_size'] = util.nice_size(int(ld.library_dataset_dataset_association.get_size()))
+        rval['date_uploaded'] = ld.library_dataset_dataset_association.create_time.strftime("%Y-%m-%d %I:%M %p")
+        rval['can_user_modify'] = trans.app.security_agent.can_modify_library_item(current_user_roles, ld) or trans.user_is_admin()
+        rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(ld.library_dataset_dataset_association.dataset)
+        rval['tags'] = tag_manager.get_tags_str(ld.library_dataset_dataset_association.tags)
 
         #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
-        rval['can_user_manage'] = trans.app.security_agent.can_manage_dataset(current_user_roles, library_dataset.library_dataset_dataset_association.dataset) or trans.user_is_admin()
+        rval['can_user_manage'] = trans.app.security_agent.can_manage_dataset(current_user_roles, ld.library_dataset_dataset_association.dataset) or trans.user_is_admin()
         return rval
 
     @expose_api_anonymous
