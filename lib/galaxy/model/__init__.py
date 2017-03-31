@@ -3999,11 +3999,11 @@ class WorkflowInvocation( object, Dictifiable ):
             and_conditions.append( WorkflowInvocation.handler == handler )
 
         query = sa_session.query(
-            WorkflowInvocation
-        ).filter( and_( *and_conditions ) )
+            WorkflowInvocation.id
+        ).filter( and_( *and_conditions ) ).order_by( WorkflowInvocation.table.c.id.asc() )
         # Immediately just load all ids into memory so time slicing logic
         # is relatively intutitive.
-        return [wi.id for wi in query.all()]
+        return [wid for wid in query.all()]
 
     def to_dict( self, view='collection', value_mapper=None, step_details=False ):
         rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
