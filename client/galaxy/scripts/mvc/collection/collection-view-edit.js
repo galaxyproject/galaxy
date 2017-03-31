@@ -76,6 +76,7 @@ var CollectionViewEdit = _super.extend(
             model           : this.model,
             el              : $where.find( '.tags-display' ),
             onshowFirstTime : function(){ this.render(); },
+            usePrompt       : false
         });
         this.tagsEditor.toggle( true );
     },
