@@ -651,43 +651,43 @@ def populate_api_routes(webapp, app):
 
     webapp.mapper.connect('show_ld_item',
                           '/api/libraries/datasets/{id}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='show',
                           conditions=dict(method=["GET"]))
 
     webapp.mapper.connect('load_ld',
                           '/api/libraries/datasets/',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='load',
                           conditions=dict(method=["POST"]))
 
     webapp.mapper.connect('show_version_of_ld_item',
                           '/api/libraries/datasets/{encoded_dataset_id}/versions/{encoded_ldda_id}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='show_version',
                           conditions=dict(method=["GET"]))
 
-    webapp.mapper.connect('show_legitimate_lda_roles',
+    webapp.mapper.connect('show_legitimate_ld_roles',
                           '/api/libraries/datasets/{encoded_dataset_id}/permissions',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='show_roles',
                           conditions=dict(method=["GET"]))
 
-    webapp.mapper.connect('update_lda_permissions',
+    webapp.mapper.connect('update_ld_permissions',
                           '/api/libraries/datasets/{encoded_dataset_id}/permissions',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='update_permissions',
                           conditions=dict(method=["POST"]))
 
-    webapp.mapper.connect('delete_lda_item',
+    webapp.mapper.connect('delete_ld_item',
                           '/api/libraries/datasets/{encoded_dataset_id}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='delete',
                           conditions=dict(method=["DELETE"]))
 
-    webapp.mapper.connect('download_lda_items',
+    webapp.mapper.connect('download_ld_items',
                           '/api/libraries/datasets/download/{format}',
-                          controller='lda_datasets',
+                          controller='library_datasets',
                           action='download',
                           conditions=dict(method=["POST", "GET"]))
 
