@@ -2,7 +2,7 @@ define( [], function() {
     return {
         title       : 'Phylogenetic Tree Visualization',
         library     : 'BioJS',
-        datatypes   : [ 'txt', 'nwk' ],
+        datatypes   : [ 'nhx' ],
         keywords    : 'biojs phylogenetic tree',
         description : 'A performant, reusable, and extensible tree visualisation library for the web hosted at: http://biojs.io/d/phylocanvas',
         settings    : {
