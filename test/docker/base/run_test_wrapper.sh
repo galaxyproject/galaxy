@@ -6,7 +6,7 @@ if [ "$GALAXY_TEST_DATABASE_TYPE" = "postgres" ];
 then
     su -c '/usr/lib/postgresql/9.3/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres
     sleep 3
-    GALAXY_TEST_DBURI="postgres://root@localhost:5930/galaxy"
+    GALAXY_TEST_DBURI="postgres://root@localhost:5930/galaxy?client_encoding=utf8"
 elif [ "$GALAXY_TEST_DATABASE_TYPE" = "mysql" ];
 then
     sh /opt/galaxy/start_mysql.sh
