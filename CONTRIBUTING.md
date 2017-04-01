@@ -6,7 +6,7 @@ galaxy project](https://github.com/galaxyproject/galaxy) -
 also checkout our 2013 Galaxy Community
 Conference presentation on the topic
 ([video](https://vimeo.com/channels/581875/73486255),
-[presentation](https://wiki.galaxyproject.org/Documents/Presentations/GCC2013?action=AttachFile&do=view&target=BakerContribute.pdf)). For
+[presentation](https://depot.galaxyproject.org/hub/attachments/documents/presentations/gcc2013/BakerContribute.pdf)). For
 information on contributing more broadly to the Galaxy ecosystem and a
 deeper discussion of some of these points - please see the
 [Develop](https://galaxyproject.org/develop) section of the
