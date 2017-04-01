@@ -110,9 +110,9 @@ opened using [this form](https://github.com/galaxyproject/galaxy/issues/new).
 
   For the most part, Galaxy tools should be published to the
   [Tool Shed](https://galaxyproject.org/toolshed) and not in this
-  repository directly. If you are looking to supply fixes for migrated
+  repository directly. If you are looking for migrated
   core tools that used to exist in this repository - please checkout
-  the [tools-devteam](https://github.com/galaxyproject/tools-iuc)
+  the [tools-iuc](https://github.com/galaxyproject/tools-iuc)
   repository on GitHub.
 
   More information about tool development can be found [on the comunity hub](https://galaxyproject.org/develop).
