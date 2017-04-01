@@ -32,6 +32,7 @@ for arg in "$@"; do
 done
 
 SAMPLES="
+    config/dependency_resolvers_conf.xml.sample
     config/migrated_tools_conf.xml.sample
     config/shed_tool_conf.xml.sample
     config/shed_tool_data_table_conf.xml.sample
