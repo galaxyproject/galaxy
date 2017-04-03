@@ -788,6 +788,66 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         self.assertEquals( output1_content.strip(), "forward\nreverse" )
 
+    @skip_without_tool( "identifier_multiple_in_conditional" )
+    def test_identifier_multiple_reduce_in_conditional( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
+        inputs = {
+            "outer_cond|inner_cond|input1": { 'src': 'hdca', 'id': hdca_id },
+        }
+        create_response = self._run( "identifier_multiple_in_conditional", history_id, inputs )
+        self._assert_status_code_is( create_response, 200 )
+        create = create_response.json()
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( outputs ), 1 )
+        self.assertEquals( len( implicit_collections ), 0 )
+        output1 = outputs[ 0 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        self.assertEquals( output1_content.strip(), "forward\nreverse" )
+
+    @skip_without_tool( "identifier_multiple_in_repeat" )
+    def test_identifier_multiple_reduce_in_repeat( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
+        inputs = {
+            "the_repeat_0|the_data|input1": { 'src': 'hdca', 'id': hdca_id },
+        }
+        create_response = self._run( "identifier_multiple_in_repeat", history_id, inputs )
+        self._assert_status_code_is( create_response, 200 )
+        create = create_response.json()
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( outputs ), 1 )
+        self.assertEquals( len( implicit_collections ), 0 )
+        output1 = outputs[ 0 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        self.assertEquals( output1_content.strip(), "forward\nreverse" )
+
+    @skip_without_tool( "identifier_multiple_in_conditional" )
+    def test_identifier_multiple_in_conditional( self ):
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123', name="Normal HDA1" )
+        inputs = {
+            "outer_cond|inner_cond|input1": { 'src': 'hda', 'id': new_dataset1["id"] },
+        }
+        create_response = self._run( "identifier_multiple_in_conditional", history_id, inputs )
+        self._assert_status_code_is( create_response, 200 )
+        create = create_response.json()
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( outputs ), 1 )
+        self.assertEquals( len( implicit_collections ), 0 )
+        output1 = outputs[ 0 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        self.assertEquals( output1_content.strip(), "Normal HDA1" )
+
     @skip_without_tool( "identifier_multiple" )
     def test_identifier_with_multiple_normal_datasets( self ):
         history_id = self.dataset_populator.new_history()
