@@ -3,9 +3,9 @@ from galaxy.queue_worker import (
     reload_toolbox,
 )
 from galaxy.tools.toolbox.watcher import (
-    get_tool_watcher,
     get_tool_conf_watcher,
-    get_tool_data_dir_watcher
+    get_tool_data_dir_watcher,
+    get_tool_watcher,
 )
 
 
