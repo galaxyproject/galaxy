@@ -77,6 +77,8 @@
   <tool file="explicit_conversion.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
+  <tool file="identifier_multiple_in_conditional.xml" />
+  <tool file="identifier_multiple_in_repeat.xml" />
   <tool file="identifier_collection.xml" />
   <tool file="tool_directory.xml" />
   <tool file="output_action_change_format.xml" />
