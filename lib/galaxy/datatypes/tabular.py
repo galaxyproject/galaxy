@@ -3,7 +3,6 @@ Tabular datatype
 """
 from __future__ import absolute_import
 
-import abc
 import csv
 import gzip
 import logging
@@ -44,7 +43,6 @@ class TabularData( data.Text ):
     MetadataElement( name="column_names", default=[], desc="Column names", readonly=True, visible=False, optional=True, no_value=[] )
     MetadataElement( name="delimiter", default='\t', desc="Data delimiter", readonly=True, visible=False, optional=True, no_value=[] )
 
-    @abc.abstractmethod
     def set_meta( self, dataset, **kwd ):
         raise NotImplementedError
 
