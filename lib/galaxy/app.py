@@ -16,8 +16,8 @@ from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.tools.special_tools import load_lib_tools
-from galaxy.tools.toolbox.watcher import ConfigWatchers
 from galaxy.tours import ToursRegistry
+from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
