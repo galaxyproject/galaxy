@@ -33,9 +33,6 @@ from .panel import (
 )
 from .parser import ensure_tool_conf_item, get_toolbox_parser
 from .tags import tool_tag_manager
-from .watcher import (
-    get_tool_watcher
-)
 
 log = logging.getLogger( __name__ )
 
@@ -73,7 +70,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         # (e.g., shed_tool_conf.xml) files include the tool_path attribute within the <toolbox> tag.
         self._tool_root_dir = tool_root_dir
         self.app = app
-        self._tool_watcher = get_tool_watcher( self, app.config )
+        self._tool_watcher = self.app.watchers.tool_watcher
         self._filter_factory = FilterFactory( self )
         self._tool_tag_manager = tool_tag_manager( app )
         self._init_tools_from_configs( config_filenames )
@@ -514,10 +511,14 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             path_template = item.get( "file" )
             template_kwds = self._path_template_kwds()
             path = string.Template(path_template).safe_substitute(**template_kwds)
+            concrete_path = os.path.join(tool_path, path)
+            if not os.path.exists(concrete_path):
+                # This is a lot faster than attempting to load a non-existing tool
+                raise IOError
             tool_shed_repository = None
             can_load_into_panel_dict = True
 
-            tool = self.load_tool_from_cache(os.path.join(tool_path, path))
+            tool = self.load_tool_from_cache(concrete_path)
             from_cache = tool
             if from_cache:
                 if guid and tool.id != guid:
@@ -532,9 +533,9 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
                     repository_id = self.app.security.encode_id(tool_shed_repository.id)
-                    tool = self.load_tool(os.path.join( tool_path, path ), guid=guid, repository_id=repository_id, use_cached=False)
+                    tool = self.load_tool(concrete_path, guid=guid, repository_id=repository_id, use_cached=False)
             if not tool:  # tool was not in cache and is not a tool shed tool.
-                tool = self.load_tool(os.path.join(tool_path, path), use_cached=False)
+                tool = self.load_tool(concrete_path, use_cached=False)
             if string_as_bool(item.get( 'hidden', False )):
                 tool.hidden = True
             key = 'tool_%s' % str(tool.id)
@@ -917,16 +918,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             rval = tools
 
         return rval
-
-    def shutdown(self):
-        exception = None
-        try:
-            self._tool_watcher.shutdown()
-        except Exception as e:
-            exception = e
-
-        if exception:
-            raise exception
 
     def _lineage_in_panel( self, panel_dict, tool=None, tool_lineage=None ):
         """ If tool with same lineage already in panel (or section) - find

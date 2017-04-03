@@ -22,6 +22,7 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
+from galaxy.tools.toolbox.cache import ToolCache
 from galaxy.jobs import metrics as job_metrics
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
@@ -97,6 +98,10 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Initialize the job management configuration
         self.job_config = jobs.JobConfiguration(self)
 
+        # Setup a Tool Cache
+        self.tool_cache = ToolCache()
+        # Watch various config files for immediate reload
+        self.watchers = ConfigWatchers(self)
         self._configure_toolbox()
 
         # Load Data Manager
@@ -113,8 +118,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
         # Load history import/export tools.
         load_lib_tools( self.toolbox )
-        # Watch various config files for immediate reload
-        self.watchers = ConfigWatchers(self)
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = VisualizationsRegistry(
             self,
