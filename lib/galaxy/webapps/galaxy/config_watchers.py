@@ -14,8 +14,15 @@ class ConfigWatchers(object):
 
     def __init__(self, app):
         self.app = app
+        # ToolConfWatcher objects will watch the tool_cache if the tool_cache is passed into get_tool_conf_watcher.
+        # Watching the tool_cache means removing outdated items from the tool_cache.
+        # Only the reload_toolbox callback will re-populate the cache, so we pass the tool_cache only to the ToolConfWatcher that
+        # watches regular tools.
+        # If there are multiple ToolConfWatcher objects for the same handler or web process a race condition occurs between the two cache_cleanup functions.
+        # If the reload_data_managers callback wins, the cache will miss the tools that had been removed from the cache
+        # and will be blind to further changes in these tools.
         self.tool_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_toolbox(self.app), tool_cache=self.app.tool_cache)
-        self.data_manager_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_data_managers(self.app), tool_cache=self.app.tool_cache)
+        self.data_manager_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_data_managers(self.app))
         self.tool_data_watcher = get_tool_data_dir_watcher(self.app.tool_data_tables, config=self.app.config)
         self.tool_watcher = get_tool_watcher( self, app.config )
         self.start()
