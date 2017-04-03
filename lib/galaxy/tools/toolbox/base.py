@@ -70,7 +70,11 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         # (e.g., shed_tool_conf.xml) files include the tool_path attribute within the <toolbox> tag.
         self._tool_root_dir = tool_root_dir
         self.app = app
-        self._tool_watcher = self.app.watchers.tool_watcher
+        if hasattr(self.app, 'watchers'):
+            self._tool_watcher = self.app.watchers.tool_watcher
+        else:
+            # Toolbox is loaded but not used during toolshed tests
+            self._tool_watcher = None
         self._filter_factory = FilterFactory( self )
         self._tool_tag_manager = tool_tag_manager( app )
         self._init_tools_from_configs( config_filenames )
