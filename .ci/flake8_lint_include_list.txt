@@ -66,8 +66,7 @@ lib/galaxy/datatypes/sequence.py
 lib/galaxy/datatypes/tabular.py
 lib/galaxy/datatypes/text.py
 lib/galaxy/datatypes/tracks.py
-lib/galaxy/datatypes/util/generic_util.py
-lib/galaxy/datatypes/util/__init__.py
+lib/galaxy/datatypes/util/
 lib/galaxy/eggs/
 lib/galaxy/exceptions/__init__.py
 lib/galaxy/external_services/__init__.py
