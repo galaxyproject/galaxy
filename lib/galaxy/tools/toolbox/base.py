@@ -711,7 +711,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             elif self._looks_like_a_tool(child_path):
                 quick_load( child_path, async=False )
                 tool_loaded = True
-        if tool_loaded or force_watch:
+        if (tool_loaded or force_watch) and self._tool_watcher:
             self._tool_watcher.watch_directory( directory, quick_load )
 
     def load_tool( self, config_file, guid=None, repository_id=None, use_cached=False, **kwds ):
@@ -724,7 +724,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             tool = self.create_tool( config_file=config_file, repository_id=repository_id, guid=guid, **kwds )
             if tool.tool_shed_repository or not guid:
                 self.add_tool_to_cache(tool, config_file)
-        if not tool.id.startswith("__"):
+        if not tool.id.startswith("__") and self._tool_watcher:
             # do not monitor special tools written to tmp directory - no reason
             # to monitor such a large directory.
             self._tool_watcher.watch_file( config_file, tool.id )
