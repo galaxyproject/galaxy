@@ -881,7 +881,7 @@ class WorkflowContentsManager(UsesAnnotations):
         step = model.WorkflowStep()
         # TODO: Consider handling position inside module.
         step.position = step_dict['position']
-        if "uuid" in step_dict and step_dict['uuid'] != "None":
+        if step_dict.get("uuid", None) and step_dict['uuid'] != "None":
             step.uuid = step_dict["uuid"]
         if "label" in step_dict:
             step.label = step_dict["label"]
