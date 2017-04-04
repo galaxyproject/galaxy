@@ -98,10 +98,12 @@ class DatasetCollectionManager( object ):
             message = "Internal logic error - create called with unknown parent type %s" % type( parent )
             log.exception( message )
             raise MessageException( message )
-
-        if tags is not None:
-            for tag in tags:
-                dataset_collection_instance.tags.append(tag.copy())
+        tags = tags or []
+        if implicit_collection_info:
+            for k, v in implicit_collection_info.get('implicit_inputs', []):
+                tags.extend(v.tags)
+        for tag in tags:
+            dataset_collection_instance.tags.append(tag.copy())
 
         return self.__persist( dataset_collection_instance )
 
