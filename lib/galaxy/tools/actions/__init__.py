@@ -679,7 +679,7 @@ class OutputCollections(object):
         self.out_collections = {}
         self.out_collection_instances = {}
 
-    def create_collection(self, output, name, **element_kwds):
+    def create_collection(self, output, name, tags=None, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = output.structure.collection_type
@@ -730,6 +730,7 @@ class OutputCollections(object):
                 name=hdca_name,
                 collection_type=collection_type,
                 trusted_identifiers=True,
+                tags=tags,
                 **element_kwds
             )
             # name here is name of the output element - not name
