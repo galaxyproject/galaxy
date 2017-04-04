@@ -505,10 +505,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :param id: the encoded history id
         :type  id: str
         """
-        if id != 'null':
-            history = self.history_manager.get_accessible( self.decode_id( id ), trans.user, current_history=trans.history )
-        else:
-            history = trans.history
+        history = self.history_manager.get_accessible( self.decode_id( id ), trans.user, current_history=trans.history )
         installed_builds = []
         for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
             installed_builds.append( os.path.basename(build).split(".len")[0] )

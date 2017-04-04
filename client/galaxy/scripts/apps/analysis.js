@@ -125,7 +125,12 @@ window.app = function app( options, bootstrapped ){
             centerPanel.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
         },
 
-        show_custom_builds : function( form_id ) {
+        show_custom_builds : function() {
+            var self = this;
+            if ( !Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model || !Galaxy.currHistoryPanel.model.id ) {
+                window.setTimeout(function() { self.show_custom_builds() }, 500)
+                return;
+            }
             centerPanel.display( new CustomBuilds.View() );
         },
 
