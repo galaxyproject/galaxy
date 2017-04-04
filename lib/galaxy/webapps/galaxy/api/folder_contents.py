@@ -258,8 +258,9 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             :type  extended_metadata:   dict
         :type   payload:    dict
 
-        :returns:   a list of dictionaries containing the id, name, and 'show' url of the new item
-        :rtype:     list
+        :returns:   a dictionary describing the new item if ``from_hda_id`` is supplied or a list of
+                    such dictionaries describing the new items if ``from_hdca_id`` is supplied.
+        :rtype:     object
 
         :raises:    ObjectAttributeInvalidException,
             InsufficientPermissionsException, ItemAccessibilityException,
@@ -271,14 +272,13 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         ldda_message = payload.pop( 'ldda_message', '' )
         if ldda_message:
             ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
-        rvals = []
         try:
             if from_hda_id:
                 decoded_hda_id = self.decode_id( from_hda_id )
-                rvals.append(self._copy_hda_to_library_folder( trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message ))
+                return self._copy_hda_to_library_folder( trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message )
             if from_hdca_id:
                 decoded_hdca_id = self.decode_id( from_hdca_id )
-                rvals.extend(self._copy_hdca_to_library_folder( trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message ))
+                return self._copy_hdca_to_library_folder( trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message )
         except Exception as exc:
             # TODO handle exceptions better within the mixins
             if 'not accessible to the current user' in str( exc ) or 'You are not allowed to access this dataset' in str( exc ):
@@ -286,7 +286,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             else:
                 log.exception( exc )
                 raise exc
-        return rvals
 
     def __decode_library_content_id( self, trans, encoded_folder_id ):
         """

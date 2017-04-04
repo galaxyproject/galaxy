@@ -111,8 +111,7 @@ class LibrariesApiTestCase( api.ApiTestCase, TestsDatasets ):
         payload = {'from_hda_id': hda_id}
         create_response = self._post( "folders/%s/contents" % folder_id, payload )
         self._assert_status_code_is( create_response, 200 )
-        library_datasets = create_response.json()
-        assert len( library_datasets ) == 1
+        self._assert_has_keys( create_response.json(), "name", "id" )
 
     def test_create_datasets_in_library_from_collection( self ):
         library = self.library_populator.new_private_library( "ForCreateDatasetsFromCollection" )

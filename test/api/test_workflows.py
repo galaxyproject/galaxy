@@ -18,10 +18,6 @@ from base.populators import (
 from galaxy.exceptions import error_codes
 from galaxy.tools.verify.test_data import TestDataResolver
 
-from base.workflows_format_2 import (
-    convert_and_import_workflow,
-    ImporterGalaxyInterface,
-)
 
 SIMPLE_NESTED_WORKFLOW_YAML = """
 class: GalaxyWorkflow
@@ -69,7 +65,7 @@ test_data:
 """
 
 
-class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
+class BaseWorkflowsApiTestCase( api.ApiTestCase ):
     # TODO: Find a new file for this class.
 
     def setUp( self ):
@@ -88,20 +84,12 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
         names = [w[ "name" ] for w in index_response.json()]
         return names
 
-    # Import importer interface...
     def import_workflow(self, workflow, **kwds):
-        workflow_str = dumps(workflow, indent=4)
-        data = {
-            'workflow': workflow_str,
-        }
-        data.update(**kwds)
-        upload_response = self._post( "workflows", data=data )
-        self._assert_status_code_is( upload_response, 200 )
-        return upload_response.json()
+        upload_response = self.workflow_populator.import_workflow(workflow, **kwds)
+        return upload_response
 
     def _upload_yaml_workflow(self, has_yaml, **kwds):
-        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
-        return workflow[ "id" ]
+        return self.workflow_populator.upload_yaml_workflow(has_yaml, **kwds)
 
     def _setup_workflow_run( self, workflow, inputs_by='step_id', history_id=None ):
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
@@ -869,8 +857,6 @@ test_data:
     @skip_without_tool( "cat1" )
     @skip_without_tool( "collection_paired_test" )
     def test_workflow_run_zip_collections( self ):
-        # A more advanced output collection workflow, testing regression of
-        # https://github.com/galaxyproject/galaxy/issues/776
         history_id = self.dataset_populator.new_history()
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -1593,11 +1579,19 @@ test_data:
         history_id = self.dataset_populator.new_history()
         hda1 = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
         hda2 = self.dataset_populator.new_dataset( history_id, content="4 5 6" )
+        hda3 = self.dataset_populator.new_dataset( history_id, content="7 8 9" )
+        hda4 = self.dataset_populator.new_dataset( history_id, content="10 11 12" )
+        parameters = {
+            "0": { "input": { "batch": True, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" },
+                                                         { "id" : hda2.get( "id" ), "hid": hda2.get( "hid" ), "src": "hda" },
+                                                         { "id" : hda3.get( "id" ), "hid": hda2.get( "hid" ), "src": "hda" },
+                                                         { "id" : hda4.get( "id" ), "hid": hda2.get( "hid" ), "src": "hda" } ] } },
+            "1": { "input": { "batch": False, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" } ] }, "exp": "2" } }
         workflow_request = {
             "history_id" : history_id,
             "batch"      : True,
             "parameters_normalized": True,
-            "parameters" : dumps( { "0": { "input": { "batch": True, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" }, { "id" : hda2.get( "id" ), "hid": hda2.get( "hid" ), "src": "hda" } ] } }, "1": { "input": { "batch": False, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" } ] }, "exp": "2" } } )
+            "parameters" : dumps( parameters ),
         }
         invocation_response = self._post( "workflows/%s/usage" % workflow_id, data=workflow_request )
         self._assert_status_code_is( invocation_response, 200 )
@@ -1605,9 +1599,16 @@ test_data:
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         r1 = "1 2 3\t1\n1 2 3\t2\n"
         r2 = "4 5 6\t1\n1 2 3\t2\n"
-        t1 = self.dataset_populator.get_history_dataset_content( history_id, hid=5 )
-        t2 = self.dataset_populator.get_history_dataset_content( history_id, hid=8 )
-        assert ( r1 == t1 and r2 == t2 ) or ( r1 == t2 and r2 == t1 )
+        r3 = "7 8 9\t1\n1 2 3\t2\n"
+        r4 = "10 11 12\t1\n1 2 3\t2\n"
+        t1 = self.dataset_populator.get_history_dataset_content( history_id, hid=7 )
+        t2 = self.dataset_populator.get_history_dataset_content( history_id, hid=10 )
+        t3 = self.dataset_populator.get_history_dataset_content( history_id, hid=13 )
+        t4 = self.dataset_populator.get_history_dataset_content( history_id, hid=16 )
+        self.assertEqual(r1, t1)
+        self.assertEqual(r2, t2)
+        self.assertEqual(r3, t3)
+        self.assertEqual(r4, t4)
 
     @skip_without_tool( "validation_default" )
     def test_parameter_substitution_sanitization( self ):

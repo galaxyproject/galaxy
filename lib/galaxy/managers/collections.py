@@ -40,7 +40,8 @@ class DatasetCollectionManager( object ):
         self.ldda_manager = lddas.LDDAManager( app )
 
     def create( self, trans, parent, name, collection_type, element_identifiers=None,
-                elements=None, implicit_collection_info=None, trusted_identifiers=None):
+                elements=None, implicit_collection_info=None, trusted_identifiers=None,
+                hide_source_items=False):
         """
         PRECONDITION: security checks on ability to add to parent
         occurred during load.
@@ -57,6 +58,7 @@ class DatasetCollectionManager( object ):
             collection_type=collection_type,
             element_identifiers=element_identifiers,
             elements=elements,
+            hide_source_items=hide_source_items,
         )
 
         if isinstance( parent, model.History ):
@@ -99,7 +101,8 @@ class DatasetCollectionManager( object ):
 
         return self.__persist( dataset_collection_instance )
 
-    def create_dataset_collection( self, trans, collection_type, element_identifiers=None, elements=None ):
+    def create_dataset_collection( self, trans, collection_type, element_identifiers=None, elements=None,
+                                   hide_source_items=None ):
         if element_identifiers is None and elements is None:
             raise RequestParameterInvalidException( ERROR_INVALID_ELEMENTS_SPECIFICATION )
         if not collection_type:
@@ -118,11 +121,16 @@ class DatasetCollectionManager( object ):
                     elements = self.__load_elements(trans, element_identifier['element_identifiers'])
             if not new_collection:
                 elements = self.__load_elements( trans, element_identifiers )
+
         # else if elements is set, it better be an ordered dict!
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
             type_plugin = collection_type_description.rank_type_plugin()
             dataset_collection = builder.build_collection( type_plugin, elements )
+            if hide_source_items:
+                log.debug("Hiding source items during dataset collection creation")
+                for dataset in dataset_collection.dataset_instances:
+                    dataset.visible = False
         else:
             dataset_collection = model.DatasetCollection( populated=False )
         dataset_collection.collection_type = collection_type

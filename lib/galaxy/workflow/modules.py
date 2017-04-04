@@ -508,7 +508,7 @@ class PauseModule( WorkflowModule ):
         return state
 
     def execute( self, trans, progress, invocation, step ):
-        progress.mark_step_outputs_delayed( step )
+        progress.mark_step_outputs_delayed( step, why="executing pause step" )
         return None
 
     def recover_mapping( self, step, step_invocations, progress ):
@@ -522,7 +522,8 @@ class PauseModule( WorkflowModule ):
                 return
             elif action is False:
                 raise CancelWorkflowEvaluation()
-        raise DelayedWorkflowEvaluation()
+        delayed_why = "workflow paused at this step waiting for review"
+        raise DelayedWorkflowEvaluation(why=delayed_why)
 
     def do_invocation_step_action( self, step, action ):
         """ Update or set the workflow invocation state action - generic
@@ -834,7 +835,8 @@ class ToolModule( WorkflowModule ):
                 workflow_invocation_uuid=invocation.uuid.hex
             )
         except ToolInputsNotReadyException:
-            raise DelayedWorkflowEvaluation()
+            delayed_why = "tool [%s] inputs are not ready, this special tool requires inputs to be ready" % tool.id
+            raise DelayedWorkflowEvaluation(why=delayed_why)
 
         if collection_info:
             step_outputs = dict( execution_tracker.implicit_collections )
@@ -1020,7 +1022,9 @@ def load_module_sections( trans ):
 
 
 class DelayedWorkflowEvaluation(Exception):
-    pass
+
+    def __init__(self, why=None):
+        self.why = why
 
 
 class CancelWorkflowEvaluation(Exception):
