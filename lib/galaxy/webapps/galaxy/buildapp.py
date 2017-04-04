@@ -1,7 +1,7 @@
 """
 Provides factory methods to assemble the Galaxy web application
 """
-
+import glob
 import os
 import sys
 import threading
@@ -254,6 +254,12 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'remote_file', 'remote_files', path_prefix='/api' )
     webapp.mapper.resource( 'group', 'groups', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
+
+    webapp.mapper.connect( 'get_custom_builds_metadata',
+                           '/api/histories/{id}/custom_builds_metadata',
+                           controller='histories',
+                           action='get_custom_builds_metadata',
+                           conditions=dict( method=["GET"] ) )
 
     # =======================
     # ====== TOOLS API ======
@@ -554,12 +560,6 @@ def populate_api_routes( webapp, app ):
                            controller='users',
                            action='set_communication',
                            conditions=dict( method=["PUT"] ) )
-
-    webapp.mapper.connect( 'get_custom_builds_metadata',
-                           '/api/users/{id}/custom_builds_metadata',
-                           controller='users',
-                           action='get_custom_builds_metadata',
-                           conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'get_custom_builds',
                            '/api/users/{id}/custom_builds',

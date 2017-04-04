@@ -1,11 +1,8 @@
 """
 API operations on User objects.
 """
-
-import glob
 import logging
 import json
-import os
 import random
 import re
 import socket
@@ -693,27 +690,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         trans.sa_session.add(user)
         trans.sa_session.flush()
         return {'message': message}
-
-    @expose_api
-    def get_custom_builds_metadata(self, trans, id, payload={}, **kwd):
-        """
-        GET /api/users/{id}/custom_builds_metadata
-        Returns meta data for custom builds.
-
-        :param id: the encoded id of the user
-        :type  id: str
-        """
-        self._get_user(trans, id)
-        installed_builds = []
-        for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
-            installed_builds.append( os.path.basename(build).split(".len")[0] )
-        fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-            .filter_by( history=trans.history, extension="fasta", deleted=False ) \
-            .order_by( model.HistoryDatasetAssociation.hid.desc() )
-        return {
-            'installed_builds'  : [ { 'label' : ins, 'value' : ins } for ins in installed_builds ],
-            'fasta_hdas'        : [ { 'label' : '%s: %s' % ( hda.hid, hda.name ), 'value' : trans.security.encode_id( hda.id ) } for hda in fasta_hdas ],
-        }
 
     @expose_api
     def get_custom_builds(self, trans, id, payload={}, **kwd):
