@@ -405,6 +405,7 @@ class DefaultToolAction( object ):
                     output_collections.create_collection(
                         output=output,
                         name=name,
+                        tags=preserved_tags,
                         **element_kwds
                     )
                 else:

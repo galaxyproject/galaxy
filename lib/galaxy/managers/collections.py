@@ -41,7 +41,7 @@ class DatasetCollectionManager( object ):
 
     def create( self, trans, parent, name, collection_type, element_identifiers=None,
                 elements=None, implicit_collection_info=None, trusted_identifiers=None,
-                hide_source_items=False):
+                hide_source_items=False, tags=None):
         """
         PRECONDITION: security checks on ability to add to parent
         occurred during load.
@@ -98,6 +98,10 @@ class DatasetCollectionManager( object ):
             message = "Internal logic error - create called with unknown parent type %s" % type( parent )
             log.exception( message )
             raise MessageException( message )
+
+        if tags is not None:
+            for tag in tags:
+                dataset_collection_instance.tags.append(tag.copy())
 
         return self.__persist( dataset_collection_instance )
 
