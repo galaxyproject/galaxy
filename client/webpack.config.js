@@ -57,7 +57,8 @@ module.exports = {
             { test: /\.js$/,
               exclude: /node_modules/,
               loader: 'babel-loader',
-              query: { compact: false } },
+              query: { presets:['env'],
+                       compact: false } },
         ],
     },
     resolveLoader : {
