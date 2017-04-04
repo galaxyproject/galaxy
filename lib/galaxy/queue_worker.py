@@ -85,12 +85,15 @@ def reload_tool(app, **kwargs):
 
 
 def reload_toolbox(app, **kwargs):
+    start = time.time()
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
     if app.tool_cache:
         app.tool_cache.cleanup()
     app.toolbox = _get_new_toolbox(app)
     app.toolbox._reload_count = reload_count + 1
+    end = time.time() - start
+    log.debug("Toolbox reload took %f seconds", end)
 
 
 def _get_new_toolbox(app):
@@ -105,15 +108,13 @@ def _get_new_toolbox(app):
     tool_configs = app.config.tool_configs
     if app.config.migrated_tools_config not in tool_configs:
         tool_configs.append(app.config.migrated_tools_config)
-    start = time.time()
+
     new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
     load_lib_tools(new_toolbox)
     new_toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
-    end = time.time() - start
-    log.debug("Toolbox reload took %d seconds", end)
     app.reindex_tool_search(new_toolbox)
     return new_toolbox
 
