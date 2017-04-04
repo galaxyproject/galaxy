@@ -55,9 +55,17 @@ var View = Backbone.View.extend({
         };
 
         // add drag-drop event handlers
-        this.$el.on( 'dragover', function( ev ) { ev.preventDefault(); self.$el.addClass( 'dragover' ) } )
-                .on( 'dragleave', function( ev ) { ev.preventDefault(); self.$el.removeClass( 'dragover' ) } )
-                .on( 'drop', function( ev ) { window.console.log( ev ) } );
+        this.$el.on( 'dragover', function( ev ) {
+                    ev.preventDefault();
+                    self.$el.addClass( 'ui-dragover' )
+                })
+                .on( 'dragleave', function( ev ) {
+                    ev.preventDefault();
+                    self.$el.removeClass( 'ui-dragover' )
+                })
+                .on( 'drop', function( ev ) {
+                    window.console.log( ev )
+                });
 
         // track current history elements
         this.history = {};
