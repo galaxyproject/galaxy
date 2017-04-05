@@ -236,7 +236,6 @@ class HDCASerializer(
             'type', 'url',
             'create_time', 'update_time',
             'tags',  # TODO: detail view only (maybe)
-            'nametags'
         ])
         self.add_view( 'detailed', [
             'elements'
@@ -255,21 +254,9 @@ class HDCASerializer(
             'history_id'                : self.serialize_id,
             'history_content_type'      : lambda *a, **c: self.hdca_manager.model_class.content_type,
             'type_id'                   : self.serialize_type_id,
-            'nametags'                  : self.serialize_nametags,
 
             'url'   : lambda i, k, **c: self.url_for( 'history_content_typed',
                                                       history_id=self.app.security.encode_id( i.history_id ),
                                                       id=self.app.security.encode_id( i.id ),
                                                       type=self.hdca_manager.model_class.content_type ),
         })
-
-    def serialize_nametags( self, hdca, key, trans=None, **context ):
-        """
-        Return list of 'name' child tags attached to this collection.
-        TODO: investigate faster ways to fetch 'name' tags and values
-        """
-        nametags = []
-        for tag in hdca.tags:
-            if tag.tag.name == 'name':
-                nametags.append(tag.value)
-        return nametags

@@ -86,8 +86,10 @@ HDCAListItemView.prototype.templates = (function(){
             '</div>',
             '<div class="subtitle"></div>',
             '<span class="nametags">',
-                '<% _.each(collection.nametags, function(tag){ %>',
-                    '<span class="label label-info"><%- tag %></span>',
+                '<% _.each(collection.tags, function(tag){ %>',
+                    '<% if (tag.indexOf("name:") == 0){ %>',
+                        '<span class="label label-info"><%- tag.slice(5) %></span>',
+                    '<% } %>',
                 '<% }); %>',
             '</span>',
         '</div>'
