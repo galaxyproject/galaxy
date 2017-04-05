@@ -269,11 +269,25 @@ var View = Backbone.View.extend({
     _handleDrop: function( ev ) {
         try {
             var drop_data = JSON.parse( ev.dataTransfer.getData( 'text' ) )[ 0 ];
-            var new_value = { values: [ { id  : drop_data.id,
-                                          src : drop_data.history_content_type == 'dataset' ? 'hda' : 'hdca' } ] };
-            this.model.set( 'value', new_value );
+            var new_id    = drop_data.id;
+            var new_src   = drop_data.history_content_type == 'dataset' ? 'hda' : 'hdca';
+            var new_value = { id : new_id, src : new_src };
+            if ( _.findWhere( this.model.get( 'data' )[ new_src ], new_value ) ) {
+                this.model.set( 'value', { values: [ new_value ] } );
+                this._handleDropResult( 'success' );
+            } else {
+                this._handleDropResult( 'danger' );
+            }
         } catch( e ) {
+            this._handleDropResult( 'danger' );
         }
+    },
+
+    /** Highlight drag result */
+    _handleDropResult: function( status ) {
+        var self = this;
+        this.$el.addClass( 'ui-dragover-' + status );
+        setTimeout( function() { self.$el.removeClass( 'ui-dragover-' + status ) }, 1000 );
     },
 
     /** Assists in identifying the batch mode */
