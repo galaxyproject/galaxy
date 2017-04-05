@@ -29,5 +29,9 @@
     "i18n-webpack-plugin": "^0.2.7",
     "webpack": "^1.10.1",
     "webpack-dev-server": "^1.7.0"
+  },
+  "scripts":{
+      "build": "grunt",
+      "build-style": "grunt style"
   }
 }

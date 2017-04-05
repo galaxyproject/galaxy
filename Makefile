@@ -84,10 +84,10 @@ npm-deps: ## Install NodeJS dependencies.
 	cd client && npm install
 
 grunt: npm-deps ## Calls out to Grunt to build client
-	cd client && $(GRUNT_EXEC)
+	cd client && npm run build
 
 style: npm-deps ## Calls the style task of Grunt
-	cd client && $(GRUNT_EXEC) style
+	cd client && npm run build-style
 
 client-install-libs: npm-deps ## Fetch updated client dependencies using bower.
 	cd client && $(GRUNT_EXEC) install-libs
