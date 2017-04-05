@@ -59,7 +59,11 @@ var DatasetListItemView = _super.extend(
                         .done( function(){ self.render(); });
 
                 } else {
-                    self.render();
+                    if( _.has( model.changed, 'tags' ) ){
+                        this.$( '> .title-bar' ).replaceWith( this._renderTitleBar() );
+                    } else {
+                        self.render();
+                    }
                 }
             }
         });
