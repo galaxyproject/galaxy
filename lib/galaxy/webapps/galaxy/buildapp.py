@@ -1,7 +1,7 @@
 """
 Provides factory methods to assemble the Galaxy web application
 """
-
+import glob
 import os
 import sys
 import threading
@@ -114,6 +114,7 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/tours/{tour_id}' )
     webapp.add_client_route( '/user' )
     webapp.add_client_route( '/user/{form_id}' )
+    webapp.add_client_route( '/custom_builds' )
 
     # ==== Done
     # Indicate that all configuration settings have been provided
@@ -253,6 +254,12 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'remote_file', 'remote_files', path_prefix='/api' )
     webapp.mapper.resource( 'group', 'groups', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
+
+    webapp.mapper.connect( 'get_custom_builds_metadata',
+                           '/api/histories/{id}/custom_builds_metadata',
+                           controller='histories',
+                           action='get_custom_builds_metadata',
+                           conditions=dict( method=["GET"] ) )
 
     # =======================
     # ====== TOOLS API ======
@@ -553,6 +560,24 @@ def populate_api_routes( webapp, app ):
                            controller='users',
                            action='set_communication',
                            conditions=dict( method=["PUT"] ) )
+
+    webapp.mapper.connect( 'get_custom_builds',
+                           '/api/users/{id}/custom_builds',
+                           controller='users',
+                           action='get_custom_builds',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'add_custom_builds',
+                           '/api/users/{id}/custom_builds/{key}',
+                           controller='users',
+                           action='add_custom_builds',
+                           conditions=dict( method=["PUT"] ) )
+
+    webapp.mapper.connect( 'delete_custom_builds',
+                           '/api/users/{id}/custom_builds/{key}',
+                           controller='users',
+                           action='delete_custom_builds',
+                           conditions=dict( method=["DELETE"] ) )
 
     # ========================
     # ===== WEBHOOKS API =====
