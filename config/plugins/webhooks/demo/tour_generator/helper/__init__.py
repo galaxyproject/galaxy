@@ -63,24 +63,70 @@ def upload_test_data(trans, tests):
     return result
 
 
+def generate_tour(tool):
+    tour_name = tool.name + ' Tour'
+
+    steps = [{
+        'title': tour_name,
+        'content': 'This short tour will guide you through the <b>' +
+                   tool.name + '</b> tool.',
+        'orphan': True
+    }]
+
+    for name, input in tool.inputs.items():
+        step = {
+            'title': input.label,
+            'element': '[tour_id=%s]' % name,
+            'placement': 'right',
+        }
+
+        if input.type == 'text':
+            step['content'] = 'Enter parameter <b>%s</b>.' % input.label
+        elif input.type == 'data':
+            step['content'] = 'Select dataset.'
+        else:
+            step['content'] = 'Select parameter <b>%s</b>.' % input.label,
+
+        steps.append(step)
+
+    # Add last step
+    steps.append({
+        'title': 'Execute tool',
+        'content': 'Click <b>Execute</b> button to run the tool.',
+        'element': '#execute',
+        'placement': 'bottom',
+        # 'postclick': ['#execute']
+    })
+
+    return {
+        'title_default': tour_name,
+        'name': tour_name,
+        'description': tool.name + ' ' + tool.description,
+        'steps': steps
+    }
+
+
 def main(trans, webhook, params):
     error = ''
+    data = {}
 
     try:
         if not params or 'tool_id' not in params.keys():
             raise KeyError('Tool id is missing.')
 
         tool_id = params['tool_id']
-        # tool_id = 'Cut1'
         tool = trans.app.toolbox.get_tool(tool_id)
-        tests = tool.tests
 
-        upload_result = upload_test_data(trans, tests)
-        if upload_result['errors']:
-            raise ValueError(str(upload_result['errors']))
+        # Generate Tour
+        data = generate_tour(tool)
+
+        # tests = tool.tests
+        # upload_result = upload_test_data(trans, tests)
+        # if upload_result['errors']:
+        #     raise ValueError(str(upload_result['errors']))
 
     except Exception as e:
         error = str(e)
         log.exception(e)
 
-    return {'success': not error, 'error': error}
+    return {'success': not error, 'error': error, 'data': data}

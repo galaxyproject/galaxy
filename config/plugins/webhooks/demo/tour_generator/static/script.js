@@ -7,14 +7,24 @@ $(document).ready(function() {
             var me = this;
             this.toolId = options.toolId;
 
+            // Add attribute 'tour_id' to the execution button
+            $('#execute').attr('tour_id', 'execute');
+
             var url = '/api/webhooks/tour_generator/get_data/' + JSON.stringify({
                 'tool_id': this.toolId
             });
 
             $.getJSON(url, function(obj) {
-                $('#history-refresh-button').click();  // Refresh history panel
+                // $('#history-refresh-button').click(); // Refresh history panel
                 if (obj.success) {
-                    me._renderForm(obj);
+                    // me._renderForm(obj);
+
+                    var tour = me._generateTour(obj.data);
+
+                    // Clean tour run
+                    tour.init();
+                    tour.goTo(0);
+                    tour.restart();
                 } else {
                     console.error('Tour Generator: ' + obj.error);
                 }
@@ -23,7 +33,9 @@ $(document).ready(function() {
 
         _renderForm: function(obj) {
             var me = this,
-                tool = Galaxy.toolPanel.get('tools').get({id: this.toolId});
+                tool = Galaxy.toolPanel.get('tools').get({
+                    id: this.toolId
+                });
 
             // Method #1
             // var toolForm = Galaxy.page.center.prev.form;
@@ -74,6 +86,15 @@ $(document).ready(function() {
                     process.reject();
                 }
             });
+        },
+
+        _generateTour: function(data) {
+            var tourData = Tours.hooked_tour_from_data(data);
+            sessionStorage.setItem('activeGalaxyTour', JSON.stringify(data));
+
+            return new Tour(_.extend({
+                steps: tourData.steps
+            }));
         }
     });
 
