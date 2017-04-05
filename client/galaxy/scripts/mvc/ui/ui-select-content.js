@@ -34,7 +34,8 @@ var View = Backbone.View.extend({
         var self = this;
         this.model = options && options.model || new Backbone.Model({
             src_labels  : { 'hda' : 'dataset', 'hdca': 'dataset collection' },
-            pagelimit   : 100
+            pagelimit   : 100,
+            statustimer : 1000
         }).set( options );
         this.setElement( $( '<div/>' ).addClass( 'ui-select-content' ) );
         this.button_product = new Ui.RadioButton.View( {
@@ -268,27 +269,27 @@ var View = Backbone.View.extend({
     /** Handles drop events e.g. from history panel */
     _handleDrop: function( ev ) {
         try {
+            var data      = this.model.get( 'data' );
             var drop_data = JSON.parse( ev.dataTransfer.getData( 'text' ) )[ 0 ];
             var new_id    = drop_data.id;
             var new_src   = drop_data.history_content_type == 'dataset' ? 'hda' : 'hdca';
             var new_value = { id : new_id, src : new_src };
-            var data      = this.model.get( 'data' );
             if ( data && _.findWhere( data[ new_src ], new_value ) ) {
                 this.model.set( 'value', { values: [ new_value ] } );
-                this._handleDropResult( 'success' );
+                this._handleDropStatus( 'success' );
             } else {
-                this._handleDropResult( 'danger' );
+                this._handleDropStatus( 'danger' );
             }
         } catch( e ) {
-            this._handleDropResult( 'danger' );
+            this._handleDropStatus( 'danger' );
         }
     },
 
     /** Highlight drag result */
-    _handleDropResult: function( status ) {
+    _handleDropStatus: function( status ) {
         var self = this;
         this.$el.addClass( 'ui-dragover-' + status );
-        setTimeout( function() { self.$el.removeClass( 'ui-dragover-' + status ) }, 1000 );
+        setTimeout( function() { self.$el.removeClass( 'ui-dragover-' + status ) }, this.model.get( 'statustimer' ) );
     },
 
     /** Assists in identifying the batch mode */
