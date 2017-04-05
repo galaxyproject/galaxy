@@ -55,18 +55,9 @@ var View = Backbone.View.extend({
         };
 
         // add drag-drop event handlers
-        this.$el.on( 'dragover', function( ev ) {
-                    ev.preventDefault();
-                    self.$el.addClass( 'ui-dragover' );
-                })
-                .on( 'dragleave', function( ev ) {
-                    ev.preventDefault();
-                    self.$el.removeClass( 'ui-dragover' );
-                })
-                .on( 'drop', function( ev ) {
-                    self.$el.removeClass( 'ui-dragover' );
-                    window.console.log( JSON.parse( ev.dataTransfer.getData( 'text' ) ) );
-                });
+        this.$el.on( 'dragover',  function( e ) { e.preventDefault();    self.$el.addClass( 'ui-dragover' ); })
+                .on( 'dragleave', function( e ) { e.preventDefault();    self.$el.removeClass( 'ui-dragover' ); })
+                .on( 'drop',      function( e ) { self._handleDrop( e ); self.$el.removeClass( 'ui-dragover' ); });
 
         // track current history elements
         this.history = {};
@@ -271,6 +262,17 @@ var View = Backbone.View.extend({
             _.each( this.fields, function( field ) {
                 field.value( null );
             });
+        }
+    },
+
+    /** Handles drop events e.g. from history panel */
+    _handleDrop: function( ev ) {
+        try {
+            var drop_data = JSON.parse( ev.dataTransfer.getData( 'text' ) )[ 0 ];
+            var new_value = { values: [ { id  : drop_data.id,
+                                          src : drop_data.history_content_type == 'dataset' ? 'hda' : 'hdca' } ] };
+            this.model.set( 'value', new_value );
+        } catch( e ) {
         }
     },
 
