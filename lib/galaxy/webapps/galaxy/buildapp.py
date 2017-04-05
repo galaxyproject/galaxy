@@ -1,7 +1,6 @@
 """
 Provides factory methods to assemble the Galaxy web application
 """
-import glob
 import os
 import sys
 import threading
