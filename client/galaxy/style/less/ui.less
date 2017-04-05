@@ -885,26 +885,6 @@
     }
 }
 
-.ui-dragover {
-    border-radius: 3px;
-    border: 2px solid @table-border-color;
-    background: lighten(@table-border-color, 30%);
-    padding: 2px;
-    cursor: grabbing;
-}
-
-.ui-dragover-danger {
-    &:extend(.ui-dragover);
-    border: 2px solid @state-danger-bg;
-    background: lighten(@state-danger-bg, 10%) !important;
-}
-
-.ui-dragover-success {
-    &:extend(.ui-dragover);
-    border: 2px solid @state-success-bg;
-    background: lighten(@state-success-bg, 10%) !important;
-}
-
 // global select2 adjustments
 .select2-container .select2-choice,
 .select2-container .select2-choices {
