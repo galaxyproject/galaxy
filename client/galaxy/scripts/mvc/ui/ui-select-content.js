@@ -56,22 +56,10 @@ var View = Backbone.View.extend({
         };
 
         // add drag-drop event handlers
-        this.$el.on( 'dragenter', function( e ) {
-                    this.lastenter = e.target;
-                    self.$el.addClass( 'ui-dragover' );
-                })
-                .on( 'dragover', function( e ) {
-                    e.preventDefault();
-                })
-                .on( 'dragleave', function( e ) {
-                    if ( this.lastenter === e.target ) {
-                        self.$el.removeClass( 'ui-dragover' );
-                    }
-                })
-                .on( 'drop', function( e ) {
-                    self._handleDrop( e );
-                    self.$el.removeClass( 'ui-dragover' );
-                });
+        this.$el.on( 'dragenter', function( e ) { this.lastenter = e.target; self.$el.addClass( 'ui-dragover' ); } )
+                .on( 'dragover',  function( e ) { e.preventDefault(); } )
+                .on( 'dragleave', function( e ) { this.lastenter === e.target && self.$el.removeClass( 'ui-dragover' ); } )
+                .on( 'drop',      function( e ) { self._handleDrop( e ); } );
 
         // track current history elements
         this.history = {};
@@ -301,7 +289,7 @@ var View = Backbone.View.extend({
     /** Highlight drag result */
     _handleDropStatus: function( status ) {
         var self = this;
-        this.$el.addClass( 'ui-dragover-' + status );
+        this.$el.removeClass( 'ui-dragover' ).addClass( 'ui-dragover-' + status );
         setTimeout( function() { self.$el.removeClass( 'ui-dragover-' + status ) }, this.model.get( 'statustimer' ) );
     },
 
