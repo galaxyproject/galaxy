@@ -11,7 +11,7 @@ from datetime import datetime
 from markupsafe import escape
 from sqlalchemy import false, true, and_, or_
 
-from galaxy import exceptions, model, util, web
+from galaxy import exceptions, util, web
 from galaxy.exceptions import MessageException, ObjectInvalid
 from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email
