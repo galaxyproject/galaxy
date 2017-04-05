@@ -34,7 +34,8 @@ var View = Backbone.View.extend({
         var self = this;
         this.model = options && options.model || new Backbone.Model({
             src_labels  : { 'hda' : 'dataset', 'hdca': 'dataset collection' },
-            pagelimit   : 100
+            pagelimit   : 100,
+            statustimer : 1000
         }).set( options );
         this.setElement( $( '<div/>' ).addClass( 'ui-select-content' ) );
         this.button_product = new Ui.RadioButton.View( {
