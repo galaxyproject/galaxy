@@ -23,9 +23,6 @@ var TagsEditor = Backbone.View
         } else {
             this.label = '<label class="prompt">' + _l( 'Tags' ) + '</label>';
         }
-        this.listenTo( this.model, 'change:tags', function(){
-            this.render();
-        });
         this.hiddenUntilActivated( options.$activator, options );
     },
 
