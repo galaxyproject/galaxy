@@ -272,7 +272,8 @@ var View = Backbone.View.extend({
             var new_id    = drop_data.id;
             var new_src   = drop_data.history_content_type == 'dataset' ? 'hda' : 'hdca';
             var new_value = { id : new_id, src : new_src };
-            if ( _.findWhere( this.model.get( 'data' )[ new_src ], new_value ) ) {
+            var data      = this.model.get( 'data' );
+            if ( data && _.findWhere( data[ new_src ], new_value ) ) {
                 this.model.set( 'value', { values: [ new_value ] } );
                 this._handleDropResult( 'success' );
             } else {
