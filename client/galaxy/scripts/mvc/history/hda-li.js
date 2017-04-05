@@ -22,6 +22,14 @@ var HDAListItemView = _super.extend(
         _super.prototype.initialize.call( this, attributes, options );
     },
 
+    /** event listeners */
+    _setUpListeners : function(){
+        _super.prototype._setUpListeners.call( this );
+        this.listenTo( this.model, {
+            'change:tags' : function( model, options ){ this.render(); },
+        });
+    },
+
     // ......................................................................... misc
     /** String representation */
     toString : function(){

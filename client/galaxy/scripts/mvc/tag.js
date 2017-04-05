@@ -83,7 +83,7 @@ var TagsEditor = Backbone.View
         var view = this;
         this.$input().on( 'change', function( event ){
             // save the model's tags in either remove or added event
-            view.model.save({ tags: event.val }, { silent: true });
+            view.model.save({ tags: event.val });
             // if it's new, add the tag to the users tags
             if( event.added ){
                 //??: solve weird behavior in FF on test.galaxyproject.org where

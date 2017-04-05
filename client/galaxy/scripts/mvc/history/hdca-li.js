@@ -20,9 +20,8 @@ var HDCAListItemView = _super.extend(
     /** event listeners */
     _setUpListeners : function(){
         _super.prototype._setUpListeners.call( this );
-
         this.listenTo( this.model, {
-            'change:populated change:visible' : function( model, options ){ this.render(); },
+            'change:tags change:populated change:visible' : function( model, options ){ this.render(); },
         });
     },
 
