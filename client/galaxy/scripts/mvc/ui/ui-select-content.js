@@ -57,7 +57,6 @@ var View = Backbone.View.extend({
 
         // add drag-drop event handlers
         this.$el.on( 'dragenter', function( e ) {
-                    e.preventDefault();
                     this.lastenter = e.target;
                     self.$el.addClass( 'ui-dragover' );
                 })
@@ -65,7 +64,6 @@ var View = Backbone.View.extend({
                     e.preventDefault();
                 })
                 .on( 'dragleave', function( e ) {
-                    e.preventDefault();
                     if ( this.lastenter === e.target ) {
                         self.$el.removeClass( 'ui-dragover' );
                     }
