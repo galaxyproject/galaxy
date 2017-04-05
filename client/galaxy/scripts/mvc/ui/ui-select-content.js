@@ -271,12 +271,27 @@ var View = Backbone.View.extend({
     _handleDrop: function( ev ) {
         try {
             var data      = this.model.get( 'data' );
+            var current   = this.model.get( 'current' );
+            var config    = this.config[ current ];
+            var field     = this.fields[ current ];
             var drop_data = JSON.parse( ev.dataTransfer.getData( 'text' ) )[ 0 ];
             var new_id    = drop_data.id;
             var new_src   = drop_data.history_content_type == 'dataset' ? 'hda' : 'hdca';
-            var new_value = { id : new_id, src : new_src };
+            var new_value = { id: new_id, src: new_src };
             if ( data && _.findWhere( data[ new_src ], new_value ) ) {
-                this.model.set( 'value', { values: [ new_value ] } );
+                if ( config.src == new_src ) {
+                    var current_value = field.value();
+                    if ( current_value && config.multiple ) {
+                        if ( current_value.indexOf( new_id ) == -1 ) {
+                            current_value.push( new_id );
+                        }
+                    } else {
+                        current_value = new_id;
+                    }
+                    field.value( current_value );
+                } else {
+                    this.model.set( 'value', { values: [ new_value ] } );
+                }
                 this._handleDropStatus( 'success' );
             } else {
                 this._handleDropStatus( 'danger' );
