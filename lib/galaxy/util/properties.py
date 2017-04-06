@@ -11,11 +11,15 @@ import yaml
 from six import iteritems
 from six.moves.configparser import ConfigParser
 
+from galaxy.util import listify
 
-def find_config_file(default, old_default, explicit, cwd=None):
+
+def find_config_file(default, old_defaults, explicit, cwd=None):
+    old_defaults = listify(old_defaults)
     if cwd is not None:
         default = os.path.join(cwd, default)
-        old_default = os.path.join(cwd, old_default)
+        for i in range(len(old_defaults)):
+            old_defaults[i] = os.path.join(cwd, old_defaults[i])
         if explicit is not None:
             explicit = os.path.join(cwd, explicit)
 
@@ -25,12 +29,17 @@ def find_config_file(default, old_default, explicit, cwd=None):
         else:
             raise Exception("Problem determining Galaxy's configuration - the specified configuration file cannot be found.")
     else:
-        if not os.path.exists( default ) and os.path.exists( old_default ):
-            config_file = old_default
-        elif os.path.exists( default ):
+        config_file = None
+        if os.path.exists(default):
             config_file = default
-        else:
+        if config_file is None:
+            for old_default in old_defaults:
+                if os.path.exists(old_default):
+                    config_file = old_default
+
+        if config_file is None:
             config_file = default + ".sample"
+
     return config_file
 
 
