@@ -1,9 +1,9 @@
 import logging
 import os
-import pipes
 import tempfile
 
 from six import string_types
+from six.moves import shlex_quote
 
 from galaxy import exceptions
 from galaxy.util import odict
@@ -41,7 +41,7 @@ class ToolParameterValueWrapper( object ):
         """
         rval = self.input.value_to_display_text( self.value, self.input.tool.app ) or ''
         if quote:
-            return pipes.quote( rval ) or "''"  # pipes.quote in Python < 2.7 returns an empty string instead of the expected quoted empty string
+            return shlex_quote( rval )
         return rval
 
 
