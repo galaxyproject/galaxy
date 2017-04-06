@@ -61,9 +61,8 @@ module.exports = {
                   /(node_modules|bower_components)/,
                   libsBase
               ],
-              loader: 'babel-loader',
-              query: { presets:['env'],
-                       compact: false } },
+              loader: 'babel-loader'
+            }
         ],
     },
     resolveLoader : {
