@@ -46,7 +46,7 @@ module.exports = {
     resolve : {
         modules: [
             scriptsBase,
-            "node_modules"],
+        ],
         alias : {
             //TODO: correct our imports and remove these rules
             // Backbone looks for these in the same root directory
@@ -67,7 +67,7 @@ module.exports = {
         alias : {
             // since we support both requirejs i18n and non-requirejs and both use a similar syntax,
             // use an alias so we can just use one file
-            i18n : 'amdi18n'
+            i18n : 'amdi18n-loader'
         }
     },
     plugins : [

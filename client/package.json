@@ -11,7 +11,7 @@
   },
   "license": "AFL-3.0",
   "dependencies": {
-    "amdi18n-loader": "^0.2.0",
+    "amdi18n-loader": "^0.5.2",
     "babel-core": "^6.24.0",
     "babel-loader": "^6.4.1",
     "babel-preset-env": "^1.3.2",
@@ -26,7 +26,6 @@
     "grunt-contrib-watch": "^0.6.1",
     "grunt-exec": "^0.4.6",
     "grunt-spritesmith": "^4.7.1",
-    "i18n-webpack-plugin": "^0.3.0",
     "webpack": "^2.3.3"
   },
   "scripts": {
