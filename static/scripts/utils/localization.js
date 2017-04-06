@@ -1,2 +1,2 @@
-define(["i18n!nls/locale"],function(a){if(a.hasOwnProperty("__root")){var b="undefined"==typeof navigator?"__root":(navigator.language||navigator.userLanguage||"__root").toLowerCase();a=a["__"+b]||a["__"+b.split("-")[0]]||a.__root}var c=function(b){return a[b]||b};return c.cacheNonLocalized=!1,c});
+define(["i18n!nls/locale"],function(o){if(o.hasOwnProperty("__root")){var n="undefined"==typeof navigator?"__root":(navigator.language||navigator.userLanguage||"__root").toLowerCase();o=o["__"+n]||o["__"+n.split("-")[0]]||o.__root}var a=function(n){return o[n]||n};return a.cacheNonLocalized=!1,a});
 //# sourceMappingURL=../../maps/utils/localization.js.map
