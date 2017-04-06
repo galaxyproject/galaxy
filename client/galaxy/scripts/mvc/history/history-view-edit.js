@@ -68,6 +68,10 @@ var HistoryViewEdit = _super.extend(
         // ---- set up instance vars
         /** editor for tags - sub-view */
         this.tagsEditor = null;
+
+        /** enable drag and drop - sub-view */
+        this.dragItems  = true;
+
         /** editor for annotations - sub-view */
         this.annotationEditor = null;
 
