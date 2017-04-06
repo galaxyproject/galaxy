@@ -83,6 +83,9 @@ release-bootstrap-history: ## bootstrap history for a new release
 npm-deps: ## Install NodeJS dependencies.
 	cd client && npm install
 
+webpack: ## Run webpack, build production bundles.
+	cd client && npm run webpack
+
 grunt: npm-deps ## Calls out to Grunt to build client
 	cd client && npm run build
 
@@ -92,7 +95,7 @@ style: npm-deps ## Calls the style task of Grunt
 client-install-libs: npm-deps ## Fetch updated client dependencies using bower.
 	cd client && $(GRUNT_EXEC) install-libs
 
-client: grunt style ## Rebuild all client-side artifacts
+client: webpack grunt style ## Rebuild all client-side artifacts
 
 charts: npm-deps ## Rebuild charts
 	NODE_PATH=$(GXY_NODE_MODULES) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js
@@ -113,7 +116,7 @@ grunt-watch-develop: npm-deps ## Execute watching grunt builder for dev purposes
 	cd client && $(GRUNT_EXEC) watch --develop
 
 webpack-watch: npm-deps ## Execute watching webpack for dev purposes
-	cd client && ./node_modules/webpack/bin/webpack.js --watch
+	cd client && npm run webpack-dev-watch
 
 client-develop: grunt-watch-style grunt-watch-develop webpack-watch  ## A useful target for parallel development building.
 	@echo "Remember to rerun `make client` before committing!"
