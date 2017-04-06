@@ -8,7 +8,7 @@ var jQuery = require( 'jquery' ),
     HistoryPanel = require( './history-panel' ),
     PAGE = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
-    UserPreferences = require( 'mvc/user/user-preferences' );
+    UserPreferences = require( 'mvc/user/user-preferences' ),
     Tours = require( 'mvc/tours' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
