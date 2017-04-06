@@ -227,9 +227,8 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                         }
                         if ( input.payload ) {
                             for ( var p_id in input.payload ) {
-                                var p = input.payload[ p_id ];
-                                input.payload[ input.name + '__' + p_id ] = p;
-                                delete p;
+                                input.payload[ input.name + '__' + p_id ] = p;input.payload[ p_id ];
+                                delete input.payload[ p_id ];
                             }
                         }
                         var d = self.post_job_actions[ input.action + output_id ];
