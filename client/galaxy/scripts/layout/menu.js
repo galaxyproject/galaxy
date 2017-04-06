@@ -258,8 +258,15 @@ var Collection = Backbone.Collection.extend({
                         }
                     },{
                         title   : _l('Custom Builds'),
-                        url     : 'user/dbkeys',
-                        target  : 'galaxy_main'
+                        url     : 'custom_builds',
+                        target  : 'galaxy_main',
+                        onclick : function() {
+                            if ( Galaxy.router ) {
+                                Galaxy.router.push( 'custom_builds' );
+                            } else {
+                                window.location = Galaxy.root + 'custom_builds';
+                            }
+                        }
                     },{
                         title   : _l('Logout'),
                         url     : 'user/logout',
