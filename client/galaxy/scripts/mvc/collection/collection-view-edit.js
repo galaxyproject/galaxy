@@ -3,9 +3,11 @@ define([
     "mvc/collection/collection-model",
     "mvc/collection/collection-li-edit",
     "mvc/base-mvc",
+    "mvc/tag",
+    "ui/fa-icon-button",
     "utils/localization",
     "ui/editable-text",
-], function( DC_VIEW, DC_MODEL, DC_EDIT, BASE_MVC, _l ){
+], function( DC_VIEW, DC_MODEL, DC_EDIT, BASE_MVC, TAGS, faIconButton, _l ){
 
 'use strict';
 /* =============================================================================
@@ -47,6 +49,8 @@ var CollectionViewEdit = _super.extend(
             return;
         }
 
+        this.tagsEditorShown = true;
+
         //TODO: extract
         var panel = this,
             nameSelector = '> .controls .name';
@@ -67,6 +71,13 @@ var CollectionViewEdit = _super.extend(
                     }
                 }
             });
+        this.tagsEditor = new TAGS.TagsEditor({
+            model           : this.model,
+            el              : $where.find( '.tags-display' ),
+            onshowFirstTime : function(){ this.render(); },
+            usePrompt       : false
+        });
+        this.tagsEditor.toggle( true );
     },
 
     // ........................................................................ misc
