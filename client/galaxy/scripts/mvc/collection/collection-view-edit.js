@@ -35,7 +35,6 @@ var CollectionViewEdit = _super.extend(
      */
     initialize : function( attributes ){
         _super.prototype.initialize.call( this, attributes );
-        // this.tagsEditorShown = attributes.tagsEditorShown || false;
     },
 
     /** In this override, make the collection name editable
