@@ -1,4 +1,3 @@
-
 <!DOCTYPE HTML>
 <html>
     <!--js-app.mako-->
