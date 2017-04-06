@@ -72,10 +72,6 @@ def paste_app_factory( global_conf, **kwargs ):
     # Force /history to go to view of current
     webapp.add_route( '/history', controller='history', action='view' )
     webapp.add_route( '/history/view/{id}', controller='history', action='view' )
-    # THIS IS A TEMPORARY ROUTE FOR THE 17.01 RELEASE
-    # This route supports the previous hide/delete-all-hidden functionality in a history.
-    # It will be removed after 17.01.
-    webapp.add_route( '/history/adjust_hidden', controller='history', action='adjust_hidden')
 
     # Force /activate to go to the controller
     webapp.add_route( '/activate', controller='user', action='activate' )
