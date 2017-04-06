@@ -1,7 +1,9 @@
 var gulp = require('gulp');
-var uglify = require('gulp-uglify');
-var sourcemaps = require('gulp-sourcemaps');
+
+var babel = require('gulp-babel');
 var del = require('del');
+var sourcemaps = require('gulp-sourcemaps');
+var uglify = require('gulp-uglify');
 
 var paths = {
     scripts: ['galaxy/scripts/**/*.js',
@@ -12,7 +14,7 @@ var paths = {
 gulp.task('scripts', ['clean'], function() {
   return gulp.src(paths.scripts)
     .pipe(sourcemaps.init())
-    // Transpile here prior to uglify.
+    .pipe(babel())
     .pipe(uglify())
     .pipe(sourcemaps.write('../maps/'))
     .pipe(gulp.dest('../static/scripts/'));

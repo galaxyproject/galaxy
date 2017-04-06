@@ -89,6 +89,9 @@ webpack: npm-deps ## Run webpack, build production bundles.
 grunt: npm-deps ## Calls out to Grunt to build client
 	cd client && npm run build
 
+gulp: npm-deps ## Calls out to Gulp to build client
+	cd client && npm run gulp
+
 style: npm-deps ## Calls the style task of Grunt
 	cd client && npm run build-style
 

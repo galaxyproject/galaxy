@@ -1,2 +1,2 @@
-define([],function(){function n(n,e){e=e||window.location.search.substr(1);var t=new RegExp(n+"=([^&#$]+)"),r=e.match(t);if(r&&r.length)return r=r.splice(1),1===r.length?r[0]:r}function e(n){if(!n)return{};var e={};return n.split("&").forEach(function(n){var t=n.split("=");e[t[0]]=decodeURI(t[1])}),e}return{get:n,parse:e}});
+"use strict";define([],function(){function n(n,t){t=t||window.location.search.substr(1);var e=new RegExp(n+"=([^&#$]+)"),r=t.match(e);if(r&&r.length)return r=r.splice(1),1===r.length?r[0]:r}function t(n){if(!n)return{};var t={};return n.split("&").forEach(function(n){var e=n.split("=");t[e[0]]=decodeURI(e[1])}),t}return{get:n,parse:t}});
 //# sourceMappingURL=../../maps/utils/query-string-parsing.js.map
