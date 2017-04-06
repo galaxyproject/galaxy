@@ -31,6 +31,7 @@
     "gulp-babel": "^6.1.2",
     "gulp-sourcemaps": "^2.5.1",
     "gulp-uglify": "^2.1.2",
+    "jshint": "^2.9.4",
     "webpack": "^2.3.3"
   },
   "scripts": {
@@ -39,6 +40,7 @@
     "webpack-dev": "webpack -d",
     "webpack-dev-watch": "webpack -d --watch",
     "build-style": "grunt style",
-    "gulp": "gulp"
+    "gulp": "gulp",
+    "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js"
   }
 }
