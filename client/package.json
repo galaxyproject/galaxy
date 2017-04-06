@@ -32,6 +32,9 @@
   },
   "scripts":{
       "build": "grunt",
+      "webpack": "webpack -p",
+      "webpack-dev": "webpack -d",
+      "webpack-watch": "webpack -d --watch",
       "build-style": "grunt style"
   }
 }

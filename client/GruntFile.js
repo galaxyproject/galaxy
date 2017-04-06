@@ -23,5 +23,5 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-check-modules');
     // see the sub directory grunt-tasks/ for individual task definitions
     grunt.loadTasks( 'grunt-tasks' );
-    grunt.registerTask( 'default', [ 'check-modules', 'webpack', 'uglify' ] );
+    grunt.registerTask( 'default', [ 'check-modules', 'uglify' ] );
 };
