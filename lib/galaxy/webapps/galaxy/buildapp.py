@@ -75,7 +75,6 @@ def paste_app_factory( global_conf, **kwargs ):
 
     # Force /activate to go to the controller
     webapp.add_route( '/activate', controller='user', action='activate' )
-    webapp.add_route( '/login', controller='root', action='login' )
 
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
