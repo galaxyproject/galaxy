@@ -395,8 +395,10 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	
 	    // Parse each line of the SIF file
 	    var _parse = function( line, i ) {
-	        var source = _getNode( line[0] ), interaction = ( line[1] ? line[1] : "" ), j, length;
+	        var source, interaction, j, length;
 	        line = ( line.split('\t').length > 1 ) ? line.split('\t') : line.split(' ');
+	        source = _getNode( line[0] );
+	        interaction = ( line[1] ? line[1] : "" );
 	        if( line.length && line.length > 0 && line[0] !== "" ) {
 	            if( interaction !== "" ) {
 	                // Get all the target nodes for a source
@@ -451,7 +453,9 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	    SIFJS.parse = function( text ) {
 	        var lines = text.split('\n'), i, length, nodesarr, linksarr;
 	        for ( i = 0, length = lines.length; i < length; i++ ) {
-	            _parse( lines[i], i );
+	            if( lines[i] !== "" ) {
+	                _parse( lines[i], i );
+	            }
 	        }
 	        nodesarr = _toArr( nodes );
 	        linksarr = _toArr( links );
