@@ -5,7 +5,7 @@ var del = require('del');
 
 var paths = {
     scripts: ['galaxy/scripts/**/*.js',
-              'galaxy/scripts/!apps/**/*.js'
+              '!galaxy/scripts/apps/**/*.js'
     ]
 };
 
@@ -19,9 +19,10 @@ gulp.task('scripts', ['clean'], function() {
 });
 
 gulp.task('clean', function(){
-    // This currently wipes out webpack bundles, too, but it'll keep us from
-    // shipping cruft.  Need to add a whitelist.
-    return del(['../static/scripts/'], {force: true});
+    //Wipe out all scripts that aren't handled by webpack
+    return del(['../static/scripts/**/*.js',
+                '!../static/scripts/bundled/**.*.js'],
+               {force: true});
 });
 
 gulp.task('default', ['scripts']);
