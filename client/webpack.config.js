@@ -40,11 +40,13 @@ module.exports = {
         analysis: './galaxy/scripts/apps/analysis.js',
     },
     output  : {
-        path        : '../static/scripts/bundled',
+        path        : path.join(__dirname, '../', 'static/scripts/bundled'),
         filename    : '[name].bundled.js'
     },
     resolve : {
-        root  : scriptsBase,
+        modules: [
+            scriptsBase,
+            "node_modules"],
         alias : {
             //TODO: correct our imports and remove these rules
             // Backbone looks for these in the same root directory
@@ -53,7 +55,7 @@ module.exports = {
         }
     },
     module : {
-        loaders : [
+        rules: [
             { test: /\.js$/,
               exclude: /node_modules/,
               loader: 'babel-loader',
@@ -69,7 +71,10 @@ module.exports = {
         }
     },
     plugins : [
-        new webpack.optimize.CommonsChunkPlugin( 'libs', 'libs.bundled.js' ),
+        new webpack.optimize.CommonsChunkPlugin({
+            name: 'libs',
+            filename: 'libs.bundled.js'
+        }),
         // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
         // and webpack will automagically require them in the bundle for you
         new webpack.ProvidePlugin({
@@ -78,7 +83,7 @@ module.exports = {
             'window.jQuery':    'jquery',
             _:                  "underscore",
             Backbone:           'libs/backbone',
-        }),
+        })
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
     ],
 };
