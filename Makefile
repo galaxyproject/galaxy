@@ -83,7 +83,7 @@ release-bootstrap-history: ## bootstrap history for a new release
 npm-deps: ## Install NodeJS dependencies.
 	cd client && npm install
 
-webpack: ## Run webpack, build production bundles.
+webpack: npm-deps ## Run webpack, build production bundles.
 	cd client && npm run webpack
 
 grunt: npm-deps ## Calls out to Grunt to build client
