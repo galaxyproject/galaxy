@@ -12,6 +12,20 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
 
     var gxy_root = typeof Galaxy === "undefined" ? '/' : Galaxy.root;
 
+    var tourpage_template = `<h2>Galaxy Tours</h2>
+<p>This page presents a list of interactive tours available on this Galaxy server.
+Select any tour to get started (and remember, you can click 'End Tour' at any time).</p>
+<ul>
+<% _.each(tours, function(tour) { %>
+    <li>
+        <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
+            <%- tour.attributes.name || tour.id %>
+        </a>
+         - <%- tour.attributes.description || "No description given." %>
+    </li>
+<% }); %>
+</ul>`;
+
     var tour_opts = { storage: window.sessionStorage,
                       onEnd: function(){
                           sessionStorage.removeItem('activeGalaxyTour');
@@ -94,20 +108,7 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
         },
 
         render: function(){
-            var tpl = _.template([
-                "<h2>Galaxy Tours</h2>",
-                "<p>This page presents a list of interactive tours available on this Galaxy server.  ",
-                "Select any tour to get started (and remember, you can click 'End Tour' at any time).</p>",
-                "<ul>",
-                '<% _.each(tours, function(tour) { %>',
-                    '<li>',
-                        '<a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>',
-                            '<%- tour.attributes.name || tour.id %>',
-                        '</a>',
-                        ' - <%- tour.attributes.description || "No description given." %>',
-                    '</li>',
-                '<% }); %>',
-                "</ul>"].join(''));
+            var tpl = _.template(tourpage_template);
             this.$el.html(tpl({tours: this.model.models})).on("click", ".tourItem", function(e){
                 e.preventDefault();
                 giveTour($(this).data("tour.id"));
