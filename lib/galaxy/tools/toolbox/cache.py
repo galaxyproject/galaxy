@@ -1,4 +1,5 @@
 import os
+import time
 
 from galaxy.util.hash_util import md5_hash_file
 
@@ -67,3 +68,32 @@ class ToolCache(object):
         self._mod_time_by_path[config_filename] = os.path.getmtime(config_filename)
         self._tool_paths_by_id[tool_id] = config_filename
         self._tools_by_path[config_filename] = tool
+
+
+class ToolShedRepositoryCache(object):
+    """
+    Cache installed ToolShedRepository objects.
+    """
+
+    def __init__(self, app):
+        self.app = app
+        self.time = 0
+
+    @property
+    def tool_shed_repositories(self):
+        if time.time() - self.time > 1:  # If cache is older than 1 second we refresh
+            repositories = self.app.install_model.context.query(self.app.install_model.ToolShedRepository).all()
+            self._tool_shed_repositories = repositories
+            self.time = time.time()
+        return self._tool_shed_repositories
+
+    def get_installed_repository(self, tool_shed, name, owner, installed_changeset_revision=None, changeset_revision=None):
+        repos = [repo for repo in self.tool_shed_repositories if repo.tool_shed == tool_shed and repo.owner == owner and repo.name == name]
+        if installed_changeset_revision:
+            repos = [repo for repo in repos if repo.installed_changeset_revision == installed_changeset_revision]
+        if changeset_revision:
+            repos = [repo for repo in repos if repo.changeset_revision == changeset_revision]
+        if repos:
+            return repos[0]
+        else:
+            return None

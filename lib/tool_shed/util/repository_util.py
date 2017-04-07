@@ -376,9 +376,15 @@ def get_installed_repository( app, tool_shed, name, owner, changeset_revision=No
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
     repository owner and either current or originally installed changeset_revision.
     """
+    tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
+    if hasattr(app, 'tool_shed_repository_cache'):
+        return app.tool_shed_repository_cache.get_installed_repository(tool_shed=tool_shed,
+                                                                       name=name,
+                                                                       owner=owner,
+                                                                       installed_changeset_revision=installed_changeset_revision,
+                                                                       changeset_revision=changeset_revision)
     query = app.install_model.context.query( app.install_model.ToolShedRepository )
     # We store the port, if one exists, in the database.
-    tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
     clause_list = [ app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
                     app.install_model.ToolShedRepository.table.c.name == name,
                     app.install_model.ToolShedRepository.table.c.owner == owner ]

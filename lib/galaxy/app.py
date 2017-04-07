@@ -22,7 +22,10 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
-from galaxy.tools.toolbox.cache import ToolCache
+from galaxy.tools.toolbox.cache import (
+    ToolCache,
+    ToolShedRepositoryCache
+)
 from galaxy.jobs import metrics as job_metrics
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
@@ -100,6 +103,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
 
         # Setup a Tool Cache
         self.tool_cache = ToolCache()
+        self.tool_shed_repository_cache = ToolShedRepositoryCache(self)
         # Watch various config files for immediate reload
         self.watchers = ConfigWatchers(self)
         self._configure_toolbox()
