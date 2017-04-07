@@ -293,6 +293,7 @@ var View = Backbone.View.extend({
                     this.model.set( 'value', { values: [ new_value ] } );
                     this.model.trigger( 'change:value' );
                 }
+                this.trigger( 'change' );
                 this._handleDropStatus( 'success' );
             } else {
                 this._handleDropStatus( 'danger' );
