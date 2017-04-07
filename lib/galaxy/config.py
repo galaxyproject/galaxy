@@ -910,11 +910,9 @@ class ConfiguresGalaxyMixin:
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
         from galaxy.tools.deps import containers
-        from galaxy.tools.toolbox.cache import ToolCache
         from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
 
         self.citations_manager = CitationsManager( self )
-        self.tool_cache = ToolCache()
         self.tool_version_cache = ToolVersionCache(self)
 
         self._toolbox_lock = threading.RLock()

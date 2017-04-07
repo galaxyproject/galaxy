@@ -29,10 +29,7 @@ from galaxy import (
 )
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.managers import histories
-from galaxy.queue_worker import (
-    reload_toolbox,
-    send_control_task
-)
+from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
@@ -195,11 +192,7 @@ class ToolBox( BaseGalaxyToolBox ):
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
-            tool_conf_watcher=tool_conf_watcher
         )
-
-    def handle_reload_toolbox(self):
-        reload_toolbox(self.app)
 
     def handle_panel_update(self, section_dict):
         """
