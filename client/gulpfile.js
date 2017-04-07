@@ -11,7 +11,7 @@ var paths = {
     ]
 };
 
-gulp.task('scripts', ['clean'], function() {
+gulp.task('scripts', function() {
   return gulp.src(paths.scripts)
     .pipe(sourcemaps.init())
     .pipe(babel())
@@ -27,4 +27,8 @@ gulp.task('clean', function(){
                {force: true});
 });
 
-gulp.task('default', ['scripts']);
+gulp.task('watch', function(){
+    gulp.watch(paths.scripts, ['scripts']);
+});
+
+gulp.task('default', ['clean', 'scripts']);

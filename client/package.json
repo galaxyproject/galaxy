@@ -15,6 +15,7 @@
     "babel-core": "^6.24.0",
     "babel-loader": "^6.4.1",
     "babel-preset-env": "^1.3.2",
+    "concurrently": "^3.4.0",
     "del": "^2.2.2",
     "grunt": "^0.4.5",
     "grunt-bower-install-simple": "^1.1.0",
@@ -31,12 +32,15 @@
     "gulp-babel": "^6.1.2",
     "gulp-sourcemaps": "^2.5.1",
     "gulp-uglify": "^2.1.2",
+    "gulp-watch": "^4.3.11",
     "jshint": "^2.9.4",
     "webpack": "^2.3.3"
   },
   "scripts": {
+    "watch": "concurrently \"npm run webpack-watch\" \"npm run gulp watch\"",
     "build": "grunt",
     "webpack": "webpack -p",
+    "webpack-watch": "webpack -p --watch",
     "webpack-dev": "webpack -d",
     "webpack-dev-watch": "webpack -d --watch",
     "build-style": "grunt style",
