@@ -10,14 +10,23 @@ log = logging.getLogger(__name__)
 def upload_test_data(trans, tests):
     result = {'errors': []}
 
-    if tests is None:
+    if not tests:
         raise ValueError('Tests are not defined.')
 
     test = tests[0]
-    inputs = test.inputs['input']
 
-    if not any(inputs):
+    # TODO@me: deal with two datasets
+    inputs = []
+    for input_key in ['input', 'input1', 'input_file', 'input_file1']:
+        if input_key in test.inputs.keys():
+            inputs = test.inputs[input_key]
+            break
+
+    if not inputs:
         raise ValueError('Test data is missing.')
+
+    if type(inputs) is not list:
+        raise ValueError('Test data type is unsuitable.')
 
     input_name = inputs[0]
     input_path = os.path.abspath(os.path.join('test-data', input_name))
@@ -58,13 +67,12 @@ def upload_test_data(trans, tests):
         if job_errors:
             result['errors'] = job_errors
 
-    # TODO:me: return job_id
-
     return result
 
 
 def generate_tour(tool):
     tour_name = tool.name + ' Tour'
+    test = tool.tests[0]
 
     steps = [{
         'title': tour_name,
@@ -73,23 +81,62 @@ def generate_tour(tool):
         'orphan': True
     }]
 
+    # TODO@me: for ... in test.inputs?
     for name, input in tool.inputs.items():
+        # Skip this type as Tours Framework doesn't add tour_id to the
+        # corresponding DOM element
+        if input.type == 'repeat':
+            continue
+
         step = {
             'title': input.label,
             'element': '[tour_id=%s]' % name,
             'placement': 'right',
+            'content': ''
         }
 
         if input.type == 'text':
-            step['content'] = 'Enter parameter <b>%s</b>.' % input.label
+            text_param = test.inputs[name]
+            step['content'] = 'Enter parameter(s): <b>%s</b>' % text_param
+
+        elif input.type == 'integer':
+            integer_param = test.inputs[name][0]
+            step['content'] = 'Enter parameter: <b>%s</b>' % integer_param
+
+        elif input.type == 'boolean':
+            choice = 'Yes' if test.inputs[name][0] is True else 'No'
+            step['content'] = 'Choose <b>%s</b>' % choice
+
+        elif input.type == 'select':
+            select_param = input.label
+            params = []
+            for option in tool.inputs[name].static_options:
+                if name in test.inputs.keys():
+                    for test_option in test.inputs[name]:
+                        if test_option == option[1]:
+                            params.append(option[0])
+            if params:
+                select_param = ', '.join(params)
+            step['content'] = 'Select parameter(s): <b>%s</b>' % select_param
+
         elif input.type == 'data':
-            step['content'] = 'Select dataset.'
+            dataset = test.inputs[name][0]
+            step['content'] = 'Select dataset <b>%s</b>' % dataset
+
+        # elif input.type == 'repeat':
+        #     step['title'] = input.title
+        #     step['content'] = 'Select parameter <b>%s</b>' % input.title
+
+        elif input.type == 'conditional':
+            # TODO@me: deal with this input type
+            pass
+
         else:
-            step['content'] = 'Select parameter <b>%s</b>.' % input.label,
+            step['content'] = 'Select parameter <b>%s</b>' % input.label
 
         steps.append(step)
 
-    # Add last step
+    # Add the last step
     steps.append({
         'title': 'Execute tool',
         'content': 'Click <b>Execute</b> button to run the tool.',
@@ -117,13 +164,13 @@ def main(trans, webhook, params):
         tool_id = params['tool_id']
         tool = trans.app.toolbox.get_tool(tool_id)
 
+        tests = tool.tests
+        upload_result = upload_test_data(trans, tests)
+        if upload_result['errors']:
+            raise ValueError(str(upload_result['errors']))
+
         # Generate Tour
         data = generate_tour(tool)
-
-        # tests = tool.tests
-        # upload_result = upload_test_data(trans, tests)
-        # if upload_result['errors']:
-        #     raise ValueError(str(upload_result['errors']))
 
     except Exception as e:
         error = str(e)
