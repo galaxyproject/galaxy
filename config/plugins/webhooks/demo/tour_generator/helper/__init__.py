@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 
 
 def upload_test_data(trans, tests):
-    result = {'errors': []}
+    result = {'hid': '', 'errors': []}
 
     if not tests:
         raise ValueError('Tests are not defined.')
@@ -66,6 +66,8 @@ def upload_test_data(trans, tests):
         job_errors = vars.get('job_errors', [])
         if job_errors:
             result['errors'] = job_errors
+        else:
+            result['hid'] = vars['out_data'][0][1].hid
 
     return result
 
@@ -166,11 +168,12 @@ def main(trans, webhook, params):
 
         tests = tool.tests
         upload_result = upload_test_data(trans, tests)
+        data['hid'] = upload_result['hid']
         if upload_result['errors']:
             raise ValueError(str(upload_result['errors']))
 
         # Generate Tour
-        data = generate_tour(tool)
+        data['tour'] = generate_tour(tool)
 
     except Exception as e:
         error = str(e)
