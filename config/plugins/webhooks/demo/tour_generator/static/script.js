@@ -1,6 +1,5 @@
 $(document).ready(function() {
-    var ToolForm = window.toolform,
-        Utils = window.utils;
+    var ToolForm = window.toolform;
 
     var TourGenerator = Backbone.View.extend({
         initialize: function(options) {
@@ -17,76 +16,48 @@ $(document).ready(function() {
             $.getJSON(url, function(obj) {
                 if (obj.success) {
                     $('#history-refresh-button').click(); // Refresh history panel
-                    // me._renderForm(obj);
 
-                    var tour = me._generateTour(obj.data);
+                    // Create a tour only when the uploaded dataset is ready
+                    setTimeout(function() {
+                        var dataset = Galaxy.currHistoryPanel.collection.where({
+                            hid: obj.data.hid
+                        })[0];
 
-                    // Clean tour run
-                    tour.init();
-                    tour.goTo(0);
-                    tour.restart();
+                        if (dataset) {
+                            dataset.on('change:state', function(model) {
+                                if (model.get('state') === 'ok') {
+                                    me._main(obj.data);
+                                }
+                            });
+                        }
+                    }, 500);
                 } else {
                     console.error('Tour Generator: ' + obj.error);
+                    console.error(obj);
                 }
             });
         },
 
-        // _renderForm: function(obj) {
-        //     var me = this,
-        //         tool = Galaxy.toolPanel.get('tools').get({
-        //             id: this.toolId
-        //         });
+        _main: function(data) {
+            var tool = Galaxy.toolPanel.get('tools').get({
+                id: this.toolId
+            });
 
-        //     // Method #1
-        //     // var toolForm = Galaxy.page.center.prev.form;
+            // Create tool form
+            var toolForm = new ToolForm.View({
+                id: tool.get('id'),
+                version: tool.get('version')
+            });
 
-        //     // Method #2
-        //     var toolForm = new ToolForm.View({
-        //         id: tool.get('id'),
-        //         version: tool.get('version')
-        //     });
+            // Show the form
+            Galaxy.app.display(toolForm);
 
-        //     // Show form
-        //     toolForm.deferred.execute(function() {
-        //         Galaxy.app.display(toolForm);
-        //     });
-
-        //     // Update form model
-        //     var form = toolForm.form;
-        //     form.deferred.reset();
-        //     form.deferred.execute(function(process) {
-        //         me._updateModel(form, process);
-        //     });
-        // },
-
-        // _updateModel: function(form, process) {
-        //     var formData = form.data.create();
-
-        //     var currentState = {
-        //         tool_id: this.toolId,
-        //         tool_version: '1.0.2',
-        //         inputs: $.extend(true, {}, form.data.create())
-        //     };
-        //     form.wait(true);
-        //     currentState.inputs.columnList = 'c3';
-
-        //     Utils.request({
-        //         url: Galaxy.root + 'api/tools/' + this.toolId + '/build',
-        //         type: 'POST',
-        //         data: currentState,
-        //         success: function(newModel) {
-        //             form.update(newModel['tool_model'] || newModel);
-        //             form.options.update && form.options.update(newModel);
-        //             form.wait(false);
-        //             Galaxy.emit.debug('tool-form-base::_updateModel()', 'Received new model.', newModel);
-        //             process.resolve();
-        //         },
-        //         error: function(response) {
-        //             Galaxy.emit.debug('tool-form-base::_updateModel()', 'Refresh request failed.', response);
-        //             process.reject();
-        //         }
-        //     });
-        // },
+            // Generate and run the tour
+            var tour = this._generateTour(data.tour);
+            tour.init();
+            tour.goTo(0);
+            tour.restart();
+        },
 
         _generateTour: function(data) {
             var tourData = Tours.hooked_tour_from_data(data);
