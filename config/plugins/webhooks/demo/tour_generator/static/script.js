@@ -50,7 +50,7 @@ $(document).ready(function() {
             });
 
             // Show the form
-            Galaxy.app.display(toolForm);
+            Galaxy.page.center.display(toolForm);
 
             // Generate and run the tour
             var tour = this._generateTour(data.tour);
