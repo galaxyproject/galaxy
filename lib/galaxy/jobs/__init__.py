@@ -203,7 +203,7 @@ class JobConfiguration( object, ConfiguresHandlers ):
         if not self.handlers:
             raise ValueError("Job configuration file defines no valid handler elements.")
         # Determine the default handler(s)
-        self.default_handler_id = self._get_default(self.app, handlers_conf, list(self.handlers.keys()))
+        self.default_handler_id = self._get_default(self.app.config, handlers_conf, list(self.handlers.keys()))
 
         # Parse destinations
         destinations = root.find('destinations')
@@ -240,7 +240,7 @@ class JobConfiguration( object, ConfiguresHandlers ):
                     self.destinations[tag].append(job_destination)
 
         # Determine the default destination
-        self.default_destination_id = self._get_default(self.app, destinations, list(self.destinations.keys()))
+        self.default_destination_id = self._get_default(self.app.config, destinations, list(self.destinations.keys()))
 
         # Parse resources...
         resources = root.find('resources')
@@ -313,11 +313,11 @@ class JobConfiguration( object, ConfiguresHandlers ):
 
         log.debug('Done loading job configuration')
 
-    def _parse_handler(self, handler_element):
+    def _parse_handler(self, handler_id, handler_element):
         for plugin in handler_element.findall('plugin'):
-            if id not in self.handler_runner_plugins:
-                self.handler_runner_plugins[id] = []
-            self.handler_runner_plugins[id].append( plugin.get('id') )
+            if handler_id not in self.handler_runner_plugins:
+                self.handler_runner_plugins[handler_id] = []
+            self.handler_runner_plugins[handler_id].append( plugin.get('id') )
 
     def __parse_job_conf_legacy(self):
         """Loads the old-style job configuration from options in the galaxy config file (by default, config/galaxy.ini).

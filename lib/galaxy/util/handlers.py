@@ -17,24 +17,24 @@ class ConfiguresHandlers:
         # Parse handlers
         if config_element is not None:
             for handler in self._findall_with_required(config_element, 'handler'):
-                id = handler.get('id')
-                if id in self.handlers:
-                    log.error("Handler '%s' overlaps handler with the same name, ignoring" % id)
+                handler_id = handler.get('id')
+                if handler_id in self.handlers:
+                    log.error("Handler '%s' overlaps handler with the same name, ignoring" % handler_id)
                 else:
-                    log.debug("Read definition for handler '%s'" % id)
-                    self.handlers[id] = (id,)
-                    self._parse_handler(handler)
+                    log.debug("Read definition for handler '%s'" % handler_id)
+                    self.handlers[handler_id] = (handler_id,)
+                    self._parse_handler(handler_id, handler)
                     if handler.get('tags', None) is not None:
                         for tag in [ x.strip() for x in handler.get('tags').split(',') ]:
                             if tag in self.handlers:
-                                self.handlers[tag].append(id)
+                                self.handlers[tag].append(handler_id)
                             else:
-                                self.handlers[tag] = [id]
+                                self.handlers[tag] = [handler_id]
 
-    def _parse_handler(self, handler_def):
+    def _parse_handler(self, handler_id, handler_def):
         pass
 
-    def _get_default(self, app, parent, names):
+    def _get_default(self, config, parent, names):
         """
         Returns the default attribute set in a parent tag like <handlers> or
         <destinations>, or return the ID of the child, if there is no explicit
@@ -54,7 +54,7 @@ class ConfiguresHandlers:
             rval = os.environ.get(environ_var, rval)
         elif 'default_from_config' in parent.attrib:
             config_val = parent.attrib['default_from_config']
-            rval = app.config.config_dict.get(config_val, rval)
+            rval = config.config_dict.get(config_val, rval)
 
         if rval is not None:
             # If the parent element has a 'default' attribute, use the id or tag in that attribute

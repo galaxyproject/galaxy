@@ -138,7 +138,7 @@ class WorkflowSchedulingManager( object, ConfiguresHandlers ):
                 self.__init_handlers(config_element)
 
                 # Determine the default handler(s)
-                self.default_handler_id = self._get_default(self.app, config_element, list(self.handlers.keys()))
+                self.default_handler_id = self._get_default(self.app.config, config_element, list(self.handlers.keys()))
             else:
                 plugin_type = config_element_tag
                 plugin_element = config_element
