@@ -913,8 +913,7 @@ class ConfiguresGalaxyMixin:
             # and make sure toolbox has finished reloading)
             if self.toolbox.has_reloaded(old_toolbox):
                 break
-
-            time.sleep(1)
+            time.sleep(0.1)
 
     def _configure_toolbox( self ):
         from galaxy import tools
@@ -948,13 +947,16 @@ class ConfiguresGalaxyMixin:
         )
         self.container_finder = containers.ContainerFinder(app_info)
 
-    def reindex_tool_search( self, toolbox=None ):
+    def reindex_tool_search( self ):
         # Call this when tools are added or removed.
         import galaxy.tools.search
         index_help = getattr( self.config, "index_tool_help", True )
-        if not toolbox:
-            toolbox = self.toolbox
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( toolbox, index_help )
+        toolbox = self.toolbox
+        if not hasattr(self, 'toolbox_search'):
+            self.toolbox_search = galaxy.tools.search.ToolBoxSearch( toolbox, index_help )
+        else:
+            self.toolbox_search.update_index(tool_cache=self.tool_cache)
+        self.tool_cache.reset_status()
 
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager

@@ -15,6 +15,8 @@ class ToolCache(object):
         self._tools_by_path = {}
         self._tool_paths_by_id = {}
         self._mod_time_by_path = {}
+        self._new_tool_ids = []
+        self._removed_tool_ids = []
 
     def cleanup(self):
         """
@@ -36,6 +38,7 @@ class ToolCache(object):
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
             pass
+        self._removed_tool_ids.extend(removed_tool_ids)
         return removed_tool_ids
 
     def _should_cleanup(self, config_filename):
@@ -49,9 +52,12 @@ class ToolCache(object):
         return False
 
     def get_tool(self, config_filename):
-        """ Get the tool from the cache if the tool is up to date.
-        """
+        """Get the tool at `config_filename` from the cache if the tool is up to date."""
         return self._tools_by_path.get(config_filename, None)
+
+    def get_tool_by_id(self, tool_id):
+        """Get the tool with the id `tool_id` from the cache if the tool is up to date. """
+        return self.get_tool(self._tool_paths_by_id.get(tool_id))
 
     def expire_tool(self, tool_id):
         if tool_id in self._tool_paths_by_id:
@@ -68,6 +74,13 @@ class ToolCache(object):
         self._mod_time_by_path[config_filename] = os.path.getmtime(config_filename)
         self._tool_paths_by_id[tool_id] = config_filename
         self._tools_by_path[config_filename] = tool
+        self._new_tool_ids.append(tool_id)
+
+    def reset_status(self):
+        """Reset self._new_tool_ids and self._removed_tool_ids once
+        all operations that need to know about new tools have finished running."""
+        self._new_tool_ids = []
+        self._removed_tool_ids = []
 
 
 class ToolShedRepositoryCache(object):

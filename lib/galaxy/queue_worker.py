@@ -115,7 +115,7 @@ def _get_new_toolbox(app):
     load_lib_tools(new_toolbox)
     new_toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
-    app.reindex_tool_search(new_toolbox)
+    app.reindex_tool_search()
     return new_toolbox
 
 
