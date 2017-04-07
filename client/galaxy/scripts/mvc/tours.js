@@ -1,11 +1,6 @@
 /**
  *  This is the primary galaxy tours definition, currently only used for
  *  rendering a tour menu.
- *
- *  For now it's intended to be plunked into the center display a-la
- *  Galaxy.app.display, but we could use a modal as well for more flexibility.
- *
- *  DBTODO - This is downright backbone abuse, rewrite it.
  */
 
 define(['libs/bootstrap-tour'],function(BootstrapTour) {
