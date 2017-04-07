@@ -109,6 +109,11 @@ var View = Backbone.View.extend({
         }
     },
 
+    /** Matches a search term with a given text */
+    _match: function( term, text ) {
+        return !term || term == '' || String( text ).toUpperCase().indexOf( term.toUpperCase() ) >= 0
+    },
+
     /** Updates the selection options */
     _changeData: function() {
         var self = this;
@@ -125,22 +130,44 @@ var View = Backbone.View.extend({
         if ( this.model.get( 'searchable' ) ) {
             this.data2 = [];
             _.each( this.data, function( option, index ) {
-                self.data2.push( { order: index, id: option.value, text: option.label } );
+                self.data2.push( { order: index, id: option.value, text: option.label, tags: option.tags } );
             });
             this.$select.data( 'select2' ) && this.$select.select2( 'destroy' );
+            this.matched_tags = {};
             this.$select.select2({
                 data            : self.data2,
                 closeOnSelect   : !this.model.get( 'multiple' ),
                 multiple        : this.model.get( 'multiple' ),
                 query           : function( q ) {
+                    self.matched_tags = {};
                     var pagesize = self.model.get( 'pagesize' );
                     var results = _.filter( self.data2, function ( e ) {
-                        return !q.term || q.term == '' || e.text.toUpperCase().indexOf( q.term.toUpperCase() ) >= 0;
+                        var found = false;
+                        _.each( e.tags, function( tag ) {
+                            if ( self._match( q.term, tag ) ) {
+                                found = self.matched_tags[ tag ] = true;
+                            }
+                        });
+                        return found || self._match( q.term, e.text );
                     });
                     q.callback({
                         results: results.slice( ( q.page - 1 ) * pagesize, q.page * pagesize ),
                         more   : results.length >= q.page * pagesize
                     });
+                },
+                formatResult    : function( result ) {
+                    return _.escape( result.text ) +
+                        '<div class="ui-tags">' +
+                            _.reduce( result.tags, function( memo, tag ) {
+                                if ( self.matched_tags[ tag ] ) {
+                                    return memo + '&nbsp;' +
+                                        '<div class="label label-info">' +
+                                            _.escape( tag ) +
+                                        '</div>'
+                                }
+                                return memo;
+                            }, '' ) +
+                        '</div>';
                 }
             });
             this.$( '.select2-container .select2-search input' ).off( 'blur' );

@@ -1,6 +1,7 @@
+from logging import getLogger
+
 from .local import LocalShell
 
-from logging import getLogger
 log = getLogger(__name__)
 
 __all__ = ('RemoteShell', 'SecureShell', 'GlobusSecureShell')

@@ -7,7 +7,7 @@ to provide relatively concrete answers for specific Galaxy development scenarios
 ... interact with the Galaxy database interactively?
 ----------------------------------------------------
 
-This can be done with either IPython/Jupyter or a plain python console, depending on your preferences::
+This can be done with either IPython or a plain Python console, depending on your preferences::
 
     python -i scripts/db_shell.py
 

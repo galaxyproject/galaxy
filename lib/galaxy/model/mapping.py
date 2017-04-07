@@ -2026,8 +2026,7 @@ mapper( model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation
 mapper( model.JobToInputDatasetCollectionAssociation, model.JobToInputDatasetCollectionAssociation.table, properties=dict(
     job=relation( model.Job ),
     dataset_collection=relation( model.HistoryDatasetCollectionAssociation,
-        lazy=False,
-        backref="dependent_jobs" )
+        lazy=False )
 ) )
 
 mapper( model.JobToOutputDatasetCollectionAssociation, model.JobToOutputDatasetCollectionAssociation.table, properties=dict(
@@ -2310,7 +2309,7 @@ mapper( model.StoredWorkflowMenuEntry, model.StoredWorkflowMenuEntry.table, prop
 ) )
 
 mapper( model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict(
-    history=relation( model.History ),
+    history=relation( model.History, backref=backref('workflow_invocations', uselist=True )),
     input_parameters=relation( model.WorkflowRequestInputParameter ),
     step_states=relation( model.WorkflowRequestStepState ),
     input_step_parameters=relation( model.WorkflowRequestInputStepParmeter ),
@@ -2565,7 +2564,8 @@ model.WorkflowInvocation.update = _workflow_invocation_update
 
 
 def init( file_path, url, engine_options={}, create_tables=False, map_install_models=False,
-        database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True ):
+        database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
+        slow_query_log_threshold=0):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     model.Dataset.file_path = file_path
@@ -2574,7 +2574,7 @@ def init( file_path, url, engine_options={}, create_tables=False, map_install_mo
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
-    engine = build_engine( url, engine_options, database_query_profiling_proxy, trace_logger )
+    engine = build_engine( url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold )
 
     # Connect the metadata to the database.
     metadata.bind = engine

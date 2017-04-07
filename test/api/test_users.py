@@ -106,9 +106,7 @@ class UsersApiTestCase( api.ApiTestCase ):
 
     def __update( self, user, **new_data ):
         update_url = self._api_url( "users/%s" % ( user[ "id" ] ), use_key=True )
-        # TODO: Awkward json.dumps required here because of https://trello.com/c/CQwmCeG6
-        body = json.dumps( new_data )
-        return put( update_url, data=body )
+        return put( update_url, data=new_data )
 
     def __assert_matches_user( self, userA, userB ):
         self._assert_has_keys( userB, "id", "username", "total_disk_usage" )

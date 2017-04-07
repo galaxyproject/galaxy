@@ -119,7 +119,7 @@ def is_tool_load_error(obj):
     return obj is TOOL_LOAD_ERROR
 
 
-def looks_like_a_tool(path, invalid_names=[], enable_beta_formats=False):
+def looks_like_a_tool(path_or_uri_like, invalid_names=[], enable_beta_formats=False):
     """Quick check to see if a file looks like it may be a tool file.
 
     Whether true in a strict sense or not, lets say the intention and
@@ -130,6 +130,11 @@ def looks_like_a_tool(path, invalid_names=[], enable_beta_formats=False):
     invalid_names may be supplied in the context of the tool shed to quickly
     rule common tool shed XML files.
     """
+    path = resolved_path(path_or_uri_like)
+    if path is UNRESOLVED_URI:
+        # Assume the path maps to a real tool.
+        return True
+
     looks = False
 
     if os.path.basename(path) in invalid_names:
@@ -222,7 +227,12 @@ def looks_like_a_tool_cwl(path):
     return looks_like_a_cwl_artifact(path, classes=["CommandLineTool", "ExpressionTool"])
 
 
-def _find_tool_files(path, recursive, enable_beta_formats):
+def _find_tool_files(path_or_uri_like, recursive, enable_beta_formats):
+    path = resolved_path(path_or_uri_like)
+    if path is UNRESOLVED_URI:
+        # Pass the URI through and assume it maps to a real tool.
+        return [path_or_uri_like]
+
     is_file = not os.path.isdir(path)
     if not os.path.exists(path):
         raise Exception(PATH_DOES_NOT_EXIST_ERROR)
@@ -259,6 +269,19 @@ def _find_files(directory, pattern='*'):
             if fnmatch.filter([full_path], pattern):
                 matches.append(os.path.join(root, filename))
     return matches
+
+
+UNRESOLVED_URI = object()
+
+
+def resolved_path(path_or_uri_like):
+    """If this is a simple file path, return the path else UNRESOLVED_URI."""
+    if "://" not in path_or_uri_like:
+        return path_or_uri_like
+    elif path_or_uri_like.startswith("file://"):
+        return path_or_uri_like[len("file://"):]
+    else:
+        return UNRESOLVED_URI
 
 
 BETA_TOOL_CHECKERS = {

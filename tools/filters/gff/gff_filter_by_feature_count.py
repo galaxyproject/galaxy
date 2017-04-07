@@ -9,10 +9,11 @@ from __future__ import print_function
 
 import sys
 
+from ast import Module, parse, walk
+
 from bx.intervals.io import GenomicInterval
 
 from galaxy.datatypes.util.gff_util import GFFReaderWrapper
-from ast import Module, parse, walk
 
 AST_NODE_TYPE_WHITELIST = [
     'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',

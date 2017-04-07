@@ -2,9 +2,12 @@
 
 set -e
 
-sleep 30  # TODO: wait on something instead of just sleeping...
-
-echo `df`
+echo "Waiting for postgres to become available"
+while ! nc -z postgres 5432;
+do
+    sleep 1
+    printf "."
+done
 
 echo "Creating postgres database for Galaxy"
 createdb -w -U postgres -h postgres galaxy

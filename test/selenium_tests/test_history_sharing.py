@@ -1,5 +1,3 @@
-import time
-
 from .framework import SeleniumTestCase
 from .framework import selenium_test
 
@@ -108,10 +106,10 @@ class HistorySharingTestCase(SeleniumTestCase):
 
     def share_history_with_user(self, email):
         self.navigate_to_history_user_share_page()
-        form = self.wait_for_selector("form#share")
-        text_element = form.find_element_by_css_selector("input[type='text']")
-        text_element.send_keys(email)
-        # Wait for select2 options to load and then click to add this one.
-        time.sleep(2)
-        self.send_enter(text_element)
+        form_selector = "form#share"
+        form = self.wait_for_selector(form_selector)
+        # If expose_user_info is on would fill form out with this
+        # line, in future dispatch on actual select2 div present or not.
+        # self.select2_set_value(form_selector, email)
+        self.fill(form, {"email": email})
         self.click_submit(form)

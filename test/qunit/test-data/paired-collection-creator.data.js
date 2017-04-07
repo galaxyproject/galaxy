@@ -22,6 +22,7 @@ var datasets1CreateRequestJSON = {
   "type": "dataset_collection",
   "collection_type": "list:paired",
   "name": "Heres a collection",
+  "hide_source_items": false,
   "element_identifiers": [
     {
       "collection_type": "paired",

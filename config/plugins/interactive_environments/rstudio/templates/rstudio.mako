@@ -33,7 +33,7 @@ ie_request.launch(
 # through proxy.
 notebook_pubkey_url = ie_request.url_template('${PROXY_URL}/rstudio/auth-public-key')
 notebook_access_url = ie_request.url_template('${PROXY_URL}/rstudio/')
-notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/auth-sign-in')
+notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/auth-do-sign-in')
 
 %>
 <html>
@@ -64,7 +64,9 @@ requirejs([
     'crypto/base64',
     'plugin/rstudio'
 ], function(){
-    load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_url, "${ USERNAME }");
+    load_when_ready(ie_readiness_url, function(){
+        load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_url, "${ USERNAME }");
+    });
 });
 </script>
 <div id="main">

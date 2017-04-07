@@ -101,8 +101,6 @@
         'cur_page_num'                  : cur_page_num,
         'num_pages'                     : num_pages,
         'num_page_links'                : num_page_links,
-        'history_tag_autocomplete_url'  : url( controller='tag', action='tag_autocomplete_data', item_class=item_class ),
-        ## 'history_name_autocomplete_url' : url( controller='history', action='name_autocomplete_data' ),
         'status'                        : status,
         'message'                       : util.restore_text(message),
         'global_actions'                : [],
@@ -160,6 +158,7 @@
             'sortable'          : column.sortable,
             'label'             : column.label,
             'filterable'        : column.filterable,
+            'target'            : column.target,
             'is_text'           : isinstance(column, TextColumn),
             'href'              : href,
             'extra'             : extra
@@ -174,7 +173,6 @@
             'target'                : operation.target,
             'label'                 : operation.label,
             'confirm'               : operation.confirm,
-            'inbound'               : operation.inbound,
             'global_operation'      : False
         })
         if operation.allow_multiple:
@@ -189,7 +187,7 @@
         self.grid_config['global_actions'].append({
             'url_args'  : url(**action.url_args),
             'label'     : action.label,
-            'inbound'   : action.inbound
+            'target'    : action.target
         })
     endfor
 
@@ -226,8 +224,8 @@
                     link = None
                 endif
 
-                ## inbound
-                inbound = column.inbound
+                ## target
+                target = column.target
 
                 ## get value
                 value = column.get_value( trans, grid, item )
@@ -242,7 +240,7 @@
                 item_dict['column_config'][column.label] = {
                     'link'      : link,
                     'value'     : value,
-                    'inbound'   : inbound
+                    'target'    : target
                 }
             endif
         endfor

@@ -279,6 +279,7 @@ steps:
 
     def _steps_by_label(self, workflow_as_dict):
         by_label = {}
+        assert "steps" in workflow_as_dict, workflow_as_dict
         for step in workflow_as_dict["steps"].values():
             by_label[step['label']] = step
         return by_label

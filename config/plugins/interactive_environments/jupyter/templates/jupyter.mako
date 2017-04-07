@@ -60,7 +60,9 @@ requirejs(['interactive_environments', 'plugin/jupyter'], function(){
 // Load notebook
 
 requirejs(['interactive_environments', 'plugin/jupyter'], function(){
-    load_notebook(ie_password, notebook_login_url, notebook_access_url);
+    load_when_ready(ie_readiness_url, function(){
+        load_notebook(ie_password, notebook_login_url, notebook_access_url);
+    });
 });
 
 

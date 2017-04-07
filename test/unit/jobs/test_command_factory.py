@@ -4,7 +4,7 @@ from os import getcwd
 from tempfile import mkdtemp
 from unittest import TestCase
 
-from galaxy.jobs.command_factory import build_command
+from galaxy.jobs.command_factory import build_command, SETUP_GALAXY_FOR_METADATA
 from galaxy.util.bunch import Bunch
 
 MOCK_COMMAND_LINE = "/opt/galaxy/tools/bowtie /mnt/galaxyData/files/000/input000.dat"
@@ -87,7 +87,7 @@ class TestCommandFactory(TestCase):
         self.include_metadata = True
         self.include_work_dir_outputs = False
         self.job_wrapper.metadata_line = TEST_METADATA_LINE
-        expected_command = _surrond_command("%s; return_code=$?; cd '%s'; %s" % (MOCK_COMMAND_LINE, self.job_dir, TEST_METADATA_LINE))
+        expected_command = _surrond_command("%s; return_code=$?; cd '%s'; %s%s" % (MOCK_COMMAND_LINE, self.job_dir, SETUP_GALAXY_FOR_METADATA, TEST_METADATA_LINE))
         self.__assert_command_is( expected_command )
 
     def test_empty_metadata(self):

@@ -48,6 +48,14 @@ UCSC_SERVERS = (
     'hgw6.cse.ucsc.edu',
     'hgw7.cse.ucsc.edu',
     'hgw8.cse.ucsc.edu',
+    'hgw1.soe.ucsc.edu',
+    'hgw2.soe.ucsc.edu',
+    'hgw3.soe.ucsc.edu',
+    'hgw4.soe.ucsc.edu',
+    'hgw5.soe.ucsc.edu',
+    'hgw6.soe.ucsc.edu',
+    'hgw7.soe.ucsc.edu',
+    'hgw8.soe.ucsc.edu',
 )
 
 
@@ -354,7 +362,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         """
         Authenticate for the API via key or session (if available).
         """
-        api_key = self.request.params.get('key', None)
+        api_key = self.request.params.get('key', None) or self.request.headers.get( 'x-api-key', None )
         secure_id = self.get_cookie( name=session_cookie )
         api_key_supplied = self.environ.get('is_api_request', False) and api_key
         if api_key_supplied and self._check_master_api_key( api_key ):

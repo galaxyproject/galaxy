@@ -22,6 +22,7 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
             use_tasked_jobs=False,
             job_resource_params_file="/tmp/fake_absent_path",
             config_dict={},
+            default_job_resubmission_condition="",
         )
         self.__write_config_from( SIMPLE_JOB_CONF )
         self.app = bunch.Bunch( config=self.config, job_metrics=MockJobMetrics() )

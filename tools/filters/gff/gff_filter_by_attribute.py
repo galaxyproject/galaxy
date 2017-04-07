@@ -6,8 +6,9 @@
 from __future__ import division, print_function
 
 import sys
-from json import loads
+
 from ast import Module, parse, walk
+from json import loads
 
 AST_NODE_TYPE_WHITELIST = [
     'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',
@@ -151,6 +152,7 @@ def check_expression( text ):
             return False
 
     return True
+
 
 #
 # Helper functions.

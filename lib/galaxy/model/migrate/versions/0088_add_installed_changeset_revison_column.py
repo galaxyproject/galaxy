@@ -3,7 +3,6 @@ Migration script to add the installed_changeset_revision column to the tool_shed
 """
 from __future__ import print_function
 
-import datetime
 import logging
 import sys
 
@@ -12,7 +11,6 @@ from sqlalchemy import Column, MetaData, Table
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import TrimmedString
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -33,9 +31,8 @@ def upgrade(migrate_engine):
     try:
         col.create( ToolShedRepository_table )
         assert col is ToolShedRepository_table.c.installed_changeset_revision
-    except Exception as e:
-        print("Adding installed_changeset_revision column to the tool_shed_repository table failed: %s" % str( e ))
-        log.debug( "Adding installed_changeset_revision column to the tool_shed_repository table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding installed_changeset_revision column to the tool_shed_repository table failed.")
     # Update each row by setting the value of installed_changeset_revison to be the value of changeset_revision.
     # This will be problematic if the value of changeset_revision was updated to something other than the value
     # that it was when the repository was installed (because the install path determined in real time will attempt to
@@ -62,6 +59,5 @@ def downgrade(migrate_engine):
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
     try:
         ToolShedRepository_table.c.installed_changeset_revision.drop()
-    except Exception as e:
-        print("Dropping column installed_changeset_revision from the tool_shed_repository table failed: %s" % str( e ))
-        log.debug( "Dropping column installed_changeset_revision from the tool_shed_repository table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping column installed_changeset_revision from the tool_shed_repository table failed.")

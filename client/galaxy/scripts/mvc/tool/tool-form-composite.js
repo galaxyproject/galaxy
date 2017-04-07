@@ -1,6 +1,7 @@
 /** This is the run workflow tool form view. */
-define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base', 'mvc/ui/ui-modal', 'mvc/webhooks' ],
-    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal, Webhooks ) {
+define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base', 'mvc/ui/ui-modal', 'mvc/webhooks', 'mvc/workflow/workflow-icons' ],
+    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal, Webhooks, WorkflowIcons ) {
+
     var View = Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
@@ -37,12 +38,19 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.parms = [];
             _.each( this.model.get( 'steps' ), function( step, i ) {
                 Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Preparing workflow step.' );
+                var icon = WorkflowIcons[ step.step_type ];
+                var title = parseInt( i + 1 ) + ': ' + ( step.step_label || step.step_name );
+                if ( step.annotation ) {
+                    title += ' - ' + step.annotation;
+                }
+                if ( step.step_version ) {
+                    title += ' (Galaxy Version ' + step.step_version + ')';
+                }
                 step = Utils.merge( {
                     index                   : i,
-                    name                    : 'Step ' + ( parseInt( i ) + 1 ) + ': ' + step.name,
-                    icon                    : '',
+                    title                   : _.escape( title ),
+                    icon                    : icon || '',
                     help                    : null,
-                    description             : step.annotation && ' - ' + step.annotation || step.description,
                     citations               : null,
                     collapsible             : true,
                     collapsed               : i > 0 && !self._isDataStep( step ),
@@ -107,24 +115,25 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var wp_count = 0;
             this.wp_inputs = {};
             function _handleWorkflowParameter( value, callback ) {
-                var wp_name = self._isWorkflowParameter( value );
-                wp_name && callback( self.wp_inputs[ wp_name ] = self.wp_inputs[ wp_name ] || {
-                    label   : wp_name,
-                    name    : wp_name,
-                    type    : 'text',
-                    color   : 'hsl( ' + ( ++wp_count * 100 ) + ', 70%, 30% )',
-                    style   : 'ui-form-wp-source',
-                    links   : []
-                });
+                var re = /\$\{(.+?)\}/g;
+                while ( match = re.exec( String( value ) ) ) {
+                    var wp_name = match[ 1 ];
+                    callback( self.wp_inputs[ wp_name ] = self.wp_inputs[ wp_name ] || {
+                        label   : wp_name,
+                        name    : wp_name,
+                        type    : 'text',
+                        color   : 'hsl( ' + ( ++wp_count * 100 ) + ', 70%, 30% )',
+                        style   : 'ui-form-wp-source',
+                        links   : []
+                    });
+                }
             }
             _.each( this.steps, function( step, i ) {
                 _.each( self.parms[ i ], function( input, name ) {
                     _handleWorkflowParameter( input.value, function( wp_input ) {
                         wp_input.links.push( step );
-                        input.wp_linked = wp_input.name;
-                        input.color     = wp_input.color;
+                        input.wp_linked = true;
                         input.type      = 'text';
-                        input.value     = null;
                         input.backdrop  = true;
                         input.style     = 'ui-form-wp-target';
                     });
@@ -258,6 +267,31 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.deferred.execute( function( promise ) {
                 self.$steps.addClass( 'ui-steps' );
                 if ( step.step_type == 'tool' ) {
+                    step.postchange = function( process, form ) {
+                        var self = this;
+                        var current_state = {
+                            tool_id         : step.id,
+                            tool_version    : step.version,
+                            inputs          : $.extend( true, {}, form.data.create() )
+                        }
+                        form.wait( true );
+                        Galaxy.emit.debug( 'tool-form-composite::postchange()', 'Sending current state.', current_state );
+                        Utils.request({
+                            type    : 'POST',
+                            url     : Galaxy.root + 'api/tools/' + step.id + '/build',
+                            data    : current_state,
+                            success : function( data ) {
+                                form.update( data );
+                                form.wait( false );
+                                Galaxy.emit.debug( 'tool-form-composite::postchange()', 'Received new model.', data );
+                                process.resolve();
+                            },
+                            error   : function( response ) {
+                                Galaxy.emit.debug( 'tool-form-composite::postchange()', 'Refresh request failed.', response );
+                                process.reject();
+                            }
+                        });
+                    };
                     form = new ToolFormBase( step );
                     if ( step.post_job_actions && step.post_job_actions.length ) {
                         form.portlet.append( $( '<div/>' ).addClass( 'ui-form-element-disabled' )
@@ -269,9 +303,10 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             );
                     }
                 } else {
-                    _.each( step.inputs, function( input ) { input.flavor = 'module' } );
+                    var is_simple_input = ([ 'data_input', 'data_collection_input' ]).indexOf( step.step_type ) != -1;
+                    _.each( step.inputs, function( input ) { input.flavor = 'module'; input.hide_label = is_simple_input; } );
                     form = new Form( Utils.merge({
-                        title    : '<b>' + step.name + '</b>',
+                        title    : step.title,
                         onchange : function() { _.each( self.links[ step.index ], function( link ) { self._refreshStep( link ) } ) },
                         inputs   : step.inputs && step.inputs.length > 0 ? step.inputs : [ { type: 'hidden', name: 'No options available.', ignore: null } ]
                     }, step ) );
@@ -310,8 +345,15 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                     new_value = { values: [ new_value.values[ 0 ] ] };
                                 }
                             } else if ( input.wp_linked ) {
-                                var wp_field = self.wp_form.field_list[ self.wp_form.data.match( input.wp_linked ) ];
-                                wp_field && ( new_value = wp_field.value() );
+                                new_value = input.value;
+                                var re = /\$\{(.+?)\}/g;
+                                while ( match = re.exec( input.value ) ) {
+                                    var wp_field = self.wp_form.field_list[ self.wp_form.data.match( match[ 1 ] ) ];
+                                    var wp_value = wp_field && wp_field.value();
+                                    if ( wp_value ) {
+                                        new_value = new_value.replace( new RegExp( '\\' + match[ 0 ], 'g' ), wp_value );
+                                    }
+                                }
                             }
                             if ( new_value !== undefined ) {
                                 field.value( new_value );
@@ -409,7 +451,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
                         self.$el.children().hide();
                         self.$el.append( self._templateSuccess( response ) );
-                        
+
                         // Show Webhook if job is running
                         if ($.isArray( response ) && response.length > 0) {
                             self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
@@ -426,7 +468,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         if ( response && response.err_data ) {
                             for ( var i in self.forms ) {
                                 var form = self.forms[ i ];
-                                var step_related_errors = response.err_data[ form.options.step_index ];
+                                var step_related_errors = response.err_data[ form.model.get( 'step_index' ) ];
                                 if ( step_related_errors ) {
                                     var error_messages = form.data.matchResponse( step_related_errors );
                                     for ( var input_id in error_messages ) {
@@ -467,13 +509,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.wp_form && this.wp_form.portlet[ enabled ? 'enable' : 'disable' ]();
             this.history_form && this.history_form.portlet[ enabled ? 'enable' : 'disable' ]();
             _.each( this.forms, function( form ) { form && form.portlet[ enabled ? 'enable' : 'disable' ]() } );
-        },
-
-        /** Handle workflow parameter */
-        _isWorkflowParameter: function( value ) {
-            if ( String( value ).substring( 0, 1 ) === '$' ) {
-                return Utils.sanitize( value.substring( 2,  value.length - 1 ) )
-            }
         },
 
         /** Is data input module/step */

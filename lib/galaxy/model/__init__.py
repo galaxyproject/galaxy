@@ -28,6 +28,7 @@ import galaxy.model.orm.now
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
 from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
                          restore_text, send_mail, unicodify, unique_id)
@@ -274,6 +275,31 @@ class User( object, Dictifiable ):
                     dataset_ids.append( hda.dataset.id )
                     total += hda.dataset.get_total_size()
         return total
+
+    def calculate_and_set_disk_usage( self ):
+        """
+        Calculates and sets user disk usage.
+        """
+        new = None
+        db_session = object_session(self)
+        current = self.get_disk_usage()
+        if db_session.get_bind().dialect.name not in ( 'postgres', 'postgresql' ):
+            done = False
+            while not done:
+                new = self.calculate_disk_usage()
+                db_session.refresh( self )
+                # make sure usage didn't change while calculating
+                # set done if it has not, otherwise reset current and iterate again.
+                if self.get_disk_usage() == current:
+                    done = True
+                else:
+                    current = self.get_disk_usage()
+        else:
+            new = pgcalc(db_session, self.id)
+        if new not in (current, None):
+            self.set_disk_usage( new )
+            db_session.add( self )
+            db_session.flush()
 
     @staticmethod
     def user_template_environment( user ):
@@ -593,8 +619,8 @@ class Job( object, JobLike, Dictifiable ):
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
 
-    def add_input_dataset_collection( self, name, dataset ):
-        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset ) )
+    def add_input_dataset_collection( self, name, dataset_collection ):
+        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset_collection ) )
 
     def add_output_dataset_collection( self, name, dataset_collection_instance ):
         self.output_dataset_collection_instances.append( JobToOutputDatasetCollectionAssociation( name, dataset_collection_instance ) )
@@ -924,9 +950,9 @@ class JobToOutputDatasetAssociation( object ):
 
 
 class JobToInputDatasetCollectionAssociation( object ):
-    def __init__( self, name, dataset ):
+    def __init__( self, name, dataset_collection ):
         self.name = name
-        self.dataset = dataset
+        self.dataset_collection = dataset_collection
 
 
 # Many jobs may map to one HistoryDatasetCollection using these for a given
@@ -1406,20 +1432,20 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         return galaxy.util.nice_size( self.disk_size )
 
     @property
-    def active_datasets_children_and_roles( self ):
-        if not hasattr(self, '_active_datasets_children_and_roles'):
+    def active_datasets_and_roles( self ):
+        if not hasattr(self, '_active_datasets_and_roles'):
             db_session = object_session( self )
             query = ( db_session.query( HistoryDatasetAssociation )
                       .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
                       .filter( not_( HistoryDatasetAssociation.deleted ) )
                       .order_by( HistoryDatasetAssociation.table.c.hid.asc() )
-                      .options( joinedload("children"),
-                                joinedload("dataset"),
+                      .options( joinedload("dataset"),
                                 joinedload("dataset.actions"),
                                 joinedload("dataset.actions.role"),
+                                joinedload("tags"),
                                 ))
-            self._active_datasets_children_and_roles = query.all()
-        return self._active_datasets_children_and_roles
+            self._active_datasets_and_roles = query.all()
+        return self._active_datasets_and_roles
 
     @property
     def active_contents( self ):
@@ -2045,7 +2071,7 @@ class DatasetInstance( object ):
             depends_list = []
         return dict([ (dep, self.get_converted_dataset(trans, dep)) for dep in depends_list ])
 
-    def get_converted_dataset(self, trans, target_ext, target_context=None):
+    def get_converted_dataset(self, trans, target_ext, target_context=None, history=None):
         """
         Return converted dataset(s) if they exist, along with a dict of dependencies.
         If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
@@ -2084,7 +2110,7 @@ class DatasetInstance( object ):
             raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass  # No deps
-        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, target_context=target_context ).values()))
+        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, target_context=target_context, history=history ).values()))
         new_dataset.name = self.name
         self.copy_attributes( new_dataset )
         assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False )
@@ -2355,8 +2381,8 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
     def copy_attributes( self, new_dataset ):
         new_dataset.hid = self.hid
 
-    def to_library_dataset_dataset_association( self, trans, target_folder,
-                                                replace_dataset=None, parent_id=None, user=None, roles=None, ldda_message='' ):
+    def to_library_dataset_dataset_association( self, trans, target_folder, replace_dataset=None,
+                                                parent_id=None, user=None, roles=None, ldda_message='', element_identifier=None ):
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
@@ -2374,7 +2400,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         if not user:
             # This should never happen since users must be authenticated to upload to a data library
             user = self.history.user
-        ldda = LibraryDatasetDatasetAssociation( name=self.name,
+        ldda = LibraryDatasetDatasetAssociation( name=element_identifier or self.name,
                                                  info=self.info,
                                                  blurb=self.blurb,
                                                  peek=self.peek,
@@ -4000,11 +4026,11 @@ class WorkflowInvocation( object, Dictifiable ):
             and_conditions.append( WorkflowInvocation.handler == handler )
 
         query = sa_session.query(
-            WorkflowInvocation
-        ).filter( and_( *and_conditions ) )
+            WorkflowInvocation.id
+        ).filter( and_( *and_conditions ) ).order_by( WorkflowInvocation.table.c.id.asc() )
         # Immediately just load all ids into memory so time slicing logic
         # is relatively intutitive.
-        return [wi.id for wi in query.all()]
+        return [wid for wid in query.all()]
 
     def to_dict( self, view='collection', value_mapper=None, step_details=False ):
         rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
@@ -4063,6 +4089,11 @@ class WorkflowInvocation( object, Dictifiable ):
             if content.workflow_step_id == step_id:
                 return True
         return False
+
+    @property
+    def seconds_since_created( self ):
+        create_time = self.create_time or galaxy.model.orm.now.now()  # In case not flushed yet
+        return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
 class WorkflowInvocationToSubworkflowInvocationAssociation( object, Dictifiable ):
