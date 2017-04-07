@@ -169,6 +169,8 @@ CollectionView.prototype.templates = (function(){
                     '<% } %>',
                 '</div>',
             '</div>',
+
+            '<div class="tags-display"></div>',
         '</div>'
     ], 'collection' );
 

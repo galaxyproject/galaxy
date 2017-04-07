@@ -59,7 +59,14 @@ var DatasetListItemView = _super.extend(
                         .done( function(){ self.render(); });
 
                 } else {
-                    self.render();
+                    if( _.has( model.changed, 'tags' ) && _.keys( model.changed ).length === 1 ){
+                        // If only the tags have changed, rerender specifically
+                        // the titlebar region.  Otherwise default to the full
+                        // render.
+                        this.$( '> .title-bar' ).replaceWith( this._renderTitleBar() );
+                    } else {
+                        self.render();
+                    }
                 }
             }
         });
