@@ -20,7 +20,7 @@ define([], function() {
             var me = this;
 
             if (options.toolId) {
-                this.$el.attr('tool-id', options.toolId);
+                this.$el.attr('tool_id', options.toolId);
             }
 
             this.model = new WebhookModel();
@@ -48,7 +48,7 @@ define([], function() {
 
         webhooks.url = Galaxy.root + options.url;
         webhooks.fetch({
-            async: (typeof options.async != 'undefined') ? options.async : true,
+            async: options.async ? options.async : true,
             success: options.callback
         });
     };
