@@ -190,7 +190,7 @@ class ToolBox( BaseGalaxyToolBox ):
     how to construct them, action types, dependency management, etc....
     """
 
-    def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
+    def __init__( self, config_filenames, tool_root_dir, app ):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
         super( ToolBox, self ).__init__(
@@ -443,9 +443,7 @@ class Tool( object, Dictifiable ):
     @property
     def tool_version( self ):
         """Return a ToolVersion if one exists for our id"""
-        return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
-                                             .filter( self.app.install_model.ToolVersion.table.c.tool_id == self.id ) \
-                                             .first()
+        return self.app.tool_version_cache.tool_version_by_tool_id.get(self.id)
 
     @property
     def tool_versions( self ):
