@@ -9,21 +9,21 @@ $(document).ready(function() {
             // Add attribute 'tour_id' to the execution button
             $('#execute').attr('tour_id', 'execute');
 
-            var url = '/api/webhooks/tour_generator/get_data/' + JSON.stringify({
-                'tool_id': this.toolId
-            });
-
-            $.getJSON(url, function(obj) {
+            $.getJSON('/api/webhooks/tour_generator/get_data/', {
+                tool_id: this.toolId
+            })
+            .done(function(obj) {
                 if (obj.success) {
                     $('#history-refresh-button').click(); // Refresh history panel
 
-                    // Create a tour only when the uploaded dataset is ready
+                    // Add a delay because of the history panel refreshing
                     setTimeout(function() {
                         var dataset = Galaxy.currHistoryPanel.collection.where({
                             hid: obj.data.hid
                         })[0];
 
                         if (dataset) {
+                            // Create a tour only when the uploaded dataset is ready
                             dataset.on('change:state', function(model) {
                                 if (model.get('state') === 'ok') {
                                     me._main(obj.data);

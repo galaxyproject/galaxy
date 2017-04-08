@@ -56,15 +56,16 @@ class WebhooksController(BaseAPIController):
         ]
 
     @expose_api_anonymous_and_sessionless
-    def get_data(self, trans, webhook_name, params, **kwd):
+    # def get_data(self, trans, webhook_name, params, **kwd):
+    def get_data(self, trans, webhook_name, **kwd):
         """
         *GET /api/webhooks/{webhook_name}/get_data/{params}
         Returns the result of executing helper function
         """
+        params = {}
 
-        # If params is not None, convert it into a dictionary
-        if params:
-            params = json.loads(params)
+        for key, value in kwd.items():
+            params[key] = value
 
         webhook = [
             webhook
