@@ -956,7 +956,6 @@ class ConfiguresGalaxyMixin:
             self.toolbox_search = galaxy.tools.search.ToolBoxSearch( toolbox, index_help )
         else:
             self.toolbox_search.update_index(tool_cache=self.tool_cache)
-        self.tool_cache.reset_status()
 
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager

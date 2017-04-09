@@ -116,6 +116,7 @@ def _get_new_toolbox(app):
     new_toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
     app.reindex_tool_search()
+    app.tool_cache.reset_status()
     return new_toolbox
 
 
@@ -130,6 +131,7 @@ def reload_data_managers(app, **kwargs):
     app.data_managers = DataManagers(app)
     app.data_managers._reload_count = reload_count + 1
     app.tool_version_cache = ToolVersionCache(app)
+    app.tool_cache.reset_status()
     end = time.time() - start
     log.debug("Data Manager reload took %f seconds", end)
 
