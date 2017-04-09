@@ -200,9 +200,14 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         if slug_set:
             trans.sa_session.flush()
 
-        return trans.fill_template( "workflow/list.mako",
-                                    workflows=workflows,
-                                    shared_by_others=shared_by_others )
+        workflowcollection = list()
+        for item in workflows:
+            workflowcollection.append(dict(id=item.id, text=str( item.name )))
+
+        return json.dumps({
+            'workflows': workflowcollection,
+            'shared_by_others': shared_by_others
+        })
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )

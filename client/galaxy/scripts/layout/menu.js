@@ -1,5 +1,8 @@
 /** Masthead Collection **/
-define(['layout/generic-nav-view', 'mvc/webhooks', 'utils/localization'], function( GenericNav, Webhooks, _l ) {
+define(['layout/generic-nav-view',
+        'mvc/webhooks',
+        'utils/localization',
+        'mvc/workflow/workflow'], function( GenericNav, Webhooks, _l, Workflow ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -33,9 +36,14 @@ var Collection = Backbone.Collection.extend({
         this.add({
             id              : 'workflow',
             title           : _l('Workflow'),
-            url             : 'workflow',
             tooltip         : 'Chain tools into workflows',
-            disabled        : !Galaxy.user.id
+            disabled        : !Galaxy.user.id,
+            target          : 'galaxy_main',
+            onclick         : function() {
+                                  if( Galaxy.router ) {
+                                      Galaxy.router.push( 'workflows' );
+                                  }
+                            }
         });
 
         //
