@@ -30,7 +30,10 @@ except ImportError:
 from datetime import datetime
 from hashlib import md5
 from os.path import normpath, relpath
-from xml.etree import ElementInclude, ElementTree
+from xml.etree import (
+    ElementInclude,
+    cElementTree as ElementTree
+)
 from xml.etree.ElementTree import ParseError
 
 from six import binary_type, iteritems, string_types, text_type
@@ -205,13 +208,9 @@ def unique_id(KEY_SIZE=128):
 
 def parse_xml( fname ):
     """Returns a parsed xml tree"""
-    # handle deprecation warning for XMLParsing a file with DOCTYPE
-    class DoctypeSafeCallbackTarget( ElementTree.TreeBuilder ):
-        def doctype( *args ):
-            pass
     tree = ElementTree.ElementTree()
     try:
-        root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
+        root = tree.parse( fname, parser=ElementTree.XMLParser( ) )
     except ParseError:
         log.exception("Error parsing file %s", fname)
         raise
