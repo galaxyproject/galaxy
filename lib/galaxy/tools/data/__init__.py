@@ -38,7 +38,7 @@ class ToolDataPathFiles(object):
         if time.time() - self.update_time > 1:
             content = os.walk(self.tool_data_path)
             try:
-                self._tool_data_path_files = set([os.path.join(dirpath, fn) for dirpath, _, fn_list in content for fn in fn_list if fn and fn.endswith('.loc') or fn.endswith('.loc.sample')])
+                self._tool_data_path_files = set(os.path.join(dirpath, fn) for dirpath, _, fn_list in content for fn in fn_list if fn and fn.endswith('.loc') or fn.endswith('.loc.sample'))
             except Exception:
                 self._tool_data_path_files = []
             self.update_time = time.time()
