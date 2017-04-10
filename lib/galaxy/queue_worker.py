@@ -117,7 +117,6 @@ def _get_new_toolbox(app):
     app.toolbox = new_toolbox
     app.reindex_tool_search()
     app.tool_cache.reset_status()
-    return new_toolbox
 
 
 def reload_data_managers(app, **kwargs):
