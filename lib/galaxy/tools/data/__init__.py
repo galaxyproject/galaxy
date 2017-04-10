@@ -48,8 +48,8 @@ class ToolDataPathFiles(object):
         path = os.path.abspath(path)
         if path in self.tool_data_path_files:
             return True
-        else:
-            return False
+        elif self.tool_data_path not in path:
+            return os.path.exists(path)
 
 
 class ToolDataTableManager( object ):
