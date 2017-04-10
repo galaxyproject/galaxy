@@ -48,6 +48,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             logging.basicConfig(level=logging.DEBUG)
         log.debug( "python path is: %s", ", ".join( sys.path ) )
         self.name = 'galaxy'
+        self.start_time = time.time()
         self.new_installation = False
         self.application_stack = application_stack_instance()
         # Read config file and check for errors
@@ -203,6 +204,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
 
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
+        log.info("Server startup took %f seconds" % (time.time() - self.start_time))
 
     def shutdown( self ):
         self.workflow_scheduling_manager.shutdown()
