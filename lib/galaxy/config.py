@@ -931,7 +931,6 @@ class ConfiguresGalaxyMixin:
             tool_configs.append( self.config.migrated_tools_config )
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
         self.reindex_tool_search()
-        self.tool_cache.reset_status()
 
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))

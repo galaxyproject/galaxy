@@ -120,6 +120,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Load external metadata tool
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
+        # Reset Tool Cache after all tools (regular, tool shed, converters, special ... are loaded)
+        self.tool_cache.reset_status()
         # Load history import/export tools.
         load_lib_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
