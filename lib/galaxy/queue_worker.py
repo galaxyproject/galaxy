@@ -87,7 +87,7 @@ def reload_toolbox(app, **kwargs):
     reload_timer = util.ExecutionTimer()
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
-    if app.tool_cache:
+    if hasattr(app, 'tool_cache'):
         app.tool_cache.cleanup()
     _get_new_toolbox(app)
     app.toolbox._reload_count = reload_count + 1
@@ -115,7 +115,8 @@ def _get_new_toolbox(app):
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
     app.toolbox = new_toolbox
     app.reindex_tool_search()
-    app.tool_cache.reset_status()
+    if hasattr(app, 'tool_cache'):
+        app.tool_cache.reset_status()
 
 
 def reload_data_managers(app, **kwargs):
@@ -129,7 +130,8 @@ def reload_data_managers(app, **kwargs):
     app.data_managers = DataManagers(app)
     app.data_managers._reload_count = reload_count + 1
     app.tool_version_cache = ToolVersionCache(app)
-    app.tool_cache.reset_status()
+    if hasattr(app, 'tool_cache'):
+        app.tool_cache.reset_status()
     log.debug("Data managers reloaded %s", reload_timer)
 
 

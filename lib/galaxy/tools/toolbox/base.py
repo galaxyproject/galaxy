@@ -319,7 +319,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                             # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
                             panel_dict.append_tool(tool)
                             log_msg = "Loaded tool id: %s, version: %s into tool panel...." % (tool.id, tool.version)
-        if tool_id in self.app.tool_cache._new_tool_ids:
+        if not hasattr(self.app, 'tool_cache') or tool_id in self.app.tool_cache._new_tool_ids:
             log.debug(log_msg)
 
     def _load_tool_panel( self ):

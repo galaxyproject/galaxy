@@ -139,7 +139,7 @@ class DataManager( object ):
             path = tool_elem.get( "file", None )
             tool_guid = tool_elem.get( "guid", None )
             # need to determine repository info so that dependencies will work correctly
-            if tool_guid in self.data_managers.app.tool_cache._tool_paths_by_id:
+            if hasattr(self.data_managers.app, 'tool_cache') and tool_guid in self.data_managers.app.tool_cache._tool_paths_by_id:
                 path = self.data_managers.app.tool_cache._tool_paths_by_id[tool_guid]
                 tool = self.data_managers.app.tool_cache.get_tool(path)
                 tool_shed_repository = tool.tool_shed_repository
