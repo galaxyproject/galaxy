@@ -95,10 +95,12 @@ class ToolShedRepositoryCache(object):
     @property
     def tool_shed_repositories(self):
         if time.time() - self.time > 1:  # If cache is older than 1 second we refresh
-            repositories = self.app.install_model.context.query(self.app.install_model.ToolShedRepository).all()
-            self._tool_shed_repositories = repositories
-            self.time = time.time()
+            self.rebuild()
         return self._tool_shed_repositories
+
+    def rebuild(self):
+        self._tool_shed_repositories = self.app.install_model.context.query(self.app.install_model.ToolShedRepository).all()
+        self.time = time.time()
 
     def get_installed_repository(self, tool_shed, name, owner, installed_changeset_revision=None, changeset_revision=None):
         repos = [repo for repo in self.tool_shed_repositories if repo.tool_shed == tool_shed and repo.owner == owner and repo.name == name]
