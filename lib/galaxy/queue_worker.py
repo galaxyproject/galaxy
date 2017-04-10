@@ -85,15 +85,14 @@ def reload_tool(app, **kwargs):
 
 
 def reload_toolbox(app, **kwargs):
-    start = time.time()
+    reload_timer = util.ExecutionTimer()
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
     if app.tool_cache:
         app.tool_cache.cleanup()
     _get_new_toolbox(app)
     app.toolbox._reload_count = reload_count + 1
-    end = time.time() - start
-    log.debug("Toolbox reload took %f seconds", end)
+    log.debug("Toolbox reload %s", reload_timer)
 
 
 def _get_new_toolbox(app):
@@ -122,7 +121,7 @@ def _get_new_toolbox(app):
 
 
 def reload_data_managers(app, **kwargs):
-    start = time.time()
+    reload_timer = util.ExecutionTimer()
     from galaxy.tools.data_manager.manager import DataManagers
     from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
@@ -133,8 +132,7 @@ def reload_data_managers(app, **kwargs):
     app.data_managers._reload_count = reload_count + 1
     app.tool_version_cache = ToolVersionCache(app)
     app.tool_cache.reset_status()
-    end = time.time() - start
-    log.debug("Data Manager reload took %f seconds", end)
+    log.debug("Data managers reloaded %s", reload_timer)
 
 
 def reload_display_application(app, **kwargs):
