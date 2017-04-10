@@ -560,6 +560,8 @@ class Registry( object ):
                         self.datatype_converters[ source_datatype ] = odict()
                     self.datatype_converters[ source_datatype ][ target_datatype ] = converter
                     self.log.debug( "Loaded converter: %s", converter.id )
+                    if converter.id in toolbox.app.tool_cache._new_tool_ids:
+                        self.log.debug( "Loaded converter: %s", converter.id )
             except Exception:
                 if deactivate:
                     self.log.exception( "Error deactivating converter from (%s)" % converter_path )

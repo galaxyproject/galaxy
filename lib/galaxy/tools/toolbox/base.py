@@ -120,7 +120,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     raise
             except Exception:
                 log.exception( "Error loading tools defined in config %s", config_filename )
-        log.debug("Reading tools from config files took %d seconds", time.time() - start)
+        log.debug("Reading tools from config files took %f seconds", time.time() - start)
 
     def _init_tools_from_config( self, config_filename ):
         """
@@ -265,6 +265,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         # section=True) or self._tool_panel (if section=False).
         tool_id = str(tool.id)
         tool = self._tools_by_id[tool_id]
+        log_msg = ""
         if section:
             panel_dict = panel_component.elems
         else:
@@ -278,7 +279,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     new_tool_id=tool_id,
                     tool=tool,
                 )
-                log.debug("Loaded tool id: %s, version: %s into tool panel." % (tool.id, tool.version))
+                log_msg = "Loaded tool id: %s, version: %s into tool panel." % (tool.id, tool.version)
         else:
             inserted = False
             index = self._integrated_tool_panel.index_of_tool_id(tool_id)
@@ -309,15 +310,19 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                         # integrated_tool_panel.xml, so append it to the tool
                         # panel.
                         panel_dict.append_tool(tool)
-                        log.debug("Loaded tool id: %s, version: %s into tool panel.." % (tool.id, tool.version))
+                        log_msg = "Loaded tool id: %s, version: %s into tool panel.." % (tool.id, tool.version)
                     else:
-                        # We are in the process of installing the tool.
+                        # We are in the process of installing the tool or we are reloading the whole toolbox.
                         tool_lineage = self._lineage_map.get(tool_id)
                         already_loaded = self._lineage_in_panel(panel_dict, tool_lineage=tool_lineage) is not None
                         if not already_loaded:
                             # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
                             panel_dict.append_tool(tool)
-                            log.debug("Loaded tool id: %s, version: %s into tool panel...." % (tool.id, tool.version))
+                            log_msg = "Loaded tool id: %s, version: %s into tool panel...." % (tool.id, tool.version)
+        if not hasattr(self.app, 'tool_cache'):
+            log.debug(log_msg)
+        elif tool_id in self.app.tool_cache._new_tool_ids:
+            log.debug(log_msg)
 
     def _load_tool_panel( self ):
         start = time.time()
@@ -529,8 +534,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     # In rare cases a tool shed tool is loaded into the cache without guid.
                     # In that case recreating the tool will correct the cached version.
                     from_cache = False
-                else:
-                    log.debug("Loading tool %s from cache", str(tool.id))
             if guid and not from_cache:  # tool was not in cache and is a tool shed tool
                 tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
@@ -595,10 +598,14 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             except AssertionError:
                 log.debug("Error while loading tool %s", path)
                 pass
-        return self._get_tool_shed_repository(tool_shed,
-                                              repository_name,
-                                              repository_owner,
-                                              installed_changeset_revision)
+        repository = self._get_tool_shed_repository(tool_shed=tool_shed,
+                                                    name=repository_name,
+                                                    owner=repository_owner,
+                                                    installed_changeset_revision=installed_changeset_revision)
+        if not repository:
+            msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found in database" % (repository_name, repository_owner)
+            raise Exception(msg)
+        return repository
 
     def _get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
         # Abstract class doesn't have a dependency on the database, for full Tool Shed
