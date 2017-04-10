@@ -31,8 +31,8 @@ from datetime import datetime
 from hashlib import md5
 from os.path import normpath, relpath
 from xml.etree import (
+    cElementTree,
     ElementInclude,
-    cElementTree as ElementTree
 )
 from xml.etree.ElementTree import ParseError
 
@@ -208,9 +208,9 @@ def unique_id(KEY_SIZE=128):
 
 def parse_xml( fname ):
     """Returns a parsed xml tree"""
-    tree = ElementTree.ElementTree()
+    tree = cElementTree.ElementTree()
     try:
-        root = tree.parse( fname, parser=ElementTree.XMLParser( ) )
+        root = tree.parse( fname, parser=cElementTree.XMLParser( ) )
     except ParseError:
         log.exception("Error parsing file %s", fname)
         raise
@@ -219,7 +219,7 @@ def parse_xml( fname ):
 
 
 def parse_xml_string(xml_string):
-    tree = ElementTree.fromstring(xml_string)
+    tree = cElementTree.fromstring(xml_string)
     return tree
 
 
@@ -228,7 +228,7 @@ def xml_to_string( elem, pretty=False ):
     if pretty:
         elem = pretty_print_xml( elem )
     try:
-        return ElementTree.tostring( elem )
+        return cElementTree.tostring( elem )
     except TypeError as e:
         # we assume this is a comment
         if hasattr( elem, 'text' ):
