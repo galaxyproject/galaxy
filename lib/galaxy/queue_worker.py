@@ -90,7 +90,7 @@ def reload_toolbox(app, **kwargs):
     reload_count = app.toolbox._reload_count
     if app.tool_cache:
         app.tool_cache.cleanup()
-    app.toolbox = _get_new_toolbox(app)
+    _get_new_toolbox(app)
     app.toolbox._reload_count = reload_count + 1
     end = time.time() - start
     log.debug("Toolbox reload took %f seconds", end)
@@ -115,6 +115,7 @@ def _get_new_toolbox(app):
     load_lib_tools(new_toolbox)
     new_toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
+    app.toolbox = new_toolbox
     app.reindex_tool_search()
     app.tool_cache.reset_status()
     return new_toolbox
