@@ -12,9 +12,9 @@ import os
 import os.path
 import re
 import string
+import time
 from glob import glob
 from tempfile import NamedTemporaryFile
-import time
 
 from six.moves.urllib.request import urlopen
 
