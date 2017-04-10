@@ -15,8 +15,8 @@ class ToolCache(object):
         self._tools_by_path = {}
         self._tool_paths_by_id = {}
         self._mod_time_by_path = {}
-        self._new_tool_ids = []
-        self._removed_tool_ids = []
+        self._new_tool_ids = set()
+        self._removed_tool_ids = set()
 
     def cleanup(self):
         """
@@ -34,11 +34,14 @@ class ToolCache(object):
                     if tool_id in self._tool_paths_by_id:
                         del self._tool_paths_by_id[tool_id]
                 removed_tool_ids.extend(tool_ids)
+            for tool_id in removed_tool_ids:
+                self._removed_tool_ids.add(tool_id)
+                if tool_id in self._new_tool_ids:
+                    self._new_tool_ids.remove(tool_id)
         except Exception:
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
             pass
-        self._removed_tool_ids.extend(removed_tool_ids)
         return removed_tool_ids
 
     def _should_cleanup(self, config_filename):
@@ -66,6 +69,8 @@ class ToolCache(object):
             del self._tool_paths_by_id[tool_id]
             del self._tools_by_path[config_filename]
             del self._mod_time_by_path[config_filename]
+            if tool_id in self._new_tool_ids:
+                self._new_tool_ids.remove(tool_id)
 
     def cache_tool(self, config_filename, tool):
         tool_hash = md5_hash_file(config_filename)
@@ -74,13 +79,13 @@ class ToolCache(object):
         self._mod_time_by_path[config_filename] = os.path.getmtime(config_filename)
         self._tool_paths_by_id[tool_id] = config_filename
         self._tools_by_path[config_filename] = tool
-        self._new_tool_ids.append(tool_id)
+        self._new_tool_ids.add(tool_id)
 
     def reset_status(self):
         """Reset self._new_tool_ids and self._removed_tool_ids once
         all operations that need to know about new tools have finished running."""
-        self._new_tool_ids = []
-        self._removed_tool_ids = []
+        self._new_tool_ids = set()
+        self._removed_tool_ids = set()
 
 
 class ToolShedRepositoryCache(object):
