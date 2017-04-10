@@ -30,7 +30,10 @@ from galaxy.jobs import metrics as job_metrics
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
 from galaxy.queue_worker import GalaxyQueueWorker
-from galaxy.util import heartbeat
+from galaxy.util import (
+    ExecutionTimer,
+    heartbeat
+)
 from tool_shed.galaxy_install import update_repository_manager
 
 
@@ -48,7 +51,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             logging.basicConfig(level=logging.DEBUG)
         log.debug( "python path is: %s", ", ".join( sys.path ) )
         self.name = 'galaxy'
-        self.start_time = time.time()
+        self.startup_timer = ExecutionTimer()
         self.new_installation = False
         self.application_stack = application_stack_instance()
         # Read config file and check for errors
@@ -204,7 +207,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
 
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
-        log.info("Server startup took %f seconds" % (time.time() - self.start_time))
+        log.info("Galaxy app startup finished %s" % self.startup_timer)
 
     def shutdown( self ):
         self.workflow_scheduling_manager.shutdown()
