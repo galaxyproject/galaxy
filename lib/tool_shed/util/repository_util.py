@@ -127,7 +127,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
         deleted = False
         uninstalled = False
     tool_shed_repository = \
-        get_installed_repository( app, tool_shed=tool_shed, name=name, owner=owner, installed_changeset_revision=installed_changeset_revision )
+        get_installed_repository( app, tool_shed=tool_shed, name=name, owner=owner, installed_changeset_revision=installed_changeset_revision, refresh=True )
     if tool_shed_repository:
         log.debug( "Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'." %
                    ( str( name ), str( status ) ) )
@@ -371,13 +371,15 @@ def get_ids_of_tool_shed_repositories_being_installed( app, as_string=False ):
     return installing_repository_ids
 
 
-def get_installed_repository( app, tool_shed, name, owner, changeset_revision=None, installed_changeset_revision=None ):
+def get_installed_repository( app, tool_shed, name, owner, changeset_revision=None, installed_changeset_revision=None, refresh=False ):
     """
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
     repository owner and either current or originally installed changeset_revision.
     """
     tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
     if hasattr(app, 'tool_shed_repository_cache'):
+        if refresh:
+            app.tool_shed_repository_cache.rebuild()
         return app.tool_shed_repository_cache.get_installed_repository(tool_shed=tool_shed,
                                                                        name=name,
                                                                        owner=owner,

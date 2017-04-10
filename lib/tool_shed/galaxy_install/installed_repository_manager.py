@@ -111,7 +111,6 @@ class InstalledRepositoryManager( object ):
                                            data_manager_relative_install_dir,
                                            repository,
                                            repository_tools_tups )
-        self.install_model.context.add( repository )
         self.install_model.context.flush()
         if repository.includes_datatypes:
             if tool_path:
