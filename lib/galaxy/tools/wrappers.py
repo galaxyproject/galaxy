@@ -140,7 +140,7 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
                 values = map( self._path_rewriter, values )
             return self._input.separator.join( values )
 
-    def __init__( self, input, value, app, other_values={}, path_rewriter=None ):
+    def __init__( self, input, value, other_values={}, path_rewriter=None ):
         self.input = input
         self.value = value
         self.input.value_label = input.value_to_display_text( value )
