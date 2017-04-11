@@ -405,6 +405,8 @@ def get_installed_tool_shed_repository( app, id ):
     else:
         id = [ id ]
         return_list = False
+    if hasattr(app, 'tool_shed_repository_cache'):
+        app.tool_shed_repository_cache.rebuild()
     for i in id:
         rval.append( app.install_model.context.query( app.install_model.ToolShedRepository ).get( app.security.decode_id( i ) ) )
     if return_list:
