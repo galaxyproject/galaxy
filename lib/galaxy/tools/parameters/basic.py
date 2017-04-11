@@ -50,8 +50,10 @@ def contains_workflow_parameter( value, search=False ):
         return True
     return False
 
+
 def is_runtime_value( value ):
     return isinstance( value, RuntimeValue ) or ( isinstance( value, dict ) and value.get( '__class__' ) == 'RuntimeValue' )
+
 
 def parse_dynamic_options( param, input_source ):
     options_elem = input_source.parse_dynamic_options_elem()
