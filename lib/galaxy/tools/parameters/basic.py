@@ -159,7 +159,7 @@ class ToolParameter( object, Dictifiable ):
             return "Not available."
         return self.to_text( value, app )
 
-    def to_text( self, value, app=None ):
+    def to_text( self, value, app ):
         """
         Convert a value to a text representation suitable for displaying to
         the user
