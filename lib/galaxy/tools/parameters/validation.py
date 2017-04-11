@@ -2,6 +2,7 @@
 Classes related to parameter validation.
 """
 import logging
+import os
 import re
 
 from six import string_types
@@ -248,6 +249,23 @@ class DatasetEmptyValidator( Validator ):
                 raise ValueError( self.message )
 
 
+class DatasetFilesPathEmptyValidator( Validator ):
+    """Validator that checks if a dataset's files_path exists and is not empty."""
+    def __init__( self, message=None ):
+        self.message = message
+
+    @classmethod
+    def from_element( cls, param, elem ):
+        return cls( elem.get( 'message', None ) )
+
+    def validate( self, value, trans=None ):
+        if value:
+            if not os.path.isdir(value.extra_files_path) or len(os.listdir(value.extra_files_path)) == 0:
+                if self.message is None:
+                    self.message = "The selected dataset's files_path directory is empty or does not exist, this tool expects non-empty files_path directories associated with the selected input."
+                raise ValueError( self.message )
+
+
 class MetadataValidator( Validator ):
     """
     Validator that checks for missing metadata
@@ -438,6 +456,7 @@ validator_types = dict( expression=ExpressionValidator,
                         no_options=NoOptionsValidator,
                         empty_field=EmptyTextfieldValidator,
                         empty_dataset=DatasetEmptyValidator,
+                        empty_files_path=DatasetFilesPathEmptyValidator,
                         dataset_metadata_in_file=MetadataInFileColumnValidator,
                         dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
                         dataset_ok_validator=DatasetOkValidator, )
