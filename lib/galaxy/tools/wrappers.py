@@ -39,7 +39,7 @@ class ToolParameterValueWrapper( object ):
         Returns a string containing the value that would be displayed to the user in the tool interface.
         When quote is True (default), the string is escaped for e.g. command-line usage.
         """
-        rval = self.input.value_to_display_text( self.value, self.input.tool.app ) or ''
+        rval = self.input.value_to_display_text( self.value ) or ''
         if quote:
             return shlex_quote( rval )
         return rval
@@ -143,7 +143,7 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
     def __init__( self, input, value, app, other_values={}, path_rewriter=None ):
         self.input = input
         self.value = value
-        self.input.value_label = input.value_to_display_text( value, app )
+        self.input.value_label = input.value_to_display_text( value )
         self._other_values = other_values
         self._path_rewriter = path_rewriter or DEFAULT_PATH_REWRITER
         self.fields = self.SelectToolParameterFieldWrapper( input, value, other_values, self._path_rewriter )
