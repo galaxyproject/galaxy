@@ -25,6 +25,7 @@ from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
+from galaxy.util import ExecutionTimer
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web.stack import register_postfork_function
@@ -908,10 +909,11 @@ class ConfiguresGalaxyMixin:
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
     def wait_for_toolbox_reload(self, old_toolbox):
+        timer = ExecutionTimer()
         while True:
             # Wait till toolbox reload has been triggered
-            # and make sure toolbox has finished reloading)
-            if self.toolbox.has_reloaded(old_toolbox):
+            # (or more than 60 seconds have passed)
+            if self.toolbox.has_reloaded(old_toolbox) or timer.elapsed > 60:
                 break
             time.sleep(0.1)
 

@@ -1523,8 +1523,11 @@ class ExecutionTimer(object):
         self.begin = time.time()
 
     def __str__(self):
-        elapsed = (time.time() - self.begin) * 1000.0
-        return "(%0.3f ms)" % elapsed
+        return "(%0.3f ms)" % (self.elapsed * 1000)
+
+    @property
+    def elapsed(self):
+        return (time.time() - self.begin)
 
 
 if __name__ == '__main__':
