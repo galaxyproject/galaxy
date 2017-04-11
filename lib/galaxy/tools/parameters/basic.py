@@ -50,6 +50,8 @@ def contains_workflow_parameter( value, search=False ):
         return True
     return False
 
+def is_runtime_value( value ):
+    return isinstance( value, RuntimeValue ) or ( isinstance( value, dict ) and value.get( '__class__' ) == 'RuntimeValue' )
 
 def parse_dynamic_options( param, input_source ):
     options_elem = input_source.parse_dynamic_options_elem()
@@ -133,16 +135,13 @@ class ToolParameter( object, Dictifiable ):
         return value
 
     def value_to_basic( self, value, app, use_security=False ):
-        if isinstance( value, RuntimeValue ):
+        if is_runtime_value( value ):
             return { '__class__': 'RuntimeValue' }
-        elif isinstance( value, dict ):
-            if value.get( '__class__' ) == 'RuntimeValue':
-                return value
         return self.to_json( value, app, use_security )
 
     def value_from_basic( self, value, app, ignore_errors=False ):
         # Handle Runtime and Unvalidated values
-        if isinstance( value, dict ) and value.get( '__class__' ) == 'RuntimeValue':
+        if is_runtime_value( value ):
             return RuntimeValue()
         elif isinstance( value, dict ) and value.get( '__class__' ) == 'UnvalidatedValue':
             return value[ 'value' ]
@@ -156,6 +155,11 @@ class ToolParameter( object, Dictifiable ):
             return self.to_python( value, app )
 
     def value_to_display_text( self, value, app=None ):
+        if is_runtime_value( value ):
+            return "Not available."
+        return self.to_text( value, app )
+
+    def to_text( self, value, app=None ):
         """
         Convert a value to a text representation suitable for displaying to
         the user
@@ -886,7 +890,7 @@ class SelectToolParameter( ToolParameter ):
             value = value[ 0 ]
         return value
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value, app ):
         if not isinstance( value, list ):
             value = [ value ]
         # FIXME: Currently only translating values back to labels if they
@@ -1351,7 +1355,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             initial_values = None
         return initial_values
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value, app ):
         def get_option_display( value, options ):
             for option in options:
                 if value == option['value']:
@@ -1651,7 +1655,7 @@ class DataToolParameter( BaseDataToolParameter ):
             return "None"
         return value.file_name
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value, app ):
         if value and not isinstance( value, list ):
             value = [ value ]
         if value:
@@ -1890,7 +1894,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             # TODO: Handle error states, implement error states ...
         return rval
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value, app ):
         try:
             if isinstance( value, galaxy.model.HistoryDatasetCollectionAssociation ):
                 display_text = "%s: %s" % ( value.hid, value.name )
