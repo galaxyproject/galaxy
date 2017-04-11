@@ -30,19 +30,23 @@ DEFAULT_TABLE_TYPE = 'tabular'
 class ToolDataPathFiles(object):
 
     def __init__(self, tool_data_path):
-        self.tool_data_path = tool_data_path
+        self.tool_data_path = os.path.abspath(tool_data_path)
         self.update_time = 0
 
     @property
     def tool_data_path_files(self):
         if time.time() - self.update_time > 1:
-            content = os.walk(self.tool_data_path)
-            try:
-                self._tool_data_path_files = set(os.path.join(dirpath, fn) for dirpath, _, fn_list in content for fn in fn_list if fn and fn.endswith('.loc') or fn.endswith('.loc.sample'))
-            except Exception:
-                self._tool_data_path_files = []
-            self.update_time = time.time()
+            self.update_files()
         return self._tool_data_path_files
+
+    def update_files(self):
+        try:
+            content = os.walk(self.tool_data_path)
+            self._tool_data_path_files = set(os.path.join(dirpath, fn) for dirpath, _, fn_list in content for fn in fn_list if fn and fn.endswith('.loc') or fn.endswith('.loc.sample'))
+            self.update_time = time.time()
+        except Exception:
+            log.exception()
+            self._tool_data_path_files = set()
 
     def exists(self, path):
         path = os.path.abspath(path)
@@ -50,6 +54,8 @@ class ToolDataPathFiles(object):
             return True
         elif self.tool_data_path not in path:
             return os.path.exists(path)
+        else:
+            return False
 
 
 class ToolDataTableManager( object ):
@@ -179,12 +185,15 @@ class ToolDataTableManager( object ):
                 remove_elems.remove( elem )
         # add new elems
         out_elems.extend( new_elems )
+        out_path_is_new = not os.path.exists(full_path)
         with open( full_path, 'wb' ) as out:
             out.write( '<?xml version="1.0"?>\n<tables>\n' )
             for elem in out_elems:
                 out.write( util.xml_to_string( elem, pretty=True ) )
             out.write( '</tables>\n' )
         os.chmod( full_path, 0o644 )
+        if out_path_is_new:
+            self.tool_data_path_files.update_files()
 
     def reload_tables( self, table_names=None, path=None ):
         """
