@@ -371,11 +371,12 @@ def get_ids_of_tool_shed_repositories_being_installed( app, as_string=False ):
     return installing_repository_ids
 
 
-def get_installed_repository( app, tool_shed, name, owner, changeset_revision=None, installed_changeset_revision=None, refresh=False ):
+def get_installed_repository( app, tool_shed=None, name=None, owner=None, changeset_revision=None, installed_changeset_revision=None, repository_id=None, refresh=False ):
     """
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
     repository owner and either current or originally installed changeset_revision.
     """
+    # We store the port, if one exists, in the database.
     tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
     if hasattr(app, 'tool_shed_repository_cache'):
         if refresh:
@@ -384,12 +385,15 @@ def get_installed_repository( app, tool_shed, name, owner, changeset_revision=No
                                                                        name=name,
                                                                        owner=owner,
                                                                        installed_changeset_revision=installed_changeset_revision,
-                                                                       changeset_revision=changeset_revision)
+                                                                       changeset_revision=changeset_revision,
+                                                                       repository_id=repository_id)
     query = app.install_model.context.query( app.install_model.ToolShedRepository )
-    # We store the port, if one exists, in the database.
-    clause_list = [ app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                    app.install_model.ToolShedRepository.table.c.name == name,
-                    app.install_model.ToolShedRepository.table.c.owner == owner ]
+    if repository_id:
+        clause_list = [app.install_model.ToolShedRepository.table.c.id == repository_id]
+    else:
+        clause_list = [app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                       app.install_model.ToolShedRepository.table.c.name == name,
+                       app.install_model.ToolShedRepository.table.c.owner == owner]
     if changeset_revision is not None:
         clause_list.append( app.install_model.ToolShedRepository.table.c.changeset_revision == changeset_revision )
     if installed_changeset_revision is not None:
@@ -407,8 +411,8 @@ def get_installed_tool_shed_repository( app, id ):
         return_list = False
     if hasattr(app, 'tool_shed_repository_cache'):
         app.tool_shed_repository_cache.rebuild()
-    for i in id:
-        rval.append( app.install_model.context.query( app.install_model.ToolShedRepository ).get( app.security.decode_id( i ) ) )
+    repository_ids = [app.security.decode_id(i)for i in id]
+    rval = [get_installed_repository(app=app, repository_id=repo_id) for repo_id in repository_ids]
     if return_list:
         return rval
     return rval[0]
@@ -613,6 +617,7 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
         message += "required parameters is None: tool_shed: %s, name: %s, owner: %s, changeset_revision: %s " % \
             ( str( tool_shed ), str( name ), str( owner ), str( changeset_revision ) )
         raise Exception( message )
+    app.tool_shed_repository_cache.rebuild()
     repository = get_installed_repository( app=app,
                                            tool_shed=tool_shed,
                                            name=name,

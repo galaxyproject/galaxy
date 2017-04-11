@@ -107,7 +107,13 @@ class ToolShedRepositoryCache(object):
         self._tool_shed_repositories = self.app.install_model.context.query(self.app.install_model.ToolShedRepository).all()
         self.time = time.time()
 
-    def get_installed_repository(self, tool_shed, name, owner, installed_changeset_revision=None, changeset_revision=None):
+    def get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
+        if repository_id:
+            repos = [repo for repo in self.tool_shed_repositories if repo.id == repository_id]
+            if repos:
+                return repos[0]
+            else:
+                return None
         repos = [repo for repo in self.tool_shed_repositories if repo.tool_shed == tool_shed and repo.owner == owner and repo.name == name]
         if installed_changeset_revision:
             repos = [repo for repo in repos if repo.installed_changeset_revision == installed_changeset_revision]
