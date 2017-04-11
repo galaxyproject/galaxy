@@ -1,7 +1,7 @@
 import os
 
 from copy import deepcopy
-from xml.etree import ElementInclude, cElementTree
+from xml.etree import ElementInclude, ElementTree
 
 
 REQUIRED_PARAMETER = object()
@@ -286,7 +286,7 @@ class XmlMacroDef(object):
 
 
 def _parse_xml(fname):
-    tree = cElementTree.parse(fname)
+    tree = ElementTree.parse(fname)
     root = tree.getroot()
     ElementInclude.include(root)
     return tree
