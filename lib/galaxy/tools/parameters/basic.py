@@ -810,7 +810,7 @@ class SelectToolParameter( ToolParameter ):
         legal_values = self.get_legal_values( trans, other_values )
         workflow_building_mode = trans.workflow_building_mode
         for context_value in other_values.values():
-            if isinstance( context_value, RuntimeValue ):
+            if is_runtime_value( context_value ):
                 workflow_building_mode = True
                 break
         if len( list( legal_values ) ) == 0 and workflow_building_mode:
