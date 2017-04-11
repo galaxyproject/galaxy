@@ -23,9 +23,9 @@ from six.moves import configparser
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
+from galaxy.util import ExecutionTimer
 from galaxy.util import listify
 from galaxy.util import string_as_bool
-from galaxy.util import ExecutionTimer
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web.stack import register_postfork_function
