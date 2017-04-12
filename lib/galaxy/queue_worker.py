@@ -23,7 +23,7 @@ def send_local_control_task(app, task, kwargs={}):
     This sends a message to the process-local control worker, which is useful
     for one-time asynchronous tasks like recalculating user disk usage.
     """
-    log.info("Queuing async task %s." % task)
+    log.info("Queuing async task %s for %s." % (task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
     try:
@@ -32,7 +32,7 @@ def send_local_control_task(app, task, kwargs={}):
             producer.publish(payload,
                              exchange=galaxy.queues.galaxy_exchange,
                              declare=[galaxy.queues.galaxy_exchange] + [galaxy.queues.control_queue_from_config(app.config)],
-                             routing_key='control')
+                             routing_key='control.%s' % app.config.server_name)
     except Exception:
         log.exception("Error queueing async task: %s." % payload)
 
@@ -120,12 +120,14 @@ def _get_new_toolbox(app):
 
 def reload_data_managers(app, **kwargs):
     from galaxy.tools.data_manager.manager import DataManagers
+    from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
     app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
     reload_count = app.data_managers._reload_count
     app.data_managers = DataManagers(app)
     app.data_managers._reload_count = reload_count + 1
+    app.tool_version_cache = ToolVersionCache(app)
 
 
 def reload_display_application(app, **kwargs):
