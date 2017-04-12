@@ -53,7 +53,7 @@
                     </element>
                 </collection>
             </param>
-            <param name="labels" value="new_labels_2.txt" ftype="txt" />
+            <param name="labels" value="new_labels_2.txt" ftype="tabular" />
             <output_collection name="output" type="list:paired">
               <element name="new_i1">
                 <element name="forward">
