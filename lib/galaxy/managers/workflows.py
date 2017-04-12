@@ -13,6 +13,7 @@ from galaxy import model
 from galaxy import util
 from galaxy import exceptions
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.util.json import safe_loads
 from galaxy.workflow import modules
 from .base import decode_id
 
@@ -425,7 +426,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if not module:
                 raise exceptions.MessageException( 'Unrecognized step type: %s' % step.type )
             # Load label from state of data input modules, necessary for backward compatibility
-            self.__set_default_label( module, step.tool_inputs )
+            self.__set_default_label( step, module, step.tool_inputs )
             # Fix any missing parameters
             upgrade_message = module.check_and_update_state()
             if upgrade_message:
@@ -821,7 +822,7 @@ class WorkflowContentsManager(UsesAnnotations):
         step = model.WorkflowStep()
         # TODO: Consider handling position inside module.
         step.position = step_dict['position']
-        if "uuid" in step_dict and step_dict['uuid'] != "None":
+        if step_dict.get("uuid", None) and step_dict['uuid'] != "None":
             step.uuid = step_dict["uuid"]
         if "label" in step_dict:
             step.label = step_dict["label"]
@@ -833,7 +834,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict["subworkflow"] = subworkflow
 
         module = module_factory.from_dict( trans, step_dict, **kwds )
-        self.__set_default_label( module, step_dict.get( 'tool_state' ) )
+        self.__set_default_label( step, module, step_dict.get( 'tool_state' ) )
         module.save_to_step( step )
 
         annotation = step_dict[ 'annotation' ]
@@ -923,14 +924,15 @@ class WorkflowContentsManager(UsesAnnotations):
 
             del step.temp_input_connections
 
-    def __set_default_label( self, module, state ):
+    def __set_default_label( self, step, module, state ):
         """ Previously data input modules had a `name` attribute to rename individual steps. Here, this value is transferred
         to the actual `label` attribute which is available for all module types, unique, and mapped to its own database column.
         """
-        if not module.label and module.type in [ 'data_input', 'data_collection_input' ] and isinstance( state, dict ):
-            default_label = state.get( 'name' )
+        if not module.label and module.type in [ 'data_input', 'data_collection_input' ]:
+            new_state = safe_loads( state )
+            default_label = new_state.get( 'name' )
             if str( default_label ).lower() not in [ 'input dataset', 'input dataset collection' ]:
-                module.label = default_label
+                step.label = module.label = default_label
 
 
 class MissingToolsException(exceptions.MessageException):

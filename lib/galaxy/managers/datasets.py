@@ -300,15 +300,14 @@ class DatasetAssociationManager( base.ModelManager,
         # error here if disallowed - before jobs are stopped
         # TODO: this check may belong in the controller
         self.dataset_manager.error_unless_dataset_purge_allowed()
-        super( DatasetAssociationManager, self ).purge( dataset_assoc, flush=flush )
+
+        # We need to ignore a potential flush=False here and force the flush
+        # so that job cleanup associated with stop_creating_job will see
+        # the dataset as purged.
+        super( DatasetAssociationManager, self ).purge( dataset_assoc, flush=True )
 
         # stop any jobs outputing the dataset_assoc
-        if dataset_assoc.creating_job_associations:
-            job = dataset_assoc.creating_job_associations[0].job
-            if not job.finished:
-                # signal to stop the creating job
-                job.mark_deleted( self.app.config.track_jobs_in_database )
-                self.app.job_manager.job_stop_queue.put( job.id )
+        self.stop_creating_job( dataset_assoc )
 
         # more importantly, purge underlying dataset as well
         if dataset_assoc.dataset.user_can_purge:
@@ -335,16 +334,10 @@ class DatasetAssociationManager( base.ModelManager,
         """
         Stops an dataset_assoc's creating job if all the job's other outputs are deleted.
         """
-        # TODO: use in purge above
-        RUNNING_STATES = (
-            self.app.model.Job.states.QUEUED,
-            self.app.model.Job.states.RUNNING,
-            self.app.model.Job.states.NEW
-        )
         if dataset_assoc.parent_id is None and len( dataset_assoc.creating_job_associations ) > 0:
             # Mark associated job for deletion
             job = dataset_assoc.creating_job_associations[0].job
-            if job.state in RUNNING_STATES:
+            if not job.finished:
                 # Are *all* of the job's other output datasets deleted?
                 if job.check_if_output_datasets_deleted():
                     job.mark_deleted( self.app.config.track_jobs_in_database )

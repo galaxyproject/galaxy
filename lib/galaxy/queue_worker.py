@@ -87,7 +87,8 @@ def reload_tool(app, **kwargs):
 def reload_toolbox(app, **kwargs):
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
-    app.tool_cache.cleanup()
+    if app.tool_cache:
+        app.tool_cache.cleanup()
     app.toolbox = _get_new_toolbox(app)
     app.toolbox._reload_count = reload_count + 1
 
@@ -105,7 +106,7 @@ def _get_new_toolbox(app):
     if app.config.migrated_tools_config not in tool_configs:
         tool_configs.append(app.config.migrated_tools_config)
     start = time.time()
-    new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, app.toolbox._tool_conf_watcher)
+    new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
     load_lib_tools(new_toolbox)
@@ -123,7 +124,7 @@ def reload_data_managers(app, **kwargs):
     app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
     reload_count = app.data_managers._reload_count
-    app.data_managers = DataManagers(app, conf_watchers=app.data_managers.conf_watchers)
+    app.data_managers = DataManagers(app)
     app.data_managers._reload_count = reload_count + 1
 
 

@@ -68,6 +68,10 @@ var HistoryViewEdit = _super.extend(
         // ---- set up instance vars
         /** editor for tags - sub-view */
         this.tagsEditor = null;
+
+        /** enable drag and drop - sub-view */
+        this.dragItems  = true;
+
         /** editor for annotations - sub-view */
         this.annotationEditor = null;
 
@@ -285,23 +289,31 @@ var HistoryViewEdit = _super.extend(
     _collectionActions : function(){
         var panel = this;
         return [
-            {   html: _l( 'Build Dataset List' ), func: function() {
-                    LIST_COLLECTION_CREATOR.createListCollection( panel.getSelectedModels() )
-                        .done( function(){ panel.model.refresh(); });
-                }
+            {   html: _l( 'Build Dataset List' ), func: function() { panel.buildCollection( "list") }
             },
             // TODO: Only show quick pair if two things selected.
-            {   html: _l( 'Build Dataset Pair' ), func: function() {
-                    PAIR_COLLECTION_CREATOR.createPairCollection( panel.getSelectedModels() )
-                        .done( function(){ panel.model.refresh(); });
-                }
+            {   html: _l( 'Build Dataset Pair' ), func: function() { panel.buildCollection( "paired") }
             },
-            {   html: _l( 'Build List of Dataset Pairs' ), func: function() {
-                    LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection( panel.getSelectedModels() )
-                        .done( function(){ panel.model.refresh(); });
-                }
+            {   html: _l( 'Build List of Dataset Pairs' ), func: function() { panel.buildCollection( "list:paired" ) }
             },
         ];
+    },
+
+    buildCollection : function( collectionType, selection, hideSourceItems ) {
+        var panel = this;
+        var selection = selection || panel.getSelectedModels();
+        var hideSourceItems = hideSourceItems || false;
+        var createFunc;
+        if( collectionType == "list" ) {
+            createFunc = LIST_COLLECTION_CREATOR.createListCollection;
+        } else if( collectionType == "paired" ) {
+            createFunc = PAIR_COLLECTION_CREATOR.createPairCollection;
+        } else if( collectionType == "list:paired" ) {
+            createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
+        } else {
+            console.warn( "Unknown collectionType encountered " + collectionType );
+        }
+        createFunc( selection, hideSourceItems ).done( function() { panel.model.refresh() } );
     },
 
     // ------------------------------------------------------------------------ sub-views

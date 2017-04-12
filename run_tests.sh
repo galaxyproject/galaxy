@@ -235,16 +235,21 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-ensure_grunt() {
+ensure_grunt_for_qunit() {
     if ! exists "grunt";
     then
-        echo "Grunt not on path, cannot run these tests."
-        exit 1
+        PATH="$PATH:./test/qunit/node_modules/grunt/bin"
+        export PATH
+        if ! exists "grunt";
+        then
+            echo "Grunt not on path, cannot run these tests."
+            exit 1
+        fi
     fi
 }
 
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:17.01.0'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:17.05.0'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -616,7 +621,7 @@ if [ "$driver" = "python" ]; then
     echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
     exit ${exit_status}
 else
-    ensure_grunt
+    ensure_grunt_for_qunit
     if [ -n "$watch" ]; then
         grunt_task="watch"
     else

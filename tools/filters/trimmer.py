@@ -6,8 +6,7 @@ import sys
 
 
 def stop_err( msg ):
-    sys.stderr.write( msg )
-    sys.exit()
+    sys.exit(msg)
 
 
 def main():

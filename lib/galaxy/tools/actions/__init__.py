@@ -148,14 +148,14 @@ class DefaultToolAction( object ):
 
         input_dataset_collections = dict()
 
-        def visitor( input, value, prefix, parent=None, **kwargs ):
+        def visitor( input, value, prefix, parent=None, prefixed_name=None, **kwargs ):
             if isinstance( input, DataToolParameter ):
                 values = value
                 if not isinstance( values, list ):
                     values = [ value ]
                 for i, value in enumerate(values):
                     if isinstance( value, model.HistoryDatasetCollectionAssociation ):
-                        append_to_key( input_dataset_collections, prefix + input.name, ( value, True ) )
+                        append_to_key( input_dataset_collections, prefixed_name, ( value, True ) )
                         target_dict = parent
                         if not target_dict:
                             target_dict = param_values
@@ -405,6 +405,7 @@ class DefaultToolAction( object ):
                     output_collections.create_collection(
                         output=output,
                         name=name,
+                        tags=preserved_tags,
                         **element_kwds
                     )
                 else:
@@ -548,19 +549,33 @@ class DefaultToolAction( object ):
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
+        reductions = {}
         for name, dataset_collection_info_pairs in inp_dataset_collections.items():
-            first_reduction = True
             for ( dataset_collection, reduced ) in dataset_collection_info_pairs:
-                # TODO: update incoming for list...
-                if reduced and first_reduction:
-                    first_reduction = False
-                    incoming[ name ] = []
                 if reduced:
-                    incoming[ name ].append( { 'id': dataset_collection.id, 'src': 'hdca' } )
-                # Should verify security? We check security of individual
-                # datasets below?
+                    if name not in reductions:
+                        reductions[name] = []
+                    reductions[name].append(dataset_collection)
+
                 # TODO: verify can have multiple with same name, don't want to loose tracability
                 job.add_input_dataset_collection( name, dataset_collection )
+
+        # If this an input collection is a reduction, we expanded it for dataset security, type
+        # checking, and such, but the persisted input must be the original collection
+        # so we can recover things like element identifier during tool command evaluation.
+        def restore_reduction_visitor( input, value, prefix, parent=None, prefixed_name=None, **kwargs ):
+            if prefixed_name in reductions and isinstance( input, DataToolParameter ):
+                target_dict = parent
+                if not target_dict:
+                    target_dict = incoming
+
+                target_dict[ input.name ] = []
+                for reduced_collection in reductions[prefixed_name]:
+                    target_dict[ input.name ].append( { 'id': reduced_collection.id, 'src': 'hdca' } )
+
+        if reductions:
+            tool.visit_inputs( incoming, restore_reduction_visitor )
+
         for name, value in tool.params_to_strings( incoming, trans.app ).items():
             job.add_parameter( name, value )
         self._check_input_data_access( trans, job, inp_data, current_user_roles )
@@ -664,7 +679,7 @@ class OutputCollections(object):
         self.out_collections = {}
         self.out_collection_instances = {}
 
-    def create_collection(self, output, name, **element_kwds):
+    def create_collection(self, output, name, tags=None, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = output.structure.collection_type
@@ -678,6 +693,17 @@ class OutputCollections(object):
                 raise Exception("Could not find collection type source with name [%s]." % collection_type_source)
 
             collection_type = input_collections[collection_type_source].collection.collection_type
+
+        if "elements" in element_kwds:
+            elements = element_kwds["elements"]
+            if hasattr(elements, "items"):  # else it is ELEMENTS_UNINITIALIZED object.
+                for key, value in elements.items():
+                    # Either a HDA (if) or a DatasetCollection (the else)
+                    if getattr(value, "history_content_type", None) == "dataset":
+                        assert value.history is not None
+                    else:
+                        for dataset in value.dataset_instances:
+                            assert dataset.history is not None
 
         if self.mapping_over_collection:
             dc = collections_manager.create_dataset_collection(
@@ -704,6 +730,7 @@ class OutputCollections(object):
                 name=hdca_name,
                 collection_type=collection_type,
                 trusted_identifiers=True,
+                tags=tags,
                 **element_kwds
             )
             # name here is name of the output element - not name

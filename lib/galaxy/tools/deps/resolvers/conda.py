@@ -131,6 +131,10 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         if not all_resolved:
             return None
         environments = set([os.path.basename(dependency.environment_path) for dependency in all_resolved])
+        return self.uninstall_environments(environments)
+
+    def uninstall_environments(self, environments):
+        environments = [env if not env.startswith(self.conda_context.envs_path) else os.path.basename(env) for env in environments]
         return_codes = [self.conda_context.exec_remove([env]) for env in environments]
         final_return_code = 0
         for env, return_code in zip(environments, return_codes):
@@ -285,6 +289,23 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
 
     def _expand_requirement(self, requirement):
         return self._expand_specs(self._expand_mappings(requirement))
+
+    def unused_dependency_paths(self, toolbox_requirements_status):
+        """
+        Identify all local environments that are not needed to build requirements_status.
+
+        We try to resolve the requirements, and we note every environment_path that has been taken.
+        """
+        used_paths = set()
+        for dependencies in toolbox_requirements_status.values():
+            for dependency in dependencies:
+                if dependency.get('dependency_type') == 'conda':
+                    path = os.path.basename(dependency['environment_path'])
+                    used_paths.add(path)
+        dir_contents = set(os.listdir(self.conda_context.envs_path) if os.path.exists(self.conda_context.envs_path) else [])
+        unused_paths = dir_contents.difference(used_paths)  # New set with paths in dir_contents but not in used_paths
+        unused_paths = [os.path.join(self.conda_context.envs_path, p) for p in unused_paths]
+        return unused_paths
 
     def list_dependencies(self):
         for install_target in installed_conda_targets(self.conda_context):

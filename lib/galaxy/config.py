@@ -327,6 +327,8 @@ class Configuration( object ):
         self.force_beta_workflow_scheduled_for_collections = string_as_bool( kwargs.get( 'force_beta_workflow_scheduled_for_collections', 'False' ) )
 
         self.history_local_serial_workflow_scheduling = string_as_bool( kwargs.get( 'history_local_serial_workflow_scheduling', 'False' ) )
+        self.parallelize_workflow_scheduling_within_histories = string_as_bool( kwargs.get( 'parallelize_workflow_scheduling_within_histories', 'False' ) )
+        self.maximum_workflow_invocation_duration = int( kwargs.get( "maximum_workflow_invocation_duration", 2678400 ) )
 
         # Per-user Job concurrency limitations
         self.cache_user_job_count = string_as_bool( kwargs.get( 'cache_user_job_count', False ) )
@@ -908,11 +910,9 @@ class ConfiguresGalaxyMixin:
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
         from galaxy.tools.deps import containers
-        from galaxy.tools.toolbox.cache import ToolCache
         from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
 
         self.citations_manager = CitationsManager( self )
-        self.tool_cache = ToolCache()
         self.tool_version_cache = ToolVersionCache(self)
 
         self._toolbox_lock = threading.RLock()

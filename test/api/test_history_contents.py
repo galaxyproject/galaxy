@@ -161,6 +161,23 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
         dataset_collection = show_response.json()
         assert dataset_collection[ "deleted" ]
 
+    def test_dataset_collection_hide_originals( self ):
+        payload = self.dataset_collection_populator.create_pair_payload(
+            self.history_id,
+            type="dataset_collection"
+        )
+
+        payload["hide_source_items"] = True
+        dataset_collection_response = self._post( "histories/%s/contents" % self.history_id, payload )
+        self.__check_create_collection_response( dataset_collection_response )
+
+        contents_response = self._get( "histories/%s/contents" % self.history_id )
+        datasets = [d for d in contents_response.json() if d["history_content_type"] == "dataset" and d["hid"] in [1, 2]]
+        # Assert two datasets in source were hidden.
+        assert len(datasets) == 2
+        assert not datasets[0]["visible"]
+        assert not datasets[1]["visible"]
+
     def test_update_dataset_collection( self ):
         payload = self.dataset_collection_populator.create_pair_payload(
             self.history_id,
