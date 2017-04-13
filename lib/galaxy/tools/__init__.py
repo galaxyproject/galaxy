@@ -1068,13 +1068,14 @@ class Tool( object, Dictifiable ):
     def populate_tool_shed_info( self ):
         if self.repository_id is not None and self.app.name == 'galaxy':
             repository_id = self.app.security.decode_id( self.repository_id )
-            tool_shed_repository = self.app.install_model.context.query( self.app.install_model.ToolShedRepository ).get( repository_id )
-            if tool_shed_repository:
-                self.tool_shed = tool_shed_repository.tool_shed
-                self.repository_name = tool_shed_repository.name
-                self.repository_owner = tool_shed_repository.owner
-                self.changeset_revision = tool_shed_repository.changeset_revision
-                self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+            if hasattr(self.app, 'tool_shed_repository_cache'):
+                tool_shed_repository = self.app.tool_shed_repository_cache.get_installed_repository( repository_id=repository_id )
+                if tool_shed_repository:
+                    self.tool_shed = tool_shed_repository.tool_shed
+                    self.repository_name = tool_shed_repository.name
+                    self.repository_owner = tool_shed_repository.owner
+                    self.changeset_revision = tool_shed_repository.changeset_revision
+                    self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
 
     @property
     def help(self):
