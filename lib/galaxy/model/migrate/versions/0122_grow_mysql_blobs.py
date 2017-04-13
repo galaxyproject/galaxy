@@ -45,7 +45,7 @@ def upgrade(migrate_engine):
         try:
             migrate_engine.execute( cmd )
         except Exception:
-            log.exception("Failed to grow column %s.%s" % (table, column))
+            log.exception("Failed to grow column %s.%s", table, column)
 
 
 def downgrade(migrate_engine):

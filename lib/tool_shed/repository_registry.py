@@ -97,7 +97,7 @@ class Registry( object ):
             # The viewable repository numbers and the categorized (filtered) lists of repository tuples
             # may be slightly skewed, but that is no reason to result in a potential server error.  All
             # will be corrected at next server start.
-            log.exception( "Handled error adding entry to repository registry: %s." % str( e ) )
+            log.exception( "Handled error adding entry to repository registry" )
 
     def edit_category_entry( self, old_name, new_name ):
         if old_name in self.viewable_repositories_and_suites_by_category:
@@ -345,7 +345,7 @@ class Registry( object ):
             # The viewable repository numbers and the categorized (filtered) lists of repository tuples
             # may be slightly skewed, but that is no reason to result in a potential server error.  All
             # will be corrected at next server start.
-            log.exception( "Handled error removing entry from repository registry: %s." % str( e ) )
+            log.exception( "Handled error removing entry from repository registry: %s." )
 
     @property
     def sa_session( self ):

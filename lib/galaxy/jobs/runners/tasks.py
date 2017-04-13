@@ -115,7 +115,7 @@ class TaskedJobRunner( BaseJobRunner ):
             stdout, stderr = splitter.do_merge(job_wrapper, task_wrappers)
         except Exception:
             job_wrapper.fail( "failure running job", exception=True )
-            log.exception("failure running job %d" % job_wrapper.job_id)
+            log.exception("failure running job %d", job_wrapper.job_id)
             return
 
         # run the metadata setting script here

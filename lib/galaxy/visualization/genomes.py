@@ -329,7 +329,7 @@ class Genomes( object ):
         if genome:
             rval = genome.to_dict( num=num, chrom=chrom, low=low )
         else:
-            log.exception( 'genome not found for key %s' % dbkey )
+            log.exception( 'genome not found for key %s', dbkey )
 
         return rval
 

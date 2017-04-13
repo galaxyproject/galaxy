@@ -1109,7 +1109,7 @@ class Tool( object, Dictifiable ):
                                         output_encoding='utf-8', default_filters=[ 'decode.utf8' ],
                                         encoding_errors='replace' )
             except:
-                log.exception( "error in help for tool %s" % self.name )
+                log.exception( "error in help for tool %s", self.name )
 
             # Handle deprecated multi-page help text in XML case.
             if hasattr(tool_source, "root"):
@@ -1129,7 +1129,7 @@ class Tool( object, Dictifiable ):
                                                       encoding_errors='replace' )
                                             for x in self.__help_by_page ]
                 except:
-                    log.exception( "error in multi-page help for tool %s" % self.name )
+                    log.exception( "error in multi-page help for tool %s", self.name )
         # Pad out help pages to match npages ... could this be done better?
         while len( self.__help_by_page ) < self.npages:
             self.__help_by_page.append( self.__help )

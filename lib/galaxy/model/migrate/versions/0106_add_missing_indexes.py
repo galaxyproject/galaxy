@@ -65,7 +65,7 @@ def upgrade(migrate_engine):
             else:
                 pass  # Index already exists, don't recreate.
         except Exception:
-            log.exception("Unable to create index '%s'." % ix)
+            log.exception("Unable to create index '%s'.", ix)
 
 
 def downgrade(migrate_engine):
@@ -78,4 +78,4 @@ def downgrade(migrate_engine):
             t = Table( table, metadata, autoload=True )
             Index( ix, t.c[col] ).drop()
         except Exception:
-            log.exception("Unable to drop index '%s'." % ix)
+            log.exception("Unable to drop index '%s'.", ix)

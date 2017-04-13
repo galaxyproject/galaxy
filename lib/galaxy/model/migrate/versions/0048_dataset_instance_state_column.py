@@ -42,7 +42,7 @@ def upgrade(migrate_engine):
                 col.create( dataset_instance_table, index_name=index_name)
                 assert col is dataset_instance_table.c.state
             except Exception:
-                log.exception("Adding column 'state' to %s table failed." % table_name)
+                log.exception("Adding column 'state' to %s table failed.", table_name)
 
 
 def downgrade(migrate_engine):
@@ -60,4 +60,4 @@ def downgrade(migrate_engine):
                 col = dataset_instance_table.c.state
                 col.drop()
             except Exception:
-                log.exception("Dropping column 'state' from %s table failed." % table_name)
+                log.exception("Dropping column 'state' from %s table failed.", table_name)

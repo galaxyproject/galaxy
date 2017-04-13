@@ -299,7 +299,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             job_wrapper.change_state( model.Job.states.QUEUED )
         except Exception:
             job_wrapper.fail( "failure running job", exception=True )
-            log.exception("failure running job %d" % job_wrapper.job_id)
+            log.exception("failure running job %d", job_wrapper.job_id)
             return
 
         pulsar_job_state = AsynchronousJobState()
@@ -366,10 +366,10 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             )
         except UnsupportedPulsarException as e:
             job_wrapper.fail( e.message, exception=False )
-            log.exception("failure running job %d" % job_wrapper.job_id)
+            log.exception("failure running job %d", job_wrapper.job_id)
         except Exception:
             job_wrapper.fail( "failure preparing job", exception=True )
-            log.exception("failure running job %d" % job_wrapper.job_id)
+            log.exception("failure running job %d", job_wrapper.job_id)
 
         # If we were able to get a command line, run the job
         if not command_line:
@@ -488,7 +488,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         except Exception:
             message = GENERIC_REMOTE_ERROR
             job_wrapper.fail( message, exception=True )
-            log.exception("failure finishing job %d" % job_wrapper.job_id)
+            log.exception("failure finishing job %d", job_wrapper.job_id)
             return
         if not PulsarJobRunner.__remote_metadata( client ):
             self._handle_metadata_externally( job_wrapper, resolve_requirements=True )
@@ -730,7 +730,7 @@ class PulsarMQJobRunner( PulsarJobRunner ):
             job_state = self._job_state( job, job_wrapper )
             self._update_job_state_for_status(job_state, full_status[ "status" ] )
         except Exception:
-            log.exception( "Failed to update Pulsar job status for job_id %s" % job_id )
+            log.exception( "Failed to update Pulsar job status for job_id %s", job_id )
             raise
             # Nothing else to do? - Attempt to fail the job?
 

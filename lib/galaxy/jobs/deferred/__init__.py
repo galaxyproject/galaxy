@@ -40,7 +40,7 @@ class DeferredJobQueue( object ):
                 try:
                     module = __import__( module_name )
                 except:
-                    log.exception( 'Deferred job plugin appears to exist but is not loadable: %s' % module_name )
+                    log.exception( 'Deferred job plugin appears to exist but is not loadable: %s', module_name )
                     continue
                 for comp in module_name.split( "." )[1:]:
                     module = getattr( module, comp )

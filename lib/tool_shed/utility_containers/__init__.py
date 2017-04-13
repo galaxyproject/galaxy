@@ -351,7 +351,7 @@ class ToolShedUtilityContainerManager( utility_container_manager.UtilityContaine
                                                                      label="Invalid Data Managers" )
                         containers_dict[ 'invalid_data_managers' ] = data_managers_root_folder
             except Exception as e:
-                log.exception( "Exception in build_repository_containers: %s" % str( e ) )
+                log.exception( "Exception in build_repository_containers" )
             finally:
                 lock.release()
         return containers_dict

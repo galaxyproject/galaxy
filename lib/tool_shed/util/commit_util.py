@@ -138,7 +138,7 @@ def handle_bz2( repository, uploaded_file_name ):
         except IOError:
             os.close( fd )
             os.remove( uncompressed )
-            log.exception( 'Problem uncompressing bz2 data "%s"' % uploaded_file_name )
+            log.exception( 'Problem uncompressing bz2 data "%s"', uploaded_file_name )
             return
         if not chunk:
             break
@@ -238,7 +238,7 @@ def handle_gzip( repository, uploaded_file_name ):
         except IOError as e:
             os.close( fd )
             os.remove( uncompressed )
-            log.exception( 'Problem uncompressing gz data "%s"' % uploaded_file_name )
+            log.exception( 'Problem uncompressing gz data "%s"', uploaded_file_name )
             return
         if not chunk:
             break

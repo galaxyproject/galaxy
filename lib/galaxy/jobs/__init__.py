@@ -726,8 +726,8 @@ class JobConfiguration( object ):
                 try:
                     rval[id] = runner_class( self.app, runner[ 'workers' ], **runner.get( 'kwds', {} ) )
                 except TypeError:
-                    log.exception( "Job runner '%s:%s' has not been converted to a new-style runner or encountered TypeError on load"
-                                   % ( module_name, class_name ) )
+                    log.exception( "Job runner '%s:%s' has not been converted to a new-style runner or encountered TypeError on load",
+                                   module_name, class_name )
                     rval[id] = runner_class( self.app )
                 log.debug( "Loaded job runner '%s:%s' as '%s'" % ( module_name, class_name, id ) )
         return rval
@@ -1551,7 +1551,7 @@ class JobWrapper( object, HasResourceParameters ):
             if delete_files:
                 self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
         except:
-            log.exception( "Unable to cleanup job %d" % self.job_id )
+            log.exception( "Unable to cleanup job %d", self.job_id )
 
     def _collect_extra_files(self, dataset, job_working_directory):
         temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( dataset.id ) )

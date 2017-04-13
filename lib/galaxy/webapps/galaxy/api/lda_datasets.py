@@ -607,7 +607,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 log.exception( "Unable to create archive for download" )
                 raise exceptions.InternalServerError( "Unable to create archive for download." )
             except Exception:
-                log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[ 0 ] )
+                log.exception( "Unexpected error %s in create archive for download", sys.exc_info()[ 0 ] )
                 raise exceptions.InternalServerError( "Unable to create archive for download." )
             composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
             seen = []
@@ -640,13 +640,13 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                         else:
                             archive.add( ldda.dataset.file_name, zpath, check_file=True )  # add the primary of a composite set
                     except IOError:
-                        log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name )
+                        log.exception( "Unable to add composite parent %s to temporary library download archive", ldda.dataset.file_name )
                         raise exceptions.InternalServerError( "Unable to create archive for download." )
                     except ObjectNotFound:
-                        log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
+                        log.exception( "Requested dataset %s does not exist on the host.", ldda.dataset.file_name )
                         raise exceptions.ObjectNotFound( "Requested dataset not found. " )
                     except Exception as e:
-                        log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name )
+                        log.exception( "Unable to add composite parent %s to temporary library download archive", ldda.dataset.file_name )
                         raise exceptions.InternalServerError( "Unable to add composite parent to temporary library download archive. " + str( e ) )
 
                     flist = glob.glob(os.path.join(ldda.dataset.extra_files_path, '*.*'))  # glob returns full paths
@@ -660,13 +660,13 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                             else:
                                 archive.add( fpath, fname, check_file=True )
                         except IOError:
-                            log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname) )
+                            log.exception( "Unable to add %s to temporary library download archive %s", fname, outfname )
                             raise exceptions.InternalServerError( "Unable to create archive for download." )
                         except ObjectNotFound:
-                            log.exception( "Requested dataset %s does not exist on the host." % fpath )
+                            log.exception( "Requested dataset %s does not exist on the host.", fpath )
                             raise exceptions.ObjectNotFound( "Requested dataset not found." )
                         except Exception as e:
-                            log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname ) )
+                            log.exception( "Unable to add %s to temporary library download archive %s", fname, outfname )
                             raise exceptions.InternalServerError( "Unable to add dataset to temporary library download archive . " + str( e ) )
 
                 else:  # simple case
@@ -676,13 +676,13 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                         else:
                             archive.add( ldda.dataset.file_name, path, check_file=True )
                     except IOError:
-                        log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name )
+                        log.exception( "Unable to write %s to temporary library download archive", ldda.dataset.file_name )
                         raise exceptions.InternalServerError( "Unable to create archive for download" )
                     except ObjectNotFound:
-                        log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
+                        log.exception( "Requested dataset %s does not exist on the host.", ldda.dataset.file_name )
                         raise exceptions.ObjectNotFound( "Requested dataset not found." )
                     except Exception as e:
-                        log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname ) )
+                        log.exception( "Unable to add %s to temporary library download archive %s", fname, outfname )
                         raise exceptions.InternalServerError( "Unknown error. " + str( e ) )
             lname = 'selected_dataset'
             fname = lname.replace( ' ', '_' ) + '_files'
