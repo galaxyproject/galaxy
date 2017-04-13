@@ -1819,7 +1819,7 @@ class Tool( object, Dictifiable ):
                     if 'test_param' in tool_dict:
                         test_param = tool_dict[ 'test_param' ]
                         test_param[ 'value' ] = input.test_param.value_to_basic( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ), self.app )
-                        test_param[ 'text_value' ] = input.test_param.value_to_display_text( test_param[ 'value' ], self.app )
+                        test_param[ 'text_value' ] = input.test_param.value_to_display_text( test_param[ 'value' ] )
                         for i in range( len( tool_dict['cases'] ) ):
                             current_state = {}
                             if i == group_state.get( '__current_case__' ):
@@ -1832,7 +1832,7 @@ class Tool( object, Dictifiable ):
                     try:
                         tool_dict = input.to_dict( request_context, other_values=other_values )
                         tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app, use_security=True )
-                        tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
+                        tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ] )
                     except Exception as e:
                         tool_dict = input.to_dict( request_context )
                         log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )

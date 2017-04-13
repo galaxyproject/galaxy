@@ -70,7 +70,7 @@ class WrappedParameters( object ):
                                             tool=tool,
                                             name=input.name )
             elif isinstance( input, SelectToolParameter ):
-                input_values[ input.name ] = SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values=incoming )
+                input_values[ input.name ] = SelectToolParameterWrapper( input, input_values[ input.name ], other_values=incoming )
             elif isinstance( input, DataCollectionToolParameter ):
                 input_values[ input.name ] = DatasetCollectionWrapper(
                     None,
