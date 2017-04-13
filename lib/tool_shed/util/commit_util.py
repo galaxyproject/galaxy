@@ -238,7 +238,7 @@ def handle_gzip( repository, uploaded_file_name ):
         except IOError as e:
             os.close( fd )
             os.remove( uncompressed )
-            log.exception( 'Problem uncompressing gz data "%s": %s' % ( uploaded_file_name, str( e ) ) )
+            log.exception( 'Problem uncompressing gz data "%s"' % uploaded_file_name )
             return
         if not chunk:
             break

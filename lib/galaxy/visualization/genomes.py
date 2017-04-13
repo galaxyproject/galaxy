@@ -216,7 +216,7 @@ class Genomes( object ):
                         twobit_fields[ key ] = path
             except IOError as e:
                 # Thrown if twobit.loc does not exist.
-                log.exception( "Error reading twobit.loc: %s", e )
+                log.exception( "Error reading twobit.loc" )
         for key, description in self.app.genome_builds.get_genome_build_names():
             self.genomes[ key ] = Genome( key, description )
             # Add len files to genomes.

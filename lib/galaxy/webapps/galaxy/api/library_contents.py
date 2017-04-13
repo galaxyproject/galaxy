@@ -391,14 +391,14 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             rval[ 'deleted' ] = True
 
         except exceptions.httpexceptions.HTTPInternalServerError as http_server_err:
-            log.exception( 'Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
-                           id, str( kwd ), str( http_server_err ) )
+            log.exception( 'Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s',
+                           id, str( kwd ) )
             raise
         except exceptions.httpexceptions.HTTPException:
             raise
         except Exception as exc:
-            log.exception( 'library_contents API, delete: uncaught exception: %s, %s\n%s',
-                           id, str( kwd ), str( exc ) )
+            log.exception( 'library_contents API, delete: uncaught exception: %s, %s',
+                           id, str( kwd ) )
             trans.response.status = 500
             rval.update({ 'error': str( exc ) })
         return rval

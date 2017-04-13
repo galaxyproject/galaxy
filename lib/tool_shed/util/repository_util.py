@@ -813,7 +813,7 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
             # The required tool shed may be unavailable, so default the revision_update value to 'false'.
             return dict( revision_update='false' )
     except Exception as e:
-        log.exception( "Error attempting to get tool shed status for installed repository %s: %s" % ( str( repository.name ), str( e ) ) )
+        log.exception( "Error attempting to get tool shed status for installed repository %s" % str( repository.name ) )
         return {}
 
 

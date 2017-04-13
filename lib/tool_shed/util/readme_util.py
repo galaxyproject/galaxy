@@ -58,7 +58,7 @@ def build_readme_files_dict( app, repository, changeset_revision, metadata, tool
                                                                                  app.security.encode_id( repository.id ),
                                                                                  text_of_reasonable_length )
                             except Exception as e:
-                                log.exception( "Exception in build_readme_files_dict, so images may not be properly displayed:\n%s" % str( e ) )
+                                log.exception( "Exception in build_readme_files_dict, so images may not be properly displayed" )
                             finally:
                                 lock.release()
                         if readme_file_name.endswith( '.rst' ):

@@ -1103,7 +1103,7 @@ class Tool( object, Dictifiable ):
                 try:
                     help_text = tool_shed.util.shed_util_common.set_image_paths( self.app, self.repository_id, help_text )
                 except Exception as e:
-                    log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
+                    log.exception( "Exception in parse_help, so images may not be properly displayed" )
             try:
                 self.__help = Template( rst_to_html(help_text), input_encoding='utf-8',
                                         output_encoding='utf-8', default_filters=[ 'decode.utf8' ],

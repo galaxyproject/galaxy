@@ -630,7 +630,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         except Exception as exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
-            log.exception( 'Error bootstrapping history for user %s: %s', user_id, exc )
+            log.exception( 'Error bootstrapping history for user %s', user_id )
             if isinstance( exc, exceptions.ItemAccessibilityException ):
                 error_msg = 'You do not have permission to view this history.'
             else:
