@@ -5,7 +5,6 @@ installed within this Galaxy.
 import logging
 import re
 import tempfile
-from datetime import datetime
 
 from whoosh import analysis
 from whoosh.analysis import StandardAnalyzer
@@ -22,6 +21,7 @@ from whoosh.filedb.filestore import (
 from whoosh.qparser import MultifieldParser
 from whoosh.scoring import BM25F
 
+from galaxy.util import ExecutionTimer
 from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger( __name__ )
@@ -50,19 +50,18 @@ class ToolBoxSearch( object ):
 
     def build_index( self, index_help=True ):
         """Prepare search index for tools loaded in toolbox."""
+        log.debug( 'Starting to build toolbox index.' )
+        execution_timer = ExecutionTimer()
         RamStorage.temp_storage = _temp_storage
         # Works around https://bitbucket.org/mchaput/whoosh/issues/391/race-conditions-with-temp-storage
         self.storage = RamStorage()
         self.index = self.storage.create_index( self.schema )
         writer = self.index.writer()
-        start_time = datetime.now()
-        log.debug( 'Starting to build toolbox index.' )
         for tool_id, tool in self.toolbox.tools():
             add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
             writer.add_document( **add_doc_kwds )
         writer.commit()
-        stop_time = datetime.now()
-        log.debug( 'Toolbox index finished. It took: ' + str(stop_time - start_time) )
+        log.debug("Toolbox index finished %s", execution_timer )
 
     def _create_doc(self, tool_id, tool, index_help=True):
         #  Do not add data managers to the public index

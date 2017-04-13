@@ -14,6 +14,7 @@ from galaxy.exceptions import MessageException, ObjectNotFound
 from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.loader_directory import looks_like_a_tool
 from galaxy.util import (
+    ExecutionTimer,
     listify,
     parse_xml,
     string_as_bool
@@ -97,7 +98,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         """ Read through all tool config files and initialize tools in each
         with init_tools_from_config below.
         """
-        start = time.time()
+        execution_timer = ExecutionTimer()
         self._tool_tag_manager.reset_tags()
         config_filenames = listify( config_filenames )
         for config_filename in config_filenames:
@@ -120,7 +121,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     raise
             except Exception:
                 log.exception( "Error loading tools defined in config %s", config_filename )
-        log.debug("Reading tools from config files took %f seconds", time.time() - start)
+        log.debug("Reading tools from config files finshed %s", execution_timer)
 
     def _init_tools_from_config( self, config_filename ):
         """
@@ -323,7 +324,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             log.debug(log_msg)
 
     def _load_tool_panel( self ):
-        start = time.time()
+        execution_timer = ExecutionTimer()
         for key, item_type, val in self._integrated_tool_panel.panel_items_iter():
             if item_type == panel_item_types.TOOL:
                 tool_id = key.replace( 'tool_', '', 1 )
@@ -363,7 +364,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                             section.elems[ section_key ] = section_val
                             log.debug( "Loaded label: %s" % ( section_val.text ) )
                 self._tool_panel[ key ] = section
-        log.debug("loading tool panel took %d seconds", time.time() - start)
+        log.debug("Loading tool panel finished %s", execution_timer)
 
     def _load_integrated_tool_panel_keys( self ):
         """
