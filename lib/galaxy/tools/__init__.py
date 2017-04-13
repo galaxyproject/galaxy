@@ -112,6 +112,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "Extract genomic DNA 1",
     "aggregate_scores_in_intervals2",
     "Interval_Maf_Merged_Fasta2",
+    "GeneBed_Maf_Fasta2",
     "maf_stats1",
     "Interval2Maf1",
     "MAF_To_Interval1",
