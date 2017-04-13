@@ -767,7 +767,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         """
         Log, raise if debugging; log and show html message if not.
         """
-        log.exception( 'error rendering visualization (%s): %s', visualization_name, unicodify( exception ) )
+        log.exception( 'error rendering visualization (%s)', visualization_name )
         if trans.debug:
             raise
         return trans.show_error_message(
