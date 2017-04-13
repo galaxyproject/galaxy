@@ -2506,17 +2506,20 @@ class FlattenTool( DatabaseOperationTool ):
         )
 
 
-class RelabelFromFileTool( DatabaseOperationTool ):
+class RelabelFromFileTool(DatabaseOperationTool):
     tool_type = 'relabel_from_file'
 
-    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
-        hdca = incoming[ "input" ]
-        new_labels_dataset_assoc = incoming[ "labels" ]
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+        hdca = incoming["input"]
+        how_type = incoming["how"]["how_select"]
+        new_labels_dataset_assoc = incoming["how"]["labels"]
+        strict = string_as_bool(incoming["how"]["strict"])
         new_elements = odict()
-        log.info(new_labels_dataset_assoc)
         new_labels_path = new_labels_dataset_assoc.file_name
         new_labels = open(new_labels_path, "r").readlines(1024 * 1000000)
-        if new_labels_dataset_assoc.ext == 'tabular' and new_labels_dataset_assoc.metadata.get('columns') == 2:
+        if strict and len(hdca.collection.elements) != len(new_labels):
+            raise Exception("Relabel mapping file contains incorrect number of identifiers")
+        if how_type == "tabular":
             # We have a tabular file, where the first column is an existing element identifier,
             # and the second column is the new element identifier.
             source_new_label = (line.strip().split('\t') for line in new_labels)
@@ -2524,15 +2527,25 @@ class RelabelFromFileTool( DatabaseOperationTool ):
             for i, dce in enumerate(hdca.collection.elements):
                 dce_object = dce.element_object
                 element_identifier = dce.element_identifier
-                new_label = new_labels_dict.get(element_identifier, element_identifier)
-                new_elements[new_label] = dce_object.copy()
-
+                default = element_identifier if strict else None
+                new_label = new_labels_dict.get(element_identifier, default)
+                if not new_label:
+                    raise Exception("Failed to find new label for identifier [%s]" % element_identifier)
+                copied_value = dce_object.copy()
+                if getattr(copied_value, "history_content_type", None) == "dataset":
+                    history.add_dataset(copied_value, set_hid=False)
+                new_elements[new_label] = copied_value
         else:
             # If new_labels_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
             for i, dce in enumerate(hdca.collection.elements):
                 dce_object = dce.element_object
-                new_elements[new_labels[i].strip()] = dce_object.copy()
-
+                copied_value = dce_object.copy()
+                if getattr(copied_value, "history_content_type", None) == "dataset":
+                    history.add_dataset(copied_value, set_hid=False)
+                new_elements[new_labels[i].strip()] = copied_value
+        for key in new_elements.keys():
+            if not re.match("^[\w\-_]+$", key):
+                raise Exception("Invalid new colleciton identifier [%s]" % key)
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
