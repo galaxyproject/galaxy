@@ -390,7 +390,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             trans.sa_session.flush()
             rval[ 'deleted' ] = True
 
-        except exceptions.httpexceptions.HTTPInternalServerError as http_server_err:
+        except exceptions.httpexceptions.HTTPInternalServerError:
             log.exception( 'Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s',
                            id, str( kwd ) )
             raise

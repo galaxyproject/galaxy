@@ -1102,7 +1102,7 @@ class Tool( object, Dictifiable ):
                 # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
                 try:
                     help_text = tool_shed.util.shed_util_common.set_image_paths( self.app, self.repository_id, help_text )
-                except Exception as e:
+                except Exception:
                     log.exception( "Exception in parse_help, so images may not be properly displayed" )
             try:
                 self.__help = Template( rst_to_html(help_text), input_encoding='utf-8',

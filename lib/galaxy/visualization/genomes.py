@@ -214,7 +214,7 @@ class Genomes( object ):
                     if len( val ) == 2:
                         key, path = val
                         twobit_fields[ key ] = path
-            except IOError as e:
+            except IOError:
                 # Thrown if twobit.loc does not exist.
                 log.exception( "Error reading twobit.loc" )
         for key, description in self.app.genome_builds.get_genome_build_names():

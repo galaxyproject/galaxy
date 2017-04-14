@@ -560,7 +560,7 @@ class Registry( object ):
                         self.datatype_converters[ source_datatype ] = odict()
                     self.datatype_converters[ source_datatype ][ target_datatype ] = converter
                     self.log.debug( "Loaded converter: %s", converter.id )
-            except Exception as e:
+            except Exception:
                 if deactivate:
                     self.log.exception( "Error deactivating converter from (%s)" % converter_path )
                 else:
@@ -628,7 +628,7 @@ class Registry( object ):
                             if inherit and ( self.datatypes_by_extension[ extension ], display_app ) not in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.append( ( self.datatypes_by_extension[ extension ], display_app ) )
                             self.log.debug( "Loaded display application '%s' for datatype '%s', inherit=%s." % ( display_app.id, extension, inherit ) )
-                except Exception as e:
+                except Exception:
                     if deactivate:
                         self.log.exception( "Error deactivating display application (%s)" % config_path )
                     else:

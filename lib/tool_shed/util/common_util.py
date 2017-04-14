@@ -174,7 +174,7 @@ def get_protocol_from_tool_shed_url( tool_shed_url ):
     try:
         if tool_shed_url.find( '://' ) > 0:
             return tool_shed_url.split( '://' )[0].lower()
-    except Exception as e:
+    except Exception:
         # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
         # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
         if tool_shed_url is not None:
@@ -272,7 +272,7 @@ def handle_tool_shed_url_protocol( app, shed_url ):
         else:
             tool_shed_url = str( url_for( '/', qualified=True ) ).rstrip( '/' )
         return tool_shed_url
-    except Exception as e:
+    except Exception:
         # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
         # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
         if shed_url is not None:
@@ -313,7 +313,7 @@ def remove_port_from_tool_shed_url( tool_shed_url ):
         else:
             new_tool_shed_url = tool_shed_url
         return new_tool_shed_url.rstrip( '/' )
-    except Exception as e:
+    except Exception:
         # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
         # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
         if tool_shed_url is not None:

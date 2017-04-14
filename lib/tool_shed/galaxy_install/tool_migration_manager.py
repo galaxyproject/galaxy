@@ -412,7 +412,7 @@ class ToolMigrationManager( object ):
                 lock.acquire( True )
                 try:
                     self.filter_and_persist_proprietary_tool_panel_configs( tool_configs_to_filter )
-                except Exception as e:
+                except Exception:
                     log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs" )
                 finally:
                     lock.release()

@@ -477,7 +477,7 @@ class Data( object ):
             if type in self.get_display_types():
                 return getattr(self, self.supported_display_apps[type]['file_function'])(dataset, **kwd)
         except:
-            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible',  self.supported_display_apps[type]['file_function'], self.__class__.__name__, type )
+            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible', self.supported_display_apps[type]['file_function'], self.__class__.__name__, type )
         return "This display type (%s) is not implemented for this datatype (%s)." % ( type, dataset.ext)
 
     def get_display_links( self, dataset, type, app, base_url, target_frame='_blank', **kwd ):

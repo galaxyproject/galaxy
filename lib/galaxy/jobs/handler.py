@@ -784,7 +784,7 @@ class DefaultJobDispatcher( object ):
         runner_name = url.split(':', 1)[0]
         try:
             return self.job_runners[runner_name].url_to_destination(url)
-        except Exception as e:
+        except Exception:
             log.exception("Unable to convert legacy job runner URL '%s' to job destination, destination will be the '%s' runner with no params", url, runner_name)
             return JobDestination(runner=runner_name)
 
