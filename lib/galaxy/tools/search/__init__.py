@@ -46,22 +46,32 @@ class ToolBoxSearch( object ):
                               labels=KEYWORD )
         self.rex = analysis.RegexTokenizer()
         self.toolbox = toolbox
-        self.build_index( index_help )
+        self.storage, self.index = self._index_setup()
 
-    def build_index( self, index_help=True ):
-        """Prepare search index for tools loaded in toolbox."""
-        log.debug( 'Starting to build toolbox index.' )
-        execution_timer = ExecutionTimer()
+    def _index_setup(self):
         RamStorage.temp_storage = _temp_storage
         # Works around https://bitbucket.org/mchaput/whoosh/issues/391/race-conditions-with-temp-storage
-        self.storage = RamStorage()
-        self.index = self.storage.create_index( self.schema )
+        storage = RamStorage()
+        index = storage.create_index(self.schema)
+        return storage, index
+
+    def build_index(self, tool_cache, index_help=True):
+        """
+        Prepare search index for tools loaded in toolbox.
+        Use `tool_cache` to determine which tools need indexing and which tools should be expired.
+        """
+        log.debug('Starting to build toolbox index.')
+        execution_timer = ExecutionTimer()
         writer = self.index.writer()
-        for tool_id, tool in self.toolbox.tools():
-            add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
-            writer.add_document( **add_doc_kwds )
+        for tool_id in tool_cache._removed_tool_ids:
+            writer.delete_by_term('id', tool_id)
+        for tool_id in tool_cache._new_tool_ids:
+            tool = tool_cache.get_tool_by_id(tool_id)
+            if tool:
+                add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
+                writer.add_document(**add_doc_kwds)
         writer.commit()
-        log.debug("Toolbox index finished %s", execution_timer )
+        log.debug("Toolbox index finished %s", execution_timer)
 
     def _create_doc(self, tool_id, tool, index_help=True):
         #  Do not add data managers to the public index
@@ -95,18 +105,6 @@ class ToolBoxSearch( object ):
                 # won't render.
                 pass
         return add_doc_kwds
-
-    def update_index(self, tool_cache, index_help=True):
-        """Use `tool_cache` to determine which tools need indexing and which tools should be expired."""
-        writer = self.index.writer()
-        for tool_id in tool_cache._removed_tool_ids:
-            writer.delete_by_term('id', tool_id)
-        for tool_id in tool_cache._new_tool_ids:
-            tool = tool_cache.get_tool_by_id(tool_id)
-            if tool:
-                add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
-                writer.add_document(**add_doc_kwds)
-        writer.commit()
 
     def search( self, q, tool_name_boost, tool_section_boost, tool_description_boost, tool_label_boost, tool_stub_boost, tool_help_boost, tool_search_limit, tool_enable_ngram_search, tool_ngram_minsize, tool_ngram_maxsize ):
         """

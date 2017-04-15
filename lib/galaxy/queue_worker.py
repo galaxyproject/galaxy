@@ -114,9 +114,7 @@ def _get_new_toolbox(app):
     new_toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
     app.toolbox = new_toolbox
-    app.reindex_tool_search()
-    if hasattr(app, 'tool_cache'):
-        app.tool_cache.reset_status()
+    send_local_control_task(app, 'rebuild_toolbox_search_index')
 
 
 def reload_data_managers(app, **kwargs):
@@ -166,6 +164,10 @@ def reload_tool_data_tables(app, **kwargs):
     log.debug("Finished data table reload for %s" % table_names)
 
 
+def rebuild_toolbox_search_index(app, **kwargs):
+    app.reindex_tool_search()
+
+
 def admin_job_lock(app, **kwargs):
     job_lock = kwargs.get('job_lock', False)
     # job_queue is exposed in the root app, but this will be 'fixed' at some
@@ -183,7 +185,8 @@ control_message_to_task = { 'create_panel_section': create_panel_section,
                             'reload_tool_data_tables': reload_tool_data_tables,
                             'admin_job_lock': admin_job_lock,
                             'reload_sanitize_whitelist': reload_sanitize_whitelist,
-                            'recalculate_user_disk_usage': recalculate_user_disk_usage}
+                            'recalculate_user_disk_usage': recalculate_user_disk_usage,
+                            'rebuild_toolbox_search_index': rebuild_toolbox_search_index}
 
 
 class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
