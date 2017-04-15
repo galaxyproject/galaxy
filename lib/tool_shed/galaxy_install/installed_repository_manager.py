@@ -129,6 +129,7 @@ class InstalledRepositoryManager( object ):
                 display_path = installed_repository_dict.get( 'display_path' )
                 if display_path is not None:
                     cdl.load_installed_display_applications( installed_repository_dict, deactivate=False )
+                self.app.datatypes_registry.to_xml_file()
 
     def add_entry_to_installed_repository_dependencies_of_installed_repositories( self, repository ):
         """
@@ -739,6 +740,7 @@ class InstalledRepositoryManager( object ):
                 installed_repository_dict = cdl.load_installed_datatypes( tool_shed_repository, relative_install_dir )
                 if installed_repository_dict:
                     self.installed_repository_dicts.append( installed_repository_dict )
+        self.app.datatypes_registry.to_xml_file()
 
     def load_proprietary_converters_and_display_applications( self, deactivate=False ):
         cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )

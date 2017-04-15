@@ -9,6 +9,7 @@ import logging
 import tempfile
 
 import yaml
+from collections import OrderedDict as odict
 
 import galaxy.util
 
@@ -23,7 +24,6 @@ from . import coverage
 from . import tracks
 from . import binary
 from . import text
-from galaxy.util.odict import odict
 from .display_applications.application import DisplayApplication
 
 
@@ -301,15 +301,11 @@ class Registry( object ):
             self.upload_file_formats.sort()
             # Load build sites
             self._load_build_sites( root )
-            # Persist the xml form of the registry into a temporary file so that it can be loaded from the command line by tools and
-            # set_metadata processing.
-            self.to_xml_file()
         self.set_default_values()
 
         def append_to_sniff_order():
             # Just in case any supported data types are not included in the config's sniff_order section.
-            for ext in self.datatypes_by_extension:
-                datatype = self.datatypes_by_extension[ ext ]
+            for ext, datatype in self.datatypes_by_extension.items():
                 included = False
                 for atype in self.sniff_order:
                     if isinstance( atype, datatype.__class__ ):
