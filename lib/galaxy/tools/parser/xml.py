@@ -594,7 +594,7 @@ def __parse_param_elem( param_elem, i=0 ):
     else:
         value = None
     attrib['children'] = param_elem
-    if attrib['children']:
+    if attrib['children'] is not None:
         # At this time, we can assume having children only
         # occurs on DataToolParameter test items but this could
         # change and would cause the below parsing to change

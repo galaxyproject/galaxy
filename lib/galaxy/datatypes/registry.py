@@ -663,6 +663,7 @@ class Registry( object ):
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
+        self.to_xml_file()
         set_meta_tool = toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug( "Loaded external metadata tool: %s", self.set_external_metadata_tool.id )
@@ -856,7 +857,6 @@ class Registry( object ):
     def integrated_datatypes_configs( self ):
         if self.xml_filename and os.path.isfile( self.xml_filename ):
             return self.xml_filename
-        self.to_xml_file()
         return self.xml_filename
 
     def to_xml_file( self ):

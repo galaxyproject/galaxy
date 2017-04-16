@@ -123,7 +123,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Load datatype converters defined in local datatypes_conf.xml
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Load external metadata tool
-        self.datatypes_registry.to_xml_file()
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
         # Load history import/export tools.
         load_lib_tools( self.toolbox )

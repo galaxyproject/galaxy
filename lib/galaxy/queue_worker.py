@@ -110,8 +110,8 @@ def _get_new_toolbox(app):
     new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
+    app.datatypes_registry.load_external_metadata_tool(new_toolbox)
     load_lib_tools(new_toolbox)
-    new_toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
     app.toolbox = new_toolbox
     send_local_control_task(app, 'rebuild_toolbox_search_index')
