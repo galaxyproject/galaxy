@@ -109,6 +109,10 @@
 #  https://github.com/docker/docker/issues/31427
 #    resolve_image_digest: no
 
+# If a container run request is received that defines volumes to attach, should those volumes be ignored? Swarm mode
+# does not support mounting volumes.
+#    ignore_volumes: no
+
 ## For the following `service_create_*_constraint` options, if set, the swarm manager automatically sets a corresponding
 ## label on nodes it spawns for services with the given constraints.
 
