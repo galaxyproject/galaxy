@@ -53,7 +53,8 @@
                             dataType: "json",
                             data: { file_path: selected_value, repository_id: "${trans.security.encode_id( repository.id )}" },
                             success : function( data ) {
-                                cell.html( '<label>'+data+'</label>' )
+                                file_contents_nbsp_cleaned = data.replace(/&nbsp;/g, ' ');
+                                cell.html( '<label>'+file_contents_nbsp_cleaned+'</label>' );
                             }
                         });
                     } else {
