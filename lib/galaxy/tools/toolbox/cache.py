@@ -1,6 +1,7 @@
 import os
-import time
 from threading import local
+
+from sqlalchemy.orm.exc import DetachedInstanceError
 
 from galaxy.util.hash_util import md5_hash_file
 
@@ -96,15 +97,12 @@ class ToolShedRepositoryCache(object):
 
     def __init__(self, app):
         self.app = app
-        self.time = 0
         self.cache = local()
 
     @property
     def tool_shed_repositories(self):
-        if time.time() - self.time > 1:  # If cache is older than 1 second we refresh
-            self.rebuild()
         try:
-            repositories =  self.cache.repositories
+            repositories = self.cache.repositories
         except AttributeError:
             self.rebuild()
             repositories = self.cache.repositories
@@ -115,9 +113,25 @@ class ToolShedRepositoryCache(object):
 
     def rebuild(self):
         self.cache.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).all()
-        self.time = time.time()
 
     def get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
+        try:
+            return self._get_installed_repository(tool_shed=tool_shed,
+                                                  name=name,
+                                                  owner=owner,
+                                                  installed_changeset_revision=installed_changeset_revision,
+                                                  changeset_revision=changeset_revision,
+                                                  repository_id=repository_id)
+        except DetachedInstanceError:
+            self.rebuild()
+            return self._get_installed_repository(tool_shed=tool_shed,
+                                                  name=name,
+                                                  owner=owner,
+                                                  installed_changeset_revision=installed_changeset_revision,
+                                                  changeset_revision=changeset_revision,
+                                                  repository_id=repository_id)
+
+    def _get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
         if repository_id:
             repos = [repo for repo in self.tool_shed_repositories if repo.id == repository_id]
             if repos:
