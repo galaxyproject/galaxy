@@ -936,7 +936,7 @@ class ConfiguresGalaxyMixin:
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
         # Since indexing the toolbox search index can take a while we
         # send it as a local control task and do not block here.
-        send_local_control_task(self, 'rebuild_toolbox_search_index')
+        register_postfork_function(send_local_control_task, self, 'rebuild_toolbox_search_index')
 
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
