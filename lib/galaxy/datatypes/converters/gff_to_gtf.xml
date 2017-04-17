@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<tool id="CONVERTER_gff_to_gtf" name="Convert GFF to GTF">
+  <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <!-- Used on the metadata edit page. -->
+  <command interpreter="python">gff_to_gtf.py $input $output</command>
+  <inputs>
+    <param format="gff" name="input" type="data" label="Choose GFF file"/>
+  </inputs>
+  <outputs>
+    <data format="gtf" name="output"/>
+  </outputs>
+  <help>
+  </help>
+</tool>
