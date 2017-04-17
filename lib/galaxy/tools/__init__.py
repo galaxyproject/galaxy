@@ -2515,6 +2515,16 @@ class RelabelFromFileTool(DatabaseOperationTool):
         new_labels_dataset_assoc = incoming["how"]["labels"]
         strict = string_as_bool(incoming["how"]["strict"])
         new_elements = odict()
+
+        def add_copied_value_to_new_elements(new_label, dce_object):
+            new_label = new_label.strip()
+            if new_label in new_elements:
+                raise Exception("New identifier [%s] appears twice in resulting collection, these values must be unique." % new_label)
+            copied_value = dce_object.copy()
+            if getattr(copied_value, "history_content_type", None) == "dataset":
+                history.add_dataset(copied_value, set_hid=False)
+            new_elements[new_label] = copied_value
+
         new_labels_path = new_labels_dataset_assoc.file_name
         new_labels = open(new_labels_path, "r").readlines(1024 * 1000000)
         if strict and len(hdca.collection.elements) != len(new_labels):
@@ -2531,18 +2541,12 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 new_label = new_labels_dict.get(element_identifier, default)
                 if not new_label:
                     raise Exception("Failed to find new label for identifier [%s]" % element_identifier)
-                copied_value = dce_object.copy()
-                if getattr(copied_value, "history_content_type", None) == "dataset":
-                    history.add_dataset(copied_value, set_hid=False)
-                new_elements[new_label] = copied_value
+                add_copied_value_to_new_elements(new_label, dce_object)
         else:
             # If new_labels_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
             for i, dce in enumerate(hdca.collection.elements):
                 dce_object = dce.element_object
-                copied_value = dce_object.copy()
-                if getattr(copied_value, "history_content_type", None) == "dataset":
-                    history.add_dataset(copied_value, set_hid=False)
-                new_elements[new_labels[i].strip()] = copied_value
+                add_copied_value_to_new_elements(new_labels[i], dce_object)
         for key in new_elements.keys():
             if not re.match("^[\w\-_]+$", key):
                 raise Exception("Invalid new colleciton identifier [%s]" % key)
