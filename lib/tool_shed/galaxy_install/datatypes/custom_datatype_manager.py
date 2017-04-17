@@ -1,9 +1,8 @@
 import logging
 import os
 
-from galaxy.util import asbool
 from tool_shed.util import basic_util, hg_util, shed_util_common as suc
-from tool_shed.util import tool_util, xml_util
+from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -84,24 +83,7 @@ class CustomDatatypeLoader( object ):
                                                     config=datatypes_config_root,
                                                     deactivate=deactivate,
                                                     override=override )
-        if deactivate:
-            # Reload the upload tool to eliminate deactivated datatype extensions from the file_type
-            # select list.
-            tool_util.reload_upload_tools( self.app )
-        else:
-            self.append_to_datatypes_registry_upload_file_formats( registration )
-            tool_util.reload_upload_tools( self.app )
         return converter_path, display_path
-
-    def append_to_datatypes_registry_upload_file_formats( self, elem ):
-        # See if we have any datatypes that should be displayed in the upload tool's file_type select list.
-        for datatype_elem in elem.findall( 'datatype' ):
-            extension = datatype_elem.get( 'extension', None )
-            display_in_upload = datatype_elem.get( 'display_in_upload', None )
-            if extension is not None and display_in_upload is not None:
-                display_in_upload = asbool( str( display_in_upload ) )
-                if display_in_upload and extension not in self.app.datatypes_registry.upload_file_formats:
-                    self.app.datatypes_registry.upload_file_formats.append( extension )
 
     def create_repository_dict_for_proprietary_datatypes( self, tool_shed, name, owner, installed_changeset_revision,
                                                           tool_dicts, converter_path=None, display_path=None ):

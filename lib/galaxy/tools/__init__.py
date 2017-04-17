@@ -34,7 +34,6 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.deps import (
     CachedDependencyManager,
     views
@@ -248,13 +247,6 @@ class ToolBox( BaseGalaxyToolBox ):
             ToolClass = Tool
         tool = ToolClass( config_file, tool_source, self.app, guid=guid, repository_id=repository_id, **kwds )
         return tool
-
-    def handle_datatypes_changed( self ):
-        """ Refresh upload tools when new datatypes are added. """
-        for tool_id in self._tools_by_id:
-            tool = self._tools_by_id[ tool_id ]
-            if isinstance( tool.tool_action, UploadToolAction ):
-                self.reload_tool_by_id( tool_id )
 
     def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
         """
