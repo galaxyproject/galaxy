@@ -131,7 +131,10 @@
             <param name="labels" value="new_labels_bad_2.txt" ftype="txt" />
         </test>
     </tests>
-    <help>
+    <help><![CDATA[
+    
+.. class:: infomark
+
         This tool will take an input list and a text file with new identifiers
         and build a new list with the same datasets but these new identifiers.
         The order and number of entries in the text file must match the order
@@ -145,5 +148,5 @@
 
         This tool will create new history datasets from your collection
         but your quota usage will not increase.
-    </help>
+    ]]></help>
 </tool>

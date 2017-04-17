@@ -2555,11 +2555,49 @@ class RelabelFromFileTool(DatabaseOperationTool):
         )
 
 
+class FilterFromFileTool(DatabaseOperationTool):
+    tool_type = 'filter_from_file'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+        hdca = incoming["input"]
+        how_filter = incoming["how"]["how_filter"]
+        filter_dataset_assoc = incoming["how"]["filter_source"]
+        filtered_elements = odict()
+        discarded_elements = odict()
+
+        filtered_path = filter_dataset_assoc.file_name
+        filtered_identifiers_raw = open(filtered_path, "r").readlines(1024 * 1000000)
+        filtered_identifiers = [i.strip() for i in filtered_identifiers_raw]
+
+        # If filtered_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
+        for i, dce in enumerate(hdca.collection.elements):
+            dce_object = dce.element_object
+            element_identifier = dce.element_identifier
+            in_filter_file = element_identifier in filtered_identifiers
+            passes_filter = in_filter_file if how_filter == "remove_if_absent" else not in_filter_file
+
+            copied_value = dce_object.copy()
+            if getattr(copied_value, "history_content_type", None) == "dataset":
+                history.add_dataset(copied_value, set_hid=False)
+
+            if passes_filter:
+                filtered_elements[element_identifier] = copied_value
+            else:
+                discarded_elements[element_identifier] = copied_value
+
+        output_collections.create_collection(
+            self.outputs["output_filtered"], "output_filtered", elements=filtered_elements
+        )
+        output_collections.create_collection(
+            self.outputs["output_discarded"], "output_discarded", elements=discarded_elements
+        )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
                     DataManagerTool, DataSourceTool, AsyncDataSourceTool,
-                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool,
+                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
                     DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
