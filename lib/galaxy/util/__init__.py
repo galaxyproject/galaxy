@@ -215,7 +215,7 @@ def parse_xml( fname ):
     except ParseError:
         log.exception("Error parsing file %s", fname)
         raise
-    ElementInclude.include( root )
+    ElementInclude.include(root)
     return tree
 
 

@@ -10,6 +10,7 @@ import tempfile
 
 import yaml
 from collections import OrderedDict as odict
+from xml.etree.ElementTree import Element
 
 import galaxy.util
 
@@ -98,14 +99,17 @@ class Registry( object ):
             #           proprietary_path="[cloned repository path]"
             #           type="galaxy.datatypes.blast:BlastXml" />
             handling_proprietary_datatypes = False
-            # Parse datatypes_conf.xml
-            tree = galaxy.util.parse_xml( config )
-            root = tree.getroot()
-            # Load datatypes and converters from config
-            if deactivate:
-                self.log.debug( 'Deactivating datatypes from %s' % config )
+            if not isinstance(config, Element):
+                # Parse datatypes_conf.xml
+                tree = galaxy.util.parse_xml( config )
+                root = tree.getroot()
+                # Load datatypes and converters from config
+                if deactivate:
+                    self.log.debug('Deactivating datatypes from %s' % config)
+                else:
+                    self.log.debug('Loading datatypes from %s' % config)
             else:
-                self.log.debug( 'Loading datatypes from %s' % config )
+                root = config
             registration = root.find( 'registration' )
             # Set default paths defined in local datatypes_conf.xml.
             if not self.converters_path:
