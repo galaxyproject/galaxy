@@ -784,6 +784,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         //this.log( 'queueHdaFetch:', column );
         // if the history model says it has hdas but none are present, queue an ajax req for them
         if( column.model.contents.length === 0 && !column.model.get( 'empty' ) ){
+            //refresh to fetch history size
+            column.model.refresh();
+            
             //this.log( '\t fetch needed:', column );
             var xhrData = {},
                 ids = _.values( column.panel.storage.get( 'expandedIds' ) ).join();
