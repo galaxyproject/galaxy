@@ -101,9 +101,13 @@ class ToolShedRepositoryCache(object):
 
     @property
     def tool_shed_repositories(self):
-        if time.time() - self.time > 1 or not hasattr(self.cache, 'repositories '):  # If cache is older than 1 second we refresh
+        if time.time() - self.time > 1:  # If cache is older than 1 second we refresh
             self.rebuild()
-        return self.cache.repositories
+        try:
+            return self.cache.repositories
+        except AttributeError:
+            self.rebuild()
+            return self.cache.repositories
 
     def rebuild(self):
         self.cache.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).all()
