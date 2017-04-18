@@ -1,15 +1,17 @@
-<tool id="cat1" name="Concatenate datasets" version="1.0.0">
+<tool id="cat1" name="Concatenate datasets" version="1.0.1">
     <description>tail-to-head</description>
     <command interpreter="python">
         catWrapper.py
-        $out_file1
-        $input1
+        "$out_file1"
+        #for $dataset in $input1
+            "$dataset"
+        #end for
         #for $q in $queries
-            ${q.input2}
+            "${q.input2}"
         #end for
     </command>
     <inputs>
-        <param name="input1" type="data" label="Concatenate Dataset"/>
+        <param name="input1" type="data" label="Concatenate Dataset" multiple="True" />
         <repeat name="queries" title="Dataset">
             <param name="input2" type="data" label="Select" />
         </repeat>
@@ -23,15 +25,20 @@
             <param name="input2" value="2.bed"/>
             <output name="out_file1" file="cat_wrapper_out1.bed"/>
         </test>
-        <!--TODO: if possible, enhance the underlying test code to handle this test
-            the problem is multiple params with the same name "input2"
+        <test>
+            <param name="input1" value="1.bed,2.bed,3.bed,4.bed,5.bed,6.bed,7.bed,8.bed,9.bed" />
+            <param name="out_file1" file="cat_wrapper_out2.bed" />
+        </test>
         <test>
             <param name="input1" value="1.bed"/>
-            <param name="input2" value="2.bed"/>
-            <param name="input2" value="3.bed"/>
-            <output name="out_file1" file="cat_wrapper_out2.bed"/>
+            <repeat name="queries">
+                <param name="input2" value="2.bed"/>
+            </repeat>
+            <repeat name="queries">
+                <param name="input2" value="3.bed"/>
+            </repeat>
+            <output name="out_file1" file="cat_wrapper_out3.bed"/>
         </test>
-        -->
     </tests>
     <help>
 
