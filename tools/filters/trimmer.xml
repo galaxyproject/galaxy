@@ -1,7 +1,11 @@
-<tool id="trimmer" name="Trim" version="0.0.1">
+<tool id="trimmer" name="Trim" version="0.0.2">
     <description>leading or trailing characters</description>
     <command interpreter="python">
-    trimmer.py -a -f $input1 -c $col -s $start -e $end -i $ignore $fastq > $out_file1
+        trimmer.py -a -f $input1 -c $col -s $start -e $end
+        #if $ignore
+            -i $ignore
+        #end if
+        $fastq > $out_file1
     </command>
     <inputs>
         <param format="tabular,txt" name="input1" type="data" label="this dataset"/>
