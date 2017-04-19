@@ -1830,8 +1830,10 @@ class Tool( object, Dictifiable ):
                     populate_model( input.inputs, group_state, tool_dict[ 'inputs' ], other_values )
                 else:
                     try:
+                        initial_value = input.get_initial_value( request_context, other_values )
                         tool_dict = input.to_dict( request_context, other_values=other_values )
-                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app, use_security=True )
+                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, initial_value ), self.app, use_security=True )
+                        tool_dict[ 'default_value' ] = input.value_to_basic( initial_value, self.app, use_security=True )
                         tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ] )
                     except Exception as e:
                         tool_dict = input.to_dict( request_context )

@@ -157,9 +157,10 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         input.options && ( ( input.options.length == 0 && !data_resolved ) || input.wp_linked ) && ( input.is_workflow = true );
                         data_ref && ( input.is_workflow = ( data_ref.step_linked && !self._isDataStep( data_ref.step_linked ) ) || input.wp_linked );
                         ( is_data_input || ( input.value && input.value.__class__ == 'RuntimeValue' && !input.step_linked ) ) && ( step.collapsed = false );
-                        input.value && input.value.__class__ == 'RuntimeValue' && ( input.value = null );
                         input.flavor = 'workflow';
-                        if ( !is_data_input && input.type !== 'hidden' && !input.wp_linked ) {
+                        if ( input.value && input.value.__class__ == 'RuntimeValue' ) {
+                            input.value = input.default_value;
+                        } else if ( !is_data_input && input.type !== 'hidden' && !input.wp_linked ) {
                             if ( input.optional || ( !Utils.isEmpty( input.value ) && input.value !== '' ) ) {
                                 input.collapsible_value = input.value;
                                 input.collapsible_preview = true;
