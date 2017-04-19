@@ -236,7 +236,8 @@ class DefaultToolAction( object ):
                 incoming[ "%s|__identifier__" % name ] = identifier
 
             for tag in data.tags:
-                preserved_tags.append(tag)
+                if tag.user_tname == 'name':
+                    preserved_tags.append(tag)
 
         # Collect chromInfo dataset and add as parameters to incoming
         ( chrom_info, db_dataset ) = app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len' )
