@@ -12,6 +12,7 @@ class TourGenerator(object):
         self._trans = trans
         self._tool = self._trans.app.toolbox.get_tool(tool_id)
 
+        self._use_datasets = True
         self._tour = {}
         self._hids = {}
         self._errors = []
@@ -36,7 +37,9 @@ class TourGenerator(object):
         ]
 
         if not input_datasets:
-            raise ValueError('Test data is missing.')
+            self._use_datasets = False
+            return
+            # raise ValueError('Test data is missing.')
 
         # Upload all test datasets
         for i, input in enumerate(input_datasets):
@@ -115,9 +118,9 @@ class TourGenerator(object):
                 text_param = self._test.inputs[name]
                 step['content'] = 'Enter parameter(s): <b>%s</b>' % text_param
 
-            elif input.type == 'integer':
-                integer_param = self._test.inputs[name][0]
-                step['content'] = 'Enter parameter: <b>%s</b>' % integer_param
+            elif input.type == 'integer' or input.type == 'float':
+                num_param = self._test.inputs[name][0]
+                step['content'] = 'Enter parameter: <b>%s</b>' % num_param
 
             elif input.type == 'boolean':
                 choice = 'Yes' if self._test.inputs[name][0] is True else 'No'
@@ -133,9 +136,8 @@ class TourGenerator(object):
                                 params.append(option[0])
                 if params:
                     select_param = ', '.join(params)
-                step[
-                    'content'] = 'Select parameter(s): <b>%s</b>' % \
-                                 select_param
+                step['content'] = 'Select parameter(s): <b>%s</b>' % \
+                    select_param
 
             elif input.type == 'data':
                 hid = self._hids[name]
@@ -149,8 +151,23 @@ class TourGenerator(object):
             #     step['content'] = 'Select parameter <b>%s</b>' % input.title
 
             elif input.type == 'conditional':
-                # TODO@me: deal with this input type
-                pass
+                param_id = '%s|%s' % (input.name, input.test_param.name)
+                step['element'] = '[tour_id="%s"]' % param_id
+                cond_param = input.label
+                params = []
+                for option in input.test_param.static_options:
+                    if param_id in self._test.inputs.keys():
+                        for test_option in self._test.inputs[param_id]:
+                            if test_option == option[1]:
+                                params.append(option[0])
+                if params:
+                    cond_param = ', '.join(params)
+                step['content'] = 'Select parameter(s): <b>%s</b>' % \
+                    cond_param
+
+            elif input.type == 'data_column':
+                column_param = self._test.inputs[name][0]
+                step['content'] = 'Select <b>Column: %s</b>' % column_param
 
             else:
                 step['content'] = 'Select parameter <b>%s</b>' % input.label
@@ -178,7 +195,11 @@ class TourGenerator(object):
         Return a dictionary with the uploaded datasets' history ids and
         the generated tour.
         """
-        return {'hids': list(self._hids.values()), 'tour': self._tour}
+        return {
+            'useDatasets': self._use_datasets,
+            'hids': list(self._hids.values()),
+            'tour': self._tour
+        }
 
 
 def main(trans, webhook, params):

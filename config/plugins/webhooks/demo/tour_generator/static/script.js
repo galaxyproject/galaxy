@@ -14,32 +14,37 @@ $(document).ready(function() {
                 tool_id: this.toolId
             }, function(obj) {
                 if (obj.success) {
-                    $('#history-refresh-button').click(); // Refresh history panel
+                    if (obj.data.useDatasets) {
+                        $('#history-refresh-button').click(); // Refresh history panel
 
-                    // Add a delay because of the history panel refreshing
-                    setTimeout(function() {
-                        var datasets = [],
-                            numUploadedDatasets = 0;
+                        // TODO@me: sometimes doesn't work, find a better solution (e.g. catch a redraw event)
+                        // Add a delay because of the history panel refreshing
+                        setTimeout(function () {
+                            var datasets = [],
+                                numUploadedDatasets = 0;
 
-                        _.each(obj.data.hids, function(hid) {
-                            var dataset = Galaxy.currHistoryPanel.collection.where({
-                                hid: hid
-                            })[0];
-                            if (dataset) datasets.push(dataset);
-                        });
-
-                        if (datasets.length === obj.data.hids.length) {
-                            _.each(datasets, function(dataset) {
-                                dataset.on('change:state', function(model) {
-                                    if (model.get('state') === 'ok') numUploadedDatasets++;
-                                    // Make sure that all test datasets have been successfully uploaded
-                                    if (numUploadedDatasets === datasets.length) me._main(obj.data);
-                                });
+                            _.each(obj.data.hids, function (hid) {
+                                var dataset = Galaxy.currHistoryPanel.collection.where({
+                                    hid: hid
+                                })[0];
+                                if (dataset) datasets.push(dataset);
                             });
-                        } else {
-                            Toastr.error('Some of the test datasets cannot be found in the history.');
-                        }
-                    }, 500);
+
+                            if (datasets.length === obj.data.hids.length) {
+                                _.each(datasets, function (dataset) {
+                                    dataset.on('change:state', function (model) {
+                                        if (model.get('state') === 'ok') numUploadedDatasets++;
+                                        // Make sure that all test datasets have been successfully uploaded
+                                        if (numUploadedDatasets === datasets.length) me._main(obj.data);
+                                    });
+                                });
+                            } else {
+                                Toastr.error('Some of the test datasets cannot be found in the history.');
+                            }
+                        }, 500);
+                    } else {
+                        me._main(obj.data);
+                    }
                 } else {
                     Toastr.error(obj.error);
                     console.error('Tour Generator: ' + obj.error);
