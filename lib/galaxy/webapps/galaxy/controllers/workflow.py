@@ -202,7 +202,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
         workflowcollection = list()
         for item in workflows:
-            workflowcollection.append(dict(id=item.id, text=str( item.name )))
+            workflowcollection.append( dict(id=item.id, text=str( item.name ), update_time=str( item.update_time )[:19],
+                name=str( item.name ), workflow_steps=str( len( item.latest_workflow.steps ) )
+            ) )
 
         return json.dumps({
             'workflows': workflowcollection,
