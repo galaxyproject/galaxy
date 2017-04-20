@@ -25,6 +25,7 @@ class DockerSwarmInterface(DockerInterface):
 
     container_class = DockerService
     conf_defaults = {
+        'ignore_volumes': False,
         'node_prefix': None,
         'service_create_image_constraint': False,
         'service_create_cpus_constraint': False,
@@ -64,6 +65,22 @@ class DockerSwarmInterface(DockerInterface):
             )
         elif kwopts.get('detach', None):
             del kwopts['detach']
+        if kwopts.get('volumes', None):
+            if self._conf.ignore_volumes:
+                log.warning(
+                    "'volumes' kwopt is set and not supported in Docker swarm "
+                    "mode, volumes will not be passed (set 'ignore_volumes: "
+                    "False' in containers config to fail instead): %s" % kwopts['volumes']
+                )
+                del kwopts['volumes']
+            else:
+                raise ContainerRunError(
+                    "'volumes' kwopt is set and not supported in Docker swarm "
+                    "mode (set 'ignore_volumes: True' in containers config to "
+                    "warn instead): %s" % kwopts['volumes'],
+                    image=image,
+                    command=command
+                )
         service = self.service_create(command, image=image, **kwopts)
         self._run_swarm_manager()
         return service
