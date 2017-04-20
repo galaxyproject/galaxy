@@ -1,8 +1,7 @@
 /** Masthead Collection **/
 define(['layout/generic-nav-view',
         'mvc/webhooks',
-        'utils/localization',
-        'mvc/workflow/workflow'], function( GenericNav, Webhooks, _l, Workflow ) {
+        'utils/localization'], function( GenericNav, Webhooks, _l ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {

@@ -23,7 +23,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                     title: 'New Workflow',
                     tooltip: 'Create a workflow',
                     icon: 'fa-plus',
-                    onclick: function() { self.create_workflow(); } 
+                    onclick: function() { self.new_workflow(); } 
                 } );
                 // Button for importing a workflow
                 self.btnImportWorkflow = new Ui.Button( {
@@ -54,8 +54,11 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
             });
         },
 
-        create_workflow: function() {
-            // TODO: Add logic for creating workflow
+        /* Open a url for creating new workflow */
+        new_workflow: function() {
+            var self = this,
+                url = Galaxy.root + 'workflow/create';
+            window.location.href = url;
         },
 
         import_workflow: function() {
