@@ -150,7 +150,7 @@ class Ipynb( Json ):
                 ofilename = '%s.html' % ofilename
             except:
                 ofilename = dataset.file_name
-                log.exception( 'Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.' % cmd )
+                log.exception( 'Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', cmd )
             return open( ofilename )
 
     def set_meta( self, dataset, **kwd ):

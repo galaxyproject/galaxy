@@ -34,7 +34,7 @@ def send_local_control_task(app, task, kwargs={}):
                              declare=[galaxy.queues.galaxy_exchange] + [galaxy.queues.control_queue_from_config(app.config)],
                              routing_key='control.%s' % app.config.server_name)
     except Exception:
-        log.exception("Error queueing async task: %s." % payload)
+        log.exception("Error queueing async task: %s.", payload)
 
 
 def send_control_task(app, task, noop_self=False, kwargs={}):
@@ -58,7 +58,7 @@ def send_control_task(app, task, noop_self=False, kwargs={}):
     except Exception:
         # This is likely connection refused.
         # TODO Use the specific Exception above.
-        log.exception("Error sending control task: %s." % payload)
+        log.exception("Error sending control task: %s.", payload)
 
 
 # Tasks -- to be reorganized into a separate module as appropriate.  This is
@@ -232,7 +232,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
                     f(self.app, **body['kwargs'])
                 except Exception:
                     # this shouldn't ever throw an exception, but...
-                    log.exception("Error running control task type: %s" % body['task'])
+                    log.exception("Error running control task type: %s", body['task'])
         else:
             log.warning("Received a malformed task message:\n%s" % body)
         message.ack()

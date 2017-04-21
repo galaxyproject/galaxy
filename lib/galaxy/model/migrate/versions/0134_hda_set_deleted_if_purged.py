@@ -24,7 +24,7 @@ def upgrade(migrate_engine):
     try:
         migrate_engine.execute(cmd)
     except Exception:
-        log.exception("Exception executing SQL command: %s" % cmd)
+        log.exception("Exception executing SQL command: %s", cmd)
 
 
 def downgrade(migrate_engine):
