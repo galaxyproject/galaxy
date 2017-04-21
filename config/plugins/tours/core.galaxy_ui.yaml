@@ -28,14 +28,14 @@ steps:
         - ".upload-button"
 
     - title: "Upload your data"
-      element: "button#btn-local"
+      element: "#btn-local"
       intro: "You can upload data from your computer."
       position: "top"
       postclick:
-        - "button#btn-new"
+        - "#btn-new"
 
     - title: "Upload your data"
-      element: "button#btn-new"
+      element: "#btn-new"
       intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data"
       position: "top"
 
@@ -49,14 +49,14 @@ steps:
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
 
     - title: "Start the upload"
-      element: "button#btn-start"
+      element: "#btn-start"
       intro: "Upload the data into your Galaxy history."
       position: "top"
       postclick:
-        - "button#btn-start"
+        - "#btn-start"
 
     - title: "Close upload/download manager"
-      element: "button#btn-close"
+      element: "#btn-close"
       intro: "Close the upload manager with this button or with a click outside of the manager window."
       position: "top"
       postclick:
