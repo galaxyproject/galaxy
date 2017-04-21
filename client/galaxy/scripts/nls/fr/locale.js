@@ -50,7 +50,7 @@ define({
 "Register":
     "Enregistrement",
 "Login or Register":
-    "Authentification/Enregistrement",
+    "Authentification et Enregistrement",
 "Logged in as":
     "Authentifié en tant que",
 "Preferences":
