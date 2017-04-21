@@ -65,6 +65,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
         self._galaxy_vol_name = "pvc-galaxy"  # TODO this needs to be read from params!!
 
+        self._supplemental_group = self.__get_supplemental_group()
+
         self._init_monitor_thread()
         self._init_worker_threads()
 
@@ -115,6 +117,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         external_runjob_script = None
         return external_runjob_script
 
+    def __get_supplemental_group(self):
+        if "k8s_supplemental_group_id" in self.runner_params:
+            try:
+                return int(self.runner_params["k8s_supplemental_group_id"])
+            except:
+                log.warn("Supplemental group passed for Kubernetes runner needs to be an integer, value "
+                         + self.runner_params["k8s_supplemental_group_id"]+" passed is invalid")
+                return None
+        return None
+
     def __produce_unique_k8s_job_name(self, galaxy_internal_job_id):
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
         return "galaxy-" + galaxy_internal_job_id
@@ -141,10 +153,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
 
-        if "k8s_supplemental_group_id" in self.runner_params:
-            supp_group = self.runner_params["k8s_supplemental_group_id"]
-            if isinstance(supp_group, (int, long)) and supp_group > 0:
-                k8s_spec_template["spec"]["securityContext"] = dict(supplementalGroups="[{0}]".format(str(supp_group)))
+        if self._supplemental_group and self._supplemental_group > 0:
+                k8s_spec_template["spec"]["securityContext"] = dict(supplementalGroups=[self._supplemental_group])
 
         return k8s_spec_template
 
