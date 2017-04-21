@@ -1,0 +1,28 @@
+##aaa	Acidovorax avenae
+##Method: BLAST	Options: evalue <= 1e-05
+##Summary:	3 succeed, 0 fail
+
+#Query	Gene ID|Gene name|Hyperlink
+aaa:Acav_0001	aaa:Acav_0001||http://www.genome.jp/dbget-bin/www_bget?aaa:Acav_0001
+aaa:Acav_0002	aaa:Acav_0002||http://www.genome.jp/dbget-bin/www_bget?aaa:Acav_0002
+aaa:Acav_0003	aaa:Acav_0003||http://www.genome.jp/dbget-bin/www_bget?aaa:Acav_0003
+
+--------------------
+
+////
+Query:              	aaa:Acav_0001
+Gene:               	aaa:Acav_0001	
+Pathway:            	Two-component system	KEGG PATHWAY	aaa02020
+////
+Query:              	aaa:Acav_0002
+Gene:               	aaa:Acav_0002	
+Pathway:            	Purine metabolism	KEGG PATHWAY	aaa00230
+                    	Pyrimidine metabolism	KEGG PATHWAY	aaa00240
+                    	Metabolic pathways	KEGG PATHWAY	aaa01100
+                    	DNA replication	KEGG PATHWAY	aaa03030
+                    	Mismatch repair	KEGG PATHWAY	aaa03430
+                    	Homologous recombination	KEGG PATHWAY	aaa03440
+////
+Query:              	aaa:Acav_0003
+Gene:               	aaa:Acav_0003	
+////

@@ -1,0 +1,142 @@
+<tool id="kobas_identify" name="KOBAS Identify" version="@WRAPPER_VERSION@">
+    <description>KEGG Orthology Based Annotation System</description>
+    <macros>
+        <import>kobas_macros.xml</import>
+    </macros>
+
+    <expand macro="requirements"/>
+
+    <command>
+        <![CDATA[
+
+        mkdir sqlite &&
+        mkdir seq_pep &&
+
+        #if not isinstance( $db.value, list ):
+            #set $db_args = [ $db.value ]
+        #else:
+            #set $db_args = $db.value
+        #end if
+        #set $db_args = "/".join($db.value)
+
+        ln -s '$kobasdb' 'sqlite/${species}.db' &&
+
+        kobas-identify
+            -f '$fgfile'
+            #if $bg.bgtype == 'file':
+                -b '$bg.bgfile'
+            #elif $bg.bgtype == 'species':
+                -b '$bg.bgspecies'
+            #end if
+            -d '$db_args'
+            -m '$method'
+            -n '$fdr'
+            -c $cutoff
+            -q sqlite
+            -p blastp
+            -x blastx
+            -o '$output'
+        ]]>
+    </command>
+    <inputs>
+        <param format="tabular" type="data" label="Foreground" argument="--fgfile" help="Foreground file, the output of KOBAS Annotate"/>
+
+        <expand macro="input_kobasdb"/>
+
+        <param type="select" label="Database" argument="--db" multiple="True" display="checkboxes" help="Select your desired databases:
+(Note: the Corrected P-Values will be affected by the number of selected databases)">
+            <option value="K">KEGG Pathway</option>
+            <option value="n">PID</option>
+            <option value="b">BioCarta</option>
+            <option value="R">Reactome</option>
+            <option value="B">BioCyc</option>
+            <option value="P">PANTHER</option>
+            <option value="o">OMIM</option>
+            <option value="k">KEGG Disease</option>
+            <option value="f">FunDo</option>
+            <option value="g">GAD</option>
+            <option value="N">NHGRI GWAS Catalog</option>
+            <option value="G">Gene Ontology</option>
+            <option value="S">Gene Ontology Slim (GOslim)</option>
+            <validator type="no_options" message="You must pick at least one database."/>
+        </param>
+
+        <conditional name="bg">
+            <param
+                name="bgtype"
+                type="select"
+                argument="--bgfile"
+                label="Background"
+                help="Optional background file, the output of annotate (3 or 4-letter
+                        file name is not allowed), or species abbreviation
+                        (for example: hsa for Homo sapiens, mmu for Mus
+                        musculus, dme for Drosophila melanogaster, ath for
+                        Arabidopsis thaliana, sce for Saccharomyces cerevisiae
+                        and eco for Escherichia coli K-12 MG1655), default
+                        same species as annotate">
+                <option value="same" selected="True">Same species as annotate</option>
+                <option value="file">Background file from KOBAS Annotate</option>
+                <option value="species">Species abbreviation</option>
+            </param>
+            <when value="same"></when>
+            <when value="file">
+                <param format="txt" name="bgfile" type="data" label="Background file"/>
+            </when>
+            <when value="species">
+                <param
+                    name="bgspecies"
+                    type="text"
+                    label="Species abbreviation"
+                    help="For example: ko for KEGG
+                        Orthology, hsa for Homo sapiens, mmu for Mus musculus,
+                        dme for Drosophila melanogaster, ath for Arabidopsis
+                        thaliana, sce for Saccharomyces cerevisiae and eco for
+                        Escherichia coli K-12 MG1655"/>
+            </when>
+        </conditional>
+
+        <param argument="--method" type="select" label="Statistical test method">
+            <option selected="True" value="h">Hpergeometric test / Fisher's exact test</option>
+            <option value="b">Binomial test</option>
+            <option value="c">Chi-square test</option>
+            <option value="x">Frequency list</option>
+        </param>
+
+        <param type="select" argument="--fdr" label="FDR" help="False discovery rate (FDR) correction method">
+            <option selected="True" value="BH">Benjamini and Hochberg</option>
+            <option value="BY">Benjamini and Yekutieli</option>
+            <option value="QVALUE">QVALUE</option>
+            <option value="None">None</option>
+        </param>
+
+        <param type="integer" min="0" argument="--cutoff" value="5" label="Cutoff" help="Terms with less than cutoff number of genes are not used for statistical tests, default 5"/>
+
+    </inputs>
+    <outputs>
+        <data format="tabular" name="output"/>
+    </outputs>
+
+    <tests>
+        <test>
+            <param name="fgfile" value="kobas_annotate_output.txt"/>
+            <param name="species" value="aaa"/>
+            <param name="kobasdb" value="aaa.db"/>
+            <param name="db" value="K"/>
+            <conditional name="bg">
+                <param name="bgtype" value="same"/>
+            </conditional>
+            <output name="out_file1" file="kobas_identify_output.txt"/>
+        </test>
+    </tests>
+
+    <help>
+@HELP_KOBAS_INFO@
+
+**KOBAS Identify**
+
+Performs statistical tests to identify significantly enriched pathways and diseases.
+
+@HELP_KOBAS_URL@
+    </help>
+    <expand macro="kobas_citations"/>
+</tool>

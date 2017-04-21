@@ -1,0 +1,23 @@
+Error: configuration file does not exist. Please create the file or provide the options through command line parameters.
+##Databases: KEGG PATHWAY
+##Statistical test method: hypergeometric test / Fisher's exact test
+##FDR correction method: Benjamini and Hochberg
+
+#Term	Database	ID	Input number	Background number	P-Value	Corrected P-Value	Input	Hyperlink
+DNA replication	KEGG PATHWAY	aaa03030	1	16	0.0282641698768	0.0888413972731	aaa:Acav_0002	http://www.genome.jp/kegg-bin/show_pathway?aaa03030/aaa:Acav_0002%09red
+Mismatch repair	KEGG PATHWAY	aaa03430	1	19	0.0331801935913	0.0888413972731	aaa:Acav_0002	http://www.genome.jp/kegg-bin/show_pathway?aaa03430/aaa:Acav_0002%09red
+Homologous recombination	KEGG PATHWAY	aaa03440	1	22	0.0380748845456	0.0888413972731	aaa:Acav_0002	http://www.genome.jp/kegg-bin/show_pathway?aaa03440/aaa:Acav_0002%09red
+Pyrimidine metabolism	KEGG PATHWAY	aaa00240	1	49	0.0811797932221	0.142064638139	aaa:Acav_0002	http://www.genome.jp/kegg-bin/show_pathway?aaa00240/aaa:Acav_0002%09red
+Purine metabolism	KEGG PATHWAY	aaa00230	1	72	0.11658233175	0.163215264449	aaa:Acav_0002	http://www.genome.jp/kegg-bin/show_pathway?aaa00230/aaa:Acav_0002%09red
+Two-component system	KEGG PATHWAY	aaa02020	1	142	0.217231283042	0.253436496882	aaa:Acav_0001	http://www.genome.jp/kegg-bin/show_pathway?aaa02020/aaa:Acav_0001%09red
+Metabolic pathways	KEGG PATHWAY	aaa01100	1	690	0.719694883569	0.719694883569	aaa:Acav_0002	http://www.genome.jp/kegg-bin/show_pathway?aaa01100/aaa:Acav_0002%09red
+
+--------------------
+
+#Term	Database	ID	Input number	Background number	P-Value	Corrected P-Value	Input	Hyperlink
+
+--------------------
+
+#Term	Database	ID	Input number	Background number	P-Value	Corrected P-Value	Input	Hyperlink
+
+--------------------

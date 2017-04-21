@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<repositories description="This requires the BLAST datatype definitions (e.g. the BLAST XML format).">
+    <repository changeset_revision="01b38f20197e" name="blast_datatypes" owner="devteam" toolshed="https://toolshed.g2.bx.psu.edu"/>
+</repositories>
