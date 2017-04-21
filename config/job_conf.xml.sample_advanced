@@ -205,15 +205,18 @@
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed) -->
             <param id="k8s_supplemental_group_id">0</param>
+            <param id="k8s_fs_group_id">0</param>
             <!-- If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access
-                 to a DEFINED user/group, this variable sets the group id that Pods need to use to be able to read and
-                 write from that mount. If left to zero or deleted, this parameter is neglected. Integer values
+                 to a DEFINED user/group, these variables set the group id that Pods need to use to be able to read and
+                 write from that mount. If left to zero or deleted, these parameters are neglected. Integer values
                  above zero trigger the addition of a security context on each Pod created to dispatch jobs:
 
                  securityContext:
                     supplementalGroups: [value-set-goes-here]
+                    fsGroup: fs-group-integer-value
 
-                 inside the Pod spec, applicable for all containers on the pod.
+                 inside the Pod spec, applicable for all containers on the pod. Just one of them set to >0 will generate
+                 the security context.
 
                  Using this requires that the Kubernetes cluster is not running the admission controller
                  "SecurityContextDeny". To check this, look at the --admission-control= variable setup for the
@@ -226,6 +229,9 @@
                  For more information see point 21.2.4.1 Group IDs on:
                  https://access.redhat.com/documentation/en-us/openshift_container_platform/3.4/html/
                  installation_and_configuration/configuring-persistent-storage
+
+                 Different storage strategies might or might not require supplemental groups or fs groups, one is not
+                 a requirement of the other.
 
                  -->
         </plugin>

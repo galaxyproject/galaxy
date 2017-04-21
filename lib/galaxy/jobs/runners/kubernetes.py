@@ -48,6 +48,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_persistent_volume_claim_mount_path=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
             k8s_supplemental_group_id=dict(map=str),
+            k8s_fs_group_id=dict(map=int),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
 
         if 'runner_param_specs' not in kwargs:
@@ -66,6 +67,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self._galaxy_vol_name = "pvc-galaxy"  # TODO this needs to be read from params!!
 
         self._supplemental_group = self.__get_supplemental_group()
+        self._fs_group = self.__get_fs_group()
 
         self._init_monitor_thread()
         self._init_worker_threads()
@@ -127,6 +129,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return None
         return None
 
+    def __get_fs_group(self):
+        if "k8s_fs_group_id" in self.runner_params:
+            try:
+                return int(self.runner_params["k8s_fs_group_id"])
+            except:
+                log.warn("FS group passed for Kubernetes runner needs to be an integer, value "
+                         + self.runner_params["k8s_fs_group_id"]+" passed is invalid")
+                return None
+        return None
+
     def __produce_unique_k8s_job_name(self, galaxy_internal_job_id):
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
         return "galaxy-" + galaxy_internal_job_id
@@ -154,7 +166,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
 
         if self._supplemental_group and self._supplemental_group > 0:
-                k8s_spec_template["spec"]["securityContext"] = dict(supplementalGroups=[self._supplemental_group])
+            k8s_spec_template["spec"]["securityContext"] = dict(supplementalGroups=[self._supplemental_group])
+        if self._fs_group and self._fs_group > 0:
+            if "securityContext" in k8s_spec_template["spec"]:
+                k8s_spec_template["spec"]["securityContext"]["fsGroup"] = self._fs_group
+            else:
+                k8s_spec_template["spec"]["securityContext"] = dict(fsGroup=self._fs_group)
 
         return k8s_spec_template
 
