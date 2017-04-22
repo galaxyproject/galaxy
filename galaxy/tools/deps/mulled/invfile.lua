@@ -84,6 +84,9 @@ inv.task('build')
         .at('/usr/local')
         .inImage(destination_base_image)
         .as(repo)
+    .using(conda_image)
+        .withHostConfig({binds = {"build:/data"}})
+        .run('rm', '-rf', '/data/dist')
 
 if VAR.TEST_BINDS == '' then
     inv.task('test')
