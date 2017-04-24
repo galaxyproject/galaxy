@@ -1863,7 +1863,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     status = 'error'
                 except:
                     error = True
-                    log.exception( "Unexpected error %s in create archive for download", sys.exc_info()[0] )
+                    log.exception( "Unexpected error in create archive for download" )
                     message = "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
                     status = 'error'
                 if not error:
