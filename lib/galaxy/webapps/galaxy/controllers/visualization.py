@@ -11,6 +11,7 @@ from sqlalchemy import and_, desc, false, or_, true
 from galaxy import managers, model, util, web
 from galaxy.datatypes.interval import Bed
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.data_providers.genome import RawBedDataProvider
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
@@ -766,13 +767,13 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         """
         Log, raise if debugging; log and show html message if not.
         """
-        log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
+        log.exception( 'error rendering visualization (%s)', visualization_name )
         if trans.debug:
             raise
         return trans.show_error_message(
             "There was an error rendering the visualization. " +
             "Contact your Galaxy administrator if the problem persists." +
-            "<br/>Details: " + str( exception ), use_panels=False )
+            "<br/>Details: " + unicodify( exception ), use_panels=False )
 
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )

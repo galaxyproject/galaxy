@@ -1,12 +1,13 @@
 """
 API check for whether the current session's interactive environment launch is ready
 """
-from subprocess import Popen, PIPE
+import logging
 
+from galaxy.containers import build_container_interfaces
 from galaxy.web import expose, json
 from galaxy.web.base.controller import BaseUIController
 
-import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -24,23 +25,18 @@ class InteractiveEnvironmentsController(BaseUIController):
         :rtype:     boolean
         """
         proxy_map = self.app.proxy_manager.query_proxy(trans)
-        if proxy_map.container_ids:
-            command = proxy_map.docker_command.format(
-                docker_args='ps --format {{{{.Status}}}} --filter id={container_id}'.format(
-                    container_id=proxy_map.container_ids[0]))
-            match_col = 0
-            match_str = 'Up'
-        elif proxy_map.service_ids:
-            command = proxy_map.docker_command.format(
-                docker_args='service ps --no-trunc {service_id}'.format(service_id=proxy_map.service_ids[0]))
-            match_col = 5
-            match_str = 'Running'
-        else:
-            raise Exception('Proxy map has neither container ids nor service ids stored')
-        p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
-        stdout, stderr = p.communicate()
-        if p.returncode != 0:
-            log.error( "%s\n%s" % (stdout, stderr) )
+        if not proxy_map.container_interface:
+            # not using the new containers interface
+            return True
+
+        container_interfaces = build_container_interfaces(
+            self.app.config.containers_config_file,
+            containers_conf=self.app.config.containers_conf,
+        )
+        try:
+            interface = container_interfaces[proxy_map.container_interface]
+        except KeyError:
+            log.error('Invalid container interface key: %s', proxy_map.container_interface)
             return None
-        else:
-            return stdout.splitlines()[-1].strip().split()[match_col].startswith(match_str)
+        container = interface.get_container(proxy_map.container_ids[0])
+        return container.is_ready()

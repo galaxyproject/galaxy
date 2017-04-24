@@ -21,6 +21,7 @@ from datetime import timedelta
 from six import string_types
 from six.moves import configparser
 
+from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
@@ -52,7 +53,7 @@ PATH_DEFAULTS = dict(
     workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
     modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
     local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
-    swarm_manager_config_file=['config/swarm_manager_conf.yml', 'config/swarm_manager_conf.yml.sample'],
+    containers_config_file=['config/containers_conf.yml'],
 )
 
 PATH_LIST_DEFAULTS = dict(
@@ -317,6 +318,8 @@ class Configuration( object ):
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool( kwargs.get( 'enable_beta_tool_formats', 'False' ) )
+        # Beta containers interface used by GIEs
+        self.enable_beta_containers_interface = string_as_bool( kwargs.get( 'enable_beta_containers_interface', 'False' ) )
 
         # Certain modules such as the pause module will automatically cause
         # workflows to be scheduled in job handlers the way all workflows will
@@ -602,6 +605,8 @@ class Configuration( object ):
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = self.resolve_path( kwargs.get( "citation_cache_data_dir", "database/citations/data" ) )
         self.citation_cache_lock_dir = self.resolve_path( kwargs.get( "citation_cache_lock_dir", "database/citations/locks" ) )
+
+        self.containers_conf = parse_containers_config(self.containers_config_file)
 
     @property
     def sentry_dsn_public( self ):

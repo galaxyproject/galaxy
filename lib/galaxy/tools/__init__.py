@@ -1802,6 +1802,46 @@ class Tool( object, Dictifiable ):
         # create parameter object
         params = galaxy.util.Params( kwd, sanitize=False )
 
+        # populates model from state
+        def populate_model( inputs, state_inputs, group_inputs, other_values=None ):
+            other_values = ExpressionContext( state_inputs, other_values )
+            for input_index, input in enumerate( inputs.values() ):
+                tool_dict = None
+                group_state = state_inputs.get( input.name, {} )
+                if input.type == 'repeat':
+                    tool_dict = input.to_dict( request_context )
+                    group_cache = tool_dict[ 'cache' ] = {}
+                    for i in range( len( group_state ) ):
+                        group_cache[ i ] = []
+                        populate_model( input.inputs, group_state[ i ], group_cache[ i ], other_values )
+                elif input.type == 'conditional':
+                    tool_dict = input.to_dict( request_context )
+                    if 'test_param' in tool_dict:
+                        test_param = tool_dict[ 'test_param' ]
+                        test_param[ 'value' ] = input.test_param.value_to_basic( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ), self.app )
+                        test_param[ 'text_value' ] = input.test_param.value_to_display_text( test_param[ 'value' ] )
+                        for i in range( len( tool_dict['cases'] ) ):
+                            current_state = {}
+                            if i == group_state.get( '__current_case__' ):
+                                current_state = group_state
+                            populate_model( input.cases[ i ].inputs, current_state, tool_dict[ 'cases' ][ i ][ 'inputs' ], other_values )
+                elif input.type == 'section':
+                    tool_dict = input.to_dict( request_context )
+                    populate_model( input.inputs, group_state, tool_dict[ 'inputs' ], other_values )
+                else:
+                    try:
+                        tool_dict = input.to_dict( request_context, other_values=other_values )
+                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app, use_security=True )
+                        tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ] )
+                    except Exception as e:
+                        tool_dict = input.to_dict( request_context )
+                        log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )
+                        pass
+                if input_index >= len( group_inputs ):
+                    group_inputs.append( tool_dict )
+                else:
+                    group_inputs[ input_index ] = tool_dict
+
         # expand incoming parameters (parameters might trigger multiple tool executions,
         # here we select the first execution only in order to resolve dynamic parameters)
         expanded_incomings, _ = expand_meta_parameters( trans, self, params.__dict__ )
@@ -1875,7 +1915,7 @@ class Tool( object, Dictifiable ):
                 if 'test_param' in tool_dict:
                     test_param = tool_dict[ 'test_param' ]
                     test_param[ 'value' ] = input.test_param.value_to_basic( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ), self.app )
-                    test_param[ 'text_value' ] = input.test_param.value_to_display_text( test_param[ 'value' ], self.app )
+                    test_param[ 'text_value' ] = input.test_param.value_to_display_text( test_param[ 'value' ] )
                     for i in range( len( tool_dict['cases'] ) ):
                         current_state = {}
                         if i == group_state.get( '__current_case__' ):
@@ -1888,7 +1928,7 @@ class Tool( object, Dictifiable ):
                 try:
                     tool_dict = input.to_dict( request_context, other_values=other_values )
                     tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app, use_security=True )
-                    tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
+                    tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ] )
                 except Exception as e:
                     tool_dict = input.to_dict( request_context )
                     log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )
@@ -2503,11 +2543,98 @@ class FlattenTool( DatabaseOperationTool ):
         )
 
 
+class RelabelFromFileTool(DatabaseOperationTool):
+    tool_type = 'relabel_from_file'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+        hdca = incoming["input"]
+        how_type = incoming["how"]["how_select"]
+        new_labels_dataset_assoc = incoming["how"]["labels"]
+        strict = string_as_bool(incoming["how"]["strict"])
+        new_elements = odict()
+
+        def add_copied_value_to_new_elements(new_label, dce_object):
+            new_label = new_label.strip()
+            if new_label in new_elements:
+                raise Exception("New identifier [%s] appears twice in resulting collection, these values must be unique." % new_label)
+            copied_value = dce_object.copy()
+            if getattr(copied_value, "history_content_type", None) == "dataset":
+                history.add_dataset(copied_value, set_hid=False)
+            new_elements[new_label] = copied_value
+
+        new_labels_path = new_labels_dataset_assoc.file_name
+        new_labels = open(new_labels_path, "r").readlines(1024 * 1000000)
+        if strict and len(hdca.collection.elements) != len(new_labels):
+            raise Exception("Relabel mapping file contains incorrect number of identifiers")
+        if how_type == "tabular":
+            # We have a tabular file, where the first column is an existing element identifier,
+            # and the second column is the new element identifier.
+            source_new_label = (line.strip().split('\t') for line in new_labels)
+            new_labels_dict = {source: new_label for source, new_label in source_new_label}
+            for i, dce in enumerate(hdca.collection.elements):
+                dce_object = dce.element_object
+                element_identifier = dce.element_identifier
+                default = element_identifier if strict else None
+                new_label = new_labels_dict.get(element_identifier, default)
+                if not new_label:
+                    raise Exception("Failed to find new label for identifier [%s]" % element_identifier)
+                add_copied_value_to_new_elements(new_label, dce_object)
+        else:
+            # If new_labels_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
+            for i, dce in enumerate(hdca.collection.elements):
+                dce_object = dce.element_object
+                add_copied_value_to_new_elements(new_labels[i], dce_object)
+        for key in new_elements.keys():
+            if not re.match("^[\w\-_]+$", key):
+                raise Exception("Invalid new colleciton identifier [%s]" % key)
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements
+        )
+
+
+class FilterFromFileTool(DatabaseOperationTool):
+    tool_type = 'filter_from_file'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+        hdca = incoming["input"]
+        how_filter = incoming["how"]["how_filter"]
+        filter_dataset_assoc = incoming["how"]["filter_source"]
+        filtered_elements = odict()
+        discarded_elements = odict()
+
+        filtered_path = filter_dataset_assoc.file_name
+        filtered_identifiers_raw = open(filtered_path, "r").readlines(1024 * 1000000)
+        filtered_identifiers = [i.strip() for i in filtered_identifiers_raw]
+
+        # If filtered_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
+        for i, dce in enumerate(hdca.collection.elements):
+            dce_object = dce.element_object
+            element_identifier = dce.element_identifier
+            in_filter_file = element_identifier in filtered_identifiers
+            passes_filter = in_filter_file if how_filter == "remove_if_absent" else not in_filter_file
+
+            copied_value = dce_object.copy()
+            if getattr(copied_value, "history_content_type", None) == "dataset":
+                history.add_dataset(copied_value, set_hid=False)
+
+            if passes_filter:
+                filtered_elements[element_identifier] = copied_value
+            else:
+                discarded_elements[element_identifier] = copied_value
+
+        output_collections.create_collection(
+            self.outputs["output_filtered"], "output_filtered", elements=filtered_elements
+        )
+        output_collections.create_collection(
+            self.outputs["output_discarded"], "output_discarded", elements=discarded_elements
+        )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
                     DataManagerTool, DataSourceTool, AsyncDataSourceTool,
-                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool,
+                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
                     DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 

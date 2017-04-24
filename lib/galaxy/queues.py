@@ -26,7 +26,9 @@ def control_queue_from_config(config):
     Returns a Queue instance with the correct name and routing key for this
     galaxy process's config
     """
-    return Queue("control.%s" % config.server_name, galaxy_exchange, routing_key='control')
+    return Queue("control.%s" % config.server_name,
+                 galaxy_exchange,
+                 routing_key='control.%s' % config.server_name)
 
 
 def connection_from_config(config):
