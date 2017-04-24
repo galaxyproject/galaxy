@@ -194,7 +194,11 @@ class InvolucroContext(installable.InstallableContext):
 
     def exec_command(self, involucro_args):
         cmd = self.build_command(involucro_args)
-        return self.shell_exec(" ".join(cmd))
+        # Create ./build dir manually, otherwise Docker will do it as root
+        os.mkdir('./build')
+        res = self.shell_exec(" ".join(cmd))
+        os.rmdir('./build')
+        return res
 
     def is_installed(self):
         return os.path.exists(self.involucro_bin)
