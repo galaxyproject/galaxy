@@ -21,11 +21,13 @@ define([], function() {
 
             this.model = new WebhookModel();
             this.model.urlRoot = options.urlRoot;
-            this.model.fetch({
-                success: function() {
-                    me.render();
-                }
-            });
+            if (window.location.pathname.indexOf("user/logout") === -1) {
+                this.model.fetch({
+                    success: function() {
+                        me.render();
+                    }
+                });
+            }
         },
 
         render: function() {
@@ -34,7 +36,7 @@ define([], function() {
             this.$el.html('<div id="' + webhook.name + '"></div>');
             if (webhook.styles) $('<style/>', {type: 'text/css'}).text(webhook.styles).appendTo('head');
             if (webhook.script) $('<script/>', {type: 'text/javascript'}).text(webhook.script).appendTo('head');
-            
+
             return this;
         }
     });
@@ -43,10 +45,12 @@ define([], function() {
         var webhooks = new Webhooks();
 
         webhooks.url = Galaxy.root + options.url;
-        webhooks.fetch({
-            async: (typeof options.async != 'undefined') ? options.async : true,
-            success: options.callback
-        });
+        if (window.location.pathname.indexOf("user/logout") === -1) {
+            webhooks.fetch({
+                async: (typeof options.async != 'undefined') ? options.async : true,
+                success: options.callback
+            });
+        }
     };
 
     return {
