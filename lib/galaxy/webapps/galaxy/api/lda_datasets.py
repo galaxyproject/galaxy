@@ -6,7 +6,6 @@ import logging
 import os
 import os.path
 import string
-import sys
 import tempfile
 import zipfile
 from json import dumps
@@ -607,7 +606,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 log.exception( "Unable to create archive for download" )
                 raise exceptions.InternalServerError( "Unable to create archive for download." )
             except Exception:
-                log.exception( "Unexpected error %s in create archive for download" )
+                log.exception( "Unexpected error in create archive for download" )
                 raise exceptions.InternalServerError( "Unable to create archive for download." )
             composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
             seen = []
