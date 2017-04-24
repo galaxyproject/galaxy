@@ -50,6 +50,8 @@ define({
     false,
 "Register":
     false,
+"Login or Register":
+    false,
 "Logged in as":
     false,
 "Preferences":
