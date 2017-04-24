@@ -607,7 +607,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 log.exception( "Unable to create archive for download" )
                 raise exceptions.InternalServerError( "Unable to create archive for download." )
             except Exception:
-                log.exception( "Unexpected error %s in create archive for download", sys.exc_info()[ 0 ] )
+                log.exception( "Unexpected error %s in create archive for download" )
                 raise exceptions.InternalServerError( "Unable to create archive for download." )
             composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
             seen = []

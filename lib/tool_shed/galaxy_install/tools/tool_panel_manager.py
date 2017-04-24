@@ -90,7 +90,7 @@ class ToolPanelManager( object ):
             fh.write( '</toolbox>\n' )
             fh.close()
         except Exception:
-            log.exception( "Exception in ToolPanelManager.config_elems_to_xml_file: %s" )
+            log.exception( "Exception in ToolPanelManager.config_elems_to_xml_file" )
         finally:
             lock.release()
 

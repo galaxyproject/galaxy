@@ -345,7 +345,7 @@ class Registry( object ):
             # The viewable repository numbers and the categorized (filtered) lists of repository tuples
             # may be slightly skewed, but that is no reason to result in a potential server error.  All
             # will be corrected at next server start.
-            log.exception( "Handled error removing entry from repository registry: %s." )
+            log.exception( "Handled error removing entry from repository registry" )
 
     @property
     def sa_session( self ):
