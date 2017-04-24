@@ -49,6 +49,8 @@ define({
     "Authentification",
 "Register":
     "Enregistrement",
+"Login or Register":
+    "Authentification et Enregistrement",
 "Logged in as":
     "Authentifié en tant que",
 "Preferences":
