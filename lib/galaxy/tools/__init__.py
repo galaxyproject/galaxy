@@ -151,6 +151,8 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
 # with the version at which they were fixed.
 GALAXY_LIB_TOOLS_VERSIONED = {
     "sam_to_bam": LooseVersion("1.1.3"),
+    "PEsortedSAM2readprofile": LooseVersion("1.1.1"),
+    "fetchflank": LooseVersion("1.0.1"),
 }
 
 
