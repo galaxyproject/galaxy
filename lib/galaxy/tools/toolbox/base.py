@@ -581,7 +581,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         except IOError:
             log.error( "Error reading tool configuration file from path: %s" % path )
         except Exception:
-            log.exception( "Error reading tool from path: %s" % path )
+            log.exception( "Error reading tool from path: %s", path )
 
     def get_tool_repository_from_xml_item(self, item, path):
         tool_shed = item.elem.find("tool_shed").text
@@ -644,7 +644,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # Always load workflows into the integrated_panel_dict.
             integrated_panel_dict.update_or_append( index, key, workflow )
         except:
-            log.exception( "Error loading workflow: %s" % workflow_id )
+            log.exception( "Error loading workflow: %s", workflow_id )
 
     def _load_label_tag_set( self, item, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         label = ToolSectionLabel( item )
@@ -711,7 +711,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     self._save_integrated_tool_panel()
                 return tool.id
             except Exception:
-                log.exception("Failed to load potential tool %s." % tool_file)
+                log.exception("Failed to load potential tool %s.", tool_file)
                 return None
 
         tool_loaded = False

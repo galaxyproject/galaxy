@@ -112,6 +112,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "Extract genomic DNA 1",
     "aggregate_scores_in_intervals2",
     "Interval_Maf_Merged_Fasta2",
+    "GeneBed_Maf_Fasta2",
     "maf_stats1",
     "Interval2Maf1",
     "MAF_To_Interval1",
@@ -1102,14 +1103,14 @@ class Tool( object, Dictifiable ):
                 # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
                 try:
                     help_text = tool_shed.util.shed_util_common.set_image_paths( self.app, self.repository_id, help_text )
-                except Exception as e:
-                    log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
+                except Exception:
+                    log.exception( "Exception in parse_help, so images may not be properly displayed" )
             try:
                 self.__help = Template( rst_to_html(help_text), input_encoding='utf-8',
                                         output_encoding='utf-8', default_filters=[ 'decode.utf8' ],
                                         encoding_errors='replace' )
             except:
-                log.exception( "error in help for tool %s" % self.name )
+                log.exception( "error in help for tool %s", self.name )
 
             # Handle deprecated multi-page help text in XML case.
             if hasattr(tool_source, "root"):
@@ -1129,7 +1130,7 @@ class Tool( object, Dictifiable ):
                                                       encoding_errors='replace' )
                                             for x in self.__help_by_page ]
                 except:
-                    log.exception( "error in multi-page help for tool %s" % self.name )
+                    log.exception( "error in multi-page help for tool %s", self.name )
         # Pad out help pages to match npages ... could this be done better?
         while len( self.__help_by_page ) < self.npages:
             self.__help_by_page.append( self.__help )
