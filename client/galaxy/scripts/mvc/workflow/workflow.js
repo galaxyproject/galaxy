@@ -75,6 +75,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
             for(var i = 0; i < collection.length; i++) {
                 var item = collection[i];
                 if( value.toString() === item.id.toString() ) {
+                    item.count = i;
                     template = self._templateWorkflowInfoTable( item );
                     $el.append( template );
                     break;
@@ -99,7 +100,22 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                         '<th>Last Updated Time</th>' +
                     '</tr>' +
                     '<tr>' +
-                        '<td class="wf-td">' + options.text + '</td>' +
+                        '<td class="wf-td">' +
+                            '<div class="dropdown">' +
+                                '<button class="menubutton" type="button" data-toggle="dropdown">' +
+                                     _.escape( options.text ) + '<span class="caret"></span>' +
+                                 '</button>' +
+                                 '<ul class="dropdown-menu action-dpd">' +
+                                     '<li><a href="/workflow/editor?id='+ options.id +'">Edit</a></li>' +
+                                     '<li><a href="/root?workflow_id='+ options.id +'">Run</a></li>' +
+                                     '<li><a href="/workflow/sharing?id='+ options.id +'">Share or Download</a></li>' +
+                                     '<li><a href="/workflow/copy?id='+ options.id +'">Copy</a></li>' +
+                                     '<li><a href="/workflow/rename?id='+ options.id +'">Rename</a></li>' +
+                                     '<li><a href="/workflow/display_by_id?id='+ options.id +'">View</a></li>' +
+                                     '<li><a href="/workflow/delete?id='+ options.id +'">Delete</a></li>' +
+                                 '</ul>' +
+                            '</div>' +
+                        '</td>' +
                         '<td class="wf-td">' + options.workflow_steps + '</td>' +
                         '<td class="wf-td">' + options.update_time + '</td>' +
                     '</tr>' +
