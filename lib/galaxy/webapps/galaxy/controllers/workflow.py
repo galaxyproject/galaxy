@@ -155,9 +155,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     __myexp_url = "www.myexperiment.org:80"
 
-    @web.expose
-    def index( self, trans ):
-        return self.list( trans )
+    #@web.expose
+    #def index( self, trans ):
+    #    return self.list( trans )
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )

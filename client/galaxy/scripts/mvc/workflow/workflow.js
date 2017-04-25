@@ -11,59 +11,58 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
 
         render: function() {
             var self = this,
-                url = Galaxy.root + 'workflow',
-                workflow_list = null;
-            $.ajax({
-                url     : url,
-                type    : 'GET'
-            }).done( function( response ) {
+                workflows = [];
+
+            $.getJSON( Galaxy.root + 'api/workflows/', function( response ) {
                 self.$el.empty().append( self._templateHeader() );
-                response = JSON.parse( response );
-                workflow_list = response[ "workflows" ];
+                // Update the workflows collection with different attributes names
+                // to be shown as a dropdown list
+                for(var i = 0; i < response.length; i++) {
+                    var wf_obj = {},
+                        wf = response[ i ];
+                    wf_obj.id = wf.id;
+                    wf_obj.text = wf.name;
+                    wf_obj.update_time = wf.update_time;
+                    wf_obj.workflow_steps = wf.latest_workflow_steps;
+                    workflows.push( wf_obj );
+                }
                 // Button for new workflow
-                self.btnNewWorkflow = new Ui.Button( { 
+                self.btnNewWorkflow = new Ui.Button( {
                     title: 'New Workflow',
                     tooltip: 'Create a workflow',
-                    icon: 'fa-plus',
-                    onclick: function() { self.new_workflow(); } 
+                    icon: 'fa-plus-circle',
+                    onclick: function() { self.new_workflow(); }
                 } );
                 // Button for importing a workflow
                 self.btnImportWorkflow = new Ui.Button( {
                     title: 'Import Workflow',
                     tooltip: 'Import a workflow',
-                    icon: 'fa-code-fork',
+                    icon: 'fa-upload',
                     onclick: function() { self.import_workflow(); }
                 } );
-
-                // Make workflows select list only where there is at least 
-                // one workflow present
-                if( workflow_list.length > 0 ) {
-                    // Workflows select box
-                    self.selectWorkflows = new Select.View({
-                        css         : 'workflow-list',
-                        container   : self.$( '.user-workflows' ),
-                        data        : workflow_list,
-                        value       : workflow_list[0].id, // Defaults to the first value
-                        onchange    : function( value ) { self.select_workflow( self, value, workflow_list ) }
-                    });
-                    self.$el.append( self.selectWorkflows.$el );
-                    // Make table to show default selected workflow
-                    self.select_workflow( self, workflow_list[0].id, workflow_list );
-                }
-                else {
-                    self.$el.append( '<div style="padding-left: 1%"> You have no workflows. </div>' );
-                }
 
                 // Make new and import workflow buttons
                 self.$el.append( self.btnNewWorkflow.$el );
                 self.$el.append( self.btnImportWorkflow.$el );
 
-            }).fail( function( response ) {
-                self.$el.empty().append( new Ui.Message({
-                    message     : 'Failed to load resource ' + self.url + '.',
-                    status      : 'danger',
-                    persistent  : true
-                }).$el );
+                // Make workflows select list only where there is at least
+                // one workflow present
+                if( workflows.length > 0 ) {
+                    // Workflows select box
+                    self.selectWorkflows = new Select.View({
+                        css         : 'workflow-list',
+                        container   : self.$( '.user-workflows' ),
+                        data        : workflows,
+                        value       : workflows[0].id, // Defaults to the first value
+                        onchange    : function( value ) { self.select_workflow( self, value, workflows ) }
+                    });
+                    self.$el.append( self.selectWorkflows.$el );
+                    // Make table to show default selected workflow
+                    self.select_workflow( self, workflows[0].id, workflows );
+                }
+                else {
+                    self.$el.append( '<div class="wf-nodata"> You have no workflows. </div>' );
+                }
             });
         },
 
@@ -75,7 +74,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
 
             for(var i = 0; i < collection.length; i++) {
                 var item = collection[i];
-                if( parseInt(value) === parseInt(item.id) ) {
+                if( value.toString() === item.id.toString() ) {
                     template = self._templateWorkflowInfoTable( item );
                     $el.append( template );
                     break;
@@ -98,15 +97,11 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                         '<th>Name</th>' +
                         '<th># of Steps</th>' +
                         '<th>Last Updated Time</th>' +
-                        '<th></th>' +
                     '</tr>' +
                     '<tr>' +
-                        '<td>' +
-                            '<div class="menubutton" style="float: left;" id="'+ options.id +'">' + options.text + '</div>' +
-                        '</td>' +
-                        '<td>' + options.workflow_steps + '</td>' +
-                        '<td>' + options.update_time + '</td>' +
-                        '<td></td>' +
+                        '<td class="wf-td">' + options.text + '</td>' +
+                        '<td class="wf-td">' + options.workflow_steps + '</td>' +
+                        '<td class="wf-td">' + options.update_time + '</td>' +
                     '</tr>' +
                 '</table>';
         },

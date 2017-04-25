@@ -106,7 +106,7 @@ window.app = function app( options, bootstrapped ){
             '(/)tours(/)(:tour_id)' : 'show_tours',
             '(/)user(/)' : 'show_user',
             '(/)user(/)(:form_id)' : 'show_user_form',
-            '(/)workflows' : 'show_workflows',
+            '(/)workflow(/)' : 'show_workflows',
         },
 
         show_tours : function( tour_id ){

@@ -39,9 +39,7 @@ var Collection = Backbone.Collection.extend({
             disabled        : !Galaxy.user.id,
             target          : 'galaxy_main',
             onclick         : function() {
-                                  if( Galaxy.router ) {
-                                      Galaxy.router.push( 'workflows' );
-                                  }
+                                  window.location = Galaxy.root + 'workflow';
                             }
         });
 
