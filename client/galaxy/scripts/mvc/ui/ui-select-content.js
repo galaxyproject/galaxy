@@ -11,7 +11,7 @@ var Configurations = {
         { src: 'hdca', icon: 'fa-folder-o', tooltip: 'Dataset collection',   multiple: false,   batch: Batch.LINKED     } ],
     data_multiple: [
         { src: 'hda',  icon: 'fa-files-o',  tooltip: 'Multiple datasets',    multiple: true,    batch: Batch.DISABLED   },
-        { src: 'hdca', icon: 'fa-folder-o', tooltip: 'Dataset collection',   multiple: false,   batch: Batch.DISABLED   } ],
+        { src: 'hdca', icon: 'fa-folder-o', tooltip: 'Dataset collections',  multiple: true,    batch: Batch.DISABLED   } ],
     data_collection: [
         { src: 'hdca', icon: 'fa-folder-o', tooltip: 'Dataset collection',   multiple: false,   batch: Batch.DISABLED   } ],
     workflow_data: [
