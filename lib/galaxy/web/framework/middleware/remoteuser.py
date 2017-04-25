@@ -69,7 +69,7 @@ class RemoteUser( object ):
             assert self.remote_user_header not in environ
             environ[ self.remote_user_header ] = self.single_user
 
-        if environ.get(self.remote_user_header, '(null)').startswith('(null)'):
+        if environ.get(self.remote_user_header, '').startswith('(null)'):
             # Throw away garbage headers.
             # Apache sets REMOTE_USER to the string '(null)' when using the
             # Rewrite* method for passing REMOTE_USER and a user is not authenticated.
