@@ -8,7 +8,6 @@ from galaxy.web.base.controller import BaseAPIController
 
 import logging
 import random
-import json
 import imp
 
 log = logging.getLogger(__name__)
