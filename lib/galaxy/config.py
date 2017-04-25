@@ -569,6 +569,10 @@ class Configuration( object ):
         self.statsd_host = kwargs.get( 'statsd_host', '')
         self.statsd_port = int( kwargs.get( 'statsd_port', 8125 ) )
         self.statsd_prefix = kwargs.get( 'statsd_prefix', 'galaxy' )
+        # Statistics and profiling with graphite
+        self.graphite_host = kwargs.get( 'graphite_host', '')
+        self.graphite_port = int( kwargs.get( 'graphite_port', 2003 ) )
+        self.graphite_prefix = kwargs.get( 'graphite_prefix', 'galaxy' )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
