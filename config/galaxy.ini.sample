@@ -119,8 +119,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Slow query logging.  Queries slower than the threshold indicated below will
 # be logged to debug.  A value of '0' is disabled.  For example, you would set
-# this to .005 to log all queries taking longer than 5 milliseconds
-# slow_query_log_threshold = 0
+# this to .005 to log all queries taking longer than 5 milliseconds.
+#slow_query_log_threshold = 0
 
 # By default, Galaxy will use the same database to track user data and
 # tool shed install data.  There are many situations in which it is
@@ -441,7 +441,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #
 # Configuration file for the object store
 # If this is set and exists, it overrides any other objectstore settings.
-# object_store_config_file = config/object_store_conf.xml
+#object_store_config_file = config/object_store_conf.xml
 
 
 # -- Mail and notification
@@ -461,7 +461,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #smtp_password = None
 
 # If your SMTP server requires SSL from the beginning of the connection
-# smtp_ssl = False
+#smtp_ssl = False
 
 # On the user registration form, users may choose to join a mailing list. This
 # is the address used to subscribe to the list. Uncomment and leave empty if you
@@ -586,7 +586,7 @@ nglims_config_file = tool-data/nglims.yaml
 # - $locale (complete format string for the server locale),
 # - $iso8601 (complete format string as specified by ISO 8601 international
 #   standard).
-# pretty_datetime_format = $locale (UTC)
+#pretty_datetime_format = $locale (UTC)
 
 # URL (with schema http/https) of the Galaxy instance as accessible within your
 # local network - if specified used as a default by pulsar file staging and
@@ -930,16 +930,16 @@ use_interactive = True
 # The higher the boost, the more importance the scoring algorithm gives to the
 # given field.  Section refers to the tool group in the tool panel.  Rest of
 # the fields are tool's attributes.
-# tool_name_boost = 9
-# tool_section_boost = 3
-# tool_description_boost = 2
-# tool_label_boost = 1
-# tool_stub_boost = 5
-# tool_help_boost = 0.5
+#tool_name_boost = 9
+#tool_section_boost = 3
+#tool_description_boost = 2
+#tool_label_boost = 1
+#tool_stub_boost = 5
+#tool_help_boost = 0.5
 
 # Limits the number of results in toolbox search.  Can be used to tweak how many
 # results will appear.
-# tool_search_limit = 20
+#tool_search_limit = 20
 
 # Enable/ disable Ngram-search for tools. It makes tool
 # search results tolerant for spelling mistakes in the query
@@ -1092,7 +1092,7 @@ use_interactive = True
 # collections.
 #force_beta_workflow_scheduled_for_collections=False
 
-# If multiple job handlers are enabled allow Galaxy to schedule workflow invocations
+# If multiple job handlers are enabled, allow Galaxy to schedule workflow invocations
 # in multiple handlers simultaneously. This is discouraged because it results in a
 # less predictable order of workflow datasets within in histories.
 #parallelize_workflow_scheduling_within_histories = False
@@ -1328,7 +1328,7 @@ use_interactive = True
 # under user preferences and can be toggled on and off at
 # runtime.  Example shown below are not real defaults (no custom
 # filters are applied by default), but can be enabled by renaming the
-# example.py.sample in the filters directory to example.py.
+# examples.py.sample in the filters directory to examples.py.
 
 #tool_filters =
 #tool_label_filters =
