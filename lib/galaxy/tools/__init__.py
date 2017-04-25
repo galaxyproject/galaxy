@@ -146,6 +146,8 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "cufflinks",
     # Tools improperly migrated to the tool shed (iuc)
     "tabular_to_dbnsfp",
+    # Tools improperly migrated using Galaxy (from shed other)
+    "column_join",
 ]
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.
