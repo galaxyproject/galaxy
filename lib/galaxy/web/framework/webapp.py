@@ -462,7 +462,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                 # No session exists, get/create user for new session
                 user_for_new_session = self.get_or_create_remote_user( remote_user_email )
             if ((galaxy_session and galaxy_session.user is None) and user_for_new_session is None):
-                raise Exception("Remote Authentication Failure")
+                raise Exception("Remote Authentication Failure - user is unknown and/or not supplied.")
         else:
             if galaxy_session is not None and galaxy_session.user and galaxy_session.user.external:
                 # Remote user support is not enabled, but there is an existing
