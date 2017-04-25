@@ -77,8 +77,6 @@ steps:
       element: '#title_filter > a'
       intro: "Tools are grouped into categories to make them easier to find."
       position: "right"
-      preclick:
-        - "#title_filter a"
 
     - title: "Select a tool"
       element: 'a[href$="tool_runner?tool_id=Filter1"]'
