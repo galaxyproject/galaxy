@@ -21,8 +21,8 @@ class TourGenerator(object):
         self._generate_tour()
 
     def _upload_test_data(self):
-        """ 
-        Upload test datasets, which are defined in the <test></test> 
+        """
+        Upload test datasets, which are defined in the <test></test>
         section of the provided tool.
         """
         if not self._tool.tests:
@@ -37,18 +37,33 @@ class TourGenerator(object):
         ]
 
         if not input_datasets:
-            self._use_datasets = False
-            return
-            # raise ValueError('Test data is missing.')
+            not_supported_input_types = [
+                k for k, v in self._tool.inputs.data.items() if
+                v.type == 'repeat' or v.type == 'data_collection'
+            ]
+            if not_supported_input_types:
+                raise ValueError('Cannot generate a tour.')
+            else:
+                self._use_datasets = False
+                return
+
+        test_data_paths = [os.path.abspath('test-data')]
+        test_data_cache_dir = os.path.abspath(
+            os.environ.get('GALAXY_TEST_DATA_REPO_CACHE', 'test-data-cache'))
+        test_data_paths.extend([
+            x[0] for x in os.walk(test_data_cache_dir) if '.git' not in x[0]])
 
         # Upload all test datasets
         for i, input in enumerate(input_datasets):
             input_name = input[0]
-            input_path = os.path.abspath(os.path.join('test-data', input_name))
 
-            if not os.path.exists(input_path):
-                raise ValueError(
-                    'Test dataset "%s" doesn\'t exist.' % input_name)
+            for j, data_path in enumerate(test_data_paths):
+                input_path = os.path.join(data_path, input_name)
+                if os.path.exists(input_path):
+                    break
+                elif j + 1 == len(test_data_paths):  # the last path
+                    raise ValueError('Test dataset "%s" doesn\'t exist.' %
+                                     input_name)
 
             upload_tool = self._trans.app.toolbox.get_tool('upload1')
             filename = os.path.basename(input_path)
@@ -102,8 +117,8 @@ class TourGenerator(object):
 
         # TODO@me: for ... in test.inputs?
         for name, input in self._tool.inputs.items():
-            # Skip this type as Tours Framework doesn't add tour_id to the
-            # corresponding DOM element
+            cond_case_steps = []
+
             if input.type == 'repeat':
                 continue
 
@@ -146,12 +161,9 @@ class TourGenerator(object):
                     hid, dataset
                 )
 
-            # elif input.type == 'repeat':
-            #     step['title'] = input.title
-            #     step['content'] = 'Select parameter <b>%s</b>' % input.title
-
             elif input.type == 'conditional':
                 param_id = '%s|%s' % (input.name, input.test_param.name)
+                step['title'] = input.test_param.label
                 step['element'] = '[tour_id="%s"]' % param_id
                 cond_param = input.label
                 params = []
@@ -165,6 +177,25 @@ class TourGenerator(object):
                 step['content'] = 'Select parameter(s): <b>%s</b>' % \
                     cond_param
 
+                # Conditional param cases
+                cases = {}
+                for case in input.cases:
+                    for key, value in case.inputs.items():
+                        if key not in cases.keys():
+                            cases[key] = value.label
+
+                for case_id, case_title in cases.items():
+                    tour_id = '%s|%s' % (input.name, case_id)
+                    if tour_id in self._test.inputs.keys():
+                        case_params = ', '.join(self._test.inputs[tour_id])
+                        cond_case_steps.append({
+                            'title': case_title,
+                            'element': '[tour_id="%s"]' % tour_id,
+                            'placement': 'right',
+                            'content': 'Select parameter(s): <b>%s</b>' %
+                                       case_params
+                        })
+
             elif input.type == 'data_column':
                 column_param = self._test.inputs[name][0]
                 step['content'] = 'Select <b>Column: %s</b>' % column_param
@@ -173,6 +204,8 @@ class TourGenerator(object):
                 step['content'] = 'Select parameter <b>%s</b>' % input.label
 
             steps.append(step)
+            if cond_case_steps:
+                steps.extend(cond_case_steps)  # add conditional input steps
 
         # Add the last step
         steps.append({
@@ -191,7 +224,7 @@ class TourGenerator(object):
         }
 
     def get_data(self):
-        """ 
+        """
         Return a dictionary with the uploaded datasets' history ids and
         the generated tour.
         """

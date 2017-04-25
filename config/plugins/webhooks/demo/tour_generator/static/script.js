@@ -9,7 +9,7 @@ $(document).ready(function() {
             // Add attribute 'tour_id' to the execution button
             $('#execute').attr('tour_id', 'execute');
 
-            Toastr.info('Tour generation will take some time.');
+            Toastr.info('Tour generation might take some time.');
             $.getJSON('/api/webhooks/tour_generator/get_data/', {
                 tool_id: this.toolId
             }, function(obj) {
@@ -41,14 +41,13 @@ $(document).ready(function() {
                             } else {
                                 Toastr.error('Some of the test datasets cannot be found in the history.');
                             }
-                        }, 500);
+                        }, 1000);
                     } else {
                         me._main(obj.data);
                     }
                 } else {
                     Toastr.error(obj.error);
                     console.error('Tour Generator: ' + obj.error);
-                    console.error(obj);
                 }
             });
         },

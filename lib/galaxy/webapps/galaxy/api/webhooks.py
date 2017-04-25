@@ -56,7 +56,6 @@ class WebhooksController(BaseAPIController):
         ]
 
     @expose_api_anonymous_and_sessionless
-    # def get_data(self, trans, webhook_name, params, **kwd):
     def get_data(self, trans, webhook_name, **kwd):
         """
         *GET /api/webhooks/{webhook_name}/get_data/{params}
@@ -72,6 +71,7 @@ class WebhooksController(BaseAPIController):
             for webhook in self.app.webhooks_registry.webhooks
             if webhook.name == webhook_name
         ]
+
         return imp.load_source('helper', webhook[0].helper).main(
             trans,
             webhook[0],
