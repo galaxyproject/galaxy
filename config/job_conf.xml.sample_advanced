@@ -123,7 +123,7 @@
                  This requires installing pykube. Install pykube by activating Galaxy's virtual
                  and then executing the following pip command:
 
-                 pip install -e git+https://github.com/pcm32/pykube.git@feature/allMergedFeatures#egg=pykube
+                 pip install pykube==0.15.0
 
                  The shared file system needs to be exposed to k8s through a Persistent Volume (rw) and a Persistent
                  Volume Claim. An example of a Persistent Volume could be, in yaml (access modes, reclaim policy and
@@ -183,6 +183,11 @@
                  galaxy is running inside Kubernetes). If this variable is True, then the previous k8s_config_path is
                  not required and actually ignored. It is not necessary to set this value if not setting it to true -->
 
+            <param id="k8s_job_api_version">batch/v1</param>
+            <!-- Version of the Kubernetes Job API object to use, the default one batch/v1 should be supported from
+                 Kubernetes 1.2 and on. Changing this a much newer version in the future might require changes to the
+                 plugin runner code. Value extensions/v1beta1 is also supported for pre 1.2 legacy installations.
+                 -->
             <param id="k8s_persistent_volume_claim_name">galaxy_pvc</param>
             <!-- The name of the Persisten Volume Claim (PVC) to be used, details above, needs to match the PVC's
                  metadata:name -->

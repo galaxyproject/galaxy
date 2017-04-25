@@ -47,6 +47,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_persistent_volume_claim_name=dict(map=str),
             k8s_persistent_volume_claim_mount_path=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
+            k8s_job_api_version=dict(map=str, default="batch/v1"),
             k8s_supplemental_group_id=dict(map=str),
             k8s_fs_group_id=dict(map=int),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
@@ -86,7 +87,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
         k8s_job_name = self.__produce_unique_k8s_job_name(job_wrapper.get_id_tag())
         k8s_job_obj = {
-            "apiVersion": "extensions/v1beta1",
+            "apiVersion": self.runner_params['k8s_job_api_version'],
             "kind": "Job",
             "metadata":
             # metadata.name is the name of the pod resource created, and must be unique
