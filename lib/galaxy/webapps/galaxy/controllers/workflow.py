@@ -200,16 +200,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         if slug_set:
             trans.sa_session.flush()
 
-        workflowcollection = list()
-        for item in workflows:
-            workflowcollection.append( dict(id=item.id, text=str( item.name ), update_time=str( item.update_time )[:19],
-                name=str( item.name ), workflow_steps=str( len( item.latest_workflow.steps ) )
-            ) )
-
-        return json.dumps({
-            'workflows': workflowcollection,
-            'shared_by_others': shared_by_others
-        })
+        return trans.response.send_redirect( '/workflow' )
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -660,7 +651,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         trans.sa_session.flush()
         # Display the management page
         trans.set_message( "Workflow '%s' deleted" % escape( stored.name ) )
-        return self.list( trans )
+        return trans.response.send_redirect( '/workflow' )
 
     @web.expose
     @web.require_login( "edit workflows" )
