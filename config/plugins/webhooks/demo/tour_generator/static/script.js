@@ -1,6 +1,4 @@
 $(document).ready(function() {
-    var ToolForm = window.toolform;
-
     window.TourGenerator = Backbone.View.extend({
         initialize: function(options) {
             var me = this;
@@ -15,9 +13,8 @@ $(document).ready(function() {
             }, function(obj) {
                 if (obj.success) {
                     if (obj.data.useDatasets) {
-                        $('#history-refresh-button').click(); // Refresh history panel
+                        Galaxy.currHistoryPanel.refreshContents();  // Refresh history panel
 
-                        // TODO@me: sometimes doesn't work, find a better solution (e.g. catch a redraw event)
                         // Add a delay because of the history panel refreshing
                         setTimeout(function () {
                             var datasets = [],
@@ -35,7 +32,7 @@ $(document).ready(function() {
                                     dataset.on('change:state', function (model) {
                                         if (model.get('state') === 'ok') numUploadedDatasets++;
                                         // Make sure that all test datasets have been successfully uploaded
-                                        if (numUploadedDatasets === datasets.length) me._main(obj.data);
+                                        if (numUploadedDatasets === datasets.length) me._generateTour(obj.data.tour);
                                     });
                                 });
                             } else {
@@ -52,33 +49,17 @@ $(document).ready(function() {
             });
         },
 
-        _main: function(data) {
-            var tool = Galaxy.toolPanel.get('tools').get({
-                id: this.toolId
-            });
-
-            // Create a tool form
-            var toolForm = new ToolForm.View({
-                id: tool.get('id'),
-                version: tool.get('version')
-            });
-
-            // Show the form
-            Galaxy.page.center.display(toolForm);
-
-            // Generate and run the tour
-            var tour = this._generateTour(data.tour);
-            tour.init();
-            tour.goTo(0);
-            tour.restart();
-        },
-
         _generateTour: function(data) {
             var tourData = Tours.hooked_tour_from_data(data);
             sessionStorage.setItem('activeGalaxyTour', JSON.stringify(data));
-            return new Tour(_.extend({
+
+            // Generate and run the tour
+            var tour = new Tour(_.extend({
                 steps: tourData.steps
             }));
+            tour.init();
+            tour.goTo(0);
+            tour.restart();
         }
     });
 });

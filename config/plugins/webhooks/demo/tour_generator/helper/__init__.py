@@ -115,7 +115,6 @@ class TourGenerator(object):
             'orphan': True
         }]
 
-        # TODO@me: for ... in test.inputs?
         for name, input in self._tool.inputs.items():
             cond_case_steps = []
 
