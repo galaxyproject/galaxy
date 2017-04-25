@@ -178,6 +178,14 @@
                  your installation. This is the file that tells the plugin where the k8s cluster is, access credentials,
                  etc. This parameter is not necessary and ignored if k8s_use_service_account is set to True -->
 
+            <param id="k8s_pull_policy">Default</param>
+            <!-- Sets the pull policy to be used for all containers invoked for jobs by the Kubernetes cluster. Can take
+                 any value among the possible Kubernetes container image pull policies: Always, IfNotPresent or Never
+                 (respecting capitalization). Any other value, such as "Default", will not change the setting on k8s and
+                 leave for the containers to run with the default pull policy specified at the cluster (this is normally
+                 IfNotPresent). Container images using latest are by default always pulled, so you need to use defined
+                 versions for offline cases to work (and images need to be previously pulled).
+
             <param id="k8s_use_service_account">false</param>
             <!-- For use when Kubernetes should be accessed from inside a Pod running Galaxy (that is,
                  galaxy is running inside Kubernetes). If this variable is True, then the previous k8s_config_path is
@@ -209,6 +217,7 @@
                  This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed) -->
+
             <param id="k8s_supplemental_group_id">0</param>
             <param id="k8s_fs_group_id">0</param>
             <!-- If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access

@@ -49,6 +49,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_namespace=dict(map=str, default="default"),
             k8s_job_api_version=dict(map=str, default="batch/v1"),
             k8s_supplemental_group_id=dict(map=str),
+            k8s_pull_policy=dict(map=str, default="Default"),
             k8s_fs_group_id=dict(map=int),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
 
@@ -69,6 +70,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         self._supplemental_group = self.__get_supplemental_group()
         self._fs_group = self.__get_fs_group()
+        self._default_pull_policy = self.__get_pull_policy()
 
         self._init_monitor_thread()
         self._init_worker_threads()
@@ -119,6 +121,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # external_runJob_script can be None, in which case it's not used.
         external_runjob_script = None
         return external_runjob_script
+
+    def __get_pull_policy(self):
+        if "k8s_pull_policy" in self.runner_params:
+            if self.runner_params['k8s_pull_policy'] in ["Always", "IfNotPresent", "Never"]:
+                return self.runner_params['k8s_pull_policy']
+        return None
 
     def __get_supplemental_group(self):
         if "k8s_supplemental_group_id" in self.runner_params:
@@ -195,7 +203,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return [k8s_mountable_volume]
 
     def __get_k8s_containers(self, job_wrapper):
-        """Fills in all required for setting up the docker containers to be used."""
+        """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
+           this has been set.
+        """
         k8s_container = {
             "name": self.__get_k8s_container_name(job_wrapper),
             "image": self._find_container(job_wrapper).container_id,
@@ -210,6 +220,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 "name": self._galaxy_vol_name
             }]
         }
+
+        if self._default_pull_policy:
+            k8s_container["imagePullPolicy"] = self._default_pull_policy
+
 
         # if self.__requires_ports(job_wrapper):
         #    k8s_container['ports'] = self.__get_k8s_containers_ports(job_wrapper)
