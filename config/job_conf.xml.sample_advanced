@@ -184,7 +184,7 @@
                  (respecting capitalization). Any other value, such as "Default", will not change the setting on k8s and
                  leave for the containers to run with the default pull policy specified at the cluster (this is normally
                  IfNotPresent). Container images using latest are by default always pulled, so you need to use defined
-                 versions for offline cases to work (and images need to be previously pulled).
+                 versions for offline cases to work (and images need to be previously pulled). -->
 
             <param id="k8s_use_service_account">false</param>
             <!-- For use when Kubernetes should be accessed from inside a Pod running Galaxy (that is,
@@ -233,7 +233,7 @@
                  the security context.
 
                  Using this requires that the Kubernetes cluster is not running the admission controller
-                 "SecurityContextDeny". To check this, look at the --admission-control= variable setup for the
+                 "SecurityContextDeny". To check this, look at the admission-control= variable setup for the
                  api-server pod definition (normally in /etc/kubernetes/manifests/kube-apiserver.manifest), it shouldn't
                  have the mentioned admission controller. Pods with the securityContext set will fail if such admission
                  controller is present. Removing that admission controller from the manifest should provoke kubelet

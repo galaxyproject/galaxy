@@ -91,15 +91,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_job_obj = {
             "apiVersion": self.runner_params['k8s_job_api_version'],
             "kind": "Job",
-            "metadata":
-            # metadata.name is the name of the pod resource created, and must be unique
-            # http://kubernetes.io/docs/user-guide/configuring-containers/
-                {
+            "metadata": {
+                    # metadata.name is the name of the pod resource created, and must be unique
+                    # http://kubernetes.io/docs/user-guide/configuring-containers/
                     "name": k8s_job_name,
                     "namespace": "default",  # TODO this should be set
-                    "labels": {"app": k8s_job_name},
-                }
-            ,
+                    "labels": {"app": k8s_job_name}
+            },
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
 
@@ -134,7 +132,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return int(self.runner_params["k8s_supplemental_group_id"])
             except:
                 log.warn("Supplemental group passed for Kubernetes runner needs to be an integer, value "
-                         + self.runner_params["k8s_supplemental_group_id"]+" passed is invalid")
+                         + self.runner_params["k8s_supplemental_group_id"] + " passed is invalid")
                 return None
         return None
 
@@ -144,7 +142,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return int(self.runner_params["k8s_fs_group_id"])
             except:
                 log.warn("FS group passed for Kubernetes runner needs to be an integer, value "
-                         + self.runner_params["k8s_fs_group_id"]+" passed is invalid")
+                         + self.runner_params["k8s_fs_group_id"] + " passed is invalid")
                 return None
         return None
 
@@ -223,8 +221,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         if self._default_pull_policy:
             k8s_container["imagePullPolicy"] = self._default_pull_policy
-
-
         # if self.__requires_ports(job_wrapper):
         #    k8s_container['ports'] = self.__get_k8s_containers_ports(job_wrapper)
 
@@ -304,7 +300,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 self.mark_as_failed(job_state)
                 job.scale(replicas=0)
                 return None
-
             # We should not get here
             log.debug(
                 "Reaching unexpected point for Kubernetes job, where it is not classified as succ., active nor failed.")
