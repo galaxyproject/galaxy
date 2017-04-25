@@ -3485,6 +3485,14 @@ class DatasetCollectionElement( object, Dictifiable ):
         else:
             return element_object
 
+    @property
+    def dataset_instances( self ):
+        element_object = self.element_object
+        if isinstance( element_object, DatasetCollection ):
+            return element_object.dataset_instances
+        else:
+            return [element_object]
+
     def copy_to_collection( self, collection, destination=None, element_destination=None ):
         element_object = self.element_object
         if element_destination:
