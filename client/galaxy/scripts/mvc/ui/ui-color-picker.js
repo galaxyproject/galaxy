@@ -64,10 +64,7 @@ define(['utils/utils'], function( Utils ) {
 
         /** Build color panel */
         _build: function() {
-            var $content = this._content({
-                colors      : this.colors.base,
-                cls         : 'ui-color-picker-first'
-            });
+            this._content( { colors : this.colors.base } );
             for ( var i in this.colors.theme ) {
                 var line_def = {};
                 if ( i == 0 ) {
@@ -81,10 +78,7 @@ define(['utils/utils'], function( Utils ) {
                 line_def[ 'colors' ] = this.colors.theme[ i ];
                 this._content( line_def );
             }
-            this._content({
-                colors      : this.colors.standard,
-                cls         : 'ui-color-picker-last'
-            });
+            this._content( { colors : this.colors.standard } );
         },
 
         /** Create content */
@@ -92,7 +86,7 @@ define(['utils/utils'], function( Utils ) {
             var colors   = options.colors;
             var $content = $( this._templateContent() );
             var $line = $content.find( '.line' );
-            this.$panel.append( $content.addClass( options.cls ) );
+            this.$panel.append( $content );
             for ( var i in colors ) {
                 var $box = $( this._templateBox( colors[ i ] ) );
                 if ( options.top ) {
