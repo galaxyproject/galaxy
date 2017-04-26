@@ -6,7 +6,9 @@ import random
 import stat
 import tempfile
 import uuid
+
 from subprocess import PIPE, Popen
+from sys import platform as _platform
 
 import yaml
 
@@ -17,6 +19,8 @@ from galaxy.tools.deps.docker_util import DockerVolume
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 
+
+IS_OS_X = _platform == "darwin"
 
 CONTAINER_NAME_PREFIX = 'gie_'
 
@@ -50,7 +54,8 @@ class InteractiveEnvironmentRequest(object):
         self.load_container_interface()
 
         self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
-        self.attr.docker_connect_port = int(self.attr.viz_config.get("docker", "docker_connect_port")) or None
+        raw_docker_connect_port = self.attr.viz_config.get("docker", "docker_connect_port")
+        self.attr.docker_connect_port = int(raw_docker_connect_port) if raw_docker_connect_port else None
 
         # Generate per-request passwords the IE plugin can use to configure
         # the destination container.
@@ -485,7 +490,10 @@ class InteractiveEnvironmentRequest(object):
         inspect_data = inspect_data[0]
         if 'Node' in inspect_data:
             return inspect_data['Node']['IP']
-        elif self.attr.docker_hostname == "localhost":
+        elif self.attr.docker_hostname == "localhost" and not IS_OS_X:
+            # If this is on Docker of Mac OS X that Gateway will be an
+            # IP address only available in the Docker host VM - so we
+            # stick with localhost.
             return inspect_data['NetworkSettings']['Gateway']
         else:
             return self.attr.docker_hostname
