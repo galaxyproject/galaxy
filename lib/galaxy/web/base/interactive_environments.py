@@ -256,7 +256,7 @@ class InteractiveEnvironmentRequest(object):
         return dict([(key.upper(), item) for key, item in conf.items()])
 
     def _get_import_volume_for_run(self):
-        if self.attr.import_volume:
+        if self.use_volumes and self.attr.import_volume:
             return '{temp_dir}:/import/'.format(temp_dir=self.temp_dir)
         return ''
 
@@ -272,7 +272,7 @@ class InteractiveEnvironmentRequest(object):
         env = self._get_env_for_run(env_override)
         import_volume_def = self._get_import_volume_for_run()
         env_str = ' '.join(['-e "%s=%s"' % (key, item) for key, item in env.items()])
-        volume_str = ' '.join(['-v "%s"' % volume for volume in volumes])
+        volume_str = ' '.join(['-v "%s"' % volume for volume in volumes]) if self.use_volumes else ''
         import_volume_str = '-v "{import_volume}"'.format(import_volume=import_volume_def) if import_volume_def else ''
         name = None
         # This is the basic docker command such as "sudo -u docker docker {docker_args}"
@@ -297,6 +297,13 @@ class InteractiveEnvironmentRequest(object):
             image=image,
         )
         return command
+
+    @property
+    def use_volumes(self):
+        if self.attr.viz_config.has_option("docker", "use_volumes"):
+            return string_as_bool_or_none(self.attr.viz_config.get("docker", "use_volumes"))
+        else:
+            return True
 
     def container_run_args(self, image, env_override=None, volumes=None):
         if volumes is None:
@@ -434,6 +441,8 @@ class InteractiveEnvironmentRequest(object):
         :param volumes: dictionary of docker volume mounts
 
         """
+        if volumes is None:
+            volumes = []
         if image is None:
             image = self.default_image
 

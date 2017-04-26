@@ -17,19 +17,26 @@ if ie_request.attr.PASSWORD_AUTH:
 else:
     PASSWORD = "none"
 
+additional_ids = trans.request.params.get('additional_dataset_ids', None)
+
 ## Jupyter Notbook Specific
 if hda.datatype.__class__.__name__ == "Ipynb":
     DATASET_HID = hda.hid
 else:
     DATASET_HID = None
+    if not additional_ids:
+        additional_ids = str(trans.security.encode_id( hda.id ) )
+    else:
+        additional_ids += "," + trans.security.encode_id( hda.id )
 
 # Add all environment variables collected from Galaxy's IE infrastructure
 ie_request.launch(
     image=trans.request.params.get('image_tag', None),
-    additional_ids=trans.request.params.get('additional_dataset_ids', None),
+    additional_ids=additional_ids if ie_request.use_volumes else None,
     env_override={
         'notebook_password': PASSWORD,
         'dataset_hid': DATASET_HID,
+        'additional_ids': additional_ids if not ie_request.use_volumes else None,
     }
 )
 
