@@ -1044,7 +1044,7 @@ class Admin( object ):
                 stop_msg += '.'
             for job_id in job_ids:
                 error_msg = "This job was stopped by an administrator: %s  <a href='%s' target='_blank'>Contact support</a> for additional help." \
-                    % ( stop_msg, self.app.config.get("support_url", "https://wiki.galaxyproject.org/Support" ) )
+                    % ( stop_msg, self.app.config.get("support_url", "https://galaxyproject.org/support/" ) )
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
                     job.stderr = error_msg
