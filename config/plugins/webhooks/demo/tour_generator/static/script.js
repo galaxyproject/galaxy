@@ -60,6 +60,13 @@ $(document).ready(function() {
             tour.init();
             tour.goTo(0);
             tour.restart();
+
+            // Force ending the tour when pressing the Execute button
+            $('#execute').on('mousedown', function() {
+                if (tour) {
+                    tour.end();
+                }
+            });
         }
     });
 });
