@@ -136,5 +136,6 @@ def main():
     print("Count of unique values in " + columns_for_display)
     return errorcode
 
+
 if __name__ == "__main__":
     main()

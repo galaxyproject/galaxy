@@ -1,7 +1,7 @@
 from galaxy import model
+from galaxy.managers import context
 from galaxy.model import mapping
 from galaxy.util import bunch
-from galaxy.managers import context
 
 
 class TestTransaction( context.ProvidesAppContext ):

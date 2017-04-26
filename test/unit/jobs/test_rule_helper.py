@@ -1,10 +1,9 @@
 import uuid
 
-from galaxy.util import bunch
 from galaxy import model
-from galaxy.model import mapping
-
 from galaxy.jobs.rule_helper import RuleHelper
+from galaxy.model import mapping
+from galaxy.util import bunch
 
 USER_EMAIL_1 = "u1@example.com"
 USER_EMAIL_2 = "u2@example.com"

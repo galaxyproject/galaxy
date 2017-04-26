@@ -4,8 +4,8 @@ Input: fasta, int
 Output: tabular
 Return titles with lengths of corresponding seq
 """
-
 import sys
+
 assert sys.version_info[:2] >= ( 2, 4 )
 
 
@@ -47,6 +47,7 @@ def compute_fasta_length( fasta_file, out_file, keep_first_char, keep_first_word
         fasta_title = fasta_title.split()[0]
     out.write( "%s\t%d\n" % ( fasta_title[ 1:keep_first_char ], seq_len ) )
     out.close()
+
 
 if __name__ == "__main__" :
     compute_fasta_length( sys.argv[1], sys.argv[2], sys.argv[3], True )

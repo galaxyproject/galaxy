@@ -18,6 +18,7 @@ def main( args ):
             else:
                 os.remove( full_path )
 
+
 if __name__ == '__main__':
     description = 'Clean out the configured tool dependency path, creating it if it does not exist.'
     parser = argparse.ArgumentParser( description=description )

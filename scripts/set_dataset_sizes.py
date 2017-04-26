@@ -34,6 +34,7 @@ def init():
     return (mapping.init( config.file_path, config.database_connection, create_tables=False, object_store=object_store ),
             object_store)
 
+
 if __name__ == '__main__':
     print 'Loading Galaxy model...'
     model, object_store = init()

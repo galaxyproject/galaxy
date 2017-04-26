@@ -36,5 +36,6 @@ def main():
 
     index.write( open(out_fname, "w") )
 
+
 if __name__ == "__main__":
     main()

@@ -49,5 +49,6 @@ def main():
     s.control(jobID, drmaa.JobControlAction.TERMINATE)
     s.exit()
 
+
 if __name__ == "__main__":
     main()

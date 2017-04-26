@@ -8,6 +8,8 @@ var jQuery = require( 'jquery' ),
     HistoryPanel = require( './history-panel' ),
     PAGE = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
+    UserPreferences = require( 'mvc/user/user-preferences' );
+    CustomBuilds = require( 'mvc/user/user-custom-builds' );
     Tours = require( 'mvc/tours' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
@@ -31,7 +33,6 @@ window.app = function app( options, bootstrapped ){
         toolPanel = new ToolPanel({
             el                  : '#left',
             userIsAnonymous     : Galaxy.user.isAnonymous(),
-            search_url          : config.search_url,
             toolbox             : config.toolbox,
             toolbox_in_panel    : config.toolbox_in_panel,
             stored_workflow_menu_entries : config.stored_workflow_menu_entries,
@@ -68,22 +69,24 @@ window.app = function app( options, bootstrapped ){
     Galaxy.currHistoryPanel = historyPanel.historyView;
     Galaxy.currHistoryPanel.listenToGalaxy( Galaxy );
 
-    //HACK: move there
-    Galaxy.app = {
-        display : function( view, target ){
-            // TODO: Remove this line after select2 update
-            $( '.select2-hidden-accessible' ).remove();
-            centerPanel.display( view );
-        },
-    };
-
     // .................................................... routes
     /**  */
-    var router = new ( Backbone.Router.extend({
+    Galaxy.router = new ( Backbone.Router.extend({
         // TODO: not many client routes at this point - fill and remove from server.
         // since we're at root here, this may be the last to be routed entirely on the client.
         initialize : function( options ){
             this.options = options;
+        },
+
+        /** helper to push a new navigation state */
+        push: function( url, data ) {
+            data = data || {};
+            data.__identifer = Math.random().toString( 36 ).substr( 2 );
+            if ( !$.isEmptyObject( data ) ) {
+                url += url.indexOf( '?' ) == -1 ? '?' : '&';
+                url += $.param( data , true );
+            }
+            this.navigate( url, { 'trigger': true } );
         },
 
         /** override to parse query string into obj and send to each route */
@@ -101,15 +104,34 @@ window.app = function app( options, bootstrapped ){
             // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
             '(/)tours(/)(:tour_id)' : 'show_tours',
+            '(/)user(/)' : 'show_user',
+            '(/)user(/)(:form_id)' : 'show_user_form',
+            '(/)custom_builds' : 'show_custom_builds'
         },
 
         show_tours : function( tour_id ){
-            if (tour_id){
-                Tours.giveTour(tour_id);
-            }
-            else{
+            if ( tour_id ){
+                Tours.giveTour( tour_id );
+            } else {
                 centerPanel.display( new Tours.ToursView() );
             }
+        },
+
+        show_user : function(){
+            centerPanel.display( new UserPreferences.View() );
+        },
+
+        show_user_form : function( form_id ) {
+            centerPanel.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+        },
+
+        show_custom_builds : function() {
+            var self = this;
+            if ( !Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model || !Galaxy.currHistoryPanel.model.id ) {
+                window.setTimeout(function() { self.show_custom_builds() }, 500)
+                return;
+            }
+            centerPanel.display( new CustomBuilds.View() );
         },
 
         /**  */

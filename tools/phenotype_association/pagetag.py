@@ -269,6 +269,7 @@ def usage():
     print("-f,--freq : the minimum MAF required (default: 0.0)", file=f)
     print("-s,--sample : a list of samples to be clustered", file=f)
 
+
 if __name__ == "__main__":
     try:
         opts, args = getopt(argv[1:], "hds:r:f:",

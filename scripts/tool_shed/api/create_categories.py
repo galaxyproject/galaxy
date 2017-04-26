@@ -46,6 +46,7 @@ def main( options ):
             create_response_dict = dict( response=response )
             create_response_dicts.append( create_response_dict )
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='Retrieve a list of categories from a Tool Shed and create them in another Tool Shed.' )
     parser.add_argument( "-a", "--api", dest="api", required=True, help="API Key for Tool Shed in which categories will be created" )

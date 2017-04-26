@@ -6,8 +6,7 @@ import sys
 
 
 def stop_err( msg ):
-    sys.stderr.write( msg )
-    sys.exit()
+    sys.exit(msg)
 
 
 def main():
@@ -107,6 +106,7 @@ options (listed below) default to 'None' if omitted
                         fields[col - 1] = fields[col - 1][ int( options.start ) - 1: ]
                     line = '\t'.join(fields)
             print(line)
+
 
 if __name__ == "__main__":
     main()

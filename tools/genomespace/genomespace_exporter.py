@@ -314,6 +314,7 @@ def send_file_to_genomespace( genomespace_site, username, token, source_filename
         log_file.write( "</body></html>\n" )
     return upload_result
 
+
 if __name__ == '__main__':
     # Parse Command Line
     parser = optparse.OptionParser()

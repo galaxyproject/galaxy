@@ -7,13 +7,13 @@
     <command >
 <![CDATA[
         obabel
-            -icml "${input}"
+            -icml '${input}'
             #if $can:
                 -ocan
             #else:
                 -osmi
             #end if
-            -O "${output}"
+            -O '${output}'
             -e
             $remove_h
             #if $iso_chi or $can or $exp_h:

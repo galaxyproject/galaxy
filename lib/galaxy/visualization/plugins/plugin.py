@@ -244,7 +244,7 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
 # =============================================================================
 class InteractiveEnvironmentPlugin( VisualizationPlugin ):
     """
-    Serves web-based REPLs such as IPython and RStudio.
+    Serves web-based REPLs such as Jupyter and RStudio.
     """
     INTENV_REQUEST_FACTORY = interactive_environments.InteractiveEnvironmentRequest
 
@@ -262,7 +262,7 @@ class InteractiveEnvironmentPlugin( VisualizationPlugin ):
         #   this feels hacky to me but it's what mako recommends:
         #   http://docs.makotemplates.org/en/latest/runtime.html
         render_vars.update( vars={} )
-        # No longer needed but being left around for a few releases as ipython-galaxy
+        # No longer needed but being left around for a few releases as jupyter-galaxy
         # as an external visualization plugin is deprecated in favor of core interactive
         # environment plugin.
         if 'get_api_key' not in render_vars:
@@ -274,7 +274,16 @@ class InteractiveEnvironmentPlugin( VisualizationPlugin ):
             render_vars[ 'plugin_path' ] = os.path.abspath( self.path )
 
         if self.config.get( 'plugin_type', 'visualization' ) == "interactive_environment":
-            request = self.INTENV_REQUEST_FACTORY( trans, self )
+            try:
+                request = self.INTENV_REQUEST_FACTORY( trans, self )
+            except:
+                log.exception("IE plugin request handling failed")
+                return trans.fill_template( 'message.mako',
+                    message='Loading the interactive environment failed, please contact the {admin_tag} for assistance'.format(
+                        admin_tag='<a href="mailto:{admin_mail}">Galaxy administrator</a>'.format(
+                            admin_mail=trans.app.config.error_email_to)
+                        if trans.app.config.error_email_to else 'Galaxy administrator'),
+                    status='error')
             render_vars[ "ie_request" ] = request
 
         template_filename = self.config[ 'entry_point' ][ 'file' ]

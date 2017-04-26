@@ -38,7 +38,6 @@ class BedGraphReader:
 
 
 def main():
-
     input_fname = sys.argv[1]
     out_fname = sys.argv[2]
 
@@ -51,6 +50,7 @@ def main():
         array_tree.root.build_summary()
 
     FileArrayTreeDict.dict_to_file( d, open( out_fname, "w" ) )
+
 
 if __name__ == "__main__":
     main()

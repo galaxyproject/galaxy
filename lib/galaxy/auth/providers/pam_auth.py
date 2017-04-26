@@ -148,4 +148,5 @@ class PAM(AuthProvider):
     def authenticate_user(self, user, password, options):
         return self.authenticate(user.email, user.username, password, options)[0]
 
+
 __all__ = ('PAM', )

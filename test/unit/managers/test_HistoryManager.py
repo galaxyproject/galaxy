@@ -1,22 +1,32 @@
 # -*- coding: utf-8 -*-
 """
 """
-import imp
 import os
+import sys
 import unittest
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
-import galaxy_mock
 
 import sqlalchemy
 from six import string_types
 from sqlalchemy import true
 
-from galaxy import exceptions, model
-from galaxy.managers import base, hdas
-from galaxy.managers.histories import (HistoryDeserializer, HistoryFilters,
-                                       HistoryManager, HistorySerializer)
+from galaxy import (
+    exceptions,
+    model
+)
+from galaxy.managers import (
+    base,
+    hdas
+)
+from galaxy.managers.histories import (
+    HistoryDeserializer,
+    HistoryFilters,
+    HistoryManager,
+    HistorySerializer
+)
+
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import galaxy_mock
 
 from .base import BaseTestCase
 
@@ -315,6 +325,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.log( "should allow purging" )
         history2 = self.history_manager.create( name='history2', user=user2 )
         self.history_manager.purge( history2 )
+        self.assertTrue(history2.deleted)
         self.assertTrue( history2.purged )
 
     def test_current( self ):
@@ -384,6 +395,7 @@ class HistoryManagerTestCase( BaseTestCase ):
 # web.url_for doesn't work well in the framework
 def testable_url_for(*a, **k):
     return '(fake url): %s, %s' % ( a, k )
+
 
 HistorySerializer.url_for = staticmethod( testable_url_for )
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )

@@ -1,7 +1,7 @@
-from os.path import join
 from contextlib import contextmanager
-from galaxy.util import parse_xml_string
+from os.path import join
 
+from galaxy.util import parse_xml_string
 from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
 

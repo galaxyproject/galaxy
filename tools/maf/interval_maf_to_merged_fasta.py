@@ -199,5 +199,6 @@ def __main__():
         if line_count > 0 and options.geneBED:
             print("This tool requires your input file to conform to the 12 column BED standard.")
 
+
 if __name__ == "__main__":
     __main__()

@@ -298,5 +298,6 @@ def __main__():
     # close up output loc file
     all_fasta_loc.close()
 
+
 if __name__ == '__main__':
     __main__()

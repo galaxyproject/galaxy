@@ -107,5 +107,6 @@ def __main__():
         os.system( 'cat %s >> %s' % ( output_tempfile, output_file ) )
         os.remove( output_tempfile )
 
+
 if __name__ == '__main__':
     __main__()

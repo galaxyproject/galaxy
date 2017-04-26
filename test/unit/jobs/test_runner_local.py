@@ -3,10 +3,10 @@ import threading
 import time
 from unittest import TestCase
 
-from galaxy.util import bunch
-from galaxy.jobs.runners import local
-from galaxy.jobs import metrics
 from galaxy import model
+from galaxy.jobs import metrics
+from galaxy.jobs.runners import local
+from galaxy.util import bunch
 
 from tools_support import (
     UsesApp,

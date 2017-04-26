@@ -110,5 +110,6 @@ def __main__():
         print("%i regions were invalid." % ( num_bad_region ))
     maf_utilities.remove_temp_index_file( index_filename )
 
+
 if __name__ == "__main__":
     __main__()

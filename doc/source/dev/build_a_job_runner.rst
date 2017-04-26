@@ -1,8 +1,8 @@
-BUILD RUNNER FOR GALAXY
------------------------
+Build a job runner
+==================
 
-A walk through the steps of building a runner for Galaxy.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A walk through the steps of building a runner for Galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In this tutorial, we would build the runner in a block by block fashion
 (like the building blocks), so we would divide the runner into
@@ -14,7 +14,7 @@ To learn more about the basics, please refer to:
 https://wiki.galaxyproject.org/Admin/GetGalaxy
 
 To explore existing runners, please refer to:
-https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runner
+https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runners
 
 What is required to make a runner for Galaxy?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,13 +51,12 @@ Implementation of parent class (galaxy.jobs.runners.\_\_init\_\_.py)
 -  .. rubric:: Class Inheritance structure
       :name: class-inheritance-structure
 
-   .. figure:: https://github.com/varunshankar/galaxy-godocker/raw/master/inherit.png
-      :alt: 
+   .. image:: inherit.png
 
 -  .. rubric:: The big picture!
       :name: the-big-picture-1
 
-   .. figure:: https://raw.githubusercontent.com/varunshankar/galaxy-godocker/master/runner_diag.png
+   .. image:: runner_diag.png
 
 The whole process is divided into different stages for understanding
 purpose.
@@ -218,7 +217,7 @@ Output params: AsynchronousJobState object
 
 Without going into much detail, assume there is a queue to track the status of every job. eg:
 
-.. image:: https://raw.githubusercontent.com/varunshankar/galaxy-godocker/master/queue.png
+.. image:: queue.png
     :align: center
 
 The galaxy framework updates the status of a job by iterating through the
@@ -229,7 +228,7 @@ copy the output files for the completed jobs.
 
 Updated result after an iteration (after invocation of check\_watched\_item 6 times):
 
-.. image:: https://raw.githubusercontent.com/varunshankar/galaxy-godocker/master/queue_b.png
+.. image:: queue_b.png
     :align: center
 
 

@@ -1,15 +1,13 @@
 <tool id="CONVERTER_bed_to_tabix_0" name="Convert BED to tabix" version="1.0.0" hidden="true">
-<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="python">interval_to_tabix_converter.py -P bed $input1 $bgzip $output1</command>
-  <inputs>
-    <page>
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <command>python '$__tool_directory__/interval_to_tabix_converter.py' -P bed '$input1' '$bgzip' '$output1'</command>
+    <inputs>
         <param format="bed" name="input1" type="data" label="Choose BED file"/>
         <param format="bgzip" name="bgzip" type="data" label="BGZIP file"/>
-    </page>
-   </inputs>
-  <outputs>
-    <data format="tabix" name="output1"/>
-  </outputs>
-  <help>
-  </help>
+    </inputs>
+    <outputs>
+        <data format="tabix" name="output1"/>
+    </outputs>
+    <help>
+    </help>
 </tool>

@@ -638,11 +638,9 @@ class AdminToolshed( AdminGalaxy ):
                                                              checked=install_tool_dependencies_check_box_checked )
         view = views.DependencyResolversView(self.app)
         if view.installable_resolvers:
-            install_resolver_dependencies_check_box_checked = True
+            install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies', checked=True )
         else:
-            install_resolver_dependencies_check_box_checked = False
-        install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies',
-                                                                 checked=install_resolver_dependencies_check_box_checked )
+            install_resolver_dependencies_check_box = None
         return trans.fill_template( '/admin/tool_shed_repository/install_tool_dependencies_with_update.mako',
                                     repository=repository,
                                     updating_repository_id=updating_repository_id,
@@ -783,8 +781,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                                 reinstalling=False,
                                                                                 required_repo_info_dicts=None )
         view = views.DependencyResolversView(self.app)
-        requirements = suc.get_unique_requirements_from_repository(repository)
-        requirements_status = view.get_requirements_status(requirements, repository.installed_tool_dependencies)
+        tool_requirements_d = suc.get_requirements_from_repository(repository)
+        requirements_status = view.get_requirements_status(tool_requirements_d, repository.installed_tool_dependencies)
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
                                     repository=repository,
                                     description=description,
@@ -1051,8 +1049,7 @@ class AdminToolshed( AdminGalaxy ):
         repo_info_dicts = [ encoding_util.tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
         dd = dependency_display.DependencyDisplayer( trans.app )
         install_repository_manager = install_manager.InstallRepositoryManager( trans.app )
-        if ( ( not includes_tools_for_display_in_tool_panel and kwd.get( 'select_shed_tool_panel_config_button', False ) ) or
-             ( includes_tools_for_display_in_tool_panel and kwd.get( 'select_tool_panel_section_button', False ) ) ):
+        if kwd.get( 'select_tool_panel_section_button', False ):
             if updating:
                 repository = repository_util.get_tool_shed_repository_by_id( trans.app, updating_repository_id )
                 decoded_updated_metadata = encoding_util.tool_shed_decode( encoded_updated_metadata )
@@ -1114,6 +1111,11 @@ class AdminToolshed( AdminGalaxy ):
         shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans.app )
         tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans.app, shed_tool_conf )
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
+        tool_requirements = suc.get_tool_shed_repo_requirements(app=trans.app,
+                                                                tool_shed_url=tool_shed_url,
+                                                                repo_info_dicts=repo_info_dicts)
+        view = views.DependencyResolversView(self.app)
+        requirements_status = view.get_requirements_status(tool_requirements)
         if len( repo_info_dicts ) == 1:
             # If we're installing or updating a single repository, see if it contains a readme or
             # dependencies that we can display.
@@ -1206,62 +1208,34 @@ class AdminToolshed( AdminGalaxy ):
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
         view = views.DependencyResolversView(self.app)
         if view.installable_resolvers:
-            install_resolver_dependencies_check_box_checked = True
+            install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies', checked=True )
         else:
-            install_resolver_dependencies_check_box_checked = False
-        install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies',
-                                                                 checked=install_resolver_dependencies_check_box_checked )
+            install_resolver_dependencies_check_box = None
         encoded_repo_info_dicts = encoding_util.encoding_sep.join( encoded_repo_info_dicts )
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        if includes_tools_for_display_in_tool_panel:
-            return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
-                                        encoded_repo_info_dicts=encoded_repo_info_dicts,
-                                        updating=updating,
-                                        updating_repository_id=updating_repository_id,
-                                        updating_to_ctx_rev=updating_to_ctx_rev,
-                                        updating_to_changeset_revision=updating_to_changeset_revision,
-                                        encoded_updated_metadata=encoded_updated_metadata,
-                                        includes_tools=includes_tools,
-                                        includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
-                                        includes_tool_dependencies=includes_tool_dependencies,
-                                        install_tool_dependencies_check_box=install_tool_dependencies_check_box,
-                                        install_resolver_dependencies_check_box=install_resolver_dependencies_check_box,
-                                        has_repository_dependencies=has_repository_dependencies,
-                                        install_repository_dependencies_check_box=install_repository_dependencies_check_box,
-                                        new_tool_panel_section_label=new_tool_panel_section_label,
-                                        containers_dict=containers_dict,
-                                        shed_tool_conf=shed_tool_conf,
-                                        shed_tool_conf_select_field=shed_tool_conf_select_field,
-                                        tool_panel_section_select_field=tool_panel_section_select_field,
-                                        tool_shed_url=tool_shed_url,
-                                        message=message,
-                                        status=status )
-        else:
-            # If installing repositories that includes no tools and has no repository dependencies, display a page
-            # allowing the Galaxy administrator to select a shed-related tool panel configuration file whose tool_path
-            # setting will be the location the repositories will be installed.
-            return trans.fill_template( '/admin/tool_shed_repository/select_shed_tool_panel_config.mako',
-                                        encoded_repo_info_dicts=encoded_repo_info_dicts,
-                                        updating=updating,
-                                        updating_repository_id=updating_repository_id,
-                                        updating_to_ctx_rev=updating_to_ctx_rev,
-                                        updating_to_changeset_revision=updating_to_changeset_revision,
-                                        encoded_updated_metadata=encoded_updated_metadata,
-                                        includes_tools=includes_tools,
-                                        includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
-                                        includes_tool_dependencies=includes_tool_dependencies,
-                                        install_tool_dependencies_check_box=install_tool_dependencies_check_box,
-                                        install_resolver_dependencies_check_box=install_resolver_dependencies_check_box,
-                                        has_repository_dependencies=has_repository_dependencies,
-                                        install_repository_dependencies_check_box=install_repository_dependencies_check_box,
-                                        new_tool_panel_section_label=new_tool_panel_section_label,
-                                        containers_dict=containers_dict,
-                                        shed_tool_conf=shed_tool_conf,
-                                        shed_tool_conf_select_field=shed_tool_conf_select_field,
-                                        tool_panel_section_select_field=tool_panel_section_select_field,
-                                        tool_shed_url=tool_shed_url,
-                                        message=message,
-                                        status=status )
+        return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
+                                    encoded_repo_info_dicts=encoded_repo_info_dicts,
+                                    updating=updating,
+                                    updating_repository_id=updating_repository_id,
+                                    updating_to_ctx_rev=updating_to_ctx_rev,
+                                    updating_to_changeset_revision=updating_to_changeset_revision,
+                                    encoded_updated_metadata=encoded_updated_metadata,
+                                    includes_tools=includes_tools,
+                                    includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
+                                    includes_tool_dependencies=includes_tool_dependencies,
+                                    install_tool_dependencies_check_box=install_tool_dependencies_check_box,
+                                    install_resolver_dependencies_check_box=install_resolver_dependencies_check_box,
+                                    has_repository_dependencies=has_repository_dependencies,
+                                    install_repository_dependencies_check_box=install_repository_dependencies_check_box,
+                                    new_tool_panel_section_label=new_tool_panel_section_label,
+                                    containers_dict=containers_dict,
+                                    shed_tool_conf=shed_tool_conf,
+                                    shed_tool_conf_select_field=shed_tool_conf_select_field,
+                                    tool_panel_section_select_field=tool_panel_section_select_field,
+                                    tool_shed_url=tool_shed_url,
+                                    requirements_status=requirements_status,
+                                    message=message,
+                                    status=status )
 
     @web.expose
     @web.require_admin
@@ -1674,11 +1648,9 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=install_tool_dependencies_check_box_checked )
         view = views.DependencyResolversView(self.app)
         if view.installable_resolvers:
-            install_resolver_dependencies_check_box_checked = True
+            install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies', checked=True )
         else:
-            install_resolver_dependencies_check_box_checked = False
-        install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies',
-                                                                 checked=install_resolver_dependencies_check_box_checked )
+            install_resolver_dependencies_check_box = None
         return trans.fill_template( '/admin/tool_shed_repository/reselect_tool_panel_section.mako',
                                     repository=tool_shed_repository,
                                     no_changes_check_box=no_changes_check_box,

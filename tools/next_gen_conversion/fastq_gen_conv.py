@@ -172,5 +172,6 @@ def __main__():
         outmsg += '\nThere were %s bad blocks skipped' % (bad_blocks)
     sys.stdout.write(outmsg)
 
+
 if __name__ == "__main__":
     __main__()

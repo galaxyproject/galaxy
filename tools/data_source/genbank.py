@@ -18,6 +18,7 @@ def make_fasta(rec):
     body = '\n'.join(textwrap.wrap(rec.seq.data, width=80))
     return head, body
 
+
 if __name__ == '__main__':
     mode = sys.argv[1]
     text = sys.argv[2]

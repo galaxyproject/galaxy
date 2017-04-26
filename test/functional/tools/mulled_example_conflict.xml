@@ -1,0 +1,17 @@
+<tool id="mulled_example_conflict" name="mulled_example_conflict" version="0.1.0">
+    <!-- Tool can't be resolved with older style Conda resolution - all requirements
+         must be installed together to ensure there is no conflict. -->
+    <command detect_errors="exit_code"><![CDATA[
+        lumpy 2>&1 | grep -q structural
+    ]]></command>
+    <requirements>
+        <requirement type="package" version="0.2.12">lumpy-sv</requirement>
+        <requirement type="package" version="1.11.2">numpy</requirement>
+    </requirements>
+    <inputs>
+        <param name="input1" type="text" value="The value" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+</tool>

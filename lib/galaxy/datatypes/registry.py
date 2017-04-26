@@ -4,9 +4,14 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 from __future__ import absolute_import
 
 import os
-import tempfile
-import logging
 import imp
+import logging
+import tempfile
+
+import yaml
+
+import galaxy.util
+
 from . import data
 from . import tabular
 from . import interval
@@ -18,7 +23,6 @@ from . import coverage
 from . import tracks
 from . import binary
 from . import text
-import galaxy.util
 from galaxy.util.odict import odict
 from .display_applications.application import DisplayApplication
 
@@ -29,9 +33,10 @@ class ConfigurationError( Exception ):
 
 class Registry( object ):
 
-    def __init__( self ):
+    def __init__( self, config=None ):
         self.log = logging.getLogger(__name__)
         self.log.addHandler( logging.NullHandler() )
+        self.config = config
         self.datatypes_by_extension = {}
         self.mimetypes_by_extension = {}
         self.datatype_converters = odict()
@@ -182,7 +187,7 @@ class Registry( object ):
                                 datatype_module = fields[ 0 ]
                                 datatype_class_name = fields[ 1 ]
                             except Exception as e:
-                                self.log.exception( 'Error parsing datatype definition for dtype %s: %s' % ( str( dtype ), str( e ) ) )
+                                self.log.exception( 'Error parsing datatype definition for dtype %s', str( dtype ) )
                                 ok = False
                             if ok:
                                 datatype_class = None
@@ -212,13 +217,13 @@ class Registry( object ):
                                         datatype_class = getattr( module, datatype_class_name )
                                         self.log.debug( 'Retrieved datatype module %s:%s from the datatype registry.' % ( str( datatype_module ), datatype_class_name ) )
                                     except Exception as e:
-                                        self.log.exception( 'Error importing datatype module %s: %s' % ( str( datatype_module ), str( e ) ) )
+                                        self.log.exception( 'Error importing datatype module %s', str( datatype_module ) )
                                         ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[ type_extension ].__class__
                             except Exception as e:
-                                self.log.exception( 'Error determining datatype_class for type_extension %s: %s' % ( str( type_extension ), str( e ) ) )
+                                self.log.exception( 'Error determining datatype_class for type_extension %s', str( type_extension ) )
                                 ok = False
                         if ok:
                             if not deactivate:
@@ -295,7 +300,7 @@ class Registry( object ):
                                          override=override )
             self.upload_file_formats.sort()
             # Load build sites
-            self.load_build_sites( root )
+            self._load_build_sites( root )
             # Persist the xml form of the registry into a temporary file so that it can be loaded from the command line by tools and
             # set_metadata processing.
             self.to_xml_file()
@@ -314,23 +319,50 @@ class Registry( object ):
                     self.sniff_order.append( datatype )
         append_to_sniff_order()
 
-    def load_build_sites( self, root ):
+    def _load_build_sites( self, root ):
+
+        def load_build_site( build_site_config ):
+            # Take in either an XML element or simple dictionary from YAML and add build site for this.
+            if not (build_site_config.get( 'type' ) and build_site_config.get( 'file' )):
+                self.log.exception( "Site is missing required 'type' and 'file' attributes" )
+                return
+
+            site_type = build_site_config.get( 'type' )
+            path = build_site_config.get( 'file' )
+            if not os.path.exists( path ):
+                sample_path = "%s.sample" % path
+                if os.path.exists( sample_path ):
+                    self.log.debug( "Build site file [%s] not found using sample [%s]." % ( path, sample_path ) )
+                    path = sample_path
+
+            self.build_sites[site_type] = path
+            if site_type in ('ucsc', 'gbrowse'):
+                self.legacy_build_sites[site_type] = galaxy.util.read_build_sites( path )
+            if build_site_config.get( 'display', None ):
+                display = build_site_config.get( 'display' )
+                if not isinstance( display, list ):
+                    display = [ x.strip() for x in display.lower().split( ',' ) ]
+                self.display_sites[site_type] = display
+                self.log.debug( "Loaded build site '%s': %s with display sites: %s", site_type, path, display )
+            else:
+                self.log.debug( "Loaded build site '%s': %s", site_type, path )
+
         if root.find( 'build_sites' ) is not None:
             for elem in root.find( 'build_sites' ).findall( 'site' ):
-                if not (elem.get( 'type' ) and elem.get( 'file' )):
-                    self.log.exception( "Site is missing required 'type' and 'file' attributes: %s" )
-                else:
-                    site_type = elem.get( 'type' )
-                    file = elem.get( 'file' )
-                    self.build_sites[site_type] = file
-                    if site_type in ('ucsc', 'gbrowse'):
-                        self.legacy_build_sites[site_type] = galaxy.util.read_build_sites( file )
-                    if elem.get( 'display', None ):
-                        display = elem.get( 'display' )
-                        self.display_sites[site_type] = [ x.strip() for x in display.lower().split( ',' ) ]
-                        self.log.debug( "Loaded build site '%s': %s with display sites: %s", site_type, file, display )
-                    else:
-                        self.log.debug( "Loaded build site '%s': %s", site_type, file )
+                load_build_site( elem )
+        else:
+            build_sites_config_file = getattr( self.config, "build_sites_config_file", None  )
+            if build_sites_config_file and os.path.exists( build_sites_config_file ):
+                with open( build_sites_config_file, "r" ) as f:
+                    build_sites_config = yaml.load( f )
+                if not isinstance( build_sites_config, list ):
+                    self.log.exception( "Build sites configuration YAML file does not declare list of sites." )
+                    return
+
+                for build_site_config in build_sites_config:
+                    load_build_site( build_site_config )
+            else:
+                self.log.debug("No build sites source located.")
 
     def get_legacy_sites_by_build( self, site_type, build ):
         sites = []
@@ -365,7 +397,7 @@ class Registry( object ):
                         datatype_class_name = fields[ 1 ]
                         module = None
                     except Exception as e:
-                        self.log.exception( 'Error determining datatype class or module for dtype %s: %s' % ( str( dtype ), str( e ) ) )
+                        self.log.exception( 'Error determining datatype class or module for dtype %s', str( dtype ) )
                         ok = False
                     if ok:
                         if handling_proprietary_datatypes:
@@ -381,13 +413,13 @@ class Registry( object ):
                                 for comp in datatype_module.split( '.' )[ 1: ]:
                                     module = getattr( module, comp )
                             except Exception as e:
-                                self.log.exception( "Error importing datatype class for '%s': %s" % ( str( dtype ), str( e ) ) )
+                                self.log.exception( "Error importing datatype class for '%s'", str( dtype ) )
                                 ok = False
                         if ok:
                             try:
                                 aclass = getattr( module, datatype_class_name )()
                             except Exception as e:
-                                self.log.exception( 'Error calling method %s from class %s: %s', str( datatype_class_name ), str( module ), str( e ) )
+                                self.log.exception( 'Error calling method %s from class %s', str( datatype_class_name ), str( module ) )
                                 ok = False
                             if ok:
                                 if deactivate:
@@ -478,7 +510,7 @@ class Registry( object ):
             data.init_meta( copy_from=data )
         return data
 
-    def load_datatype_converters( self, toolbox, installed_repository_dict=None, deactivate=False ):
+    def load_datatype_converters( self, toolbox, installed_repository_dict=None, deactivate=False, use_cached=False ):
         """
         If deactivate is False, add datatype converters from self.converters or self.proprietary_converters
         to the calling app's toolbox.  If deactivate is True, eliminates relevant converters from the calling
@@ -500,7 +532,7 @@ class Registry( object ):
                 converter_path = self.converters_path
             try:
                 config_path = os.path.join( converter_path, tool_config )
-                converter = toolbox.load_tool( config_path )
+                converter = toolbox.load_tool( config_path, use_cached=use_cached )
                 if installed_repository_dict:
                     # If the converter is included in an installed tool shed repository, set the tool
                     # shed related tool attributes.
@@ -528,11 +560,11 @@ class Registry( object ):
                         self.datatype_converters[ source_datatype ] = odict()
                     self.datatype_converters[ source_datatype ][ target_datatype ] = converter
                     self.log.debug( "Loaded converter: %s", converter.id )
-            except Exception as e:
+            except Exception:
                 if deactivate:
-                    self.log.exception( "Error deactivating converter from (%s): %s" % ( converter_path, str( e ) ) )
+                    self.log.exception( "Error deactivating converter from (%s)" % converter_path )
                 else:
-                    self.log.exception( "Error loading converter (%s): %s" % ( converter_path, str( e ) ) )
+                    self.log.exception( "Error loading converter (%s)" % converter_path )
 
     def load_display_applications( self, app, installed_repository_dict=None, deactivate=False ):
         """
@@ -596,11 +628,11 @@ class Registry( object ):
                             if inherit and ( self.datatypes_by_extension[ extension ], display_app ) not in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.append( ( self.datatypes_by_extension[ extension ], display_app ) )
                             self.log.debug( "Loaded display application '%s' for datatype '%s', inherit=%s." % ( display_app.id, extension, inherit ) )
-                except Exception as e:
+                except Exception:
                     if deactivate:
-                        self.log.exception( "Error deactivating display application (%s): %s" % ( config_path, str( e ) ) )
+                        self.log.exception( "Error deactivating display application (%s)" % config_path )
                     else:
-                        self.log.exception( "Error loading display application (%s): %s" % ( config_path, str( e ) ) )
+                        self.log.exception( "Error loading display application (%s)" % config_path )
         # Handle display_application subclass inheritance.
         for extension, d_type1 in self.datatypes_by_extension.iteritems():
             for d_type2, display_app in self.inherit_display_application_by_class:

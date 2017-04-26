@@ -28,8 +28,8 @@ class DataManagerHandler( object ):
                 fh.write( xml_util.xml_to_string( elem ) )
             fh.write( '</data_managers>\n' )
             fh.close()
-        except Exception as e:
-            log.exception( "Exception in DataManagerHandler.data_manager_config_elems_to_xml_file: %s" % str( e ) )
+        except Exception:
+            log.exception( "Exception in DataManagerHandler.data_manager_config_elems_to_xml_file" )
         finally:
             lock.release()
 

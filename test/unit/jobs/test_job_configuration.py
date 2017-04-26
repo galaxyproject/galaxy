@@ -4,8 +4,8 @@ import shutil
 import tempfile
 import unittest
 
-from galaxy.util import bunch
 from galaxy.jobs import JobConfiguration
+from galaxy.util import bunch
 
 # File would be slightly more readable if contents were embedded directly, but
 # there are advantages to testing the documentation/examples.
@@ -22,6 +22,7 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
             use_tasked_jobs=False,
             job_resource_params_file="/tmp/fake_absent_path",
             config_dict={},
+            default_job_resubmission_condition="",
         )
         self.__write_config_from( SIMPLE_JOB_CONF )
         self.app = bunch.Bunch( config=self.config, job_metrics=MockJobMetrics() )
@@ -100,6 +101,7 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
         assert limits.anonymous_user_concurrent_jobs is None
         assert limits.walltime is None
         assert limits.walltime_delta is None
+        assert limits.total_walltime == {}
         assert limits.output_size is None
         assert limits.destination_user_concurrent_jobs == {}
         assert limits.destination_total_concurrent_jobs == {}
@@ -113,6 +115,8 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
         assert limits.destination_user_concurrent_jobs[ "mycluster" ] == 2
         assert limits.destination_user_concurrent_jobs[ "longjobs" ] == 1
         assert limits.walltime_delta == datetime.timedelta( 0, 0, 0, 0, 0, 24 )
+        assert limits.total_walltime["delta"] == datetime.timedelta( 0, 0, 0, 0, 0, 24)
+        assert limits.total_walltime["window"] == 30
 
     def test_env_parsing( self ):
         self.__with_advanced_config()

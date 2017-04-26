@@ -152,6 +152,7 @@ class DisplayApplicationTemplateParameter( DisplayApplicationParameter ):
             value = value.strip()
         return DisplayParameterValueWrapper( value, self, other_values, dataset_hash, user_hash, trans )
 
+
 parameter_type_to_class = { DisplayApplicationDataParameter.type: DisplayApplicationDataParameter,
                             DisplayApplicationTemplateParameter.type: DisplayApplicationTemplateParameter }
 

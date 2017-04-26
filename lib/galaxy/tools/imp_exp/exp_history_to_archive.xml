@@ -1,7 +1,7 @@
 <tool id="__EXPORT_HISTORY__" name="Export History" version="0.1" tool_type="export_history">
   <type class="ExportHistoryTool" module="galaxy.tools"/>
   <action module="galaxy.tools.actions.history_imp_exp" class="ExportHistoryToolAction"/>
-  <command>python $export_history $__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__ $output_file</command>
+  <command>python '$export_history' $__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__ '$output_file'</command>
   <inputs>
     <param name="__HISTORY_TO_EXPORT__" type="hidden"/>
     <param name="compress" type="boolean"/>

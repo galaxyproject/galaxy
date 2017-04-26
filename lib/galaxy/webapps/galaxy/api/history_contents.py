@@ -162,7 +162,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             )
             return self.__collection_dict( trans, dataset_collection_instance, view="element" )
         except Exception as e:
-            log.exception( "Error in history API at listing dataset collection: %s", e )
+            log.exception( "Error in history API at listing dataset collection" )
             trans.response.status = 500
             return { 'error': str( e ) }
 
@@ -404,8 +404,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 hda = self.hda_manager.error_if_uploading( hda )
 
         # make the actual changes
-        # TODO: is this if still needed?
-        if hda and isinstance( hda, trans.model.HistoryDatasetAssociation ):
+        if hda:
             self.hda_deserializer.deserialize( hda, payload, user=trans.user, trans=trans )
             # TODO: this should be an effect of deleting the hda
             if payload.get( 'deleted', False ):
@@ -619,7 +618,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         :returns:   archive file for download
 
-        .. note: this is a volatile endpoint and settings and behavior may change.
+        .. note:: this is a volatile endpoint and settings and behavior may change.
         """
         # roughly from: http://stackoverflow.com/a/31976060 (windows, linux)
         invalid_filename_char_regex = re.compile( r'[:<>|\\\/\?\* "]' )

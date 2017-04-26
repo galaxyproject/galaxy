@@ -1,21 +1,21 @@
 """
 Unit tests for ``galaxy.web.base.pluginframework.PluginManager``
 """
-import os
-import imp
-import unittest
-
 import logging
-log = logging.getLogger( __name__ )
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../../unittest_utils/utility.py' ) )
-import galaxy_mock
+import os
+import sys
+import unittest
 
 from galaxy.web.base.pluginframework import PluginManager
 
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import galaxy_mock
 
-class PluginManager_TestCase( test_utils.unittest.TestCase ):
+log = logging.getLogger( __name__ )
+
+
+class PluginManager_TestCase( unittest.TestCase ):
 
     def test_rel_path_search( self ):
         """should be able to search given rel. path"""

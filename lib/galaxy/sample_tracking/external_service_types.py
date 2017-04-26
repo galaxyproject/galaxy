@@ -38,7 +38,7 @@ class ExternalServiceTypesCollection( object ):
                     if visible:
                         self.visible_external_service_types.append( external_service_type.id )
             except:
-                log.exception( "error reading external_service_type from path: %s" % file_path )
+                log.exception( "error reading external_service_type from path: %s", file_path )
 
     def load_external_service_type( self, config_file, visible=True ):
         # Parse XML configuration file and get the root element

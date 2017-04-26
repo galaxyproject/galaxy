@@ -44,13 +44,11 @@ class ShedTwillTestCase( TwillTestCase ):
         self.galaxy_url = "http://%s:%s" % ( self.galaxy_host, self.galaxy_port )
         self.shed_tool_data_table_conf = os.environ.get( 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF' )
         self.file_dir = os.environ.get( 'TOOL_SHED_TEST_FILE_DIR', None )
-        self.tool_shed_test_file = None
         self.tool_data_path = os.environ.get( 'GALAXY_TEST_TOOL_DATA_PATH' )
         self.shed_tool_conf = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF' )
         self.test_db_util = test_db_util
         # TODO: Figure out a way to alter these attributes during tests.
         self.galaxy_tool_dependency_dir = os.environ.get( 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' )
-        self.shed_tools_dict = {}
 
     def add_repository_review_component( self, **kwd ):
         url = '/repository_review/create_component?operation=create'

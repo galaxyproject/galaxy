@@ -247,7 +247,7 @@ class BaseJobRunner( object ):
                         output_pairs.append( ( source_file, destination ) )
                     else:
                         # Security violation.
-                        log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
+                        log.exception( "from_work_dir specified a location not in the working directory: %s, %s", source_file, job_wrapper.working_directory )
         return output_pairs
 
     def _walk_dataset_outputs( self, job ):
@@ -314,6 +314,7 @@ class BaseJobRunner( object ):
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=command_line,
             shell=job_wrapper.shell,
+            preserve_python_environment=job_wrapper.tool.requires_galaxy_python_environment,
         )
         # Additional logging to enable if debugging from_work_dir handling, metadata
         # commands, etc... (or just peak in the job script.)
@@ -368,6 +369,17 @@ class BaseJobRunner( object ):
         except:
             log.exception('Caught exception in runner state handler:')
 
+    def fail_job( self, job_state, exception=False ):
+        if getattr( job_state, 'stop_job', True ):
+            self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
+        self._handle_runner_state( 'failure', job_state )
+        # Not convinced this is the best way to indicate this state, but
+        # something necessary
+        if not job_state.runner_state_handled:
+            job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ), exception=exception )
+            if job_state.job_wrapper.cleanup_job == "always":
+                job_state.cleanup()
+
     def mark_as_resubmitted( self, job_state, info=None ):
         job_state.job_wrapper.mark_as_resubmitted( info=info )
         if not self.app.config.track_jobs_in_database:
@@ -382,12 +394,17 @@ class JobState( object ):
     runner_states = Bunch(
         WALLTIME_REACHED='walltime_reached',
         MEMORY_LIMIT_REACHED='memory_limit_reached',
+        UNKNOWN_ERROR='unknown_error',
         GLOBAL_WALLTIME_REACHED='global_walltime_reached',
         OUTPUT_SIZE_LIMIT='output_size_limit'
     )
 
-    def __init__( self ):
+    def __init__( self, job_wrapper, job_destination ):
         self.runner_state_handled = False
+        self.job_wrapper = job_wrapper
+        self.job_destination = job_destination
+
+        self.cleanup_file_attributes = [ 'job_file', 'output_file', 'error_file', 'exit_code_file' ]
 
     def set_defaults( self, files_dir ):
         if self.job_wrapper is not None:
@@ -412,6 +429,19 @@ class JobState( object ):
     def default_exit_code_file( files_dir, id_tag ):
         return os.path.join( files_dir, 'galaxy_%s.ec' % id_tag )
 
+    def cleanup( self ):
+        for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:
+            try:
+                os.unlink( file )
+            except Exception as e:
+                # TODO: Move this prefix stuff to a method so we don't have dispatch on attributes we may or may
+                # not have.
+                if not hasattr( self, "job_id" ):
+                    prefix = "(%s)" % self.job_wrapper.get_id_tag()
+                else:
+                    prefix = "(%s/%s)" % ( self.job_wrapper.get_id_tag(), self.job_id )
+                log.debug( "%s Unable to cleanup %s: %s" % (prefix, file, str( e ) ) )
+
 
 class AsynchronousJobState( JobState ):
     """
@@ -421,16 +451,14 @@ class AsynchronousJobState( JobState ):
     """
 
     def __init__( self, files_dir=None, job_wrapper=None, job_id=None, job_file=None, output_file=None, error_file=None, exit_code_file=None, job_name=None, job_destination=None  ):
-        super( AsynchronousJobState, self ).__init__()
+        super( AsynchronousJobState, self ).__init__( job_wrapper, job_destination )
         self.old_state = None
         self._running = False
         self.check_count = 0
         self.start_time = None
 
-        self.job_wrapper = job_wrapper
         # job_id is the DRM's job id, not the Galaxy job id
         self.job_id = job_id
-        self.job_destination = job_destination
 
         self.job_file = job_file
         self.output_file = output_file
@@ -439,8 +467,6 @@ class AsynchronousJobState( JobState ):
         self.job_name = job_name
 
         self.set_defaults( files_dir )
-
-        self.cleanup_file_attributes = [ 'job_file', 'output_file', 'error_file', 'exit_code_file' ]
 
     @property
     def running( self ):
@@ -468,13 +494,6 @@ class AsynchronousJobState( JobState ):
             self.stop_job = True
             return True
         return False
-
-    def cleanup( self ):
-        for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:
-            try:
-                os.unlink( file )
-            except Exception as e:
-                log.debug( "(%s/%s) Unable to cleanup %s: %s" % ( self.job_wrapper.get_id_tag(), self.job_id, file, str( e ) ) )
 
     def register_cleanup_file_attribute( self, attribute ):
         if attribute not in self.cleanup_file_attributes:
@@ -612,17 +631,6 @@ class AsynchronousJobRunner( BaseJobRunner ):
         except:
             log.exception( "(%s/%s) Job wrapper finish method failed" % ( galaxy_id_tag, external_job_id ) )
             job_state.job_wrapper.fail( "Unable to finish job", exception=True )
-
-    def fail_job( self, job_state ):
-        if getattr( job_state, 'stop_job', True ):
-            self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
-        self._handle_runner_state( 'failure', job_state )
-        # Not convinced this is the best way to indicate this state, but
-        # something necessary
-        if not job_state.runner_state_handled:
-            job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ) )
-            if job_state.job_wrapper.cleanup_job == "always":
-                job_state.cleanup()
 
     def mark_as_finished(self, job_state):
         self.work_queue.put( ( self.finish_job, job_state ) )

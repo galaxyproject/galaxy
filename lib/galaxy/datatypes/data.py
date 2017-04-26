@@ -15,6 +15,7 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
+from galaxy.util import compression_utils
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import inflector
 from galaxy.util import unicodify
@@ -66,14 +67,13 @@ class Data( object ):
     'test'
     >>> type( DataTest.metadata_spec.test.param )
     <class 'galaxy.model.metadata.MetadataParameter'>
-
     """
     edam_data = "data_0006"
     edam_format = "format_1915"
     # Data is not chunkable by default.
     CHUNKABLE = False
 
-    #: dictionary of metadata fields for this datatype::
+    #: Dictionary of metadata fields for this datatype
     metadata_spec = None
 
     # Add metadata elements
@@ -129,7 +129,7 @@ class Data( object ):
         try:
             return open(dataset.file_name, 'rb').read(-1)
         except OSError:
-            log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__, dataset.file_name))
+            log.exception('%s reading a file that does not exist %s', self.__class__.__name__, dataset.file_name)
             return ''
 
     def dataset_content_needs_grooming( self, file_name ):
@@ -229,7 +229,7 @@ class Data( object ):
             archive.add(data_filename, archname)
         except IOError:
             error = True
-            log.exception("Unable to add composite parent %s to temporary library download archive" % data_filename)
+            log.exception("Unable to add composite parent %s to temporary library download archive", data_filename)
             msg = "Unable to create archive for download, please report this error"
             messagetype = "error"
         return error, msg, messagetype
@@ -284,7 +284,7 @@ class Data( object ):
                                 archive.add( fpath, rpath )
                             except IOError:
                                 error = True
-                                log.exception( "Unable to add %s to temporary library download archive" % rpath)
+                                log.exception( "Unable to add %s to temporary library download archive", rpath)
                                 msg = "Unable to create archive for download, please report this error"
                                 continue
                 if not error:
@@ -439,7 +439,7 @@ class Data( object ):
         try:
             del self.supported_display_apps[app_id]
         except:
-            log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.' % ( type, self.__class__.__name__ ) )
+            log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.', type, self.__class__.__name__ )
 
     def clear_display_apps( self ):
         self.supported_display_apps = {}
@@ -477,7 +477,7 @@ class Data( object ):
             if type in self.get_display_types():
                 return getattr(self, self.supported_display_apps[type]['file_function'])(dataset, **kwd)
         except:
-            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible' % (self.supported_display_apps[type]['file_function'], self.__class__.__name__, type) )
+            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible', self.supported_display_apps[type]['file_function'], self.__class__.__name__, type )
         return "This display type (%s) is not implemented for this datatype (%s)." % ( type, dataset.ext)
 
     def get_display_links( self, dataset, type, app, base_url, target_frame='_blank', **kwd ):
@@ -491,8 +491,8 @@ class Data( object ):
             if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr( self, self.supported_display_apps[type]['links_function'] )( dataset, type, app, base_url, **kwd )
         except:
-            log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible'
-                           % ( self.supported_display_apps[type]['links_function'], self.__class__.__name__, type ) )
+            log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible',
+                           self.supported_display_apps[type]['links_function'], self.__class__.__name__, type )
         return target_frame, []
 
     def get_converter_types(self, original_dataset, datatypes_registry):
@@ -503,7 +503,7 @@ class Data( object ):
         """Returns ( target_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions( dataset, accepted_formats, **kwd )
 
-    def convert_dataset(self, trans, original_dataset, target_type, return_output=False, visible=True, deps=None, set_output_history=True, target_context=None):
+    def convert_dataset(self, trans, original_dataset, target_type, return_output=False, visible=True, deps=None, target_context=None, history=None):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
         converter = trans.app.datatypes_registry.get_converter_by_target_type( original_dataset.ext, target_type )
 
@@ -526,7 +526,7 @@ class Data( object ):
         params[input_name] = original_dataset
 
         # Run converter, job is dispatched through Queue
-        converted_dataset = converter.execute( trans, incoming=params, set_output_hid=visible, set_output_history=set_output_history)[1]
+        converted_dataset = converter.execute( trans, incoming=params, set_output_hid=visible, history=history )[1]
         if len(params) > 0:
             trans.log_event( "Converter params: %s" % (str(params)), tool_id=converter.id )
         if not visible:
@@ -594,8 +594,8 @@ class Data( object ):
             files[ substitute_composite_key( key, value ) ] = value
         return files
 
-    def generate_auto_primary_file( self, dataset=None ):
-        raise Exception( "generate_auto_primary_file is not implemented for this datatype." )
+    def generate_primary_file( self, dataset=None ):
+        raise Exception( "generate_primary_file is not implemented for this datatype." )
 
     @property
     def has_resolution(self):
@@ -855,7 +855,7 @@ class Text( Data ):
     @dataproviders.decorators.dataprovider_factory( 'line', dataproviders.line.FilteredLineDataProvider.settings )
     def line_dataprovider( self, dataset, **settings ):
         """
-        Returns an iterator over the dataset's lines (that have been `strip`ed)
+        Returns an iterator over the dataset's lines (that have been stripped)
         optionally excluding blank lines and lines that start with a comment character.
         """
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
@@ -962,10 +962,9 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
 
-    ## >>> fname = get_test_fname('4.bed')
-    ## >>> get_file_peek(fname)
-    ## 'chr22    30128507    31828507    uc003bnx.1_cds_2_0_chr22_29227_f    0    +\n'
-
+    >>> fname = get_test_fname('4.bed')
+    >>> get_file_peek(fname, LINE_COUNT=1)
+    u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n'
     """
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very
@@ -978,39 +977,38 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     count = 0
     file_type = None
     data_checked = False
-    temp = open( file_name, "U" )
-    while count < LINE_COUNT:
-        line = temp.readline( WIDTH )
-        if line and not is_multi_byte and not data_checked:
-            # See if we have a compressed or binary file
-            if line[0:2] == util.gzip_magic:
-                file_type = 'gzipped'
-            else:
+    temp = compression_utils.get_fileobj( file_name, "U" )
+    try:
+        while count < LINE_COUNT:
+            line = temp.readline( WIDTH )
+            if line and not is_multi_byte and not data_checked:
+                # See if we have a compressed or binary file
                 for char in line:
                     if ord( char ) > 128:
                         file_type = 'binary'
                         break
-            data_checked = True
-            if file_type in [ 'gzipped', 'binary' ]:
-                break
-        if not line_wrap:
-            if line.endswith('\n'):
-                line = line[:-1]
-            else:
-                while True:
-                    i = temp.read(1)
-                    if not i or i == '\n':
-                        break
-        skip_line = False
-        for skipchar in skipchars:
-            if line.startswith( skipchar ):
-                skip_line = True
-                break
-        if not skip_line:
-            lines.append( line )
-            count += 1
-    temp.close()
-    if file_type in [ 'gzipped', 'binary' ]:
+                data_checked = True
+                if file_type == 'binary':
+                    break
+            if not line_wrap:
+                if line.endswith('\n'):
+                    line = line[:-1]
+                else:
+                    while True:
+                        i = temp.read(1)
+                        if not i or i == '\n':
+                            break
+            skip_line = False
+            for skipchar in skipchars:
+                if line.startswith( skipchar ):
+                    skip_line = True
+                    break
+            if not skip_line:
+                lines.append( line )
+                count += 1
+    finally:
+        temp.close()
+    if file_type == 'binary':
         text = "%s file" % file_type
     else:
         try:

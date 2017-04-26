@@ -78,8 +78,8 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
             Optional: defaults to the tab character.
         :type deliminator: str
 
-        .. note: that the subclass constructors are passed kwargs - so they're
-        params (limit, offset, etc.) are also applicable here.
+        .. note:: that the subclass constructors are passed kwargs - so they're
+            params (limit, offset, etc.) are also applicable here.
         """
         # TODO: other columnar formats: csv, etc.
         super( ColumnarDataProvider, self ).__init__( source, **kwargs )
@@ -141,9 +141,13 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
 
         The function will compare the column at index `column` against `val`
         using the given op where op is one of:
-            lt: less than, le: less than or equal to,
-            eq: equal to, ne: not equal to,
-            ge: greather than or equal to, gt: greater than
+
+        - lt: less than
+        - le: less than or equal to
+        - eq: equal to
+        - ne: not equal to
+        - ge: greather than or equal to
+        - gt: greater than
 
         `val` is cast as float here and will return None if there's a parsing error.
         """
@@ -173,9 +177,10 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
 
         The function will compare the column at index `column` against `val`
         using the given op where op is one of:
-            eq: exactly matches,
-            has: the column contains the substring `val`,
-            re: the column matches the regular expression in `val`
+
+        - eq: exactly matches
+        - has: the column contains the substring `val`
+        - re: the column matches the regular expression in `val`
         """
         if 'eq' == op:
             return lambda d: d[column] == val
@@ -195,8 +200,9 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
 
         The function will compare the column at index `column` against `val`
         using the given op where op is one of:
-            eq: the list `val` exactly matches the list in the column,
-            has: the list in the column contains the sublist `val`,
+
+        - eq: the list `val` exactly matches the list in the column
+        - has: the list in the column contains the sublist `val`
         """
         if 'eq' == op:
             val = self.parse_value( val, 'list' )
@@ -210,8 +216,9 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         Return parser dictionary keyed for each columnar type
         (as defined in datatypes).
 
-        .. note: primitives only by default (str, int, float, boolean, None).
+        .. note:: primitives only by default (str, int, float, boolean, None).
             Other (more complex) types are retrieved as strings.
+
         :returns: a dictionary of the form:
             `{ <parser type name> : <function used to parse type> }`
         """
@@ -324,8 +331,8 @@ class DictDataProvider( ColumnarDataProvider ):
     A combination use of both `column_names` and `indeces` allows 'picking'
     key/value pairs from the source.
 
-    .. note: that the subclass constructors are passed kwargs - so they're
-    params (limit, offset, etc.) are also applicable here.
+    .. note:: The subclass constructors are passed kwargs - so their
+        params (limit, offset, etc.) are also applicable here.
     """
     settings = {
         'column_names'  : 'list:str',

@@ -6,6 +6,7 @@ Here is a working example of how to use this script to repair a repository insta
 python ./import_workflows_from_installed_tool_shed_repository.py -a 22be3b -l http://localhost:8763/ -n workflow_with_tools -o test -r ef45bb64237e -u http://localhost:9009/
 """
 from __future__ import print_function
+
 import argparse
 
 from common import display, submit
@@ -50,6 +51,7 @@ def main( options ):
             submit( options.api, url, data )
     else:
         print("Invalid tool_shed / name / owner / changeset_revision.")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='Import workflows contained in an installed tool shed repository via the Galaxy API.' )

@@ -45,6 +45,7 @@ def create_database( config_file ):
     model = mapping.init( database_connection )
     return install_session, model
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument( '--config_file', dest='config_file', required=True, help="The path to your Galaxy configuration .ini file." )

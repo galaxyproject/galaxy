@@ -46,4 +46,5 @@ def is_hashable( value ):
         return False
     return True
 
+
 __all__ = ('md5', 'hashlib', 'sha1', 'sha', 'new_secure_hash', 'hmac_new', 'is_hashable')

@@ -79,6 +79,7 @@ def main( options ):
             # An nginx timeout undoubtedly occurred.
             sys.exit( 1 )
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='Reset metadata on certain repositories in the Tool Shed via the Tool Shed API.' )
     parser.add_argument( "-a", "--api", dest="api", required=True, help="API Key" )

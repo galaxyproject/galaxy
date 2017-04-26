@@ -34,5 +34,6 @@ def main():
                 except Exception as e:
                     print "Unable to check XML file '%s': %s" % ( path, e )
 
+
 if __name__ == "__main__":
     main()

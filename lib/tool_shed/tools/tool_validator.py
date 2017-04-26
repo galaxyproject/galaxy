@@ -3,8 +3,10 @@ import logging
 import os
 import tempfile
 
-from galaxy.tools import Tool
-from galaxy.tools import parameters
+from galaxy.tools import (
+    parameters,
+    Tool
+)
 from galaxy.tools.parameters import dynamic_options
 
 from tool_shed.tools import data_table_manager

@@ -91,6 +91,7 @@ class HmmerPress( Binary ):
         # Profiles (remained)
         self.add_composite_file('model.hmm.h3p', is_binary=True)
 
+
 Binary.register_unsniffable_binary_ext("hmmpress")
 
 

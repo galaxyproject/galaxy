@@ -112,7 +112,7 @@ var FolderRowView = Backbone.View.extend({
           Galaxy.libraries.folderListView.collection.sortByNameAsc();
           mod_toastr.success('Dataset undeleted. Click this to see it.', '', {onclick: function() {
             var folder_id = that.model.get('folder_id');
-            window.location='#folders/' + folder_id + '/datasets/' + that.id;
+            window.location = Galaxy.root + 'library/list#folders/' + folder_id + '/datasets/' + that.id;
           }});
         },
         error : function(model, response){

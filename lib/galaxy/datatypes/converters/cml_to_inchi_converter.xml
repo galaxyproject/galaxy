@@ -6,7 +6,7 @@
     </requirements>
     <command>
 <![CDATA[
-        obabel -icml "${input}" -oinchi -O "${output}" -e 2>&1
+        obabel -icml '${input}' -oinchi -O '${output}' -e 2>&1
 ]]>
     </command>
     <inputs>

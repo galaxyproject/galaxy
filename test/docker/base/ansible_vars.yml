@@ -26,16 +26,13 @@ galaxy_web_processes: 1
 galaxy_handler_processes: 2
 galaxy_log_dir: "/root"
 
-supervisor_nodaemon: true
-supervisor_postgres_database_path: "{{ galaxy_db_dir }}"
-
-galaxy_extras_config_nginx: true
+galaxy_extras_config_nginx: false
 galaxy_extras_config_proftpd: false
 galaxy_extras_config_slurm: true
-galaxy_extras_config_supervisor: true
+galaxy_extras_config_supervisor: false
 galaxy_extras_config_galaxy_root: false
 galaxy_extras_config_galaxy_job_metrics: false
-galaxy_extras_config_uwsgi: true
+galaxy_extras_config_uwsgi: false
 
 manage_shed_db: yes
 galaxy_toolshed_manage_static_setup: yes

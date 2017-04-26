@@ -311,5 +311,6 @@ def __main__():
         os.remove( seq_path )
         os.remove( tmp_name )
 
+
 if __name__ == "__main__":
     __main__()

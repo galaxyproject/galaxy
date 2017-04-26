@@ -2,11 +2,12 @@ import os
 
 from galaxy.util import parse_xml
 
-from tools.test_toolbox import BaseToolBoxTestCase
-from tools.test_toolbox import SimplifiedToolBox
 from tool_shed.galaxy_install.tools import tool_panel_manager
-
 from tool_shed.tools import tool_version_manager
+from tools.test_toolbox import (
+    BaseToolBoxTestCase,
+    SimplifiedToolBox
+)
 
 DEFAULT_GUID = "123456"
 
@@ -161,11 +162,11 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         if section:
             section = new_toolbox._tool_panel["tid"]
             assert len(section.elems) == 1
-            assert section.elems.values()[0].id == "github.com/galaxyproject/example/test_tool/0.1"
+            assert next(iter(section.elems.values())).id == "github.com/galaxyproject/example/test_tool/0.1"
 
             assert "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel["tid"].elems
         else:
-            self.toolbox._tool_panel.values()[0].id == "github.com/galaxyproject/example/test_tool/0.1"
+            next(iter(self.toolbox._tool_panel.values())).id == "github.com/galaxyproject/example/test_tool/0.1"
             assert "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel
 
     def _remove_guids( self, guids, uninstall, shed_tool_conf="tool_conf.xml" ):

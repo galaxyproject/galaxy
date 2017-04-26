@@ -13,6 +13,8 @@ IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
+WEBPACK_EXEC?=node_modules/webpack/bin/webpack.js
+GXY_NODE_MODULES=client/node_modules
 DOCS_DIR=doc
 DOC_SOURCE_DIR=$(DOCS_DIR)/source
 SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
@@ -22,7 +24,13 @@ SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /c
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
 
-docs: ## generate HTML documentation, you must install documentation dependencies from lib/galaxy/dependencies/dev-requirements.txt beforehand
+docs:
+# Generate HTML documentation.
+# Run following commands to setup the Python portion of the requirements:
+#   $ ./scripts/common_startup.sh
+#   $ . .venv/bin/activate
+#   $ pip install -r lib/galaxy/dependencies/dev-requirements.txt
+# You also need to install pandoc separately.
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
@@ -33,15 +41,6 @@ docs-slides-ready:
 
 docs-slides-export: docs-slides-ready
 	$(SLIDESHOW_TO_PDF) $(SLIDESHOW_DIR)/galaxy_architecture/galaxy_architecture.html
-
-docs-schema-ready: ## Build Github-flavored Markdown from Galaxy Tool XSD (expects libxml in environment)
-	python $(DOCS_DIR)/parse_gx_xsd.py > $(DOCS_DIR)/schema.md
-
-docs-schema-html: docs-schema-ready ## Convert Galaxy Tool XSD Markdown docs into HTML (expects pandoc in environment)
-	pandoc $(DOCS_DIR)/schema.md -f markdown_github -s -o $(DOCS_DIR)/schema.html
-
-open-docs-schema: docs-schema-html ## Open HTML generated from Galaxy Tool XSD.
-	$(OPEN_RESOURCE) $(DOCS_DIR)/schema.html
 
 _open-docs:
 	$(OPEN_RESOURCE) $(DOCS_DIR)/_build/html/index.html
@@ -95,6 +94,9 @@ client-install-libs: npm-deps ## Fetch updated client dependencies using bower.
 	cd client && $(GRUNT_EXEC) install-libs
 
 client: grunt style ## Rebuild all client-side artifacts
+
+charts: npm-deps ## Rebuild charts
+	NODE_PATH=$(GXY_NODE_MODULES) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js
 
 grunt-docker-image: ## Build docker image for running grunt
 	docker build -t ${GRUNT_DOCKER_NAME} client

@@ -184,4 +184,5 @@ class HDT( binary.Binary, Triples ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+
 binary.Binary.register_sniffable_binary_format('HDT', 'HDT', HDT)

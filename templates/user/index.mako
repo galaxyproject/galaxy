@@ -22,9 +22,6 @@
         %else:
             <li><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller )}">${_('Manage your information')}</a></li>
             <li><a href="${h.url_for( controller='user', action='change_password' )}">${_('Change your password')}</a></li>
-            %if trans.app.config.enable_communication_server:
-                <li><a href="${h.url_for( controller='user', action='change_communication', cntrller=cntrller )}">${_('Change your communication settings')}</a></li>
-            %endif
             <li><a href="${h.url_for( controller='user', action='api_keys', cntrller=cntrller )}">${_('Manage your API keys')}</a></li>
             <li><a href="${h.url_for( controller='repository', action='manage_email_alerts', cntrller=cntrller )}">${_('Manage your email alerts')}</a></li>
             <li><a href="${h.url_for( controller='user', action='logout', logout_all=True )}" target="_top">${_('Logout')}</a> ${_('of all user sessions')}</li>

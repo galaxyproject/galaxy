@@ -1,15 +1,17 @@
 import uuid
 
-import jobs.test_rules
-
+from galaxy.jobs import (
+    HasResourceParameters,
+    JobDestination,
+)
 from galaxy.jobs.mapper import (
-    JobRunnerMapper,
     ERROR_MESSAGE_NO_RULE_FUNCTION,
     ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND,
+    JobRunnerMapper,
 )
-from galaxy.jobs import JobDestination
-
 from galaxy.util import bunch
+
+from . import test_rules
 
 WORKFLOW_UUID = uuid.uuid1().hex
 TOOL_JOB_DESTINATION = JobDestination()
@@ -107,7 +109,7 @@ def __mapper( tool_job_destination=TOOL_JOB_DESTINATION ):
         {},
         job_config
     )
-    mapper.rules_module = jobs.test_rules
+    mapper.rules_module = test_rules
     return mapper
 
 
@@ -128,7 +130,7 @@ class MockJobConfig( object ):
         return DYNAMICALLY_GENERATED_DESTINATION
 
 
-class MockJobWrapper( object ):
+class MockJobWrapper( object, HasResourceParameters ):
 
     def __init__( self, tool_job_destination ):
         self.tool = MockTool( tool_job_destination )

@@ -137,4 +137,5 @@ class CollectlCli( object ):
         if return_code:
             raise Exception( "Problem running collectl command." )
 
+
 __all__ = ( 'CollectlCli', )

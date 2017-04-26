@@ -147,9 +147,11 @@ class RemoteUser( object ):
                     """
                     return self.error( start_response, title, message )
             user_accessible_paths = (
+                '/users',
                 '/user/api_keys',
                 '/user/edit_username',
                 '/user/dbkeys',
+                '/user/logout',
                 '/user/toolbox_filters',
                 '/user/set_default_permissions',
                 '/user/change_communication',
@@ -161,6 +163,7 @@ class RemoteUser( object ):
                 '/user/manage_user_info',
                 '/user/edit_info',
                 '/userskeys/all_users',
+                '/userskeys/admin_api_keys',
             )
 
             if not path_info.startswith('/user'):

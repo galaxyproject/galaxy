@@ -26,8 +26,6 @@ from tool_shed.util import tool_util, xml_util
 
 log = logging.getLogger( __name__ )
 
-FAILED_TO_FETCH_VERSIONS = object()
-
 
 class InstallToolDependencyManager( object ):
 
@@ -494,7 +492,7 @@ class InstallRepositoryManager( object ):
 
     def __handle_repository_contents( self, tool_shed_repository, tool_path, repository_clone_url, relative_install_dir,
                                       tool_shed=None, tool_section=None, shed_tool_conf=None, reinstalling=False,
-                                      tool_versions_response=None, tool_panel_section_mapping={} ):
+                                      tool_panel_section_mapping={} ):
         """
         Generate the metadata for the installed tool shed repository, among other things.
         This method is called when an administrator is installing a new repository or
@@ -522,10 +520,6 @@ class InstallRepositoryManager( object ):
             tool_shed_repository.tool_shed_status = tool_shed_status_dict
         self.install_model.context.add( tool_shed_repository )
         self.install_model.context.flush()
-        if tool_versions_response and tool_versions_response is not FAILED_TO_FETCH_VERSIONS:
-            tool_version_dicts = tool_versions_response
-            tvm = tool_version_manager.ToolVersionManager( self.app )
-            tvm.handle_tool_versions( tool_version_dicts, tool_shed_repository )
         if 'tool_dependencies' in irmm_metadata_dict and not reinstalling:
             tool_dependency_util.create_tool_dependency_objects( self.app,
                                                                  tool_shed_repository,
@@ -542,6 +536,12 @@ class InstallRepositoryManager( object ):
                                                                             self.app.config.shed_tool_data_table_config,
                                                                             persist=True )
         if 'tools' in irmm_metadata_dict:
+            # Get the tool_versions from the Tool Shed for each tool in the installed change set.
+            self.update_tool_shed_repository_status( tool_shed_repository,
+                                                     self.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
+            tool_version_dicts = fetch_tool_versions( self.app, tool_shed_repository )
+            tvm = tool_version_manager.ToolVersionManager( self.app )
+            tvm.handle_tool_versions( tool_version_dicts, tool_shed_repository )
             tool_panel_dict = self.tpm.generate_tool_panel_dict_for_new_install( irmm_metadata_dict[ 'tools' ], tool_section )
             sample_files = irmm_metadata_dict.get( 'sample_files', [] )
             tool_index_sample_files = tdtm.get_tool_index_sample_files( sample_files )
@@ -583,7 +583,8 @@ class InstallRepositoryManager( object ):
                                        tool_shed_repository,
                                        repository_tools_tups )
         if 'datatypes' in irmm_metadata_dict:
-            tool_shed_repository.status = self.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+            self.update_tool_shed_repository_status( tool_shed_repository,
+                                                     self.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES )
             if not tool_shed_repository.includes_datatypes:
                 tool_shed_repository.includes_datatypes = True
             self.install_model.context.add( tool_shed_repository )
@@ -866,7 +867,7 @@ class InstallRepositoryManager( object ):
             tool_section = None
         if isinstance( repo_info_dict, string_types ):
             repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
-        # Clone each repository to the configured location.
+        # Clone the repository to the configured location.
         self.update_tool_shed_repository_status( tool_shed_repository,
                                                  self.install_model.ToolShedRepository.installation_status.CLONING )
         repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
@@ -890,7 +891,6 @@ class InstallRepositoryManager( object ):
                                                             create=False )
                     hg_util.pull_repository( repo, repository_clone_url, current_changeset_revision )
                     hg_util.update_repository( repo, ctx_rev=current_ctx_rev )
-            tool_versions_response = fetch_tool_versions( self.app, tool_shed_repository )
             self.__handle_repository_contents( tool_shed_repository=tool_shed_repository,
                                                tool_path=tool_path,
                                                repository_clone_url=repository_clone_url,
@@ -898,24 +898,19 @@ class InstallRepositoryManager( object ):
                                                tool_shed=tool_shed_repository.tool_shed,
                                                tool_section=tool_section,
                                                shed_tool_conf=shed_tool_conf,
-                                               tool_versions_response=tool_versions_response,
                                                reinstalling=reinstalling,
                                                tool_panel_section_mapping=tool_panel_section_mapping )
             self.install_model.context.refresh( tool_shed_repository )
             metadata = tool_shed_repository.metadata
-            if 'tools' in metadata:
-                # Get the tool_versions from the tool shed for each tool in the installed change set.
+            if 'tools' in metadata and install_resolver_dependencies:
                 self.update_tool_shed_repository_status( tool_shed_repository,
-                                                         self.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
-                if tool_versions_response is FAILED_TO_FETCH_VERSIONS:
-                    if not error_message:
-                        error_message = ""
-                    error_message += "Version information for the tools included in the <b>%s</b> repository is missing.  " % tool_shed_repository.name
-                    error_message += "Reset all of this repository's metadata in the tool shed, then set the installed tool versions "
-                    error_message += "from the installed repository's <b>Repository Actions</b> menu.  "
-                if install_resolver_dependencies:
-                    requirements = suc.get_unique_requirements_from_repository(tool_shed_repository)
-                    [self._view.install_dependency(id=None, **req) for req in requirements]
+                                                         self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
+                new_tools = [self.app.toolbox._tools_by_id.get(tool_d['guid'], None) for tool_d in metadata['tools']]
+                new_requirements = set([tool.requirements.packages for tool in new_tools if tool])
+                [self._view.install_dependencies(r) for r in new_requirements]
+                if self.app.config.use_cached_dependency_manager:
+                    [self.app.toolbox.dependency_manager.build_cache(r) for r in new_requirements]
+
             if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
                 # Install tool dependencies.
@@ -1023,7 +1018,6 @@ def fetch_tool_versions( app, tool_shed_repository ):
     """ Fetch a data structure describing tool shed versions from the tool shed
     corresponding to a tool_shed_repository object.
     """
-    failed_to_fetch = False
     try:
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, str( tool_shed_repository.tool_shed ) )
         params = dict( name=str( tool_shed_repository.name ),
@@ -1035,10 +1029,7 @@ def fetch_tool_versions( app, tool_shed_repository ):
         if text:
             return json.loads( text )
         else:
-            log.error("No content returned from tool shed repository version request to %s", url)
-            failed_to_fetch = True
+            raise Exception("No content returned from Tool Shed repository version request to %s" % url)
     except Exception:
-        failed_to_fetch = True
-        log.exception("Failed to fetch tool shed repository version information.")
-    if failed_to_fetch:
-        return FAILED_TO_FETCH_VERSIONS
+        log.exception("Failed to fetch tool version information for Tool Shed repository.")
+        raise

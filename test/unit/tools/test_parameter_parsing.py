@@ -1,11 +1,10 @@
 from unittest import TestCase
-
-from galaxy import model
-from galaxy.tools.parameters import basic
-from galaxy.util import bunch
 from xml.etree.ElementTree import XML
 
 import tools_support
+from galaxy import model
+from galaxy.tools.parameters import basic
+from galaxy.util import bunch
 
 
 class BaseParameterTestCase( TestCase, tools_support.UsesApp ):

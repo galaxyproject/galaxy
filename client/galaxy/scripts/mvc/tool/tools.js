@@ -351,7 +351,6 @@ var ToolSearch = Backbone.Model.extend({
         search_hint_string: "search tools",
         min_chars_for_search: 3,
         clear_btn_url: "",
-        search_url: "",
         visible: true,
         query: "",
         results: null,
@@ -533,10 +532,7 @@ var ToolLinkView = BaseView.extend({
             var self = this;
             $link.find('a').on('click', function(e) {
                 e.preventDefault();
-                var form = new ToolForm.View( { id : self.model.id, version : self.model.get('version') } );
-                form.deferred.execute(function() {
-                    Galaxy.app.display( form );
-                });
+                Galaxy.router.push( '/', { tool_id : self.model.id, version : self.model.get('version') } );
             });
         }
 
@@ -625,6 +621,7 @@ var ToolSearchView = Backbone.View.extend({
     events: {
         'click': 'focus_and_select',
         'keyup :input': 'query_changed',
+        'change :input': 'query_changed',
         'click #search-clear-btn': 'clear'
     },
 

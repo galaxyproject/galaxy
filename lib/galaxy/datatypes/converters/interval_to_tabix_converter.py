@@ -36,5 +36,6 @@ def main():
     if os.path.getsize(index_fname) == 0:
         sys.stderr.write("The converted tabix index file is empty, meaning the input data is invalid.")
 
+
 if __name__ == "__main__":
     main()

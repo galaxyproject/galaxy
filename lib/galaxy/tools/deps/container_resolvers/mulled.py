@@ -3,6 +3,8 @@
 import collections
 import logging
 
+import six
+
 from ..container_resolvers import (
     ContainerResolver,
 )
@@ -33,7 +35,7 @@ CachedMulledImageMultiTarget.multi_target = True
 
 
 def list_cached_mulled_images(namespace=None):
-    command = build_docker_images_command(truncate=True, sudo_docker=False)
+    command = build_docker_images_command(truncate=True, sudo=False)
     command = "%s | tail -n +2 | tr -s ' ' | cut -d' ' -f1,2" % command
     images_and_versions = check_output(command)
     name_filter = get_filter(namespace)
@@ -102,6 +104,7 @@ def cached_container_description(targets, namespace):
     return container
 
 
+@six.python_2_unicode_compatible
 class CachedMulledContainerResolver(ContainerResolver):
 
     resolver_type = "cached_mulled"
@@ -114,13 +117,17 @@ class CachedMulledContainerResolver(ContainerResolver):
         targets = mulled_targets(tool_info)
         return cached_container_description(targets, self.namespace)
 
+    def __str__(self):
+        return "CachedMulledContainerResolver[namespace=%s]" % self.namespace
 
+
+@six.python_2_unicode_compatible
 class MulledContainerResolver(ContainerResolver):
     """Look for mulled images matching tool dependencies."""
 
     resolver_type = "mulled"
 
-    def __init__(self, app_info=None, namespace="mulled"):
+    def __init__(self, app_info=None, namespace="biocontainers"):
         super(MulledContainerResolver, self).__init__(app_info)
         self.namespace = namespace
 
@@ -160,7 +167,11 @@ class MulledContainerResolver(ContainerResolver):
                 type="docker",
             )
 
+    def __str__(self):
+        return "MulledContainerResolver[namespace=%s]" % self.namespace
 
+
+@six.python_2_unicode_compatible
 class BuildMulledContainerResolver(ContainerResolver):
     """Look for mulled images matching tool dependencies."""
 
@@ -194,6 +205,9 @@ class BuildMulledContainerResolver(ContainerResolver):
         involucro_context = InvolucroContext(**self._involucro_context_kwds)
         self.enabled = ensure_installed(involucro_context, self.auto_init)
         return involucro_context
+
+    def __str__(self):
+        return "BuildContainerResolver[namespace=%s]" % self.namespace
 
 
 def mulled_targets(tool_info):

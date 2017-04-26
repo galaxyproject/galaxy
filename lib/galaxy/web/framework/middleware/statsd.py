@@ -2,6 +2,7 @@
 Middleware for sending request statistics to statsd
 """
 from __future__ import absolute_import
+
 import time
 
 try:

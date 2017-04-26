@@ -127,8 +127,8 @@ bower_components
 
 # Documentation build files.
 doc/build
-doc/schema.html
 doc/schema.md
+doc/source/dev/schema.rst
 
 # Misc
 *.orig

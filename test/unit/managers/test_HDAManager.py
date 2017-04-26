@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-import imp
-import os
 import unittest
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 import sqlalchemy
 from six import string_types
@@ -184,6 +179,7 @@ class HDAManagerTestCase( HDATestCase ):
         self.log( "should purge an hda if config does allow" )
         self.assertFalse( item1.purged )
         self.assertEqual( self.hda_manager.purge( item1 ), item1 )
+        self.assertTrue(item1.deleted)
         self.assertTrue( item1.purged )
 
     def test_purge_not_allowed( self ):
@@ -197,6 +193,7 @@ class HDAManagerTestCase( HDATestCase ):
         self.log( "should raise an error when purging an hda if config does not allow" )
         self.assertFalse( item1.purged )
         self.assertRaises( exceptions.ConfigDoesNotAllowException, self.hda_manager.purge, item1 )
+        self.assertFalse(item1.deleted)
         self.assertFalse( item1.purged )
 
     def test_ownable( self ):
@@ -350,6 +347,7 @@ class HDAManagerTestCase( HDATestCase ):
 # web.url_for doesn't work well in the framework
 def testable_url_for(*a, **k):
     return '(fake url): %s, %s' % ( a, k )
+
 
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 

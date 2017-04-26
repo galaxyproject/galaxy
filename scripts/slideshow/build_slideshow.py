@@ -23,5 +23,6 @@ def main(argv=None):
     print html
     open(output, "w").write(html)
 
+
 if __name__ == "__main__":
     main()

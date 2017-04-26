@@ -1,6 +1,7 @@
-from __init__ import DefaultToolAction
-
 import logging
+
+from . import DefaultToolAction
+
 log = logging.getLogger( __name__ )
 
 

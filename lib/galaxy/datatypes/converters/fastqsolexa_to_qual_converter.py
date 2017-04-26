@@ -93,5 +93,6 @@ def __main__():
 
     outfile_score.close()
 
+
 if __name__ == "__main__":
     __main__()

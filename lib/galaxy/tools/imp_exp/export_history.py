@@ -5,6 +5,7 @@ Export a history to an archive file using attribute files.
 usage: %prog history_attrs dataset_attrs job_attrs out_file
     -G, --gzip: gzip archive file
 """
+from __future__ import print_function
 
 import optparse
 import os
@@ -105,7 +106,8 @@ def main():
 
     # Create archive.
     status = create_archive( history_attrs, dataset_attrs, job_attrs, out_file, gzip )
-    print status
+    print(status)
+
 
 if __name__ == "__main__":
     main()

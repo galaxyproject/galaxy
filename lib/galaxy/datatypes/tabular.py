@@ -5,7 +5,6 @@ from __future__ import absolute_import
 
 import abc
 import csv
-import gzip
 import logging
 import os
 import re
@@ -19,7 +18,7 @@ from galaxy import util
 from galaxy.datatypes import data, metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
-from galaxy.util.checkers import is_gzip
+from galaxy.util import compression_utils
 
 from . import dataproviders
 
@@ -168,7 +167,7 @@ class TabularData( data.Text ):
                 out.append( '</th>' )
             out.append( '</tr>' )
         except Exception as exc:
-            log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
+            log.exception( 'make_html_peek_header failed on HDA %s', dataset.id )
             raise Exception( "Can't create peek header %s" % str( exc ) )
         return "".join( out )
 
@@ -199,7 +198,7 @@ class TabularData( data.Text ):
                             out.append( '<td>%s</td>' % escape( elem ) )
                         out.append( '</tr>' )
         except Exception as exc:
-            log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
+            log.exception( 'make_html_peek_rows failed on HDA %s', dataset.id )
             raise Exception( "Can't create peek rows %s" % str( exc ) )
         return "".join( out )
 
@@ -408,7 +407,7 @@ class Taxonomy( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super(Taxonomy, self).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
 
 @dataproviders.decorators.has_dataproviders
@@ -428,7 +427,7 @@ class Sam( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Sam, self ).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def sniff( self, filename ):
         """
@@ -614,7 +613,7 @@ class Pileup( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Pileup, self ).make_html_table( dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'baseCol': 'Base'} )
+        return self.make_html_table( dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'baseCol': 'Base'} )
 
     def repair_methods( self, dataset ):
         """Return options for removing errors along with a description"""
@@ -691,7 +690,7 @@ class Vcf( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Vcf, self ).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def set_meta( self, dataset, **kwd ):
         super( Vcf, self ).set_meta( dataset, **kwd )
@@ -789,11 +788,7 @@ class Eland( Tabular ):
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
         try:
-            compress = is_gzip(filename)
-            if compress:
-                fh = gzip.GzipFile(filename, 'r')
-            else:
-                fh = open( filename )
+            fh = compression_utils.get_fileobj(filename, gzip_only=True)
             count = 0
             while True:
                 line = fh.readline()
@@ -830,33 +825,31 @@ class Eland( Tabular ):
 
     def set_meta( self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd ):
         if dataset.has_data():
-            compress = is_gzip(dataset.file_name)
-            if compress:
-                dataset_fh = gzip.GzipFile(dataset.file_name, 'r')
-            else:
-                dataset_fh = open( dataset.file_name )
-            lanes = {}
-            tiles = {}
-            barcodes = {}
-            reads = {}
-            # Should always read the entire file (until we devise a more clever way to pass metadata on)
-            # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            # If the dataset is larger than optional_metadata, just count comment lines.
-            #     dataset.metadata.data_lines = None
-            # else:
-            # Otherwise, read the whole thing and set num data lines.
-            for i, line in enumerate(dataset_fh):
-                if line:
-                    line_pieces = line.split('\t')
-                    if len(line_pieces) != 22:
-                        raise Exception('%s:%d:Corrupt line!' % (dataset.file_name, i))
-                    lanes[line_pieces[2]] = 1
-                    tiles[line_pieces[3]] = 1
-                    barcodes[line_pieces[6]] = 1
-                    reads[line_pieces[7]] = 1
-                pass
-            dataset.metadata.data_lines = i + 1
-            dataset_fh.close()
+            dataset_fh = compression_utils.get_fileobj(dataset.file_name, gzip_only=True)
+            try:
+                lanes = {}
+                tiles = {}
+                barcodes = {}
+                reads = {}
+                # Should always read the entire file (until we devise a more clever way to pass metadata on)
+                # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                # If the dataset is larger than optional_metadata, just count comment lines.
+                #     dataset.metadata.data_lines = None
+                # else:
+                # Otherwise, read the whole thing and set num data lines.
+                for i, line in enumerate(dataset_fh):
+                    if line:
+                        line_pieces = line.split('\t')
+                        if len(line_pieces) != 22:
+                            raise Exception('%s:%d:Corrupt line!' % (dataset.file_name, i))
+                        lanes[line_pieces[2]] = 1
+                        tiles[line_pieces[3]] = 1
+                        barcodes[line_pieces[6]] = 1
+                        reads[line_pieces[7]] = 1
+                    pass
+                dataset.metadata.data_lines = i + 1
+            finally:
+                dataset_fh.close()
             dataset.metadata.comment_lines = 0
             dataset.metadata.columns = 21
             dataset.metadata.column_types = ['str', 'int', 'int', 'int', 'int', 'int', 'str', 'int', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str']
@@ -1058,31 +1051,31 @@ class ConnectivityTable( Tabular ):
         The ConnectivityTable (CT) is a file format used for describing
         RNA 2D structures by tools including MFOLD, UNAFOLD and
         the RNAStructure package. The tabular file format is defined as
-        follows:
+        follows::
 
-5	energy = -12.3	sequence name
-1	G	0	2	0	1
-2	A	1	3	0	2
-3	A	2	4	0	3
-4	A	3	5	0	4
-5	C	4	6	1	5
+            5	energy = -12.3	sequence name
+            1	G	0	2	0	1
+            2	A	1	3	0	2
+            3	A	2	4	0	3
+            4	A	3	5	0	4
+            5	C	4	6	1	5
 
         The links given at the edam ontology page do not indicate what
         type of separator is used (space or tab) while different
         implementations exist. The implementation that uses spaces as
-        separator (implemented in RNAStructure) is as follows:
+        separator (implemented in RNAStructure) is as follows::
 
-   10    ENERGY = -34.8  seqname
-    1 G       0    2    9    1
-    2 G       1    3    8    2
-    3 G       2    4    7    3
-    4 a       3    5    0    4
-    5 a       4    6    0    5
-    6 a       5    7    0    6
-    7 C       6    8    3    7
-    8 C       7    9    2    8
-    9 C       8   10    1    9
-   10 a       9    0    0   10
+            10    ENERGY = -34.8  seqname
+            1 G       0    2    9    1
+            2 G       1    3    8    2
+            3 G       2    4    7    3
+            4 a       3    5    0    4
+            5 a       4    6    0    5
+            6 a       5    7    0    6
+            7 C       6    8    3    7
+            8 C       7    9    2    8
+            9 C       8   10    1    9
+            10 a       9    0    0   10
         """
 
         i = 0

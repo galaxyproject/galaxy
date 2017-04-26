@@ -1222,18 +1222,23 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                     view.reference_track = ref_track;
                 }
                 view.chrom_data = result.chrom_info;
-                var chrom_options = '<option value="">Select Chrom/Contig</option>';
+                
+                view.chrom_select.html('');
+                view.chrom_select.append($('<option value="">Select Chrom/Contig</option>'));
+
                 for (var i = 0, len = view.chrom_data.length; i < len; i++) {
                     var chrom = view.chrom_data[i].chrom;
-                    chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
+                    var chrom_option  = $("<option>");
+                    chrom_option.text(chrom);
+                    chrom_option.val(chrom);
+                    view.chrom_select.append(chrom_option);
                 }
                 if (result.prev_chroms) {
-                    chrom_options += '<option value="previous">Previous ' + MAX_CHROMS_SELECTABLE + '</option>';
+                    view.chrom_select.append($('<option value="previous">Previous ' + MAX_CHROMS_SELECTABLE + '</option>'));
                 }
                 if (result.next_chroms) {
-                    chrom_options += '<option value="next">Next ' + MAX_CHROMS_SELECTABLE + '</option>';
+                    view.chrom_select.append($('<option value="next">Next ' + MAX_CHROMS_SELECTABLE + '</option>'));
                 }
-                view.chrom_select.html(chrom_options);
                 view.chrom_start_index = result.start_index;
 
                 chrom_data.resolve(result.chrom_info);

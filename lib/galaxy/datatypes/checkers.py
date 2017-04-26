@@ -1,4 +1,4 @@
-"""Module proxies :module:`galaxy.util.checkers` for backward compatibility.
+"""Module proxies :mod:`galaxy.util.checkers` for backward compatibility.
 
 External datatypes may make use of these functions.
 """

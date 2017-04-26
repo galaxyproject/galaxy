@@ -49,5 +49,6 @@ def main():
     print("Restricted to species: %s." % ", ".join( species ))
     print("%i MAF blocks have been kept." % maf_blocks_kept)
 
+
 if __name__ == "__main__":
     main()

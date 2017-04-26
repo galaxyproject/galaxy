@@ -51,5 +51,6 @@ def __main__():
         except Exception as e:
             print "Line %i is invalid: %s" % ( i, e )
 
+
 if __name__ == "__main__":
     __main__()

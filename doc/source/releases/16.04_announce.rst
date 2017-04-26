@@ -65,6 +65,7 @@ See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additio
 
 Security
 ===========================================================
+
 TL;DR
 **Only Tool Sheds newer than 16.01 should be deployed from now on.**
 (with commit 449098d8b14b45269be106f6410c0b9145c51d50 from Mar 30 present)
@@ -81,7 +82,7 @@ Deprecation Notices
 ===========================================================
 
 API deprecations
-~~~~~~~~~~~~~~~~
+----------------
 
 API for history contents, index:
  * **types**: is no longer a valid parameter but accessible using ``?q=history_content_type&qv=[dataset | dataset_collection]``
@@ -96,7 +97,7 @@ API histories (removed from the available serialized data on all calls):
   * **state, state_details, state_ids** - can be replaced by specifically requesting a single array of contents, each containing :code:`{ id, state, deleted, visible }`
 
 Galaxy no longer on Bitbucket
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------
 
 Galaxy moved its code and development activities from Bitbucket to GitHub in early 2015. Since this time, releases have been mirrored back to Bitbucket. However, after this release, no new changes will be pushed to Bitbucket. Anyone still receiving updates to a Galaxy server via Bitbucket and Mercurial should switch to GitHub and Git. This can be done using the following process:
 

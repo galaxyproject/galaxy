@@ -61,6 +61,7 @@ def gff_filter( gff_file, attribute_name, ids_file, output_file ):
             output.write( line )
     output.close()
 
+
 if __name__ == "__main__":
     # Handle args.
     if len( sys.argv ) != 5:

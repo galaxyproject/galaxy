@@ -6,7 +6,6 @@ consumer datum by datum.
 
 As well as subclassing and overriding to get the proper data, Dataproviders
 can be piped from one to the other.
-..example::
 
 .. note:: be careful to NOT pipe providers into subclasses of those providers.
     Subclasses provide all the functionality of their superclasses,

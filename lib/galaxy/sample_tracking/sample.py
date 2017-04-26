@@ -22,4 +22,5 @@ class SampleStateFactory( object ):
         description = elem.get( 'description', None )
         return self.new( request_type, name, description=description )
 
+
 sample_state_factory = SampleStateFactory()

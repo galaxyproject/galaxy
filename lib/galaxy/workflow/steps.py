@@ -2,6 +2,7 @@
 workflow steps.
 """
 import math
+
 from galaxy.util.topsort import (
     CycleError,
     topsort,
@@ -14,14 +15,13 @@ def attach_ordered_steps( workflow, steps ):
     fails - the workflow contains cycles so it mark it as such.
     """
     ordered_steps = order_workflow_steps( steps )
+    workflow.has_cycles = True
     if ordered_steps:
         workflow.has_cycles = False
-        for i, step in enumerate( ordered_steps ):
-            step.order_index = i
-            workflow.steps.append( step )
-    else:
-        workflow.has_cycles = True
-        workflow.steps = steps
+        workflow.steps = ordered_steps
+    for i, step in enumerate( workflow.steps ):
+        step.order_index = i
+    return workflow.has_cycles
 
 
 def order_workflow_steps( steps ):
@@ -33,7 +33,7 @@ def order_workflow_steps( steps ):
         if not step.position or 'left' not in step.position or 'top' not in step.position:
             position_data_available = False
     if position_data_available:
-        steps.sort(cmp=lambda s1, s2: cmp( math.sqrt(s1.position['left'] ** 2 + s1.position['top'] ** 2), math.sqrt(s2.position['left'] ** 2 + s2.position['top'] ** 2)))
+        steps.sort(key=lambda _: math.sqrt(_.position['left'] ** 2 + _.position['top'] ** 2))
     try:
         edges = edgelist_for_workflow_steps( steps )
         node_order = topsort( edges )
@@ -52,7 +52,12 @@ def edgelist_for_workflow_steps( steps ):
     for step in steps:
         edges.append( ( steps_to_index[step], steps_to_index[step] ) )
         for conn in step.input_connections:
-            edges.append( ( steps_to_index[conn.output_step], steps_to_index[conn.input_step] ) )
+            output_index = steps_to_index[conn.output_step]
+            input_index = steps_to_index[conn.input_step]
+            # self connection - a cycle not detectable by topsort function.
+            if output_index == input_index:
+                raise CycleError([], 0, 0)
+            edges.append( ( output_index, input_index ) )
     return edges
 
 

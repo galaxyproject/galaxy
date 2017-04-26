@@ -13,7 +13,7 @@ class RBACPermissionFailedException( galaxy.exceptions.InsufficientPermissionsEx
 
 class RBACPermission( object ):
     """
-    Base class for wrangling/controlling the permissions ORM models (*Permissions, Roles)
+    Base class for wrangling/controlling the permissions ORM models (\*Permissions, Roles)
     that control which users can perform certain actions on their associated models
     (Libraries, Datasets).
     """
@@ -68,8 +68,9 @@ class DatasetRBACPermission( RBACPermission ):
 
     DatasetPermissions are typed (but not polymorphic themselves) by a string 'action'.
     There are two types:
-        - manage permissions : can a role manage the permissions on a dataset
-        - access : can a role read/look at/copy a dataset
+
+    - manage permissions : can a role manage the permissions on a dataset
+    - access : can a role read/look at/copy a dataset
     """
     permissions_class = model.DatasetPermissions
     action_name = None

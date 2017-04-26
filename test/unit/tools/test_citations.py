@@ -2,12 +2,12 @@ import tempfile
 from contextlib import contextmanager
 from shutil import rmtree
 
-from galaxy.util import parse_xml_string
 from galaxy.managers.citations import (
-    parse_citation,
     BibtexCitation,
     CitationCollection,
+    parse_citation,
 )
+from galaxy.util import parse_xml_string
 
 EXAMPLE_BIBTEX_CITATION = """<citation type="bibtex">@article{goecks2010galaxy,
     title={Galaxy: a comprehensive approach for supporting accessible, reproducible, and transparent computational research in the life sciences},

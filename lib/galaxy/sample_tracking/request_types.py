@@ -29,4 +29,5 @@ class RequestTypeFactory( object ):
                 self.sample_state_factory.from_elem( rval, sample_state_elem )  # should this be the return value??
         return rval
 
+
 request_type_factory = RequestTypeFactory( sample_state_factory, RENAME_DATASET_OPTIONS )

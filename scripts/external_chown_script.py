@@ -20,5 +20,6 @@ def main():
     os.system('chown -Rh %s %s' % (galaxy_user_name, path))
     os.system('chgrp -Rh %s %s' % (gid, path))
 
+
 if __name__ == "__main__":
     main()
