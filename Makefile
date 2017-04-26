@@ -24,8 +24,7 @@ SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /c
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
 
-docs:
-# Generate HTML documentation.
+docs: ## Generate HTML documentation.
 # Run following commands to setup the Python portion of the requirements:
 #   $ ./scripts/common_startup.sh
 #   $ . .venv/bin/activate
