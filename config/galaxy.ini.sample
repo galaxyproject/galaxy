@@ -591,6 +591,11 @@ nglims_config_file = tool-data/nglims.yaml
 # URL (with schema http/https) of the Galaxy instance as accessible within your
 # local network - if specified used as a default by pulsar file staging and
 # Jupyter Docker container for communicating back with Galaxy via the API.
+#
+# If you are attempting to setup GIEs on Mac OS X with Docker for Mac - this
+# should likely be the IP address of your machine on the virtualbox network (vboxnet0)
+# setup for the Docker host VM. This can found by running ifconfig and using the
+# IP address of the network vboxnet0.
 #galaxy_infrastructure_url = http://localhost:8080
 
 # If the above URL cannot be determined ahead of time in dynamic environments
