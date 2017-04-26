@@ -56,7 +56,7 @@
         sending all necessary information, and appropriate action will be taken.
     </p>
     <p>
-        <a href="https://wiki.galaxyproject.org/ToolShedRepositoryFeatures#Contact_repository_owner" target="_blank">Contact the repository owner</a> for 
+        <a href="https://galaxyproject.org/toolshed/repository-features/#contact-repository-owner" target="_blank">Contact the repository owner</a> for 
         general questions or concerns.
     </p>
 </div>
