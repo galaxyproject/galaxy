@@ -20,9 +20,9 @@ OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 
 all: help
-	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
+	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
 
-docs: ## generate Sphinx HTML documentation, including API docs
+docs: ## generate HTML documentation, you must install documentation dependencies from lib/galaxy/dependencies/dev-requirements.txt beforehand
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 

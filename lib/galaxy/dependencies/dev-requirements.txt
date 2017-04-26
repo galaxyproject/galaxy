@@ -2,3 +2,9 @@ nose
 NoseHTML
 twill==0.9.1
 mock
+
+# Documentation requirements
+sphinx
+sphinx_rtd_theme
+lxml
+recommonmark
