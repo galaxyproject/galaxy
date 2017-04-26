@@ -181,18 +181,6 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 });
             };
             menu_button.addMenu({
-                icon    : 'fa-puzzle-piece',
-                title   : 'Generate Tour',
-                tooltip : 'Generate Tour from the tool\'s test data',
-                onclick : function() {
-                    if (typeof TourGenerator !== 'undefined') {
-                        new TourGenerator({toolId: options.id});
-                    } else {
-                        alert('Please activate Tour Generator first.');
-                    }
-                }
-            });
-            menu_button.addMenu({
                 icon    : 'fa-share',
                 title   : 'Share',
                 onclick : function() {
@@ -254,6 +242,22 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     }
                 });
             }
+
+            // add tool menu webhooks
+            $.getJSON('/api/webhooks/tool-menu/all', function(webhooks) {
+                _.each(webhooks, function(webhook) {
+                    if (webhook.activate && webhook.config.function) {
+                        menu_button.addMenu({
+                            icon    : webhook.config.icon,
+                            title   : webhook.config.title,
+                            onclick : function() {
+                                var func = new Function('options', webhook.config.function);
+                                func(options);
+                            }
+                        });
+                    }
+                });
+            });
 
             return {
                 menu        : menu_button,

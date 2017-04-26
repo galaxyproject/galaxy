@@ -117,24 +117,20 @@ var Collection = Backbone.Collection.extend({
                     $.each(webhooks.models, function(index, model) {
                         var webhook = model.toJSON();
                         if (webhook.activate) {
+                            var obj = {
+                                id      : webhook.name,
+                                icon    : webhook.config.icon,
+                                url     : webhook.config.url,
+                                tooltip : webhook.config.tooltip,
+                                onclick : webhook.config.function && new Function(webhook.config.function),
+                            };
+
                             // Galaxy.page is undefined for data libraries, workflows pages
                             if( Galaxy.page ) {
-                                Galaxy.page.masthead.collection.add({
-                                    id      : webhook.name,
-                                    icon    : webhook.config.icon,
-                                    url     : webhook.config.url,
-                                    tooltip : webhook.config.tooltip,
-                                    onclick : webhook.config.function && new Function(webhook.config.function),
-                                });
+                                Galaxy.page.masthead.collection.add(obj);
                             }
                             else if( Galaxy.masthead ) {
-                                Galaxy.masthead.collection.add({
-                                    id      : webhook.name,
-                                    icon    : webhook.config.icon,
-                                    url     : webhook.config.url,
-                                    tooltip : webhook.config.tooltip,
-                                    onclick : webhook.config.function && new Function(webhook.config.function),
-                                });
+                                Galaxy.masthead.collection.add(obj);
                             }
                         }
                     });
