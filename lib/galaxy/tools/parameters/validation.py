@@ -260,7 +260,7 @@ class DatasetFilesPathEmptyValidator( Validator ):
 
     def validate( self, value, trans=None ):
         if value:
-            if not os.path.isdir(value.extra_files_path) or len(os.listdir(value.extra_files_path)) == 0:
+            if value.get_total_size() == value.get_size():
                 if self.message is None:
                     self.message = "The selected dataset's files_path directory is empty or does not exist, this tool expects non-empty files_path directories associated with the selected input."
                 raise ValueError( self.message )
