@@ -12,5 +12,3 @@ statsd
 azure-storage==0.32.0
 # PyRods not in PyPI
 python-ldap==2.4.27
-# chronos client
-chronos-python
