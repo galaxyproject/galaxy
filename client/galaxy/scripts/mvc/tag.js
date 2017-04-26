@@ -44,6 +44,20 @@ var TagsEditor = Backbone.View
         return this;
     },
 
+    _hashToName: function(tag){
+        if (tag.startsWith('#')){
+            return 'name:' + tag.slice(1);
+        }
+        return tag;
+    },
+
+    _nameToHash: function(tag){
+        if (tag.startsWith('name:')){
+            tag = '#' + tag.slice(5);
+        }
+        return tag;
+    },
+
     /** @returns {String} the html text used to build the view's DOM */
     _template : function(){
         return [
@@ -55,15 +69,13 @@ var TagsEditor = Backbone.View
 
     /** @returns {String} the sorted, comma-separated tags from the model */
     tagsToCSV : function(){
+        var self = this;
         var tagsArray = this.model.get( 'tags' );
         if( !_.isArray( tagsArray ) || _.isEmpty( tagsArray ) ){
             return '';
         }
         return tagsArray.map( function( tag ){
-            if (tag.startsWith('name:')){
-                tag = '#' + tag.slice(5);
-            }
-            return _.escape( tag );
+            return _.escape( self._nameToHash( tag ) );
         }).sort().join( ',' );
     },
 
@@ -75,29 +87,23 @@ var TagsEditor = Backbone.View
     /** @returns {String[]} all tags used by the current user */
     _getTagsUsed : function(){
 //TODO: global
-        return Galaxy.user.get( 'tags_used' );
+        var self = this;
+        return _.map(Galaxy.user.get( 'tags_used' ), self._nameToHash);
     },
 
     /** set up any event listeners on the view's DOM (mostly handled by select2) */
     _setUpBehaviors : function(){
-        var view = this;
+        var self = this;
         this.$input().on( 'change', function( event ){
             // Modify any 'hashtag' 'nametags'
-            event.val = _.map(event.val, function(k){
-                if (k.startsWith("#")){
-                    return "name:" + k.slice(1);
-                }
-                else {
-                    return k;
-                }
-            });
+            event.val = _.map(event.val, self._hashToName);
             // save the model's tags in either remove or added event
-            view.model.save({ tags: event.val });
+            self.model.save({ tags: event.val });
             // if it's new, add the tag to the users tags
             if( event.added ){
                 //??: solve weird behavior in FF on test.galaxyproject.org where
                 //  event.added.text is string object: 'String{ 0="o", 1="n", 2="e" }'
-                view._addNewTagToTagsUsed( event.added.text + '' );
+                self._addNewTagToTagsUsed( event.added.text + '' );
             }
         });
     },
