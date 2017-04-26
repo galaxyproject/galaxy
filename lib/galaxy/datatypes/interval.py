@@ -16,7 +16,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.tabular import Tabular
-from galaxy.datatypes.util.gff_util import parse_gff_attributes
+from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
 from galaxy.web import url_for
 
 from . import (
@@ -649,6 +649,7 @@ class Gff( Tabular, _RemoteCallMixin ):
     edam_data = "data_1255"
     edam_format = "format_2305"
     file_ext = "gff"
+    valid_gff_frame = ['.', '0', '1', '2']
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
     data_sources = { "data": "interval_index", "index": "bigwig", "feature_search": "fli" }
     track_type = Interval.track_type
@@ -868,6 +869,8 @@ class Gff( Tabular, _RemoteCallMixin ):
                             return False
                     if hdr[6] not in data.valid_strand:
                         return False
+                    if hdr[7] not in self.valid_gff_frame:
+                        return False
             return True
         except:
             return False
@@ -902,7 +905,7 @@ class Gff3( Gff ):
     edam_format = "format_1975"
     file_ext = "gff3"
     valid_gff3_strand = ['+', '-', '.', '?']
-    valid_gff3_phase = ['.', '0', '1', '2']
+    valid_gff3_phase = Gff.valid_gff_frame
     column_names = [ 'Seqid', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes' ]
     track_type = Interval.track_type
 
@@ -945,7 +948,7 @@ class Gff3( Gff ):
 
     def sniff( self, filename ):
         """
-        Determines whether the file is in gff version 3 format
+        Determines whether the file is in GFF version 3 format
 
         GFF 3 format:
 
@@ -967,6 +970,9 @@ class Gff3( Gff ):
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'test.gff' )
+        >>> Gff3().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'test.gtf' )
         >>> Gff3().sniff( fname )
         False
         >>> fname = get_test_fname('gff_version_3.gff')
@@ -1005,6 +1011,7 @@ class Gff3( Gff ):
                         return False
                     if hdr[7] not in self.valid_gff3_phase:
                         return False
+                    parse_gff3_attributes(hdr[8])
             return True
         except:
             return False
@@ -1068,6 +1075,8 @@ class Gtf( Gff ):
                         except:
                             return False
                     if hdr[6] not in data.valid_strand:
+                        return False
+                    if hdr[7] not in self.valid_gff_frame:
                         return False
 
                     # Check attributes for gene_id, transcript_id

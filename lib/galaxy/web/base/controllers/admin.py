@@ -931,10 +931,7 @@ class Admin( object ):
                     kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received" % str( user_id ) )
                     kwd[ 'status' ] = 'error'
                 else:
-                    return trans.response.send_redirect( web.url_for( controller='user',
-                                                                      action='manage_user_info',
-                                                                      cntrller='admin',
-                                                                      **kwd ) )
+                    return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwd )
         if trans.app.config.allow_user_deletion:
@@ -1125,9 +1122,18 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
-    def manage_tool_dependencies( self, trans, install_dependencies=False, uninstall_dependencies=False, selected_tool_ids=None, viewkey='View tool-centric dependencies'):
+    def manage_tool_dependencies( self,
+                                  trans,
+                                  install_dependencies=False,
+                                  uninstall_dependencies=False,
+                                  remove_unused_dependencies=False,
+                                  selected_tool_ids=None,
+                                  selected_environments_to_uninstall=None,
+                                  viewkey='View tool-centric dependencies'):
         if not selected_tool_ids:
             selected_tool_ids = []
+        if not selected_environments_to_uninstall:
+            selected_environments_to_uninstall = []
         tools_by_id = trans.app.toolbox.tools_by_id
         view = six.next(six.itervalues(trans.app.toolbox.tools_by_id))._view
         if selected_tool_ids:
@@ -1139,17 +1145,15 @@ class Admin( object ):
                 [view.install_dependencies(r) for r in requirements]
             elif uninstall_dependencies:
                 [view.uninstall_dependencies(index=None, requirements=r) for r in requirements]
-        tool_ids_by_requirements = {}
-        for tid, tool in trans.app.toolbox.tools_by_id.items():
-            if tool.tool_requirements not in tool_ids_by_requirements:
-                tool_ids_by_requirements[tool.tool_requirements] = [tid]
-            else:
-                tool_ids_by_requirements[tool.tool_requirements].append(tid)
-        requirements_status = {r: view.get_requirements_status({tid: r}, tools_by_id[tids[0]].installed_tool_dependencies) for r, tids in tool_ids_by_requirements.items()}
+        if selected_environments_to_uninstall and remove_unused_dependencies:
+            if not isinstance(selected_environments_to_uninstall, list):
+                selected_environments_to_uninstall = [selected_environments_to_uninstall]
+            view.remove_unused_dependency_paths(selected_environments_to_uninstall)
         return trans.fill_template( '/webapps/galaxy/admin/manage_dependencies.mako',
                                     tools=tools_by_id,
-                                    requirements_status=requirements_status,
-                                    tool_ids_by_requirements=tool_ids_by_requirements,
+                                    requirements_status=view.toolbox_requirements_status,
+                                    tool_ids_by_requirements=view.tool_ids_by_requirements,
+                                    unused_environments=view.unused_dependency_paths,
                                     viewkey=viewkey )
 
     @web.expose

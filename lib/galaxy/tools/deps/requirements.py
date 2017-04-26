@@ -151,6 +151,7 @@ DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES = False
 DEFAULT_CONTAINER_SHELL = "/bin/sh"  # Galaxy assumes bash, but containers are usually thinner.
 
 
+@six.python_2_unicode_compatible
 class ContainerDescription( object ):
 
     def __init__(
@@ -185,6 +186,9 @@ class ContainerDescription( object ):
             resolve_dependencies=resolve_dependencies,
             shell=shell,
         )
+
+    def __str__(self):
+        return "ContainerDescription[identifier=%s,type=%s]" % (self.identifier, self.type)
 
 
 def parse_requirements_from_dict( root_dict ):

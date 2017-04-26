@@ -21,12 +21,13 @@ from datetime import timedelta
 from six import string_types
 from six.moves import configparser
 
+from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.util.postfork import register_postfork_function
 from galaxy.web.formatting import expand_pretty_datetime_format
+from galaxy.web.stack import register_postfork_function
 from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
@@ -52,6 +53,7 @@ PATH_DEFAULTS = dict(
     workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
     modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
     local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
+    containers_config_file=['config/containers_conf.yml'],
 )
 
 PATH_LIST_DEFAULTS = dict(
@@ -316,6 +318,8 @@ class Configuration( object ):
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool( kwargs.get( 'enable_beta_tool_formats', 'False' ) )
+        # Beta containers interface used by GIEs
+        self.enable_beta_containers_interface = string_as_bool( kwargs.get( 'enable_beta_containers_interface', 'False' ) )
 
         # Certain modules such as the pause module will automatically cause
         # workflows to be scheduled in job handlers the way all workflows will
@@ -326,6 +330,8 @@ class Configuration( object ):
         self.force_beta_workflow_scheduled_for_collections = string_as_bool( kwargs.get( 'force_beta_workflow_scheduled_for_collections', 'False' ) )
 
         self.history_local_serial_workflow_scheduling = string_as_bool( kwargs.get( 'history_local_serial_workflow_scheduling', 'False' ) )
+        self.parallelize_workflow_scheduling_within_histories = string_as_bool( kwargs.get( 'parallelize_workflow_scheduling_within_histories', 'False' ) )
+        self.maximum_workflow_invocation_duration = int( kwargs.get( "maximum_workflow_invocation_duration", 2678400 ) )
 
         # Per-user Job concurrency limitations
         self.cache_user_job_count = string_as_bool( kwargs.get( 'cache_user_job_count', False ) )
@@ -564,6 +570,10 @@ class Configuration( object ):
         self.statsd_host = kwargs.get( 'statsd_host', '')
         self.statsd_port = int( kwargs.get( 'statsd_port', 8125 ) )
         self.statsd_prefix = kwargs.get( 'statsd_prefix', 'galaxy' )
+        # Statistics and profiling with graphite
+        self.graphite_host = kwargs.get( 'graphite_host', '')
+        self.graphite_port = int( kwargs.get( 'graphite_port', 2003 ) )
+        self.graphite_prefix = kwargs.get( 'graphite_prefix', 'galaxy' )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
@@ -600,6 +610,8 @@ class Configuration( object ):
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = self.resolve_path( kwargs.get( "citation_cache_data_dir", "database/citations/data" ) )
         self.citation_cache_lock_dir = self.resolve_path( kwargs.get( "citation_cache_lock_dir", "database/citations/locks" ) )
+
+        self.containers_conf = parse_containers_config(self.containers_config_file)
 
     @property
     def sentry_dsn_public( self ):
@@ -908,11 +920,9 @@ class ConfiguresGalaxyMixin:
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
         from galaxy.tools.deps import containers
-        from galaxy.tools.toolbox.cache import ToolCache
         from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
 
         self.citations_manager = CitationsManager( self )
-        self.tool_cache = ToolCache()
         self.tool_version_cache = ToolVersionCache(self)
 
         self._toolbox_lock = threading.RLock()

@@ -49,6 +49,11 @@ var Base = Backbone.View.extend({
         this._changeVisible();
     },
 
+    /** Update available options */
+    update: function( options ) {
+        this.model.set( 'data', options );
+    },
+
     _changeData: function() {
         var self = this;
         this.$options.empty();

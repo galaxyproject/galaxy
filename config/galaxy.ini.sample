@@ -120,8 +120,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Slow query logging.  Queries slower than the threshold indicated below will
 # be logged to debug.  A value of '0' is disabled.  For example, you would set
-# this to .005 to log all queries taking longer than 5 milliseconds
-# slow_query_log_threshold = 0
+# this to .005 to log all queries taking longer than 5 milliseconds.
+#slow_query_log_threshold = 0
 
 # By default, Galaxy will use the same database to track user data and
 # tool shed install data.  There are many situations in which it is
@@ -366,6 +366,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # the plugin's ini config file.
 #interactive_environment_swarm_mode = False
 
+# Galaxy can run a "swarm manager" service that will monitor utilization of the
+# swarm and provision/deprovision worker nodes as necessary. The service has
+# its own configuration file.
+#swarm_manager_config_file = config/swarm_manager_conf.yml
+
 # Interactive tour directory: where to store interactive tour definition files.
 # Galaxy ships with several basic interface tours enabled, though a different
 # directory with custom tours can be specified here. The path is relative to the
@@ -437,7 +442,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #
 # Configuration file for the object store
 # If this is set and exists, it overrides any other objectstore settings.
-# object_store_config_file = config/object_store_conf.xml
+#object_store_config_file = config/object_store_conf.xml
 
 
 # -- Mail and notification
@@ -457,7 +462,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #smtp_password = None
 
 # If your SMTP server requires SSL from the beginning of the connection
-# smtp_ssl = False
+#smtp_ssl = False
 
 # On the user registration form, users may choose to join a mailing list. This
 # is the address used to subscribe to the list. Uncomment and leave empty if you
@@ -582,11 +587,16 @@ nglims_config_file = tool-data/nglims.yaml
 # - $locale (complete format string for the server locale),
 # - $iso8601 (complete format string as specified by ISO 8601 international
 #   standard).
-# pretty_datetime_format = $locale (UTC)
+#pretty_datetime_format = $locale (UTC)
 
 # URL (with schema http/https) of the Galaxy instance as accessible within your
 # local network - if specified used as a default by pulsar file staging and
 # Jupyter Docker container for communicating back with Galaxy via the API.
+#
+# If you are attempting to setup GIEs on Mac OS X with Docker for Mac - this
+# should likely be the IP address of your machine on the virtualbox network (vboxnet0)
+# setup for the Docker host VM. This can found by running ifconfig and using the
+# IP address of the network vboxnet0.
 #galaxy_infrastructure_url = http://localhost:8080
 
 # If the above URL cannot be determined ahead of time in dynamic environments
@@ -871,6 +881,16 @@ use_interactive = True
 #statsd_port=8125
 #statsd_prefix=galaxy
 
+# Log to graphite
+# Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
+# Enabling the following options will cause galaxy to log request timing and
+# other statistics to the configured graphite instance. The graphite_prefix is
+# useful if you are running multiple Galaxy instances and want to segment
+# statistics between them within the same aggregator.
+#graphite_host=
+#graphite_port=2003
+#graphite_prefix=galaxy
+
 # -- Data Libraries
 
 # These library upload options are described in much more detail in the Galaxy
@@ -927,16 +947,16 @@ use_interactive = True
 # The higher the boost, the more importance the scoring algorithm gives to the
 # given field.  Section refers to the tool group in the tool panel.  Rest of
 # the fields are tool's attributes.
-# tool_name_boost = 9
-# tool_section_boost = 3
-# tool_description_boost = 2
-# tool_label_boost = 1
-# tool_stub_boost = 5
-# tool_help_boost = 0.5
+#tool_name_boost = 9
+#tool_section_boost = 3
+#tool_description_boost = 2
+#tool_label_boost = 1
+#tool_stub_boost = 5
+#tool_help_boost = 0.5
 
 # Limits the number of results in toolbox search.  Can be used to tweak how many
 # results will appear.
-# tool_search_limit = 20
+#tool_search_limit = 20
 
 # Enable/ disable Ngram-search for tools. It makes tool
 # search results tolerant for spelling mistakes in the query
@@ -1059,6 +1079,9 @@ use_interactive = True
 # via the API. Admin menu will list both if enabled.
 #enable_beta_ts_api_install = False
 
+# Enable the new container interface for Interactive Environments
+#enable_beta_containers_interface = False
+
 # Set the following to a number of threads greater than 1 to spawn
 # a Python task queue for dealing with large tool submissions (either
 # through the tool form or as part of an individual workflow step across
@@ -1086,6 +1109,15 @@ use_interactive = True
 # collections.
 #force_beta_workflow_scheduled_for_collections=False
 
+# If multiple job handlers are enabled, allow Galaxy to schedule workflow invocations
+# in multiple handlers simultaneously. This is discouraged because it results in a
+# less predictable order of workflow datasets within in histories.
+#parallelize_workflow_scheduling_within_histories = False
+
+# This is the maximum amount of time a workflow invocation may stay in an active
+# scheduling state in seconds. Set to -1 to disable this maximum and allow any workflow
+# invocation to schedule indefinitely. The default corresponds to 1 month.
+#maximum_workflow_invocation_duration = 2678400
 
 # Force serial scheduling of workflows within the context of a particular history
 #history_local_serial_workflow_scheduling=False
@@ -1313,7 +1345,7 @@ use_interactive = True
 # under user preferences and can be toggled on and off at
 # runtime.  Example shown below are not real defaults (no custom
 # filters are applied by default), but can be enabled by renaming the
-# example.py.sample in the filters directory to example.py.
+# examples.py.sample in the filters directory to examples.py.
 
 #tool_filters =
 #tool_label_filters =

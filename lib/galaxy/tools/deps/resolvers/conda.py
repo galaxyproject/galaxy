@@ -55,6 +55,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         'auto_install': False,
         'auto_init': True,
         'copy_dependencies': False,
+        'use_local': False,
     }
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
 
@@ -84,6 +85,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             )
 
         copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
+        use_local = _string_as_bool(get_option("use_local"))
         conda_exec = get_option("exec")
         debug = _string_as_bool(get_option("debug"))
         ensure_channels = get_option("ensure_channels")
@@ -102,7 +104,8 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             ensure_channels=ensure_channels,
             condarc_override=condarc_override,
             use_path_exec=use_path_exec,
-            copy_dependencies=copy_dependencies
+            copy_dependencies=copy_dependencies,
+            use_local=use_local,
         )
         self.ensure_channels = ensure_channels
 
@@ -111,6 +114,8 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         self.auto_init = _string_as_bool(get_option("auto_init"))
         self.conda_context = conda_context
         self.disabled = not galaxy.tools.deps.installable.ensure_installed(conda_context, install_conda, self.auto_init)
+        if self.auto_init and not self.disabled:
+            self.conda_context.ensure_conda_build_installed_if_needed()
         self.auto_install = auto_install
         self.copy_dependencies = copy_dependencies
 
@@ -126,6 +131,10 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         if not all_resolved:
             return None
         environments = set([os.path.basename(dependency.environment_path) for dependency in all_resolved])
+        return self.uninstall_environments(environments)
+
+    def uninstall_environments(self, environments):
+        environments = [env if not env.startswith(self.conda_context.envs_path) else os.path.basename(env) for env in environments]
         return_codes = [self.conda_context.exec_remove([env]) for env in environments]
         final_return_code = 0
         for env, return_code in zip(environments, return_codes):
@@ -280,6 +289,23 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
 
     def _expand_requirement(self, requirement):
         return self._expand_specs(self._expand_mappings(requirement))
+
+    def unused_dependency_paths(self, toolbox_requirements_status):
+        """
+        Identify all local environments that are not needed to build requirements_status.
+
+        We try to resolve the requirements, and we note every environment_path that has been taken.
+        """
+        used_paths = set()
+        for dependencies in toolbox_requirements_status.values():
+            for dependency in dependencies:
+                if dependency.get('dependency_type') == 'conda':
+                    path = os.path.basename(dependency['environment_path'])
+                    used_paths.add(path)
+        dir_contents = set(os.listdir(self.conda_context.envs_path) if os.path.exists(self.conda_context.envs_path) else [])
+        unused_paths = dir_contents.difference(used_paths)  # New set with paths in dir_contents but not in used_paths
+        unused_paths = [os.path.join(self.conda_context.envs_path, p) for p in unused_paths]
+        return unused_paths
 
     def list_dependencies(self):
         for install_target in installed_conda_targets(self.conda_context):

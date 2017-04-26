@@ -1049,8 +1049,7 @@ class AdminToolshed( AdminGalaxy ):
         repo_info_dicts = [ encoding_util.tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
         dd = dependency_display.DependencyDisplayer( trans.app )
         install_repository_manager = install_manager.InstallRepositoryManager( trans.app )
-        if ( ( not includes_tools_for_display_in_tool_panel and kwd.get( 'select_shed_tool_panel_config_button', False ) ) or
-             ( includes_tools_for_display_in_tool_panel and kwd.get( 'select_tool_panel_section_button', False ) ) ):
+        if kwd.get( 'select_tool_panel_section_button', False ):
             if updating:
                 repository = repository_util.get_tool_shed_repository_by_id( trans.app, updating_repository_id )
                 decoded_updated_metadata = encoding_util.tool_shed_decode( encoded_updated_metadata )
@@ -1214,57 +1213,29 @@ class AdminToolshed( AdminGalaxy ):
             install_resolver_dependencies_check_box = None
         encoded_repo_info_dicts = encoding_util.encoding_sep.join( encoded_repo_info_dicts )
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        if includes_tools_for_display_in_tool_panel:
-            return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
-                                        encoded_repo_info_dicts=encoded_repo_info_dicts,
-                                        updating=updating,
-                                        updating_repository_id=updating_repository_id,
-                                        updating_to_ctx_rev=updating_to_ctx_rev,
-                                        updating_to_changeset_revision=updating_to_changeset_revision,
-                                        encoded_updated_metadata=encoded_updated_metadata,
-                                        includes_tools=includes_tools,
-                                        includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
-                                        includes_tool_dependencies=includes_tool_dependencies,
-                                        install_tool_dependencies_check_box=install_tool_dependencies_check_box,
-                                        install_resolver_dependencies_check_box=install_resolver_dependencies_check_box,
-                                        has_repository_dependencies=has_repository_dependencies,
-                                        install_repository_dependencies_check_box=install_repository_dependencies_check_box,
-                                        new_tool_panel_section_label=new_tool_panel_section_label,
-                                        containers_dict=containers_dict,
-                                        shed_tool_conf=shed_tool_conf,
-                                        shed_tool_conf_select_field=shed_tool_conf_select_field,
-                                        tool_panel_section_select_field=tool_panel_section_select_field,
-                                        tool_shed_url=tool_shed_url,
-                                        requirements_status=requirements_status,
-                                        message=message,
-                                        status=status )
-        else:
-            # If installing repositories that includes no tools and has no repository dependencies, display a page
-            # allowing the Galaxy administrator to select a shed-related tool panel configuration file whose tool_path
-            # setting will be the location the repositories will be installed.
-            return trans.fill_template( '/admin/tool_shed_repository/select_shed_tool_panel_config.mako',
-                                        encoded_repo_info_dicts=encoded_repo_info_dicts,
-                                        updating=updating,
-                                        updating_repository_id=updating_repository_id,
-                                        updating_to_ctx_rev=updating_to_ctx_rev,
-                                        updating_to_changeset_revision=updating_to_changeset_revision,
-                                        encoded_updated_metadata=encoded_updated_metadata,
-                                        includes_tools=includes_tools,
-                                        includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
-                                        includes_tool_dependencies=includes_tool_dependencies,
-                                        install_tool_dependencies_check_box=install_tool_dependencies_check_box,
-                                        install_resolver_dependencies_check_box=install_resolver_dependencies_check_box,
-                                        has_repository_dependencies=has_repository_dependencies,
-                                        install_repository_dependencies_check_box=install_repository_dependencies_check_box,
-                                        new_tool_panel_section_label=new_tool_panel_section_label,
-                                        containers_dict=containers_dict,
-                                        shed_tool_conf=shed_tool_conf,
-                                        shed_tool_conf_select_field=shed_tool_conf_select_field,
-                                        tool_panel_section_select_field=tool_panel_section_select_field,
-                                        tool_shed_url=tool_shed_url,
-                                        tool_requirements=tool_requirements,
-                                        message=message,
-                                        status=status )
+        return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
+                                    encoded_repo_info_dicts=encoded_repo_info_dicts,
+                                    updating=updating,
+                                    updating_repository_id=updating_repository_id,
+                                    updating_to_ctx_rev=updating_to_ctx_rev,
+                                    updating_to_changeset_revision=updating_to_changeset_revision,
+                                    encoded_updated_metadata=encoded_updated_metadata,
+                                    includes_tools=includes_tools,
+                                    includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
+                                    includes_tool_dependencies=includes_tool_dependencies,
+                                    install_tool_dependencies_check_box=install_tool_dependencies_check_box,
+                                    install_resolver_dependencies_check_box=install_resolver_dependencies_check_box,
+                                    has_repository_dependencies=has_repository_dependencies,
+                                    install_repository_dependencies_check_box=install_repository_dependencies_check_box,
+                                    new_tool_panel_section_label=new_tool_panel_section_label,
+                                    containers_dict=containers_dict,
+                                    shed_tool_conf=shed_tool_conf,
+                                    shed_tool_conf_select_field=shed_tool_conf_select_field,
+                                    tool_panel_section_select_field=tool_panel_section_select_field,
+                                    tool_shed_url=tool_shed_url,
+                                    requirements_status=requirements_status,
+                                    message=message,
+                                    status=status )
 
     @web.expose
     @web.require_admin

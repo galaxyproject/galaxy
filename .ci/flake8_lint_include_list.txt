@@ -9,6 +9,7 @@ doc/patch.py
 lib/galaxy/actions/
 lib/galaxy/auth/
 lib/galaxy/config.py
+lib/galaxy/containers/
 lib/galaxy/dataset_collections/builder.py
 lib/galaxy/dataset_collections/__init__.py
 lib/galaxy/dataset_collections/structure.py
@@ -66,8 +67,7 @@ lib/galaxy/datatypes/sequence.py
 lib/galaxy/datatypes/tabular.py
 lib/galaxy/datatypes/text.py
 lib/galaxy/datatypes/tracks.py
-lib/galaxy/datatypes/util/generic_util.py
-lib/galaxy/datatypes/util/__init__.py
+lib/galaxy/datatypes/util/
 lib/galaxy/eggs/
 lib/galaxy/exceptions/__init__.py
 lib/galaxy/external_services/__init__.py
@@ -146,6 +146,7 @@ lib/galaxy/visualization/plugins/utils.py
 lib/galaxy/visualization/tracks/
 lib/galaxy/web/base/controllers/__init__.py
 lib/galaxy/web/base/__init__.py
+lib/galaxy/web/base/interactive_environments.py
 lib/galaxy/web/buildapp.py
 lib/galaxy/web/formatting.py
 lib/galaxy/web/framework/base.py
@@ -185,6 +186,7 @@ lib/galaxy/webapps/galaxy/controllers/requests.py
 lib/galaxy/webapps/galaxy/controllers/search.py
 lib/galaxy/webapps/galaxy/controllers/tool_runner.py
 lib/galaxy/webapps/galaxy/controllers/userskeys.py
+lib/galaxy/webapps/galaxy/config_watchers.py
 lib/galaxy/webapps/galaxy/__init__.py
 lib/galaxy/webapps/__init__.py
 lib/galaxy/webapps/reports/config.py

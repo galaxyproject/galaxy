@@ -9,6 +9,10 @@ from pkg_resources import resource_string
 from six import StringIO
 
 from base import api_asserts
+from base.workflows_format_2 import (
+    convert_and_import_workflow,
+    ImporterGalaxyInterface,
+)
 
 # Simple workflow that takes an input and call cat wrapper on it.
 workflow_str = resource_string( __name__, "data/test_workflow_1.ga" )
@@ -173,19 +177,23 @@ class BaseDatasetPopulator( object ):
         # kwds should contain a 'dataset' object response, a 'dataset_id' or
         # the last dataset in the history will be fetched.
         if "dataset_id" in kwds:
-            dataset_id = kwds[ "dataset_id" ]
+            history_content_id = kwds[ "dataset_id" ]
         elif "dataset" in kwds:
-            dataset_id = kwds[ "dataset" ][ "id" ]
+            history_content_id = kwds[ "dataset" ][ "id" ]
         else:
             hid = kwds.get( "hid", None )  # If not hid, just grab last dataset
+            history_contents = self.__get_contents_request( history_id ).json()
             if hid:
-                index = hid - 1
+                history_content_id = None
+                for history_item in history_contents:
+                    if history_item["hid"] == hid:
+                        history_content_id = history_item["id"]
+                if history_content_id is None:
+                    raise Exception("Could not find content with HID [%s] in [%s]" % (hid, history_contents))
             else:
                 # No hid specified - just grab most recent element.
-                index = -1
-            dataset_contents = self.__get_contents_request( history_id ).json()
-            dataset_id = dataset_contents[ index ][ "id" ]
-        return dataset_id
+                history_content_id = history_contents[-1]["id"]
+        return history_content_id
 
     def __get_contents_request( self, history_id, suffix=""):
         url = "histories/%s/contents" % history_id
@@ -253,6 +261,10 @@ class BaseWorkflowPopulator( object ):
         upload_response = self._post( "workflows/upload", data=data )
         return upload_response
 
+    def upload_yaml_workflow(self, has_yaml, **kwds):
+        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
+        return workflow[ "id" ]
+
     def wait_for_invocation( self, workflow_id, invocation_id, timeout=DEFAULT_TIMEOUT ):
         url = "workflows/%s/usage/%s" % ( workflow_id, invocation_id )
         return wait_on_state( lambda: self._get( url ), timeout=timeout  )
@@ -264,7 +276,7 @@ class BaseWorkflowPopulator( object ):
         self.dataset_populator.wait_for_history( history_id, assert_ok=assert_ok, timeout=timeout )
 
 
-class WorkflowPopulator( BaseWorkflowPopulator ):
+class WorkflowPopulator( BaseWorkflowPopulator, ImporterGalaxyInterface ):
 
     def __init__( self, galaxy_interactor ):
         self.galaxy_interactor = galaxy_interactor
@@ -275,6 +287,18 @@ class WorkflowPopulator( BaseWorkflowPopulator ):
 
     def _get( self, route ):
         return self.galaxy_interactor.get( route )
+
+    # Required for ImporterGalaxyInterface interface - so we can recurisvely import
+    # nested workflows.
+    def import_workflow(self, workflow, **kwds):
+        workflow_str = json.dumps(workflow, indent=4)
+        data = {
+            'workflow': workflow_str,
+        }
+        data.update(**kwds)
+        upload_response = self._post( "workflows", data=data )
+        assert upload_response.status_code == 200, upload_response
+        return upload_response.json()
 
 
 class LibraryPopulator( object ):
@@ -465,17 +489,17 @@ class DatasetCollectionPopulator( BaseDatasetCollectionPopulator ):
         return create_response
 
 
-def wait_on_state( state_func, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
+def wait_on_state( state_func, skip_states=["running", "queued", "new", "ready"], assert_ok=False, timeout=DEFAULT_TIMEOUT ):
     def get_state( ):
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting."
         state = response.json()[ "state" ]
-        if state not in [ "running", "queued", "new", "ready" ]:
+        if state in skip_states:
+            return None
+        else:
             if assert_ok:
                 assert state == "ok", "Final state - %s - not okay." % state
             return state
-        else:
-            return None
     return wait_on( get_state, desc="state", timeout=timeout)
 
 

@@ -22,12 +22,10 @@ function message_failed_connection(){
  *
  */
 function load_notebook(notebook_access_url){
-    $( document ).ready(function() {
-        // Test notebook_login_url for accessibility, executing the login+load function whenever
-        // we've successfully connected to the IE.
-        test_ie_availability(notebook_access_url, function(){
-            _handle_notebook_loading(notebook_access_url);
-        });
+    // Test notebook_login_url for accessibility, executing the login+load function whenever
+    // we've successfully connected to the IE.
+    test_ie_availability(notebook_access_url, function(){
+        _handle_notebook_loading(notebook_access_url);
     });
 }
 

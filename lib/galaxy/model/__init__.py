@@ -2381,8 +2381,8 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
     def copy_attributes( self, new_dataset ):
         new_dataset.hid = self.hid
 
-    def to_library_dataset_dataset_association( self, trans, target_folder,
-                                                replace_dataset=None, parent_id=None, user=None, roles=None, ldda_message='' ):
+    def to_library_dataset_dataset_association( self, trans, target_folder, replace_dataset=None,
+                                                parent_id=None, user=None, roles=None, ldda_message='', element_identifier=None ):
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
@@ -2400,7 +2400,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         if not user:
             # This should never happen since users must be authenticated to upload to a data library
             user = self.history.user
-        ldda = LibraryDatasetDatasetAssociation( name=self.name,
+        ldda = LibraryDatasetDatasetAssociation( name=element_identifier or self.name,
                                                  info=self.info,
                                                  blurb=self.blurb,
                                                  peek=self.peek,
@@ -3512,6 +3512,14 @@ class DatasetCollectionElement( object, Dictifiable ):
         else:
             return element_object
 
+    @property
+    def dataset_instances( self ):
+        element_object = self.element_object
+        if isinstance( element_object, DatasetCollection ):
+            return element_object.dataset_instances
+        else:
+            return [element_object]
+
     def copy_to_collection( self, collection, destination=None, element_destination=None ):
         element_object = self.element_object
         if element_destination:
@@ -4026,11 +4034,11 @@ class WorkflowInvocation( object, Dictifiable ):
             and_conditions.append( WorkflowInvocation.handler == handler )
 
         query = sa_session.query(
-            WorkflowInvocation
-        ).filter( and_( *and_conditions ) )
+            WorkflowInvocation.id
+        ).filter( and_( *and_conditions ) ).order_by( WorkflowInvocation.table.c.id.asc() )
         # Immediately just load all ids into memory so time slicing logic
         # is relatively intutitive.
-        return [wi.id for wi in query.all()]
+        return [wid for wid in query.all()]
 
     def to_dict( self, view='collection', value_mapper=None, step_details=False ):
         rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
@@ -4089,6 +4097,11 @@ class WorkflowInvocation( object, Dictifiable ):
             if content.workflow_step_id == step_id:
                 return True
         return False
+
+    @property
+    def seconds_since_created( self ):
+        create_time = self.create_time or galaxy.model.orm.now.now()  # In case not flushed yet
+        return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
 class WorkflowInvocationToSubworkflowInvocationAssociation( object, Dictifiable ):

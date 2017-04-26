@@ -6,6 +6,7 @@ doc/patch.py
 lib/galaxy/actions/
 lib/galaxy/auth/
 lib/galaxy/config.py
+lib/galaxy/containers/
 lib/galaxy/dataset_collections/
 lib/galaxy/datatypes/assembly.py
 lib/galaxy/datatypes/binary.py
@@ -47,6 +48,8 @@ lib/galaxy/tours/
 lib/galaxy/util/
 lib/galaxy/visualization/
 lib/galaxy/web/buildapp.py
+lib/galaxy/web/framework/base.py
+lib/galaxy/web/framework/decorators.py
 lib/galaxy/web/framework/__init__.py
 lib/galaxy/web/framework/middleware/error.py
 lib/galaxy/web/framework/middleware/static.py

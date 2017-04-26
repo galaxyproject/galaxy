@@ -18,12 +18,17 @@ The Galaxy API addresses these and other situations by exposing Galaxy
 internals through an additional interface, known as an Application Programming
 Interface, or API.
 
+Various language specific bindings for interfacing with the Galaxy API have been developed by the Galaxy community including `Python <http://bioblend.readthedocs.io/en/latest/>`__, `PHP <https://github.com/galaxyproject/blend4php>`__, `Java <https://github.com/jmchilton/blend4j>`__, and `JavaScript <https://github.com/galaxyproject/galaxy/tree/dev/client/galaxy/scripts/mvc>`__.
+
+Overview of available API resources is available at https://galaxyproject.org/develop/api/.
+
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
-    Galaxy API Quickstart <api/quickstart>
+    Quickstart <api/quickstart>
 
-    Galaxy API Guidelines <api/guidelines>
+    Development Guidelines <api/guidelines>
 
-    Galaxy API Documentation <lib/galaxy.webapps.galaxy.api>
+    Documentation <api/api>
+

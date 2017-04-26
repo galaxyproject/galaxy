@@ -129,7 +129,7 @@ class Data( object ):
         try:
             return open(dataset.file_name, 'rb').read(-1)
         except OSError:
-            log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__, dataset.file_name))
+            log.exception('%s reading a file that does not exist %s', self.__class__.__name__, dataset.file_name)
             return ''
 
     def dataset_content_needs_grooming( self, file_name ):
@@ -229,7 +229,7 @@ class Data( object ):
             archive.add(data_filename, archname)
         except IOError:
             error = True
-            log.exception("Unable to add composite parent %s to temporary library download archive" % data_filename)
+            log.exception("Unable to add composite parent %s to temporary library download archive", data_filename)
             msg = "Unable to create archive for download, please report this error"
             messagetype = "error"
         return error, msg, messagetype
@@ -284,7 +284,7 @@ class Data( object ):
                                 archive.add( fpath, rpath )
                             except IOError:
                                 error = True
-                                log.exception( "Unable to add %s to temporary library download archive" % rpath)
+                                log.exception( "Unable to add %s to temporary library download archive", rpath)
                                 msg = "Unable to create archive for download, please report this error"
                                 continue
                 if not error:
@@ -439,7 +439,7 @@ class Data( object ):
         try:
             del self.supported_display_apps[app_id]
         except:
-            log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.' % ( type, self.__class__.__name__ ) )
+            log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.', type, self.__class__.__name__ )
 
     def clear_display_apps( self ):
         self.supported_display_apps = {}
@@ -477,7 +477,7 @@ class Data( object ):
             if type in self.get_display_types():
                 return getattr(self, self.supported_display_apps[type]['file_function'])(dataset, **kwd)
         except:
-            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible' % (self.supported_display_apps[type]['file_function'], self.__class__.__name__, type) )
+            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible', self.supported_display_apps[type]['file_function'], self.__class__.__name__, type )
         return "This display type (%s) is not implemented for this datatype (%s)." % ( type, dataset.ext)
 
     def get_display_links( self, dataset, type, app, base_url, target_frame='_blank', **kwd ):
@@ -491,8 +491,8 @@ class Data( object ):
             if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr( self, self.supported_display_apps[type]['links_function'] )( dataset, type, app, base_url, **kwd )
         except:
-            log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible'
-                           % ( self.supported_display_apps[type]['links_function'], self.__class__.__name__, type ) )
+            log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible',
+                           self.supported_display_apps[type]['links_function'], self.__class__.__name__, type )
         return target_frame, []
 
     def get_converter_types(self, original_dataset, datatypes_registry):

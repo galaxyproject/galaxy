@@ -51,6 +51,10 @@ def contains_workflow_parameter( value, search=False ):
     return False
 
 
+def is_runtime_value( value ):
+    return isinstance( value, RuntimeValue ) or ( isinstance( value, dict ) and value.get( '__class__' ) == 'RuntimeValue' )
+
+
 def parse_dynamic_options( param, input_source ):
     options_elem = input_source.parse_dynamic_options_elem()
     if options_elem is not None:
@@ -133,16 +137,13 @@ class ToolParameter( object, Dictifiable ):
         return value
 
     def value_to_basic( self, value, app, use_security=False ):
-        if isinstance( value, RuntimeValue ):
+        if is_runtime_value( value ):
             return { '__class__': 'RuntimeValue' }
-        elif isinstance( value, dict ):
-            if value.get( '__class__' ) == 'RuntimeValue':
-                return value
         return self.to_json( value, app, use_security )
 
     def value_from_basic( self, value, app, ignore_errors=False ):
         # Handle Runtime and Unvalidated values
-        if isinstance( value, dict ) and value.get( '__class__' ) == 'RuntimeValue':
+        if is_runtime_value( value ):
             return RuntimeValue()
         elif isinstance( value, dict ) and value.get( '__class__' ) == 'UnvalidatedValue':
             return value[ 'value' ]
@@ -155,22 +156,27 @@ class ToolParameter( object, Dictifiable ):
         else:
             return self.to_python( value, app )
 
-    def value_to_display_text( self, value, app=None ):
+    def value_to_display_text( self, value ):
+        if is_runtime_value( value ):
+            return "Not available."
+        return self.to_text( value )
+
+    def to_text( self, value ):
         """
         Convert a value to a text representation suitable for displaying to
         the user
         >>> p = ToolParameter( None, XML( '<param name="_name" />' ) )
-        >>> print p.value_to_display_text( None )
+        >>> print p.to_text( None )
         Not available.
-        >>> print p.value_to_display_text( '' )
+        >>> print p.to_text( '' )
         Empty.
-        >>> print p.value_to_display_text( 'text' )
+        >>> print p.to_text( 'text' )
         text
-        >>> print p.value_to_display_text( True )
+        >>> print p.to_text( True )
         True
-        >>> print p.value_to_display_text( False )
+        >>> print p.to_text( False )
         False
-        >>> print p.value_to_display_text( 0 )
+        >>> print p.to_text( 0 )
         0
         """
         if value is not None:
@@ -806,7 +812,7 @@ class SelectToolParameter( ToolParameter ):
         legal_values = self.get_legal_values( trans, other_values )
         workflow_building_mode = trans.workflow_building_mode
         for context_value in other_values.values():
-            if isinstance( context_value, RuntimeValue ):
+            if is_runtime_value( context_value ):
                 workflow_building_mode = True
                 break
         if len( list( legal_values ) ) == 0 and workflow_building_mode:
@@ -886,7 +892,7 @@ class SelectToolParameter( ToolParameter ):
             value = value[ 0 ]
         return value
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         if not isinstance( value, list ):
             value = [ value ]
         # FIXME: Currently only translating values back to labels if they
@@ -1351,7 +1357,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             initial_values = None
         return initial_values
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         def get_option_display( value, options ):
             for option in options:
                 if value == option['value']:
@@ -1651,7 +1657,7 @@ class DataToolParameter( BaseDataToolParameter ):
             return "None"
         return value.file_name
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         if value and not isinstance( value, list ):
             value = [ value ]
         if value:
@@ -1773,23 +1779,23 @@ class DataToolParameter( BaseDataToolParameter ):
                                   'keep' : keep } )
 
         # add datasets
-        visible_hda = other_values.get( self.name )
-        has_matched = False
+        hda_list = util.listify( other_values.get( self.name ) )
         for hda in history.active_datasets_and_roles:
             match = dataset_matcher.hda_match( hda, check_security=False )
             if match:
                 m = match.hda
-                has_matched = has_matched or visible_hda == m or visible_hda == hda
+                hda_list = [ h for h in hda_list if h != m and h != hda ]
                 m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
                 append( d[ 'options' ][ 'hda' ], m, m_name, 'hda' )
-        if not has_matched and hasattr( visible_hda, 'hid' ):
-            if visible_hda.deleted:
-                hda_state = 'deleted'
-            elif not visible_hda.visible:
-                hda_state = 'hidden'
-            else:
-                hda_state = 'unavailable'
-            append( d[ 'options' ][ 'hda' ], visible_hda, '(%s) %s' % ( hda_state, visible_hda.name ), 'hda', True )
+        for hda in hda_list:
+            if hasattr( hda, 'hid' ):
+                if hda.deleted:
+                    hda_state = 'deleted'
+                elif not hda.visible:
+                    hda_state = 'hidden'
+                else:
+                    hda_state = 'unavailable'
+                append( d[ 'options' ][ 'hda' ], hda, '(%s) %s' % ( hda_state, hda.name ), 'hda', True )
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
@@ -1890,7 +1896,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             # TODO: Handle error states, implement error states ...
         return rval
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         try:
             if isinstance( value, galaxy.model.HistoryDatasetCollectionAssociation ):
                 display_text = "%s: %s" % ( value.hid, value.name )

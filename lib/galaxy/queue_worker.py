@@ -23,7 +23,7 @@ def send_local_control_task(app, task, kwargs={}):
     This sends a message to the process-local control worker, which is useful
     for one-time asynchronous tasks like recalculating user disk usage.
     """
-    log.info("Queuing async task %s." % task)
+    log.info("Queuing async task %s for %s." % (task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
     try:
@@ -32,9 +32,9 @@ def send_local_control_task(app, task, kwargs={}):
             producer.publish(payload,
                              exchange=galaxy.queues.galaxy_exchange,
                              declare=[galaxy.queues.galaxy_exchange] + [galaxy.queues.control_queue_from_config(app.config)],
-                             routing_key='control')
+                             routing_key='control.%s' % app.config.server_name)
     except Exception:
-        log.exception("Error queueing async task: %s." % payload)
+        log.exception("Error queueing async task: %s.", payload)
 
 
 def send_control_task(app, task, noop_self=False, kwargs={}):
@@ -51,13 +51,14 @@ def send_control_task(app, task, noop_self=False, kwargs={}):
     try:
         c = Connection(app.config.amqp_internal_connection)
         with producers[c].acquire(block=True) as producer:
+            control_queues = galaxy.queues.all_control_queues_for_declare(app.config, app.application_stack)
             producer.publish(payload, exchange=galaxy.queues.galaxy_exchange,
-                             declare=[galaxy.queues.galaxy_exchange] + galaxy.queues.all_control_queues_for_declare(app.config),
+                             declare=[galaxy.queues.galaxy_exchange] + control_queues,
                              routing_key='control')
     except Exception:
         # This is likely connection refused.
         # TODO Use the specific Exception above.
-        log.exception("Error sending control task: %s." % payload)
+        log.exception("Error sending control task: %s.", payload)
 
 
 # Tasks -- to be reorganized into a separate module as appropriate.  This is
@@ -86,6 +87,8 @@ def reload_tool(app, **kwargs):
 def reload_toolbox(app, **kwargs):
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
+    if app.tool_cache:
+        app.tool_cache.cleanup()
     app.toolbox = _get_new_toolbox(app)
     app.toolbox._reload_count = reload_count + 1
 
@@ -103,7 +106,7 @@ def _get_new_toolbox(app):
     if app.config.migrated_tools_config not in tool_configs:
         tool_configs.append(app.config.migrated_tools_config)
     start = time.time()
-    new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, app.toolbox._tool_conf_watcher)
+    new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
     load_lib_tools(new_toolbox)
@@ -117,12 +120,14 @@ def _get_new_toolbox(app):
 
 def reload_data_managers(app, **kwargs):
     from galaxy.tools.data_manager.manager import DataManagers
+    from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
     app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
     reload_count = app.data_managers._reload_count
-    app.data_managers = DataManagers(app, conf_watchers=app.data_managers.conf_watchers)
+    app.data_managers = DataManagers(app)
     app.data_managers._reload_count = reload_count + 1
+    app.tool_version_cache = ToolVersionCache(app)
 
 
 def reload_display_application(app, **kwargs):
@@ -203,7 +208,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
             # Default to figuring out which control queue to use based on the app config.
             queue = galaxy.queues.control_queue_from_config(app.config)
         self.task_mapping = task_mapping
-        self.declare_queues = galaxy.queues.all_control_queues_for_declare(app.config)
+        self.declare_queues = galaxy.queues.all_control_queues_for_declare(app.config, app.application_stack)
         # TODO we may want to purge the queue at the start to avoid executing
         # stale 'reload_tool', etc messages.  This can happen if, say, a web
         # process goes down and messages get sent before it comes back up.
@@ -227,7 +232,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
                     f(self.app, **body['kwargs'])
                 except Exception:
                     # this shouldn't ever throw an exception, but...
-                    log.exception("Error running control task type: %s" % body['task'])
+                    log.exception("Error running control task type: %s", body['task'])
         else:
             log.warning("Received a malformed task message:\n%s" % body)
         message.ack()
