@@ -153,6 +153,8 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
 # with the version at which they were fixed.
 GALAXY_LIB_TOOLS_VERSIONED = {
     "sam_to_bam": LooseVersion("1.1.3"),
+    "PEsortedSAM2readprofile": LooseVersion("1.1.1"),
+    "fetchflank": LooseVersion("1.0.1"),
 }
 
 
@@ -2310,9 +2312,10 @@ class DatabaseOperationTool( Tool ):
         for input_dataset in input_datasets.values():
             check_dataset_instance( input_dataset )
 
-        for input_dataset_collection in input_dataset_collections.values():
-            if not input_dataset_collection.collection.populated:
-                raise ToolInputsNotReadyException()
+        for input_dataset_collection_pairs in input_dataset_collections.values():
+            for input_dataset_collection, is_mapped in input_dataset_collection_pairs:
+                if not input_dataset_collection.collection.populated:
+                    raise ToolInputsNotReadyException()
 
             map( check_dataset_instance, input_dataset_collection.dataset_instances )
 
