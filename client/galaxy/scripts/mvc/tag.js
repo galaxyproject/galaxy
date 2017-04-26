@@ -79,6 +79,15 @@ var TagsEditor = Backbone.View
     _setUpBehaviors : function(){
         var view = this;
         this.$input().on( 'change', function( event ){
+            // Modify any 'hashtag' 'nametags'
+            event.val = _.map(event.val, function(k){
+                if (k.startsWith("#")){
+                    return "name:" + k.slice(1);
+                }
+                else {
+                    return k;
+                }
+            });
             // save the model's tags in either remove or added event
             view.model.save({ tags: event.val });
             // if it's new, add the tag to the users tags
