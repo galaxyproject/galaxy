@@ -65,7 +65,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             encoded_id = trans.security.encode_id(wf.id)
             item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
-            item['update_time'] = str( wf.update_time )[:19]
             item['latest_workflow_steps'] = str( len( wf.latest_workflow.steps ) )
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
@@ -76,8 +75,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
             item['url'] = url_for( 'workflow', id=encoded_id )
             item['owner'] = wf_sa.stored_workflow.user.username
-            item['update_time'] = str( wf.update_time )[:19]
             item['latest_workflow_steps'] = str( len( wf.latest_workflow.steps ) )
+            item['user_email'] = str( wf_sa.stored_workflow.user.email )
             rval.append(item)
         return rval
 
