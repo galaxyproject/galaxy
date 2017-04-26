@@ -443,6 +443,10 @@ class InteractiveEnvironmentRequest(object):
             raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]"
                             % (image, ', '.join(self.allowed_images)))
 
+        # Do not allow a None volumes
+        if not volumes:
+            volumes = []
+
         if additional_ids is not None:
             volumes += self._idsToVolumes(additional_ids)
 
