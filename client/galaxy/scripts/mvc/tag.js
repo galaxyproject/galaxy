@@ -60,6 +60,9 @@ var TagsEditor = Backbone.View
             return '';
         }
         return tagsArray.map( function( tag ){
+            if (tag.startsWith('name:')){
+                tag = '#' + tag.slice(5);
+            }
             return _.escape( tag );
         }).sort().join( ',' );
     },
