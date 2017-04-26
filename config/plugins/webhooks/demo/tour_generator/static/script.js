@@ -36,14 +36,15 @@ $(document).ready(function() {
                                     });
                                 });
                             } else {
-                                Toastr.error('Some of the test datasets cannot be found in the history.');
+                                Toastr.warning('Cannot generate a tour.');
+                                console.error('Some of the test datasets cannot be found in the history.');
                             }
-                        }, 1000);
+                        }, 1500);
                     } else {
-                        me._main(obj.data);
+                        me._generateTour(obj.data.tour);
                     }
                 } else {
-                    Toastr.error(obj.error);
+                    Toastr.warning('Cannot generate a tour.');
                     console.error('Tour Generator: ' + obj.error);
                 }
             });

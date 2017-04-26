@@ -29,21 +29,28 @@ class TourGenerator(object):
             raise ValueError('Tests are not defined.')
 
         self._test = self._tool.tests[0]
-        input_keys = [k for k, v in self._tool.inputs.data.items() if
-                      v.type == 'data']
-        input_datasets = [
-            self._test.inputs[input_key]
-            for input_key in input_keys
-        ]
 
-        if not input_datasets:
+        # All inputs with the type 'data'
+        data_inputs = {k: v for k, v in self._tool.inputs.items() if
+                       v.type == 'data'}
+
+        # Datasets from the <test></test> section
+        test_datasets = {
+            input_name: self._test.inputs[input_name][0]
+            for input_name in data_inputs.keys()
+            if input_name in self._test.inputs.keys()
+        }
+
+        if not test_datasets.keys():
             not_supported_input_types = [
-                k for k, v in self._tool.inputs.data.items() if
+                k for k, v in self._tool.inputs.items() if
                 v.type == 'repeat' or v.type == 'data_collection'
             ]
             if not_supported_input_types:
-                raise ValueError('Cannot generate a tour.')
+                raise ValueError('Not supported input types.')
             else:
+                # Some tests don't have data inputs at all,
+                # so we can generate a tour without them
                 self._use_datasets = False
                 return
 
@@ -52,61 +59,65 @@ class TourGenerator(object):
             os.environ.get('GALAXY_TEST_DATA_REPO_CACHE', 'test-data-cache'))
         test_data_paths.extend([
             x[0] for x in os.walk(test_data_cache_dir) if '.git' not in x[0]])
+        if self._tool.tool_shed:
+            test_data_paths.append(os.path.abspath(os.path.join(
+                self._tool.tool_dir, 'test-data')))
 
         # Upload all test datasets
-        for i, input in enumerate(input_datasets):
-            input_name = input[0]
+        for input_name, input in data_inputs.items():
+            if input_name in test_datasets.keys():
+                for i, data_path in enumerate(test_data_paths):
+                    input_path = os.path.join(data_path,
+                                              test_datasets[input_name])
+                    if os.path.exists(input_path):
+                        break
+                    elif i + 1 == len(test_data_paths):  # the last path
+                        raise ValueError('Test dataset "%s" doesn\'t exist.' %
+                                         input_name)
 
-            for j, data_path in enumerate(test_data_paths):
-                input_path = os.path.join(data_path, input_name)
-                if os.path.exists(input_path):
-                    break
-                elif j + 1 == len(test_data_paths):  # the last path
-                    raise ValueError('Test dataset "%s" doesn\'t exist.' %
-                                     input_name)
+                upload_tool = self._trans.app.toolbox.get_tool('upload1')
+                filename = os.path.basename(input_path)
 
-            upload_tool = self._trans.app.toolbox.get_tool('upload1')
-            filename = os.path.basename(input_path)
+                with open(input_path, 'r') as f:
+                    content = f.read()
+                    headers = {
+                        'content-disposition':
+                            'form-data; name="{}"; filename="{}"'.format(
+                                'files_0|file_data', filename
+                            ),
+                    }
 
-            with open(input_path, 'r') as f:
-                content = f.read()
-                headers = {
-                    'content-disposition':
-                        'form-data; name="{}"; filename="{}"'.format(
-                            'files_0|file_data', filename
-                        ),
-                }
+                    input_file = FieldStorage(headers=headers)
+                    input_file.file = input_file.make_file()
+                    input_file.file.write(content)
 
-                input_file = FieldStorage(headers=headers)
-                input_file.file = input_file.make_file()
-                input_file.file.write(content)
+                    inputs = {
+                        'dbkey': '?',  # is it always a question mark?
+                        'file_type': input.extensions[0],
+                        'files_0|type': 'upload_dataset',
+                        'files_0|space_to_tab': None,
+                        'files_0|to_posix_lines': 'Yes',
+                        'files_0|file_data': input_file,
+                    }
 
-                inputs = {
-                    'dbkey': '?',  # is it always a question mark?
-                    'file_type': 'auto',
-                    'files_0|type': 'upload_dataset',
-                    'files_0|space_to_tab': None,
-                    'files_0|to_posix_lines': 'Yes',
-                    'files_0|file_data': input_file,
-                }
+                    params = Params(inputs, sanitize=False)
+                    incoming = params.__dict__
+                    output = upload_tool.handle_input(self._trans, incoming,
+                                                      history=None)
 
-                params = Params(inputs, sanitize=False)
-                incoming = params.__dict__
-                output = upload_tool.handle_input(self._trans, incoming,
-                                                  history=None)
-
-                job_errors = output.get('job_errors', [])
-                if job_errors:
-                    # self._errors.extend(job_errors)
-                    raise ValueError('Cannot upload a dataset.')
-                else:
-                    self._hids.update({
-                        input_keys[i]: output['out_data'][0][1].hid
-                    })
+                    job_errors = output.get('job_errors', [])
+                    if job_errors:
+                        # self._errors.extend(job_errors)
+                        raise ValueError('Cannot upload a dataset.')
+                    else:
+                        self._hids.update({
+                            input_name: output['out_data'][0][1].hid
+                        })
 
     def _generate_tour(self):
         """ Generate a tour. """
         tour_name = self._tool.name + ' Tour'
+        test_inputs = self._test.inputs.keys()
 
         steps = [{
             'title': tour_name,
@@ -129,78 +140,99 @@ class TourGenerator(object):
             }
 
             if input.type == 'text':
-                text_param = self._test.inputs[name]
-                step['content'] = 'Enter parameter(s): <b>%s</b>' % text_param
+                if name in test_inputs:
+                    param = self._test.inputs[name]
+                    step['content'] = 'Enter value(s): <b>%s</b>' % param
+                else:
+                    step['content'] = 'Enter a value.'
 
             elif input.type == 'integer' or input.type == 'float':
-                num_param = self._test.inputs[name][0]
-                step['content'] = 'Enter parameter: <b>%s</b>' % num_param
+                if name in test_inputs:
+                    num_param = self._test.inputs[name][0]
+                    step['content'] = 'Enter number: <b>%s</b>' % num_param
+                else:
+                    step['content'] = 'Enter a number.'
 
             elif input.type == 'boolean':
-                choice = 'Yes' if self._test.inputs[name][0] is True else 'No'
-                step['content'] = 'Choose <b>%s</b>' % choice
+                if name in test_inputs:
+                    choice = 'Yes' if self._test.inputs[name][0] is True \
+                        else 'No'
+                    step['content'] = 'Choose <b>%s</b>' % choice
+                else:
+                    step['content'] = 'Choose Yes/No.'
 
             elif input.type == 'select':
-                select_param = input.label
                 params = []
-                for option in self._tool.inputs[name].static_options:
-                    if name in self._test.inputs.keys():
+                if name in test_inputs:
+                    for option in self._tool.inputs[name].static_options:
                         for test_option in self._test.inputs[name]:
                             if test_option == option[1]:
                                 params.append(option[0])
                 if params:
                     select_param = ', '.join(params)
-                step['content'] = 'Select parameter(s): <b>%s</b>' % \
-                    select_param
+                    step['content'] = 'Select parameter(s): <b>%s</b>' % \
+                                      select_param
+                else:
+                    step['content'] = 'Select a parameter.'
 
             elif input.type == 'data':
-                hid = self._hids[name]
-                dataset = self._test.inputs[name][0]
-                step['content'] = 'Select dataset <b>%s: %s</b>' % (
-                    hid, dataset
-                )
+                if name in test_inputs:
+                    hid = self._hids[name]
+                    dataset = self._test.inputs[name][0]
+                    step['content'] = 'Select dataset <b>%s: %s</b>' % (
+                        hid, dataset
+                    )
+                else:
+                    step['content'] = 'Select a dataset.'
 
             elif input.type == 'conditional':
                 param_id = '%s|%s' % (input.name, input.test_param.name)
                 step['title'] = input.test_param.label
                 step['element'] = '[tour_id="%s"]' % param_id
-                cond_param = input.label
                 params = []
-                for option in input.test_param.static_options:
-                    if param_id in self._test.inputs.keys():
+
+                if param_id in self._test.inputs.keys():
+                    for option in input.test_param.static_options:
                         for test_option in self._test.inputs[param_id]:
                             if test_option == option[1]:
                                 params.append(option[0])
+
+                    # Conditional param cases
+                    cases = {}
+                    for case in input.cases:
+                        for key, value in case.inputs.items():
+                            if key not in cases.keys():
+                                cases[key] = value.label
+
+                    for case_id, case_title in cases.items():
+                        tour_id = '%s|%s' % (input.name, case_id)
+                        if tour_id in self._test.inputs.keys():
+                            case_params = ', '.join(
+                                self._test.inputs[tour_id])
+                            cond_case_steps.append({
+                                'title': case_title,
+                                'element': '[tour_id="%s"]' % tour_id,
+                                'placement': 'right',
+                                'content': 'Select parameter(s): <b>%s</b>' %
+                                           case_params
+                            })
+
                 if params:
                     cond_param = ', '.join(params)
-                step['content'] = 'Select parameter(s): <b>%s</b>' % \
-                    cond_param
-
-                # Conditional param cases
-                cases = {}
-                for case in input.cases:
-                    for key, value in case.inputs.items():
-                        if key not in cases.keys():
-                            cases[key] = value.label
-
-                for case_id, case_title in cases.items():
-                    tour_id = '%s|%s' % (input.name, case_id)
-                    if tour_id in self._test.inputs.keys():
-                        case_params = ', '.join(self._test.inputs[tour_id])
-                        cond_case_steps.append({
-                            'title': case_title,
-                            'element': '[tour_id="%s"]' % tour_id,
-                            'placement': 'right',
-                            'content': 'Select parameter(s): <b>%s</b>' %
-                                       case_params
-                        })
+                    step['content'] = 'Select parameter(s): <b>%s</b>' % \
+                                      cond_param
+                else:
+                    step['content'] = 'Select a parameter.'
 
             elif input.type == 'data_column':
-                column_param = self._test.inputs[name][0]
-                step['content'] = 'Select <b>Column: %s</b>' % column_param
+                if name in test_inputs:
+                    column_param = self._test.inputs[name][0]
+                    step['content'] = 'Select <b>Column: %s</b>' % column_param
+                else:
+                    step['content'] = 'Select a column.'
 
             else:
-                step['content'] = 'Select parameter <b>%s</b>' % input.label
+                step['content'] = 'Select a parameter.'
 
             steps.append(step)
             if cond_case_steps:
