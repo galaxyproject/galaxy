@@ -2,7 +2,6 @@
 Classes related to parameter validation.
 """
 import logging
-import os
 import re
 
 from six import string_types
