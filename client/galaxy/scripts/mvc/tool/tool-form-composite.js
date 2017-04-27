@@ -151,15 +151,16 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 if ( step.step_type == 'tool' ) {
                     var data_resolved = true;
                     FormData.visitInputs( step.inputs, function ( input, name, context ) {
+                        var is_runtime_value = input.value && input.value.__class__ == 'RuntimeValue';
                         var is_data_input = ([ 'data', 'data_collection' ]).indexOf( input.type ) != -1;
                         var data_ref = context[ input.data_ref ];
                         input.step_linked && !self._isDataStep( input.step_linked ) && ( data_resolved = false );
                         input.options && ( ( input.options.length == 0 && !data_resolved ) || input.wp_linked ) && ( input.is_workflow = true );
                         data_ref && ( input.is_workflow = ( data_ref.step_linked && !self._isDataStep( data_ref.step_linked ) ) || input.wp_linked );
                         ( is_data_input || ( input.value && input.value.__class__ == 'RuntimeValue' && !input.step_linked ) ) && ( step.collapsed = false );
-                        input.value && input.value.__class__ == 'RuntimeValue' && ( input.value = null );
+                        is_runtime_value && ( input.value = input.default_value );
                         input.flavor = 'workflow';
-                        if ( !is_data_input && input.type !== 'hidden' && !input.wp_linked ) {
+                        if ( !is_runtime_value && !is_data_input && input.type !== 'hidden' && !input.wp_linked ) {
                             if ( input.optional || ( !Utils.isEmpty( input.value ) && input.value !== '' ) ) {
                                 input.collapsible_value = input.value;
                                 input.collapsible_preview = true;
