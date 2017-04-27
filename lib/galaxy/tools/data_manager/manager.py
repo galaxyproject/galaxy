@@ -37,7 +37,7 @@ class DataManagers( object ):
                 continue
             self.load_from_xml( filename )
         if self.app.config.shed_data_manager_config_file:
-            self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=False, replace_existing=True )
+            self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=True, replace_existing=True )
 
     def load_from_xml( self, xml_filename, store_tool_path=True, replace_existing=False ):
         try:
@@ -57,7 +57,7 @@ class DataManagers( object ):
                 tool_path = '.'
             self.tool_path = tool_path
         for data_manager_elem in root.findall( 'data_manager' ):
-            self.load_manager_from_elem( data_manager_elem, replace_existing=replace_existing )
+            self.load_manager_from_elem( data_manager_elem, tool_path=tool_path, replace_existing=replace_existing )
 
     def load_manager_from_elem( self, data_manager_elem, tool_path=None, add_manager=True, replace_existing=False ):
         try:
