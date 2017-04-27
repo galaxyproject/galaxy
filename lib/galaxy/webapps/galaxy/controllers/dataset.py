@@ -10,6 +10,7 @@ from sqlalchemy import false, true
 from galaxy import datatypes, model, util, web
 from galaxy import managers
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import inflector, smart_str
 from galaxy.util.sanitize_html import sanitize_html
@@ -235,6 +236,13 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         data = self._check_dataset(trans, dataset_id)
         if not isinstance( data, trans.app.model.DatasetInstance ):
             return data
+        if "hdca" in kwd:
+            raise RequestParameterInvalidException("Invalid request parameter 'hdca' encountered.")
+        hdca_id = kwd.get("hdca_id", None)
+        if hdca_id:
+            hdca = self.app.dataset_collections_service.get_dataset_collection_instance( trans, "history", hdca_id )
+            del kwd["hdca_id"]
+            kwd["hdca"] = hdca
         # Ensure offset is an integer before passing through to datatypes.
         if offset:
             offset = int(offset)
