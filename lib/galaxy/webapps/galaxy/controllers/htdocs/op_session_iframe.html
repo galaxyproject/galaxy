@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Check session iframe</title>
+    <script src="/static/CryptoJS/sha256.js"></script>
+</head>
+<body>
+
+<script type="application/javascript">
+    window.addEventListener("message", receiveMessage, false);
+
+    function receiveMessage(e) {
+        var message_parts = e.data.split(' ');
+        // Validate message origin
+        var client_id = message_parts[0];
+        var session_state = message_parts[1];
+        console.log('OP recv session state: ' + session_state);
+        var salt = session_state.split('.')[1];
+
+        var opbs = getOPBrowserState();
+        var ss = CryptoJS.SHA256(client_id + ' ' + e.origin + ' ' + opbs + ' ' + salt) + ["." + salt];
+        console.log('OP computed session state: ' + ss);
+
+        if (session_state == ss) {
+            stat = 'unchanged';
+        } else {
+            stat = 'changed';
+        }
+
+        e.source.postMessage(stat, e.origin);
+    }
+
+    function getOPBrowserState() {
+        var cookie = readCookie('pyoic_session');
+        console.log('pyoic_session cookie: ' + cookie);
+
+        if (cookie !== null) {
+            cookie = cookie.split('|')[0];
+        }
+        return cookie;
+    }
+
+    function readCookie(name) {
+        var nameEQ = name + "=";
+        var ca = document.cookie.split(';');
+        for (var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
+
+</script>
+
+</body>
+</html>
