@@ -7,7 +7,6 @@ from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
-# <data_managers tool_path="/var/galaxy/data_managers">
 
 
 class DataManagerHandler( object ):
