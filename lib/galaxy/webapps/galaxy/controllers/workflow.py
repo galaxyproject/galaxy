@@ -155,10 +155,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     __myexp_url = "www.myexperiment.org:80"
 
-    #@web.expose
-    #def index( self, trans ):
-    #    return self.list( trans )
-
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def list_grid( self, trans, **kwargs ):
@@ -199,7 +195,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 slug_set = True
         if slug_set:
             trans.sa_session.flush()
-
         return trans.response.send_redirect( '/workflow' )
 
     @web.expose
@@ -423,8 +418,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             stored.name = san_new_name
             stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
-            trans.set_message( "Workflow renamed to '%s'." % san_new_name )
-            return self.list( trans )
+            
+            message = 'Workflow renamed to: %s' % escape( san_new_name )
+            trans.set_message( message )
+            return_url = '/workflow?status=done&message=%s' % escape( message )
+            return trans.response.send_redirect( return_url )
         else:
             return form( url_for(controller='workflow', action='rename', id=trans.security.encode_id(stored.id) ),
                          "Rename workflow",
@@ -541,7 +539,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         if (save_as_name):
             new_stored.name = '%s' % save_as_name
         else:
-            new_stored.name = "Copy of '%s'" % stored.name
+            new_stored.name = "Copy of %s" % stored.name
         new_stored.latest_workflow = stored.latest_workflow
         # Copy annotation.
         annotation_obj = self.get_item_annotation_obj( trans.sa_session, stored.user, stored )
@@ -549,15 +547,17 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             self.add_item_annotation( trans.sa_session, trans.get_user(), new_stored, annotation_obj.annotation )
         new_stored.copy_tags_from(trans.user, stored)
         if not owner:
-            new_stored.name += " shared by '%s'" % stored.user.email
+            new_stored.name += " shared by %s" % stored.user.email
         new_stored.user = user
         # Persist
         session = trans.sa_session
         session.add( new_stored )
         session.flush()
         # Display the management page
-        trans.set_message( 'Created new workflow with name "%s"' % escape( new_stored.name ) )
-        return self.list( trans )
+        message = 'Created new workflow with name: %s' % escape( new_stored.name )
+        trans.set_message( message )
+        return_url = '/workflow?status=done&message=%s' % escape( message )
+        trans.response.send_redirect( return_url )
 
     @web.expose
     @web.require_login( "create workflows" )
@@ -650,8 +650,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         trans.sa_session.add( stored )
         trans.sa_session.flush()
         # Display the management page
-        trans.set_message( "Workflow '%s' deleted" % escape( stored.name ) )
-        return trans.response.send_redirect( '/workflow' )
+        message = "Workflow deleted: %s" % escape( stored.name )
+        trans.set_message( message )
+        return trans.response.send_redirect( '/workflow?status=done&message=%s' % escape( message ) )
 
     @web.expose
     @web.require_login( "edit workflows" )

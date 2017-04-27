@@ -18,6 +18,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
 
             $.getJSON( url, function( response ) {
                 self.$el.empty().append( self._templateHeader() );
+                self.build_messages( self );
+
                 // Update the workflows collection with different attributes names
                 // to be shown as a dropdown list
                 _.each( response, function( wf ) {
@@ -34,86 +36,52 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                         shared_workflows.push( wf_obj );
                     }
                 });
-                // Button for new workflow
-                self.btnNewWorkflow = new Ui.Button( {
-                    title: 'Create new workflow',
-                    tooltip: 'Create a workflow',
-                    icon: 'fa-plus-circle',
-                    cls: 'btn-wf',
-                    onclick: function() { window.location.href = Galaxy.root + 'workflow/create'; }
-                } );
-                // Button for importing a workflow
-                self.btnImportWorkflow = new Ui.Button( {
-                    title: 'Upload or import workflow',
-                    tooltip: 'Import a workflow',
-                    icon: 'fa-upload',
-                    cls: 'btn-wf',
-                    onclick: function() { window.location.href = Galaxy.root + 'workflow/import_workflow'; }
-                } );
-                // Button for configuring workflow menu
-                self.btnCongifureWorkflowMenu = new Ui.Button( {
-                    title: 'Configure your workflow menu',
-                    tooltip: 'Configure your workflow menu',
-                    icon: 'fa-cog',
-                    cls: 'btn-wf',
-                    onclick: function() { window.location.href = Galaxy.root + 'workflow/configure_menu'; }
-                } );
 
-                // Make workflows select list only where there is at least
-                // one workflow present
-                if( workflows.length > 0 ) {
-                    // Workflows select box
-                    self.selectWorkflows = new Select.View({
-                        css         : 'workflow-list',
-                        container   : self.$( '.user-workflows' ),
-                        data        : workflows,
-                        value       : workflows[0].id, // Defaults to the first value
-                        onchange    : function( value ) { self.select_workflow( self, value, workflows, 'user-workflows', 'workflow' ) }
-                    });
-                    self.$el.append( self.selectWorkflows.$el );
-                    // Make table to show default selected workflow
-                    self.select_workflow( self, workflows[0].id, workflows, 'user-workflows', 'workflow' );
-                }
-                else {
-                    self.$el.find( '.wf-user' ).remove();
-                    self.$el.find( '.user-workflows' ).append( '<div class="wf-nodata"> You have no workflows. </div>' );
-                }
+                // Add the actions buttons
+                self.$el.find( '.user-workflows' ).append( self._templateActionButtons() );
 
-                // Make shared workflows select list only where there is at least
-                // one shared workflow present
-                if( shared_workflows.length > 0 ) {
-                    // Workflows select box
-                    self.selectSharedWorkflows = new Select.View({
-                        css         : 'workflow-list',
-                        container   : self.$( '.shared-workflows' ),
-                        data        : shared_workflows,
-                        value       : shared_workflows[0].id, // Defaults to the first value
-                        onchange    : function( value ) { self.select_workflow( self, value, shared_workflows, 'shared-workflows', 'shared' ) }
-                    });
-                    self.$el.append( self.selectSharedWorkflows.$el );
-                    // Make table to show default selected workflow
-                    self.select_workflow( self, shared_workflows[0].id, shared_workflows, 'shared-workflows', 'shared' );                   
-                }
-                else {
-                    self.$el.find( '.wf-shared' ).remove();
-                    self.$el.find( '.shared-workflows' ).append( '<div class="wf-nodata"> No workflows have been shared with you. </div>' );
-                }
-
-                // Make new, import workflow and configure workflow menu buttons
-                self.$el.append( self.btnNewWorkflow.$el );
-                self.$el.append( self.btnImportWorkflow.$el );
-                self.$el.append( self.btnCongifureWorkflowMenu.$el );
+                // Make workflows and shared workflows select list only where there is at least
+                // one workflow present in each category
+                self.build_selectlist( self, workflows, 'user-workflows', 'workflow', 'wf-user', 'You have no workflows.' );
+                self.build_selectlist( self, shared_workflows, 'shared-workflows', 'shared', 'wf-shared', 'No workflows have been shared with you.' );
             });
         },
 
-        /** Add confirm box before removing/unsharing workflow */
-        confirm_delete: function( workflow ) {
-            $( '.link-confirm-' + workflow.id ).click( function() {
-                return confirm( "Are you sure you want to delete workflow '" + workflow.text + "'?" );
-            });
-            $( '.link-confirm-shared-' + workflow.id ).click( function() {
-                return confirm( "Are you sure you want to remove the shared workflow '" + workflow.text + "'?" );
-            });
+        /** Build messages after user action */
+        build_messages: function( self ) {
+            var $el_message = $( '.response-message' ),
+                status = self.getQueryStringValue( 'status' ),
+                message = self.getQueryStringValue( 'message' );
+
+            if( message && message !== null && message !== "" ) {
+                $el_message.addClass( status + 'message' );
+                $el_message.html( '<p>' + message + '</p>' );
+            }
+            else {
+                $el_message.html("");
+            }
+        },
+
+        /** Build workflow select lists */
+        build_selectlist: function( self, collection, class_name, type, class_hr, no_data_text ) {
+            // Add a select list if there is at least a workflow
+            if( collection.length > 0 ) {
+                // Workflows select box
+                self.selectWorkflows = new Select.View({
+                    css         : 'workflow-list',
+                    container   : self.$( '.' + class_name ),
+                    data        : collection,
+                    value       : collection[0].id, // Defaults to the first value
+                    onchange    : function( value ) { self.select_workflow( self, value, collection, class_name, type ) }
+                });
+                self.$el.append( self.selectWorkflows.$el );
+                // Make table to show default selected workflow
+                self.select_workflow( self, collection[0].id, collection, class_name, type );
+            }
+            else {
+                self.$el.find( '.' + class_hr ).remove();
+                self.$el.find( '.' + class_name ).append( '<div class="wf-nodata">' +  no_data_text + '</div>' );
+            }
         },
 
         /** Select a workflow */
@@ -127,6 +95,40 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                 }
             });
         },
+
+        /** Add confirm box before removing/unsharing workflow */
+        confirm_delete: function( workflow ) {
+            $( '.link-confirm-' + workflow.id ).click( function() {
+                return confirm( "Are you sure you want to delete workflow '" + workflow.text + "'?" );
+            });
+            $( '.link-confirm-shared-' + workflow.id ).click( function() {
+                return confirm( "Are you sure you want to remove the shared workflow '" + workflow.text + "'?" );
+            });
+        },
+
+        /** Get querystrings from url */
+        getQueryStringValue: function( key ) {
+            return decodeURIComponent(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
+        },
+
+        /** Template for actions buttons */
+        _templateActionButtons: function() {
+           return '<ul class="manage-table-actions">' +
+                '<li>' +
+                    '<a class="action-button" id="new-workflow" href="/workflow/create">' +
+                        '<img src="/static/images/silk/add.png" />' +
+                        '<span>Create new workflow</span>' +
+                    '</a>' +
+                '</li>' +
+                '<li>' +
+                    '<a class="action-button" id="import-workflow" href="/workflow/import_workflow">' +
+                        '<img src="/static/images/fugue/arrow-090.png" />' +
+                        '<span>Upload or import workflow</span>' +
+                    '</a>' +
+                '</li>' +
+            '</ul>';
+
+       },
 
         /** Template for workflow table */
         _templateWorkflowInfoTable: function( options ) {
@@ -188,8 +190,9 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
        
         /** Main template */
         _templateHeader: function( options ) {
-            return  '<div class="user-workflows wf">' +
+            return '<div class="user-workflows wf">' +
                         '<div class="page-container">' +
+                            '<div class="response-message"></div>' +
                             '<h2>Your workflows</h2>' +
                         '</div>' +
                     '</div>'+
@@ -199,7 +202,15 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                             '<h2>Workflows shared with you by others</h2>' +
                         '</div>' +
                     '</div>' +
-                    '<hr class="wf-table-bottom wf-shared">';
+                    '<hr class="wf-table-bottom wf-shared">' +
+                    '<div class="other-options wf">' +
+                        '<div class="page-container">' +
+                            '<h2>Other options</h2>' +
+                                '<a class="action-button" href="/workflow/configure_menu">' +
+                                    '<span>Configure your workflow menu</span>' +
+                                '</a>' +
+                        '</div>' +
+                    '</div>';
         }
     });
 
