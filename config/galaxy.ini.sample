@@ -895,7 +895,7 @@ use_interactive = True
 
 # These library upload options are described in much more detail in the Galaxy
 # Community Hub:
-# https://galaxyproject.org/admin/data-libraries/
+# https://galaxyproject.org/data-libraries/
 
 # Add an option to the library upload form which allows administrators to
 # upload a directory of files.
