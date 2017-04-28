@@ -19,9 +19,7 @@ class DataManagerHandler( object ):
         tree, error_message = xml_util.parse_xml( self.app.config.shed_data_manager_config_file )
         if tree:
             root = tree.getroot()
-            data_managers_path = root.get( 'tool_path', None )
-        return data_managers_path
-
+            return root.get( 'tool_path', None )
 
     def data_manager_config_elems_to_xml_file( self, config_elems, config_filename ):
         """
