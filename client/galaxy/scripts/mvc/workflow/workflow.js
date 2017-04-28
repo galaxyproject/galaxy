@@ -13,38 +13,48 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
             var self = this,
                 workflows = [],
                 shared_workflows = [],
-                url = Galaxy.root + 'api/workflows/',
-                username = Galaxy.user.attributes.username;
+                url = Galaxy.root + 'api/workflows/';
 
             $.getJSON( url, function( response ) {
                 self.$el.empty().append( self._templateHeader() );
                 self.build_messages( self );
 
-                // Update the workflows collection with different attributes names
-                // to be shown as a dropdown list
-                _.each( response, function( wf ) {
-                    var wf_obj = {};
-                    wf_obj.id = wf.id;
-                    wf_obj.text = wf.name;
-                    wf_obj.workflow_steps = wf.latest_workflow_steps;
-                    // Check whether workflow belongs to user or shared
-                    if( wf.owner === username ) {
-                        workflows.push( wf_obj );
-                    }
-                    else {
-                        wf_obj.email = wf.user_email;
-                        shared_workflows.push( wf_obj );
-                    }
-                });
-
                 // Add the actions buttons
                 self.$el.find( '.user-workflows' ).append( self._templateActionButtons() );
+
+                // Update the workflows collection with different attribute names
+                // to be shown in dropdown lists
+                var wf = self.build_workflows( response );
+                workflows = wf.workflows;
+                shared_workflows = wf.shared_workflows;
 
                 // Make workflows and shared workflows select list only where there is at least
                 // one workflow present in each category
                 self.build_selectlist( self, workflows, 'user-workflows', 'workflow', 'wf-user', 'You have no workflows.' );
                 self.build_selectlist( self, shared_workflows, 'shared-workflows', 'shared', 'wf-shared', 'No workflows have been shared with you.' );
             });
+        },
+
+        /** Build user workflows and shared workflows objects */
+        build_workflows: function( response ) {
+            var workflows = [],
+                shared_workflows = [],
+                username = Galaxy.user.attributes.username;
+            _.each( response, function( wf ) {
+                var wf_obj = {};
+                wf_obj.id = wf.id;
+                wf_obj.text = wf.name;
+                wf_obj.workflow_steps = wf.latest_workflow_steps;
+                // Check whether workflow belongs to user or shared
+                if( wf.owner === username ) {
+                    workflows.push( wf_obj );
+                }
+                else {
+                    wf_obj.email = wf.user_email;
+                    shared_workflows.push( wf_obj );
+                }
+            });
+            return { 'workflows': workflows, 'shared_workflows': shared_workflows };
         },
 
         /** Build messages after user action */
@@ -108,21 +118,19 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
 
         /** Get querystrings from url */
         getQueryStringValue: function( key ) {
-            return decodeURIComponent(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
+            return decodeURIComponent( window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent( key ).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1") );
         },
 
         /** Template for actions buttons */
         _templateActionButtons: function() {
            return '<ul class="manage-table-actions">' +
                 '<li>' +
-                    '<a class="action-button" id="new-workflow" href="/workflow/create">' +
-                        '<img src="/static/images/silk/add.png" />' +
+                    '<a class="action-button fa fa-plus wf-action" id="new-workflow" href="/workflow/create">' +
                         '<span>Create new workflow</span>' +
                     '</a>' +
                 '</li>' +
                 '<li>' +
-                    '<a class="action-button" id="import-workflow" href="/workflow/import_workflow">' +
-                        '<img src="/static/images/fugue/arrow-090.png" />' +
+                    '<a class="action-button fa fa-upload wf-action" id="import-workflow" href="/workflow/import_workflow">' +
                         '<span>Upload or import workflow</span>' +
                     '</a>' +
                 '</li>' +
@@ -181,7 +189,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                                  '</ul>' +
                             '</div>' +
                         '</td>' +
-                        '<td class="shared-wf-td">' + options.email + '</td>' +
+                        '<td class="shared-wf-td">' + _.escape(options.email) + '</td>' +
                         '<td class="shared-wf-td">' + options.workflow_steps + '</td>' +
                     '</tr>' +
                 '</table>';
@@ -190,27 +198,21 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
        
         /** Main template */
         _templateHeader: function( options ) {
-            return '<div class="user-workflows wf">' +
-                        '<div class="page-container">' +
-                            '<div class="response-message"></div>' +
-                            '<h2>Your workflows</h2>' +
-                        '</div>' +
+            return '<div class="page-container"><div class="user-workflows wf">' +
+                        '<div class="response-message"></div>' +
+                        '<h2>Your workflows</h2>' +
                     '</div>'+
                     '<hr class="wf-table-bottom wf-user">' +
                     '<div class="shared-workflows wf">' +
-                        '<div class="page-container">' +
-                            '<h2>Workflows shared with you by others</h2>' +
-                        '</div>' +
+                        '<h2>Workflows shared with you by others</h2>' +
                     '</div>' +
                     '<hr class="wf-table-bottom wf-shared">' +
                     '<div class="other-options wf">' +
-                        '<div class="page-container">' +
-                            '<h2>Other options</h2>' +
-                                '<a class="action-button" href="/workflow/configure_menu">' +
-                                    '<span>Configure your workflow menu</span>' +
-                                '</a>' +
-                        '</div>' +
-                    '</div>';
+                        '<h2>Other options</h2>' +
+                            '<a class="action-button fa fa-cog wf-action" href="/workflow/configure_menu">' +
+                                '<span>Configure your workflow menu</span>' +
+                            '</a>' +
+                    '</div></div>';
         }
     });
 
