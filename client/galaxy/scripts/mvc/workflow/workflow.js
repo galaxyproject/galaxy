@@ -51,6 +51,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                 }
                 else {
                     wf_obj.email = wf.user_email;
+                    wf_obj.slug = wf.slug;
+                    wf_obj.username = wf.user_name;
                     shared_workflows.push( wf_obj );
                 }
             });
@@ -182,7 +184,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                                      _.escape( options.text ) + '<span class="caret"></span>' +
                                  '</button>' +
                                  '<ul class="dropdown-menu action-dpd">' +
-                                     '<li><a href="">View</a></li>' +
+                                     '<li><a href="/workflow/display_by_username_and_slug?username='+ options.username +'&slug='+ options.slug +'">View</a></li>' +
                                      '<li><a href="/workflow/run?id='+ options.id +'">Run</a></li>' +
                                      '<li><a href="/workflow/copy?id='+ options.id +'">Copy</a></li>' +
                                      '<li><a class="link-confirm-shared-'+ options.id +'" href="/workflow/sharing?unshare_me=True&id='+ options.id +'">Remove</a></li>' +

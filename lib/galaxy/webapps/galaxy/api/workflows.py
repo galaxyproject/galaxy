@@ -77,6 +77,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['owner'] = wf_sa.stored_workflow.user.username
             item['latest_workflow_steps'] = len( wf_sa.stored_workflow.latest_workflow.steps )
             item['user_email'] = wf_sa.stored_workflow.user.email
+            item['user_name'] = wf_sa.stored_workflow.user.username
+            item['slug'] = wf_sa.stored_workflow.slug
             rval.append(item)
         return rval
 
