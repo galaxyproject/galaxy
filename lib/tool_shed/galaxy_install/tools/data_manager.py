@@ -20,6 +20,7 @@ class DataManagerHandler( object ):
         if tree:
             root = tree.getroot()
             return root.get( 'tool_path', None )
+        return None
 
     def data_manager_config_elems_to_xml_file( self, config_elems, config_filename ):
         """
