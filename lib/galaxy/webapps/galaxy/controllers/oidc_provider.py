@@ -380,6 +380,10 @@ class OIDCProvider(BaseUIController):
         return resp(environ, start_response)
 
     # noinspection PyUnusedLocal
+    def endsession(self, environ, start_response):
+        return self.provider.endsession_endpoint
+
+    # noinspection PyUnusedLocal
     def token(self, trans, **kwargs):
         # TODO: double check this endpoint
         return self.provider.token_endpoint()
@@ -446,11 +450,6 @@ class OIDCProvider(BaseUIController):
     def userinfo(self, trans):
         # TODO: double check this endpoint
         return self.provider.userinfo_endpoint
-
-    # TODO: Do we need this endpoint?
-    # noinspection PyUnusedLocal
-    # def endsession(self, environ, start_response):
-    #    return self.provider.endsession_endpoint
 
     # TODO: this function is not used - To be deleted!
     def oidc(self, trans, **kwd):
