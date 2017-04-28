@@ -164,7 +164,7 @@ class BaseUIController( BaseController ):
         except exceptions.MessageException:
             raise       # handled in the caller
         except:
-            log.exception( "Exception in get_object check for %s %s:" % ( class_name, str( id ) ) )
+            log.exception( "Exception in get_object check for %s %s:", class_name, str( id ) )
             raise Exception( 'Server error retrieving %s id ( %s ).' % ( class_name, str( id ) ) )
 
 
@@ -180,7 +180,7 @@ class BaseAPIController( BaseController ):
         except exceptions.MessageException as e:
             raise HTTPBadRequest( detail=e.err_msg )
         except Exception as e:
-            log.exception( "Exception in get_object check for %s %s." % ( class_name, str( id ) ) )
+            log.exception( "Exception in get_object check for %s %s.", class_name, str( id ) )
             raise HTTPInternalServerError( comment=str( e ) )
 
     def validate_in_users_and_groups( self, trans, payload ):

@@ -36,7 +36,7 @@ def test_select_wrapper_simple_options(tool):
         <option value="z">I am Z</option>
     </param>''')
     parameter = SelectToolParameter( tool, xml )
-    wrapper = SelectToolParameterWrapper( parameter, "x", tool.app )
+    wrapper = SelectToolParameterWrapper( parameter, "x" )
     assert str(wrapper) == "x"
     assert wrapper.name == "blah"
     assert wrapper.value_label == "I am X"
@@ -45,14 +45,14 @@ def test_select_wrapper_simple_options(tool):
 @with_mock_tool
 def test_select_wrapper_with_drilldown(tool):
     parameter = _drilldown_parameter(tool)
-    wrapper = SelectToolParameterWrapper( parameter, ["option3"], tool.app )
+    wrapper = SelectToolParameterWrapper( parameter, ["option3"] )
     assert str(wrapper) == "option3", str(wrapper)
 
 
 @with_mock_tool
 def test_select_wrapper_option_file(tool):
     parameter = _setup_blast_tool(tool)
-    wrapper = SelectToolParameterWrapper( parameter, "val2", tool.app )
+    wrapper = SelectToolParameterWrapper( parameter, "val2" )
     assert str(wrapper) == "val2"
     assert wrapper.fields.name == "name2"
     assert wrapper.fields.path == "path2"
@@ -61,7 +61,7 @@ def test_select_wrapper_option_file(tool):
 @with_mock_tool
 def test_select_wrapper_multiple(tool):
     parameter = _setup_blast_tool(tool, multiple=True)
-    wrapper = SelectToolParameterWrapper( parameter, ["val1", "val2"], tool.app )
+    wrapper = SelectToolParameterWrapper( parameter, ["val1", "val2"] )
     assert str(wrapper) == "val1,val2"
     assert wrapper.fields.name == "name1,name2"
 
@@ -69,7 +69,7 @@ def test_select_wrapper_multiple(tool):
 @with_mock_tool
 def test_select_wrapper_with_path_rewritting(tool):
     parameter = _setup_blast_tool(tool, multiple=True)
-    wrapper = SelectToolParameterWrapper( parameter, ["val1", "val2"], tool.app, other_values={}, path_rewriter=lambda v: "Rewrite<%s>" % v )
+    wrapper = SelectToolParameterWrapper( parameter, ["val1", "val2"], other_values={}, path_rewriter=lambda v: "Rewrite<%s>" % v )
     assert wrapper.fields.path == "Rewrite<path1>,Rewrite<path2>"
 
 

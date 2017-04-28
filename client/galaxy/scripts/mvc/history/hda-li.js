@@ -45,8 +45,10 @@ HDAListItemView.prototype.templates = (function(){
             '</div>',
             '</br>',
             '<span class="nametags">',
-                '<% _.each(dataset.nametags, function(tag){ %>',
-                    '<span class="label label-info"><%- tag %></span>',
+                '<% _.each(dataset.tags, function(tag){ %>',
+                    '<% if (tag.indexOf("name:") == 0){ %>',
+                        '<span class="label label-info"><%- tag.slice(5) %></span>',
+                    '<% } %>',
                 '<% }); %>',
             '</span>',
         '</div>'

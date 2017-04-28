@@ -1,8 +1,8 @@
 """
 API operations on User objects.
 """
-
 import logging
+import json
 import random
 import re
 import socket
@@ -12,7 +12,7 @@ from markupsafe import escape
 from sqlalchemy import false, true, and_, or_
 
 from galaxy import exceptions, util, web
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import MessageException, ObjectInvalid
 from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_password
@@ -244,7 +244,13 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     @expose_api
     def get_information(self, trans, id, **kwd):
-        """Return user details such as username, email, addresses etc."""
+        """
+        GET /api/users/{id}/information
+        Return user details such as username, email, addresses etc.
+
+        :param id: the encoded id of the user
+        :type  id: str
+        """
         user = self._get_user(trans, id)
         email = user.email
         username = user.username
@@ -315,7 +321,16 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     @expose_api
     def set_information(self, trans, id, payload={}, **kwd):
-        """Save a user's email, username, addresses etc."""
+        """
+        POST /api/users/{id}/information
+        Save a user's email, username, addresses etc.
+
+        :param id: the encoded id of the user
+        :type  id: str
+
+        :param payload: data with new settings
+        :type  payload: dict
+        """
         user = self._get_user(trans, id)
         email = payload.get('email')
         username = payload.get('username')
@@ -675,6 +690,139 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         trans.sa_session.add(user)
         trans.sa_session.flush()
         return {'message': message}
+
+    @expose_api
+    def get_custom_builds(self, trans, id, payload={}, **kwd):
+        """
+        GET /api/users/{id}/custom_builds
+        Returns collection of custom builds.
+
+        :param id: the encoded id of the user
+        :type  id: str
+        """
+        user = self._get_user(trans, id)
+        dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
+        update = False
+        for key in dbkeys:
+            dbkey = dbkeys[ key ]
+            if 'count' not in dbkey and 'linecount' in dbkey:
+                chrom_count_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey[ 'linecount' ] )
+                if chrom_count_dataset.state == trans.app.model.Job.states.OK:
+                    chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                    dbkey[ 'count' ] = chrom_count
+                    update = True
+        if update:
+            user.preferences['dbkeys'] = json.dumps(dbkeys)
+        dbkey_collection = []
+        for key, attributes in dbkeys.items():
+            attributes['id'] = key
+            dbkey_collection.append(attributes)
+        return dbkey_collection
+
+    @expose_api
+    def add_custom_builds(self, trans, id, key, payload={}, **kwd):
+        """
+        PUT /api/users/{id}/custom_builds/{key}
+        Add new custom build.
+
+        :param id: the encoded id of the user
+        :type  id: str
+
+        :param id: custom build key
+        :type  id: str
+
+        :param payload: data with new build details
+        :type  payload: dict
+        """
+        user = self._get_user(trans, id)
+        dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
+        name = payload.get('name')
+        len_type = payload.get('len|type')
+        len_value = payload.get('len|value')
+        if len_type not in [ 'file', 'fasta', 'text' ] or not len_value:
+            raise MessageException('Please specify a valid data source type.')
+        if not name or not key:
+            raise MessageException('You must specify values for all the fields.')
+        elif key in dbkeys:
+            raise MessageException('There is already a custom build with that key. Delete it first if you want to replace it.')
+        else:
+            # Have everything needed; create new build.
+            build_dict = { 'name': name }
+            if len_type in [ 'text', 'file' ]:
+                # Create new len file
+                new_len = trans.app.model.HistoryDatasetAssociation( extension='len', create_dataset=True, sa_session=trans.sa_session )
+                trans.sa_session.add( new_len )
+                new_len.name = name
+                new_len.visible = False
+                new_len.state = trans.app.model.Job.states.OK
+                new_len.info = 'custom build .len file'
+                try:
+                    trans.app.object_store.create( new_len.dataset )
+                except ObjectInvalid:
+                    raise MessageException( 'Unable to create output dataset: object store is full.' )
+                trans.sa_session.flush()
+                counter = 0
+                lines_skipped = 0
+                f = open(new_len.file_name, 'w')
+                # LEN files have format:
+                #   <chrom_name><tab><chrom_length>
+                for line in len_value.split('\n'):
+                    # Splits at the last whitespace in the line
+                    lst = line.strip().rsplit(None, 1)
+                    if not lst or len(lst) < 2:
+                        lines_skipped += 1
+                        continue
+                    chrom, length = lst[0], lst[1]
+                    try:
+                        length = int(length)
+                    except ValueError:
+                        lines_skipped += 1
+                        continue
+                    if chrom != escape(chrom):
+                        build_dict[ 'message' ] = 'Invalid chromosome(s) with HTML detected and skipped.'
+                        lines_skipped += 1
+                        continue
+                    counter += 1
+                    f.write( '%s\t%s\n' % (chrom, length) )
+                f.close()
+                build_dict[ 'len' ] = new_len.id
+                build_dict[ 'count' ] = counter
+            else:
+                build_dict[ 'fasta' ] = trans.security.decode_id( len_value )
+                dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( build_dict[ 'fasta' ] )
+                try:
+                    new_len = dataset.get_converted_dataset( trans, 'len' )
+                    new_linecount = new_len.get_converted_dataset( trans, 'linecount' )
+                    build_dict[ 'len' ] = new_len.id
+                    build_dict[ 'linecount' ] = new_linecount.id
+                except:
+                    raise MessageException( 'Failed to convert dataset.' )
+            dbkeys[key] = build_dict
+            user.preferences['dbkeys'] = json.dumps(dbkeys)
+            trans.sa_session.flush()
+            return build_dict
+
+    @expose_api
+    def delete_custom_builds(self, trans, id, key, payload={}, **kwd):
+        """
+        DELETE /api/users/{id}/custom_builds/{key}
+        Delete a custom build.
+
+        :param id: the encoded id of the user
+        :type  id: str
+
+        :param id: custom build key to be deleted
+        :type  id: str
+        """
+        user = self._get_user(trans, id)
+        dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
+        if key and key in dbkeys:
+            del dbkeys[key]
+            user.preferences['dbkeys'] = json.dumps(dbkeys)
+            trans.sa_session.flush()
+            return { 'message': 'Deleted %s.' % key }
+        else:
+            raise MessageException('Could not find and delete build (%s).' % key)
 
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)

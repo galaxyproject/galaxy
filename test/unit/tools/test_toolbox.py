@@ -13,6 +13,7 @@ from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
 from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
 from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
+from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 
 from .test_toolbox_filters import mock_trans
 
@@ -62,6 +63,7 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
         self.app.reindex_tool_search = self.__reindex
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
+        self.app.watchers = ConfigWatchers(self.app)
         self.__toolbox = None
         self.config_files = []
 

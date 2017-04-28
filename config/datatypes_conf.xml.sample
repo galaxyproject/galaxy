@@ -238,6 +238,8 @@
     <datatype extension="peptideshaker_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="percin" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
     <datatype extension="percout" type="galaxy.datatypes.xml:GenericXml" subclass="true" />
+    <datatype extension="hardklor" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="kronik" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
     <!-- End Proteomics Datatypes -->
     <datatype extension="netcdf" type="galaxy.datatypes.binary:NetCDF" mimetype="application/octet-stream" display_in_upload="true" description="Format used by netCDF software library for writing and reading chromatography-MS data files." />
     <datatype extension="eps" type="galaxy.datatypes.images:Eps" mimetype="image/eps"/>

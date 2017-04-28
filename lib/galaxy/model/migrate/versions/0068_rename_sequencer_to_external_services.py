@@ -73,7 +73,7 @@ def upgrade(migrate_engine):
         cmd = "ALTER TABLE sequencer RENAME TO external_service"
         migrate_engine.execute( cmd )
     except Exception:
-        log.exception("Exception executing SQL command: %s" % cmd)
+        log.exception("Exception executing SQL command: %s", cmd)
     # if running postgres then rename the primary key sequence too
     if migrate_engine.name in ['postgres', 'postgresql']:
         cmd = "ALTER TABLE sequencer_id_seq RENAME TO external_service_id_seq"

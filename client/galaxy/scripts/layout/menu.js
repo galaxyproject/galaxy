@@ -225,7 +225,7 @@ var Collection = Backbone.Collection.extend({
         if ( !Galaxy.user.id ){
             var userTab = {
                 id              : 'user',
-                title           : _l('User'),
+                title           : _l('Login or Register'),
                 cls             : 'loggedout-only',
                 tooltip         : 'Account registration or login',
                 menu            : [{
@@ -263,8 +263,15 @@ var Collection = Backbone.Collection.extend({
                         }
                     },{
                         title   : _l('Custom Builds'),
-                        url     : 'user/dbkeys',
-                        target  : 'galaxy_main'
+                        url     : 'custom_builds',
+                        target  : 'galaxy_main',
+                        onclick : function() {
+                            if ( Galaxy.router ) {
+                                Galaxy.router.push( 'custom_builds' );
+                            } else {
+                                window.location = Galaxy.root + 'custom_builds';
+                            }
+                        }
                     },{
                         title   : _l('Logout'),
                         url     : 'user/logout',

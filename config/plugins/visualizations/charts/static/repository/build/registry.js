@@ -44,7 +44,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() { return {nvd3_bar:__webpack_require__( 6 ), nvd3_bar_horizontal:__webpack_require__( 9 ), nvd3_bar_horizontal_stacked:__webpack_require__( 10 ), nvd3_bar_stacked:__webpack_require__( 11 ), nvd3_line:__webpack_require__( 12 ), nvd3_line_focus:__webpack_require__( 13 ), nvd3_scatter:__webpack_require__( 14 ), nvd3_stackedarea:__webpack_require__( 15 ), nvd3_stackedarea_full:__webpack_require__( 16 ), nvd3_stackedarea_stream:__webpack_require__( 17 ), nvd3_pie:__webpack_require__( 18 ), nvd3_histogram:__webpack_require__( 19 ), nvd3_histogram_discrete:__webpack_require__( 20 ), jqplot_bar:__webpack_require__( 21 ), jqplot_boxplot:__webpack_require__( 23 ), jqplot_histogram_discrete:__webpack_require__( 24 ), jqplot_line:__webpack_require__( 25 ), jqplot_scatter:__webpack_require__( 26 ), biojs_msa:__webpack_require__( 27 ), biojs_drawrnajs:__webpack_require__( 28 ), others_example:__webpack_require__( 29 ), others_heatmap:__webpack_require__( 30 ), others_heatmap_cluster:__webpack_require__( 31 ), cytoscape_viewer:__webpack_require__( 32 ), pv_viewer:__webpack_require__( 33 ), benfred_venn:__webpack_require__( 34 ), ngl_viewer:__webpack_require__( 35 ),} }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() { return {nvd3_bar:__webpack_require__( 6 ), nvd3_bar_horizontal:__webpack_require__( 9 ), nvd3_bar_horizontal_stacked:__webpack_require__( 10 ), nvd3_bar_stacked:__webpack_require__( 11 ), nvd3_line:__webpack_require__( 12 ), nvd3_line_focus:__webpack_require__( 13 ), nvd3_scatter:__webpack_require__( 14 ), nvd3_stackedarea:__webpack_require__( 15 ), nvd3_stackedarea_full:__webpack_require__( 16 ), nvd3_stackedarea_stream:__webpack_require__( 17 ), nvd3_pie:__webpack_require__( 18 ), nvd3_histogram:__webpack_require__( 19 ), nvd3_histogram_discrete:__webpack_require__( 20 ), jqplot_bar:__webpack_require__( 21 ), jqplot_boxplot:__webpack_require__( 23 ), jqplot_histogram_discrete:__webpack_require__( 24 ), jqplot_line:__webpack_require__( 25 ), jqplot_scatter:__webpack_require__( 26 ), biojs_msa:__webpack_require__( 27 ), biojs_drawrnajs:__webpack_require__( 28 ), biojs_phylocanvas:__webpack_require__( 29 ), others_example:__webpack_require__( 30 ), others_heatmap:__webpack_require__( 31 ), others_heatmap_cluster:__webpack_require__( 32 ), cytoscape_viewer:__webpack_require__( 33 ), pv_viewer:__webpack_require__( 34 ), benfred_venn:__webpack_require__( 35 ), ngl_viewer:__webpack_require__( 36 ),} }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ },
 /* 1 */,
@@ -721,6 +721,97 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() {
 	    return {
+	        title       : 'Phylogenetic Tree Visualization',
+	        library     : 'BioJS',
+	        datatypes   : [ 'nhx' ],
+	        keywords    : 'biojs phylogenetic tree',
+	        description : 'A performant, reusable, and extensible tree visualisation library for the web hosted at: http://biojs.io/d/phylocanvas',
+	        settings    : {
+	           tree_type : {
+	                label   : 'Tree types',
+	                help    : 'Select a tree type.',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : 'rectangular',
+	                data    : [ { label : 'Circular', value : 'circular' },
+	                            { label : 'Diagonal', value: 'diagonal' },
+	                            { label : 'Hierarchial', value : 'hierarchical' },
+	                            { label : 'Radial', value : 'radial' },
+	                            { label : 'Rectangular', value : 'rectangular' } ]
+	            },
+	            edge_color : {
+	                label : 'Select a color for the tree',
+	                type  : 'color',
+	                value : '#548DB8'
+	            },
+	            highlighted_color: {
+	                label : 'Select a color for the highlighted branch of tree',
+	                type  : 'color',
+	                value : '#548DB8'
+	            },
+	            selected_color: {
+	                label : 'Select a color for the selected branch of tree',
+	                type  : 'color',
+	                value : '#00b050'
+	            },
+	            collapse_branch : {
+	                label   : 'Collapse the selected branch',
+	                help    : 'Select true to collapse the selected branch.',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : 'false',
+	                data    : [ { label : 'True', value : 'true' },
+	                            { label : 'False', value : 'false' } ]
+	            },
+	            prune_branch : {
+	                label   : 'Prune the selected branch',
+	                help    : 'Select true to prune the selected branch.',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : 'false',
+	                data    : [ { label : 'True', value : 'true' },
+	                            { label : 'False', value : 'false' } ]
+	            },
+	            show_labels: {
+	                label   : 'Show/Hide labels',
+	                help    : 'Select false to hide labels.',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : 'true',
+	                data    : [ { label : 'True', value : 'true' },
+	                            { label : 'False', value : 'false' } ]
+	            },
+	            align_labels: {
+	                label   : 'Align labels',
+	                help    : 'Select to align the labels of tree. Supported with rectangular, circular, and hierarchical tree types.',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : 'true',
+	                data    : [ { label : 'True', value : 'true' },
+	                            { label : 'False', value : 'false' } ]
+	            },
+	            node_shape : {
+	                label   : 'Node shapes for leaves',
+	                help    : 'Select a node shape for leaves.',
+	                type    : 'select',
+	                display : 'radio',
+	                value   : 'circle',
+	                data    : [ { label : 'Circle', value : 'circle' },
+	                            { label : 'Square', value: 'square' },
+	                            { label : 'Star', value : 'star' },
+	                            { label : 'Triangle', value : 'triangle' } ]
+	            }
+	        }
+	    }
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 30 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() {
+	    return {
 	        title       : 'Example',
 	        library     : 'Custom',
 	        tag         : 'svg',
@@ -737,7 +828,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(8) ], __WEBPACK_AMD_DEFINE_RESULT__ = function( default_config ) {
@@ -803,10 +894,10 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(30) ], __WEBPACK_AMD_DEFINE_RESULT__ = function( default_config ) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(31) ], __WEBPACK_AMD_DEFINE_RESULT__ = function( default_config ) {
 	    return $.extend( true, {}, default_config, {
 	        title       : 'Clustered Heatmap',
 	        description : 'Applies hierarchical clustering to a matrix using R. The data has to be provided in 3-column format. The result is displayed as clustered heatmap.',
@@ -815,7 +906,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ },
-/* 32 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() {
@@ -908,7 +999,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() {
@@ -1016,7 +1107,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() {
@@ -1045,7 +1136,7 @@ define(function() { return /******/ (function(modules) { // webpackBootstrap
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() {

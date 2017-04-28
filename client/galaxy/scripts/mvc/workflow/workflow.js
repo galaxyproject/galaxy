@@ -137,8 +137,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                     '</a>' +
                 '</li>' +
             '</ul>';
-
-       },
+        },
 
         /** Template for workflow table */
         _templateWorkflowInfoTable: function( options ) {
@@ -197,7 +196,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                 '</table>';
         },
 
-       
         /** Main template */
         _templateHeader: function( options ) {
             return '<div class="page-container"><div class="user-workflows wf">' +

@@ -36,19 +36,19 @@ def upgrade(migrate_engine):
     try:
         migrate_engine.execute( cmd )
     except Exception:
-        log.exception("Exception executing SQL command: %s" % cmd)
+        log.exception("Exception executing SQL command: %s", cmd)
     # Update the status column for tool_shed_repositories that have been uninstalled.
     cmd = "UPDATE tool_shed_repository SET status = 'Uninstalled' WHERE uninstalled;"
     try:
         migrate_engine.execute( cmd )
     except Exception:
-        log.exception("Exception executing SQL command: %s" % cmd)
+        log.exception("Exception executing SQL command: %s", cmd)
     # Update the status column for tool_shed_repositories that have been deactivated.
     cmd = "UPDATE tool_shed_repository SET status = 'Deactivated' where deleted and not uninstalled;"
     try:
         migrate_engine.execute( cmd )
     except Exception:
-        log.exception("Exception executing SQL command: %s" % cmd)
+        log.exception("Exception executing SQL command: %s", cmd)
 
 
 def downgrade(migrate_engine):

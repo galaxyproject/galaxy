@@ -183,9 +183,9 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             * description: (optional, only if create_type is 'folder')
                 description of the folder to create
 
-        :rtype:     list
-        :returns:   a list of dictionaries containing the id, name,
-            and 'show' url of the new item
+        :returns:   a dictionary describing the new item unless ``from_hdca_id`` is supplied,
+                    in that case a list of such dictionaries is returned.
+        :rtype:     object
         """
         if 'create_type' not in payload:
             trans.response.status = 400
@@ -213,15 +213,11 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         # are we copying an HDA to the library folder?
         #   we'll need the id and any message to attach, then branch to that private function
         from_hda_id, from_hdca_id, ldda_message = ( payload.pop( 'from_hda_id', None ), payload.pop( 'from_hdca_id', None ), payload.pop( 'ldda_message', '' ) )
-        log.debug(payload)
         if create_type == 'file':
-            rval = []
             if from_hda_id:
-                rval.append(self._copy_hda_to_library_folder( trans, self.hda_manager, self.decode_id(from_hda_id), real_folder_id, ldda_message ))
+                return self._copy_hda_to_library_folder( trans, self.hda_manager, self.decode_id(from_hda_id), real_folder_id, ldda_message )
             if from_hdca_id:
-                rval.extend(self._copy_hdca_to_library_folder(trans, self.hda_manager, self.decode_id(from_hdca_id), real_folder_id, ldda_message))
-            if from_hda_id or from_hdca_id:
-                return rval
+                return self._copy_hdca_to_library_folder(trans, self.hda_manager, self.decode_id(from_hdca_id), real_folder_id, ldda_message)
 
         # check for extended metadata, store it and pop it out of the param
         # otherwise sanitize_param will have a fit
@@ -394,15 +390,15 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             trans.sa_session.flush()
             rval[ 'deleted' ] = True
 
-        except exceptions.httpexceptions.HTTPInternalServerError as http_server_err:
-            log.exception( 'Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
-                           id, str( kwd ), str( http_server_err ) )
+        except exceptions.httpexceptions.HTTPInternalServerError:
+            log.exception( 'Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s',
+                           id, str( kwd ) )
             raise
         except exceptions.httpexceptions.HTTPException:
             raise
         except Exception as exc:
-            log.exception( 'library_contents API, delete: uncaught exception: %s, %s\n%s',
-                           id, str( kwd ), str( exc ) )
+            log.exception( 'library_contents API, delete: uncaught exception: %s, %s',
+                           id, str( kwd ) )
             trans.response.status = 500
             rval.update({ 'error': str( exc ) })
         return rval

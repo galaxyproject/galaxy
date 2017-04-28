@@ -33,10 +33,6 @@ from .panel import (
 )
 from .parser import ensure_tool_conf_item, get_toolbox_parser
 from .tags import tool_tag_manager
-from .watcher import (
-    get_tool_conf_watcher,
-    get_tool_watcher
-)
 
 log = logging.getLogger( __name__ )
 
@@ -47,11 +43,10 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
     workflows optionally in labelled sections.
     """
 
-    def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
+    def __init__( self, config_filenames, tool_root_dir, app ):
         """
         Create a toolbox from the config files named by `config_filenames`, using
         `tool_root_dir` as the base directory for finding individual tool config files.
-        When reloading the toolbox, tool_conf_watcher will be provided.
         """
         # The _dynamic_tool_confs list contains dictionaries storing
         # information about the tools defined in each shed-related
@@ -75,17 +70,11 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         # (e.g., shed_tool_conf.xml) files include the tool_path attribute within the <toolbox> tag.
         self._tool_root_dir = tool_root_dir
         self.app = app
-        self._tool_watcher = get_tool_watcher( self, app.config )
-        if tool_conf_watcher:
-            self._tool_conf_watcher = tool_conf_watcher  # Avoids (re-)starting threads in uwsgi
+        if hasattr(self.app, 'watchers'):
+            self._tool_watcher = self.app.watchers.tool_watcher
         else:
-            if hasattr(self.app, 'tool_cache'):
-                # Normal galaxy instances should have a tool_cache,
-                # but the toolshed does not.
-                tool_cache = self.app.tool_cache
-            else:
-                tool_cache = None
-            self._tool_conf_watcher = get_tool_conf_watcher(reload_callback=lambda: self.handle_reload_toolbox(), tool_cache=tool_cache)
+            # Toolbox is loaded but not used during toolshed tests
+            self._tool_watcher = None
         self._filter_factory = FilterFactory( self )
         self._tool_tag_manager = tool_tag_manager( app )
         self._init_tools_from_configs( config_filenames )
@@ -93,13 +82,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # Load self._tool_panel based on the order in self._integrated_tool_panel.
             self._load_tool_panel()
         self._save_integrated_tool_panel()
-
-    def handle_reload_toolbox(self):
-        """Extension-point for Galaxy-app specific reload logic.
-
-        This abstract representation of the toolbox shouldn't have details about
-        interacting with the rest of the Galaxy app or message queues, etc....
-        """
 
     def handle_panel_update(self, section_dict):
         """Extension-point for Galaxy-app specific reload logic.
@@ -188,10 +170,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                                         tool_path=tool_path,
                                         config_elems=config_elems )
             self._dynamic_tool_confs.append( shed_tool_conf_dict )
-            # This explicitly monitors shed_tool_confs, otherwise need to add <toolbox monitor="true">>
-            self._tool_conf_watcher.watch_file(config_filename)
-        if tool_conf_source.parse_monitor():
-            self._tool_conf_watcher.watch_file(config_filename)
 
     def load_item( self, item, tool_path, panel_dict=None, integrated_panel_dict=None, load_panel_dict=True, guid=None, index=None, internal=False ):
         with self.app._toolbox_lock:
@@ -537,10 +515,14 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             path_template = item.get( "file" )
             template_kwds = self._path_template_kwds()
             path = string.Template(path_template).safe_substitute(**template_kwds)
+            concrete_path = os.path.join(tool_path, path)
+            if not os.path.exists(concrete_path):
+                # This is a lot faster than attempting to load a non-existing tool
+                raise IOError
             tool_shed_repository = None
             can_load_into_panel_dict = True
 
-            tool = self.load_tool_from_cache(os.path.join(tool_path, path))
+            tool = self.load_tool_from_cache(concrete_path)
             from_cache = tool
             if from_cache:
                 if guid and tool.id != guid:
@@ -555,9 +537,9 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
                     repository_id = self.app.security.encode_id(tool_shed_repository.id)
-                    tool = self.load_tool(os.path.join( tool_path, path ), guid=guid, repository_id=repository_id, use_cached=False)
+                    tool = self.load_tool(concrete_path, guid=guid, repository_id=repository_id, use_cached=False)
             if not tool:  # tool was not in cache and is not a tool shed tool.
-                tool = self.load_tool(os.path.join(tool_path, path), use_cached=False)
+                tool = self.load_tool(concrete_path, use_cached=False)
             if string_as_bool(item.get( 'hidden', False )):
                 tool.hidden = True
             key = 'tool_%s' % str(tool.id)
@@ -585,7 +567,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         except IOError:
             log.error( "Error reading tool configuration file from path: %s" % path )
         except Exception:
-            log.exception( "Error reading tool from path: %s" % path )
+            log.exception( "Error reading tool from path: %s", path )
 
     def get_tool_repository_from_xml_item(self, item, path):
         tool_shed = item.elem.find("tool_shed").text
@@ -648,7 +630,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # Always load workflows into the integrated_panel_dict.
             integrated_panel_dict.update_or_append( index, key, workflow )
         except:
-            log.exception( "Error loading workflow: %s" % workflow_id )
+            log.exception( "Error loading workflow: %s", workflow_id )
 
     def _load_label_tag_set( self, item, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         label = ToolSectionLabel( item )
@@ -715,7 +697,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     self._save_integrated_tool_panel()
                 return tool.id
             except Exception:
-                log.exception("Failed to load potential tool %s." % tool_file)
+                log.exception("Failed to load potential tool %s.", tool_file)
                 return None
 
         tool_loaded = False
@@ -729,7 +711,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             elif self._looks_like_a_tool(child_path):
                 quick_load( child_path, async=False )
                 tool_loaded = True
-        if tool_loaded or force_watch:
+        if (tool_loaded or force_watch) and self._tool_watcher:
             self._tool_watcher.watch_directory( directory, quick_load )
 
     def load_tool( self, config_file, guid=None, repository_id=None, use_cached=False, **kwds ):
@@ -742,7 +724,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             tool = self.create_tool( config_file=config_file, repository_id=repository_id, guid=guid, **kwds )
             if tool.tool_shed_repository or not guid:
                 self.add_tool_to_cache(tool, config_file)
-        if not tool.id.startswith("__"):
+        if not tool.id.startswith("__") and self._tool_watcher:
             # do not monitor special tools written to tmp directory - no reason
             # to monitor such a large directory.
             self._tool_watcher.watch_file( config_file, tool.id )
@@ -941,21 +923,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
 
         return rval
 
-    def shutdown(self):
-        exception = None
-        try:
-            self._tool_watcher.shutdown()
-        except Exception as e:
-            exception = e
-
-        try:
-            self._tool_conf_watcher.shutdown()
-        except Exception as e:
-            exception = exception or e
-
-        if exception:
-            raise exception
-
     def _lineage_in_panel( self, panel_dict, tool=None, tool_lineage=None ):
         """ If tool with same lineage already in panel (or section) - find
         and return it. Otherwise return None.
@@ -1066,8 +1033,8 @@ class BaseGalaxyToolBox(AbstractToolBox):
     shouldn't really depend on.
     """
 
-    def __init__(self, config_filenames, tool_root_dir, app, tool_conf_watcher=None):
-        super(BaseGalaxyToolBox, self).__init__(config_filenames, tool_root_dir, app, tool_conf_watcher=tool_conf_watcher)
+    def __init__(self, config_filenames, tool_root_dir, app):
+        super(BaseGalaxyToolBox, self).__init__(config_filenames, tool_root_dir, app)
         self._init_dependency_manager()
 
     @property

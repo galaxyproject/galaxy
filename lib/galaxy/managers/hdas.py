@@ -261,7 +261,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'state',
             'extension',
             'deleted', 'purged', 'visible',
-            'nametags',
+            'tags',
             'type',
             'url',
             'create_time',
@@ -286,7 +286,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'creating_job',
             'rerunnable',
 
-            'tags',
             'uuid',
             'permissions',
             'file_name',
@@ -332,7 +331,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'misc_blurb'    : self._remap_from( 'blurb' ),
             'file_ext'      : self._remap_from( 'extension' ),
             'file_path'     : self._remap_from( 'file_name' ),
-            'nametags'      : self.serialize_nametags,
             'resubmitted'   : lambda i, k, **c: self.hda_manager.has_been_resubmitted( i ),
             'display_apps'  : self.serialize_display_apps,
             'display_types' : self.serialize_old_display_applications,
@@ -385,17 +383,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 display_apps.append( dict( label=display_app.name, links=app_links ) )
 
         return display_apps
-
-    def serialize_nametags( self, hda, key, trans=None, **context ):
-        """
-        Return list of 'name' child tags attached to this dataset.
-        TODO: investigate faster ways to fetch 'name' tags and values
-        """
-        nametags = []
-        for tag in hda.tags:
-            if tag.tag.name == 'name':
-                nametags.append(tag.value)
-        return nametags
 
     def serialize_old_display_applications( self, hda, key, trans=None, **context ):
         """

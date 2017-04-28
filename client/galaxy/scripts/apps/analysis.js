@@ -9,6 +9,7 @@ var jQuery = require( 'jquery' ),
     PAGE = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
     UserPreferences = require( 'mvc/user/user-preferences' );
+    CustomBuilds = require( 'mvc/user/user-custom-builds' );
     Tours = require( 'mvc/tours' );
     Workflows = require( 'mvc/workflow/workflow' );
 
@@ -95,18 +96,31 @@ window.app = function app( options, bootstrapped ){
             var queryObj = QUERY_STRING.parse( args.pop() );
             args.push( queryObj );
             if( callback ){
-                callback.apply( this, args );
+                if ( this.authenticate( args, name ) ) {
+                    callback.apply( this, args );
+                } else {
+                    this.push( Galaxy.root );
+                }
             }
         },
 
         routes : {
             '(/)' : 'home',
-            // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
             '(/)tours(/)(:tour_id)' : 'show_tours',
             '(/)user(/)' : 'show_user',
             '(/)user(/)(:form_id)' : 'show_user_form',
             '(/)workflow(/)' : 'show_workflows',
+            '(/)custom_builds' : 'show_custom_builds'
+        },
+
+        require_login: [
+            'show_user',
+            'show_user_form'
+        ],
+
+        authenticate: function( args, name ) {
+            return ( Galaxy.user && Galaxy.user.id ) || this.require_login.indexOf( name ) == -1;
         },
 
         show_tours : function( tour_id ){
@@ -127,6 +141,15 @@ window.app = function app( options, bootstrapped ){
 
         show_workflows : function(){
             centerPanel.display( new Workflows.View() );
+        },
+
+        show_custom_builds : function() {
+            var self = this;
+            if ( !Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model || !Galaxy.currHistoryPanel.model.id ) {
+                window.setTimeout(function() { self.show_custom_builds() }, 500)
+                return;
+            }
+            centerPanel.display( new CustomBuilds.View() );
         },
 
         /**  */

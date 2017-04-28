@@ -899,7 +899,7 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
         if not isinstance(value, text_type):
             value = text_type(value, encoding, error)
     except Exception:
-        log.exception("value %s could not be coerced to unicode" % value)
+        log.exception("value %s could not be coerced to unicode", value)
         return default
     return value
 
@@ -1139,7 +1139,7 @@ def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
     try:
         st = os.stat( path )
     except OSError as e:
-        log.exception( 'Unable to set permissions or group on %s' % path )
+        log.exception( 'Unable to set permissions or group on %s', path )
         return
     # fix modes
     if stat.S_IMODE( st.st_mode ) != perms:

@@ -235,6 +235,7 @@ class HDCASerializer(
             'visible',
             'type', 'url',
             'create_time', 'update_time',
+            'tags',  # TODO: detail view only (maybe)
         ])
         self.add_view( 'detailed', [
             'elements'
