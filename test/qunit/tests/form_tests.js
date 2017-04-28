@@ -29,7 +29,7 @@ define([ 'test-app', 'mvc/form/form-input', 'mvc/ui/ui-misc', 'mvc/form/form-dat
         ok( dropdown.children().length == 2, 'Found two menu items' );
         dropdown.find( '.fa-info-circle' ).parent().click();
         this.clock.tick ( window.WAIT_FADE );
-        ok( form.$( '.ui-message' ).html() === '<span>This tool requires req_name_a (Version req_version_a) and req_name_b (Version req_version_b). Click <a target="_blank" href="https://wiki.galaxyproject.org/Tools/Requirements">here</a> for more information.</span>', 'Check requirements message' );
+        ok( form.$( '.ui-message' ).html() === '<span>This tool requires req_name_a (Version req_version_a) and req_name_b (Version req_version_b). Click <a target="_blank" href="https://galaxyproject.org/tools/requirements/">here</a> for more information.</span>', 'Check requirements message' );
         ok( form.$( '.form-repeat-delete' ).css( 'display' ) == 'none', 'Delete button disabled' );
         var $add = form.$( '.form-repeat-add' );
         ok( !$add.attr( 'disabled' ), 'Adding new repeat possible' );
