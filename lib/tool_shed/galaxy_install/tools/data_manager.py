@@ -14,16 +14,28 @@ class DataManagerHandler( object ):
     def __init__( self, app ):
         self.app = app
 
+    @property
+    def data_managers_path( self ):
+        tree, error_message = xml_util.parse_xml( self.app.config.shed_data_manager_config_file )
+        if tree:
+            root = tree.getroot()
+            return root.get( 'tool_path', None )
+        return None
+
     def data_manager_config_elems_to_xml_file( self, config_elems, config_filename ):
         """
         Persist the current in-memory list of config_elems to a file named by the value
         of config_filename.
         """
+        data_managers_path = self.data_managers_path
         lock = threading.Lock()
         lock.acquire( True )
         try:
             fh = open( config_filename, 'wb' )
-            fh.write( '<?xml version="1.0"?>\n<data_managers>\n' )
+            if data_managers_path is not None:
+                fh.write( '<?xml version="1.0"?>\n<data_managers tool_path="%s">\n    ' % data_managers_path )
+            else:
+                fh.write( '<?xml version="1.0"?>\n<data_managers>\n    ' )
             for elem in config_elems:
                 fh.write( xml_util.xml_to_string( elem ) )
             fh.write( '</data_managers>\n' )
@@ -158,4 +170,4 @@ class DataManagerHandler( object ):
                     self.app.data_managers.load_manager_from_elem( elem )
                 # Persist the altered shed_data_manager_config file.
                 if data_manager_config_has_changes:
-                    self.data_manager_config_elems_to_xml_file( config_elems, shed_data_manager_conf_filename  )
+                    self.data_manager_config_elems_to_xml_file( config_elems, shed_data_manager_conf_filename )
