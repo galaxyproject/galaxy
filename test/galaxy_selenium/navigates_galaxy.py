@@ -79,7 +79,7 @@ class NavigatesGalaxy(HasDriver):
             self.switch_to_main_panel()
             yield
         finally:
-            self.driver.switch_to.default_content
+            self.driver.switch_to.default_content()
 
     def api_get(self, endpoint, data={}, raw=False):
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
@@ -148,7 +148,14 @@ class NavigatesGalaxy(HasDriver):
         contents = self.api_get("histories/%s/contents" % current_history_id)
         history_item = [d for d in contents if d["hid"] == hid][0]
         history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
-        self.wait_for_selector_visible(history_item_selector)
+        try:
+            self.wait_for_selector_visible(history_item_selector)
+        except self.TimeoutException as e:
+            dataset_elements = self.driver.find_elements_by_css_selector("#current-history-panel .list-items div")
+            div_ids = [d.get_attribute('id') for d in dataset_elements]
+            template = "Failed waiting on history item %d to become visible, visible datasets include [%s]."
+            message = template % (hid, ",".join(div_ids))
+            raise self.prepend_timeout_message(e, message)
         return history_item_selector
 
     def history_panel_wait_for_hid_hidden(self, hid, timeout=60):
