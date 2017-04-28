@@ -248,8 +248,8 @@ class DatasetEmptyValidator( Validator ):
                 raise ValueError( self.message )
 
 
-class DatasetFilesPathEmptyValidator( Validator ):
-    """Validator that checks if a dataset's files_path exists and is not empty."""
+class DatasetExtraFilesPathEmptyValidator( Validator ):
+    """Validator that checks if a dataset's extra_files_path exists and is not empty."""
     def __init__( self, message=None ):
         self.message = message
 
@@ -261,7 +261,7 @@ class DatasetFilesPathEmptyValidator( Validator ):
         if value:
             if value.get_total_size() == value.get_size():
                 if self.message is None:
-                    self.message = "The selected dataset's files_path directory is empty or does not exist, this tool expects non-empty files_path directories associated with the selected input."
+                    self.message = "The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input."
                 raise ValueError( self.message )
 
 
@@ -455,7 +455,7 @@ validator_types = dict( expression=ExpressionValidator,
                         no_options=NoOptionsValidator,
                         empty_field=EmptyTextfieldValidator,
                         empty_dataset=DatasetEmptyValidator,
-                        empty_files_path=DatasetFilesPathEmptyValidator,
+                        empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
                         dataset_metadata_in_file=MetadataInFileColumnValidator,
                         dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
                         dataset_ok_validator=DatasetOkValidator, )
