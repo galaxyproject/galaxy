@@ -104,7 +104,7 @@ Please visit <a href="https://galaxyproject.org/admin" target="_blank">the Galax
         <h4>Sample tracking</h4>
             <ul>
                 <li>
-                    Please see the <a href="https://galaxyproject.org/admin/data-libraries/library-sample-tracking" target="_blank">sample tracking tutorial</a>.
+                    Please see the <a href="https://galaxyproject.org/archive/library-sample-tracking" target="_blank">sample tracking tutorial</a>.
                 </li>
             </ul>
 %endif

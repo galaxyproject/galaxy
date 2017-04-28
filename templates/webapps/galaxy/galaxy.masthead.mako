@@ -16,7 +16,7 @@
             'biostar_url'               : app.config.biostar_url,
             'biostar_url_redirect'      : h.url_for( controller='biostar', action='biostar_redirect', qualified=True ),
             'support_url'               : app.config.get("support_url", "https://galaxyproject.org/support"),
-            'search_url'                : app.config.get("search_url", "http://galaxyproject.org/search/usegalaxy/"),
+            'search_url'                : app.config.get("search_url", "http://galaxyproject.org/search/"),
             'mailing_lists'             : app.config.get("mailing_lists", "https://galaxyproject.org/mailing-lists"),
             'screencasts_url'           : app.config.get("screencasts_url", "https://vimeo.com/galaxyproject"),
             'wiki_url'                  : app.config.get("wiki_url", "https://galaxyproject.org/"),

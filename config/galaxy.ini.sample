@@ -625,7 +625,7 @@ nglims_config_file = tool-data/nglims.yaml
 #citation_url = https://galaxyproject.org/citing-galaxy
 
 # The URL linked by the "Search" link in the "Help" menu.
-#search_url = http://galaxyproject.org/search/
+#search_url = https://galaxyproject.org/search/
 
 # The URL linked by the "Mailing Lists" link in the "Help" menu.
 #mailing_lists_url = https://galaxyproject.org/mailing-lists
@@ -895,7 +895,7 @@ use_interactive = True
 
 # These library upload options are described in much more detail in the Galaxy
 # Community Hub:
-# https://galaxyproject.org/admin/data-libraries/uploading-library-files
+# https://galaxyproject.org/admin/data-libraries/
 
 # Add an option to the library upload form which allows administrators to
 # upload a directory of files.
@@ -1024,7 +1024,7 @@ use_interactive = True
 # users (email addresses).  These users will have access to the Admin section
 # of the server, and will have access to create users, groups, roles,
 # libraries, and more.  For more information, see:
-#   https://galaxyproject.org/admin/interface
+#   https://galaxyproject.org/admin/
 #admin_users = None
 
 # Force everyone to log in (disable anonymous access).
