@@ -11,52 +11,45 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
 
         render: function() {
             var self = this,
-                workflows = [],
-                shared_workflows = [],
-                url = Galaxy.root + 'api/workflows/';
-
-            $.getJSON( url, function( response ) {
+                workflows = [];
+            $.getJSON( Galaxy.root + 'api/workflows/', function( response ) {
+                var $el_workflow = null;
                 self.$el.empty().append( self._templateHeader() );
                 self.build_messages( self );
-
+                $el_workflow = self.$el.find( '.user-workflows' );
                 // Add the actions buttons
-                self.$el.find( '.user-workflows' ).append( self._templateActionButtons() );
-
-                // Update the workflows collection with different attribute names
-                // to be shown in dropdown lists
-                var wf = self.build_workflows( response );
-                workflows = wf.workflows;
-                shared_workflows = wf.shared_workflows;
-
-                // Make workflows and shared workflows select list only where there is at least
-                // one workflow present in each category
-                self.build_selectlist( self, workflows, 'user-workflows', 'workflow', 'wf-user', 'You have no workflows.' );
-                self.build_selectlist( self, shared_workflows, 'shared-workflows', 'shared', 'wf-shared', 'No workflows have been shared with you.' );
+                $el_workflow.append( self._templateActionButtons() );
+                workflows = self.build_workflows( response );
+                if( workflows.length > 0) {
+                    $el_workflow.append( self._templateWorkflowTable( self, workflows) );
+                    self.adjust_actiondropdown( $el_workflow );
+                    // Register delete workflow events
+                    _.each( workflows, function( wf ) {
+                        self.confirm_delete( wf );
+                    });
+                }
+                else {
+                    $el_workflow.append( self._templateNoWorkflow() );
+                }
             });
         },
 
-        /** Build user workflows and shared workflows objects */
+        /** Build workflows object */
         build_workflows: function( response ) {
             var workflows = [],
-                shared_workflows = [],
                 username = Galaxy.user.attributes.username;
             _.each( response, function( wf ) {
                 var wf_obj = {};
                 wf_obj.id = wf.id;
                 wf_obj.text = wf.name;
                 wf_obj.workflow_steps = wf.latest_workflow_steps;
-                // Check whether workflow belongs to user or shared
-                if( wf.owner === username ) {
-                    workflows.push( wf_obj );
-                }
-                else {
-                    wf_obj.email = wf.user_email;
-                    wf_obj.slug = wf.slug;
-                    wf_obj.username = wf.user_name;
-                    shared_workflows.push( wf_obj );
-                }
+                wf_obj.published = ( wf.published ? "Yes" : "No" );
+                wf_obj.email = wf.user_email ? wf.user_email : "You";
+                wf_obj.slug = wf.slug ? wf.slug : "";
+                wf_obj.username = wf.user_name ? wf.user_name : "";
+                workflows.push( wf_obj );
             });
-            return { 'workflows': workflows, 'shared_workflows': shared_workflows };
+            return workflows;
         },
 
         /** Build messages after user action */
@@ -74,40 +67,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
             }
         },
 
-        /** Build workflow select lists */
-        build_selectlist: function( self, collection, class_name, type, class_hr, no_data_text ) {
-            // Add a select list if there is at least a workflow
-            if( collection.length > 0 ) {
-                // Workflows select box
-                self.selectWorkflows = new Select.View({
-                    css         : 'workflow-list',
-                    container   : self.$( '.' + class_name ),
-                    data        : collection,
-                    value       : collection[0].id, // Defaults to the first value
-                    onchange    : function( value ) { self.select_workflow( self, value, collection, class_name, type ) }
-                });
-                self.$el.append( self.selectWorkflows.$el );
-                // Make table to show default selected workflow
-                self.select_workflow( self, collection[0].id, collection, class_name, type );
-            }
-            else {
-                self.$el.find( '.' + class_hr ).remove();
-                self.$el.find( '.' + class_name ).append( '<div class="wf-nodata">' +  no_data_text + '</div>' );
-            }
-        },
-
-        /** Select a workflow */
-        select_workflow: function( self, value, collection, cssClass, type ) {
-            _.each( collection, function( item ) {
-                if( value.toString() === item.id.toString() ) {
-                    var $el = $( '.' + cssClass );
-                    $el.find( '.manage-table' ).remove();
-                    type === 'workflow' ? $el.append( self._templateWorkflowInfoTable( item ) ) : $el.append( self._templateSharedWorkflowInfoTable( item ) );
-                    self.confirm_delete( item );
-                }
-            });
-        },
-
         /** Add confirm box before removing/unsharing workflow */
         confirm_delete: function( workflow ) {
             $( '.link-confirm-' + workflow.id ).click( function() {
@@ -121,6 +80,22 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
         /** Get querystrings from url */
         getQueryStringValue: function( key ) {
             return decodeURIComponent( window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent( key ).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1") );
+        },
+
+        /** Ajust the position of dropdown with respect to table */
+        adjust_actiondropdown: function( $el ) {
+            $el.on( 'show.bs.dropdown', function () {
+                $el.css( "overflow", "inherit" );
+            });
+
+            $el.on( 'hide.bs.dropdown', function () {
+                $el.css( "overflow", "auto" );
+            });
+        },
+
+        /** Template for no workflow */
+        _templateNoWorkflow: function() {
+            return '<div class="wf-nodata"> You have no workflows. </div>';
         },
 
         /** Template for actions buttons */
@@ -140,73 +115,62 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
         },
 
         /** Template for workflow table */
-        _templateWorkflowInfoTable: function( options ) {
-            return '<table class="manage-table colored">' +
-                    '<tr class="header">' +
-                        '<th>Name</th>' +
-                        '<th># of Steps</th>' +
-                    '</tr>' +
-                    '<tr>' +
-                        '<td class="wf-td wf-dpd">' +
-                            '<div class="dropdown">' +
-                                '<button class="menubutton" type="button" data-toggle="dropdown">' +
-                                     _.escape( options.text ) + '<span class="caret"></span>' +
-                                 '</button>' +
-                                 '<ul class="dropdown-menu action-dpd">' +
-                                     '<li><a href="/workflow/editor?id='+ options.id +'">Edit</a></li>' +
-                                     '<li><a href="/root?workflow_id='+ options.id +'">Run</a></li>' +
-                                     '<li><a href="/workflow/sharing?id='+ options.id +'">Share or Download</a></li>' +
-                                     '<li><a href="/workflow/copy?id='+ options.id +'">Copy</a></li>' +
-                                     '<li><a href="/workflow/rename?id='+ options.id +'">Rename</a></li>' +
-                                     '<li><a href="/workflow/display_by_id?id='+ options.id +'">View</a></li>' +
-                                     '<li><a class="link-confirm-'+ options.id +'" href="/workflow/delete?id='+ options.id +'">Delete</a></li>' +
-                                 '</ul>' +
-                            '</div>' +
-                        '</td>' +
-                        '<td class="wf-td">' + options.workflow_steps + '</td>' +
-                    '</tr>' +
-                '</table>';
-        },
-
-        /** Template for shared workflow table */
-        _templateSharedWorkflowInfoTable: function( options ) {
-            return '<table class="manage-table colored">' +
+        _templateWorkflowTable: function( self, workflows ) {
+            var tableHtml = "", trHtml = "";
+            tableHtml = tableHtml + '<table class="table colored">' +
                     '<tr class="header">' +
                         '<th>Name</th>' +
                         '<th>Owner</th>' +
                         '<th># of Steps</th>' +
-                    '</tr>' +
-                    '<tr>' +
-                        '<td class="shared-wf-td wf-dpd">' +
-                            '<div class="dropdown">' +
-                                '<button class="menubutton" type="button" data-toggle="dropdown">' +
-                                     _.escape( options.text ) + '<span class="caret"></span>' +
-                                 '</button>' +
-                                 '<ul class="dropdown-menu action-dpd">' +
-                                     '<li><a href="/workflow/display_by_username_and_slug?username='+ options.username +'&slug='+ options.slug +'">View</a></li>' +
-                                     '<li><a href="/workflow/run?id='+ options.id +'">Run</a></li>' +
-                                     '<li><a href="/workflow/copy?id='+ options.id +'">Copy</a></li>' +
-                                     '<li><a class="link-confirm-shared-'+ options.id +'" href="/workflow/sharing?unshare_me=True&id='+ options.id +'">Remove</a></li>' +
-                                 '</ul>' +
-                            '</div>' +
-                        '</td>' +
-                        '<td class="shared-wf-td">' + _.escape(options.email) + '</td>' +
-                        '<td class="shared-wf-td">' + options.workflow_steps + '</td>' +
-                    '</tr>' +
-                '</table>';
+                        '<th>Published</th>' +
+                    '</tr>';
+            _.each( workflows, function( wf ) {
+                trHtml = trHtml + '<tr>' +
+                             '<td class="wf-td wf-dpd">' +
+                                 '<div class="dropdown">' +
+                                     '<button class="menubutton" type="button" data-toggle="dropdown">' +
+                                         _.escape( wf.text ) + '<span class="caret"></span>' +
+                                     '</button>' +
+                                     self._templateActions( wf ) +
+                                 '</div>' +
+                              '</td>' +
+                              '<td>' + _.escape( wf.email ) +'</td>' +
+                              '<td class="wf-td">' + wf.workflow_steps + '</td>' +
+                              '<td class="wf-td">' + wf.published + '</td>' +
+                         '</tr>';
+            });
+            return tableHtml + trHtml + '</table>';
         },
 
+        /** Template for user actions for workflows */
+        _templateActions: function( workflow ) {
+            if( workflow.username === "" ) {
+                return '<ul class="dropdown-menu action-dpd">' +
+                           '<li><a href="/workflow/editor?id='+ workflow.id +'">Edit</a></li>' +
+                           '<li><a href="/root?workflow_id='+ workflow.id +'">Run</a></li>' +
+                           '<li><a href="/workflow/sharing?id='+ workflow.id +'">Share or Download</a></li>' +
+                           '<li><a href="/workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
+                           '<li><a href="/workflow/rename?id='+ workflow.id +'">Rename</a></li>' +
+                           '<li><a href="/workflow/display_by_id?id='+ workflow.id +'">View</a></li>' +
+                           '<li><a class="link-confirm-'+ workflow.id +'" href="/workflow/delete?id='+ workflow.id +'">Delete</a></li>' +
+                      '</ul>';
+            }
+            else {
+                return '<ul class="dropdown-menu action-dpd">' +
+                         '<li><a href="/workflow/display_by_username_and_slug?username='+ workflow.username +'&slug='+ workflow.slug +'">View</a></li>' +
+                         '<li><a href="/workflow/run?id='+ workflow.id +'">Run</a></li>' +
+                         '<li><a href="/workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
+                         '<li><a class="link-confirm-shared-'+ workflow.id +'" href="/workflow/sharing?unshare_me=True&id='+ workflow.id +'">Remove</a></li>' +
+                      '</ul>';
+            }
+        },      
+
         /** Main template */
-        _templateHeader: function( options ) {
+        _templateHeader: function() {
             return '<div class="page-container"><div class="user-workflows wf">' +
                         '<div class="response-message"></div>' +
                         '<h2>Your workflows</h2>' +
                     '</div>'+
-                    '<hr class="wf-table-bottom wf-user">' +
-                    '<div class="shared-workflows wf">' +
-                        '<h2>Workflows shared with you by others</h2>' +
-                    '</div>' +
-                    '<hr class="wf-table-bottom wf-shared">' +
                     '<div class="other-options wf">' +
                         '<h2>Other options</h2>' +
                             '<a class="action-button fa fa-cog wf-action" href="/workflow/configure_menu">' +
