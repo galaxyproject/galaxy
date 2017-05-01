@@ -13,6 +13,7 @@ from base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_tool,
+    wait_on,
     WorkflowPopulator
 )
 from galaxy.exceptions import error_codes
@@ -258,6 +259,10 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
 
     def _history_jobs( self, history_id ):
         return self._get("jobs", { "history_id": history_id, "order_by": "create_time" } ).json()
+
+    def _assert_history_job_count( self, history_id, n ):
+        jobs = self._history_jobs( history_id )
+        self.assertEqual( len( jobs ), n )
 
 
 # Workflow API TODO:
@@ -1104,20 +1109,21 @@ steps:
 test_data:
   test_input: "hello world"
 """, history_id=history_id, wait=False)
-        time.sleep( 2 )
         history_id = run_summary.history_id
         workflow_id = run_summary.workflow_id
         invocation_id = run_summary.invocation_id
+        # Wait for first two jobs to be scheduled - upload and first cat.
+        wait_on( lambda: len( self._history_jobs( history_id ) ) >= 2 or None, "history jobs" )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         invocation = self._invocation_details( workflow_id, invocation_id )
-        assert invocation[ 'state' ] != 'scheduled'
+        assert invocation[ 'state' ] != 'scheduled', invocation
         # Expect two jobs - the upload and first cat. randomlines shouldn't run
         # it is implicitly dependent on second cat.
-        assert len(  self._history_jobs( history_id ) ) == 2
+        self._assert_history_job_count( history_id, 2 )
 
         self.__review_paused_steps( workflow_id, invocation_id, order_index=2, action=True )
         self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
-        assert len(  self._history_jobs( history_id ) ) == 4
+        self._assert_history_job_count( history_id, 4 )
 
     def test_run_with_validated_parameter_connection_valid( self ):
         history_id = self.dataset_populator.new_history()

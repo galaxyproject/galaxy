@@ -33,8 +33,7 @@ def get_message_for_no_shed_tool_config():
     message += 'tag that includes a tool_path attribute value which is a directory relative to the Galaxy installation directory in order to '
     message += 'automatically install tools from a tool shed into Galaxy (e.g., the file name shed_tool_conf.xml whose <toolbox> tag is '
     message += '<toolbox tool_path="../shed_tools">).  For details, see the "Installation of Galaxy tool shed repository tools into a local '
-    message += 'Galaxy instance" section of the Galaxy tool shed wiki at http://wiki.galaxyproject.org/InstallingRepositoriesToGalaxy#'
-    message += 'Installing_Galaxy_tool_shed_repository_tools_into_a_local_Galaxy_instance.'
+    message += 'Galaxy instance" section of the Galaxy tool shed wiki at https://galaxyproject.org/installing-repositories-to-galaxy/'
     return message
 
 
