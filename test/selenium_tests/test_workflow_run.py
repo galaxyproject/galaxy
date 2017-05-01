@@ -29,10 +29,8 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         with self.main_panel():
             self.workflow_run_submit()
 
-        time.sleep(.5)
-        self.wait_for_history()
-        self.home()
         self.history_panel_wait_for_hid_ok(2)
+        self.history_panel_wait_for_hid_ok(3)
         self.history_panel_click_item_title(hid=2, wait=True)
         self.assert_item_summary_includes(2, "2 sequences")
 
