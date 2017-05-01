@@ -11,22 +11,28 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
 
         render: function() {
             var self = this,
-                workflows = [];
+                workflows = [],
+                min_query_length = 3;
             $.getJSON( Galaxy.root + 'api/workflows/', function( response ) {
                 var $el_workflow = null;
+                // Add workflow header
                 self.$el.empty().append( self._templateHeader() );
+                // Add user actions message if any
                 self.build_messages( self );
                 $el_workflow = self.$el.find( '.user-workflows' );
                 // Add the actions buttons
                 $el_workflow.append( self._templateActionButtons() );
+                // Add attributes to workflow object
                 workflows = self.build_workflows( response );
                 if( workflows.length > 0) {
                     $el_workflow.append( self._templateWorkflowTable( self, workflows) );
                     self.adjust_actiondropdown( $el_workflow );
                     // Register delete workflow events
                     _.each( workflows, function( wf ) {
-                        self.confirm_delete( wf );
+                        self.confirm_delete( self, wf );
                     });
+                    // Register search workflow event
+                    self.search_workflow( self, self.$el.find( '.search-wf' ), self.$el.find( '.workflow-search tr' ), min_query_length );
                 }
                 else {
                     $el_workflow.append( self._templateNoWorkflow() );
@@ -54,9 +60,9 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
 
         /** Build messages after user action */
         build_messages: function( self ) {
-            var $el_message = $( '.response-message' ),
-                status = self.getQueryStringValue( 'status' ),
-                message = self.getQueryStringValue( 'message' );
+            var $el_message = self.$el.find( '.response-message' ),
+                status = self.get_querystring( 'status' ),
+                message = self.get_querystring( 'message' );
 
             if( message && message !== null && message !== "" ) {
                 $el_message.addClass( status + 'message' );
@@ -68,17 +74,42 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
         },
 
         /** Add confirm box before removing/unsharing workflow */
-        confirm_delete: function( workflow ) {
-            $( '.link-confirm-' + workflow.id ).click( function() {
+        confirm_delete: function( self, workflow ) {
+            var $el_wf_link = self.$el.find( '.link-confirm-' + workflow.id ),
+                $el_shared_wf_link = self.$el.find( '.link-confirm-shared-' + workflow.id );
+
+            $el_wf_link.click( function() {
                 return confirm( "Are you sure you want to delete workflow '" + workflow.text + "'?" );
             });
-            $( '.link-confirm-shared-' + workflow.id ).click( function() {
+            $el_shared_wf_link.click( function() {
                 return confirm( "Are you sure you want to remove the shared workflow '" + workflow.text + "'?" );
             });
         },
 
+        /** Implement client side workflow search/filtering */
+        search_workflow: function( self, $el_searchinput, $el_tabletr, min_querylen ) {
+            $el_searchinput.on( 'keyup', function () {
+                var query = $( this ).val();
+                // Filter when query is at least 3 characters
+                // otherwise show all rows
+                if( query.length >= min_querylen ) {
+                    // Ignore the query's case using 'i'
+                    var regular_expression = new RegExp( query, 'i' );
+                    $el_tabletr.hide();
+                    $el_tabletr.filter(function () {
+                        // Apply regular expression on each row's text
+                        // and show when there is a match
+                        return regular_expression.test( $( this ).text() );
+                    }).show();
+                }
+                else {
+                    $el_tabletr.show();
+                }
+            });
+        },
+
         /** Get querystrings from url */
-        getQueryStringValue: function( key ) {
+        get_querystring: function( key ) {
             return decodeURIComponent( window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent( key ).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1") );
         },
 
@@ -102,6 +133,9 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
         _templateActionButtons: function() {
            return '<ul class="manage-table-actions">' +
                 '<li>' +
+                    '<input class="search-wf form-control" type="text" autocomplete="off" placeholder="search for workflow...">' +
+                '</li>' +
+                '<li>' +
                     '<a class="action-button fa fa-plus wf-action" id="new-workflow" href="/workflow/create">' +
                         '<span>Create new workflow</span>' +
                     '</a>' +
@@ -117,13 +151,13 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
         /** Template for workflow table */
         _templateWorkflowTable: function( self, workflows ) {
             var tableHtml = "", trHtml = "";
-            tableHtml = tableHtml + '<table class="table colored">' +
+            tableHtml = tableHtml + '<table class="table colored"><thead>' +
                     '<tr class="header">' +
-                        '<th>Name</th>' +
-                        '<th>Owner</th>' +
-                        '<th># of Steps</th>' +
-                        '<th>Published</th>' +
-                    '</tr>';
+                        '<th class="wf-td">Name</th>' +
+                        '<th class="wf-td">Owner</th>' +
+                        '<th class="wf-td"># of Steps</th>' +
+                        '<th class="wf-td">Published</th>' +
+                    '</tr></thead>';
             _.each( workflows, function( wf ) {
                 trHtml = trHtml + '<tr>' +
                              '<td class="wf-td wf-dpd">' +
@@ -139,7 +173,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                               '<td class="wf-td">' + wf.published + '</td>' +
                          '</tr>';
             });
-            return tableHtml + trHtml + '</table>';
+            return tableHtml + '<tbody class="workflow-search">' + trHtml + '</tbody></table>';
         },
 
         /** Template for user actions for workflows */
@@ -167,16 +201,18 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
 
         /** Main template */
         _templateHeader: function() {
-            return '<div class="page-container"><div class="user-workflows wf">' +
-                        '<div class="response-message"></div>' +
-                        '<h2>Your workflows</h2>' +
-                    '</div>'+
-                    '<div class="other-options wf">' +
-                        '<h2>Other options</h2>' +
-                            '<a class="action-button fa fa-cog wf-action" href="/workflow/configure_menu">' +
-                                '<span>Configure your workflow menu</span>' +
-                            '</a>' +
-                    '</div></div>';
+            return '<div class="page-container">' +
+                       '<div class="user-workflows wf">' +
+                           '<div class="response-message"></div>' +
+                           '<h2>Your workflows</h2>' +
+                       '</div>'+
+                       '<div class="other-options wf">' +
+                           '<h2>Other options</h2>' +
+                           '<a class="action-button fa fa-cog wf-action" href="/workflow/configure_menu">' +
+                               '<span>Configure your workflow menu</span>' +
+                           '</a>' +
+                       '</div>' +
+                   '</div>';
         }
     });
 
