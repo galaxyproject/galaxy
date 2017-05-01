@@ -23,7 +23,6 @@ from six.moves import configparser
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
-from galaxy.queue_worker import send_local_control_task
 from galaxy.util import ExecutionTimer
 from galaxy.util import listify
 from galaxy.util import string_as_bool
@@ -934,10 +933,6 @@ class ConfiguresGalaxyMixin:
         if self.config.migrated_tools_config not in tool_configs:
             tool_configs.append( self.config.migrated_tools_config )
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-        # Since indexing the toolbox search index can take a while we
-        # send it as a local control task and do not block here.
-        register_postfork_function(send_local_control_task, self, 'rebuild_toolbox_search_index')
-
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
         app_info = containers.AppInfo(
@@ -954,6 +949,7 @@ class ConfiguresGalaxyMixin:
         self.container_finder = containers.ContainerFinder(app_info)
         index_help = getattr(self.config, "index_tool_help", True)
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch(self.toolbox, index_help)
+        self.reindex_tool_search()
 
     def reindex_tool_search( self ):
         # Call this when tools are added or removed.

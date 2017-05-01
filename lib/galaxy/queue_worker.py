@@ -91,6 +91,7 @@ def reload_toolbox(app, **kwargs):
         app.tool_cache.cleanup()
     _get_new_toolbox(app)
     app.toolbox._reload_count = reload_count + 1
+    send_local_control_task(app, 'rebuild_toolbox_search_index')
     log.debug("Toolbox reload %s", reload_timer)
 
 
@@ -102,6 +103,8 @@ def _get_new_toolbox(app):
     from galaxy import tools
     from galaxy.tools.special_tools import load_lib_tools
     from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
+    if hasattr(app, 'tool_shed_repository_cache'):
+                app.tool_shed_repository_cache.rebuild()
     app.tool_version_cache = ToolVersionCache(app)  # Load new tools into version cache
     tool_configs = app.config.tool_configs
     if app.config.migrated_tools_config not in tool_configs:
@@ -114,7 +117,6 @@ def _get_new_toolbox(app):
     load_lib_tools(new_toolbox)
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
     app.toolbox = new_toolbox
-    send_local_control_task(app, 'rebuild_toolbox_search_index')
 
 
 def reload_data_managers(app, **kwargs):
@@ -122,6 +124,8 @@ def reload_data_managers(app, **kwargs):
     from galaxy.tools.data_manager.manager import DataManagers
     from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
+    if hasattr(app, 'tool_shed_repository_cache'):
+        app.tool_shed_repository_cache.rebuild()
     app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
     reload_count = app.data_managers._reload_count
@@ -165,7 +169,8 @@ def reload_tool_data_tables(app, **kwargs):
 
 
 def rebuild_toolbox_search_index(app, **kwargs):
-    app.reindex_tool_search()
+    if app.toolbox_search.index_count < app.toolbox._reload_count:
+        app.reindex_tool_search()
 
 
 def admin_job_lock(app, **kwargs):

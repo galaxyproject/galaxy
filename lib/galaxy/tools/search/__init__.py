@@ -47,6 +47,11 @@ class ToolBoxSearch( object ):
         self.rex = analysis.RegexTokenizer()
         self.toolbox = toolbox
         self.storage, self.index = self._index_setup()
+        # We keep track of how many times the tool index has been rebuilt.
+        # We start at -1, so that after the first index the count is at 0,
+        # which is the same is the toolbox reload count. This way we can skip
+        # reindexing if the index count is equal to the toolbox reload count.
+        self.index_count = -1
 
     def _index_setup(self):
         RamStorage.temp_storage = _temp_storage
@@ -61,6 +66,7 @@ class ToolBoxSearch( object ):
         Use `tool_cache` to determine which tools need indexing and which tools should be expired.
         """
         log.debug('Starting to build toolbox index.')
+        self.index_count += 1
         execution_timer = ExecutionTimer()
         writer = self.index.writer()
         for tool_id in tool_cache._removed_tool_ids:
