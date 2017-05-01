@@ -69,6 +69,18 @@ window.app = function app( options, bootstrapped ){
     Galaxy.currHistoryPanel = historyPanel.historyView;
     Galaxy.currHistoryPanel.listenToGalaxy( Galaxy );
 
+    var routingMessage = Backbone.View.extend({
+        initialize: function(options) {
+            this.message = options.message || "Undefined Message";
+            this.msg_status = options.type || 'info';
+            this.render();
+		},
+        render: function(){
+            this.$el.html(_.escape(this.message)).addClass(this.msg_status + "message");
+        }
+    });
+
+
     // .................................................... routes
     /**  */
     Galaxy.router = new ( Backbone.Router.extend({
@@ -98,7 +110,7 @@ window.app = function app( options, bootstrapped ){
                 if ( this.authenticate( args, name ) ) {
                     callback.apply( this, args );
                 } else {
-                    this.push( Galaxy.root );
+                    this.loginRequired();
                 }
             }
         },
@@ -116,6 +128,10 @@ window.app = function app( options, bootstrapped ){
             'show_user',
             'show_user_form'
         ],
+
+        loginRequired: function() {
+            centerPanel.display( new routingMessage({type: 'error', message: "You must be logged in to make this request."}) );
+        },
 
         authenticate: function( args, name ) {
             return ( Galaxy.user && Galaxy.user.id ) || this.require_login.indexOf( name ) == -1;
