@@ -369,8 +369,9 @@ class Configuration( object ):
         self.message_box_visible = string_as_bool( kwargs.get( 'message_box_visible', False ) )
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
-        self.support_url = kwargs.get( 'support_url', 'https://wiki.galaxyproject.org/Support' )
-        self.wiki_url = kwargs.get( 'wiki_url', 'https://wiki.galaxyproject.org/' )
+        self.support_url = kwargs.get( 'support_url', 'https://galaxyproject.org/support' )
+        self.citation_url = kwargs.get( 'citation_url', 'https://galaxyproject.org/citing-galaxy' )
+        self.wiki_url = kwargs.get( 'wiki_url', 'https://galaxyproject.org/' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.library_import_dir = kwargs.get( 'library_import_dir', None )
@@ -569,6 +570,10 @@ class Configuration( object ):
         self.statsd_host = kwargs.get( 'statsd_host', '')
         self.statsd_port = int( kwargs.get( 'statsd_port', 8125 ) )
         self.statsd_prefix = kwargs.get( 'statsd_prefix', 'galaxy' )
+        # Statistics and profiling with graphite
+        self.graphite_host = kwargs.get( 'graphite_host', '')
+        self.graphite_port = int( kwargs.get( 'graphite_port', 2003 ) )
+        self.graphite_prefix = kwargs.get( 'graphite_prefix', 'galaxy' )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )

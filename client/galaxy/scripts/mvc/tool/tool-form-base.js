@@ -279,7 +279,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 _.each( options.requirements, function( req, i ) {
                     requirements_message += req.name + ( req.version ? ' (Version ' + req.version + ')' : '' ) + ( i < nreq - 2 ? ', ' : ( i == nreq - 2 ? ' and ' : '' ) );
                 });
-                var requirements_link = $( '<a/>' ).attr( 'target', '_blank' ).attr( 'href', 'https://wiki.galaxyproject.org/Tools/Requirements' ).text( 'here' );
+                var requirements_link = $( '<a/>' ).attr( 'target', '_blank' ).attr( 'href', 'https://galaxyproject.org/tools/requirements/' ).text( 'here' );
                 return $( '<span/>' ).append( requirements_message + '. Click ' ).append( requirements_link ).append( ' for more information.' );
             }
             return 'No requirements found.';
