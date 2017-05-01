@@ -5153,6 +5153,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="empty_dataset"/>
+      <xs:enumeration value="empty_extra_files_path"/>
       <xs:enumeration value="expression"/>
       <xs:enumeration value="regex"/>
       <xs:enumeration value="in_range"/>
