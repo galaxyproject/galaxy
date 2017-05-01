@@ -29,11 +29,15 @@ $(document).ready(function() {
 
                             if (datasets.length === obj.data.hids.length) {
                                 _.each(datasets, function (dataset) {
-                                    dataset.on('change:state', function (model) {
-                                        if (model.get('state') === 'ok') numUploadedDatasets++;
-                                        // Make sure that all test datasets have been successfully uploaded
-                                        if (numUploadedDatasets === datasets.length) me._generateTour(obj.data.tour);
-                                    });
+                                    if (dataset.get('state') === 'ok') {
+                                        numUploadedDatasets++;
+                                    } else {
+                                        dataset.on('change:state', function (model) {
+                                            if (model.get('state') === 'ok') numUploadedDatasets++;
+                                            // Make sure that all test datasets have been successfully uploaded
+                                            if (numUploadedDatasets === datasets.length) me._generateTour(obj.data.tour);
+                                        });
+                                    }
                                 });
                             } else {
                                 Toastr.warning('Cannot generate a tour.');

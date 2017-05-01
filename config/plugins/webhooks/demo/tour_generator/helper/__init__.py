@@ -13,6 +13,7 @@ class TourGenerator(object):
         self._tool = self._trans.app.toolbox.get_tool(tool_id)
 
         self._use_datasets = True
+        self._data_inputs = {}
         self._tour = {}
         self._hids = {}
         self._errors = []
@@ -31,15 +32,24 @@ class TourGenerator(object):
         self._test = self._tool.tests[0]
 
         # All inputs with the type 'data'
-        data_inputs = {k: v for k, v in self._tool.inputs.items() if
-                       v.type == 'data'}
+        self._data_inputs = {x.name: x for x in self._tool.input_params if
+                             x.type == 'data'}
 
         # Datasets from the <test></test> section
         test_datasets = {
             input_name: self._test.inputs[input_name][0]
-            for input_name in data_inputs.keys()
+            for input_name in self._data_inputs.keys()
             if input_name in self._test.inputs.keys()
         }
+
+        # Conditional datasets
+        for name, value in self._test.inputs.items():
+            if '|' in name:
+                input_name = name.split('|')[1]
+                if input_name in self._data_inputs.keys():
+                    test_datasets.update({
+                        input_name: self._test.inputs[name][0]
+                    })
 
         if not test_datasets.keys():
             not_supported_input_types = [
@@ -64,7 +74,7 @@ class TourGenerator(object):
                 self._tool.tool_dir, 'test-data')))
 
         # Upload all test datasets
-        for input_name, input in data_inputs.items():
+        for input_name, input in self._data_inputs.items():
             if input_name in test_datasets.keys():
                 for i, data_path in enumerate(test_data_paths):
                     input_path = os.path.join(data_path,
@@ -144,14 +154,14 @@ class TourGenerator(object):
                     param = self._test.inputs[name]
                     step['content'] = 'Enter value(s): <b>%s</b>' % param
                 else:
-                    step['content'] = 'Enter a value.'
+                    step['content'] = 'Enter a value'
 
             elif input.type == 'integer' or input.type == 'float':
                 if name in test_inputs:
                     num_param = self._test.inputs[name][0]
                     step['content'] = 'Enter number: <b>%s</b>' % num_param
                 else:
-                    step['content'] = 'Enter a number.'
+                    step['content'] = 'Enter a number'
 
             elif input.type == 'boolean':
                 if name in test_inputs:
@@ -159,7 +169,7 @@ class TourGenerator(object):
                         else 'No'
                     step['content'] = 'Choose <b>%s</b>' % choice
                 else:
-                    step['content'] = 'Choose Yes/No.'
+                    step['content'] = 'Choose Yes/No'
 
             elif input.type == 'select':
                 params = []
@@ -173,17 +183,17 @@ class TourGenerator(object):
                     step['content'] = 'Select parameter(s): <b>%s</b>' % \
                                       select_param
                 else:
-                    step['content'] = 'Select a parameter.'
+                    step['content'] = 'Select a parameter'
 
             elif input.type == 'data':
                 if name in test_inputs:
                     hid = self._hids[name]
                     dataset = self._test.inputs[name][0]
-                    step['content'] = 'Select dataset <b>%s: %s</b>' % (
+                    step['content'] = 'Select dataset: <b>%s: %s</b>' % (
                         hid, dataset
                     )
                 else:
-                    step['content'] = 'Select a dataset.'
+                    step['content'] = 'Select a dataset'
 
             elif input.type == 'conditional':
                 param_id = '%s|%s' % (input.name, input.test_param.name)
@@ -207,14 +217,21 @@ class TourGenerator(object):
                     for case_id, case_title in cases.items():
                         tour_id = '%s|%s' % (input.name, case_id)
                         if tour_id in self._test.inputs.keys():
-                            case_params = ', '.join(
-                                self._test.inputs[tour_id])
+                            if case_id in self._data_inputs.keys():
+                                hid = self._hids[case_id]
+                                dataset = self._test.inputs[tour_id][0]
+                                step_msg = 'Select dataset: <b>%s: %s</b>' % \
+                                           (hid, dataset)
+                            else:
+                                case_params = ', '.join(
+                                    self._test.inputs[tour_id])
+                                step_msg = 'Select parameter(s): ' + \
+                                           '<b>%s</b>' % case_params
                             cond_case_steps.append({
                                 'title': case_title,
                                 'element': '[tour_id="%s"]' % tour_id,
                                 'placement': 'right',
-                                'content': 'Select parameter(s): <b>%s</b>' %
-                                           case_params
+                                'content': step_msg
                             })
 
                 if params:
@@ -222,17 +239,17 @@ class TourGenerator(object):
                     step['content'] = 'Select parameter(s): <b>%s</b>' % \
                                       cond_param
                 else:
-                    step['content'] = 'Select a parameter.'
+                    step['content'] = 'Select a parameter'
 
             elif input.type == 'data_column':
                 if name in test_inputs:
                     column_param = self._test.inputs[name][0]
                     step['content'] = 'Select <b>Column: %s</b>' % column_param
                 else:
-                    step['content'] = 'Select a column.'
+                    step['content'] = 'Select a column'
 
             else:
-                step['content'] = 'Select a parameter.'
+                step['content'] = 'Select a parameter'
 
             steps.append(step)
             if cond_case_steps:
