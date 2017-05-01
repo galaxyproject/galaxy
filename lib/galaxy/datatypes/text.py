@@ -607,7 +607,22 @@ class Smat(Text):
         return True
 
 
-class PlantTribesOrtho(Html):
+class PlantTribes(Html):
+    """
+    PlantTribes abstract class.
+    """
+    MetadataElement(name="num_files", default=0, desc="Number of files in files_path directory", param=MetadataParameter, readonly=True, visible=False, no_value=0)
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        try:
+            efp = dataset.extra_files_path
+            if os.path.exists(efp):
+                dataset.metadata.num_files = len(os.listdir(efp))
+        except Exception as e:
+            log.warning("set_meta fname: %s %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
+
+
+class PlantTribesOrtho(PlantTribes):
     """
     PlantTribes sequences classified into precomputed, orthologous gene family
     clusters.
@@ -616,10 +631,10 @@ class PlantTribesOrtho(Html):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesOrtho, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes gene family clusters: %d files" % dataset.metadata.data_lines
+        dataset.blurb = "PlantTribes gene family clusters: %d files" % dataset.metadata.num_files
 
 
-class PlantTribesOrthoCodingSequence(Html):
+class PlantTribesOrthoCodingSequence(PlantTribes):
     """
     PlantTribes sequences classified into precomputed, orthologous gene family
     clusters and corresponding coding sequences.
@@ -628,10 +643,10 @@ class PlantTribesOrthoCodingSequence(Html):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesOrthoCodingSequence, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes gene family clusters with corresponding coding sequences: %d files" % dataset.metadata.data_lines
+        dataset.blurb = "PlantTribes gene family clusters with corresponding coding sequences: %d files" % dataset.metadata.num_files
 
 
-class PlantTribesPhylogeneticTree(Html):
+class PlantTribesPhylogeneticTree(PlantTribes):
     """
     PlantTribes multiple sequence alignments and inferred maximum likelihood
     phylogenies for orthogroups.
@@ -640,15 +655,70 @@ class PlantTribesPhylogeneticTree(Html):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesPhylogeneticTree, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes phylogenetic trees: %d files" % dataset.metadata.data_lines
+        dataset.blurb = "PlantTribes phylogenetic trees: %d files" % dataset.metadata.num_files
 
 
-class PlantTribesMultipleSequenceAlignment(Html):
+class PlantTribesMultipleSequenceAlignment(PlantTribes):
     """
-    PlantTribes multiple sequence alignments for orthogroups.
+    PlantTribes multiple sequence alignments.
     """
     file_ext = "ptalign"
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes multiple sequence alignments: %d files" % dataset.metadata.data_lines
+        dataset.blurb = "PlantTribes multiple sequence alignments: %d files" % dataset.metadata.num_files
+
+
+class PlantTribesMultipleSequenceAlignmentCodonAlignment(PlantTribes):
+    """
+    PlantTribes multiple sequence alignments with codon alignments.
+    """
+    file_ext = "ptalignca"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesMultipleSequenceAlignmentCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes multiple sequence alignments with codon alignments: %d files" % dataset.metadata.num_files
+
+
+class PlantTribesMultipleSequenceAlignmentTrimmed(PlantTribes):
+    """
+    PlantTribes trimmed multiple sequence alignments.
+    """
+    file_ext = "ptaligntrimmed"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesMultipleSequenceAlignmentTrimmed, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes trimmed multiple sequence alignments: %d files" % dataset.metadata.num_files
+
+
+class PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment(PlantTribes):
+    """
+    PlantTribes trimmed multiple sequence alignments with codon alignments.
+    """
+    file_ext = "ptaligntrimmedca"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes trimmed multiple sequence alignments with codon alignments: %d files" % dataset.metadata.num_files
+
+
+class PlantTribesMultipleSequenceAlignmentFiltered(PlantTribes):
+    """
+    PlantTribes filtered multiple sequence alignments.
+    """
+    file_ext = "ptalignfiltered"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesMultipleSequenceAlignmentFiltered, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes filtered multiple sequence alignments: %d files" % dataset.metadata.num_files
+
+
+class PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment(PlantTribes):
+    """
+    PlantTribes filtered multiple sequence alignments with codon alignments.
+    """
+    file_ext = "ptalignfilteredca"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes filtered multiple sequence alignments with codon alignments: %d files" % dataset.metadata.num_files
