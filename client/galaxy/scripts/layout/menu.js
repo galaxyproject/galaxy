@@ -1,7 +1,5 @@
 /** Masthead Collection **/
-define(['layout/generic-nav-view',
-        'mvc/webhooks',
-        'utils/localization'], function( GenericNav, Webhooks, _l ) {
+define(['layout/generic-nav-view', 'mvc/webhooks', 'utils/localization'], function( GenericNav, Webhooks, _l ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -37,6 +35,7 @@ var Collection = Backbone.Collection.extend({
             title           : _l('Workflow'),
             tooltip         : 'Chain tools into workflows',
             disabled        : !Galaxy.user.id,
+            url             : 'workflow',
             target          : 'galaxy_main',
             onclick         : function() {
                                   window.location = Galaxy.root + 'workflow';

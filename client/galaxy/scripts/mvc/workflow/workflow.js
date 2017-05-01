@@ -1,5 +1,8 @@
 /** Workflow view */
-define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function( Form, Ui, Select ) {
+define( [ 'mvc/form/form-view',
+          'mvc/ui/ui-misc',
+          'mvc/ui/ui-select',
+          'mvc/tool/tool-form-composite' ], function( Form, Ui, Select, ToolForm ) {
 
     /** View of the main workflow list page */
     var View = Backbone.View.extend({
@@ -27,9 +30,10 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
                 if( workflows.length > 0) {
                     $el_workflow.append( self._templateWorkflowTable( self, workflows) );
                     self.adjust_actiondropdown( $el_workflow );
-                    // Register delete workflow events
+                    // Register delete and run workflow events
                     _.each( workflows, function( wf ) {
                         self.confirm_delete( self, wf );
+                        self.run_workflow( self, wf );
                     });
                     // Register search workflow event
                     self.search_workflow( self, self.$el.find( '.search-wf' ), self.$el.find( '.workflow-search tr' ), min_query_length );
@@ -83,6 +87,18 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
             });
             $el_shared_wf_link.click( function() {
                 return confirm( "Are you sure you want to remove the shared workflow '" + workflow.text + "'?" );
+            });
+        },
+
+        /** Open page for running workflow  */
+        run_workflow: function( self, workflow ) {
+            var $el_wf_run = self.$el.find( '.run-workflow-' + workflow.id );
+            $el_wf_run.on( 'click', function( e ) {
+                var url = Galaxy.root + 'workflow/run?id='+ workflow.id
+                $.getJSON( url, function( workflow_dict ) {
+                    var form = new ToolForm.View( workflow_dict );
+                    self.$el.empty().append( form.$el );
+                });
             });
         },
 
@@ -181,7 +197,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
             if( workflow.username === "" ) {
                 return '<ul class="dropdown-menu action-dpd">' +
                            '<li><a href="/workflow/editor?id='+ workflow.id +'">Edit</a></li>' +
-                           '<li><a href="/root?workflow_id='+ workflow.id +'">Run</a></li>' +
+                           '<li><a class="run-workflow-'+ workflow.id +'" href="#">Run</a></li>' +
                            '<li><a href="/workflow/sharing?id='+ workflow.id +'">Share or Download</a></li>' +
                            '<li><a href="/workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
                            '<li><a href="/workflow/rename?id='+ workflow.id +'">Rename</a></li>' +
@@ -192,12 +208,12 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/ui/ui-select' ], function
             else {
                 return '<ul class="dropdown-menu action-dpd">' +
                          '<li><a href="/workflow/display_by_username_and_slug?username='+ workflow.username +'&slug='+ workflow.slug +'">View</a></li>' +
-                         '<li><a href="/workflow/run?id='+ workflow.id +'">Run</a></li>' +
+                         '<li><a class="run-workflow-'+ workflow.id +'" href="#">Run</a></li>' +
                          '<li><a href="/workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
                          '<li><a class="link-confirm-shared-'+ workflow.id +'" href="/workflow/sharing?unshare_me=True&id='+ workflow.id +'">Remove</a></li>' +
                       '</ul>';
             }
-        },      
+        },
 
         /** Main template */
         _templateHeader: function() {
