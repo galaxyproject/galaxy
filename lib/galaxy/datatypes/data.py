@@ -360,6 +360,7 @@ class Data( object ):
             else:
                 trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
                 filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
+                trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
                 return open( data.file_name )
         if not os.path.exists( data.file_name ):
