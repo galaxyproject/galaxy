@@ -64,7 +64,7 @@ var DatasetAssociation = Backbone.Model
             'purge'         : 'datasets/' + id + '/purge_async',
             'display'       : 'datasets/' + id + '/display/?preview=True',
             'edit'          : 'datasets/' + id + '/edit',
-            'download'      : 'datasets/' + id + '/display?to_ext=' + this.get( 'file_ext' ),
+            'download'      : 'datasets/' + id + '/display' + this._downloadQueryParameters(),
             'report_error'  : 'dataset/errors?id=' + id,
             'rerun'         : 'tool_runner/rerun?id=' + id,
             'show_params'   : 'datasets/' + id + '/show_params',
@@ -76,6 +76,10 @@ var DatasetAssociation = Backbone.Model
         });
         this.urls = urls;
         return urls;
+    },
+
+    _downloadQueryParameters : function() {
+        return '?to_ext=' + this.get( 'file_ext' );
     },
 
     /** set up any event listeners
