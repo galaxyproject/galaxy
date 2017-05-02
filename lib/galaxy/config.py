@@ -23,6 +23,7 @@ from six.moves import configparser
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
+from galaxy.util import ExecutionTimer
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
@@ -908,19 +909,20 @@ class ConfiguresGalaxyMixin:
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
     def wait_for_toolbox_reload(self, old_toolbox):
+        timer = ExecutionTimer()
         while True:
             # Wait till toolbox reload has been triggered
-            # and make sure toolbox has finished reloading)
-            if self.toolbox.has_reloaded(old_toolbox):
+            # (or more than 60 seconds have passed)
+            if self.toolbox.has_reloaded(old_toolbox) or timer.elapsed > 60:
                 break
-
-            time.sleep(1)
+            time.sleep(0.1)
 
     def _configure_toolbox( self ):
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
         from galaxy.tools.deps import containers
         from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
+        import galaxy.tools.search
 
         self.citations_manager = CitationsManager( self )
         self.tool_version_cache = ToolVersionCache(self)
@@ -931,8 +933,6 @@ class ConfiguresGalaxyMixin:
         if self.config.migrated_tools_config not in tool_configs:
             tool_configs.append( self.config.migrated_tools_config )
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-        self.reindex_tool_search()
-
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
         app_info = containers.AppInfo(
@@ -947,14 +947,14 @@ class ConfiguresGalaxyMixin:
             involucro_auto_init=self.config.involucro_auto_init,
         )
         self.container_finder = containers.ContainerFinder(app_info)
+        index_help = getattr(self.config, "index_tool_help", True)
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch(self.toolbox, index_help)
+        self.reindex_tool_search()
 
-    def reindex_tool_search( self, toolbox=None ):
+    def reindex_tool_search( self ):
         # Call this when tools are added or removed.
-        import galaxy.tools.search
-        index_help = getattr( self.config, "index_tool_help", True )
-        if not toolbox:
-            toolbox = self.toolbox
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( toolbox, index_help )
+        self.toolbox_search.build_index(tool_cache=self.tool_cache)
+        self.tool_cache.reset_status()
 
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager

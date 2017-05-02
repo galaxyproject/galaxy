@@ -34,7 +34,6 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.deps import (
     CachedDependencyManager,
     views
@@ -190,7 +189,7 @@ class ToolBox( BaseGalaxyToolBox ):
     how to construct them, action types, dependency management, etc....
     """
 
-    def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
+    def __init__( self, config_filenames, tool_root_dir, app ):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
         super( ToolBox, self ).__init__(
@@ -248,13 +247,6 @@ class ToolBox( BaseGalaxyToolBox ):
             ToolClass = Tool
         tool = ToolClass( config_file, tool_source, self.app, guid=guid, repository_id=repository_id, **kwds )
         return tool
-
-    def handle_datatypes_changed( self ):
-        """ Refresh upload tools when new datatypes are added. """
-        for tool_id in self._tools_by_id:
-            tool = self._tools_by_id[ tool_id ]
-            if isinstance( tool.tool_action, UploadToolAction ):
-                self.reload_tool_by_id( tool_id )
 
     def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
         """
@@ -443,9 +435,7 @@ class Tool( object, Dictifiable ):
     @property
     def tool_version( self ):
         """Return a ToolVersion if one exists for our id"""
-        return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
-                                             .filter( self.app.install_model.ToolVersion.table.c.tool_id == self.id ) \
-                                             .first()
+        return self.app.tool_version_cache.tool_version_by_tool_id.get(self.id)
 
     @property
     def tool_versions( self ):
@@ -1070,13 +1060,14 @@ class Tool( object, Dictifiable ):
     def populate_tool_shed_info( self ):
         if self.repository_id is not None and self.app.name == 'galaxy':
             repository_id = self.app.security.decode_id( self.repository_id )
-            tool_shed_repository = self.app.install_model.context.query( self.app.install_model.ToolShedRepository ).get( repository_id )
-            if tool_shed_repository:
-                self.tool_shed = tool_shed_repository.tool_shed
-                self.repository_name = tool_shed_repository.name
-                self.repository_owner = tool_shed_repository.owner
-                self.changeset_revision = tool_shed_repository.changeset_revision
-                self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+            if hasattr(self.app, 'tool_shed_repository_cache'):
+                tool_shed_repository = self.app.tool_shed_repository_cache.get_installed_repository( repository_id=repository_id )
+                if tool_shed_repository:
+                    self.tool_shed = tool_shed_repository.tool_shed
+                    self.repository_name = tool_shed_repository.name
+                    self.repository_owner = tool_shed_repository.owner
+                    self.changeset_revision = tool_shed_repository.changeset_revision
+                    self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
 
     @property
     def help(self):

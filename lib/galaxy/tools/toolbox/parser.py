@@ -44,7 +44,7 @@ class XmlToolConfSource(ToolConfSource):
         return self.root.get('tool_path')
 
     def parse_items(self):
-        return [ensure_tool_conf_item(_) for _ in self.root.getchildren()]
+        return [ensure_tool_conf_item(_) for _ in self.root]
 
     def is_shed_tool_conf(self):
         has_tool_path = self.parse_tool_path() is not None
@@ -140,7 +140,7 @@ def ensure_tool_conf_item(xml_or_item):
         if type != "section":
             return ToolConfItem(type, attributes, elem)
         else:
-            items = [ensure_tool_conf_item(_) for _ in elem.getchildren()]
+            items = [ensure_tool_conf_item(_) for _ in elem]
             return ToolConfSection(attributes, items, elem=elem)
 
 

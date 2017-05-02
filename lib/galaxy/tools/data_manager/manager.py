@@ -37,9 +37,9 @@ class DataManagers( object ):
                 continue
             self.load_from_xml( filename )
         if self.app.config.shed_data_manager_config_file:
-            self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=True, replace_existing=True )
+            self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=True )
 
-    def load_from_xml( self, xml_filename, store_tool_path=True, replace_existing=False ):
+    def load_from_xml( self, xml_filename, store_tool_path=True ):
         try:
             tree = util.parse_xml( xml_filename )
         except Exception as e:
@@ -57,26 +57,22 @@ class DataManagers( object ):
                 tool_path = '.'
             self.tool_path = tool_path
         for data_manager_elem in root.findall( 'data_manager' ):
-            self.load_manager_from_elem( data_manager_elem, tool_path=self.tool_path, replace_existing=replace_existing )
+            self.load_manager_from_elem( data_manager_elem, tool_path=self.tool_path )
 
-    def load_manager_from_elem( self, data_manager_elem, tool_path=None, add_manager=True, replace_existing=False ):
+    def load_manager_from_elem( self, data_manager_elem, tool_path=None, add_manager=True ):
         try:
             data_manager = DataManager( self, data_manager_elem, tool_path=tool_path )
         except Exception as e:
             log.error( "Error loading data_manager '%s':\n%s" % ( e, util.xml_to_string( data_manager_elem ) ) )
             return None
         if add_manager:
-            self.add_manager( data_manager, replace_existing=replace_existing )
+            self.add_manager( data_manager )
         log.debug( 'Loaded Data Manager: %s' % ( data_manager.id ) )
         return data_manager
 
-    def add_manager( self, data_manager, replace_existing=False ):
-        if not replace_existing:
-            assert data_manager.id not in self.data_managers, "A data manager has been defined twice: %s" % ( data_manager.id )
-        elif data_manager.id in self.data_managers:
-            # Data Manager already exists, remove first one and replace with new one
-            log.warning( "A data manager has been defined twice and will be replaced with the last loaded version: %s" % ( data_manager.id ) )
-            self.remove_manager( data_manager.id  )
+    def add_manager( self, data_manager ):
+        if data_manager.id in self.data_managers:
+            log.warning( "A data manager has been defined twice: %s " % ( data_manager.id ) )
         self.data_managers[ data_manager.id ] = data_manager
         for data_table_name in data_manager.data_tables.keys():
             if data_table_name not in self.managed_data_tables:
@@ -143,7 +139,7 @@ class DataManager( object ):
             path = tool_elem.get( "file", None )
             tool_guid = tool_elem.get( "guid", None )
             # need to determine repository info so that dependencies will work correctly
-            if tool_guid in self.data_managers.app.tool_cache._tool_paths_by_id:
+            if hasattr(self.data_managers.app, 'tool_cache') and tool_guid in self.data_managers.app.tool_cache._tool_paths_by_id:
                 path = self.data_managers.app.tool_cache._tool_paths_by_id[tool_guid]
                 tool = self.data_managers.app.tool_cache.get_tool(path)
                 tool_shed_repository = tool.tool_shed_repository

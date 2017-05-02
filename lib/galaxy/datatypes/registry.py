@@ -9,6 +9,8 @@ import logging
 import tempfile
 
 import yaml
+from collections import OrderedDict as odict
+from xml.etree.ElementTree import Element
 
 import galaxy.util
 
@@ -23,7 +25,6 @@ from . import coverage
 from . import tracks
 from . import binary
 from . import text
-from galaxy.util.odict import odict
 from .display_applications.application import DisplayApplication
 
 
@@ -98,14 +99,17 @@ class Registry( object ):
             #           proprietary_path="[cloned repository path]"
             #           type="galaxy.datatypes.blast:BlastXml" />
             handling_proprietary_datatypes = False
-            # Parse datatypes_conf.xml
-            tree = galaxy.util.parse_xml( config )
-            root = tree.getroot()
-            # Load datatypes and converters from config
-            if deactivate:
-                self.log.debug( 'Deactivating datatypes from %s' % config )
+            if not isinstance(config, Element):
+                # Parse datatypes_conf.xml
+                tree = galaxy.util.parse_xml( config )
+                root = tree.getroot()
+                # Load datatypes and converters from config
+                if deactivate:
+                    self.log.debug('Deactivating datatypes from %s' % config)
+                else:
+                    self.log.debug('Loading datatypes from %s' % config)
             else:
-                self.log.debug( 'Loading datatypes from %s' % config )
+                root = config
             registration = root.find( 'registration' )
             # Set default paths defined in local datatypes_conf.xml.
             if not self.converters_path:
@@ -301,15 +305,11 @@ class Registry( object ):
             self.upload_file_formats.sort()
             # Load build sites
             self._load_build_sites( root )
-            # Persist the xml form of the registry into a temporary file so that it can be loaded from the command line by tools and
-            # set_metadata processing.
-            self.to_xml_file()
         self.set_default_values()
 
         def append_to_sniff_order():
             # Just in case any supported data types are not included in the config's sniff_order section.
-            for ext in self.datatypes_by_extension:
-                datatype = self.datatypes_by_extension[ ext ]
+            for ext, datatype in self.datatypes_by_extension.items():
                 included = False
                 for atype in self.sniff_order:
                     if isinstance( atype, datatype.__class__ ):
@@ -559,7 +559,8 @@ class Registry( object ):
                     if source_datatype not in self.datatype_converters:
                         self.datatype_converters[ source_datatype ] = odict()
                     self.datatype_converters[ source_datatype ][ target_datatype ] = converter
-                    self.log.debug( "Loaded converter: %s", converter.id )
+                    if not hasattr(toolbox.app, 'tool_cache') or converter.id in toolbox.app.tool_cache._new_tool_ids:
+                        self.log.debug( "Loaded converter: %s", converter.id )
             except Exception:
                 if deactivate:
                     self.log.exception( "Error deactivating converter from (%s)" % converter_path )
@@ -666,6 +667,7 @@ class Registry( object ):
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
+        self.to_xml_file()
         set_meta_tool = toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug( "Loaded external metadata tool: %s", self.set_external_metadata_tool.id )
@@ -859,7 +861,6 @@ class Registry( object ):
     def integrated_datatypes_configs( self ):
         if self.xml_filename and os.path.isfile( self.xml_filename ):
             return self.xml_filename
-        self.to_xml_file()
         return self.xml_filename
 
     def to_xml_file( self ):
