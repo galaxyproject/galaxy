@@ -300,7 +300,9 @@ class InteractiveEnvironmentRequest(object):
 
     @property
     def use_volumes(self):
-        if self.attr.viz_config.has_option("docker", "use_volumes"):
+        if self.attr.container_interface and not self.attr.container_interface.supports_volumes:
+            return False
+        elif self.attr.viz_config.has_option("docker", "use_volumes"):
             return string_as_bool_or_none(self.attr.viz_config.get("docker", "use_volumes"))
         else:
             return True
