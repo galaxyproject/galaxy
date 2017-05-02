@@ -39,9 +39,8 @@ RELEASE_DELTA_MONTHS = 4  # Number of months between releases.
 DEVTEAM = [
     "afgane", "dannon", "blankenberg",
     "davebx", "martenson", "jmchilton",
-    "tnabtaf", "natefoo", "carlfeberhard",
-    "jgoecks", "guerler", "jennaj",
-    "nekrut", "jxtx", "nitesh1989"
+    "tnabtaf", "natefoo", "jgoecks",
+    "guerler", "jennaj", "nekrut", "jxtx"
 ]
 
 TEMPLATE = """
