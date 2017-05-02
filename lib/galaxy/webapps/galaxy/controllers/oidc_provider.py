@@ -39,8 +39,11 @@ from oic.utils.sdb import SessionDB
 
 
 class OIDCConfig(object):
+    # TODO: change the following two parameters as they are
+    # TODO: initialized by the server knowing the port and address of the galaxy insntace.
     PORT = 8080
     ISSUER = 'http://127.0.0.1'  # do not include the port, it will be added in the code.
+
     SERVICEURL = "{issuer}verify"  # do not manually add issuer or port number, these will be added in the code.
     SERVER_CERT = "certification/server.crt"
     SERVER_KEY = "certification/server.key"
