@@ -7,8 +7,10 @@ var uglify = require('gulp-uglify');
 
 var paths = {
     scripts: ['galaxy/scripts/**/*.js',
-              '!galaxy/scripts/apps/**/*.js'
-    ]
+              '!galaxy/scripts/apps/**/*.js',
+               '!galaxy/scripts/libs/**/*.js'
+    ],
+    libs: ['galaxy/scripts/libs/**/*.js']
 };
 
 gulp.task('scripts', function() {
@@ -18,6 +20,12 @@ gulp.task('scripts', function() {
     .pipe(uglify())
     .pipe(sourcemaps.write('../maps/'))
     .pipe(gulp.dest('../static/scripts/'));
+});
+
+gulp.task('libs', function() {
+  return gulp.src(paths.libs)
+    .pipe(uglify())
+    .pipe(gulp.dest('../static/scripts/libs/'));
 });
 
 gulp.task('clean', function(){
@@ -31,4 +39,4 @@ gulp.task('watch', function(){
     gulp.watch(paths.scripts, ['scripts']);
 });
 
-gulp.task('default', ['clean', 'scripts']);
+gulp.task('default', ['clean', 'scripts', 'libs']);
