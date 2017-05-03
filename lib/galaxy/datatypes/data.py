@@ -310,10 +310,10 @@ class Data( object ):
                         return archive.stream
         return trans.show_error_message( msg )
 
-    def _serve_raw(self, trans, dataset, to_ext):
+    def _serve_raw(self, trans, dataset, to_ext, **kwd):
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
-        filename = self._download_filename(dataset, to_ext)
+        filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
         return open( dataset.file_name )
 
