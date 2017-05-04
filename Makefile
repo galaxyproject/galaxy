@@ -98,7 +98,7 @@ style: npm-deps ## Calls the style task of Grunt
 client-install-libs: npm-deps ## Fetch updated client dependencies using bower.
 	cd client && $(GRUNT_EXEC) install-libs
 
-client: webpack grunt style ## Rebuild all client-side artifacts
+client: webpack gulp style ## Rebuild all client-side artifacts
 
 charts: npm-deps ## Rebuild charts
 	NODE_PATH=$(GXY_NODE_MODULES) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js
