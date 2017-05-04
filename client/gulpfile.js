@@ -4,6 +4,7 @@ var babel = require('gulp-babel');
 var del = require('del');
 var sourcemaps = require('gulp-sourcemaps');
 var uglify = require('gulp-uglify');
+var cached = require('gulp-cached');
 
 var paths = {
     scripts: ['galaxy/scripts/**/*.js',
@@ -15,6 +16,7 @@ var paths = {
 
 gulp.task('scripts', function() {
   return gulp.src(paths.scripts)
+    .pipe(cached('scripts'))
     .pipe(sourcemaps.init())
     .pipe(babel())
     .pipe(uglify())
