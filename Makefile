@@ -86,9 +86,6 @@ npm-deps: ## Install NodeJS dependencies.
 webpack: npm-deps ## Run webpack, build production bundles.
 	cd client && npm run webpack
 
-grunt: npm-deps ## Calls out to Grunt to build client
-	cd client && npm run build
-
 gulp: npm-deps ## Calls out to Gulp to build client
 	cd client && npm run gulp
 
@@ -98,7 +95,8 @@ style: npm-deps ## Calls the style task of Grunt
 client-install-libs: npm-deps ## Fetch updated client dependencies using bower.
 	cd client && $(GRUNT_EXEC) install-libs
 
-client: webpack gulp style ## Rebuild all client-side artifacts
+client: npm-deps ## Rebuild all client-side artifacts
+	cd client && npm run build
 
 charts: npm-deps ## Rebuild charts
 	NODE_PATH=$(GXY_NODE_MODULES) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js

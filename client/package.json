@@ -39,7 +39,7 @@
   },
   "scripts": {
     "watch": "concurrently \"npm run webpack-watch\" \"npm run gulp watch\"",
-    "build": "grunt",
+    "build": "concurrently \"npm run build-style\" \"npm run webpack\" \"npm run gulp clean && npm run gulp\"",
     "webpack": "webpack -p",
     "webpack-watch": "webpack -p --watch",
     "webpack-dev": "webpack -d",
