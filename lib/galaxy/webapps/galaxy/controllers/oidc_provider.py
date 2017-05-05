@@ -156,6 +156,7 @@ class OIDCProvider(BaseUIController):
             self.urls.append(("^%s" % endp.etype, endp.func))
 
     def setup_oidc_provider(self, oidcConfig):
+        # TODO: root should read it's value from Galaxy, not a hard-coded path like this. Update it.
         root = '/Users/vahid/pyProjects/galaxy/lib/galaxy/webapps/galaxy/controllers/'
         lookup = TemplateLookup(directories=[root + 'Templates', root + 'htdocs'],
                                 module_directory=root + 'modules',
@@ -168,8 +169,10 @@ class OIDCProvider(BaseUIController):
 
         # JWKS: JSON Web Key
         jwksFileName = "static/jwks.json"
-
-        oidcConfig.ISSUER = oidcConfig.ISSUER + ':{}/{}/'.format(oidcConfig.PORT, "oidc")
+        if oidcConfig.PORT:
+            oidcConfig.ISSUER = oidcConfig.ISSUER + ':{}/{}/'.format(oidcConfig.PORT, "oidc")
+        else:
+            oidcConfig.ISSUER = oidcConfig.ISSUER + '/{}/'.format("oidc")
         oidcConfig.SERVICEURL = oidcConfig.SERVICEURL.format(issuer=oidcConfig.ISSUER)
         endPoints = oidcConfig.AUTHENTICATION["UserPassword"]["EndPoints"]
         fullEndPointsPath = ["%s%s" % (oidcConfig.ISSUER, ep) for ep in endPoints]

@@ -25,13 +25,16 @@ from .s3_multipart_upload import multipart_upload
 from ..objectstore import convert_bytes, ObjectStore
 from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
 
+# TODO: Cloudbridge is not exposing exceptions; however, it is planned in the next release milestone.
+# TODO: Till then we're using temporarily using S3ResponseError, which will be replaced by CloudBridge
+# TODO: error responses, once ready.
 try:
     # Imports are done this way to allow objectstore code to be used outside of Galaxy.
     import boto
 
     from boto.exception import S3ResponseError
-    from boto.s3.key import Key
-    from boto.s3.connection import S3Connection
+    # from boto.s3.key import Key
+    # from boto.s3.connection import S3Connection
 except ImportError:
     boto = None
 
@@ -50,8 +53,8 @@ class S3ObjectStore(ObjectStore):
     """
 
     def __init__(self, config, config_xml):
-        if boto is None:
-            raise Exception(NO_BOTO_ERROR_MESSAGE)
+        # if boto is None:
+        #    raise Exception(NO_BOTO_ERROR_MESSAGE)
         super(S3ObjectStore, self).__init__(config)
         self.staging_path = self.config.file_path
         self.transfer_progress = 0
@@ -81,6 +84,11 @@ class S3ObjectStore(ObjectStore):
             self.use_axel = False
 
     def _configure_connection(self):
+        # TODO: in the absence of an internet connection,
+        # this would prevent galaxy from starting.
+        # Maybe it would be better to put a maximum
+        # wait time, and ignore process if fails to
+        # respond within the time frame.
         log.debug("Configuring S3 Connection")
         aws_config = {'aws_access_key': self.access_key,
                       'aws_secret_key': self.secret_key}
@@ -206,11 +214,6 @@ class S3ObjectStore(ObjectStore):
                 return bucket
 
             except S3ResponseError:
-                # @OLD
-                # try:
-                # log.debug("Bucket not found, creating s3 bucket with handle '%s'", bucket_name)
-                # self.conn.create_bucket(bucket_name)
-                # except S3ResponseError:
                 log.exception("Could not get bucket '%s', attempt %s/5", bucket_name, i + 1)
                 time.sleep(2)
         # All the attempts have been exhausted and connection was not established,
@@ -271,7 +274,6 @@ class S3ObjectStore(ObjectStore):
     def _get_transfer_progress(self):
         return self.transfer_progress
 
-    # TODO: Rename this function.
     def _get_size_in_s3(self, rel_path):
         try:
             obj = self.bucket.get(rel_path)
@@ -285,7 +287,6 @@ class S3ObjectStore(ObjectStore):
         exists = False
         try:
             # A hackish way of testing if the rel_path is a folder vs a file
-            # is index `-1` correct?
             is_dir = rel_path[-1] == '/'
             if is_dir:
                 keyresult = self.bucket.list(prefix=rel_path)
@@ -383,22 +384,20 @@ class S3ObjectStore(ObjectStore):
         try:
             source_file = source_file if source_file else self._get_cache_path(rel_path)
             if os.path.exists(source_file):
-
-                # OLD
-                # key = Key(self.bucket, rel_path)
-                # if os.path.getsize(source_file) == 0 and key.exists():
-
-                # NEW
+                # TODO: is it necessary to check for existence of the bucket ?
                 if os.path.getsize(source_file) == 0 and self.bucket.exists(rel_path):
                     log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file,
                               rel_path)
                     return True
+                # TODO: don't need to differenciate between uploading from a string or file,
+                # because CloudBridge handles this internally.
                 if from_string:
-
                     # TODO: The upload function of CloudBridge should be updated to accept the following parameters.
-                    # key.set_contents_from_string(from_string, reduced_redundancy=self.use_rr)
-                    self.bucket.get(rel_path).upload(source_file)
-
+                    if not self.bucket.get(rel_path):
+                        created_obj = self.bucket.create_object(rel_path)
+                        created_obj.upload(source_file)
+                    else:
+                        self.bucket.get(rel_path).upload(source_file)
                     log.debug("Pushed data from string '%s' to key '%s'", from_string, rel_path)
                 else:
                     start_time = datetime.now()
@@ -413,8 +412,11 @@ class S3ObjectStore(ObjectStore):
                         #                               reduced_redundancy=self.use_rr,
                         #                               cb=self._transfer_cb,
                         #                               num_cb=10)
-                        self.bucket.get(rel_path).upload(source_file)
-
+                        if not self.bucket.get(rel_path):
+                            created_obj = self.bucket.create_object(rel_path)
+                            created_obj.upload(source_file)
+                        else:
+                            self.bucket.get(rel_path).upload(source_file)
                     else:
                         multipart_upload(self.s3server, self.bucket, self.bucket.get(rel_path).name, source_file, mb_size)
 
@@ -425,7 +427,6 @@ class S3ObjectStore(ObjectStore):
             else:
                 log.error("Tried updating key '%s' from source file '%s', but source file does not exist.",
                           rel_path, source_file)
-        # TODO: All exception will be raised by CloudBridge, so, the following should be updated accordingly.
         except S3ResponseError:
             log.exception("Trouble pushing S3 key '%s' from file '%s'", rel_path, source_file)
         return False
@@ -479,7 +480,6 @@ class S3ObjectStore(ObjectStore):
 
     def create(self, obj, **kwargs):
         if not self.exists(obj, **kwargs):
-
             # Pull out locally used fields
             extra_dir = kwargs.get('extra_dir', None)
             extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
@@ -667,11 +667,12 @@ class SwiftObjectStore(S3ObjectStore):
     """
 
     def _configure_connection(self):
+        # TODO: Replace with Cloudbridge connection.
         log.debug("Configuring Swift Connection")
-        self.conn = boto.connect_s3(aws_access_key_id=self.access_key,
-                                    aws_secret_access_key=self.secret_key,
-                                    is_secure=self.is_secure,
-                                    host=self.host,
-                                    port=self.port,
-                                    calling_format=boto.s3.connection.OrdinaryCallingFormat(),
-                                    path=self.conn_path)
+        # self.conn = boto.connect_s3(aws_access_key_id=self.access_key,
+        #                            aws_secret_access_key=self.secret_key,
+        #                            is_secure=self.is_secure,
+        #                            host=self.host,
+        #                            port=self.port,
+        #                            calling_format=boto.s3.connection.OrdinaryCallingFormat(),
+        #                            path=self.conn_path)
