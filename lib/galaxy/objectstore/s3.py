@@ -26,15 +26,13 @@ from ..objectstore import convert_bytes, ObjectStore
 from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
 
 # TODO: Cloudbridge is not exposing exceptions; however, it is planned in the next release milestone.
-# TODO: Till then we're using temporarily using S3ResponseError, which will be replaced by CloudBridge
-# TODO: error responses, once ready.
+# Till then we're using temporarily using S3ResponseError, which will be replaced by CloudBridge
+# error responses, once ready.
 try:
     # Imports are done this way to allow objectstore code to be used outside of Galaxy.
     import boto
 
     from boto.exception import S3ResponseError
-    # from boto.s3.key import Key
-    # from boto.s3.connection import S3Connection
 except ImportError:
     boto = None
 
@@ -52,8 +50,6 @@ class S3ObjectStore(ObjectStore):
     Galaxy and S3.
     """
     def __init__(self, config, config_xml):
-        # if boto is None:
-        #    raise Exception(NO_BOTO_ERROR_MESSAGE)
         super(S3ObjectStore, self).__init__(config)
         self.staging_path = self.config.file_path
         self.transfer_progress = 0
@@ -378,7 +374,6 @@ class S3ObjectStore(ObjectStore):
         try:
             source_file = source_file if source_file else self._get_cache_path(rel_path)
             if os.path.exists(source_file):
-                # TODO: is it necessary to check for existence of the bucket ?
                 if os.path.getsize(source_file) == 0 and self.bucket.exists(rel_path):
                     log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file,
                               rel_path)
@@ -386,7 +381,6 @@ class S3ObjectStore(ObjectStore):
                 # TODO: don't need to differenciate between uploading from a string or file,
                 # because CloudBridge handles this internally.
                 if from_string:
-                    # TODO: The upload function of CloudBridge should be updated to accept the following parameters.
                     if not self.bucket.get(rel_path):
                         created_obj = self.bucket.create_object(rel_path)
                         created_obj.upload(source_file)
