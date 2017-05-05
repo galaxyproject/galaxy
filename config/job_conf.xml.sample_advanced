@@ -729,7 +729,8 @@
             <param id="volumes">/directory/</param>
             <!-- Directory which is mounted to the container and is parent of
                  the  `job_working_directory`, `file_path`, `new_file_path`
-                 directories -->
+                 directories. Directories of the data used by tools are
+                 included as well.-->
             <param id="max_retries">2</param>
             <!-- Number of retries to attempt if a command returns a non-zero status -->
         </destination>
