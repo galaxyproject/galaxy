@@ -666,10 +666,13 @@ class NavigatesGalaxy(HasDriver):
         return self._assert_message("warning", contains=contains)
 
     def _assert_message(self, type, contains=None):
-        element = self.wait_for_selector(self.test_data["selectors"]["messages"][type])
+        element = self.wait_for_selector_visible(self.test_data["selectors"]["messages"][type])
         assert element, "No error message found, one expected."
         if contains is not None:
-            assert contains in element.text
+            text = element.text
+            if contains not in text:
+                message = "Text [%s] expected inside of [%s] but not found." % (contains, text)
+                raise AssertionError(message)
 
     def assert_no_error_message(self):
         self.assert_selector_absent(self.test_data["selectors"]["messages"]["error"])
