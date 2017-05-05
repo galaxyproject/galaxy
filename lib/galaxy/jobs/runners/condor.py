@@ -52,7 +52,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
 
         # prepare the job
         include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", True ) )
-        if not self.prepare_job( job_wrapper, include_metadata=include_metadata):
+        if not self.prepare_job( job_wrapper, include_metadata=include_metadata, modify_command_for_container=False):
             return
 
         # get configured job destination
@@ -69,7 +69,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
             container = self._find_container( job_wrapper )
             if container:
                 # HTCondor needs the image as 'docker_image'
-                query_params.update({'docker_image': container})
+                query_params.update({'docker_image': container.container_id})
 
         galaxy_slots = query_params.get('request_cpus', None)
         if galaxy_slots:
