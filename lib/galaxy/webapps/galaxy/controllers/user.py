@@ -80,7 +80,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         message = 'Unspecified failure authenticating via OpenID'
         openid_url = kwd.get( 'openid_url', '' )
         openid_provider = kwd.get( 'openid_provider', '' )
-        if not openid_provider or openid_url:
+        if not openid_provider:
             openid_provider = trans.app.openid_providers.NO_PROVIDER_ID  # empty fields cause validation errors
         redirect = kwd.get( 'redirect', '' ).strip()
         auto_associate = util.string_as_bool( kwd.get( 'auto_associate', False ) )
