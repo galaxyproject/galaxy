@@ -86,7 +86,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     if collection_info:
         history = history or tool.get_default_history_by_trans( trans )
         if len(param_combinations) == 0:
-            template = "Attempting to map over an empty collection, this is not yet implemented. colleciton_info is [%s]"
+            template = "Attempting to map over an empty collection, this is not yet implemented. collection_info is [%s]"
             message = template % collection_info
             log.warn(message)
             raise Exception(message)

@@ -116,8 +116,7 @@ class DataManagerHandler( object ):
                     elem.insert( 0, tool_elem )
                     data_manager = \
                         self.app.data_managers.load_manager_from_elem( elem,
-                                                                       tool_path=shed_config_dict.get( 'tool_path', '' ),
-                                                                       replace_existing=True )
+                                                                       tool_path=shed_config_dict.get( 'tool_path', '' ))
                     if data_manager:
                         rval.append( data_manager )
                 else:
@@ -129,7 +128,7 @@ class DataManagerHandler( object ):
                 reload_count = self.app.data_managers._reload_count
                 self.data_manager_config_elems_to_xml_file( config_elems, shed_data_manager_conf_filename )
                 while self.app.data_managers._reload_count <= reload_count:
-                    time.sleep(1)  # Wait for shed_data_manager watcher thread to pick up changes
+                    time.sleep(0.1)  # Wait for shed_data_manager watcher thread to pick up changes
         return rval
 
     def remove_from_data_manager( self, repository ):

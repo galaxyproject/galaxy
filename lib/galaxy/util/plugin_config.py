@@ -41,7 +41,7 @@ def load_plugins(plugins_dict, plugin_source, extra_kwds={}):
 def __load_plugins_from_element(plugins_dict, plugins_element, extra_kwds):
     plugins = []
 
-    for plugin_element in plugins_element.getchildren():
+    for plugin_element in plugins_element:
         plugin_type = plugin_element.tag
         plugin_kwds = dict( plugin_element.items() )
         plugin_kwds.update( extra_kwds )

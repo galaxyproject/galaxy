@@ -5,6 +5,7 @@ import logging
 import mimetypes
 import os
 import shutil
+import string
 import tempfile
 import zipfile
 from cgi import escape
@@ -37,6 +38,9 @@ log = logging.getLogger(__name__)
 # Valid first column and strand column values vor bed, other formats
 col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
 valid_strand = ['+', '-', '.']
+
+DOWNLOAD_FILENAME_PATTERN_DATASET = "Galaxy${hid}-[${name}].${ext}"
+DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}__${element_identifier}].${ext}"
 
 
 class DataMeta( abc.ABCMeta ):
@@ -306,11 +310,11 @@ class Data( object ):
                         return archive.stream
         return trans.show_error_message( msg )
 
-    def _serve_raw(self, trans, dataset, to_ext):
+    def _serve_raw(self, trans, dataset, to_ext, **kwd):
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
-        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
+        filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
         return open( dataset.file_name )
 
     def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
@@ -355,11 +359,9 @@ class Data( object ):
                 return self._archive_composite_dataset( trans, data, **kwd )
             else:
                 trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
-                if not to_ext:
-                    to_ext = data.extension
-                fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in data.name)[0:150]
+                filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
                 trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, to_ext)
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
                 return open( data.file_name )
         if not os.path.exists( data.file_name ):
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
@@ -384,6 +386,31 @@ class Data( object ):
             return trans.stream_template_mako( "/dataset/large_file.mako",
                                                truncated_data=open( data.file_name ).read(max_peek_size),
                                                data=data)
+
+    def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
+        def escape(raw_identifier):
+            return ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in raw_identifier)[0:150]
+
+        if not to_ext:
+            to_ext = dataset.extension
+
+        template_values = {
+            "name": escape(dataset.name),
+            "ext": to_ext,
+            "hid": dataset.hid,
+        }
+
+        filename_pattern = DOWNLOAD_FILENAME_PATTERN_DATASET
+
+        if hdca is not None:
+            # Use collection context to build up filename.
+            template_values["element_identifier"] = element_identifier
+            template_values["hdca_name"] = escape(hdca.name)
+            template_values["hdca_hid"] = hdca.hid
+
+            filename_pattern = DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT
+
+        return string.Template(filename_pattern).substitute(**template_values)
 
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""

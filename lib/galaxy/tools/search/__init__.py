@@ -5,7 +5,6 @@ installed within this Galaxy.
 import logging
 import re
 import tempfile
-from datetime import datetime
 
 from whoosh import analysis
 from whoosh.analysis import StandardAnalyzer
@@ -22,6 +21,7 @@ from whoosh.filedb.filestore import (
 from whoosh.qparser import MultifieldParser
 from whoosh.scoring import BM25F
 
+from galaxy.util import ExecutionTimer
 from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger( __name__ )
@@ -46,52 +46,71 @@ class ToolBoxSearch( object ):
                               labels=KEYWORD )
         self.rex = analysis.RegexTokenizer()
         self.toolbox = toolbox
-        self.build_index( index_help )
+        self.storage, self.index = self._index_setup()
+        # We keep track of how many times the tool index has been rebuilt.
+        # We start at -1, so that after the first index the count is at 0,
+        # which is the same is the toolbox reload count. This way we can skip
+        # reindexing if the index count is equal to the toolbox reload count.
+        self.index_count = -1
 
-    def build_index( self, index_help=True ):
-        """Prepare search index for tools loaded in toolbox."""
+    def _index_setup(self):
         RamStorage.temp_storage = _temp_storage
         # Works around https://bitbucket.org/mchaput/whoosh/issues/391/race-conditions-with-temp-storage
-        self.storage = RamStorage()
-        self.index = self.storage.create_index( self.schema )
+        storage = RamStorage()
+        index = storage.create_index(self.schema)
+        return storage, index
+
+    def build_index(self, tool_cache, index_help=True):
+        """
+        Prepare search index for tools loaded in toolbox.
+        Use `tool_cache` to determine which tools need indexing and which tools should be expired.
+        """
+        log.debug('Starting to build toolbox index.')
+        self.index_count += 1
+        execution_timer = ExecutionTimer()
         writer = self.index.writer()
-        start_time = datetime.now()
-        log.debug( 'Starting to build toolbox index.' )
-        for id, tool in self.toolbox.tools():
-            #  Do not add data managers to the public index
-            if tool.tool_type == 'manage_data':
-                continue
-            add_doc_kwds = {
-                "id": id,
-                "description": to_unicode( tool.description ),
-                "section": to_unicode( tool.get_panel_section()[1] if len( tool.get_panel_section() ) == 2 else '' ),
-                "help": to_unicode( "" )
-            }
-            if tool.name.find( '-' ) != -1:
-                # Hyphens are wildcards in Whoosh causing bad things
-                add_doc_kwds['name'] = (' ').join( [ token.text for token in self.rex( to_unicode( tool.name ) ) ] )
-            else:
-                add_doc_kwds['name'] = to_unicode( tool.name )
-            if tool.guid:
-                # Create a stub consisting of owner, repo, and tool from guid
-                slash_indexes = [ m.start() for m in re.finditer( '/', tool.guid ) ]
-                id_stub = tool.guid[ ( slash_indexes[1] + 1 ): slash_indexes[4] ]
-                add_doc_kwds['stub'] = (' ').join( [ token.text for token in self.rex( to_unicode( id_stub ) ) ] )
-            else:
-                add_doc_kwds['stub'] = to_unicode( id )
-            if tool.labels:
-                add_doc_kwds['labels'] = to_unicode( " ".join( tool.labels ) )
-            if index_help and tool.help:
-                try:
-                    add_doc_kwds['help'] = to_unicode( tool.help.render( host_url="", static_path="" ) )
-                except Exception:
-                    # Don't fail to build index just because a help message
-                    # won't render.
-                    pass
-            writer.add_document( **add_doc_kwds )
+        for tool_id in tool_cache._removed_tool_ids:
+            writer.delete_by_term('id', tool_id)
+        for tool_id in tool_cache._new_tool_ids:
+            tool = tool_cache.get_tool_by_id(tool_id)
+            if tool:
+                add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
+                writer.add_document(**add_doc_kwds)
         writer.commit()
-        stop_time = datetime.now()
-        log.debug( 'Toolbox index finished. It took: ' + str(stop_time - start_time) )
+        log.debug("Toolbox index finished %s", execution_timer)
+
+    def _create_doc(self, tool_id, tool, index_help=True):
+        #  Do not add data managers to the public index
+        if tool.tool_type == 'manage_data':
+            return {}
+        add_doc_kwds = {
+            "id": tool_id,
+            "description": to_unicode(tool.description),
+            "section": to_unicode(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ''),
+            "help": to_unicode("")
+        }
+        if tool.name.find('-') != -1:
+            # Hyphens are wildcards in Whoosh causing bad things
+            add_doc_kwds['name'] = (' ').join([token.text for token in self.rex(to_unicode(tool.name))])
+        else:
+            add_doc_kwds['name'] = to_unicode(tool.name)
+        if tool.guid:
+            # Create a stub consisting of owner, repo, and tool from guid
+            slash_indexes = [m.start() for m in re.finditer('/', tool.guid)]
+            id_stub = tool.guid[(slash_indexes[1] + 1): slash_indexes[4]]
+            add_doc_kwds['stub'] = (' ').join([token.text for token in self.rex(to_unicode(id_stub))])
+        else:
+            add_doc_kwds['stub'] = to_unicode(id)
+        if tool.labels:
+            add_doc_kwds['labels'] = to_unicode(" ".join(tool.labels))
+        if index_help and tool.help:
+            try:
+                add_doc_kwds['help'] = to_unicode(tool.help.render(host_url="", static_path=""))
+            except Exception:
+                # Don't fail to build index just because a help message
+                # won't render.
+                pass
+        return add_doc_kwds
 
     def search( self, q, tool_name_boost, tool_section_boost, tool_description_boost, tool_label_boost, tool_stub_boost, tool_help_boost, tool_search_limit, tool_enable_ngram_search, tool_ngram_minsize, tool_ngram_maxsize ):
         """

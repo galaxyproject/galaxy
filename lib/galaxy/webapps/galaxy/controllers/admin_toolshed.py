@@ -312,8 +312,8 @@ class AdminToolshed( AdminGalaxy ):
                         trans.app.installed_repository_manager.handle_repository_uninstall( tool_shed_repository )
                 else:
                     tool_shed_repository.status = trans.install_model.ToolShedRepository.installation_status.DEACTIVATED
-                trans.install_model.context.add( tool_shed_repository )
-                trans.install_model.context.flush()
+                trans.install_model.context.current.add( tool_shed_repository )
+                trans.install_model.context.current.flush()
                 if remove_from_disk_checked:
                     message += 'The repository named <b>%s</b> has been uninstalled.  ' % escape( tool_shed_repository.name )
                     if errors:
