@@ -19,7 +19,6 @@ var POPUPMENU = require( 'ui/popupmenu' );
 window.make_popupmenu = POPUPMENU.make_popupmenu;
 window.make_popup_menus = POPUPMENU.make_popup_menus;
 window.init_tag_click_function = require( 'ui/autocom_tagging' );
-window.Toastr = require( 'libs/toastr' );
 var TOURS = require( 'mvc/tours' );
 var QUERY_STRING = require( 'utils/query-string-parsing' );
 // console.debug( 'galaxy globals loaded' );

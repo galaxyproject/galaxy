@@ -1,77 +1,79 @@
 $(document).ready(function() {
-    window.TourGenerator = Backbone.View.extend({
-        initialize: function(options) {
-            var me = this;
-            this.toolId = options.toolId;
+    require(['libs/toastr'], function(Toastr){
+        window.TourGenerator = Backbone.View.extend({
+            initialize: function(options) {
+                var me = this;
+                this.toolId = options.toolId;
 
-            // Add attribute 'tour_id' to the execution button
-            $('#execute').attr('tour_id', 'execute');
+                // Add attribute 'tour_id' to the execution button
+                $('#execute').attr('tour_id', 'execute');
 
-            Toastr.info('Tour generation might take some time.');
-            $.getJSON('/api/webhooks/tour_generator/get_data/', {
-                tool_id: this.toolId
-            }, function(obj) {
-                if (obj.success) {
-                    if (obj.data.useDatasets) {
-                        Galaxy.currHistoryPanel.refreshContents();  // Refresh history panel
+                Toastr.info('Tour generation might take some time.');
+                $.getJSON('/api/webhooks/tour_generator/get_data/', {
+                    tool_id: this.toolId
+                }, function(obj) {
+                    if (obj.success) {
+                        if (obj.data.useDatasets) {
+                            Galaxy.currHistoryPanel.refreshContents();  // Refresh history panel
 
-                        // Add a delay because of the history panel refreshing
-                        setTimeout(function () {
-                            var datasets = [],
-                                numUploadedDatasets = 0;
+                            // Add a delay because of the history panel refreshing
+                            setTimeout(function () {
+                                var datasets = [],
+                                    numUploadedDatasets = 0;
 
-                            _.each(obj.data.hids, function (hid) {
-                                var dataset = Galaxy.currHistoryPanel.collection.where({
-                                    hid: hid
-                                })[0];
-                                if (dataset) datasets.push(dataset);
-                            });
-
-                            if (datasets.length === obj.data.hids.length) {
-                                _.each(datasets, function (dataset) {
-                                    if (dataset.get('state') === 'ok') {
-                                        numUploadedDatasets++;
-                                    } else {
-                                        dataset.on('change:state', function (model) {
-                                            if (model.get('state') === 'ok') numUploadedDatasets++;
-                                            // Make sure that all test datasets have been successfully uploaded
-                                            if (numUploadedDatasets === datasets.length) me._generateTour(obj.data.tour);
-                                        });
-                                    }
+                                _.each(obj.data.hids, function (hid) {
+                                    var dataset = Galaxy.currHistoryPanel.collection.where({
+                                        hid: hid
+                                    })[0];
+                                    if (dataset) datasets.push(dataset);
                                 });
-                            } else {
-                                Toastr.warning('Cannot generate a tour.');
-                                console.error('Some of the test datasets cannot be found in the history.');
-                            }
-                        }, 1500);
+
+                                if (datasets.length === obj.data.hids.length) {
+                                    _.each(datasets, function (dataset) {
+                                        if (dataset.get('state') === 'ok') {
+                                            numUploadedDatasets++;
+                                        } else {
+                                            dataset.on('change:state', function (model) {
+                                                if (model.get('state') === 'ok') numUploadedDatasets++;
+                                                // Make sure that all test datasets have been successfully uploaded
+                                                if (numUploadedDatasets === datasets.length) me._generateTour(obj.data.tour);
+                                            });
+                                        }
+                                    });
+                                } else {
+                                    Toastr.warning('Cannot generate a tour.');
+                                    console.error('Some of the test datasets cannot be found in the history.');
+                                }
+                            }, 1500);
+                        } else {
+                            me._generateTour(obj.data.tour);
+                        }
                     } else {
-                        me._generateTour(obj.data.tour);
+                        Toastr.warning('Cannot generate a tour.');
+                        console.error('Tour Generator: ' + obj.error);
                     }
-                } else {
-                    Toastr.warning('Cannot generate a tour.');
-                    console.error('Tour Generator: ' + obj.error);
-                }
-            });
-        },
+                });
+            },
 
-        _generateTour: function(data) {
-            var tourData = Tours.hooked_tour_from_data(data);
-            sessionStorage.setItem('activeGalaxyTour', JSON.stringify(data));
+            _generateTour: function(data) {
+                var tourData = Tours.hooked_tour_from_data(data);
+                sessionStorage.setItem('activeGalaxyTour', JSON.stringify(data));
 
-            // Generate and run the tour
-            var tour = new Tour(_.extend({
-                steps: tourData.steps
-            }));
-            tour.init();
-            tour.goTo(0);
-            tour.restart();
+                // Generate and run the tour
+                var tour = new Tour(_.extend({
+                    steps: tourData.steps
+                }));
+                tour.init();
+                tour.goTo(0);
+                tour.restart();
 
-            // Force ending the tour when pressing the Execute button
-            $('#execute').on('mousedown', function() {
-                if (tour) {
-                    tour.end();
-                }
-            });
-        }
+                // Force ending the tour when pressing the Execute button
+                $('#execute').on('mousedown', function() {
+                    if (tour) {
+                        tour.end();
+                    }
+                });
+            }
+        });
     });
 });
