@@ -46,10 +46,15 @@ COUNT=0
 while [ $COUNT -lt $MAX_TRIES ]; do
     . %s '%s' > conda_activate.log 2>&1
     if [ $? -eq 0 ];then
-       break
+        break
     else
-        sleep 10s
         let COUNT=COUNT+1
+        if [ $COUNT -eq $MAX_TRIES ];then
+            echo "Failed to activate conda environment! Error was:"
+            cat conda_activate.log
+            exit 1
+        fi
+        sleep 10s
     fi
 done """
 
