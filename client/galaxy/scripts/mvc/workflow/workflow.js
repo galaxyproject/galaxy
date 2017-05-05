@@ -152,13 +152,11 @@ define( [ 'mvc/form/form-view',
                     '<input class="search-wf form-control" type="text" autocomplete="off" placeholder="search for workflow...">' +
                 '</li>' +
                 '<li>' +
-                    '<a class="action-button fa fa-plus wf-action" id="new-workflow" href="/workflow/create">' +
-                        '<span>Create new workflow</span>' +
+                    '<a class="action-button fa fa-plus wf-action" id="new-workflow" title="Create new workflow" href="/workflow/create">' +
                     '</a>' +
                 '</li>' +
                 '<li>' +
-                    '<a class="action-button fa fa-upload wf-action" id="import-workflow" href="/workflow/import_workflow">' +
-                        '<span>Upload or import workflow</span>' +
+                    '<a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="/workflow/import_workflow">' +
                     '</a>' +
                 '</li>' +
             '</ul>';
