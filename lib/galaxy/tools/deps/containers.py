@@ -269,9 +269,10 @@ class ToolInfo(object):
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=[], requirements=[]):
+    def __init__(self, container_descriptions=[], requirements=[], requires_galaxy_python_environment=False):
         self.container_descriptions = container_descriptions
         self.requirements = requirements
+        self.requires_galaxy_python_environment = requires_galaxy_python_environment
         self.env_pass_through = ["GALAXY_SLOTS"]
 
 
