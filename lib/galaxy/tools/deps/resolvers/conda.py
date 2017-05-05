@@ -40,6 +40,19 @@ from ..resolvers import (
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
 DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,r,defaults,conda-forge"
+CONDA_SOURCE_CMD = """[ "$CONDA_DEFAULT_ENV" = "%s" ] ||
+MAX_TRIES=3
+COUNT=0
+while [ $COUNT -lt $MAX_TRIES ]; do
+    . %s '%s' > conda_activate.log 2>&1
+    if [ $? -eq 0 ];then
+       break
+    else
+        sleep 10s
+        let COUNT=COUNT+1
+    fi
+done """
+
 
 log = logging.getLogger(__name__)
 
@@ -385,7 +398,7 @@ class MergedCondaDependency(Dependency):
                 self.environment_path,
             )
         else:
-            return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s' > conda_activate.log 2>&1 """ % (
+            return CONDA_SOURCE_CMD % (
                 self.environment_path,
                 self.activate,
                 self.environment_path
@@ -454,7 +467,7 @@ class CondaDependency(Dependency):
                 self.environment_path,
             )
         else:
-            return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s' > conda_activate.log 2>&1 """ % (
+            return CONDA_SOURCE_CMD % (
                 self.environment_path,
                 self.activate,
                 self.environment_path
