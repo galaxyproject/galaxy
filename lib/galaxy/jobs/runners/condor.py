@@ -52,7 +52,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
 
         # prepare the job
         include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", True ) )
-        if not self.prepare_job( job_wrapper, include_metadata=include_metadata, modify_command_for_container=False):
+        if not self.prepare_job( job_wrapper, include_metadata=include_metadata):
             return
 
         # get configured job destination
