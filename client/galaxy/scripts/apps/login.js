@@ -17,24 +17,24 @@ window.app = function app( options, bootstrapped ){
         return;
     }
 
-    var loginPage = new Page( _.extend( options, {
-        right   : Backbone.View.extend({
-            title : _l( 'Login required' ),
-            el : '#right'
-        }),
-    }));
+    var LoginPage = Backbone.View.extend({
+        initialize: function( page, options ) {
+            this.options = options;
+            this.model = new Backbone.Model({ title : _l( 'Login required' ) } );
+            this.setElement( this._template() );
+        },
+        render: function() {
+            $( '#galaxy_main' ).prop( 'src', this.options.config.welcome_url );
+        },
+        _template : function() {
+            var login_url = this.options.root + 'user/login?' + $.param( { redirect : this.options.redirect } );
+            return '<iframe src="' + login_url + '" frameborder="0" style="width: 100%; height: 100%;"/>';
+        }
+    });
 
     $(function(){
-        // TODO: incorporate *actual* referrer/redirect info as the original page does
-        var params = jQuery.param({ redirect : redirect }),
-            loginUrl = Galaxy.root + 'user/login?' + params;
-        loginPage.render();
-
-        // welcome page (probably) needs to remain sandboxed
-        loginPage.center.$( '#galaxy_main' ).prop( 'src', options.welcome_url );
-
-        loginPage.right.$( '.unified-panel-body' )
-            .css( 'overflow', 'hidden' )
-            .html( '<iframe src="' + loginUrl + '" frameborder="0" style="width: 100%; height: 100%;"/>' );
+        Galaxy.page = new Page( _.extend( options, {
+            Right : LoginPage
+        } ) );
     });
 };
