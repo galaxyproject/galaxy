@@ -1,4 +1,3 @@
-
 var jQuery = require( 'jquery' ),
     $ = jQuery,
     GalaxyApp = require( 'galaxy' ).GalaxyApp,
