@@ -89,7 +89,7 @@ window.app = function app( options, bootstrapped ){
         ],
 
         loginRequired: function() {
-            centerPanel.display( new routingMessage({type: 'error', message: "You must be logged in to make this request."}) );
+            Galaxy.display( new routingMessage({type: 'error', message: "You must be logged in to make this request."}) );
         },
 
         authenticate: function( args, name ) {
@@ -100,16 +100,16 @@ window.app = function app( options, bootstrapped ){
             if ( tour_id ){
                 Tours.giveTour( tour_id );
             } else {
-                centerPanel.display( new Tours.ToursView() );
+                Galaxy.display( new Tours.ToursView() );
             }
         },
 
         show_user : function(){
-            centerPanel.display( new UserPreferences.View() );
+            Galaxy.display( new UserPreferences.View() );
         },
 
         show_user_form : function( form_id ) {
-            centerPanel.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+            Galaxy.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
         },
 
         show_custom_builds : function() {
@@ -118,7 +118,7 @@ window.app = function app( options, bootstrapped ){
                 window.setTimeout(function() { self.show_custom_builds() }, 500)
                 return;
             }
-            centerPanel.display( new CustomBuilds.View() );
+            Galaxy.display( new CustomBuilds.View() );
         },
 
         /**  */
@@ -150,14 +150,14 @@ window.app = function app( options, bootstrapped ){
         _loadToolForm : function( params ){
             //TODO: load tool form code async
             params.id = params.tool_id;
-            centerPanel.display( new ToolForm.View( params ) );
+            Galaxy.display( new ToolForm.View( params ) );
         },
 
         /** load the center panel iframe using the given url */
         _loadCenterIframe : function( url, root ){
             root = root || Galaxy.root;
             url = root + url;
-            centerPanel.$( '#galaxy_main' ).prop( 'src', url );
+            $( '#galaxy_main' ).prop( 'src', url );
         },
 
     }))( options );
