@@ -1,10 +1,8 @@
-
 var jQuery = require( 'jquery' ),
     $ = jQuery,
     GalaxyApp = require( 'galaxy' ).GalaxyApp,
-    PANEL = require( 'layout/panel' ),
     _l = require( 'utils/localization' ),
-    PAGE = require( 'layout/page' );
+    Page = require( 'layout/page' );
 
 window.app = function app( options, bootstrapped ){
     window.Galaxy = new GalaxyApp( options, bootstrapped );
@@ -19,10 +17,8 @@ window.app = function app( options, bootstrapped ){
         return;
     }
 
-    var loginPage = new PAGE.PageLayoutView( _.extend( options, {
-        el      : 'body',
-        center  : new PANEL.CenterPanel({ el : '#center' }),
-        right   : new PANEL.RightPanel({
+    var loginPage = new Page( _.extend( options, {
+        right   : Backbone.View.extend({
             title : _l( 'Login required' ),
             el : '#right'
         }),
