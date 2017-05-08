@@ -3,7 +3,6 @@ var jQuery = require( 'jquery' ),
     $ = jQuery,
     GalaxyApp = require( 'galaxy' ).GalaxyApp,
     QUERY_STRING = require( 'utils/query-string-parsing' ),
-    PANEL = require( 'layout/panel' ),
     ToolPanel = require( './tool-panel' ),
     HistoryPanel = require( './history-panel' ),
     Page = require( 'layout/page' ),
@@ -38,7 +37,6 @@ window.app = function app( options, bootstrapped ){
             this.$el.html(_.escape(this.message)).addClass(this.msg_status + "message");
         }
     });
-
 
     // .................................................... routes
     /**  */
