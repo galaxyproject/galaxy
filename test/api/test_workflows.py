@@ -1296,6 +1296,37 @@ test_data:
         assert content[ "name" ] == "foo was replaced"
 
     @skip_without_tool( "cat" )
+    def test_run_rename_collection_element( self ):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+    type: data_collection_input
+    collection_type: list
+steps:
+  - tool_id: cat
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        rename: "my new name"
+test_data:
+  input1:
+    type: list
+    name: the_dataset_list
+    elements:
+      - identifier: el1
+        value: 1.fastq
+        type: File
+""", history_id=history_id)
+        content = self.dataset_populator.get_history_dataset_details( history_id, hid=3, wait=True, assert_ok=True )
+        name = content[ "name" ]
+        assert name == "my new name", name
+
+    @skip_without_tool( "cat" )
     def test_run_rename_based_on_input( self ):
         history_id = self.dataset_populator.new_history()
         self._run_jobs("""
