@@ -6,7 +6,7 @@ var jQuery = require( 'jquery' ),
     PANEL = require( 'layout/panel' ),
     ToolPanel = require( './tool-panel' ),
     HistoryPanel = require( './history-panel' ),
-    PAGE = require( 'layout/page' ),
+    Page = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
     UserPreferences = require( 'mvc/user/user-preferences' );
     CustomBuilds = require( 'mvc/user/user-custom-builds' );
@@ -26,48 +26,7 @@ var jQuery = require( 'jquery' ),
 window.app = function app( options, bootstrapped ){
     window.Galaxy = new GalaxyApp( options, bootstrapped );
     Galaxy.debug( 'analysis app' );
-    // TODO: use router as App base (combining with Galaxy)
-
-    // .................................................... panels and page
-    var config = options.config,
-        toolPanel = new ToolPanel({
-            el                  : '#left',
-            userIsAnonymous     : Galaxy.user.isAnonymous(),
-            toolbox             : config.toolbox,
-            toolbox_in_panel    : config.toolbox_in_panel,
-            stored_workflow_menu_entries : config.stored_workflow_menu_entries,
-            nginx_upload_path   : config.nginx_upload_path,
-            ftp_upload_site     : config.ftp_upload_site,
-            default_genome      : config.default_genome,
-            default_extension   : config.default_extension,
-        }),
-        centerPanel = new PANEL.CenterPanel({
-            el              : '#center'
-        }),
-        historyPanel = new HistoryPanel({
-            el              : '#right',
-            galaxyRoot      : Galaxy.root,
-            userIsAnonymous : Galaxy.user.isAnonymous(),
-            allow_user_dataset_purge: config.allow_user_dataset_purge,
-        }),
-        analysisPage = new PAGE.PageLayoutView( _.extend( options, {
-            el              : 'body',
-            left            : toolPanel,
-            center          : centerPanel,
-            right           : historyPanel,
-        }));
-
-    // .................................................... decorate the galaxy object
-    // TODO: most of this is becoming unnecessary as we move to apps
-    Galaxy.page = analysisPage;
     Galaxy.params = Galaxy.config.params;
-
-    // add tool panel to Galaxy object
-    Galaxy.toolPanel = toolPanel.tool_panel;
-    Galaxy.upload = toolPanel.uploadButton;
-
-    Galaxy.currHistoryPanel = historyPanel.historyView;
-    Galaxy.currHistoryPanel.listenToGalaxy( Galaxy );
 
     var routingMessage = Backbone.View.extend({
         initialize: function(options) {
@@ -206,18 +165,11 @@ window.app = function app( options, bootstrapped ){
     // .................................................... when the page is ready
     // render and start the router
     $(function(){
-        analysisPage.render();
-        analysisPage.right.historyView.loadCurrentHistory();
 
-        // use galaxy to listen to history size changes and then re-fetch the user's total size (to update the quota meter)
-        // TODO: we have to do this here (and after every page.render()) because the masthead is re-created on each
-        // page render. It's re-created each time because there is no render function and can't be re-rendered without
-        // re-creating it.
-        Galaxy.listenTo( analysisPage.right.historyView, 'history-size-change', function(){
-            // fetch to update the quota meter adding 'current' for any anon-user's id
-            Galaxy.user.fetch({ url: Galaxy.user.urlRoot() + '/' + ( Galaxy.user.id || 'current' ) });
-        });
-        analysisPage.right.historyView.connectToQuotaMeter( analysisPage.masthead.quotaMeter );
+        Galaxy.page = new Page( _.extend( options, {
+            Left  : ToolPanel,
+            Right : HistoryPanel
+        } ) );
 
         // start the router - which will call any of the routes above
         Backbone.history.start({
