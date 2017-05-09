@@ -18,16 +18,15 @@ window.app = function app( options, bootstrapped ){
     }
 
     var LoginPage = Backbone.View.extend({
-        initialize: function( page, options ) {
-            this.options = options;
+        initialize: function( page ) {
             this.model = new Backbone.Model({ title : _l( 'Login required' ) } );
             this.setElement( this._template() );
         },
         render: function() {
-            $( '#galaxy_main' ).prop( 'src', this.options.config.welcome_url );
+            $( '#galaxy_main' ).prop( 'src', options.welcome_url );
         },
         _template : function() {
-            var login_url = this.options.root + 'user/login?' + $.param( { redirect : this.options.redirect } );
+            var login_url = options.root + 'user/login?' + $.param( { redirect : redirect } );
             return '<iframe src="' + login_url + '" frameborder="0" style="width: 100%; height: 100%;"/>';
         }
     });
