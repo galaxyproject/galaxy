@@ -155,7 +155,7 @@ window.app = function app( options, bootstrapped ){
         _loadCenterIframe : function( url, root ){
             root = root || Galaxy.root;
             url = root + url;
-            $( '#galaxy_main' ).prop( 'src', url );
+            this.page.$( '#galaxy_main' ).prop( 'src', url );
         },
 
     });
