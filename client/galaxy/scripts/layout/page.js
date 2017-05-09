@@ -6,7 +6,7 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
 
         initialize : function( options ) {
             var self = this;
-            this.options = _.defaults( _.omit( options.config, this._panelids ), {
+            this.config = _.defaults( options.config, {
                 message_box_visible     : false,
                 message_box_content     : '',
                 message_box_class       : 'info',
@@ -18,7 +18,7 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
             Galaxy.modal = this.modal = new Modal.View();
             Galaxy.display = this.display = function( view ) { self.center.display( view ) };
             Galaxy.router = this.router = options.Router && new options.Router( self, options );
-            this.masthead = new Masthead.View( this.options );
+            this.masthead = new Masthead.View( this.config );
 
             // build page template
             this.$el.attr( 'scroll', 'no' );
@@ -61,9 +61,9 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
 
         /** Render message box */
         renderMessageBox : function() {
-            if ( this.options.message_box_visible ){
-                var content = this.options.message_box_content || '';
-                var level = this.options.message_box_class || 'info';
+            if ( this.config.message_box_visible ){
+                var content = this.config.message_box_content || '';
+                var level = this.config.message_box_class || 'info';
                 this.$el.addClass( 'has-message-box' );
                 this.$messagebox
                     .attr( 'class', 'panel-' + level + '-message' )
@@ -79,8 +79,8 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
 
         /** Render inactivity warning */
         renderInactivityBox : function() {
-            if( this.options.show_inactivity_warning ){
-                var content = this.options.inactivity_box_content || '';
+            if( this.config.show_inactivity_warning ){
+                var content = this.config.inactivity_box_content || '';
                 var verificationLink = $( '<a/>' ).attr( 'href', Galaxy.root + 'user/resend_verification' ).text( 'Resend verification' );
                 this.$el.addClass( 'has-inactivity-box' );
                 this.$inactivebox
