@@ -66,7 +66,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
             item['latest_workflow_steps'] = len( wf.latest_workflow.steps )
-            item['published'] = wf.published
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
@@ -77,10 +76,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['url'] = url_for( 'workflow', id=encoded_id )
             item['owner'] = wf_sa.stored_workflow.user.username
             item['latest_workflow_steps'] = len( wf_sa.stored_workflow.latest_workflow.steps )
-            item['user_email'] = wf_sa.stored_workflow.user.email
-            item['user_name'] = wf_sa.stored_workflow.user.username
             item['slug'] = wf_sa.stored_workflow.slug
-            item['published'] = wf_sa.stored_workflow.published
             rval.append(item)
         return rval
 

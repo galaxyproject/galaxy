@@ -45,17 +45,14 @@ define( [ 'mvc/form/form-view',
 
         /** Build workflows object */
         build_workflows: function( response ) {
-            var workflows = [],
-                username = Galaxy.user.attributes.username;
+            var workflows = [];
             _.each( response, function( wf ) {
                 var wf_obj = {};
                 wf_obj.id = wf.id;
                 wf_obj.text = wf.name;
                 wf_obj.workflow_steps = wf.latest_workflow_steps;
-                wf_obj.published = ( wf.published ? "Yes" : "No" );
-                wf_obj.email = wf.user_email ? wf.user_email : "You";
                 wf_obj.slug = wf.slug ? wf.slug : "";
-                wf_obj.username = wf.user_name ? wf.user_name : "";
+                wf_obj.owner = wf.owner;
                 workflows.push( wf_obj );
             });
             return workflows;
@@ -80,7 +77,6 @@ define( [ 'mvc/form/form-view',
         confirm_delete: function( self, workflow ) {
             var $el_wf_link = self.$el.find( '.link-confirm-' + workflow.id ),
                 $el_shared_wf_link = self.$el.find( '.link-confirm-shared-' + workflow.id );
-
             $el_wf_link.click( function() {
                 return confirm( "Are you sure you want to delete workflow '" + workflow.text + "'?" );
             });
@@ -169,9 +165,9 @@ define( [ 'mvc/form/form-view',
                                      self._templateActions( wf ) +
                                  '</div>' +
                               '</td>' +
-                              '<td>' + _.escape( wf.email ) +'</td>' +
+                              '<td>' + ( wf.owner === Galaxy.user.attributes.username ? "You" : wf.owner ) +'</td>' +
                               '<td class="wf-td">' + wf.workflow_steps + '</td>' +
-                              '<td class="wf-td">' + wf.published + '</td>' +
+                              '<td class="wf-td">' + ( wf.published ? "Yes" : "No" ) + '</td>' +
                          '</tr>';
             });
             return tableHtml + '<tbody class="workflow-search">' + trHtml + '</tbody></table>';
@@ -179,7 +175,7 @@ define( [ 'mvc/form/form-view',
 
         /** Template for user actions for workflows */
         _templateActions: function( workflow ) {
-            if( workflow.username === "" ) {
+            if( workflow.owner === Galaxy.user.attributes.username ) {
                 return '<ul class="dropdown-menu action-dpd">' +
                            '<li><a href="/workflow/editor?id='+ workflow.id +'">Edit</a></li>' +
                            '<li><a href="/workflow/run?id='+ workflow.id +'" target="galaxy_main">Run</a></li>' +
@@ -192,7 +188,7 @@ define( [ 'mvc/form/form-view',
             }
             else {
                 return '<ul class="dropdown-menu action-dpd">' +
-                         '<li><a href="/workflow/display_by_username_and_slug?username='+ workflow.username +'&slug='+ workflow.slug +'">View</a></li>' +
+                         '<li><a href="/workflow/display_by_username_and_slug?username='+ workflow.owner +'&slug='+ workflow.slug +'">View</a></li>' +
                          '<li><a href="/workflow/run?id='+ workflow.id +'" target="galaxy_main">Run</a></li>' +
                          '<li><a href="/workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
                          '<li><a class="link-confirm-shared-'+ workflow.id +'" href="/workflow/sharing?unshare_me=True&id='+ workflow.id +'">Remove</a></li>' +
