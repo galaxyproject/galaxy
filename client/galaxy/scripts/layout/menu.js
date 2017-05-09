@@ -24,7 +24,7 @@ var Collection = Backbone.Collection.extend({
             id              : 'analysis',
             title           : _l('Analyze Data'),
             url             : '',
-            tooltip         : 'Analysis home view'
+            tooltip         : _l('Analysis home view')
         });
 
         //
@@ -34,7 +34,7 @@ var Collection = Backbone.Collection.extend({
             id              : 'workflow',
             title           : _l('Workflow'),
             url             : 'workflow',
-            tooltip         : 'Chain tools into workflows',
+            tooltip         : _l('Chain tools into workflows'),
             disabled        : !Galaxy.user.id
         });
 
@@ -45,7 +45,7 @@ var Collection = Backbone.Collection.extend({
             id              : 'shared',
             title           : _l('Shared Data'),
             url             : 'library/index',
-            tooltip         : 'Access published resources',
+            tooltip         : _l('Access published resources'),
             menu            : [{
                     title   : _l('Data Libraries'),
                     url     : 'library/list'
@@ -89,7 +89,7 @@ var Collection = Backbone.Collection.extend({
             id              : 'visualization',
             title           : _l('Visualization'),
             url             : 'visualization/list',
-            tooltip         : 'Visualize datasets',
+            tooltip         : _l('Visualize datasets'),
             disabled        : !Galaxy.user.id,
             menu            : [{
                     title   : _l('New Track Browser'),
@@ -149,7 +149,7 @@ var Collection = Backbone.Collection.extend({
             id              : 'admin',
             title           : _l('Admin'),
             url             : 'admin',
-            tooltip         : 'Administer this Galaxy',
+            tooltip         : _l('Administer this Galaxy'),
             cls             : 'admin-only'
         });
 
@@ -159,7 +159,7 @@ var Collection = Backbone.Collection.extend({
         var helpTab = {
             id              : 'help',
             title           : _l('Help'),
-            tooltip         : 'Support, contact, and community',
+            tooltip         : l('Support, contact, and community'),
             menu            : [{
                     title   : _l('Support'),
                     url     : options.support_url,
@@ -222,7 +222,7 @@ var Collection = Backbone.Collection.extend({
                 id              : 'user',
                 title           : _l('Login or Register'),
                 cls             : 'loggedout-only',
-                tooltip         : 'Account registration or login',
+                tooltip         : l('Account registration or login'),
                 menu            : [{
                     title           : _l('Login'),
                     url             : 'user/login',
@@ -242,7 +242,7 @@ var Collection = Backbone.Collection.extend({
                 id              : 'user',
                 title           : _l('User'),
                 cls             : 'loggedin-only',
-                tooltip         : 'Account and saved data',
+                tooltip         : l('Account and saved data'),
                 menu            : [{
                         title   : _l('Logged in as') + ' ' + Galaxy.user.get( 'email' )
                     },{
