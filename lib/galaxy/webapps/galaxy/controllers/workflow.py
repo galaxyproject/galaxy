@@ -418,7 +418,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             stored.name = san_new_name
             stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
-            
             message = 'Workflow renamed to: %s' % escape( san_new_name )
             trans.set_message( message )
             return_url = '/workflow?status=done&message=%s' % escape( message )
@@ -1005,7 +1004,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         workflow_contents_manager = workflows.WorkflowContentsManager( trans.app )
         stored = workflow_manager.get_stored_accessible_workflow( trans, id )
         workflow_dict = workflow_contents_manager.workflow_to_dict( trans, stored, style='run' )
-        return json.dumps( workflow_dict )
+        return trans.fill_template( 'workflow/run.mako', workflow_dict=workflow_dict )
 
     def get_item( self, trans, id ):
         return self.get_stored_workflow( trans, id )

@@ -33,7 +33,6 @@ define( [ 'mvc/form/form-view',
                     // Register delete and run workflow events
                     _.each( workflows, function( wf ) {
                         self.confirm_delete( self, wf );
-                        self.run_workflow( self, wf );
                     });
                     // Register search workflow event
                     self.search_workflow( self, self.$el.find( '.search-wf' ), self.$el.find( '.workflow-search tr' ), min_query_length );
@@ -87,18 +86,6 @@ define( [ 'mvc/form/form-view',
             });
             $el_shared_wf_link.click( function() {
                 return confirm( "Are you sure you want to remove the shared workflow '" + workflow.text + "'?" );
-            });
-        },
-
-        /** Open page for running workflow  */
-        run_workflow: function( self, workflow ) {
-            var $el_wf_run = self.$el.find( '.run-workflow-' + workflow.id );
-            $el_wf_run.on( 'click', function( e ) {
-                var url = Galaxy.root + 'workflow/run?id='+ workflow.id
-                $.getJSON( url, function( workflow_dict ) {
-                    var form = new ToolForm.View( workflow_dict );
-                    self.$el.empty().append( form.$el );
-                });
             });
         },
 
@@ -195,7 +182,7 @@ define( [ 'mvc/form/form-view',
             if( workflow.username === "" ) {
                 return '<ul class="dropdown-menu action-dpd">' +
                            '<li><a href="/workflow/editor?id='+ workflow.id +'">Edit</a></li>' +
-                           '<li><a class="run-workflow-'+ workflow.id +'" href="#">Run</a></li>' +
+                           '<li><a href="/workflow/run?id='+ workflow.id +'" target="galaxy_main">Run</a></li>' +
                            '<li><a href="/workflow/sharing?id='+ workflow.id +'">Share or Download</a></li>' +
                            '<li><a href="/workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
                            '<li><a href="/workflow/rename?id='+ workflow.id +'">Rename</a></li>' +
@@ -206,7 +193,7 @@ define( [ 'mvc/form/form-view',
             else {
                 return '<ul class="dropdown-menu action-dpd">' +
                          '<li><a href="/workflow/display_by_username_and_slug?username='+ workflow.username +'&slug='+ workflow.slug +'">View</a></li>' +
-                         '<li><a class="run-workflow-'+ workflow.id +'" href="#">Run</a></li>' +
+                         '<li><a href="/workflow/run?id='+ workflow.id +'" target="galaxy_main">Run</a></li>' +
                          '<li><a href="/workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
                          '<li><a class="link-confirm-shared-'+ workflow.id +'" href="/workflow/sharing?unshare_me=True&id='+ workflow.id +'">Remove</a></li>' +
                       '</ul>';
@@ -222,7 +209,7 @@ define( [ 'mvc/form/form-view',
                        '</div>'+
                        '<div class="other-options wf">' +
                            '<h2>Other options</h2>' +
-                           '<a class="action-button fa fa-cog wf-action" href="/workflow/configure_menu">' +
+                           '<a class="action-button fa fa-cog wf-action" href="/workflow/configure_menu" title="Configure your workflow menu">' +
                                '<span>Configure your workflow menu</span>' +
                            '</a>' +
                        '</div>' +
