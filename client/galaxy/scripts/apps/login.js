@@ -19,11 +19,12 @@ window.app = function app( options, bootstrapped ){
 
     var LoginPage = Backbone.View.extend({
         initialize: function( page ) {
+            this.page = page;
             this.model = new Backbone.Model({ title : _l( 'Login required' ) } );
             this.setElement( this._template() );
         },
         render: function() {
-            $( '#galaxy_main' ).prop( 'src', options.welcome_url );
+            this.page.$( '#galaxy_main' ).prop( 'src', options.welcome_url );
         },
         _template : function() {
             var login_url = options.root + 'user/login?' + $.param( { redirect : redirect } );
