@@ -80,7 +80,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['user_email'] = wf_sa.stored_workflow.user.email
             item['user_name'] = wf_sa.stored_workflow.user.username
             item['slug'] = wf_sa.stored_workflow.slug
-            item['published'] = wf_sa.stored_workflow.published            
+            item['published'] = wf_sa.stored_workflow.published
             rval.append(item)
         return rval
 

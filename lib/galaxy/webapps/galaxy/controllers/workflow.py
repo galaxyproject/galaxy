@@ -175,26 +175,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         Render workflow main page (management of existing workflows)
         """
-        user = trans.get_user()
-        workflows = trans.sa_session.query( model.StoredWorkflow ) \
-            .filter_by( user=user, deleted=False ) \
-            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
-            .all()
-        shared_by_others = trans.sa_session \
-            .query( model.StoredWorkflowUserShareAssociation ) \
-            .filter_by( user=user ) \
-            .join( 'stored_workflow' ) \
-            .filter( model.StoredWorkflow.deleted == expression.false() ) \
-            .order_by( desc( model.StoredWorkflow.update_time ) ) \
-            .all()
-
-        # Legacy issue: all shared workflows must have slugs.
-        slug_set = False
-        for workflow_assoc in shared_by_others:
-            if self.create_item_slug( trans.sa_session, workflow_assoc.stored_workflow ):
-                slug_set = True
-        if slug_set:
-            trans.sa_session.flush()
         return trans.response.send_redirect( '/workflow' )
 
     @web.expose
