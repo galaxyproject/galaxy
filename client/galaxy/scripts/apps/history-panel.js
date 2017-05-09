@@ -84,7 +84,7 @@ var HistoryPanel = Backbone.View.extend({
         ].join('');
     },
 
-    toString : function() { return 'HistoryPanel' }
+    toString : function() { return 'historyPanel' }
 });
 
 module.exports = HistoryPanel;

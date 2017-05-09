@@ -17,7 +17,7 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
             // attach global objects, build mastheads
             Galaxy.modal = this.modal = new Modal.View();
             Galaxy.display = this.display = function( view ) { self.center.display( view ) };
-            //Galaxy.router = this.router = new options.Router( self, options );
+            Galaxy.router = this.router = options.Router && new options.Router( self, options );
             this.masthead = new Masthead.View( this.options );
 
             // build page template
@@ -36,11 +36,12 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
                 var panel_class_name = panel_id.charAt( 0 ).toUpperCase() + panel_id.slice( 1 );
                 var panel_class = options[ panel_class_name ];
                 if ( panel_class ) {
-                    self[ panel_id ] = new panel_class( self, options );
+                    var panel_instance = new panel_class( self, options );
+                    self[ panel_instance.toString() ] = panel_instance;
                     self.panels[ panel_id ] = new Panel.SidePanel({
                         id      : panel_id,
                         el      : self.$( '#' + panel_id ),
-                        view    : self[ panel_id ]
+                        view    : panel_instance
                     });
                 }
             });

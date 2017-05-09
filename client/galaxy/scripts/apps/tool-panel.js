@@ -94,7 +94,7 @@ var ToolPanel = Backbone.View.extend({
         ].join('');
     },
 
-    toString : function() { return 'ToolPanel' }
+    toString : function() { return 'toolPanel' }
 });
 
 module.exports = ToolPanel;

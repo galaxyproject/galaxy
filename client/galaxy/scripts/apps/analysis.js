@@ -38,10 +38,11 @@ window.app = function app( options, bootstrapped ){
     });
 
     /** Routes */
-    Galaxy.router = new ( Backbone.Router.extend({
+    var Router = Backbone.Router.extend({
         // TODO: not many client routes at this point - fill and remove from server.
         // since we're at root here, this may be the last to be routed entirely on the client.
-        initialize : function( options ){
+        initialize : function( page, options ){
+            this.page = page;
             this.options = options;
         },
 
@@ -85,7 +86,7 @@ window.app = function app( options, bootstrapped ){
         ],
 
         loginRequired: function() {
-            Galaxy.display( new routingMessage({type: 'error', message: "You must be logged in to make this request."}) );
+            this.page.display( new routingMessage({type: 'error', message: "You must be logged in to make this request."}) );
         },
 
         authenticate: function( args, name ) {
@@ -96,25 +97,26 @@ window.app = function app( options, bootstrapped ){
             if ( tour_id ){
                 Tours.giveTour( tour_id );
             } else {
-                Galaxy.display( new Tours.ToursView() );
+                this.page.display( new Tours.ToursView() );
             }
         },
 
         show_user : function(){
-            Galaxy.display( new UserPreferences.View() );
+            this.page.display( new UserPreferences.View() );
         },
 
         show_user_form : function( form_id ) {
-            Galaxy.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+            this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
         },
 
         show_custom_builds : function() {
             var self = this;
-            if ( !Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model || !Galaxy.currHistoryPanel.model.id ) {
+            var historyPanel = this.page.historyPanel.historyView;
+            if ( !historyPanel || !historyPanel.model || !historyPanel.model.id ) {
                 window.setTimeout(function() { self.show_custom_builds() }, 500)
                 return;
             }
-            Galaxy.display( new CustomBuilds.View() );
+            this.page.display( new CustomBuilds.View() );
         },
 
         /**  */
@@ -123,7 +125,7 @@ window.app = function app( options, bootstrapped ){
             // load a tool by id (tool_id) or rerun a previous tool execution (job_id)
             if( params.tool_id || params.job_id ) {
                 if ( params.tool_id === 'upload1' ) {
-                    Galaxy.upload.show();
+                    this.page.toolPanel.upload.show();
                     this._loadCenterIframe( 'welcome' );
                 } else {
                     this._loadToolForm( params );
@@ -146,7 +148,7 @@ window.app = function app( options, bootstrapped ){
         _loadToolForm : function( params ){
             //TODO: load tool form code async
             params.id = params.tool_id;
-            Galaxy.display( new ToolForm.View( params ) );
+            this.page.display( new ToolForm.View( params ) );
         },
 
         /** load the center panel iframe using the given url */
@@ -156,14 +158,15 @@ window.app = function app( options, bootstrapped ){
             $( '#galaxy_main' ).prop( 'src', url );
         },
 
-    }))( options );
+    });
 
     // render and start the router
     $(function(){
 
         Galaxy.page = new Page( _.extend( options, {
-            Left  : ToolPanel,
-            Right : HistoryPanel
+            Left   : ToolPanel,
+            Right  : HistoryPanel,
+            Router : Router
         } ) );
 
         // start the router - which will call any of the routes above
