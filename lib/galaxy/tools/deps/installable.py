@@ -67,11 +67,16 @@ def ensure_installed(installable_context, install_func, auto_init):
     if not os.path.lexists(parent_path):
         os.mkdir(parent_path)
 
-    try:
-        if auto_init and os.access(parent_path, os.W_OK):
-            with FileLock(os.path.join(parent_path, desc.lower())):
+    import time
+    MAX_TRIES = 10
+
+    for i in range( MAX_TRIES ):
+        try:
+            if auto_init and os.access(parent_path, os.W_OK):
+                with FileLock(os.path.join(parent_path, desc.lower())):
+                    return _check()
+            else:
                 return _check()
-        else:
-            return _check()
-    except FileLockException:
-        return ensure_installed(installable_context, install_func, auto_init)
+        except FileLockException:
+            time.sleep(1)
+    raise Exception("Failed to get file lock for %s for %s times" % (os.path.join(parent_path, desc.lower()), MAX_TRIES))
