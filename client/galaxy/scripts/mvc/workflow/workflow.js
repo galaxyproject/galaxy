@@ -14,9 +14,8 @@ define( [ 'mvc/form/form-view',
 
         render: function() {
             var self = this,
-                workflows = [],
                 min_query_length = 3;
-            $.getJSON( Galaxy.root + 'api/workflows/', function( response ) {
+            $.getJSON( Galaxy.root + 'api/workflows/', function( workflows ) {
                 var $el_workflow = null;
                 // Add workflow header
                 self.$el.empty().append( self._templateHeader() );
@@ -25,8 +24,6 @@ define( [ 'mvc/form/form-view',
                 $el_workflow = self.$el.find( '.user-workflows' );
                 // Add the actions buttons
                 $el_workflow.append( self._templateActionButtons() );
-                // Add attributes to workflow object
-                workflows = self.build_workflows( response );
                 if( workflows.length > 0) {
                     $el_workflow.append( self._templateWorkflowTable( self, workflows) );
                     self.adjust_actiondropdown( $el_workflow );
@@ -41,21 +38,6 @@ define( [ 'mvc/form/form-view',
                     $el_workflow.append( self._templateNoWorkflow() );
                 }
             });
-        },
-
-        /** Build workflows object */
-        build_workflows: function( response ) {
-            var workflows = [];
-            _.each( response, function( wf ) {
-                var wf_obj = {};
-                wf_obj.id = wf.id;
-                wf_obj.text = wf.name;
-                wf_obj.workflow_steps = wf.latest_workflow_steps;
-                wf_obj.slug = wf.slug ? wf.slug : "";
-                wf_obj.owner = wf.owner;
-                workflows.push( wf_obj );
-            });
-            return workflows;
         },
 
         /** Build messages after user action */
@@ -78,10 +60,10 @@ define( [ 'mvc/form/form-view',
             var $el_wf_link = self.$el.find( '.link-confirm-' + workflow.id ),
                 $el_shared_wf_link = self.$el.find( '.link-confirm-shared-' + workflow.id );
             $el_wf_link.click( function() {
-                return confirm( "Are you sure you want to delete workflow '" + workflow.text + "'?" );
+                return confirm( "Are you sure you want to delete workflow '" + workflow.name + "'?" );
             });
             $el_shared_wf_link.click( function() {
-                return confirm( "Are you sure you want to remove the shared workflow '" + workflow.text + "'?" );
+                return confirm( "Are you sure you want to remove the shared workflow '" + workflow.name + "'?" );
             });
         },
 
@@ -160,13 +142,13 @@ define( [ 'mvc/form/form-view',
                              '<td class="wf-td wf-dpd">' +
                                  '<div class="dropdown">' +
                                      '<button class="menubutton" type="button" data-toggle="dropdown">' +
-                                         _.escape( wf.text ) + '<span class="caret"></span>' +
+                                         _.escape( wf.name ) + '<span class="caret"></span>' +
                                      '</button>' +
                                      self._templateActions( wf ) +
                                  '</div>' +
                               '</td>' +
                               '<td>' + ( wf.owner === Galaxy.user.attributes.username ? "You" : wf.owner ) +'</td>' +
-                              '<td class="wf-td">' + wf.workflow_steps + '</td>' +
+                              '<td class="wf-td">' + wf.number_of_steps + '</td>' +
                               '<td class="wf-td">' + ( wf.published ? "Yes" : "No" ) + '</td>' +
                          '</tr>';
             });
