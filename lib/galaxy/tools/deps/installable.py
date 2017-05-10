@@ -74,4 +74,4 @@ def ensure_installed(installable_context, install_func, auto_init):
         else:
             return _check()
     except FileLockException:
-        return ensure_installed(installable_context, auto_init)
+        return ensure_installed(installable_context, install_func, auto_init)
