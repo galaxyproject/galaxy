@@ -117,11 +117,11 @@ define( [ 'mvc/form/form-view',
                     '<input class="search-wf form-control" type="text" autocomplete="off" placeholder="search for workflow...">' +
                 '</li>' +
                 '<li>' +
-                    '<a class="action-button fa fa-plus wf-action" id="new-workflow" title="Create new workflow" href="/workflow/create">' +
+                    '<a class="action-button fa fa-plus wf-action" id="new-workflow" title="Create new workflow" href="'+ Galaxy.root +'workflow/create">' +
                     '</a>' +
                 '</li>' +
                 '<li>' +
-                    '<a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="/workflow/import_workflow">' +
+                    '<a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="'+ Galaxy.root +'workflow/import_workflow">' +
                     '</a>' +
                 '</li>' +
             '</ul>';
@@ -159,21 +159,21 @@ define( [ 'mvc/form/form-view',
         _templateActions: function( workflow ) {
             if( workflow.owner === Galaxy.user.attributes.username ) {
                 return '<ul class="dropdown-menu action-dpd">' +
-                           '<li><a href="/workflow/editor?id='+ workflow.id +'">Edit</a></li>' +
-                           '<li><a href="/workflow/run?id='+ workflow.id +'" target="galaxy_main">Run</a></li>' +
-                           '<li><a href="/workflow/sharing?id='+ workflow.id +'">Share or Download</a></li>' +
-                           '<li><a href="/workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
-                           '<li><a href="/workflow/rename?id='+ workflow.id +'">Rename</a></li>' +
-                           '<li><a href="/workflow/display_by_id?id='+ workflow.id +'">View</a></li>' +
-                           '<li><a class="link-confirm-'+ workflow.id +'" href="/workflow/delete?id='+ workflow.id +'">Delete</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/editor?id='+ workflow.id +'">Edit</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/run?id='+ workflow.id +'" target="galaxy_main">Run</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/sharing?id='+ workflow.id +'">Share or Download</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/rename?id='+ workflow.id +'">Rename</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/display_by_id?id='+ workflow.id +'">View</a></li>' +
+                           '<li><a class="link-confirm-'+ workflow.id +'" href="'+ Galaxy.root +'workflow/delete?id='+ workflow.id +'">Delete</a></li>' +
                       '</ul>';
             }
             else {
                 return '<ul class="dropdown-menu action-dpd">' +
-                         '<li><a href="/workflow/display_by_username_and_slug?username='+ workflow.owner +'&slug='+ workflow.slug +'">View</a></li>' +
-                         '<li><a href="/workflow/run?id='+ workflow.id +'" target="galaxy_main">Run</a></li>' +
-                         '<li><a href="/workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
-                         '<li><a class="link-confirm-shared-'+ workflow.id +'" href="/workflow/sharing?unshare_me=True&id='+ workflow.id +'">Remove</a></li>' +
+                         '<li><a href="'+ Galaxy.root +'workflow/display_by_username_and_slug?username='+ workflow.owner +'&slug='+ workflow.slug +'">View</a></li>' +
+                         '<li><a href="'+ Galaxy.root +'workflow/run?id='+ workflow.id +'" target="galaxy_main">Run</a></li>' +
+                         '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
+                         '<li><a class="link-confirm-shared-'+ workflow.id +'" href="'+ Galaxy.root +'workflow/sharing?unshare_me=True&id='+ workflow.id +'">Remove</a></li>' +
                       '</ul>';
             }
         },
@@ -187,7 +187,7 @@ define( [ 'mvc/form/form-view',
                        '</div>'+
                        '<div class="other-options wf">' +
                            '<h2>Other options</h2>' +
-                           '<a class="action-button fa fa-cog wf-action" href="/workflow/configure_menu" title="Configure your workflow menu">' +
+                           '<a class="action-button fa fa-cog wf-action" href="'+ Galaxy.root +'workflow/configure_menu" title="Configure your workflow menu">' +
                                '<span>Configure your workflow menu</span>' +
                            '</a>' +
                        '</div>' +

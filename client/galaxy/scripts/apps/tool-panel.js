@@ -63,9 +63,9 @@ var ToolPanel = LeftPanel.extend({
     _renderWorkflowMenu : function(){
         var self = this;
         // add internal workflow list
-        self.$( '#internal-workflows' ).append( self._templateTool({
+        self.$( '#internal-workflows' ).append( self._templateAllWorkflow({
             title   : _l( 'All workflows' ),
-            href    : 'workflow/list_for_run'
+            href    : 'workflow'
         }));
         _.each( self.stored_workflow_menu_entries, function( menu_entry ){
             self.$( '#internal-workflows' ).append( self._templateTool({
@@ -81,6 +81,16 @@ var ToolPanel = LeftPanel.extend({
             '<div class="toolTitle">',
                 // global
                 '<a href="', Galaxy.root, tool.href, '" target="galaxy_main">', tool.title, '</a>',
+            '</div>'
+        ].join('');
+    },
+
+    /** build a link to 'All Workflows' */
+    _templateAllWorkflow: function( tool ) {
+        return [
+            '<div class="toolTitle">',
+                // global
+                '<a href="', Galaxy.root, tool.href, '">', tool.title, '</a>',
             '</div>'
         ].join('');
     },
