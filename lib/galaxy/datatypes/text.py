@@ -658,6 +658,17 @@ class PlantTribesPhylogeneticTree(PlantTribes):
         dataset.blurb = "PlantTribes phylogenetic trees: %d files" % dataset.metadata.num_files
 
 
+class PlantTribesPhylip(PlantTribes):
+    """
+    PlantTribes orthogroup phylip multiple sequence alignments.
+    """
+    file_ext = "ptphylip"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesPhylip, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes orthogroup phylip multiple sequence alignments: %d files" % dataset.metadata.num_files
+
+
 class PlantTribesMultipleSequenceAlignment(PlantTribes):
     """
     PlantTribes multiple sequence alignments.

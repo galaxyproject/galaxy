@@ -610,6 +610,7 @@
     <datatype extension="ptalignfilteredca" type="galaxy.datatypes.text:PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment" />
     <datatype extension="ptortho" type="galaxy.datatypes.text:PlantTribesOrtho" />
     <datatype extension="ptorthocs" type="galaxy.datatypes.text:PlantTribesOrthoCodingSequence" />
+    <datatype extension="ptphylip" type="galaxy.datatypes.text:PlantTribesPhylip" />
     <datatype extension="pttree" type="galaxy.datatypes.text:PlantTribesPhylogeneticTree" />
     <datatype extension="smat" type="galaxy.datatypes.text:Smat" display_in_upload="true" />
   </registration>
