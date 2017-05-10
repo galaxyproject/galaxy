@@ -1,6 +1,5 @@
 /** en/main localization hash - for use with requirejs' i18n plugin */
 define({
-    root : {
 // ----------------------------------------------------------------------------- masthead
 "Analyze Data": 
  	"Daten analysieren",
