@@ -58,13 +58,30 @@ define({
 "Custom Builds":
     "Mes génomes Builds de référence",
 "Logout":
-    "Déconnection",
+    "Déconnexion",
 "Saved Histories":
     "Historiques sauvegardés",
 "Saved Datasets":
     "Jeux de données sauvegardés",
 "Saved Pages":
     "Pages sauvegardées",
+//Tooltip
+"Account and saved data": 
+ 	"Compte et données sauvegardées",
+"Account registration or login": 
+ 	"Enregistrement ou authentification",
+"Support, contact, and community": 
+ 	"Support,contact et communauté",
+"Administer this Galaxy": 
+ 	"Outils Admin",
+"Visualize datasets": 
+ 	"Visualiser les jeux de données",
+"Access published resources": 
+ 	"Accéder aux données partagées",
+"Chain tools into workflows": 
+ 	"Relier outils dans un workflow",
+"Analysis home view": 
+ 	"Accueil analyse de donnée",
 // ---------------------------------------------------------------------------- histories
 // ---- history/options-menu
 "History Lists":
