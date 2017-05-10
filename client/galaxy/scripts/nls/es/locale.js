@@ -1,6 +1,5 @@
 /** en/main localization hash - for use with requirejs' i18n plugin */
 define({
-    root : {
 // ----------------------------------------------------------------------------- masthead
 "Analyze Data": 
  	"Analizar datos",
@@ -193,7 +192,7 @@ define({
  	"Anotación",
 // ---- history-view-edit-current
 "This history is empty. Click 'Get Data' on the left tool menu to start": 
- 	"Este historial está vacío. Haga clic en" Obtener datos "en el menú de herramientas de la izquierda para iniciar",
+ 	"Este historial está vacío. Haga clic en 'Obtener datos' en el menú de herramientas de la izquierda para iniciar",
 "You must be logged in to create histories": 
  	"Debe haber iniciado sesión para crear historiales",
 //TODO:

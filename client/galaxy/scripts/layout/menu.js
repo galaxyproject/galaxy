@@ -159,7 +159,7 @@ var Collection = Backbone.Collection.extend({
         var helpTab = {
             id              : 'help',
             title           : _l('Help'),
-            tooltip         : l('Support, contact, and community'),
+            tooltip         : _l('Support, contact, and community'),
             menu            : [{
                     title   : _l('Support'),
                     url     : options.support_url,
@@ -222,7 +222,7 @@ var Collection = Backbone.Collection.extend({
                 id              : 'user',
                 title           : _l('Login or Register'),
                 cls             : 'loggedout-only',
-                tooltip         : l('Account registration or login'),
+                tooltip         : _l('Account registration or login'),
                 menu            : [{
                     title           : _l('Login'),
                     url             : 'user/login',
@@ -242,7 +242,7 @@ var Collection = Backbone.Collection.extend({
                 id              : 'user',
                 title           : _l('User'),
                 cls             : 'loggedin-only',
-                tooltip         : l('Account and saved data'),
+                tooltip         : _l('Account and saved data'),
                 menu            : [{
                         title   : _l('Logged in as') + ' ' + Galaxy.user.get( 'email' )
                     },{
@@ -319,7 +319,7 @@ var Tab = Backbone.View.extend({
         this.$note.html( this.model.get( 'note' ) || '' )
                   .removeClass().addClass( 'dropdown-note' )
                   .addClass( this.model.get( 'note_cls' ) )
-                  .css( { 'display' : this.model.get( 'show_note' ) && 'block' || 'none' } )
+                  .css( { 'display' : this.model.get( 'show_note' ) && 'block' || 'none' } );
         this.$toggle.html( this.model.get( 'title' ) || '' )
                     .removeClass().addClass( 'dropdown-toggle' )
                     .addClass( this.model.get( 'cls' ) )
@@ -398,7 +398,7 @@ var Tab = Backbone.View.extend({
             }
         } else {
             function buildLink( label, url ) {
-                return $( '<div/>' ).append( $( '<a/>' ).attr( 'href', Galaxy.root + url ).html( label ) ).html()
+                return $( '<div/>' ).append( $( '<a/>' ).attr( 'href', Galaxy.root + url ).html( label ) ).html();
             }
             this.$toggle.popover && this.$toggle.popover( 'destroy' );
             this.$toggle.popover({
