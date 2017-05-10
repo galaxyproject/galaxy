@@ -37,6 +37,7 @@ DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = '/source/'
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
+DEST_BASE_IMAGE = os.environ.get('DEST_BASE_IMAGE', None)
 
 
 def involucro_link():
@@ -144,6 +145,9 @@ def mull_targets(
         '-set', "REPO='%s'" % repo,
         '-set', "BINDS='%s'" % bind_str,
     ]
+
+    if DEST_BASE_IMAGE:
+        involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % DEST_BASE_IMAGE])
     if verbose:
         involucro_args.extend(["-set", "VERBOSE='1'"])
     if conda_version is not None:
