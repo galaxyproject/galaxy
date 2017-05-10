@@ -163,7 +163,7 @@ window.app = function app( options, bootstrapped ){
     // render and start the router
     $(function(){
 
-        Galaxy.page = new Page( _.extend( options, {
+        Galaxy.page = new Page.View( _.extend( options, {
             Left   : ToolPanel,
             Right  : HistoryPanel,
             Router : Router

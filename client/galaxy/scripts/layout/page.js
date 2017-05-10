@@ -1,5 +1,5 @@
 define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Masthead, Panel, Modal ) {
-    return Backbone.View.extend({
+    var View = Backbone.View.extend({
         el : 'body',
         className : 'full-content',
         _panelids : [ 'left', 'right' ],
@@ -159,4 +159,6 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
             }
         },
     });
+
+    return { View: View }
 });
