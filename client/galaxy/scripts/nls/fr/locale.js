@@ -123,7 +123,7 @@ define({
 "Delete Hidden Datasets":
     "Supprimer les données cachés",
 "Purge Deleted Datasets":
-    "Purger les données supprimer",
+    "Purger les données supprimées",
 "Downloads":
     "Télécharger",
 "Export Tool Citations":
