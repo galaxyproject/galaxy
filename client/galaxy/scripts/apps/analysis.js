@@ -112,7 +112,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_workflows : function(){
-            centerPanel.display( new Workflows.View() );
+            this.page.display( new Workflows.View() );
         },
 
         show_custom_builds : function() {
