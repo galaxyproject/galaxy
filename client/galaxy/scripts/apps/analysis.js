@@ -6,9 +6,10 @@ var jQuery = require( 'jquery' ),
     HistoryPanel = require( './history-panel' ),
     Page = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
-    UserPreferences = require( 'mvc/user/user-preferences' );
-    CustomBuilds = require( 'mvc/user/user-custom-builds' );
-    Tours = require( 'mvc/tours' );
+    UserPreferences = require( 'mvc/user/user-preferences' ),
+    CustomBuilds = require( 'mvc/user/user-custom-builds' ),
+    Tours = require( 'mvc/tours' ),
+    Workflows = require( 'mvc/workflow/workflow' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -77,6 +78,7 @@ window.app = function app( options, bootstrapped ){
             '(/)tours(/)(:tour_id)' : 'show_tours',
             '(/)user(/)' : 'show_user',
             '(/)user(/)(:form_id)' : 'show_user_form',
+            '(/)workflow(/)' : 'show_workflows',
             '(/)custom_builds' : 'show_custom_builds'
         },
 
@@ -107,6 +109,10 @@ window.app = function app( options, bootstrapped ){
 
         show_user_form : function( form_id ) {
             this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+        },
+
+        show_workflows : function(){
+            centerPanel.display( new Workflows.View() );
         },
 
         show_custom_builds : function() {

@@ -52,9 +52,10 @@ var ToolPanel = Backbone.View.extend({
             this.tool_panel_view.render();
         }
         // build the dom for the workflow portion of the tool menu
-        this.$( '#internal-workflows' ).append( self._templateTool({
+        // add internal workflow list
+        self.$( '#internal-workflows' ).append( self._templateAllWorkflow({
             title   : _l( 'All workflows' ),
-            href    : 'workflow/list_for_run'
+            href    : 'workflow'
         }));
         _.each( this.stored_workflow_menu_entries, function( menu_entry ){
             self.$( '#internal-workflows' ).append( self._templateTool({
@@ -69,6 +70,16 @@ var ToolPanel = Backbone.View.extend({
         return [
             '<div class="toolTitle">',
                 '<a href="', this.root, tool.href, '" target="galaxy_main">', tool.title, '</a>',
+            '</div>'
+        ].join('');
+    },
+
+    /** build a link to 'All Workflows' */
+    _templateAllWorkflow: function( tool ) {
+        return [
+            '<div class="toolTitle">',
+                // global
+                '<a href="', Galaxy.root, tool.href, '">', tool.title, '</a>',
             '</div>'
         ].join('');
     },

@@ -156,10 +156,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     __myexp_url = "www.myexperiment.org:80"
 
     @web.expose
-    def index( self, trans ):
-        return self.list( trans )
-
-    @web.expose
     @web.require_login( "use Galaxy workflows" )
     def list_grid( self, trans, **kwargs ):
         """ List user's stored workflows. """
@@ -179,52 +175,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         Render workflow main page (management of existing workflows)
         """
-        user = trans.get_user()
-        workflows = trans.sa_session.query( model.StoredWorkflow ) \
-            .filter_by( user=user, deleted=False ) \
-            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
-            .all()
-        shared_by_others = trans.sa_session \
-            .query( model.StoredWorkflowUserShareAssociation ) \
-            .filter_by( user=user ) \
-            .join( 'stored_workflow' ) \
-            .filter( model.StoredWorkflow.deleted == expression.false() ) \
-            .order_by( desc( model.StoredWorkflow.update_time ) ) \
-            .all()
-
-        # Legacy issue: all shared workflows must have slugs.
-        slug_set = False
-        for workflow_assoc in shared_by_others:
-            if self.create_item_slug( trans.sa_session, workflow_assoc.stored_workflow ):
-                slug_set = True
-        if slug_set:
-            trans.sa_session.flush()
-
-        return trans.fill_template( "workflow/list.mako",
-                                    workflows=workflows,
-                                    shared_by_others=shared_by_others )
-
-    @web.expose
-    @web.require_login( "use Galaxy workflows" )
-    def list_for_run( self, trans ):
-        """
-        Render workflow list for analysis view (just allows running workflow
-        or switching to management view)
-        """
-        user = trans.get_user()
-        workflows = trans.sa_session.query( model.StoredWorkflow ) \
-            .filter_by( user=user, deleted=False ) \
-            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
-            .all()
-        shared_by_others = trans.sa_session \
-            .query( model.StoredWorkflowUserShareAssociation ) \
-            .filter_by( user=user ) \
-            .filter( model.StoredWorkflow.deleted == expression.false() ) \
-            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
-            .all()
-        return trans.fill_template( "workflow/list_for_run.mako",
-                                    workflows=workflows,
-                                    shared_by_others=shared_by_others )
+        # Take care of proxy prefix in url as well
+        redirect_url = url_for( '/' ) + 'workflow'
+        return trans.response.send_redirect( redirect_url )
 
     @web.expose
     def list_published( self, trans, **kwargs ):
@@ -425,8 +378,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             stored.name = san_new_name
             stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
-            trans.set_message( "Workflow renamed to '%s'." % san_new_name )
-            return self.list( trans )
+            message = 'Workflow renamed to: %s' % escape( san_new_name )
+            trans.set_message( message )
+            # Take care of proxy prefix in url as well
+            redirect_url = url_for( '/' ) + 'workflow?status=done&message=%s' % escape( message )
+            return trans.response.send_redirect( redirect_url )
         else:
             return form( url_for(controller='workflow', action='rename', id=trans.security.encode_id(stored.id) ),
                          "Rename workflow",
@@ -543,7 +499,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         if (save_as_name):
             new_stored.name = '%s' % save_as_name
         else:
-            new_stored.name = "Copy of '%s'" % stored.name
+            new_stored.name = "Copy of %s" % stored.name
         new_stored.latest_workflow = stored.latest_workflow
         # Copy annotation.
         annotation_obj = self.get_item_annotation_obj( trans.sa_session, stored.user, stored )
@@ -551,15 +507,17 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             self.add_item_annotation( trans.sa_session, trans.get_user(), new_stored, annotation_obj.annotation )
         new_stored.copy_tags_from(trans.user, stored)
         if not owner:
-            new_stored.name += " shared by '%s'" % stored.user.email
+            new_stored.name += " shared by %s" % stored.user.email
         new_stored.user = user
         # Persist
         session = trans.sa_session
         session.add( new_stored )
         session.flush()
         # Display the management page
-        trans.set_message( 'Created new workflow with name "%s"' % escape( new_stored.name ) )
-        return self.list( trans )
+        message = 'Created new workflow with name: %s' % escape( new_stored.name )
+        trans.set_message( message )
+        return_url = url_for( '/' ) + 'workflow?status=done&message=%s' % escape( message )
+        trans.response.send_redirect( return_url )
 
     @web.expose
     @web.require_login( "create workflows" )
@@ -652,8 +610,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         trans.sa_session.add( stored )
         trans.sa_session.flush()
         # Display the management page
-        trans.set_message( "Workflow '%s' deleted" % escape( stored.name ) )
-        return self.list( trans )
+        message = "Workflow deleted: %s" % escape( stored.name )
+        trans.set_message( message )
+        return trans.response.send_redirect( url_for( '/' ) + 'workflow?status=done&message=%s' % escape( message ) )
 
     @web.expose
     @web.require_login( "edit workflows" )

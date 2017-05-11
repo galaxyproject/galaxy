@@ -107,6 +107,7 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/tours/{tour_id}' )
     webapp.add_client_route( '/user' )
     webapp.add_client_route( '/user/{form_id}' )
+    webapp.add_client_route( '/workflow' )
     webapp.add_client_route( '/custom_builds' )
 
     # ==== Done

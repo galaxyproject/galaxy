@@ -66,6 +66,25 @@ define({
     false,
 "Saved Pages":
     false,
+
+//Tooltip
+"Account and saved data" :
+   false, 
+"Account registration or login" :
+   false, 
+"Support, contact, and community" :
+   false,
+"Administer this Galaxy" :
+   false, 
+"Visualize datasets" :
+   false,
+"Access published resources" :
+   false,
+"Chain tools into workflows" :
+   false,
+"Analysis home view" :
+   false,
+
 // ---------------------------------------------------------------------------- histories
 // ---- history/options-menu
 "History Lists":
@@ -320,6 +339,8 @@ false,
     false,
 "Edit dataset annotation" :
     false,
+
+
 
 
 // ---------------------------------------------------------------------------- misc. MVC

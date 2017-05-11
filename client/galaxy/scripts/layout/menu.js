@@ -25,7 +25,7 @@ var Collection = Backbone.Collection.extend({
             id              : 'analysis',
             title           : _l('Analyze Data'),
             url             : '',
-            tooltip         : 'Analysis home view'
+            tooltip         : _l('Analysis home view')
         });
 
         //
@@ -34,9 +34,13 @@ var Collection = Backbone.Collection.extend({
         this.add({
             id              : 'workflow',
             title           : _l('Workflow'),
+            tooltip         : _l('Chain tools into workflows'),
+            disabled        : !Galaxy.user.id,
             url             : 'workflow',
-            tooltip         : 'Chain tools into workflows',
-            disabled        : !Galaxy.user.id
+            target          : 'galaxy_main',
+            onclick         : function() {
+                                  window.location = Galaxy.root + 'workflow';
+                            }
         });
 
         //
@@ -46,7 +50,7 @@ var Collection = Backbone.Collection.extend({
             id              : 'shared',
             title           : _l('Shared Data'),
             url             : 'library/index',
-            tooltip         : 'Access published resources',
+            tooltip         : _l('Access published resources'),
             menu            : [{
                     title   : _l('Data Libraries'),
                     url     : 'library/list'
@@ -90,7 +94,7 @@ var Collection = Backbone.Collection.extend({
             id              : 'visualization',
             title           : _l('Visualization'),
             url             : 'visualization/list',
-            tooltip         : 'Visualize datasets',
+            tooltip         : _l('Visualize datasets'),
             disabled        : !Galaxy.user.id,
             menu            : [{
                     title   : _l('New Track Browser'),
@@ -138,7 +142,7 @@ var Collection = Backbone.Collection.extend({
             id              : 'admin',
             title           : _l('Admin'),
             url             : 'admin',
-            tooltip         : 'Administer this Galaxy',
+            tooltip         : _l('Administer this Galaxy'),
             cls             : 'admin-only'
         });
 
@@ -148,7 +152,7 @@ var Collection = Backbone.Collection.extend({
         var helpTab = {
             id              : 'help',
             title           : _l('Help'),
-            tooltip         : 'Support, contact, and community',
+            tooltip         : _l('Support, contact, and community'),
             menu            : [{
                     title   : _l('Support'),
                     url     : options.support_url,
@@ -211,7 +215,7 @@ var Collection = Backbone.Collection.extend({
                 id              : 'user',
                 title           : _l('Login or Register'),
                 cls             : 'loggedout-only',
-                tooltip         : 'Account registration or login',
+                tooltip         : _l('Account registration or login'),
                 menu            : [{
                     title           : _l('Login'),
                     url             : 'user/login',
@@ -231,7 +235,7 @@ var Collection = Backbone.Collection.extend({
                 id              : 'user',
                 title           : _l('User'),
                 cls             : 'loggedin-only',
-                tooltip         : 'Account and saved data',
+                tooltip         : _l('Account and saved data'),
                 menu            : [{
                         title   : _l('Logged in as') + ' ' + Galaxy.user.get( 'email' )
                     },{
@@ -308,7 +312,7 @@ var Tab = Backbone.View.extend({
         this.$note.html( this.model.get( 'note' ) || '' )
                   .removeClass().addClass( 'dropdown-note' )
                   .addClass( this.model.get( 'note_cls' ) )
-                  .css( { 'display' : this.model.get( 'show_note' ) && 'block' || 'none' } )
+                  .css( { 'display' : this.model.get( 'show_note' ) && 'block' || 'none' } );
         this.$toggle.html( this.model.get( 'title' ) || '' )
                     .removeClass().addClass( 'dropdown-toggle' )
                     .addClass( this.model.get( 'cls' ) )
@@ -387,7 +391,7 @@ var Tab = Backbone.View.extend({
             }
         } else {
             function buildLink( label, url ) {
-                return $( '<div/>' ).append( $( '<a/>' ).attr( 'href', Galaxy.root + url ).html( label ) ).html()
+                return $( '<div/>' ).append( $( '<a/>' ).attr( 'href', Galaxy.root + url ).html( label ) ).html();
             }
             this.$toggle.popover && this.$toggle.popover( 'destroy' );
             this.$toggle.popover({
