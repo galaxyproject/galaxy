@@ -69,7 +69,7 @@ def ensure_installed(installable_context, install_func, auto_init):
 
     try:
         if auto_init and os.access(parent_path, os.W_OK):
-            with FileLock(os.path.join(parent_path, desc.lower())):
+            with FileLock(os.path.join(parent_path, desc.lower()), timeout=300):
                 return _check()
         else:
             return _check()
