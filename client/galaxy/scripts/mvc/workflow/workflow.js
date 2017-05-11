@@ -1,8 +1,5 @@
 /** Workflow view */
-define( [ 'mvc/form/form-view',
-          'mvc/ui/ui-misc',
-          'mvc/ui/ui-select',
-          'mvc/tool/tool-form-composite' ], function( Form, Ui, Select, ToolForm ) {
+define( [], function() {
 
     /** View of the main workflow list page */
     var View = Backbone.View.extend({
