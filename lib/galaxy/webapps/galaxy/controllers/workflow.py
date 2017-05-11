@@ -175,7 +175,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         Render workflow main page (management of existing workflows)
         """
-        return trans.response.send_redirect( '/workflow' )
+        # Take care of proxy prefix in url as well
+        redirect_url = url_for( '/' ) + 'workflow'
+        return trans.response.send_redirect( redirect_url )
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -400,8 +402,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             trans.sa_session.flush()
             message = 'Workflow renamed to: %s' % escape( san_new_name )
             trans.set_message( message )
-            return_url = '/workflow?status=done&message=%s' % escape( message )
-            return trans.response.send_redirect( return_url )
+            # Take care of proxy prefix in url as well
+            redirect_url = url_for( '/' ) + 'workflow?status=done&message=%s' % escape( message )
+            return trans.response.send_redirect( redirect_url )
         else:
             return form( url_for(controller='workflow', action='rename', id=trans.security.encode_id(stored.id) ),
                          "Rename workflow",
@@ -535,7 +538,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Display the management page
         message = 'Created new workflow with name: %s' % escape( new_stored.name )
         trans.set_message( message )
-        return_url = '/workflow?status=done&message=%s' % escape( message )
+        return_url = url_for( '/' ) + 'workflow?status=done&message=%s' % escape( message )
         trans.response.send_redirect( return_url )
 
     @web.expose
@@ -631,7 +634,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Display the management page
         message = "Workflow deleted: %s" % escape( stored.name )
         trans.set_message( message )
-        return trans.response.send_redirect( '/workflow?status=done&message=%s' % escape( message ) )
+        return trans.response.send_redirect( url_for( '/' ) + 'workflow?status=done&message=%s' % escape( message ) )
 
     @web.expose
     @web.require_login( "edit workflows" )
