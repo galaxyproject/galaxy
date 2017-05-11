@@ -8,9 +8,9 @@ var jQuery = require( 'jquery' ),
     HistoryPanel = require( './history-panel' ),
     PAGE = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
-    UserPreferences = require( 'mvc/user/user-preferences' );
-    CustomBuilds = require( 'mvc/user/user-custom-builds' );
-    Tours = require( 'mvc/tours' );
+    UserPreferences = require( 'mvc/user/user-preferences' ),
+    CustomBuilds = require( 'mvc/user/user-custom-builds' ),
+    Tours = require( 'mvc/tours' ),
     Workflows = require( 'mvc/workflow/workflow' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
