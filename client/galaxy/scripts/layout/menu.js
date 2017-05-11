@@ -33,9 +33,13 @@ var Collection = Backbone.Collection.extend({
         this.add({
             id              : 'workflow',
             title           : _l('Workflow'),
-            url             : 'workflow',
             tooltip         : _l('Chain tools into workflows'),
-            disabled        : !Galaxy.user.id
+            disabled        : !Galaxy.user.id,
+            url             : 'workflow',
+            target          : 'galaxy_main',
+            onclick         : function() {
+                                  window.location = Galaxy.root + 'workflow';
+                            }
         });
 
         //
