@@ -71,6 +71,8 @@ def selenium_test(f):
     def func_wrapper(self, *args, **kwds):
         retry_attempts = 0
         while True:
+            if retry_attempts > 0:
+                self.reset_driver_and_session()
             try:
                 return f(self, *args, **kwds)
             except Exception:
@@ -118,11 +120,7 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
             self.target_url_from_selenium = GALAXY_TEST_EXTERNAL_FROM_SELENIUM
         else:
             self.target_url_from_selenium = self.url
-        self.display = driver_factory.virtual_display_if_enabled(headless_selenium())
-        self.driver = get_driver()
-
-        if self.ensure_registered:
-            self.register()
+        self.setup_driver_and_session()
 
     def tearDown(self):
         exception = None
@@ -131,6 +129,27 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
         except Exception as e:
             exception = e
 
+        try:
+            self.tear_down_driver()
+        except Exception as e:
+            exception = e
+
+        if exception is not None:
+            raise exception
+
+    def reset_driver_and_session(self):
+        self.tear_down_driver()
+        self.setup_driver_and_session()
+
+    def setup_driver_and_session(self):
+        self.display = driver_factory.virtual_display_if_enabled(headless_selenium())
+        self.driver = get_driver()
+
+        if self.ensure_registered:
+            self.register()
+
+    def tear_down_driver(self):
+        exception = None
         try:
             self.driver.close()
         except Exception as e:
