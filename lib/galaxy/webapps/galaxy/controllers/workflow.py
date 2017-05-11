@@ -180,28 +180,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return trans.response.send_redirect( redirect_url )
 
     @web.expose
-    @web.require_login( "use Galaxy workflows" )
-    def list_for_run( self, trans ):
-        """
-        Render workflow list for analysis view (just allows running workflow
-        or switching to management view)
-        """
-        user = trans.get_user()
-        workflows = trans.sa_session.query( model.StoredWorkflow ) \
-            .filter_by( user=user, deleted=False ) \
-            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
-            .all()
-        shared_by_others = trans.sa_session \
-            .query( model.StoredWorkflowUserShareAssociation ) \
-            .filter_by( user=user ) \
-            .filter( model.StoredWorkflow.deleted == expression.false() ) \
-            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
-            .all()
-        return trans.fill_template( "workflow/list_for_run.mako",
-                                    workflows=workflows,
-                                    shared_by_others=shared_by_others )
-
-    @web.expose
     def list_published( self, trans, **kwargs ):
         kwargs[ 'embedded' ] = True
         grid = self.published_list_grid( trans, **kwargs )
