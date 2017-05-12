@@ -45,7 +45,14 @@ def __load_plugins_from_element(plugins_dict, plugins_element, extra_kwds):
         plugin_type = plugin_element.tag
         plugin_kwds = dict( plugin_element.items() )
         plugin_kwds.update( extra_kwds )
-        plugin = plugins_dict[ plugin_type ]( **plugin_kwds )
+        try:
+            plugin_klazz = plugins_dict[ plugin_type ]
+        except KeyError:
+            template = "Failed to find plugin of type [%s] in available plugin types %s"
+            message = template % ( plugin_type, str( plugins_dict.keys() ) )
+            raise Exception( message )
+
+        plugin = plugin_klazz( **plugin_kwds )
         plugins.append( plugin )
 
     return plugins
