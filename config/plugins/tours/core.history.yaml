@@ -30,6 +30,7 @@ steps:
       intro: "URLs separated by a line break are automatically downloaded by Galaxy."
       position: "bottom"
       textinsert: |
+        https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
 
     - title: "Start the upload"
