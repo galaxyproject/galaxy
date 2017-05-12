@@ -81,6 +81,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         openid_url = kwd.get( 'openid_url', '' )
         openid_provider = kwd.get( 'openid_provider', '' )
         if not openid_provider:
+            message = "An OpenID provider was not specified, using the default provider '%s'" % trans.app.openid_providers.NO_PROVIDER_ID
             openid_provider = trans.app.openid_providers.NO_PROVIDER_ID  # empty fields cause validation errors
         redirect = kwd.get( 'redirect', '' ).strip()
         auto_associate = util.string_as_bool( kwd.get( 'auto_associate', False ) )
