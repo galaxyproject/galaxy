@@ -345,7 +345,7 @@ class BaseJobRunner( object ):
 
         tool = job_wrapper.tool
         from galaxy.tools.deps import containers
-        tool_info = containers.ToolInfo(tool.containers, tool.requirements)
+        tool_info = containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment)
         job_info = containers.JobInfo(
             compute_working_directory,
             compute_tool_directory,
