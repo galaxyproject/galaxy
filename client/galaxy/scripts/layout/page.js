@@ -6,7 +6,7 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
 
         initialize : function( options ) {
             var self = this;
-            this.config = _.defaults( options.config, {
+            this.config = _.defaults( options.config || {}, {
                 message_box_visible     : false,
                 message_box_content     : '',
                 message_box_class       : 'info',
