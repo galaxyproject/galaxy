@@ -78,25 +78,21 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if not trans.app.config.enable_openid:
             return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
         message = 'Unspecified failure authenticating via OpenID'
-        openid_url = kwd.get( 'openid_url', '' )
-        openid_provider = kwd.get( 'openid_provider', '' )
-        if not openid_provider:
-            message = "An OpenID provider was not specified, using the default provider '%s'" % trans.app.openid_providers.NO_PROVIDER_ID
-            openid_provider = trans.app.openid_providers.NO_PROVIDER_ID  # empty fields cause validation errors
-        redirect = kwd.get( 'redirect', '' ).strip()
         auto_associate = util.string_as_bool( kwd.get( 'auto_associate', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
-        action = 'login'
         consumer = trans.app.openid_manager.get_consumer( trans )
+        openid_url = kwd.get( 'openid_url', '' )
+        openid_provider = kwd.get('openid_provider', '')
         if openid_url:
             openid_provider_obj = trans.app.openid_providers.new_provider_from_identifier( openid_url )
+        elif openid_provider:
+            openid_provider_obj = trans.app.openid_providers.get(openid_provider)
         else:
-            openid_provider_obj = trans.app.openid_providers.get( openid_provider )
-        if not openid_url and openid_provider == trans.app.openid_providers.NO_PROVIDER_ID:
             message = 'An OpenID provider was not specified'
-        elif openid_provider_obj:
-            if not redirect:
-                redirect = ' '
+        redirect = kwd.get('redirect', '').strip()
+        if not redirect:
+            redirect = ' '
+        if openid_provider_obj:
             process_url = trans.request.base.rstrip( '/' ) + url_for( controller='user', action='openid_process', redirect=redirect, openid_provider=openid_provider, auto_associate=auto_associate )  # None of these values can be empty, or else a verification error will occur
             request = None
             try:
@@ -117,7 +113,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     trans.app.openid_manager.persist_session( trans, consumer )
                     return form
         return trans.response.send_redirect( url_for( controller='user',
-                                                      action=action,
+                                                      action='login',
                                                       redirect=redirect,
                                                       use_panels=use_panels,
                                                       message=message,
