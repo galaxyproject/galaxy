@@ -100,7 +100,7 @@ steps:
     - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.warnings > div > a.undelete-link"
       title: "Undeleting a dataset"
       intro: |
-            Galaxy datasets are only marked as deleled and can be recovered by clicking this link.
+            Galaxy datasets are only marked as deleted and can be recovered by clicking this link.
             Please note that datasets marked as deleted can be purged by your administrator at any time.
       position: "bottom"
       postclick:
