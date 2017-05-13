@@ -110,7 +110,7 @@ helper/__init__.py
          error = str(e)
       return {'success': not error, 'error': error, 'data': data}
 
-As an example please take a look at the *phdcomics* example plugin: https://github.com/bgruening/galaxy/blob/feature/plugin-system/config/plugins/webhooks/phdcomics/helper/__init__.py
+As an example please take a look at the *phdcomics* example plugin: https://github.com/galaxyproject/galaxy/blob/release_17.05/test/functional/webhooks/phdcomics/helper/__init__.py
 
 
 static
