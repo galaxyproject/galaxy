@@ -81,6 +81,9 @@ The configuration file is just a .yml (or .yaml) file with a few options. The fo
 - **name** - must be the same as the plugin's root directory name
 - **type** (see Entry points) - can be combined with others
 - **activate** - *true* or *false* - whether show the plugin on a page or not
+- **icon** Icon to show (if masthead)
+- **tooltip** - Tooltip to show on hover
+- **function** - A javascript function to be executed. Any calls to Galaxy APIs should be sure to use Galaxy.root when constructing the URL to ensure compatability across Galaxy deployments.
 
 All other options can be anything used by the plugin and accessed later via *webhook.config['...']*.
 
