@@ -123,6 +123,7 @@ window.app = function app( options, bootstrapped ){
             '(/)user(/)' : 'show_user',
             '(/)user(/)(:form_id)' : 'show_user_form',
             '(/)workflow(/)' : 'show_workflows',
+            '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)custom_builds' : 'show_custom_builds'
         },
 
@@ -157,6 +158,10 @@ window.app = function app( options, bootstrapped ){
 
         show_workflows : function(){
             centerPanel.display( new Workflows.View() );
+        },
+
+        show_configure_menu : function(){
+            centerPanel.display( new Workflows.Configure_Menu_View() );
         },
 
         show_custom_builds : function() {
