@@ -30,7 +30,6 @@ define( [], function() {
                     });
                     // Register search workflow event
                     self.search_workflow( self, self.$el.find( '.search-wf' ), self.$el.find( '.workflow-search tr' ), min_query_length );
-                    //self.register_configure_menu( self );
                 }
                 else {
                     $el_workflow.append( self._templateNoWorkflow() );
@@ -100,14 +99,6 @@ define( [], function() {
 
             $el.on( 'hide.bs.dropdown', function () {
                 $el.css( "overflow", "auto" );
-            });
-        },
-
-        /** Open configure workflow menu */
-        register_configure_menu: function( self, workflows ) {
-            self.$el.find( '.configure-wf-menu' ).click(function( e ) {
-                // register_configure_menu
-                
             });
         },
 
@@ -286,7 +277,7 @@ define( [], function() {
             tableHtml = tableHtml + '<a class="action-button wf-save-menu" href="#" title="Save">' +
                                         '<span>Save</span>' +
                                     '</a>';
-            return tableHtml
+            return tableHtml;
         },
 
        /** Template for no workflow */
