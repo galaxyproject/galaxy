@@ -38,6 +38,7 @@ module.exports = {
         libs    : commonLibs,
         login   : './galaxy/scripts/apps/login.js',
         analysis: './galaxy/scripts/apps/analysis.js',
+        admin   : './galaxy/scripts/apps/admin.js',
     },
     output  : {
         path        : '../static/scripts/bundled',

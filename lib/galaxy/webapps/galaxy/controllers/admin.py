@@ -13,6 +13,7 @@ from galaxy.model import tool_shed_install as install_model
 from galaxy.util import nice_size, sanitize_text, url_get
 from galaxy.util.odict import odict
 from galaxy.web import url_for
+from galaxy.web.base import controller
 from galaxy.web.base.controller import BaseUIController, UsesQuotaMixin
 from galaxy.web.base.controllers.admin import Admin
 from galaxy.web.framework.helpers import grids, time_ago
@@ -20,6 +21,7 @@ from galaxy.web.params import QuotaParamParser
 from galaxy.tools import global_tool_errors
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
+from tool_shed.util import repository_util
 from tool_shed.util.web_util import escape
 
 log = logging.getLogger( __name__ )
@@ -490,7 +492,7 @@ class ToolVersionListGrid( grids.Grid ):
         return trans.install_model.context.query( self.model_class )
 
 
-class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaParamParser ):
+class AdminGalaxy( controller.JSAppLauncher, Admin, AdminActions, UsesQuotaMixin, QuotaParamParser ):
 
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
@@ -500,6 +502,20 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     delete_operation = grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True )
     undelete_operation = grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
     purge_operation = grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
+
+    @web.expose
+    @web.require_admin
+    def index( self, trans, **kwd ):
+        message = escape( kwd.get( 'message', ''  ) )
+        status = kwd.get( 'status', 'done' )
+        is_repo_installed = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None
+        installing_repository_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
+        return self.template( trans, 'admin' )
+        #return trans.fill_template( '/webapps/galaxy/admin/index.mako',
+        #                            is_repo_installed=is_repo_installed,
+        #                            installing_repository_ids=installing_repository_ids,
+        #                            message=message,
+        #                            status=status )
 
     @web.expose
     @web.require_admin
