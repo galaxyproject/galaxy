@@ -121,6 +121,8 @@ var Categories = new Backbone.Collection([{
 var AdminPanel = Backbone.View.extend({
     initialize: function( page, options ) {
         var config = options.config;
+        var settings = options.settings;
+        this.page = page;
         this.root  = options.root;
         this.model = new Backbone.Model({
             title   : _l( 'Administration' )
@@ -144,6 +146,7 @@ var AdminPanel = Backbone.View.extend({
             });
             self.$menu.append( $section );
         });
+        this.page.$( '#galaxy_main' ).prop( 'src', this.root + 'admin/center' ); //?message=' + this.settings.message + '&status=' + this.settings.status
     },
 
     _templateSection : function( options ) {
