@@ -1,40 +1,67 @@
 var _l = require( 'utils/localization' );
 
+var Categories = [
+    {   title : 'Server',
+        items : [ {
+            title   : 'Data types registry',
+            url     : 'admin/view_datatypes_registry'
+        },{
+            title   : 'Data tables registry',
+            url     : 'admin/view_tool_data_tables'
+        },{
+            title   : 'Display applications',
+            url     : 'admin/display_applications'
+        },{
+            title   : 'Manage jobs',
+            url     : 'admin/jobs'
+        } ]
+    }
+];
+
 var AdminPanel = Backbone.View.extend({
     initialize: function( page, options ) {
-        // access configuration options
         var config = options.config;
         this.root  = options.root;
-
-        // components for panel definition
-        this.model = new Backbone.Model({
+            this.model = new Backbone.Model({
             title   : _l( 'Administration' )
         });
-
-        // build body template
         this.setElement( this._template() );
+        this.$menu = this.$( '.toolMenu' );
     },
 
-    render : function(){
+    render : function() {
+        var self = this;
+        this.$menu.empty();
+        _.each( Categories, function( categories ) {
+            var $section = $( self._templateSection( categories ) );
+            var $entries = $section.find( '.toolSectionBg' );
+            _.each( categories.items, function( item ) {
+                var $title = $( '<div/>' ).addClass( 'toolTitle' ).text( item.title );
+                $entries.append( $title );
+                //var $link = $( '<a/>' ).set;
+                //'<div class="toolTitle"><a href="${h.url_for( controller="admin", action="view_datatypes_registry" )}" target="galaxy_main">Data types registry</a></div>'
+            });
+            self.$menu.append( $section );
+        });
+    },
+
+    /** override to include inital menu dom and workflow section */
+    _templateSection : function( options ) {
+        return [
+            '<div class="toolSectionList">',
+                '<div class="toolSectionTitle">' + options.title + '</div>',
+                '<div class="toolSectionBody">',
+                    '<div class="toolSectionBg"/>',
+                '</div>',
+            '</div>'
+        ].join('');
     },
 
     /** override to include inital menu dom and workflow section */
     _template : function() {
         return [
             '<div class="toolMenuContainer">',
-                '<div class="toolMenu">',
-                    '<div class="toolSectionList">',
-                        '<div class="toolSectionTitle">Server</div>',
-                        '<div class="toolSectionBody">',
-                            '<div class="toolSectionBg">',
-                                '<div class="toolTitle"><a href="${h.url_for( controller="admin", action="view_datatypes_registry" )}" target="galaxy_main">Data types registry</a></div>',
-                                '<div class="toolTitle"><a href="${h.url_for( controller="admin", action="view_tool_data_tables" )}" target="galaxy_main">Data tables registry</a></div>',
-                                '<div class="toolTitle"><a href="${h.url_for( controller="admin", action="display_applications" )}" target="galaxy_main">Display applications</a></div>',
-                                '<div class="toolTitle"><a href="${h.url_for( controller="admin", action="jobs" )}" target="galaxy_main">Manage jobs</a></div>',
-                            '</div>',
-                        '</div>',
-                    '</div>',
-                '</div>',
+                '<div class="toolMenu"/>',
             '</div>'
 
 
