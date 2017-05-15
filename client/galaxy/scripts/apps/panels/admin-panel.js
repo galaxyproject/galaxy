@@ -1,7 +1,7 @@
 var _l = require( 'utils/localization' );
 
-var Categories = [
-    {   title : 'Server',
+var Categories = [ {
+        title : 'Server',
         items : [ {
             title   : 'Data types registry',
             url     : 'admin/view_datatypes_registry'
@@ -15,8 +15,8 @@ var Categories = [
             title   : 'Manage jobs',
             url     : 'admin/jobs'
         } ]
-    },
-    {   title : 'Tools and Tool Shed',
+    },{
+        title : 'Tools and Tool Shed',
         items : [ {
             title   : 'Search Tool Shed',
             url     : 'admin_toolshed/browse_tool_sheds'
@@ -29,6 +29,81 @@ var Categories = [
         },{
             title   : 'Manage installed tools',
             url     : 'admin_toolshed/browse_repositories'
+        },{
+            title   : 'Download local tool',
+            url     : 'admin/package_tool'
+        },{
+            title   : 'Tool lineage',
+            url     : 'admin/tool_versions'
+        },{
+            title   : 'Reload a tool\'s configuration',
+            url     : 'admin/reload_tool'
+        },{
+            title   : 'Review tool migration stages',
+            url     : 'admin/review_tool_migration_stages'
+        },{
+            title   : 'View Tool Error Logs',
+            url     : 'admin/tool_errors'
+        },{
+            title   : 'Manage Display Whitelist',
+            url     : 'admin/sanitize_whitelist'
+        },{
+            title   : 'Manage Tool Dependencies',
+            url     : 'admin/manage_tool_dependencies'
+        } ]
+    },{
+        title : 'User Management',
+        items : [ {
+            title   : 'Users',
+            url     : 'admin/users'
+        },{
+            title   : 'Groups',
+            url     : 'admin/groups'
+        },{
+            title   : 'Roles',
+            url     : 'admin/roles'
+        },{
+            title   : 'API keys',
+            url     : 'userskeys/all_users'
+        },{
+            title   : 'Impersonate a user',
+            url     : 'admin/impersonate'
+        } ]
+    },{
+        title : 'Data',
+        items : [ {
+            title   : 'Quotas',
+            url     : 'admin/quotas'
+        },{
+            title   : 'Data libraries',
+            url     : 'library_admin/browse_libraries'
+        },{
+            title   : 'Roles',
+            url     : 'admin/roles'
+        },{
+            title   : 'Local data',
+            url     : 'data_manager'
+        } ]
+    },{
+        title : 'Form Definitions',
+        items : [ {
+            title   : 'Form definitions',
+            url     : 'forms/browse_form_definitions'
+        } ]
+    },{
+        title : 'Sample Tracking',
+        items : [ {
+            title   : 'Sequencers and external services',
+            url     : 'external_service/browse_external_services'
+        },{
+            title   : 'Request types',
+            url     : 'request_type/browse_request_types'
+        },{
+            title   : 'Sequencing requests',
+            url     : 'requests_admin/browse_requests'
+        },{
+            title   : 'Find samples',
+            url     : 'requests_common/find_samples?cntrller=requests_admin'
         } ]
     }
 ];
