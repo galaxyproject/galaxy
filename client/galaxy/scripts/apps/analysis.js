@@ -11,7 +11,8 @@ var jQuery = require( 'jquery' ),
     UserPreferences = require( 'mvc/user/user-preferences' ),
     CustomBuilds = require( 'mvc/user/user-custom-builds' ),
     Tours = require( 'mvc/tours' ),
-    Workflows = require( 'mvc/workflow/workflow' );
+    Workflows = require( 'mvc/workflow/workflow' ),
+    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -161,7 +162,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_configure_menu : function(){
-            centerPanel.display( new Workflows.Configure_Menu_View() );
+            centerPanel.display( new WorkflowsConfigureMenu.View() );
         },
 
         show_custom_builds : function() {
