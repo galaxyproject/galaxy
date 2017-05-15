@@ -1,6 +1,6 @@
 var _l = require( 'utils/localization' );
 
-var Categories = [ {
+var Categories = new Backbone.Collection([{
         title : 'Server',
         items : [ {
             title   : 'Data types registry',
@@ -106,7 +106,7 @@ var Categories = [ {
             url     : 'requests_common/find_samples?cntrller=requests_admin'
         } ]
     }
-];
+]);
 
 var AdminPanel = Backbone.View.extend({
     initialize: function( page, options ) {
@@ -117,15 +117,16 @@ var AdminPanel = Backbone.View.extend({
         });
         this.setElement( this._template() );
         this.$menu = this.$( '.toolMenu' );
+        window.console.log( Categories );
     },
 
     render : function() {
         var self = this;
         this.$menu.empty();
-        _.each( Categories, function( categories ) {
-            var $section = $( self._templateSection( categories ) );
+        Categories.each( function( category ) {
+            var $section = $( self._templateSection( category.attributes ) );
             var $entries = $section.find( '.toolSectionBg' );
-            _.each( categories.items, function( item ) {
+            _.each( category.get( 'items' ), function( item ) {
                 var $link = $( '<a/>' ).attr({
                     href    : self.root + item.url,
                     target  : 'galaxy_main'
