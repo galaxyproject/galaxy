@@ -186,9 +186,10 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
         of the file that contains this dataset's data.
         """
         is_admin = self.user_manager.is_admin( user )
-        # expensive: allow conifg option due to cost of operation
+        # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
-            return dataset.file_name
+            if not dataset.purged:
+                return dataset.file_name
         self.skip()
 
     def serialize_extra_files_path( self, dataset, key, user=None, **context ):
@@ -196,9 +197,10 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
         If the config allows or the user is admin, return the file path.
         """
         is_admin = self.user_manager.is_admin( user )
-        # expensive: allow conifg option due to cost of operation
+        # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
-            return dataset.extra_files_path
+            if not dataset.purged:
+                return dataset.extra_files_path
         self.skip()
 
     def serialize_permissions( self, dataset, key, user=None, **context ):
