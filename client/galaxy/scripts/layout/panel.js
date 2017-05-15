@@ -72,7 +72,6 @@ define( [ 'jquery', 'libs/underscore', 'libs/backbone' ], function( $, _, Backbo
             ].join('');
         },
 
-        // ..............................................................
         events : {
             'mousedown .unified-panel-footer > .drag'       : '_mousedownDragHandler',
             'click .unified-panel-footer > .panel-collapse' : 'toggle'
@@ -86,7 +85,6 @@ define( [ 'jquery', 'libs/underscore', 'libs/backbone' ], function( $, _, Backbo
             function move( e ){
                 var delta = e.pageX - prevX;
                 prevX = e.pageX;
-
                 var oldWidth = self.$el.width(),
                     newWidth = draggingLeft?( oldWidth + delta ):( oldWidth - delta );
                 // Limit range
