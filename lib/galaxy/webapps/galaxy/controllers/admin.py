@@ -14,7 +14,7 @@ from galaxy.util import nice_size, sanitize_text, url_get
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base import controller
-from galaxy.web.base.controller import BaseUIController, UsesQuotaMixin
+from galaxy.web.base.controller import UsesQuotaMixin
 from galaxy.web.base.controllers.admin import Admin
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
