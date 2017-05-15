@@ -136,10 +136,10 @@ var AdminPanel = Backbone.View.extend({
         this.$el.empty();
         this.categories.each( function( category ) {
             var $section = $( self._templateSection( category.attributes ) );
-            var $entries = $section.find( '.ui-panel-section-body' );
+            var $entries = $section.find( '.ui-side-section-body' );
             _.each( category.get( 'items' ), function( item ) {
                 if ( item.enabled === undefined || item.enabled ) {
-                    $entries.append( $( '<div/>' ).addClass( 'ui-panel-section-body-title' )
+                    $entries.append( $( '<div/>' ).addClass( 'ui-side-section-body-title' )
                                                   .append( $( '<a/>' ).attr({
                                                                 href    : self.root + item.url,
                                                                 target  : 'galaxy_main' }).text( item.title ) ) );
@@ -153,14 +153,14 @@ var AdminPanel = Backbone.View.extend({
     _templateSection : function( options ) {
         return [
             '<div>',
-                '<div class="ui-panel-section-title">' + options.title + '</div>',
-                '<div class="ui-panel-section-body"/>',
+                '<div class="ui-side-section-title">' + options.title + '</div>',
+                '<div class="ui-side-section-body"/>',
             '</div>'
         ].join('');
     },
 
     _template : function() {
-        return '<div class="ui-panel"/>';
+        return '<div class="ui-side-panel"/>';
     },
 
     toString : function() { return 'adminPanel' }

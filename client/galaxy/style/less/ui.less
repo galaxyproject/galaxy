@@ -197,16 +197,16 @@
     padding-right: 3px !important;
 }
 
-// panel
-.ui-panel {
+// side panel
+.ui-side-panel {
     color: @base-text-color;
     background: @side-panel-bg;
     padding: 10px;
-    .ui-panel-section-title {
+    .ui-side-section-title {
         font-weight: bold;
     }
-    .ui-panel-section-body {
-        .ui-panel-section-body-title {
+    .ui-side-section-body {
+        .ui-side-section-body-title {
             padding-top: 5px;
             padding-bottom: 5px;
             margin-left: 16px;
@@ -214,9 +214,28 @@
             display: list-item;
             list-style: square outside;
         }
-        .ui-panel-section-body-title:last-child {
+        .ui-side-section-body-title:last-child {
             padding-bottom: 15px;
         }
+    }
+}
+
+// panel
+.ui-panel {
+    .ui-panel-table {
+        margin-left: 20px;
+        margin-right: 20px;
+        .ui-panel-icon {
+            margin: 10px;
+            margin-right: 20px;
+            font-size: 1.6em;
+        }
+        .ui-panel-anchor {
+            font-weight: bold;
+        }
+    }
+    .ui-panel-footer {
+        margin-top: 10px;
     }
 }
 
