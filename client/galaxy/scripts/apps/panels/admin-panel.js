@@ -117,7 +117,6 @@ var AdminPanel = Backbone.View.extend({
         });
         this.setElement( this._template() );
         this.$menu = this.$( '.toolMenu' );
-        window.console.log( Categories );
     },
 
     render : function() {
@@ -127,12 +126,10 @@ var AdminPanel = Backbone.View.extend({
             var $section = $( self._templateSection( category.attributes ) );
             var $entries = $section.find( '.toolSectionBg' );
             _.each( category.get( 'items' ), function( item ) {
-                var $link = $( '<a/>' ).attr({
-                    href    : self.root + item.url,
-                    target  : 'galaxy_main'
-                });
                 $entries.append( $( '<div/>' ).addClass( 'toolTitle' )
-                                              .append( $link.text( item.title ) ) );
+                                              .append( $( '<a/>' ).attr({
+                                                            href    : self.root + item.url,
+                                                            target  : 'galaxy_main' }).text( item.title ) ) );
             });
             self.$menu.append( $section );
         });
