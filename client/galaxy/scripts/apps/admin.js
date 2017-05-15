@@ -10,7 +10,7 @@ window.app = function app( options, bootstrapped ){
     Galaxy.params = Galaxy.config.params;
     $(function(){
         Galaxy.page = new Page.View( _.extend( options, {
-            Left   : AdminPanel
+            Left : AdminPanel
         } ) );
     });
 };
