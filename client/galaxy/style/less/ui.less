@@ -199,20 +199,23 @@
 
 // panel
 .ui-panel {
-    .ui-panel-table {
-        margin-left: 20px;
-        margin-right: 20px;
-        .ui-panel-icon {
-            margin: 10px;
-            margin-right: 20px;
-            font-size: 1.6em;
-        }
-        .ui-panel-anchor {
-            font-weight: bold;
-        }
+    color: @base-text-color;
+    background: @side-panel-bg;
+    min-height: 100%;
+    padding: 10px;
+    .ui-panel-section-title {
+        font-weight: bold;
+        margin-top: 5px;
     }
-    .ui-panel-footer {
-        margin-top: 10px;
+    .ui-panel-section-body {
+        .ui-panel-section-body-title {
+            padding-top: 5px;
+            padding-bottom: 5px;
+            margin-left: 16px;
+            margin-right: 10px;
+            display: list-item;
+            list-style: square outside;
+        }
     }
 }
 

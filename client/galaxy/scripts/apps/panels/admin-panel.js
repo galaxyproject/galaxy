@@ -128,48 +128,39 @@ var AdminPanel = Backbone.View.extend({
                 url     : 'requests_common/find_samples?cntrller=requests_admin'
             } ]
         }]);
-
         this.setElement( this._template() );
-        this.$menu = this.$( '.toolMenu' );
-        window.console.log( options );
     },
 
     render : function() {
         var self = this;
-        this.$menu.empty();
+        this.$el.empty();
         this.categories.each( function( category ) {
             var $section = $( self._templateSection( category.attributes ) );
-            var $entries = $section.find( '.toolSectionBg' );
+            var $entries = $section.find( '.ui-panel-section-body' );
             _.each( category.get( 'items' ), function( item ) {
                 if ( item.enabled === undefined || item.enabled ) {
-                    $entries.append( $( '<div/>' ).addClass( 'toolTitle' )
+                    $entries.append( $( '<div/>' ).addClass( 'ui-panel-section-body-title' )
                                                   .append( $( '<a/>' ).attr({
                                                                 href    : self.root + item.url,
                                                                 target  : 'galaxy_main' }).text( item.title ) ) );
                 }
             });
-            self.$menu.append( $section );
+            self.$el.append( $section );
         });
         this.page.$( '#galaxy_main' ).prop( 'src', this.root + 'admin/center?message=' + this.message + '&status=' + this.status );
     },
 
     _templateSection : function( options ) {
         return [
-            '<div class="toolSectionList">',
-                '<div class="toolSectionTitle">' + options.title + '</div>',
-                '<div class="toolSectionBody">',
-                    '<div class="toolSectionBg"/>',
-                '</div>',
+            '<div>',
+                '<div class="ui-panel-section-title">' + options.title + '</div>',
+                '<div class="ui-panel-section-body"/>',
             '</div>'
         ].join('');
     },
 
     _template : function() {
-        return [
-            '<div class="toolMenuContainer">',
-                '<div class="toolMenu"/>',
-            '</div>'
-        ].join('');
+        return '<div class="ui-panel"/>';
     },
 
     toString : function() { return 'adminPanel' }
