@@ -508,14 +508,14 @@ class AdminGalaxy( controller.JSAppLauncher, Admin, AdminActions, UsesQuotaMixin
     def index( self, trans, **kwd ):
         message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
-        is_repo_installed = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None
-        installing_repository_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
-        return self.template( trans, 'admin' )
-        #return trans.fill_template( '/webapps/galaxy/admin/index.mako',
-        #                            is_repo_installed=is_repo_installed,
-        #                            installing_repository_ids=installing_repository_ids,
-        #                            message=message,
-        #                            status=status )
+        settings = {
+            'is_repo_installed'          : trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None,
+            'installing_repository_ids'  : repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True ),
+            'is_tool_shed_installed'     : bool( trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds ),
+            'message'                    : message,
+            'status'                     : status
+        }
+        return self.template( trans, 'admin', settings=settings )
 
     @web.expose
     @web.require_admin

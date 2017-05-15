@@ -19,16 +19,24 @@ var Categories = new Backbone.Collection([{
         title : 'Tools and Tool Shed',
         items : [ {
             title   : 'Search Tool Shed',
-            url     : 'admin_toolshed/browse_tool_sheds'
+            url     : 'admin_toolshed/browse_tool_sheds',
+            //enabled : settings.is_tool_shed_installed
         },{
             title   : 'Search Tool Shed (Beta)',
             url     : 'admin_toolshed/browse_toolsheds'
+            //enabled : settings.is_tool_shed_installed && config.enable_beta_ts_api_install
         },{
             title   : 'Monitor installing repositories',
             url     : 'admin_toolshed/monitor_repository_installation'
+            //enabled : settings.installing_repository_ids
         },{
             title   : 'Manage installed tools',
-            url     : 'admin_toolshed/browse_repositories'
+            url     : 'admin_toolshed/browse_repositories',
+            //enabled : is_repo_installed
+        },{
+            title   : 'Reset metadata',
+            url     : 'admin_toolshed/reset_metadata_on_selected_installed_repositories',
+            //enabled : is_repo_installed
         },{
             title   : 'Download local tool',
             url     : 'admin/package_tool'
@@ -67,13 +75,15 @@ var Categories = new Backbone.Collection([{
             url     : 'userskeys/all_users'
         },{
             title   : 'Impersonate a user',
-            url     : 'admin/impersonate'
+            url     : 'admin/impersonate',
+            //enabled : config.allow_user_impersonation
         } ]
     },{
         title : 'Data',
         items : [ {
             title   : 'Quotas',
-            url     : 'admin/quotas'
+            url     : 'admin/quotas',
+            //enabled : config.enable_quotas
         },{
             title   : 'Data libraries',
             url     : 'library_admin/browse_libraries'
@@ -112,11 +122,12 @@ var AdminPanel = Backbone.View.extend({
     initialize: function( page, options ) {
         var config = options.config;
         this.root  = options.root;
-            this.model = new Backbone.Model({
+        this.model = new Backbone.Model({
             title   : _l( 'Administration' )
         });
         this.setElement( this._template() );
         this.$menu = this.$( '.toolMenu' );
+        window.console.log( options );
     },
 
     render : function() {
