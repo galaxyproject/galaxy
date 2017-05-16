@@ -11,9 +11,12 @@ The following individuals have contributed code to Galaxy:
 * Finn Bacall <finn.bacall@cs.man.ac.uk>
 * Dannon Baker <dannon.baker@gmail.com>
 * Christopher Bare <christopherbare@gmail.com>
+* Bérénice Batut <berenice.batut@gmail.com>
 * Marius van den Beek <m.vandenbeek@gmail.com>
 * Dan Blanchard <dan.blanchard@gmail.com>
+* Clemens Blank <blankclemens@gmail.com>
 * Daniel Blankenberg <dan.blankenberg@gmail.com> <dan@bx.psu.edu>
+* Jorrit Boekel <jorrit.boekel@scilifelab.se>
 * James Boocock <sfk2001@gmail.com>
 * Carlos Borroto <carlos.borroto@gmail.com>
 * Daniel Bouchard <dbouchard@corefacility.ca> <daniel.bouchard@phac-aspc.gc.ca>
@@ -75,6 +78,7 @@ The following individuals have contributed code to Galaxy:
 * Edward Kirton <eskirton@lbl.gov>
 * Brad Langhorst <langhorst@neb.com>
 * Ross Lazarus <ross.lazarus@gmail.com> <rossl@bx.psu.edu>
+* Yvan Le Bras <yvan.le_bras@irisa.fr>
 * Gildas Le Corguillé @lecorguille
 * Simone Leo <simone.leo@gmail.com>
 * Kanwei Li <kanwei@gmail.com>
@@ -96,6 +100,7 @@ The following individuals have contributed code to Galaxy:
 * Chinmay Rao <chinmay@bx.psu.edu>
 * Matt Ralston <mrals89@gmail.com>
 * Eric Rasche <esr@tamu.edu> <rasche.eric@gmail.com> <rasche.eric@yandex.ru>
+* Athos Ribeiro <athoscr@fedoraproject.org>
 * Andrew Robinson <Andrew.Robinson@latrobe.edu.au>
 * Michael Sauria <crockopotamus@gmail.com>
 * Andrea Sbardellati <andrea.sbardellati@crs4.it>
