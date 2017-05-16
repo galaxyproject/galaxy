@@ -292,7 +292,7 @@ class JSAppLauncher( BaseUIController ):
             self.JS_APP_MAKO_FILEPATH,
             js_app_name=app_name,
             js_app_entry_fn=( entry_fn or self.DEFAULT_ENTRY_FN ),
-            options=( options or self._get_js_options( trans ) ),
+            options=options,
             bootstrapped=( bootstrapped_data or {} ),
             masthead=masthead
         )

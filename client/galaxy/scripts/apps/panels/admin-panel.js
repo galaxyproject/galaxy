@@ -39,7 +39,7 @@ var AdminPanel = Backbone.View.extend({
                 enabled : self.settings.is_tool_shed_installed && self.config.enable_beta_ts_api_install
             },{
                 title   : 'Monitor installing repositories',
-                url     : 'admin_toolshed/monitor_repository_installation',
+                url     : 'admin_toolshed/monitor_repository_installation?installing_repository_ids=' + self.settings.installing_repository_ids,
                 enabled : self.settings.installing_repository_ids
             },{
                 title   : 'Manage installed tools',
