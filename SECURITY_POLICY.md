@@ -1,14 +1,12 @@
 # Security
 
-[Generic copy indicating how much Galaxy project cares about security]
+The Galaxy project is strongly committed to security and responsible disclosure. We have adopted and published a set of policies specifying how we will act in response to reported security issues, in order to ensure timely updates are made available to all affected parties.
 
 ## Reporting Security Issues
 
 If you believe you have discovered a security issue, please email [galaxy-committers@lists.galaxyproject.org](galaxy-committers@lists.galaxyproject.org). We ask that you not disclose the issues on the public issue tracker. Someone on that list will acknowledge your email within 2 US business days.
 
 Security issues which affect a pre-release version of Galaxy (i.e. the dev branch in GitHub) do not need to go through this process, you may open issues and PRs publicly.
-
-[Is there a pubkey it should be encrypted against?]
 
 ## Supported versions
 
