@@ -12,10 +12,13 @@ The following individuals have contributed code to Galaxy:
 * Abdulrahman Azab <eng.azab@gmail.com>
 * Finn Bacall <finn.bacall@cs.man.ac.uk>
 * Dannon Baker <dannon.baker@gmail.com>
+* balto <balto_59@hotmail.fr>
 * Christopher Bare <christopherbare@gmail.com>
 * Bérénice Batut <berenice.batut@gmail.com>
 * Marius van den Beek <m.vandenbeek@gmail.com>
+* Maria Bernard <maria.bernard@jouy.inra.fr>
 * Jean-Frédéric Berthelot <jean-frederic.berthelot@lifl.fr>
+* Léo Biscassi <leo.biscassi@gmail.com>
 * Dan Blanchard <dan.blanchard@gmail.com>
 * Clemens Blank <blankclemens@gmail.com>
 * Daniel Blankenberg <dan.blankenberg@gmail.com> <dan@bx.psu.edu>
@@ -32,6 +35,7 @@ The following individuals have contributed code to Galaxy:
 * Jennifer Cabral <jencabral@gmail.com>
 * Martin Čech <marten@bx.psu.edu>
 * Ramkrishna Chakrabarty <rc@bx.psu.edu>
+* Matt Chambers <matt.chambers42@gmail.com>
 * Brad Chapman <chapmanb@50mail.com>
 * John Chilton <jmchilton@gmail.com>
 * Saket Choudhary <saketkc@gmail.com>
@@ -59,6 +63,7 @@ The following individuals have contributed code to Galaxy:
 * Jean-Frédéric (@JeanFred on Github)
 * Maximilian Friedersdorff <max@friedersdorff.com>
 * Jaime Frey <jfrey@cs.wisc.edu>
+* Ben Fulton <benmarkfulton@gmail.com>
 * Carrie Ganote <cganote@iu.edu>
 * Ryan Golhar <ngsbioinformatics@gmail.com>
 * Jeremy Goecks <jeremy.goecks@emory.edu> <jgoecks@gwu.edu>
@@ -75,10 +80,13 @@ The following individuals have contributed code to Galaxy:
 * Hans-Rudolf Hotz <hrhotz@users.noreply.github.com>
 * Jian-Long Huang <jlh@pyhub.org>
 * Gert Hulselmans <gert.hulselmans@med.kuleuven.be>
+* Manabu Ishii <manabu.ishii.rb@gmail.com>
 * Jennifer Jackson <jen@bx.psu.edu>
 * Joachim Jacob <joachim.jacob@gmail.com>
+* Xiaoqian Jiang <jxq198409@hotmail.com>
 * Jim Johnson <jj@umn.edu> <jj@msi.umn.edu>
 * Radhesh Kamath <radhesh@bx.psu.edu>
+* Iyad Kandalaft <ik@iyadk.com>
 * Jan Kanis <jan.code@jankanis.nl>
 * David King <dcking@bx.psu.edu>
 * Rory Kirchner <roryk@mit.edu>
@@ -90,17 +98,20 @@ The following individuals have contributed code to Galaxy:
 * Ross Lazarus <ross.lazarus@gmail.com> <rossl@bx.psu.edu>
 * Yvan Le Bras <yvan.le_bras@irisa.fr>
 * Gildas Le Corguillé @lecorguille
+* Alexander Lenail <alexander.lenail@tufts.edu>
 * Simone Leo <simone.leo@gmail.com>
 * Kanwei Li <kanwei@gmail.com>
 * Michael Li <michael.li@uwaterloo.ca>
 * Pierre Lindenbaum <plindenbaum@yahoo.fr>
 * Mikael Loaec <mikael.loaec@versailles.inra.fr>
+* Thoba Lose <thobalose@users.noreply.github.com>
 * Philip Mabon <philipmabon@gmail.com>
 * Remi Marenco <remi.marenco@gmail.com> <remimarenco@gmail.com>
 * Zipho Mashologu <zipho@trustpay.biz>
 * Thomas McGowan <mcgo0092@msi.umn.edu>
 * Scott McManus <scottmcmanus@emory.edu> <scottmcmanus@gatech.edu>
 * Hervé Ménager <herve.menager@pasteur.fr>
+* Pablo Moreno <pablo.a.moreno@gmail.com>
 * Hunter Moseley <hunter.moseley@louisville.edu>
 * Takao Nakaguchi <takao.nakaguchi@gmail.com>
 * Arjun Nath <arjun@bx.psu.edu>
@@ -108,22 +119,26 @@ The following individuals have contributed code to Galaxy:
 * Eric Paniagua <paniagua.cshl@gmail.com>
 * Richard Park <rpark@bu.edu>
 * Lance Parsons <lparsons@princeton.edu>
+* Balthazar Pavot <balthazar.pavot@hotmail.fr>
 * Chinmay Rao <chinmay@bx.psu.edu>
 * Matt Ralston <mrals89@gmail.com>
 * ramezrawas <ramezrawas@gmail.com>
 * Eric Rasche <esr@tamu.edu> <rasche.eric@gmail.com> <rasche.eric@yandex.ru>
 * Athos Ribeiro <athoscr@fedoraproject.org>
 * Andrew Robinson <Andrew.Robinson@latrobe.edu.au>
+* Devon Ryan <dpryan79@gmail.com>
 * Michael Sauria <crockopotamus@gmail.com>
 * Andrea Sbardellati <andrea.sbardellati@crs4.it>
 * Ian Schenck <ian@bx.psu.edu>
 * Nick Semenkovich <semenko@alum.mit.edu>
 * Varun Shankar <varunshankar55@gmail.com>
 * Matthew Shirley <mdshw5@gmail.com>
+* Timur Shtatland <shtatland@neb.com>
 * Sourav Singh <ssouravsingh12@gmail.com>
 * Clare Sloggett <sloc@unimelb.edu.au>
 * Eteri Sokhoyan @Sokhoyan
 * Nicola Soranzo <nicola.soranzo@tgac.ac.uk> <nsoranzo@tiscali.it> <soranzo@crs4.it>
+* Nick Stoler <nick@nstoler.com>
 * Roy Storey <kiwiroy@gmail.com>
 * Hanfei Sun <ad9075@gmail.com>
 * Ilya Sytchev <hackdna@gmail.com>
@@ -142,6 +157,7 @@ The following individuals have contributed code to Galaxy:
 * Greg Von Kuster <greg@bx.psu.edu>
 * Pavan Videm <videmp@informatik.uni-freiburg.de>
 * Hiral Vora <hvora1@uncc.edu>
+* Junzhou Wang <junzhouwang@gmail.com>
 * Andrew Warren <anwarren@vbi.vt.edu>
 * Trevor Wennblom <trevor@well.com>
 * Joachim Wolff <wolffj@informatik.uni-freiburg.de>
