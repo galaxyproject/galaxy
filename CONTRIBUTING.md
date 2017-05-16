@@ -67,7 +67,7 @@ opened using [this form](https://github.com/galaxyproject/galaxy/issues/new).
 
   * Serious security problems should not be fixed via pull request - please
     see [the Galaxy security policies](SECURITY_POLICY.md) for information
-    about responsibly disclosing any security issues.
+    about responsibly disclosing security issues.
 
 * If your changes modify code - please ensure the resulting files
   conform to Galaxy [style
