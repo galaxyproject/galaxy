@@ -9,7 +9,9 @@ History
 17.5.9.dev0
 ---------------------
 
-    
+* Make mulled-search to search biocontainers instead of mulled repository by default
+  (thanks to @tom-tan).
+* Allow setting a new base image with mulled-build.
 
 ---------------------
 17.5.8 (2017-04-23)
