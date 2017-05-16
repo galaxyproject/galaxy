@@ -4,7 +4,7 @@ The Galaxy project is strongly committed to security and responsible disclosure.
 
 ## Reporting Security Issues
 
-If you believe you have discovered a security issue, please email [galaxy-committers@lists.galaxyproject.org](galaxy-committers@lists.galaxyproject.org). Someone on that list will acknowledge your email within 2 US business days. We ask that you not disclose the issues on the public issue tracker. We will provide you credit for the discovery when publicly disclosing the issue.
+If you believe you have discovered a security issue, please email [galaxy-committers@lists.galaxyproject.org](galaxy-committers@lists.galaxyproject.org). Please use `[SECURITY]` in the email title. Someone on that list will acknowledge your email within 2 US business days. We ask that you not disclose the issues on the public issue tracker. We will provide you credit for the discovery when publicly disclosing the issue.
 
 Security issues which *only* affect a pre-release version of Galaxy (i.e. the `dev` branch in GitHub) do not need to go through this process, so you may open issues and pull requests publicly.
 
@@ -15,18 +15,18 @@ The following branches or releases receive security support:
 - Development on the `dev` branch, hosted on GitHub, which will become the next release of Galaxy
 - Releases within the past 12 months.
   - E.g. 16.04 will receive support until 2017-04. As the month changes to 2017-05 it will become unsupported.
-- There are currently no plans for LTS releases.
+- There are currently no plans for Long Term Support (LTS) releases.
 
 For unsupported branches:
 
 - Older versions of Galaxy may be affected by security issues.
 - Security patches *may* apply
-- The security team will not investigate issues that pertain to unsupported releases.
-- The security team will not issue patches or new releases of unsupported versions.
+- The security team does not commit to investigating issues that pertain to unsupported releases.
+- The security team does not commit to issuing patches or new releases of unsupported versions.
 
 ## Issue Severity
 
-Galaxy takes a very conservative stance on issue severity as individual Galaxy instances often install tools and make customizations that might increase their risk in the face of otherwise less-serious vulnerabilities. As a result, issues that would be considered less-severe in other projects are treated as higher risk here.
+Galaxy takes a very conservative stance on issue severity as individual Galaxy instances often install tools and make customizations that might increase their risk in the face of otherwise less-serious vulnerabilities. As a result, issues that would be considered less-severe in other projects may be treated as higher risk here.
 
 ### Issue Classification
 
