@@ -4,9 +4,9 @@ The Galaxy project is strongly committed to security and responsible disclosure.
 
 ## Reporting Security Issues
 
-If you believe you have discovered a security issue, please email [galaxy-committers@lists.galaxyproject.org](galaxy-committers@lists.galaxyproject.org). We ask that you not disclose the issues on the public issue tracker. Someone on that list will acknowledge your email within 2 US business days.
+If you believe you have discovered a security issue, please email [galaxy-committers@lists.galaxyproject.org](galaxy-committers@lists.galaxyproject.org). Someone on that list will acknowledge your email within 2 US business days. We ask that you not disclose the issues on the public issue tracker. We will provide you credit for the discovery when publicly disclosing the issue.
 
-Security issues which affect a pre-release version of Galaxy (i.e. the dev branch in GitHub) do not need to go through this process, you may open issues and PRs publicly.
+Security issues which *only* affect a pre-release version of Galaxy (i.e. the `dev` branch in GitHub) do not need to go through this process, so you may open issues and pull requests publicly.
 
 ## Supported versions
 
@@ -26,13 +26,13 @@ For unsupported branches:
 
 ## Issue Severity
 
-Galaxy takes a very conservative stance on issue severity as individual Galaxies often install tools and make customizations that might increase their risk in the face of otherwise less-serious vulnerabilities. As a result, issues that would be considered less-severe issues in other projects are treated as higher risk here.
+Galaxy takes a very conservative stance on issue severity as individual Galaxy instances often install tools and make customizations that might increase their risk in the face of otherwise less-serious vulnerabilities. As a result, issues that would be considered less-severe in other projects are treated as higher risk here.
 
 ### Issue Classification
 
 Severity     | Examples
 ------------ | ---------
-High         | RCE, SQL Injection, Sensitive Data Exposure, XSS, CSRF, and *any issue allowing user impersonation*.
+High         | Remote code execution (RCE), SQL Injection, Sensitive Data Exposure, Cross-site scripting (XSS), Cross-site request forgery (CSRF), and *any issue allowing user impersonation*.
 Medium / Low | Unvalidated redirects/forwards, Issues due to uncommon configuration options.
 
 These are only examples. The security team will provide a severity classification based on its impact on the average Galaxy instance. However, Galaxy administrators should take it upon themselves to evaluate the impact for their instance(s).
