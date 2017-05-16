@@ -32,7 +32,7 @@ Galaxy takes a very conservative stance on issue severity as individual Galaxy i
 
 Severity     | Examples
 ------------ | ---------
-High         | Remote code execution (RCE), SQL Injection, Sensitive Data Exposure, Cross-site scripting (XSS), Cross-site request forgery (CSRF), and *any issue allowing user impersonation*.
+High         | Remote code execution (RCE), SQL Injection, Cross-site scripting (XSS), and *any issue allowing user impersonation*.
 Medium / Low | Unvalidated redirects/forwards, Issues due to uncommon configuration options.
 
 These are only examples. The security team will provide a severity classification based on its impact on the average Galaxy instance. However, Galaxy administrators should take it upon themselves to evaluate the impact for their instance(s).
@@ -51,7 +51,7 @@ embargo, we will:
 
 - Patch the oldest release within the 12 month support window, and merge that fix forward.
   - Updates will be available on the `release_XX.YY` branches.
-- Create new point release tags for each release branch [??? I've never understood point release tags in Galaxy]
+- Update each release branch
 - Post a notice to the [galaxy-announce mailing list](https://lists.galaxyproject.org/listinfo/galaxy-announce) with:
   - A description of the issue
   - List of supported versions that are affected
