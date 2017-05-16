@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.5.9.dev0
+17.5.9 (2017-05-16)
 ---------------------
 
 * Make mulled-search to search biocontainers instead of mulled repository by default
