@@ -6,6 +6,7 @@ The following individuals have contributed code to Galaxy:
 * Istvan Albert <istvan.albert@gmail.com>
 * Renato Alves <alves.rjc@gmail.com> <rjalves@igc.gulbenkian.pt>
 * Guruprasad Ananda <gua110@bx.psu.edu>
+* Evgeny Anatskiy <evgeny.anatskiy@gmail.com>
 * Florent Angly <florent.angly@gmail.com>
 * Raj Ayyampalayam <raj76@uga.edu>
 * Abdulrahman Azab <eng.azab@gmail.com>
@@ -14,6 +15,7 @@ The following individuals have contributed code to Galaxy:
 * Christopher Bare <christopherbare@gmail.com>
 * Bérénice Batut <berenice.batut@gmail.com>
 * Marius van den Beek <m.vandenbeek@gmail.com>
+* Jean-Frédéric Berthelot <jean-frederic.berthelot@lifl.fr>
 * Dan Blanchard <dan.blanchard@gmail.com>
 * Clemens Blank <blankclemens@gmail.com>
 * Daniel Blankenberg <dan.blankenberg@gmail.com> <dan@bx.psu.edu>
@@ -47,6 +49,7 @@ The following individuals have contributed code to Galaxy:
 * Shane Dowling <shane@shanedowling.com>
 * John Duddy <jduddy@illumina.com>
 * Carl Eberhard <carlfeberhard@gmail.com>
+* Ignacio Eguinoa <ignacio.eguinoa@gmail.com>
 * Mark Einon <mark.einon@gmail.com>
 * Kyle Ellrott <kellrott@gmail.com> <kellrott@soe.ucsc.edu>
 * Eric Enns <eric.enns@gmail.com>
@@ -80,6 +83,7 @@ The following individuals have contributed code to Galaxy:
 * David King <dcking@bx.psu.edu>
 * Rory Kirchner <roryk@mit.edu>
 * Edward Kirton <eskirton@lbl.gov>
+* Jasper Koehorst <jasperkoehorst@gmail.com>
 * Anup Kumar <anup.rulez@gmail.com>
 * Brad Langhorst <langhorst@neb.com>
 * Delphine Lariviere <lariviere.delphine@gmail.com>
@@ -106,6 +110,7 @@ The following individuals have contributed code to Galaxy:
 * Lance Parsons <lparsons@princeton.edu>
 * Chinmay Rao <chinmay@bx.psu.edu>
 * Matt Ralston <mrals89@gmail.com>
+* ramezrawas <ramezrawas@gmail.com>
 * Eric Rasche <esr@tamu.edu> <rasche.eric@gmail.com> <rasche.eric@yandex.ru>
 * Athos Ribeiro <athoscr@fedoraproject.org>
 * Andrew Robinson <Andrew.Robinson@latrobe.edu.au>
@@ -113,6 +118,7 @@ The following individuals have contributed code to Galaxy:
 * Andrea Sbardellati <andrea.sbardellati@crs4.it>
 * Ian Schenck <ian@bx.psu.edu>
 * Nick Semenkovich <semenko@alum.mit.edu>
+* Varun Shankar <varunshankar55@gmail.com>
 * Matthew Shirley <mdshw5@gmail.com>
 * Sourav Singh <ssouravsingh12@gmail.com>
 * Clare Sloggett <sloc@unimelb.edu.au>
@@ -121,6 +127,7 @@ The following individuals have contributed code to Galaxy:
 * Roy Storey <kiwiroy@gmail.com>
 * Hanfei Sun <ad9075@gmail.com>
 * Ilya Sytchev <hackdna@gmail.com>
+* Scott Szakonyi <sszakony@nd.edu>
 * James Taylor <james@jamestaylor.org>
 * Tomithy Too <tomithy.too@gmail.com>
 * David Trudgian <dave@trudgian.net> <david.trudgian@utsouthwestern.edu>
@@ -137,6 +144,7 @@ The following individuals have contributed code to Galaxy:
 * Hiral Vora <hvora1@uncc.edu>
 * Andrew Warren <anwarren@vbi.vt.edu>
 * Trevor Wennblom <trevor@well.com>
+* Joachim Wolff <wolffj@informatik.uni-freiburg.de>
 * Thomas Wollmann <thomas.s.wollmann@gmail.com> <thomas.wollmann@bioquant.uni-heidelberg.de>
 * Jay Young <xiaojay@gmail.com>
 * Yi Zhang <yizhang@bx.psu.edu>
