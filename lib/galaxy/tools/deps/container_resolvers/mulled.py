@@ -114,6 +114,9 @@ class CachedMulledContainerResolver(ContainerResolver):
         self.namespace = namespace
 
     def resolve(self, enabled_container_types, tool_info):
+        if tool_info.requires_galaxy_python_environment:
+            return None
+
         targets = mulled_targets(tool_info)
         return cached_container_description(targets, self.namespace)
 
@@ -132,6 +135,9 @@ class MulledContainerResolver(ContainerResolver):
         self.namespace = namespace
 
     def resolve(self, enabled_container_types, tool_info):
+        if tool_info.requires_galaxy_python_environment:
+            return None
+
         targets = mulled_targets(tool_info)
         if len(targets) == 0:
             return None
@@ -190,6 +196,9 @@ class BuildMulledContainerResolver(ContainerResolver):
         self.auto_init = self._get_config_option("auto_init", DEFAULT_CHANNELS, prefix="involucro")
 
     def resolve(self, enabled_container_types, tool_info):
+        if tool_info.requires_galaxy_python_environment:
+            return None
+
         targets = mulled_targets(tool_info)
         if len(targets) == 0:
             return None
