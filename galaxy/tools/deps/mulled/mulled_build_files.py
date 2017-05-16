@@ -20,6 +20,7 @@ from ._cli import arg_parser
 from .mulled_build import (
     add_build_arguments,
     args_to_mull_targets_kwds,
+    BuildExistsException,
     mull_targets,
     target_str_to_targets,
 )
@@ -34,7 +35,10 @@ def main(argv=None):
                         help="Path to directory (or single file) of TSV files describing composite recipes.")
     args = parser.parse_args()
     for targets in generate_targets(args.files):
-        mull_targets(targets, **args_to_mull_targets_kwds(args))
+        try:
+            mull_targets(targets, rebuild=False, **args_to_mull_targets_kwds(args))
+        except BuildExistsException:
+            continue
 
 
 def generate_targets(target_source):
@@ -59,7 +63,7 @@ def generate_targets(target_source):
 
 def line_to_targets(line_str):
     line = _parse_line(line_str)
-    return target_str_to_targets(line)
+    return target_str_to_targets(line[0])
 
 
 _Line = collections.namedtuple("_Line", ["targets", "image_build", "name_override"])
