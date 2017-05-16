@@ -174,7 +174,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [ ] **Create Release Notes**
 
-    - [ ] Review merged PRs and ensure they all have a milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Amerged+no%3Amilestone)
+    - [ ] Review merged PRs and ensure they all have a milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Amerged+no%3Amilestone%20-label%3Amerge)
     - [ ] Checkout release branch
 
           git checkout release_${version} -b ${version}_release_notes
