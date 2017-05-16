@@ -8,6 +8,7 @@ The following individuals have contributed code to Galaxy:
 * Guruprasad Ananda <gua110@bx.psu.edu>
 * Florent Angly <florent.angly@gmail.com>
 * Raj Ayyampalayam <raj76@uga.edu>
+* Abdulrahman Azab <eng.azab@gmail.com>
 * Finn Bacall <finn.bacall@cs.man.ac.uk>
 * Dannon Baker <dannon.baker@gmail.com>
 * Christopher Bare <christopherbare@gmail.com>
@@ -50,8 +51,10 @@ The following individuals have contributed code to Galaxy:
 * Kyle Ellrott <kellrott@gmail.com> <kellrott@soe.ucsc.edu>
 * Eric Enns <eric.enns@gmail.com>
 * fescudie <fescudie@toulouse.inra.fr>
+* Anne Fouilloux <annefou@uio.no>
 * Dorine Francheteau <dorine@bx.psu.edu>
 * Jean-Frédéric (@JeanFred on Github)
+* Maximilian Friedersdorff <max@friedersdorff.com>
 * Jaime Frey <jfrey@cs.wisc.edu>
 * Carrie Ganote <cganote@iu.edu>
 * Ryan Golhar <ngsbioinformatics@gmail.com>
@@ -66,6 +69,7 @@ The following individuals have contributed code to Galaxy:
 * Saskia Hiltemann <zazkia@gmail.com>
 * Rob Hooft <rob.hooft@nbic.nl>
 * Y. Hoogstrate <y.hoogstrate@erasmusmc.nl>
+* Hans-Rudolf Hotz <hrhotz@users.noreply.github.com>
 * Jian-Long Huang <jlh@pyhub.org>
 * Gert Hulselmans <gert.hulselmans@med.kuleuven.be>
 * Jennifer Jackson <jen@bx.psu.edu>
@@ -76,7 +80,9 @@ The following individuals have contributed code to Galaxy:
 * David King <dcking@bx.psu.edu>
 * Rory Kirchner <roryk@mit.edu>
 * Edward Kirton <eskirton@lbl.gov>
+* Anup Kumar <anup.rulez@gmail.com>
 * Brad Langhorst <langhorst@neb.com>
+* Delphine Lariviere <lariviere.delphine@gmail.com>
 * Ross Lazarus <ross.lazarus@gmail.com> <rossl@bx.psu.edu>
 * Yvan Le Bras <yvan.le_bras@irisa.fr>
 * Gildas Le Corguillé @lecorguille
@@ -90,6 +96,7 @@ The following individuals have contributed code to Galaxy:
 * Zipho Mashologu <zipho@trustpay.biz>
 * Thomas McGowan <mcgo0092@msi.umn.edu>
 * Scott McManus <scottmcmanus@emory.edu> <scottmcmanus@gatech.edu>
+* Hervé Ménager <herve.menager@pasteur.fr>
 * Hunter Moseley <hunter.moseley@louisville.edu>
 * Takao Nakaguchi <takao.nakaguchi@gmail.com>
 * Arjun Nath <arjun@bx.psu.edu>
@@ -120,9 +127,11 @@ The following individuals have contributed code to Galaxy:
 * Nitesh Turaga <nitesh.turaga@gmail.com>
 * Clayton Turner <clayclay911@gmail.com>
 * Jesse c j van Dam <jesse.vandam@wur.nl>
+* Ashok Varadharajan <ashvark@gmail.com>
 * Marek Vavruša <marek@vavrusa.com>
 * Martijn Vermaat <m.vermaat.hg@lumc.nl>
 * Kelly Vincent <kpvincent@bx.psu.edu>
+* Jeremy Volkening <jdv@base2bio.com>
 * Greg Von Kuster <greg@bx.psu.edu>
 * Pavan Videm <videmp@informatik.uni-freiburg.de>
 * Hiral Vora <hvora1@uncc.edu>
