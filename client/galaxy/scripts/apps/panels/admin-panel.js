@@ -142,7 +142,7 @@ var AdminPanel = Backbone.View.extend({
                     $entries.append( $( '<div/>' ).addClass( 'ui-side-section-body-title' )
                                                   .append( $( '<a/>' ).attr({
                                                                 href    : self.root + item.url,
-                                                                target  : 'galaxy_main' }).text( item.title ) ) );
+                                                                target  : 'galaxy_main' }).text( _l( item.title ) ) ) );
                 }
             });
             self.$el.append( $section );
@@ -153,7 +153,7 @@ var AdminPanel = Backbone.View.extend({
     _templateSection : function( options ) {
         return [
             '<div>',
-                '<div class="ui-side-section-title">' + options.title + '</div>',
+                '<div class="ui-side-section-title">' + _l( options.title ) + '</div>',
                 '<div class="ui-side-section-body"/>',
             '</div>'
         ].join('');
