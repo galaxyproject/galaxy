@@ -11,11 +11,14 @@ Highlights
 **Feature1**
   Feature description.
 
-**Feature2**
-  Feature description.
+**Track your original datasets more easily**
+  When you add certain tags with a ``#`` in front (e.g. ``#sample_A``) to datasets they will be propagated
+  through toolruns to subsequent datasets helping you to better orientate within history.
+  Implemented in `Pull Request 3704`_ `Pull Request 3718`_ `Pull Request 3719`_ `Pull Request 3760`_ `Pull Request 3868`_ `Pull Request 3979`_
 
-**Feature3**
-  Feature description.
+**Drag & Drop datasets into tool inputs**
+  Interface now allows dragging datasets from history panel into the content selectors of the tool form.
+  Implemented in `Pull Request 3871`_.
 
 Get Galaxy
 ==========

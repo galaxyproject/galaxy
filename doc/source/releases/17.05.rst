@@ -11,49 +11,49 @@ Enhancements
 
 .. major_feature
 
-* Normalizes the handling of steps and missing tools for the workflow editor
-  `Pull Request 3181`_
 
 .. feature
 
-* added nrrd image datatype
-  (thanks to `@ThomasWollmann <https://github.com/ThomasWollmann>`__).
-  `Pull Request 3385`_
+* Allow direct uploading to collections.
+  `Pull Request 3696`_
 * Overlay search for tools, wf, libraries and histories
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3460`_
+* Add Cytoscape as the Galaxy charts plugin
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 3817`_
+* Ethercalc Interactive Environment
+  (thanks to `@shiltemann <https://github.com/shiltemann>`__).
+  `Pull Request 3699`_
 * Add a simple UI to manage tool dependencies
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3479`_
+* Add nrrd image datatype
+  (thanks to `@ThomasWollmann <https://github.com/ThomasWollmann>`__).
+  `Pull Request 3385`_
 * NGL Viewer for molecule representation
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3601`_
 * Util to encode or decode values
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3622`_
 * Support Docker Engine swarm mode for Interactive Environments
   `Pull Request 3666`_
-* Allow uploading to collections.
-  `Pull Request 3696`_
-* Ethercalc Interactive Environment
-  (thanks to `@shiltemann <https://github.com/shiltemann>`__).
-  `Pull Request 3699`_
 * Interactive Environment container waiting and swarm management
   `Pull Request 3740`_
 * Webhook plugin: tool_list
   (thanks to `@blankclemens <https://github.com/blankclemens>`__).
   `Pull Request 3753`_
-* Cytoscape as the Galaxy charts plugin
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 3817`_
 * Phylocanvas as a BioJS component for the Galaxy charts
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__ `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3850`_
 * Container interface abstraction
   `Pull Request 3863`_
 * Graphite support
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3964`_
+* Normalize the handling of steps and missing tools for the workflow editor
+  `Pull Request 3181`_
 
 .. enhancement
 
@@ -62,28 +62,12 @@ Enhancements
   `Pull Request 3104`_
 * Workflow editor UI touch up
   `Pull Request 3407`_
-* Inline CSS in error report email
-  (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 3445`_
-* Improve routing for user preference views
-  `Pull Request 3446`_
-* Fix various transiently failing Selenium tests.
-  `Pull Request 3450`_
-* Tool Documentation and Testing Improvements
-  `Pull Request 3457`_
-* update readme badges
-  `Pull Request 3465`_
-* Lint some tools
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 3468`_
 * Add an example group filter for displaying tool panel sections
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 3484`_
 * Python3: use @six.add_metaclass() decorator
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3491`_
-* improve release issue docs
-  `Pull Request 3496`_
 * Improvements to build sites configuration
   `Pull Request 3503`_
 * Add compressed fastq peek and preview
@@ -140,8 +124,6 @@ Enhancements
   `Pull Request 3619`_
 * Usable slow query logging
   `Pull Request 3625`_
-* Fix kombu documentation link in galaxy.ini.sample
-  `Pull Request 3629`_
 * Allow composite datatypes of type auto_primary_file to automatically
   generate dataset
   `Pull Request 3643`_
@@ -174,18 +156,10 @@ Enhancements
 * Add datatypes for soon coming PlantTribes Galaxy tools.
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 3698`_
-* 'nametags' implementation
-  `Pull Request 3704`_
 * Prefer versioned Conda dependencies to unversioned Galaxy ones
   `Pull Request 3708`_
 * Touch up Galaxy testing documentation.
   `Pull Request 3715`_
-* Show tags in select search field
-  `Pull Request 3718`_
-* Use values for 'name'tags instead of child tags.
-  `Pull Request 3719`_
-* Fix tag escaping
-  `Pull Request 3720`_
 * Add API and UI to remove requirements installed by Conda
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3725`_
@@ -209,8 +183,6 @@ Enhancements
   `Pull Request 3752`_
 * Abstract uWSGI handling into new galaxy.web.stack package
   `Pull Request 3759`_
-* Tagging tweaks to handle multiple 'name'/etc tags on a single object.
-  `Pull Request 3760`_
 * i18n improvements and French localization
   `Pull Request 3762`_
 * Should exit immediately to avoid index error
@@ -237,8 +209,6 @@ Enhancements
   `Pull Request 3819`_
 * Restrict workflow scheduling within a history to a fixed, random handler.
   `Pull Request 3820`_
-* Fix for EtherCalc IE image specification.
-  `Pull Request 3825`_
 * Order processing evaluation of workflow invocations when scheduling.
   `Pull Request 3830`_
 * Stricter checks for GFF/GFF3/GTF sniffing
@@ -258,13 +228,9 @@ Enhancements
 * Small changes to links and add gitter
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 3861`_
-* Adding tagging to collections.
-  `Pull Request 3868`_
 * Use detect_errors="exit_code" in Trim tool
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3869`_
-* Allows to drag-and-drop history items into the content selector
-  `Pull Request 3871`_
 * synchronise against latest UCSC versions
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3874`_
@@ -290,16 +256,9 @@ Enhancements
   `Pull Request 3953`_
 * change 'user' menu to login or register for anons
   `Pull Request 3955`_
-* Fix margin style values for color picker element
-  `Pull Request 3965`_
 * Stats docs
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3968`_
-* 17.05 rstudio fixes / one small gie fix
-  (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 3975`_
-* Hashtags
-  `Pull Request 3979`_
 * Enhance filenames with collection context when downloading datasets from
   GUI.
   `Pull Request 3985`_
@@ -309,46 +268,39 @@ Enhancements
   `Pull Request 4006`_
 * Update Jupyter image to 17.05
   `Pull Request 4007`_
+* Inline CSS in error report email
+  (thanks to `@erasche <https://github.com/erasche>`__).
+  `Pull Request 3445`_
+* Improve routing for user preference views
+  `Pull Request 3446`_
+* Tool Documentation and Testing Improvements
+  `Pull Request 3457`_
+* update readme badges
+  `Pull Request 3465`_
+* Lint some tools
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 3468`_
+* improve release issue docs
+  `Pull Request 3496`_
 
 .. small_enhancement
 
-* Another fix for Selenium testing on Jenkins.
-  `Pull Request 3422`_
-* Fix most broken Selenium tests.
-  `Pull Request 3440`_
-* Various fixes for test image Docker user switching.
-  `Pull Request 3443`_
 * Attempt work around for race-y sort of condition in Selenium sizzle
   checkers.
   `Pull Request 3451`_
 * Webhooks: add tests
   (thanks to `@anatskiy <https://github.com/anatskiy>`__).
   `Pull Request 3469`_
-* Fix selenium workflow tests broken with `#3181
-  <https://github.com/galaxyproject/galaxy/issues/3181>`__.
-  `Pull Request 3504`_
-* Fix integration test for default Conda mapping.
-  `Pull Request 3508`_
 * Watch tool data table *.loc files, and reload if modified.
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3533`_
-* Fix transiently failing Selenium upload test.
-  `Pull Request 3587`_
 * Disable transiently failing tour test.
   `Pull Request 3599`_
-* Fix for transiently failing workflow test.
-  `Pull Request 3668`_
 * Selenium Testing Improvements
   `Pull Request 3716`_
-* Fix webhook search overlay interfering with masthead load
-  `Pull Request 3731`_
 * Merge ConfiguresGalaxyMixin.reload_toolbox() in _configure_toolbox()
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3732`_
-* Assorted Fixes for Dockerized Test Setup
-  `Pull Request 3755`_
-* deduplicate obsolete API readme
-  `Pull Request 3777`_
 * Abstraction for re-use between collection creators.
   `Pull Request 3781`_
 * Merge ToolConfWatchers and separate from Toolbox
@@ -357,10 +309,6 @@ Enhancements
 * Attempt to improve the robustness and verboseness of the test_sharing_valid
   Selenium test.
   `Pull Request 3841`_
-* Fix collection operations in workflows.
-  `Pull Request 3848`_
-* Remove old, unused search controller.
-  `Pull Request 3894`_
 * Routes cleanup
   `Pull Request 3895`_
 * Speedup startup and toolbox operations
@@ -370,14 +318,9 @@ Enhancements
   `Pull Request 3933`_
 * Followup to exception refactoring
   `Pull Request 3959`_
-* Small selenium hack to fix occasionally failing collection upload tests.
-  `Pull Request 3967`_
 * Use container-based infrastructure (sudo: false) in TravisCI
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3977`_
-* Fix Travix builds which use flake8-docstrings
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 3981`_
 * Improve implicit workflow connection test case.
   `Pull Request 3991`_
 
@@ -390,6 +333,45 @@ Fixes
 
 .. bug
 
+* Fix tag escaping
+  `Pull Request 3720`_
+* Fix kombu documentation link in galaxy.ini.sample
+  `Pull Request 3629`_
+* Fix for EtherCalc IE image specification.
+  `Pull Request 3825`_
+* Fix margin style values for color picker element
+  `Pull Request 3965`_
+* 17.05 rstudio fixes / one small gie fix
+  (thanks to `@erasche <https://github.com/erasche>`__).
+  `Pull Request 3975`_
+* Fix transiently failing Selenium upload test.
+  `Pull Request 3587`_
+* Fix webhook search overlay interfering with masthead load
+  `Pull Request 3731`_
+* Fix collection operations in workflows.
+  `Pull Request 3848`_
+* Remove old, unused search controller.
+  `Pull Request 3894`_
+* deduplicate obsolete API readme
+  `Pull Request 3777`_
+* Assorted Fixes for Dockerized Test Setup
+  `Pull Request 3755`_
+* Another fix for Selenium testing on Jenkins.
+  `Pull Request 3422`_
+* Fix most broken Selenium tests.
+  `Pull Request 3440`_
+* Fix for transiently failing workflow test.
+  `Pull Request 3668`_
+* Fix selenium workflow tests broken with `#3181
+  <https://github.com/galaxyproject/galaxy/issues/3181>`__.
+  `Pull Request 3504`_
+* Fix integration test for default Conda mapping.
+  `Pull Request 3508`_
+* Various fixes for test image Docker user switching.
+  `Pull Request 3443`_
+* Fix Travix builds which use flake8-docstrings
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 3981`_
 * Azure - Leasing container sometimes breaks things in docker galaxy
   (thanks to `@zfrenchee <https://github.com/zfrenchee>`__).
   `Pull Request 3263`_
@@ -398,6 +380,8 @@ Fixes
   `Pull Request 3322`_
 * Fix cycle detection for single node workflows.
   `Pull Request 3374`_
+* Small selenium hack to fix occasionally failing collection upload tests.
+  `Pull Request 3967`_
 * Bug fix in mulled.py
   (thanks to `@abdulrahmanazab <https://github.com/abdulrahmanazab>`__).
   `Pull Request 3434`_
@@ -567,6 +551,8 @@ Fixes
   `Pull Request 4065`_
 * Fix global grid action event handler
   `Pull Request 4068`_
+* Fix various transiently failing Selenium tests.
+  `Pull Request 3450`_
 
 .. github_links
 .. _Pull Request 3104: https://github.com/galaxyproject/galaxy/pull/3104
