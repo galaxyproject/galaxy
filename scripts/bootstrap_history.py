@@ -114,7 +114,7 @@ To update an existing Galaxy repository run:
 
       $$ git checkout release_${release} && git pull --ff-only origin release_${release}
 
-See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
+See our community `hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
 Release Notes
 ===========================================================
@@ -185,6 +185,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
           make release-bootstrap-history RELEASE_CURR=${version}
     - [ ] Open newly created files and manually curate major topics and release notes.
+    - [ ] Check ``diff`` of ``galaxy.ini.sample`` against last release and include any important changes.
     - [ ] Commit release notes.
 
           git add docs/; git commit -m "Release notes for $version"; git push upstream ${version}_release_notes
@@ -204,7 +205,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
           make release-create RELEASE_CURR=${version}
 
-    - [ ] Switch Jenkins documentation build [branch specifier](https://jenkins.galaxyproject.org/job/Sphinx-Docs/configure) to `*/release_{version}`.
+    - [ ] Switch Jenkins documentation build [branch specifier](https://jenkins.galaxyproject.org/job/Sphinx-Docs/configure) to `*/release_${version}`.
     - [ ] Trigger the documentation build.
 
 - [ ] **Do Docker Release**
