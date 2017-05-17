@@ -186,6 +186,8 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
           make release-bootstrap-history RELEASE_CURR=${version}
     - [ ] Open newly created files and manually curate major topics and release notes.
     - [ ] Check ``diff`` of ``galaxy.ini.sample`` against last release and include any important changes.
+    - [ ] Check ``diff`` of ``datatypes_conf.xml.sample`` against last release and include any important changes.
+    - [ ] Check if there were database migrations and include a high-profile note about it if so.
     - [ ] Commit release notes.
 
           git add docs/; git commit -m "Release notes for $version"; git push upstream ${version}_release_notes
