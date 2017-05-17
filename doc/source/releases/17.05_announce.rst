@@ -50,7 +50,7 @@ New Configuration Options
 ===========================================================
 
 Below are the newly added options you can configure in ``galaxy.ini``.
-To see the whole sample file visit our GitHub `repository <https://github.com/galaxyproject/galaxy/blob/dev/config/galaxy.ini.sample>`__.
+To see the whole sample file visit our GitHub `repository <https://github.com/galaxyproject/galaxy/blob/release_17.05/config/galaxy.ini.sample>`__.
 
 .. code-block:: shell
 
