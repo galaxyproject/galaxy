@@ -37,7 +37,7 @@ To update an existing Galaxy repository run:
 
 See the community`hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
-Newly there is `New Configuration Options`_ section.
+Additionaly there are `New Configuration Options`_  and `New Datatypes`_ sections.
 
 Release Notes
 ===========================================================
@@ -47,7 +47,7 @@ Release Notes
 
 
 New Configuration Options
-===========================================================
+=========================
 
 Below are the newly added options you can configure in ``galaxy.ini``.
 To see the whole sample file visit our GitHub `repository <https://github.com/galaxyproject/galaxy/blob/release_17.05/config/galaxy.ini.sample>`__.
@@ -93,6 +93,25 @@ To see the whole sample file visit our GitHub `repository <https://github.com/ga
     # Enable the new container interface for Interactive Environments
     #enable_beta_containers_interface = False
 
+New Datatypes
+=============
+
+Below are the newly added datatypes and sniffers you can configure in ``datatypes_conf.xml``.
+To see the whole sample file visit our GitHub `repository <https://github.com/galaxyproject/galaxy/blob/release_17.05/config/datatypes_conf.xml.sample>`__.
+
+.. code-block:: xml
+
+    <datatype extension="d3_hierarchy" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
+    <datatype extension="mzdata" type="galaxy.datatypes.proteomics:MzData" mimetype="application/xml" display_in_upload="true" />
+    <datatype extension="percin" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="percout" type="galaxy.datatypes.xml:GenericXml" subclass="true" />
+    <datatype extension="hardklor" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="kronik" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="ptalign" type="galaxy.datatypes.text:PlantTribesMultipleSequenceAlignment" />
+    <datatype extension="ptortho" type="galaxy.datatypes.text:PlantTribesOrtho" />
+    <datatype extension="ptorthocs" type="galaxy.datatypes.text:PlantTribesOrthoCodingSequence" />
+    <datatype extension="pttree" type="galaxy.datatypes.text:PlantTribesPhylogeneticTree" />
+    <sniffer type="galaxy.datatypes.proteomics:MzData"/>
 
 
 .. include:: _thanks.rst
