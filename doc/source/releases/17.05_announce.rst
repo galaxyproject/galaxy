@@ -35,12 +35,64 @@ To update an existing Galaxy repository run:
 
       $ git checkout release_17.05 && git pull --ff-only origin release_17.05
 
-See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
+See the community`hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Newly there is `New Configuration Options`_ section.
 
 Release Notes
 ===========================================================
 
 .. include:: 17.05.rst
    :start-after: announce_start
+
+
+New Configuration Options
+===========================================================
+
+Below are the newly added options you can configure in ``galaxy.ini``.
+To see the whole sample file visit our GitHub `repository <https://github.com/galaxyproject/galaxy/blob/dev/config/galaxy.ini.sample>`__.
+
+.. code-block:: shell
+
+    # Set to True to enable monitoring of the tool_data and shed_tool_data_path
+    # directories. If changes in tool data table files are found, the tool data
+    # tables for that data manager are automatically reloaded.
+    # Watchdog ( https://pypi.python.org/pypi/watchdog ) must be installed and
+    # available to Galaxy to use this option. Other options include 'auto'
+    # which will attempt to use the watchdog library if it is available but won't
+    # fail to load Galaxy if it is not and 'polling' which will use a less
+    # efficient monitoring scheme that may work in wider range of scenarios
+    # than the watchdog default.
+    #watch_tool_data_dir = False
+
+    # To run interactive environment containers in Docker Swarm mode (on an
+    # existing swarm), set this option to True and set `docker_connect_port` in the
+    # IE plugin config (ini) file(s) of any IE plugins you have enabled and ensure
+    # that you are not using any `docker run`-specific options in your plugins'
+    # `command_inject` options (swarm mode services run using `docker service
+    # create`, which has a different and more limited set of options). This option
+    # can be overridden on a per-plugin basis by using the `swarm_mode` option in
+    # the plugin's ini config file.
+    #interactive_environment_swarm_mode = False
+
+    # Galaxy can run a "swarm manager" service that will monitor utilization of the
+    # swarm and provision/deprovision worker nodes as necessary. The service has
+    # its own configuration file.
+    #swarm_manager_config_file = config/swarm_manager_conf.yml
+
+    # Log to graphite
+    # Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
+    # Enabling the following options will cause galaxy to log request timing and
+    # other statistics to the configured graphite instance. The graphite_prefix is
+    # useful if you are running multiple Galaxy instances and want to segment
+    # statistics between them within the same aggregator.
+    #graphite_host=
+    #graphite_port=2003
+    #graphite_prefix=galaxy
+
+    # Enable the new container interface for Interactive Environments
+    #enable_beta_containers_interface = False
+
+
 
 .. include:: _thanks.rst
