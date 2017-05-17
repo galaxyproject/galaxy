@@ -25,7 +25,7 @@ except ImportError:
 from galaxy.tools.deps import commands, installable
 
 from ._cli import arg_parser
-from .util import build_target, conda_build_target_str, image_name
+from .util import build_target, conda_build_target_str, create_repository, image_name, quay_repository
 from ..conda_compat import MetaData
 
 DIRNAME = os.path.dirname(__file__)
@@ -112,12 +112,21 @@ def conda_versions(pkg_name, file_name):
     return ret
 
 
+class BuildExistsException(Exception):
+    """Exception indicating mull_targets is skipping an existing build.
+
+    If mull_targets is called with rebuild=False and the target built is already published
+    an instance of this exception is thrown.
+    """
+
+
 def mull_targets(
     targets, involucro_context=None,
     command="build", channels=DEFAULT_CHANNELS, namespace="mulled",
     test='true', test_files=None, image_build=None, name_override=None,
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
-    conda_version=None, verbose=False, binds=DEFAULT_BINDS
+    conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
+    oauth_token=None,
 ):
     targets = list(targets)
     if involucro_context is None:
@@ -128,6 +137,16 @@ def mull_targets(
         "image": image_name(targets, image_build=image_build, name_override=name_override)
     }
     repo = string.Template(repository_template).safe_substitute(repo_template_kwds)
+
+    if rebuild or "push" in command:
+        repo_data = quay_repository(repo_template_kwds["namespace"], repo_template_kwds["image"])
+
+        if not rebuild:
+            if "error_type" not in repo_data and "tags" in repo_data and repo_data["tags"]:
+                raise BuildExistsException()
+        if "push" in command and "error_type" in repo_data and oauth_token:
+            # Explicitly create the repository so it can be built as public.
+            create_repository(repo_template_kwds["namespace"], repo_template_kwds["image"], oauth_token)
 
     for channel in channels:
         if channel.startswith('file://'):
@@ -246,6 +265,8 @@ def add_build_arguments(parser):
                         help='Dependent conda channels.')
     parser.add_argument('--conda-version', dest="conda_version", default=None,
                         help="Change to specified version of Conda before installing packages.")
+    parser.add_argument('--oauth-token', dest="oauth_token", default=None,
+                        help="If set, use this token when communicating with quay.io API.")
 
 
 def add_single_image_arguments(parser):
@@ -297,6 +318,8 @@ def args_to_mull_targets_kwds(args):
         kwds["repository_template"] = args.repository_template
     if hasattr(args, "conda_version"):
         kwds["conda_version"] = args.conda_version
+    if hasattr(args, "oauth_token"):
+        kwds["oauth_token"] = args.oauth_token
 
     kwds["involucro_context"] = context_from_args(args)
 

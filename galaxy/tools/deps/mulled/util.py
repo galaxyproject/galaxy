@@ -12,8 +12,32 @@ except ImportError:
     requests = None
 
 
+def create_repository(namespace, pkg_name, oauth_token):
+    assert oauth_token
+    headers = {'Authorization': 'Bearer %s' % oauth_token}
+    data = {
+        "repository": pkg_name,
+        "namespace": namespace,
+        "description": "",
+        "visibility": "public",
+    }
+    requests.post("https://quay.io/api/v1/repository", json=data, headers=headers)
+
+
 def quay_versions(namespace, pkg_name):
     """Get all version tags for a Docker image stored on quay.io for supplied package name."""
+    data = quay_repository(namespace, pkg_name)
+
+    if 'error_type' in data and data['error_type'] == "invalid_token":
+        return []
+
+    if 'tags' not in data:
+        raise Exception("Unexpected response from quay.io - not tags description found [%s]" % data)
+
+    return [tag for tag in data['tags'] if tag != 'latest']
+
+
+def quay_repository(namespace, pkg_name):
     if requests is None:
         raise Exception("requets library is unavailable, functionality not available.")
 
@@ -22,13 +46,7 @@ def quay_versions(namespace, pkg_name):
     url = 'https://quay.io/api/v1/repository/%s/%s' % (namespace, pkg_name)
     response = requests.get(url, timeout=None)
     data = response.json()
-    if 'error_type' in data and data['error_type'] == "invalid_token":
-        return []
-
-    if 'tags' not in data:
-        raise Exception("Unexpected response from quay.io - not tags description found [%s]" % data)
-
-    return [tag for tag in data['tags'] if tag != 'latest']
+    return data
 
 
 def mulled_tags_for(namespace, image):
