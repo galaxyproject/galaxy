@@ -239,9 +239,10 @@ def ensure_installed(involucro_context, auto_init):
 
 
 def install_involucro(involucro_context=None, to_path=None):
-    to_path = involucro_context.involucro_bin
-    download_cmd = " ".join(commands.download_command(involucro_link(), to=to_path, quote_url=True))
-    full_cmd = "%s && chmod +x %s" % (download_cmd, to_path)
+    install_path = os.path.abspath(involucro_context.involucro_bin)
+    involucro_context.involucro_bin = install_path
+    download_cmd = " ".join(commands.download_command(involucro_link(), to=install_path, quote_url=True))
+    full_cmd = "%s && chmod +x %s" % (download_cmd, install_path)
     return involucro_context.shell_exec(full_cmd)
 
 
