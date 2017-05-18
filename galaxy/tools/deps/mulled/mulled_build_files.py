@@ -35,6 +35,8 @@ def main(argv=None):
                         help="Path to directory (or single file) of TSV files describing composite recipes.")
     args = parser.parse_args()
     for (targets, image_build, name_override) in generate_targets(args.files):
+        if not image_build:
+            image_build = "1"
         try:
             mull_targets(
                 targets,
