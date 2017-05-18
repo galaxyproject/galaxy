@@ -1132,11 +1132,9 @@ class RepositoriesController( BaseAPIController ):
             os.remove( uploaded_file_name )
         if not ok:
             return {
-                "err_msg": message,
-                "content_alert": content_alert_str
+                "err_msg": message
             }
         else:
             return {
-                "message": message,
-                "content_alert": content_alert_str
+                "message": message
             }
