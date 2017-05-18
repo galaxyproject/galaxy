@@ -40,7 +40,6 @@ def main(argv=None):
                 targets,
                 image_build=image_build,
                 name_override=name_override,
-                rebuild=False,
                 **args_to_mull_targets_kwds(args)
             )
         except BuildExistsException:
@@ -76,7 +75,7 @@ _Line = collections.namedtuple("_Line", ["targets", "image_build", "name_overrid
 
 
 def _parse_line(line_str):
-    line_parts = line_str.split(" ")
+    line_parts = line_str.split("\t")
     assert len(line_parts) < 3, "Too many fields in line [%s], expect at most 3 - targets, image build number, and name override." % line_str
     line_parts += [None] * (3 - len(line_parts))
     return _Line(*line_parts)
