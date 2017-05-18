@@ -10,7 +10,10 @@ title: Generate Tour
 function: >
     require(["libs/toastr"], function(Toastr) {
       if (typeof TourGenerator !== 'undefined') {
-        new TourGenerator({toolId: options.id});
+        new TourGenerator({
+          toolId: options.id,
+          toolVersion: options.version
+        });
       } else if (typeof Toastr !== 'undefined') {
         Toastr.warning('Tour Generator is not loaded.');
       } else {

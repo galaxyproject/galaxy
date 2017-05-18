@@ -18,10 +18,11 @@ define([], function() {
 
         initialize: function(options) {
             var me = this;
+            var toolId = options.toolId || '';
+            var toolVersion = options.toolVersion || '';
 
-            if (options.toolId) {
-                this.$el.attr('tool_id', options.toolId);
-            }
+            this.$el.attr('tool_id', toolId);
+            this.$el.attr('tool_version', toolVersion);
 
             this.model = new WebhookModel();
             this.model.urlRoot = options.urlRoot;

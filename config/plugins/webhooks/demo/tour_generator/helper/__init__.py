@@ -8,9 +8,9 @@ log = logging.getLogger(__name__)
 
 
 class TourGenerator(object):
-    def __init__(self, trans, tool_id):
+    def __init__(self, trans, tool_id, tool_version):
         self._trans = trans
-        self._tool = self._trans.app.toolbox.get_tool(tool_id)
+        self._tool = self._trans.app.toolbox.get_tool(tool_id, tool_version)
 
         self._use_datasets = True
         self._data_inputs = {}
@@ -291,8 +291,12 @@ def main(trans, webhook, params):
         if not params or 'tool_id' not in params.keys():
             raise KeyError('Tool id is missing.')
 
+        if not params or 'tool_version' not in params.keys():
+            raise KeyError('Tool version is missing.')
+
         tool_id = params['tool_id']
-        tour_generator = TourGenerator(trans, tool_id)
+        tool_version = params['tool_version']
+        tour_generator = TourGenerator(trans, tool_id, tool_version)
         data = tour_generator.get_data()
 
     except Exception as e:

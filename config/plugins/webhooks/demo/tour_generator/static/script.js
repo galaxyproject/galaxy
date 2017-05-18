@@ -3,14 +3,16 @@ $(document).ready(function() {
         window.TourGenerator = Backbone.View.extend({
             initialize: function(options) {
                 var me = this;
-                this.toolId = options.toolId;
+                me.toolId = options.toolId;
+                me.toolVersion = options.toolVersion;
 
                 // Add attribute 'tour_id' to the execution button
                 $('#execute').attr('tour_id', 'execute');
 
                 Toastr.info('Tour generation might take some time.');
                 $.getJSON('/api/webhooks/tour_generator/get_data/', {
-                    tool_id: this.toolId
+                    tool_id: me.toolId,
+                    tool_version: me.toolVersion
                 }, function(obj) {
                     if (obj.success) {
                         if (obj.data.useDatasets) {
