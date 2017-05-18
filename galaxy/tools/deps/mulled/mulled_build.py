@@ -139,14 +139,20 @@ def mull_targets(
     repo = string.Template(repository_template).safe_substitute(repo_template_kwds)
 
     if not rebuild or "push" in command:
-        repo_data = quay_repository(repo_template_kwds["namespace"], repo_template_kwds["image"])
-
+        repo_name = repo_template_kwds["image"].split(":", 1)[0]
+        repo_data = quay_repository(repo_template_kwds["namespace"], repo_name)
         if not rebuild:
-            if "error_type" not in repo_data and "tags" in repo_data and repo_data["tags"]:
+            tags = repo_data.get("tags", [])
+
+            target_tag = None
+            if ":" in repo_template_kwds["image"]:
+                target_tag = repo_template_kwds["image"].split(":", 1)[1]
+
+            if tags and (target_tag is None or target_tag in tags):
                 raise BuildExistsException()
         if "push" in command and "error_type" in repo_data and oauth_token:
             # Explicitly create the repository so it can be built as public.
-            create_repository(repo_template_kwds["namespace"], repo_template_kwds["image"], oauth_token)
+            create_repository(repo_template_kwds["namespace"], repo_name, oauth_token)
 
     for channel in channels:
         if channel.startswith('file://'):
