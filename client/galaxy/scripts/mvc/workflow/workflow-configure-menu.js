@@ -118,8 +118,11 @@ define( [], function() {
                 '</tr>';
             });
             tableHtml = tableHtml + '<tbody class="workflow-config-menu">' + trHtml + '</tbody></table>';
-            tableHtml = tableHtml + '<a class="action-button wf-save-menu" href="#" title="Save">' +
+            tableHtml = tableHtml + '<a class="action-button wf-save-menu wf-action fa fa-floppy-o" href="#" title="Save">' +
                                         '<span>Save</span>' +
+                                    '</a>' +
+                                    '<a class="action-button wf-back wf-action fa fa-arrow-left" href="'+ Galaxy.root +'workflow" title="Back to workflow">' +
+                                        '<span>Back to workflow</span>' +
                                     '</a>';
             return tableHtml;
         },
