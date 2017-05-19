@@ -45,6 +45,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         self.workflow_manager = workflows.WorkflowsManager( app )
         self.workflow_contents_manager = workflows.WorkflowContentsManager( app )
 
+    def __get_full_shed_url( self, url ):
+        for name, shed_url in self.app.tool_shed_registry.tool_sheds.items():
+            if url in shed_url:
+                return shed_url
+        return None
+
     @expose_api
     def index(self, trans, **kwd):
         """
@@ -101,8 +107,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :param  show_published:      if True, show also published workflows
         :type   show_published:      boolean
+        :param  missing_tools:       if True, include a list of missing tools per workflow
+        :type   missing_tools:       boolean
         """
         show_published = util.string_as_bool( kwd.get( 'show_published', 'False' ) )
+        missing_tools = util.string_as_bool( kwd.get( 'missing_tools', 'False' ) )
         rval = []
         filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
         if show_published:
@@ -133,6 +142,39 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['owner'] = wf_sa.stored_workflow.user.username
             item['number_of_steps'] = len( wf_sa.stored_workflow.latest_workflow.steps )
             rval.append(item)
+        if missing_tools:
+            workflows_missing_tools = []
+            workflows = []
+            workflows_by_toolshed = dict()
+            for key, value in enumerate(rval):
+                tool_ids = []
+                workflow_details = self.workflow_contents_manager.workflow_to_dict( trans, self.__get_stored_workflow( trans, value[ 'id' ] ), style='instance' )
+                if 'steps' in workflow_details:
+                    for step in workflow_details[ 'steps' ]:
+                        tool_id = workflow_details[ 'steps' ][ step ][ 'tool_id' ]
+                        if tool_id not in tool_ids and self.app.toolbox.is_missing_shed_tool( tool_id ):
+                            tool_ids.append( tool_id )
+                if len( tool_ids ) > 0:
+                    value[ 'missing_tools' ] = tool_ids
+                    workflows_missing_tools.append( value )
+            for workflow in workflows_missing_tools:
+                for tool_id in workflow[ 'missing_tools' ]:
+                    toolshed, _, owner, name, tool, version = tool_id.split( '/' )
+                    shed_url = self.__get_full_shed_url( toolshed )
+                    repo_identifier = '/'.join( [ toolshed, owner, name ] )
+                    if repo_identifier not in workflows_by_toolshed:
+                        workflows_by_toolshed[ repo_identifier ] = dict( shed=shed_url.rstrip('/'), repository=name, owner=owner, tools=[ tool_id ], workflows=[ workflow[ 'name' ] ] )
+                    else:
+                        if tool_id not in workflows_by_toolshed[ repo_identifier ][ 'tools' ]:
+                            workflows_by_toolshed[ repo_identifier ][ 'tools' ].append( tool_id )
+                        if workflow[ 'name' ] not in workflows_by_toolshed[ repo_identifier ][ 'workflows' ]:
+                            workflows_by_toolshed[ repo_identifier ][ 'workflows' ].append( workflow[ 'name' ] )
+            for repo_tag in workflows_by_toolshed:
+                workflows.append( workflows_by_toolshed[ repo_tag ] )
+            return workflows
+            # import json
+            # log.debug(json.dumps(workflows_by_toolshed, indent=2))
+            # return workflows_by_toolshed
         return rval
 
     @expose_api

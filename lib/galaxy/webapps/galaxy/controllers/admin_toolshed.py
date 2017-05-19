@@ -3,11 +3,11 @@ import logging
 import os
 import shutil
 
+from admin import AdminGalaxy
 from six import string_types
 from sqlalchemy import or_
 
 import tool_shed.repository_types.util as rt_util
-from admin import AdminGalaxy
 from galaxy import util, web
 from galaxy.tools.deps import views
 from galaxy.web.form_builder import CheckboxField
@@ -195,10 +195,13 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def browse_toolsheds( self, trans, **kwd ):
-        message = escape( kwd.get( 'message', '' ) )
-        return trans.fill_template( '/admin/tool_shed_repository/browse_toolsheds.mako',
-                                    message=message,
-                                    status='error' )
+        app = {
+            'jscript': "admin.toolshed"
+        }
+        return trans.fill_template( 'galaxy.panels.mako',
+                                    config={
+                                        'title': 'Galaxy Tool Sheds',
+                                        'app': app } )
 
     @web.expose
     @web.require_admin

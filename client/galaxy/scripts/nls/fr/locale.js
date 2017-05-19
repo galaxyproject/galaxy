@@ -117,11 +117,11 @@ define({
 "Resume Paused Jobs":
     "Reprendre les processus en pause",
 "Collapse Expanded Datasets":
-    "Réduire les données étendus",
+    "Réduire les données étendues",
 "Unhide Hidden Datasets":
-    "Afficher les données cachés",
+    "Afficher les données cachées",
 "Delete Hidden Datasets":
-    "Supprimer les données cachés",
+    "Supprimer les données cachées",
 "Purge Deleted Datasets":
     "Purger les données supprimées",
 "Downloads":

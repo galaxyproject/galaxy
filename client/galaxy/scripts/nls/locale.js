@@ -69,13 +69,13 @@ define({
 
 //Tooltip
 "Account and saved data" :
-   false, 
+   false,
 "Account registration or login" :
-   false, 
+   false,
 "Support, contact, and community" :
    false,
 "Administer this Galaxy" :
-   false, 
+   false,
 "Visualize datasets" :
    false,
 "Access published resources" :
@@ -340,8 +340,47 @@ false,
 "Edit dataset annotation" :
     false,
 
-
-
+// ---------------------------------------------------------------------------- admin
+"Search Tool Shed":
+    false,
+"Monitor installing repositories":
+    false,
+"Manage installed tools":
+    false,
+"Reset metadata":
+    false,
+"Download local tool":
+    false,
+"Tool lineage":
+    false,
+"Reload a tool's configuration":
+    false,
+"Review tool migration stages":
+    false,
+"View Tool Error Logs":
+    false,
+"Manage Display Whitelist":
+    false,
+"Manage Tool Dependencies":
+    false,
+"Users":
+    false,
+"Groups":
+    false,
+"API keys":
+    false,
+"Impersonate a user":
+    false,
+"Data":
+    false,
+"Quotas":
+    false,
+"Roles":
+    false,
+"Local data":
+    false,
+"Form Definitions":
+    false,
 
 // ---------------------------------------------------------------------------- misc. MVC
 "Tags" :

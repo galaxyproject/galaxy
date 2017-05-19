@@ -8,6 +8,7 @@ var Collection = Backbone.Collection.extend({
         }
     }),
     fetch: function( options ){
+        var self = this;
         options = options || {};
         this.reset();
 
@@ -121,25 +122,13 @@ var Collection = Backbone.Collection.extend({
                     $.each(webhooks.models, function(index, model) {
                         var webhook = model.toJSON();
                         if (webhook.activate) {
-                            // Galaxy.page is undefined for data libraries, workflows pages
-                            if( Galaxy.page ) {
-                                Galaxy.page.masthead.collection.add({
-                                    id      : webhook.name,
-                                    icon    : webhook.config.icon,
-                                    url     : webhook.config.url,
-                                    tooltip : webhook.config.tooltip,
-                                    onclick : webhook.config.function && new Function(webhook.config.function),
-                                });
-                            }
-                            else if( Galaxy.masthead ) {
-                                Galaxy.masthead.collection.add({
-                                    id      : webhook.name,
-                                    icon    : webhook.config.icon,
-                                    url     : webhook.config.url,
-                                    tooltip : webhook.config.tooltip,
-                                    onclick : webhook.config.function && new Function(webhook.config.function),
-                                });
-                            }
+                            self.add({
+                                id      : webhook.name,
+                                icon    : webhook.config.icon,
+                                url     : webhook.config.url,
+                                tooltip : webhook.config.tooltip,
+                                onclick : webhook.config.function && new Function(webhook.config.function),
+                            });
                         }
                     });
                 });
