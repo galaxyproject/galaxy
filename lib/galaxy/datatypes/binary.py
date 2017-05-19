@@ -453,6 +453,15 @@ class Bam( Binary ):
         except:
             return "Binary bam alignments file (%s)" % ( nice_size( dataset.get_size() ) )
 
+    def to_archive(self, trans, dataset, name=""):
+        rel_paths = []
+        file_paths = []
+        rel_paths.append("%s.%s" % (name or dataset.file_name, dataset.extension))
+        file_paths.append(dataset.file_name)
+        rel_paths.append("%s.%s.bai" % (name or dataset.file_name, dataset.extension))
+        file_paths.append(dataset.metadata.bam_index.file_name)
+        return zip(file_paths, rel_paths)
+
     # ------------- Dataproviders
     # pipe through samtools view
     # ALSO: (as Sam)

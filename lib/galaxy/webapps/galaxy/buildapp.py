@@ -341,6 +341,10 @@ def populate_api_routes( webapp, app ):
                            controller='history_contents', action='archive')
     webapp.mapper.connect( '/api/histories/{history_id}/contents/archive/{filename}{.format}',
                            controller='history_contents', action='archive')
+    webapp.mapper.connect("/api/histories/{history_id}/contents/dataset_collections/{id}/download",
+                          controller='history_contents',
+                          action='download_dataset_collection',
+                          conditions=dict(method=["GET"]))
 
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated

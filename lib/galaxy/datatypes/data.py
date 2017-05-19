@@ -269,7 +269,6 @@ class Data( object ):
             if not error:
                 ext = data.extension
                 path = data.file_name
-                fname = os.path.split(path)[-1]
                 efp = data.extra_files_path
                 # Add any central file to the archive,
 
@@ -280,17 +279,14 @@ class Data( object ):
                 error, msg = self._archive_main_file(archive, display_name, path)[:2]
                 if not error:
                     # Add any child files to the archive,
-                    for root, dirs, files in os.walk(efp):
-                        for fname in files:
-                            fpath = os.path.join(root, fname)
-                            rpath = os.path.relpath(fpath, efp)
-                            try:
-                                archive.add( fpath, rpath )
-                            except IOError:
-                                error = True
-                                log.exception( "Unable to add %s to temporary library download archive", rpath)
-                                msg = "Unable to create archive for download, please report this error"
-                                continue
+                    for fpath, rpath in self.__archive_extra_files_path(extra_files_path=efp):
+                        try:
+                            archive.add(fpath, rpath)
+                        except IOError:
+                            error = True
+                            log.exception("Unable to add %s to temporary library download archive", rpath)
+                            msg = "Unable to create archive for download, please report this error"
+                            continue
                 if not error:
                     if params.do_action == 'zip':
                         archive.close()
@@ -310,12 +306,44 @@ class Data( object ):
                         return archive.stream
         return trans.show_error_message( msg )
 
+    def __archive_extra_files_path(self, extra_files_path):
+        """Yield filepaths and relative filepaths for files in extra_files_path"""
+        for root, dirs, files in os.walk(extra_files_path):
+            for fname in files:
+                fpath = os.path.join(root, fname)
+                rpath = os.path.relpath(fpath, extra_files_path)
+                yield fpath, rpath
+
     def _serve_raw(self, trans, dataset, to_ext, **kwd):
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
         filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
         return open( dataset.file_name )
+
+    def to_archive(self, trans, dataset, name=""):
+        """
+        Collect archive paths and file handles that need to be exported when archiving `dataset`.
+
+        :param dataset: HistoryDatasetAssociation
+        :param name: archive name, in collection context corresponds to collection name(s) and element_identifier,
+                     joined by '/', e.g 'fastq_collection/sample1/forward'
+        """
+        composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
+        composite_extensions.append('html')  # for archiving composite datatypes
+        rel_paths = []
+        file_paths = []
+        if dataset.extension in composite_extensions:
+            main_file = "%s.%s" % (name, 'html')
+            rel_paths.append(main_file)
+            file_paths.append(dataset.file_name)
+            for fpath, rpath in self.__archive_extra_files_path(dataset.extra_files_path):
+                rel_paths.append(os.path.join(name, rpath))
+                file_paths.append(fpath)
+        else:
+            rel_paths.append("%s.%s" % (name or dataset.file_name, dataset.extension))
+            file_paths.append(dataset.file_name)
+        return zip(file_paths, rel_paths)
 
     def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
         """ Old display method, for transition - though still used by API and
