@@ -146,7 +146,9 @@ def mull_targets(
 
             target_tag = None
             if ":" in repo_template_kwds["image"]:
-                target_tag = repo_template_kwds["image"].split(":", 1)[1]
+                image_name_parts = repo_template_kwds["image"].split(":")
+                assert len(image_name_parts) == 2, ": not allowed in image name [%s]" % repo_template_kwds["image"]
+                target_tag = image_name_parts[1]
 
             if tags and (target_tag is None or target_tag in tags):
                 raise BuildExistsException()
