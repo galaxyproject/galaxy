@@ -86,7 +86,9 @@ window.app = function app( options, bootstrapped ){
 
         require_login: [
             'show_user',
-            'show_user_form'
+            'show_user_form',
+            'show_workflows',
+            'show_configure_menu'
         ],
 
         loginRequired: function() {
@@ -118,7 +120,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_configure_menu : function(){
-            centerPanel.display( new WorkflowsConfigureMenu.View() );
+            this.page.display( new WorkflowsConfigureMenu.View() );
         },
 
         show_custom_builds : function() {
