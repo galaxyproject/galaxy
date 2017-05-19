@@ -77,7 +77,7 @@ The following individuals have contributed code to Galaxy:
 * Saskia Hiltemann <zazkia@gmail.com>
 * Rob Hooft <rob.hooft@nbic.nl>
 * Y. Hoogstrate <y.hoogstrate@erasmusmc.nl>
-* Hans-Rudolf Hotz <hrhotz@users.noreply.github.com>
+* Hans-Rudolf Hotz @hrhotz
 * Jian-Long Huang <jlh@pyhub.org>
 * Gert Hulselmans <gert.hulselmans@med.kuleuven.be>
 * Manabu Ishii <manabu.ishii.rb@gmail.com>
@@ -104,7 +104,7 @@ The following individuals have contributed code to Galaxy:
 * Michael Li <michael.li@uwaterloo.ca>
 * Pierre Lindenbaum <plindenbaum@yahoo.fr>
 * Mikael Loaec <mikael.loaec@versailles.inra.fr>
-* Thoba Lose <thobalose@users.noreply.github.com>
+* Thoba Lose @thobalose
 * Philip Mabon <philipmabon@gmail.com>
 * Remi Marenco <remi.marenco@gmail.com> <remimarenco@gmail.com>
 * Zipho Mashologu <zipho@trustpay.biz>
