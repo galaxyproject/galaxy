@@ -1130,6 +1130,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
 
         # Get the associated job, if any. If this hda was copied from another,
         # we need to find the job that created the origial dataset association.
+        hdca_id = kwd.get('hdca_id')
         params_objects = None
         job = None
         tool = None
@@ -1168,6 +1169,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                    inherit_chain=inherit_chain,
                                    history=trans.get_history(),
                                    hda=hda,
+                                   hdca_id=hdca_id,
                                    job=job,
                                    tool=tool,
                                    params_objects=params_objects,

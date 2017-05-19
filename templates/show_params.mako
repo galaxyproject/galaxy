@@ -178,6 +178,9 @@
             <tr><td>Job API ID:</td><td>${trans.security.encode_id( job.id )}</td></tr>
         %endif
         <tr><td>History API ID:</td><td>${encoded_history_id}</td></tr>
+        %if hdca_id:
+        <tr><td>Parent Collection ID:</td><td>${hdca_id}</td></tr>
+        %endif
         %if hda.dataset.uuid:
         <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
         %endif

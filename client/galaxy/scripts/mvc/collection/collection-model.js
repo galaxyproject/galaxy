@@ -134,6 +134,10 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
         return '?to_ext=' + this.get( 'file_ext' ) + '&hdca_id=' + this.get( 'parent_hdca_id' ) + '&element_identifier=' + this.get( 'element_identifier' );
     },
 
+    _hdcaId : function() {
+        return '?hdca_id=' + this.get( 'parent_hdca_id' );
+    },
+
     // because all objects have constructors (as this hashmap would even if this next line wasn't present)
     //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
     //  - re-apply manually for now
