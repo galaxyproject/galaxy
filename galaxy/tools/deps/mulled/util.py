@@ -12,11 +12,11 @@ except ImportError:
     requests = None
 
 
-def create_repository(namespace, pkg_name, oauth_token):
+def create_repository(namespace, repo_name, oauth_token):
     assert oauth_token
     headers = {'Authorization': 'Bearer %s' % oauth_token}
     data = {
-        "repository": pkg_name,
+        "repository": repo_name,
         "namespace": namespace,
         "description": "",
         "visibility": "public",

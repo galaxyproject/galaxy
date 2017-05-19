@@ -138,15 +138,23 @@ def mull_targets(
     }
     repo = string.Template(repository_template).safe_substitute(repo_template_kwds)
 
-    if rebuild or "push" in command:
-        repo_data = quay_repository(repo_template_kwds["namespace"], repo_template_kwds["image"])
-
+    if not rebuild or "push" in command:
+        repo_name = repo_template_kwds["image"].split(":", 1)[0]
+        repo_data = quay_repository(repo_template_kwds["namespace"], repo_name)
         if not rebuild:
-            if "error_type" not in repo_data and "tags" in repo_data and repo_data["tags"]:
+            tags = repo_data.get("tags", [])
+
+            target_tag = None
+            if ":" in repo_template_kwds["image"]:
+                image_name_parts = repo_template_kwds["image"].split(":")
+                assert len(image_name_parts) == 2, ": not allowed in image name [%s]" % repo_template_kwds["image"]
+                target_tag = image_name_parts[1]
+
+            if tags and (target_tag is None or target_tag in tags):
                 raise BuildExistsException()
         if "push" in command and "error_type" in repo_data and oauth_token:
             # Explicitly create the repository so it can be built as public.
-            create_repository(repo_template_kwds["namespace"], repo_template_kwds["image"], oauth_token)
+            create_repository(repo_template_kwds["namespace"], repo_name, oauth_token)
 
     for channel in channels:
         if channel.startswith('file://'):
@@ -239,9 +247,10 @@ def ensure_installed(involucro_context, auto_init):
 
 
 def install_involucro(involucro_context=None, to_path=None):
-    to_path = involucro_context.involucro_bin
-    download_cmd = " ".join(commands.download_command(involucro_link(), to=to_path, quote_url=True))
-    full_cmd = "%s && chmod +x %s" % (download_cmd, to_path)
+    install_path = os.path.abspath(involucro_context.involucro_bin)
+    involucro_context.involucro_bin = install_path
+    download_cmd = " ".join(commands.download_command(involucro_link(), to=install_path, quote_url=True))
+    full_cmd = "%s && chmod +x %s" % (download_cmd, install_path)
     return involucro_context.shell_exec(full_cmd)
 
 
@@ -249,8 +258,6 @@ def add_build_arguments(parser):
     """Base arguments describing how to 'mull'."""
     parser.add_argument('--involucro-path', dest="involucro_path", default=None,
                         help="Path to involucro (if not set will look in working directory and on PATH).")
-    parser.add_argument('--force-rebuild', dest="force_rebuild", action="store_true",
-                        help="Rebuild package even if already published.")
     parser.add_argument('--dry-run', dest='dry_run', action="store_true",
                         help='Just print commands instead of executing them.')
     parser.add_argument('--verbose', dest='verbose', action="store_true",
@@ -267,6 +274,7 @@ def add_build_arguments(parser):
                         help="Change to specified version of Conda before installing packages.")
     parser.add_argument('--oauth-token', dest="oauth_token", default=None,
                         help="If set, use this token when communicating with quay.io API.")
+    parser.add_argument('--check-published', dest="rebuild", action='store_false')
 
 
 def add_single_image_arguments(parser):
@@ -320,6 +328,8 @@ def args_to_mull_targets_kwds(args):
         kwds["conda_version"] = args.conda_version
     if hasattr(args, "oauth_token"):
         kwds["oauth_token"] = args.oauth_token
+    if hasattr(args, "rebuild"):
+        kwds["rebuild"] = args.rebuild
 
     kwds["involucro_context"] = context_from_args(args)
 

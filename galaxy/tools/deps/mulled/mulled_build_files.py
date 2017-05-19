@@ -34,9 +34,17 @@ def main(argv=None):
     parser.add_argument('files', metavar="FILES", default=".",
                         help="Path to directory (or single file) of TSV files describing composite recipes.")
     args = parser.parse_args()
-    for targets in generate_targets(args.files):
+    for (targets, image_build, name_override) in generate_targets(args.files):
+        if not image_build and len(targets) > 1:
+            # Specify an explict tag in this case.
+            image_build = "0"
         try:
-            mull_targets(targets, rebuild=False, **args_to_mull_targets_kwds(args))
+            mull_targets(
+                targets,
+                image_build=image_build,
+                name_override=name_override,
+                **args_to_mull_targets_kwds(args)
+            )
         except BuildExistsException:
             continue
 
@@ -63,14 +71,14 @@ def generate_targets(target_source):
 
 def line_to_targets(line_str):
     line = _parse_line(line_str)
-    return target_str_to_targets(line[0])
+    return (target_str_to_targets(line.targets), line.image_build, line.name_override)
 
 
 _Line = collections.namedtuple("_Line", ["targets", "image_build", "name_override"])
 
 
 def _parse_line(line_str):
-    line_parts = line_str.split(" ")
+    line_parts = line_str.split("\t")
     assert len(line_parts) < 3, "Too many fields in line [%s], expect at most 3 - targets, image build number, and name override." % line_str
     line_parts += [None] * (3 - len(line_parts))
     return _Line(*line_parts)
