@@ -4,11 +4,9 @@ API operations for Workflows
 from __future__ import absolute_import
 
 import logging
-import json
 
 from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
-from sqlalchemy.sql import expression
 
 from galaxy import (
     exceptions,
@@ -57,7 +55,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         GET /api/workflows
         """
         return self.get_workflows_list( trans, False, kwd )
- 
+
     @expose_api
     def configure_workflow_menu( self, trans, **kwd ):
         """
@@ -94,7 +92,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             return { 'message': message, 'status': 'done' }
         else:
             user = trans.get_user()
-            workflows = list()
             ids_in_menu = [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ]
             return {
                 'ids_in_menu': ids_in_menu,
@@ -119,7 +116,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
                 filter1, trans.app.model.StoredWorkflow.table.c.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.table.c.update_time ) ).all():
-            if( for_menu == True ):
+            if for_menu:
                 item = wf.to_dict()
             else:
                 item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
@@ -132,7 +129,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 user=trans.user ).join( 'stored_workflow' ).filter(
                 trans.app.model.StoredWorkflow.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
-            if( for_menu == True ):
+            if for_menu:
                 item = wf_sa.stored_workflow.to_dict()
             else:
                 item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
@@ -172,9 +169,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             for repo_tag in workflows_by_toolshed:
                 workflows.append( workflows_by_toolshed[ repo_tag ] )
             return workflows
-            # import json
-            # log.debug(json.dumps(workflows_by_toolshed, indent=2))
-            # return workflows_by_toolshed
         return rval
 
     @expose_api
