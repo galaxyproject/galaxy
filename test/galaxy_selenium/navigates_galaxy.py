@@ -449,7 +449,8 @@ class NavigatesGalaxy(HasDriver):
         self.click_xpath(self.navigation_data["selectors"]["masthead"]["workflow"])
 
     def click_button_new_workflow(self):
-        self.click_selector(self.navigation_data["selectors"]["workflows"]["new_button"])
+        element = self.wait_for_selector_clickable(self.navigation_data["selectors"]["workflows"]["new_button"])
+        element.click()
 
     def wait_for_sizzle_selector_clickable(self, selector):
         element = self._wait_on(
