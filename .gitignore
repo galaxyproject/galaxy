@@ -121,7 +121,7 @@ tool-data/shared/jars/
 sprite-*.less
 
 # JS, Local node_modules, and bower_components directories
-static/scripts/bundled
+static/scripts/bundled/[0-9]*
 node_modules
 bower_components
 
