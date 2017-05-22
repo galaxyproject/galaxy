@@ -81,7 +81,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         user = trans.get_user()
         workflow_ids = payload.get( 'workflow_ids' )
         if workflow_ids is None:
-             workflow_ids = []
+            workflow_ids = []
         elif type( workflow_ids ) != list:
             workflow_ids = [ workflow_ids ]
         sess = trans.sa_session
