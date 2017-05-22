@@ -57,71 +57,71 @@ New Contributors
 
 We thank these new contributors that helped with the Galaxy codebase since 16.04:
 
-Evgeny Anatskiy
-Abdulrahman Azab
-balto
-Bérénice Batut
-Marius van den Beek
-Maria Bernard
-Jean-Frédéric Berthelot
-Léo Biscassi
-Clemens Blank
-Jorrit Boekel
-Christian Y. Brenninkmeijer
-Freek de Bruijn
-Matt Chambers
-Peter Cock
-Matthias Desmet
-Shane Dowling
-Ignacio Eguinoa
-Mark Einon
-fescudie
-Anne Fouilloux
-Jean-Frédéric
-Maximilian Friedersdorff
-Ben Fulton
-Carrie Ganote
-Ryan Golhar
-Peter van Heusden
-Saskia Hiltemann
-Hans-Rudolf Hotz
-Manabu Ishii
-Xiaoqian Jiang
-Iyad Kandalaft
-Edward Kirton
-Jasper Koehorst
-Anup Kumar
-Delphine Lariviere
-Yvan Le Bras
-Gildas Le Corguillé
-Alexander Lenail
-Pierre Lindenbaum
-Mikael Loaec
-Thoba Lose
-Zipho Mashologu
-Hervé Ménager
-Pablo Moreno
-Takao Nakaguchi
-Balthazar Pavot
-Matt Ralston
-ramezrawas
-Athos Ribeiro
-Devon Ryan
-Michael Sauria
-Varun Shankar
-Timur Shtatland
-Sourav Singh
-Eteri Sokhoyan
-Nick Stoler
-Scott Szakonyi
-Jesse c j van Dam
-Ashok Varadharajan
-Jeremy Volkening
-Pavan Videm
-Junzhou Wang
-Joachim Wolff
-Thomas Wollmann
-Jay Young
+* Evgeny Anatskiy
+* Abdulrahman Azab
+* balto
+* Bérénice Batut
+* Marius van den Beek
+* Maria Bernard
+* Jean-Frédéric Berthelot
+* Léo Biscassi
+* Clemens Blank
+* Jorrit Boekel
+* Christian Y. Brenninkmeijer
+* Freek de Bruijn
+* Matt Chambers
+* Peter Cock
+* Matthias Desmet
+* Shane Dowling
+* Ignacio Eguinoa
+* Mark Einon
+* fescudie
+* Anne Fouilloux
+* Jean-Frédéric
+* Maximilian Friedersdorff
+* Ben Fulton
+* Carrie Ganote
+* Ryan Golhar
+* Peter van Heusden
+* Saskia Hiltemann
+* Hans-Rudolf Hotz
+* Manabu Ishii
+* Xiaoqian Jiang
+* Iyad Kandalaft
+* Edward Kirton
+* Jasper Koehorst
+* Anup Kumar
+* Delphine Lariviere
+* Yvan Le Bras
+* Gildas Le Corguillé
+* Alexander Lenail
+* Pierre Lindenbaum
+* Mikael Loaec
+* Thoba Lose
+* Zipho Mashologu
+* Hervé Ménager
+* Pablo Moreno
+* Takao Nakaguchi
+* Balthazar Pavot
+* Matt Ralston
+* ramezrawas
+* Athos Ribeiro
+* Devon Ryan
+* Michael Sauria
+* Varun Shankar
+* Timur Shtatland
+* Sourav Singh
+* Eteri Sokhoyan
+* Nick Stoler
+* Scott Szakonyi
+* Jesse c j van Dam
+* Ashok Varadharajan
+* Jeremy Volkening
+* Pavan Videm
+* Junzhou Wang
+* Joachim Wolff
+* Thomas Wollmann
+* Jay Young
 
 New Configuration Options
 =========================
