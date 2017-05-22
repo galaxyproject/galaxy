@@ -25,10 +25,10 @@ galaxy.objectstore.rods module
     :undoc-members:
     :show-inheritance:
 
-galaxy.objectstore.s3 module
+galaxy.objectstore.cloud module
 ----------------------------
 
-.. automodule:: galaxy.objectstore.s3
+.. automodule:: galaxy.objectstore.cloud
     :members:
     :undoc-members:
     :show-inheritance:

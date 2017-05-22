@@ -719,11 +719,11 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
 
     if store == 'disk':
         return DiskObjectStore(config=config, config_xml=config_xml)
-    elif store == 's3':
-        from .s3 import CloudObjectStore
+    elif store == 'cloud':
+        from .cloud import CloudObjectStore
         return CloudObjectStore(config=config, config_xml=config_xml)
     elif store == 'swift':
-        from .s3 import SwiftObjectStore
+        from .cloud import SwiftObjectStore
         return SwiftObjectStore(config=config, config_xml=config_xml)
     elif store == 'distributed':
         return DistributedObjectStore(
