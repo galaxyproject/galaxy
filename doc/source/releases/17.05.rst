@@ -14,11 +14,14 @@ Enhancements
 
 .. feature
 
-* Allow direct uploading to collections.
-  `Pull Request 3696`_
+* Recalculate user disk usage on logout.
+  `Pull Request 3600`_
 * Overlay search for tools, wf, libraries and histories
   (thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3460`_
+* Webhook plugin: tool_list
+  (thanks to `@blankclemens <https://github.com/blankclemens>`__).
+  `Pull Request 3753`_
 * Add Cytoscape as the Galaxy charts plugin
   (thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3817`_
@@ -41,9 +44,6 @@ Enhancements
   `Pull Request 3666`_
 * Interactive Environment container waiting and swarm management
   `Pull Request 3740`_
-* Webhook plugin: tool_list
-  (thanks to `@blankclemens <https://github.com/blankclemens>`__).
-  `Pull Request 3753`_
 * Phylocanvas as a BioJS component for the Galaxy charts
   (thanks to `@anuprulez <https://github.com/anuprulez>`__ `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3850`_
@@ -54,6 +54,14 @@ Enhancements
   `Pull Request 3964`_
 * Normalize the handling of steps and missing tools for the workflow editor
   `Pull Request 3181`_
+* Add possibility to load collection into data library
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 3559`_
+* Prefer versioned Conda dependencies to unversioned Galaxy ones
+  `Pull Request 3708`_
+* Speedup startup and toolbox operations
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 3909`_
 
 .. enhancement
 
@@ -82,9 +90,6 @@ Enhancements
   `Pull Request 3523`_
 * Allow decompressing tool test outputs.
   `Pull Request 3550`_
-* Add possibility to load collection into library
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 3559`_
 * add a task to protect the release branch in github
   `Pull Request 3562`_
 * Remove duplicated/unused display_migration_details() functions
@@ -112,8 +117,6 @@ Enhancements
   `Pull Request 3594`_
 * Revision of tool xml reloading feature
   `Pull Request 3596`_
-* Recalculate user disk usage on logout.
-  `Pull Request 3600`_
 * Implement Collection Operation to Relabelling Identifiers
   `Pull Request 3603`_
 * Slow query logging
@@ -156,8 +159,6 @@ Enhancements
 * Add datatypes for soon coming PlantTribes Galaxy tools.
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 3698`_
-* Prefer versioned Conda dependencies to unversioned Galaxy ones
-  `Pull Request 3708`_
 * Touch up Galaxy testing documentation.
   `Pull Request 3715`_
 * Add API and UI to remove requirements installed by Conda
@@ -282,6 +283,9 @@ Enhancements
   `Pull Request 3468`_
 * improve release issue docs
   `Pull Request 3496`_
+* Watch tool data table *.loc files, and reload if modified.
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 3533`_
 
 .. small_enhancement
 
@@ -291,9 +295,6 @@ Enhancements
 * Webhooks: add tests
   (thanks to `@anatskiy <https://github.com/anatskiy>`__).
   `Pull Request 3469`_
-* Watch tool data table *.loc files, and reload if modified.
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 3533`_
 * Disable transiently failing tour test.
   `Pull Request 3599`_
 * Selenium Testing Improvements
@@ -311,9 +312,6 @@ Enhancements
   `Pull Request 3841`_
 * Routes cleanup
   `Pull Request 3895`_
-* Speedup startup and toolbox operations
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 3909`_
 * Standardize usage of log.exception
   `Pull Request 3933`_
 * Followup to exception refactoring
