@@ -331,22 +331,16 @@ class Grid( object ):
             'operations'                    : [],
             'items'                         : [],
             'columns'                       : [],
-            'get_class_plural'              : str( self.model_class ).lower(), #get_class_plural( grid.model_class ).lower(),
+            'model_class'                   : str( self.model_class ),
             'use_paging'                    : self.use_paging,
             'legend'                        : self.legend,
             'current_item_id'               : False,
-            ##'use_panels'                    : context.get('use_panels'),
             'use_hide_message'              : self.use_hide_message,
-            'insert'                        : False, #insert,
             'default_filter_dict'           : self.default_filter,
             'advanced_search'               : self.advanced_search,
-            'refresh_frames'                : [],
-            'embedded'                      : False, #embedded,
             'info_text'                     : self.info_text,
             'url'                           : url(dict())
         }
-        #if refresh_frames:
-        #    grid_config['refresh_frames'] = refresh_frames
         if current_item:
             grid_config['current_item_id'] = current_item.id
         for column in self.columns:

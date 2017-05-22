@@ -40,7 +40,6 @@ return Backbone.View.extend({
                     url: grid_config.url_base,
                     success: function( response ) {
                         self.init_grid( response );
-                        window.console.log( self.$el );
                     }
                 });
             } else {

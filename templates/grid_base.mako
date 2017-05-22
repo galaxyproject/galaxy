@@ -94,7 +94,7 @@
         'operations'                    : [],
         'items'                         : [],
         'columns'                       : [],
-        'get_class_plural'              : get_class_plural( grid.model_class ).lower(),
+        'model_class'                   : str( grid.model_class ),
         'use_paging'                    : grid.use_paging,
         'legend'                        : grid.legend,
         'current_item_id'               : False,
