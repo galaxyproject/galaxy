@@ -57,10 +57,20 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.get_workflows_list( trans, False, kwd )
 
     @expose_api
-    def get_workflow_menu( self, trans, **kwd ):
+    def workflow_menu( self, trans, **kwd ):
         """
         GET /api/workflows/get_workflow_menu
+        PUT /api/workflows/set_workflow_menu
 
+        Get/Set workflow menu
+        """
+        if trans.request.method == "GET":
+            return self.get_workflow_menu( trans, kwd )
+        else:
+            return self.set_workflow_menu( trans, kwd )
+
+    def get_workflow_menu( self, trans, kwd ):
+        """
         Get workflows present in the tools panel
         """
         user = trans.get_user()
@@ -70,12 +80,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'workflows': self.get_workflows_list( trans, True, kwd )
         }
 
-    @expose_api
-    def workflow_menu( self, trans, **kwd ):
+    def set_workflow_menu( self, trans, kwd ):
         """
-        PUT /api/workflows/workflow_menu
-
-        Save workflow menu
+        Save workflow menu to be shown in the tool panel
         """
         payload = kwd.get( 'payload' )
         user = trans.get_user()

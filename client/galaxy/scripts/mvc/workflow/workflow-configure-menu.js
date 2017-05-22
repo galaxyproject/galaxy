@@ -76,7 +76,7 @@ define( [], function() {
                 });
                 $.ajax({
                     type: 'PUT',
-                    url: Galaxy.root + 'api/workflows/workflow_menu/',
+                    url: Galaxy.root + 'api/workflows/set_workflow_menu/',
                     data: JSON.stringify( { 'workflow_ids': ids } ),
                     contentType : 'application/json'
                 }).done( function( response ) {
