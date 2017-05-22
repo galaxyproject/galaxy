@@ -45,7 +45,7 @@ log = logging.getLogger( __name__ )
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
 
 
-class S3ObjectStore(ObjectStore):
+class CloudObjectStore(ObjectStore):
     """
     Object store that stores objects as items in an AWS S3 bucket. A local
     cache exists that is used as an intermediate location for files between
@@ -55,7 +55,7 @@ class S3ObjectStore(ObjectStore):
     def __init__(self, config, config_xml):
         # if boto is None:
         #    raise Exception(NO_BOTO_ERROR_MESSAGE)
-        super(S3ObjectStore, self).__init__(config)
+        super(CloudObjectStore, self).__init__(config)
         self.staging_path = self.config.file_path
         self.transfer_progress = 0
         self._parse_config_xml(config_xml)
@@ -299,8 +299,12 @@ class S3ObjectStore(ObjectStore):
         except S3ResponseError:
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False
-        if rel_path[0] == '/':
-            raise
+        # if rel_path[0] == '/':
+        #     raise
+        print '------------------------------------------------'
+        print 'rel path: ', rel_path
+        print 'exist: ', exists
+        print '------------------------------------------------'
         return exists
 
     def _in_cache(self, rel_path):
@@ -659,7 +663,7 @@ class S3ObjectStore(ObjectStore):
         return 0.0
 
 
-class SwiftObjectStore(S3ObjectStore):
+class SwiftObjectStore(CloudObjectStore):
     """
     Object store that stores objects as items in a Swift bucket. A local
     cache exists that is used as an intermediate location for files between
