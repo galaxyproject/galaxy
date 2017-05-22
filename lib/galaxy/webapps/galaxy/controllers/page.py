@@ -342,14 +342,10 @@ class PageController( BaseUIController, SharableMixin,
         return trans.fill_template( "page/index.mako", embedded_grid=grid, shared_by_others=shared_by_others )
 
     @web.expose
+    @web.json
     def list_published( self, trans, *args, **kwargs ):
-        kwargs[ 'embedded' ] = True
-        grid = self._all_published_list( trans, *args, **kwargs )
-        if 'async' in kwargs:
-            return grid
-
-        # Render grid wrapped in panels
-        return trans.fill_template( "page/list_published.mako", embedded_grid=grid )
+        kwargs[ 'dict_format' ] = True
+        return self._all_published_list( trans, *args, **kwargs )
 
     @web.expose
     @web.require_login( "create pages" )

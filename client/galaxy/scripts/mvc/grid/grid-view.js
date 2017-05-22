@@ -4,10 +4,11 @@ jQuery.ajaxSettings.traditional = true;
 
 // dependencies
 define([
+    'utils/utils',
     'mvc/grid/grid-model',
     'mvc/grid/grid-template',
     "mvc/ui/popup-menu"
-], function(GridModel, Templates, PopupMenu) {
+], function(Utils, GridModel, Templates, PopupMenu) {
 
 // grid view
 return Backbone.View.extend({
@@ -18,6 +19,7 @@ return Backbone.View.extend({
     // Initialize
     initialize: function(grid_config)
     {
+        this.dict_format = grid_config.dict_format;
         var self = this;
         window.add_tag_to_grid_filter = function( tag_name, tag_value ){
             // Put tag name and value together.
@@ -31,7 +33,23 @@ return Backbone.View.extend({
         };
 
         // set element
-        this.setElement('#grid-container');
+        if ( this.dict_format ) {
+            this.setElement('<div/>');
+            if ( grid_config.url_base && !grid_config.items ) {
+                Utils.get({
+                    url: grid_config.url_base,
+                    success: function( response ) {
+                        self.init_grid( response );
+                        window.console.log( self.$el );
+                    }
+                });
+            } else {
+                this.init_grid(grid_config);
+            }
+        } else {
+            this.setElement('#grid-container');
+            this.init_grid(grid_config);
+        }
 
         // fix padding
         if (grid_config.use_panels) {
@@ -40,9 +58,6 @@ return Backbone.View.extend({
                 overflow    : 'auto'
             });
         }
-
-        // initialize controls
-        this.init_grid(grid_config);
     },
 
     // refresh frames
@@ -557,7 +572,7 @@ return Backbone.View.extend({
             });
 
             // Do operation. If operation cannot be performed asynchronously, redirect to location.
-            if (this.grid.can_async_op(operation)) {
+            if (this.grid.can_async_op(operation) || this.dict_format) {
                 this.update_grid();
             } else {
                 this.go_to(target, href);
@@ -574,7 +589,7 @@ return Backbone.View.extend({
         }
 
         // refresh grid
-        if (this.grid.get('async')) {
+        if (this.grid.get('async') || this.dict_format) {
             this.update_grid();
         } else {
             this.go_to(target, href);
@@ -642,7 +657,7 @@ return Backbone.View.extend({
                 var insert = self.grid.get('insert');
 
                 // request new configuration
-                var json = $.parseJSON(response_text);
+                var json = self.dict_format ? response_text.embedded_grid || response_text : $.parseJSON(response_text);
 
                 // update
                 json.embedded = embedded;
