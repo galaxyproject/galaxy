@@ -9,7 +9,7 @@ define( [], function() {
 
         render: function() {
             var self = this;
-            $.getJSON( Galaxy.root + 'api/workflows/configure_workflow_menu/', function( response ) {
+            $.getJSON( Galaxy.root + 'api/workflows/get_workflow_menu/', function( response ) {
                 var workflows = response.workflows,
                     ids_in_menu = response.ids_in_menu,
                     $el_config_worflow = null;
@@ -76,7 +76,7 @@ define( [], function() {
                 });
                 $.ajax({
                     type: 'PUT',
-                    url: Galaxy.root + 'api/workflows/configure_workflow_menu/',
+                    url: Galaxy.root + 'api/workflows/workflow_menu/',
                     data: JSON.stringify( { 'workflow_ids': ids } ),
                     contentType : 'application/json'
                 }).done( function( response ) {

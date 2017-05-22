@@ -57,46 +57,54 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.get_workflows_list( trans, False, kwd )
 
     @expose_api
-    def configure_workflow_menu( self, trans, **kwd ):
+    def get_workflow_menu( self, trans, **kwd ):
         """
-        GET /api/workflows/configure_workflow_menu
+        GET /api/workflows/get_workflow_menu
+
+        Get workflows present in the tools panel
+        """
+        user = trans.get_user()
+        ids_in_menu = [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ]
+        return {
+            'ids_in_menu': ids_in_menu,
+            'workflows': self.get_workflows_list( trans, True, kwd )
+        }
+
+    @expose_api
+    def workflow_menu( self, trans, **kwd ):
+        """
+        PUT /api/workflows/workflow_menu
+
+        Save workflow menu
         """
         payload = kwd.get( 'payload' )
         user = trans.get_user()
-        if trans.request.method == "PUT":
-            workflow_ids = payload.get( 'workflow_ids' )
-            if workflow_ids is None:
-                workflow_ids = []
-            elif type( workflow_ids ) != list:
-                workflow_ids = [ workflow_ids ]
-            sess = trans.sa_session
-            # This explicit remove seems like a hack, need to figure out
-            # how to make the association do it automatically.
-            for m in user.stored_workflow_menu_entries:
-                sess.delete( m )
-            user.stored_workflow_menu_entries = []
-            q = sess.query( model.StoredWorkflow )
-            # To ensure id list is unique
-            seen_workflow_ids = set()
-            for id in workflow_ids:
-                if id in seen_workflow_ids:
-                    continue
-                else:
-                    seen_workflow_ids.add( id )
-                m = model.StoredWorkflowMenuEntry()
-                m.stored_workflow = q.get( id )
-                user.stored_workflow_menu_entries.append( m )
-            sess.flush()
-            message = "Menu updated."
-            trans.set_message( message )
-            return { 'message': message, 'status': 'done' }
-        else:
-            user = trans.get_user()
-            ids_in_menu = [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ]
-            return {
-                'ids_in_menu': ids_in_menu,
-                'workflows': self.get_workflows_list( trans, True, kwd )
-            }
+        workflow_ids = payload.get( 'workflow_ids' )
+        if workflow_ids is None:
+             workflow_ids = []
+        elif type( workflow_ids ) != list:
+            workflow_ids = [ workflow_ids ]
+        sess = trans.sa_session
+        # This explicit remove seems like a hack, need to figure out
+        # how to make the association do it automatically.
+        for m in user.stored_workflow_menu_entries:
+            sess.delete( m )
+        user.stored_workflow_menu_entries = []
+        q = sess.query( model.StoredWorkflow )
+        # To ensure id list is unique
+        seen_workflow_ids = set()
+        for id in workflow_ids:
+            if id in seen_workflow_ids:
+                continue
+            else:
+                seen_workflow_ids.add( id )
+            m = model.StoredWorkflowMenuEntry()
+            m.stored_workflow = q.get( id )
+            user.stored_workflow_menu_entries.append( m )
+        sess.flush()
+        message = "Menu updated."
+        trans.set_message( message )
+        return { 'message': message, 'status': 'done' }
 
     def get_workflows_list( self, trans, for_menu, kwd ):
         """
