@@ -18,6 +18,18 @@ return Backbone.View.extend({
     // Initialize
     initialize: function(grid_config)
     {
+        var self = this;
+        window.add_tag_to_grid_filter = function( tag_name, tag_value ){
+            // Put tag name and value together.
+            var tag = tag_name + ( tag_value !== undefined && tag_value !== "" ? ":" + tag_value : "" );
+            var advanced_search = $( '#advanced-search').is(":visible" );
+            if( !advanced_search ){
+                $('#standard-search').slideToggle('fast');
+                $('#advanced-search').slideToggle('fast');
+            }
+            self.add_filter_condition( "tags", tag );
+        };
+
         // set element
         this.setElement('#grid-container');
 
