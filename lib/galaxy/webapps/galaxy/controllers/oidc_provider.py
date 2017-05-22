@@ -314,6 +314,7 @@ class OIDCProvider(BaseUIController):
     @web.expose
     # noinspection PyUnusedLocal
     def op_info(self, trans):
+        print '\n\n\n\n in op info \n\n\n\n\n\n\n'
         return self.provider.providerinfo_endpoint()
 
     @web.expose
