@@ -282,8 +282,22 @@ def create_paramfile( trans, uploaded_datasets ):
     """
     def _chown( path ):
         try:
-            pwent = pwd.getpwnam( trans.user.email.split('@')[0] )
-            cmd = [ '/usr/bin/sudo', '-E', trans.app.config.external_chown_script, path, pwent[0], str( pwent[3] ) ]
+            # get username from email/username
+            pwent = None        
+            for cand in [ trans.user.email.split('@')[0], trans.user.username]:
+                try:
+                    pwent = pwd.getpwnam( cand )
+                except KeyError:
+                    pass
+            assert pwent != None
+
+            cmd = [ '/usr/bin/sudo', '-E', ]
+            for v in ["PATH", "LD_LIBRARY_PATH", "PKG_CONFIG_PATH"]:
+                try:
+                    cmd.append('%s=%s'%(v, os.environ[ v ]))
+                except KeyError:
+                    pass
+            cmd.extend( [ trans.app.config.external_chown_script, path, pwent[0], str( pwent[3] ) ] )
             log.debug( 'Changing ownership of %s with: %s' % ( path, ' '.join( cmd ) ) )
             p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
             stdout, stderr = p.communicate()

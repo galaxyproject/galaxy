@@ -316,7 +316,15 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 self.ds.kill( ext_id )
             else:
                 # FIXME: hardcoded path
-                subprocess.Popen( [ '/usr/bin/sudo', '-E', kill_script, str( ext_id ), str( self.userid ) ], shell=False )
+
+                command = [ '/usr/bin/sudo', '-E', ]
+                for v in ["PATH", "LD_LIBRARY_PATH", "PKG_CONFIG_PATH"]:
+                    try:
+                        command.append('%s=%s'%(v, os.environ[ v ]))
+                    except KeyError:
+                        pass
+                command.extend( [ kill_script, str( ext_id ), str( self.userid ) ])
+                subprocess.Popen( command, shell=False )
             log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.get_id(), ext_id ) )
         except drmaa.InvalidJobException:
             log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.get_id(), ext_id ) )
@@ -362,11 +370,18 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         """
         script_parts = external_runjob_script.split()
         script = script_parts[0]
-        command = [ '/usr/bin/sudo', '-E', script]
+        command = [ '/usr/bin/sudo', '-E', ]
+        for v in ["PATH", "LD_LIBRARY_PATH", "PKG_CONFIG_PATH"]:
+            try:
+                command.append('%s=%s'%(v, os.environ[ v ]))
+            except KeyError:
+                pass
+        command.append( script )
         for script_argument in script_parts[1:]:
             command.append(script_argument)
 
         command.extend( [ str(username), jobtemplate_filename ] )
+        command.append( "--assign_all_groups"  )
         log.info("Running command %s" % command)
         p = subprocess.Popen(command,
                              shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

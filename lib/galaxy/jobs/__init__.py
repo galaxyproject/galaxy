@@ -1743,7 +1743,14 @@ class JobWrapper( object, HasResourceParameters ):
         job = self.get_job()
         # FIXME: hardcoded path
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        cmd = [ '/usr/bin/sudo', '-E', external_chown_script, self.working_directory, username, str( gid ) ]
+
+        cmd = [ '/usr/bin/sudo', '-E', ]
+        for v in ["PATH", "LD_LIBRARY_PATH", "PKG_CONFIG_PATH"]:
+            try:
+                cmd.append('%s=%s'%(v, os.environ[ v ]))
+            except KeyError:
+                pass
+        cmd.extend( [ external_chown_script, self.working_directory, username, str( gid ) ] )
         log.debug( '(%s) Changing ownership of working directory with: %s' % ( job.id, ' '.join( cmd ) ) )
         p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
         # TODO: log stdout/stderr
@@ -1770,10 +1777,14 @@ class JobWrapper( object, HasResourceParameters ):
     def user_system_pwent( self ):
         if self.__user_system_pwent is None:
             job = self.get_job()
-            try:
-                self.__user_system_pwent = pwd.getpwnam( job.user.email.split('@')[0] )
-            except:
-                pass
+
+            # try to get user from email address/username
+            for cand in [job.user.email.split('@')[0], job.user.username]:
+                try:
+                    self.__user_system_pwent = pwd.getpwnam( cand )
+                except KeyError:
+                    pass
+            
         return self.__user_system_pwent
 
     @property
