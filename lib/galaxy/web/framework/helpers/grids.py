@@ -389,7 +389,7 @@ class Grid( object ):
                 'target'    : action.target
             })
         for operation in [op for op in self.operations if op.async_compatible]:
-            grid_config['async_ops'].append(operation.label.lower());
+            grid_config['async_ops'].append(operation.label.lower())
         for column in self.columns:
             if column.filterable is not None and not isinstance( column, TextColumn ):
                 grid_config['categorical_filters'][column.key] = dict([ (filter.label, filter.args) for filter in column.get_accepted_filters() ])
