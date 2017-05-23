@@ -104,7 +104,7 @@ The following individuals have contributed code to Galaxy:
 * Michael Li <michael.li@uwaterloo.ca>
 * Pierre Lindenbaum <plindenbaum@yahoo.fr>
 * Mikael Loaec <mikael.loaec@versailles.inra.fr>
-* Thoba Lose @thobalose
+* Thoba Lose <lose.thoba@gmail.com>
 * Philip Mabon <philipmabon@gmail.com>
 * Remi Marenco <remi.marenco@gmail.com> <remimarenco@gmail.com>
 * Zipho Mashologu <zipho@trustpay.biz>
