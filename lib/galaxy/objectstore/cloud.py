@@ -25,6 +25,8 @@ from .s3_multipart_upload import multipart_upload
 from ..objectstore import convert_bytes, ObjectStore
 from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
 
+import traceback
+
 # TODO: Cloudbridge is not exposing exceptions; however, it is planned in the next release milestone.
 # TODO: Till then we're using temporarily using S3ResponseError, which will be replaced by CloudBridge
 # TODO: error responses, once ready.
@@ -45,6 +47,10 @@ log = logging.getLogger( __name__ )
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
 
 
+# TODO: Since functions of this class need online resource, and check for their availability,
+# TODO: then Internet connection should be checked, and info the user of the absence of the connection.
+
+
 class CloudObjectStore(ObjectStore):
     """
     Object store that stores objects as items in an AWS S3 bucket. A local
@@ -53,19 +59,17 @@ class CloudObjectStore(ObjectStore):
     """
 
     def __init__(self, config, config_xml):
-        # if boto is None:
-        #    raise Exception(NO_BOTO_ERROR_MESSAGE)
         super(CloudObjectStore, self).__init__(config)
         self.staging_path = self.config.file_path
         self.transfer_progress = 0
         self._parse_config_xml(config_xml)
-        self._configure_connection()
+        # self._configure_connection()
 
         # Maybe it would be better if we differentiate between
         # the "name" of a bucket, and bucket as an "object".
         # Till this command, self.bucket is bucket "name",
         # but after this command it becomes a bucket "object".
-        self.bucket = self._get_bucket(self.bucket)
+        # self.bucket = self._get_bucket(self.bucket)
 
         # Clean cache only if value is set in galaxy.ini
         if self.cache_size != -1:
@@ -83,16 +87,28 @@ class CloudObjectStore(ObjectStore):
         except OSError:
             self.use_axel = False
 
-    def _configure_connection(self):
-        # TODO: in the absence of an internet connection,
-        # this would prevent galaxy from starting.
-        # Maybe it would be better to put a maximum
-        # wait time, and ignore process if fails to
-        # respond within the time frame.
-        log.debug("Configuring S3 Connection")
-        aws_config = {'aws_access_key': self.access_key,
-                      'aws_secret_key': self.secret_key}
-        self.conn = CloudProviderFactory().create_provider(ProviderList.AWS, aws_config)
+        # THIS IS TEMP, IT HAS TO BE REPLACED WITH A DATABASE OF TEMPORARY ACCESS CREDENTIALS FOR EACH PROVIDER.
+        self.access_credentials = {'user_1_id': {'aws_access_key': 'access key 1', 'aws_secret_key': 'secret key 1'},
+                                   'user_2_id': {'aws_access_key': 'access key 2', 'aws_secret_key': 'secret key 2'}}
+
+        self.connections = {}
+        # This dictionary caches connections to various providers for each user.
+        # The structure is as it follows:
+        # key   := user id
+        # value := {
+        #            key   := Provider
+        #            value := Connection
+        #          }
+
+    def _configure_connection(self, user_id, provider):
+        # provider is of type ProviderList, and its valid values are: AWS, OPENSTACK
+        # (i.e., ProviderList.AWS, ProviderList.OPENSTACK).
+        if user_id not in self.connections:
+            self.connections[user_id] = {}
+        if provider not in self.connections[user_id]:
+            log.debug("Configuring a connection to '%s' for the user with ID: '%s'", provider, user_id)
+            self.connections[user_id][provider] = \
+                CloudProviderFactory().create_provider(provider, self.access_credentials[user_id])
 
     def _parse_config_xml(self, config_xml):
         try:
@@ -201,24 +217,19 @@ class CloudObjectStore(ObjectStore):
                 log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
                 return
 
-    def _get_bucket(self, bucket_name):
-        """ Sometimes a handle to a bucket is not established right away so try
-        it a few times. Raise error if connection is not established. """
-        for i in range(5):
-            try:
-                bucket = self.conn.object_store.get(bucket_name)
-                if bucket is None:
-                    log.debug("Bucket not found, creating s3 bucket with handle '%s'", bucket_name)
-                    bucket = self.conn.object_store.create(bucket_name)
-                log.debug("Using cloud object store with bucket '%s'", bucket.name)
-                return bucket
+    def _get_bucket(self, user_id, provider, bucket_name):
+        try:
+            _configure_connection(user_id, provider)
+            bucket = self.connections[user_id][provider].object_store.get(bucket_name)
+            if bucket is None:
+                log.debug("Bucket not found, creating '%s' bucket with handle '%s'", provider, bucket_name)
+                bucket = self.connections[user_id][provider].object_store.create(bucket_name)
+            log.debug("Using cloud object store with bucket '%s'", bucket.name)
+            return bucket
 
-            except S3ResponseError:
-                log.exception("Could not get bucket '%s', attempt %s/5", bucket_name, i + 1)
-                time.sleep(2)
-        # All the attempts have been exhausted and connection was not established,
-        # raise error
-        raise S3ResponseError
+        except S3ResponseError:
+            log.exception("Could not get bucket '%s'", bucket_name)
+
 
     def _fix_permissions(self, rel_path):
         """ Set permissions on rel_path"""
@@ -247,6 +258,7 @@ class CloudObjectStore(ObjectStore):
             # alt_name can contain parent directory references, but S3 will not
             # follow them, so if they are valid we normalize them out
             alt_name = os.path.normpath(alt_name)
+
         rel_path = os.path.join(*directory_hash_id(obj.id))
         if extra_dir is not None:
             if extra_dir_at_root:
@@ -299,9 +311,10 @@ class CloudObjectStore(ObjectStore):
         except S3ResponseError:
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False
-        # if rel_path[0] == '/':
-        #     raise
         print '------------------------------------------------'
+        if rel_path[0] == '/':
+            print 'here'
+            # raise
         print 'rel path: ', rel_path
         print 'exist: ', exists
         print '------------------------------------------------'
@@ -451,6 +464,15 @@ class CloudObjectStore(ObjectStore):
 
     def exists(self, obj, **kwargs):
         in_cache = False
+        print '\n\n\n'
+        for line in traceback.format_stack():
+            print(line.strip())
+        print '============== obj:', obj
+        print '\n\n\n'
+        # print 'obj.get_user.username', obj.get_user().username
+        # print 'obj.get_user_id', obj.get_user_id()
+        # print 'kwargs: ', kwargs
+
         rel_path = self._construct_path(obj, **kwargs)
 
         # Check cache
