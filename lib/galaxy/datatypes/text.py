@@ -613,6 +613,41 @@ class PlantTribes(Html):
     """
     MetadataElement(name="num_files", default=0, desc="Number of files in files_path directory", param=MetadataParameter, readonly=True, visible=False, no_value=0)
 
+    def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
+        file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
+        if os.path.isdir(file_path):
+            fh = tempfile.NamedTemporaryFile(delete=False)
+            fn = fh.name
+            dir_items = sorted(os.listdir(file_path))
+            # Directories can only contain either files or directories, but not both.
+            item_path = os.path.join(file_path, dir_items[0])
+            if os.path.isdir(item_path):
+                header = 'Directories'
+            else:
+                header = 'Datasets'
+            base_path, item_name = os.path.split(file_path)
+            fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (item_name, len(dir_items)))
+            fh.write('<body><p/><table cellpadding="2">\n')
+            fh.write('<tr><b>%s</b></tr>\n' % header)
+            for index, fname in enumerate(dir_items):
+                if index % 2 == 0:
+                    bgcolor = '#D8D8D8'
+                else:
+                    bgcolor = '#FFFFFF'
+                # Can't have an href link here because there is no route
+                # defined for files contained within multiple subdirectory
+                # levels of the primary dataset.  Something like this is
+                # close, but not quite correct:
+                # href = url_for(controller='dataset', action='display',
+                # dataset_id=trans.security.encode_id(data.dataset.id),
+                # preview=preview, filename=fname, to_ext=to_ext)
+                fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, fname))
+            fh.write('</table></body></html>\n')
+            fh.close()
+            return open(fn)
+        else:
+            return super(PlantTribes, self).display_data(trans, data, preview=preview, filename=filename, to_ext=to_ext, **kwd)
+
     def set_meta(self, dataset, overwrite=True, **kwd):
         try:
             efp = dataset.extra_files_path
@@ -631,7 +666,7 @@ class PlantTribesOrtho(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesOrtho, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes gene family clusters: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Proteins orthogroup fasta files: %d files" % dataset.metadata.num_files
 
 
 class PlantTribesOrthoCodingSequence(PlantTribes):
@@ -643,7 +678,18 @@ class PlantTribesOrthoCodingSequence(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesOrthoCodingSequence, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes gene family clusters with corresponding coding sequences: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Protein and coding sequences orthogroup fasta files: %d files" % dataset.metadata.num_files
+
+
+class PlantTribesTargetedGeneFamilies(PlantTribes):
+    """
+    PlantTribes targeted gene families.
+    """
+    file_ext = "pttgf"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesTargetedGeneFamilies, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "Targeted gene families"
 
 
 class PlantTribesPhylogeneticTree(PlantTribes):
@@ -655,7 +701,7 @@ class PlantTribesPhylogeneticTree(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesPhylogeneticTree, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes phylogenetic trees: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Phylogenetic trees: %d files" % dataset.metadata.num_files
 
 
 class PlantTribesPhylip(PlantTribes):
@@ -666,7 +712,7 @@ class PlantTribesPhylip(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesPhylip, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes orthogroup phylip multiple sequence alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Orthogroup phylip multiple sequence alignments: %d files" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignment(PlantTribes):
@@ -677,7 +723,7 @@ class PlantTribesMultipleSequenceAlignment(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes multiple sequence alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Proteins orthogroup alignments: %d files" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignmentCodonAlignment(PlantTribes):
@@ -688,7 +734,7 @@ class PlantTribesMultipleSequenceAlignmentCodonAlignment(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignmentCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes multiple sequence alignments with codon alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Protein and coding sequences orthogroup alignments: %d files" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignmentTrimmed(PlantTribes):
@@ -699,7 +745,7 @@ class PlantTribesMultipleSequenceAlignmentTrimmed(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignmentTrimmed, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes trimmed multiple sequence alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Trimmed proteins orthogroup alignments: %d files" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment(PlantTribes):
@@ -710,7 +756,7 @@ class PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes trimmed multiple sequence alignments with codon alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Trimmed protein and coding sequences orthogroup alignments: %d files" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignmentFiltered(PlantTribes):
@@ -721,7 +767,7 @@ class PlantTribesMultipleSequenceAlignmentFiltered(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignmentFiltered, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes filtered multiple sequence alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Filtered proteins orthogroup alignments: %d files" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment(PlantTribes):
@@ -732,4 +778,4 @@ class PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "PlantTribes filtered multiple sequence alignments with codon alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Filtered protein and coding sequences orthogroup alignments: %d files" % dataset.metadata.num_files
