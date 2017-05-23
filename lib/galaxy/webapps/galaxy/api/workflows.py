@@ -59,8 +59,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api
     def workflow_menu( self, trans, **kwd ):
         """
-        GET /api/workflows/get_workflow_menu
-        PUT /api/workflows/set_workflow_menu
+        GET /api/workflows/menu
+        PUT /api/workflows/menu
 
         Get/Set workflow menu
         """
