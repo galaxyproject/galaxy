@@ -9,8 +9,7 @@ import sys
 # this can increase security in particular if write access to this
 # script is removed by the admin.
 # ALLOWED_PATHS = [ job_working_directory, new_file_path ]
-# ALLOWED_PATHS = None 
-ALLOWED_PATHS = [ "/gpfs1/data/galaxy_server/galaxy-dev/database/tmp/", "/gpfs1/data/galaxy_server/galaxy-dev/jobs_dir/" ]
+ALLOWED_PATHS = None 
 
 def validate_paramters():
     if len(sys.argv) < 4:
