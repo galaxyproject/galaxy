@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-import os.path
 import sys
 
 # you may configure the paths below which modifications are allowed.
@@ -8,7 +7,8 @@ import sys
 # if set to None every file can be modified by the script.
 # this can increase security in particular if write access to this
 # script is removed by the admin.
-# ALLOWED_PATHS = [ job_working_directory, new_file_path ]
+# 
+# ALLOWED_PATHS = [ "job_working_directory", "new_file_path" ]
 ALLOWED_PATHS = None 
 
 def validate_paramters():
