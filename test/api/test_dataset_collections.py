@@ -100,7 +100,7 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
         returned_datasets = dataset_collection["elements"]
         assert len(returned_datasets) == 3, dataset_collection
         for element in returned_datasets:
-            self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element['id'])
+            self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element['id'], assert_ok=True)
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
         tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
@@ -114,7 +114,7 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
         dataset_collection = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
         returned_datasets = dataset_collection["elements"]
         for element in returned_datasets:
-            self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element['id'])
+            self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element['id'], assert_ok=True)
         hdca_id = dataset_collection['id']
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=hdca_id)
         self._assert_status_code_is(create_response, 200)
@@ -132,7 +132,7 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
         list_collection_name = dataset_collection['name']
         pair = returned_datasets[0]
         for element in pair['object']['elements']:
-            self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element['id'])
+            self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element['id'], assert_ok=True)
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
         tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
