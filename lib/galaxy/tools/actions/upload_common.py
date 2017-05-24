@@ -284,12 +284,20 @@ def create_paramfile( trans, uploaded_datasets ):
         try:
             # get username from email/username
             pwent = None        
-            for cand in [ trans.user.email.split('@')[0], trans.user.username]:
+
+            if trans.app.config.real_system_username == 'user_email': 
                 try:
-                    pwent = pwd.getpwnam( cand )
+                    pwent = pwd.getpwnam( trans.user.email.split('@')[0] )
                 except KeyError:
                     pass
-            assert pwent != None
+
+            elif trans.app.config.real_system_username == 'username': 
+                try:
+                    pwent = pwd.getpwnam( trans.user.username )
+                except KeyError:
+                    pass
+            else:
+                log.warning("invalid configuration of real_system_username")
 
             cmd = [ '/usr/bin/sudo', '-E', ]
             for v in ["PATH", "LD_LIBRARY_PATH", "PKG_CONFIG_PATH"]:
