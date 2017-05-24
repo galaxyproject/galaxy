@@ -3,23 +3,21 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">maf_reverse_complement.py $input1 $out_file1 $species</command>
+  <command>python '$__tool_directory__/maf_reverse_complement.py' '$input1' '$out_file1' $species</command>
   <inputs>
-    <page>
         <param format="maf" name="input1" label="Alignment File" type="data"/>
         <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
           <options>
             <filter type="data_meta" ref="input1" key="species" />
           </options>
         </param>
-    </page>
    </inputs>
   <outputs>
     <data format="maf" name="out_file1" metadata_source="input1"/>
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="3.maf" dbkey="hg17" format="maf"/>
+      <param name="input1" value="3.maf" dbkey="hg17" ftype="maf"/>
       <param name="species" value="hg17,panTro1,mm5,rn3,canFam1"/>
       <output name="out_file1" file="maf_reverse_complement_out.dat"/>
     </test>
@@ -44,8 +42,6 @@ becomes::
   s hg17.chr7     31156555 58 - 158628139 CCTCTTCCACTATAGACCTCCTTAAACAAAATAATGAAAAATGAATAAACCACAAATT
   s panTro1.chr6  31691510 58 - 161576975 CCTCTTCCACTATAGACCTCCTTAAACAAAATAATGAAAAACGAATAAACCACAAATT
   s mm5.chr6     120816549 54 - 149721531 CCTCTTCCACTGAGGAATTTCTTTTTTTAAATGATGAGCAATCAATGAAACG----TT
-
-@HELP_CITATIONS@
     </help>
     <expand macro="citations" />
 </tool>

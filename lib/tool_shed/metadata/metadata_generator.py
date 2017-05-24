@@ -321,9 +321,6 @@ class MetadataGenerator( object ):
             metadata_dict = {}
         readme_files = []
         invalid_tool_configs = []
-        tool_dependencies_config = None
-        original_tool_data_path = self.app.config.tool_data_path
-        original_tool_data_table_config_path = self.app.config.tool_data_table_config_path
         if self.resetting_all_metadata_on_repository:
             if not self.relative_install_dir:
                 raise Exception( "The value of self.repository.repo_path must be set when resetting all metadata on a repository." )
@@ -334,8 +331,6 @@ class MetadataGenerator( object ):
             files_dir = self.repository_files_dir
             # Since we're working from a temporary directory, we can safely copy sample files included
             # in the repository to the repository root.
-            self.app.config.tool_data_path = self.repository_files_dir
-            self.app.config.tool_data_table_config_path = self.repository_files_dir
         else:
             # Use a temporary working directory to copy all sample files.
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-gmfcr" )
@@ -344,8 +339,6 @@ class MetadataGenerator( object ):
             files_dir = self.relative_install_dir
             if self.shed_config_dict.get( 'tool_path' ):
                 files_dir = os.path.join( self.shed_config_dict[ 'tool_path' ], files_dir )
-            self.app.config.tool_data_path = work_dir  # FIXME: Thread safe?
-            self.app.config.tool_data_table_config_path = work_dir
         # Handle proprietary datatypes, if any.
         datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
         if datatypes_config:
@@ -371,8 +364,8 @@ class MetadataGenerator( object ):
             if filename == 'tool_data_table_conf.xml.sample':
                 new_table_elems, error_message = \
                     self.app.tool_data_tables.add_new_entries_from_config_file( config_filename=sample_file,
-                                                                                tool_data_path=self.app.config.tool_data_path,
-                                                                                shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
+                                                                                tool_data_path=work_dir,
+                                                                                shed_tool_data_table_config=work_dir,
                                                                                 persist=False )
                 if error_message:
                     self.invalid_file_tups.append( ( filename, error_message ) )
@@ -450,9 +443,9 @@ class MetadataGenerator( object ):
                                 valid_exported_galaxy_workflow = True
                                 try:
                                     exported_workflow_dict = json.loads( workflow_text )
-                                except Exception as e:
-                                    log.exception( "Skipping file %s since it does not seem to be a valid exported Galaxy workflow: %s"
-                                                   % ( str( relative_path ), str( e ) ) )
+                                except Exception:
+                                    log.exception( "Skipping file %s since it does not seem to be a valid exported Galaxy workflow",
+                                                   str( relative_path ) )
                                     valid_exported_galaxy_workflow = False
                             if valid_exported_galaxy_workflow and \
                                 'a_galaxy_workflow' in exported_workflow_dict and \
@@ -481,9 +474,6 @@ class MetadataGenerator( object ):
         if invalid_tool_configs:
             metadata_dict[ 'invalid_tools' ] = invalid_tool_configs
         self.metadata_dict = metadata_dict
-        # Reset the value of the app's tool_data_path  and tool_data_table_config_path to their respective original values.
-        self.app.config.tool_data_path = original_tool_data_path
-        self.app.config.tool_data_table_config_path = original_tool_data_table_config_path
         basic_util.remove_dir( work_dir )
 
     def generate_package_dependency_metadata( self, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict ):

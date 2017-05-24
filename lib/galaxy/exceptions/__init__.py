@@ -99,6 +99,11 @@ class ToolMetaParameterException( MessageException ):
     err_code = error_codes.USER_TOOL_META_PARAMETER_PROBLEM
 
 
+class ToolMissingException( MessageException ):
+    status_code = 400
+    err_code = error_codes.USER_TOOL_MISSING_PROBLEM
+
+
 class RequestParameterInvalidException( MessageException ):
     status_code = 400
     err_code = error_codes.USER_REQUEST_INVALID_PARAMETER
@@ -178,3 +183,36 @@ class InternalServerError ( MessageException ):
 class NotImplemented ( MessageException ):
     status_code = 501
     err_code = error_codes.NOT_IMPLEMENTED
+
+
+# non-web exceptions
+
+
+class ContainerCLIError(Exception):
+    def __init__(self, msg=None, stdout=None, stderr=None, returncode=None,
+                 command=None, subprocess_command=None, **kwargs):
+        super(ContainerCLIError, self).__init__(msg, **kwargs)
+        self.stdout = stdout
+        self.stderr = stderr
+        self.returncode = returncode
+        self.command = command
+        self.subprocess_command = subprocess_command
+
+
+class ContainerNotFound(Exception):
+    def __init__(self, msg=None, container_id=None, **kwargs):
+        super(ContainerNotFound, self).__init__(msg, **kwargs)
+        self.container_id = container_id
+
+
+class ContainerImageNotFound(Exception):
+    def __init__(self, msg=None, image=None, **kwargs):
+        super(ContainerImageNotFound, self).__init__(msg, **kwargs)
+        self.image = image
+
+
+class ContainerRunError(Exception):
+    def __init__(self, msg=None, image=None, command=None, **kwargs):
+        super(ContainerRunError, self).__init__(msg, **kwargs)
+        self.image = image
+        self.command = command

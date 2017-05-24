@@ -312,8 +312,8 @@ class AdminToolshed( AdminGalaxy ):
                         trans.app.installed_repository_manager.handle_repository_uninstall( tool_shed_repository )
                 else:
                     tool_shed_repository.status = trans.install_model.ToolShedRepository.installation_status.DEACTIVATED
-                trans.install_model.context.add( tool_shed_repository )
-                trans.install_model.context.flush()
+                trans.install_model.context.current.add( tool_shed_repository )
+                trans.install_model.context.current.flush()
                 if remove_from_disk_checked:
                     message += 'The repository named <b>%s</b> has been uninstalled.  ' % escape( tool_shed_repository.name )
                     if errors:
@@ -961,7 +961,7 @@ class AdminToolshed( AdminGalaxy ):
             message += 'attribute value which is a directory relative to the Galaxy installation directory in order '
             message += 'to automatically install tools from a Galaxy Tool Shed (e.g., the file name <b>shed_tool_conf.xml</b> '
             message += 'whose <b>&lt;toolbox&gt;</b> tag is <b>&lt;toolbox tool_path="../shed_tools"&gt;</b>).<p/>See the '
-            message += '<a href="https://wiki.galaxyproject.org/InstallingRepositoriesToGalaxy" target="_blank">Installation '
+            message += '<a href="https://galaxyproject.org/installing-repositories-to-galaxy/" target="_blank">Installation '
             message += 'of Galaxy Tool Shed repository tools into a local Galaxy instance</a> section of the Galaxy Tool '
             message += 'Shed wiki for all of the details.'
             return trans.show_error_message( message )

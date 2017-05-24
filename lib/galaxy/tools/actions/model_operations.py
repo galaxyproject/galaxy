@@ -12,8 +12,12 @@ log = logging.getLogger( __name__ )
 
 class ModelOperationToolAction( DefaultToolAction ):
 
-    def check_inputs_ready( self, tool, trans, incoming, history ):
-        history, inp_data, inp_dataset_collections = self._collect_inputs(tool, trans, incoming, history)
+    def check_inputs_ready( self, tool, trans, incoming, history, execution_cache=None ):
+        if execution_cache is None:
+            execution_cache = ToolExecutionCache(trans)
+
+        current_user_roles = execution_cache.current_user_roles
+        history, inp_data, inp_dataset_collections = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
 
         tool.check_inputs_ready( inp_data, inp_dataset_collections )
 

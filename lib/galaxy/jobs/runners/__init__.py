@@ -247,7 +247,7 @@ class BaseJobRunner( object ):
                         output_pairs.append( ( source_file, destination ) )
                     else:
                         # Security violation.
-                        log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
+                        log.exception( "from_work_dir specified a location not in the working directory: %s, %s", source_file, job_wrapper.working_directory )
         return output_pairs
 
     def _walk_dataset_outputs( self, job ):
@@ -345,7 +345,7 @@ class BaseJobRunner( object ):
 
         tool = job_wrapper.tool
         from galaxy.tools.deps import containers
-        tool_info = containers.ToolInfo(tool.containers, tool.requirements)
+        tool_info = containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment)
         job_info = containers.JobInfo(
             compute_working_directory,
             compute_tool_directory,

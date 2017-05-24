@@ -3,27 +3,42 @@ API operations on a history.
 
 .. seealso:: :class:`galaxy.model.History`
 """
-
-from sqlalchemy import true, false
-
-from galaxy import exceptions
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.web import _future_expose_api_raw as expose_api_raw
-
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import ExportsHistoryMixin
-from galaxy.web.base.controller import ImportsHistoryMixin
-
-from galaxy.managers import histories, citations, users
-
-from galaxy import util
-from galaxy.util import string_as_bool
-from galaxy.util import restore_text
-from galaxy.web import url_for
-
+import glob
 import logging
+import os
+
+from sqlalchemy import (
+    false,
+    true
+)
+
+from galaxy import (
+    exceptions,
+    model,
+    util
+)
+from galaxy.managers import (
+    citations,
+    histories,
+    users
+)
+from galaxy.util import (
+    restore_text,
+    string_as_bool
+)
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous as expose_api_anonymous,
+    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
+    _future_expose_api_raw as expose_api_raw,
+    url_for
+)
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    ExportsHistoryMixin,
+    ImportsHistoryMixin
+)
+
 log = logging.getLogger( __name__ )
 
 
@@ -219,8 +234,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             if not tool_id:
                 continue
             tool_ids.add(tool_id)
-        return map( lambda citation: citation.to_dict( "bibtex" ),
-                    self.citations_manager.citations_for_tool_ids( tool_ids ) )
+        return [citation.to_dict( "bibtex" ) for citation in self.citations_manager.citations_for_tool_ids( tool_ids )]
 
     @expose_api_anonymous_and_sessionless
     def published( self, trans, **kwd ):
@@ -353,17 +367,16 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         """
         history_id = id
         # a request body is optional here
-        purge = False
-        if 'purge' in kwd:
-            purge = string_as_bool( kwd.get( 'purge' ) )
+        purge = string_as_bool( kwd.get( 'purge', False ) )
         # for backwards compat, keep the payload sub-dictionary
         if kwd.get( 'payload', None ):
-            purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
+            purge = string_as_bool( kwd['payload'].get( 'purge', purge ) )
 
         history = self.history_manager.get_owned( self.decode_id( history_id ), trans.user, current_history=trans.history )
-        self.history_manager.delete( history )
         if purge:
             self.history_manager.purge( history )
+        else:
+            self.history_manager.delete( history )
 
         return self.history_serializer.serialize_to_view( history,
             user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
@@ -471,7 +484,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         # Seems silly to put jeha_id in here, but want GET to be immuatable?
         # and this is being accomplished this way.
         history = self.history_manager.get_accessible( self.decode_id( id ), trans.user, current_history=trans.history )
-        matching_exports = filter( lambda e: trans.security.encode_id( e.id ) == jeha_id, history.exports )
+        matching_exports = [e for e in history.exports if trans.security.encode_id( e.id ) == jeha_id]
         if not matching_exports:
             raise exceptions.ObjectNotFound()
 
@@ -482,3 +495,24 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             raise exceptions.MessageException( "Export not available or not yet ready." )
 
         return self.serve_ready_history_export( trans, jeha )
+
+    @expose_api
+    def get_custom_builds_metadata(self, trans, id, payload={}, **kwd):
+        """
+        GET /api/histories/{id}/custom_builds_metadata
+        Returns meta data for custom builds.
+
+        :param id: the encoded history id
+        :type  id: str
+        """
+        history = self.history_manager.get_accessible( self.decode_id( id ), trans.user, current_history=trans.history )
+        installed_builds = []
+        for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
+            installed_builds.append( os.path.basename(build).split(".len")[0] )
+        fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+            .filter_by( history=history, extension="fasta", deleted=False ) \
+            .order_by( model.HistoryDatasetAssociation.hid.desc() )
+        return {
+            'installed_builds'  : [ { 'label' : ins, 'value' : ins } for ins in installed_builds ],
+            'fasta_hdas'        : [ { 'label' : '%s: %s' % ( hda.hid, hda.name ), 'value' : trans.security.encode_id( hda.id ) } for hda in fasta_hdas ],
+        }

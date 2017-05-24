@@ -29,7 +29,8 @@ define(['utils/utils',
             'hidden_data'       : '_fieldHidden',
             'baseurl'           : '_fieldHidden',
             'library_data'      : '_fieldLibrary',
-            'ftpfile'           : '_fieldFtp'
+            'ftpfile'           : '_fieldFtp',
+            'upload'            : '_fieldUpload'
         },
 
         /** Returns an input field for a given field type */
@@ -151,6 +152,7 @@ define(['utils/utils',
                 area        : input_def.area,
                 readonly    : input_def.readonly,
                 placeholder : input_def.placeholder,
+                datalist    : input_def.datalist,
                 onchange    : input_def.onchange
             });
         },
@@ -209,6 +211,14 @@ define(['utils/utils',
                 id          : 'field-' + input_def.id,
                 optional    : input_def.optional,
                 multiple    : input_def.multiple,
+                onchange    : input_def.onchange
+            });
+        },
+
+        /** Upload file field */
+        _fieldUpload: function( input_def ) {
+            return new Ui.Upload({
+                id          : 'field-' + input_def.id,
                 onchange    : input_def.onchange
             });
         }

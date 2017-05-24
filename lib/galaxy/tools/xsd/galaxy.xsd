@@ -356,6 +356,10 @@ Read more about configuring Galaxy to run Docker jobs
       <xs:documentation xml:lang="en"><![CDATA[
 **Deprecated** do not use this unless absolutely necessary.
 
+The extensions described here can cause problems using your tool with certain components
+of Galaxy (like the workflow system). It is highly recommended to avoid these constructs
+unless absolutely necessary.
+
 This tag set provides detailed control of the way the tool is executed. This
 (optional) code can be deployed in a separate file in the same directory as the
 tool's config file. These hooks are being replaced by new tool config features
@@ -443,6 +447,76 @@ def get_field_components_options( dataset, field_name ):
         options.append( ( field_component, field_component, i == 0 ) )
     return options
 ```
+
+#### Parameter Validation
+
+This function is called before the tool is executed. If it raises any exceptions the tool execution will be aborted and the exception's value will be displayed in an error message box. Here is an example:
+
+```python
+def validate(incoming):
+    """Validator for the plotting program"""
+    
+    
+    bins = incoming.get("bins","")
+    col = incoming.get("col","")
+
+
+    if not bins or not col:
+        raise Exception, "You need to specify a number for bins and columns"
+
+
+    try:
+        bins = int(bins)
+        col = int(col)
+    except:
+        raise Exception, "Parameters are not integers, columns:%s, bins:%s" % (col, bins)
+
+
+    if not 1<bins<100:
+        raise Exception, "The number of bins %s must be a number between 1 and 100" % bins
+```
+
+This code will intercept a number of parameter errors and return corresponding error messages. The parameter ``incoming`` contains a dictionary with all the parameters that were sent through the web.
+
+#### Pre-job and pre-process code
+
+The signature of both of these is the same:
+
+```python
+def exec_before_job(inp_data, out_data, param_dict, tool):
+def exec_before_process(inp_data, out_data, param_dict, tool):
+```
+
+The ``param_dict`` is a dictionary that contains all the values in the ``incoming`` parameter above plus a number of keys and values generated internally by galaxy. The ``inp_data`` and the ``out_data`` are dictionaries keyed by parameter name containing the classes that represent the data.
+
+Example:
+
+```python
+def exec_before_process(inp_data, out_data, param_dict, tool):
+    for name, data in out_data.items():
+        data.name = 'New name'
+```
+
+This custom code will change the name of the data that was created for this tool to **New name**. The difference between these two functions is that the ``exec_before_job`` executes before the page returns and the user will see the new name right away. If one were to use ``exec_before_process`` the new name would be set only once the job starts to execute.
+
+#### Post-process code
+
+This code executes after the background process running the tool finishes its run. The example below is more advanced one that replaces the type of the output data depending on the parameter named ``extension``:
+
+```python
+from galaxy import datatypes
+def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
+    ext = param_dict.get('extension', 'text')
+    items = out_data.items()   
+    for name, data in items: 
+        newdata = datatypes.factory(ext)(id=data.id)
+        for key, value in data. __dict__.items():
+            setattr(newdata, key, value)
+        newdata.ext = ext
+        out_data[name] = newdata
+```
+
+The content of ``stdout`` and ``stderr`` are strings containing the output of the process.
 
 ]]></xs:documentation>
 
@@ -1089,6 +1163,15 @@ it may be inconvenient to upload the entiry file and this can be used instead.
     <xs:attribute name="lines_diff" type="xs:integer">
       <xs:annotation>
         <xs:documentation xml:lang="en">If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="decompress" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy 17.05+ and was introduced in ``Pull Request #3550 <https://github.com/galaxyproject/galaxy/pull/3550>`__.
+
+]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="delta" type="xs:integer">
@@ -1916,7 +1999,7 @@ parameter being described. All the attributes for the ``param`` element are
 documented below for completeness, but here are the common ones for each
 type are as follows:
 
-$attribute_list:name,type,optional,label,help,argument:4
+$attribute_list:name,type,optional,label,help,argument,refresh_on_change:4
 
 ### Parameter Types
 
@@ -1941,6 +2024,20 @@ rendered on the tool form as a text area instead of a single line text box.
 ```xml
 <param name="foo" type="text" area="True" size="5x25" />
 ```
+
+As of 17.01, ``text`` parameters can also supply a static list of preset
+defaults options. The user **may** be presented with the option to select one of
+these but will be allowed to supply an arbitrary text value.
+
+```xml
+<param name="foo" type="text" value="foo 1">
+    <option value="foo 1">Foo 1 Display</option>
+    <option value="foo 2">Foo 2 Display</option>
+</param>
+```
+
+See [param_text_option.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/param_text_option.xml)
+for a demonstration of this.
 
 $attribute_list:value,size,area:5
 
@@ -2234,6 +2331,11 @@ but not always the tool's input dataset).
         <xs:attribute name="accept_default" type="PermissiveBoolean">
           <xs:annotation>
             <xs:documentation xml:lang="en"></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="refresh_on_change" type="PermissiveBoolean">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Force a reload of the tool panel when the value of this parameter changes to allow ``code`` file processing. See deprecation-like notice for ``code`` blocks.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="force_select" type="PermissiveBoolean" gxdocs:deprecated="true">
@@ -3260,7 +3362,7 @@ to the tool.
 ```
 
 This more advanced example, taken from Mothur's
-[remove.linage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
+[remove.lineage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
 tool demonstrates using filters to sort a list and remove duplicate entries.
 
 ```xml
@@ -3310,7 +3412,7 @@ tool demonstrates adding values to an option list using ``filter``s.
 </param>
 ```
 
-While this fragment from maf_to_interval.xml demonstrates removing items.
+While this fragment from [maf_to_interval.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/maf_to_interval.xml) demonstrates removing items.
 
 ```xml
 <param name="species" type="select" label="Select additional species"
@@ -3375,7 +3477,7 @@ used with ``type`` of ``add_value``).</xs:documentation>
     <xs:attribute name="key" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">When ``type`` is ``data_meta``, ``param_value``,
-or ``remove_value`` - this is the name of the metadata key of ref to filter by.</xs:documentation>
+or ``remove_value`` - this is the name of the metadata key to filter by.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="multiple" type="PermissiveBoolean" default="false">
@@ -3420,6 +3522,13 @@ attributes to use as value for filter.</xs:documentation>
         <xs:documentation xml:lang="en">Used when ``type`` is ``add_value``, it
 is the index into the list to add the option to. If not set, the option will be
 added to the end of the list.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="meta_ref" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Only used when ``type`` is
+``remove_value``. Dataset to look for the value of metadata ``key`` to remove
+from the list.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -4802,7 +4911,7 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
       <xs:documentation xml:lang="en"><![CDATA[See
 [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
-[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+[output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for simple examples of how this tag set is used in a tool. This tag set is
 optionally contained within the ``<data>`` tag set and is the container tag set
 for the following ``<when>`` tag set.]]></xs:documentation>
@@ -4847,22 +4956,23 @@ in the ``<data>`` tag set with ``format="interval"``.
 See
 [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
-[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+[output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for more examples.
 
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence/>
-    <xs:attribute name="input" type="xs:string" use="required">
+    <xs:attribute name="input" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value must be the attribute name of
+        <xs:documentation xml:lang="en">This attribute should be the name of
 the desired input parameter (e.g. ``input="out_format"`` above).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value must also be an attribute
-name of an input parameter (e.g. ``value="interval"`` above).</xs:documentation>
+        <xs:documentation xml:lang="en">This must be a possible value of the ``input``
+parameter (e.g. ``value="interval"`` above), or of the deprecated ``input_dataset``'s
+``attribute.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format" type="xs:string" use="required">
@@ -4871,6 +4981,16 @@ name of an input parameter (e.g. ``value="interval"`` above).</xs:documentation>
 (e.g. ``format="interval"``). See
 [/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
 for a list of supported formats.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="input_dataset" type="xs:string" gxdocs:deprecated="true">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="attribute" type="xs:string" gxdocs:deprecated="true">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -5033,6 +5153,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="empty_dataset"/>
+      <xs:enumeration value="empty_extra_files_path"/>
       <xs:enumeration value="expression"/>
       <xs:enumeration value="regex"/>
       <xs:enumeration value="in_range"/>
@@ -5057,6 +5178,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="unique_value"/>
       <xs:enumeration value="multiple_splitter"/>
       <xs:enumeration value="add_value"/>
+      <xs:enumeration value="remove_value"/>
       <xs:enumeration value="sort_by"/>
     </xs:restriction>
   </xs:simpleType>

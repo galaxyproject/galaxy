@@ -17,12 +17,12 @@ PasteDeploy==1.5.2
 docutils==0.12
 wchartype==0.1
 repoze.lru==0.6
-Routes==2.2
+Routes==2.4.1
 WebOb==1.4.1
 WebHelpers==1.3
 Mako==1.0.2
 pytz==2015.4
-Babel==2.0
+Babel==2.1.1
 Beaker==1.7.0
 dictobj==0.3.1
 nose==1.3.7

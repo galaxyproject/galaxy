@@ -5,6 +5,7 @@ from abc import (
     abstractproperty,
 )
 
+import six
 import yaml
 
 from galaxy.util import listify
@@ -13,11 +14,12 @@ from galaxy.util.dictifiable import Dictifiable
 from ..requirements import ToolRequirement
 
 
+@six.add_metaclass(ABCMeta)
 class DependencyResolver(Dictifiable, object):
     """Abstract description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
-    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies']
+    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies', 'can_uninstall_dependencies']
     # A "simple" dependency is one that does not depend on the the tool
     # resolving the dependency. Classic tool shed dependencies are non-simple
     # because the repository install context is used in dependency resolution
@@ -25,8 +27,8 @@ class DependencyResolver(Dictifiable, object):
     # resolution.
     disabled = False
     resolves_simple_dependencies = True
+    can_uninstall_dependencies = False
     config_options = {}
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def resolve( self, requirement, **kwds ):
@@ -46,17 +48,26 @@ class MultipleDependencyResolver:
     """Variant of DependencyResolver that can optionally resolve multiple dependencies together."""
 
     @abstractmethod
-    def resolve_all( self, requirements, **kwds ):
-        """Given multiple requirements yield Dependency objects if and only if they may all be resolved together.
+    def resolve_all(self, requirements, **kwds):
+        """
+        Given multiple requirements yields a list of Dependency objects if and only if they may all be resolved together.
+
+        Unsuccessfull attempts should return an empty list.
+
+        :param requirements: list of tool requirements
+        :param type: [ToolRequirement] or ToolRequirements
+
+        :returns: list of resolved dependencies
+        :rtype: [Dependency]
         """
 
 
+@six.add_metaclass(ABCMeta)
 class ListableDependencyResolver:
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can iterate over its dependencies and generate
     requirements.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def list_dependencies(self):
@@ -87,7 +98,7 @@ class MappableDependencyResolver:
     def _mapping_file_to_list(mapping_file):
         with open(mapping_file, "r") as f:
             raw_mapping = yaml.load(f) or []
-            return map(RequirementMapping.from_dict, raw_mapping)
+        return map(RequirementMapping.from_dict, raw_mapping)
 
     def _expand_mappings(self, requirement):
         for mapping in self._mappings:
@@ -165,13 +176,13 @@ class RequirementMapping(object):
         return RequirementMapping(from_name, from_version, to_name, to_version)
 
 
+@six.add_metaclass(ABCMeta)
 class SpecificationAwareDependencyResolver:
     """Mix this into a :class:`DependencyResolver` to implement URI specification matching.
 
     Allows adapting generic requirements to more specific URIs - to tailor name
     or version to specified resolution system.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def _expand_specs(self, requirement):
@@ -209,11 +220,11 @@ class SpecificationPatternDependencyResolver:
         return requirement
 
 
+@six.add_metaclass(ABCMeta)
 class InstallableDependencyResolver:
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can attempt to install new dependencies.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def install_dependency(self, name, version, type, **kwds):
@@ -222,9 +233,9 @@ class InstallableDependencyResolver:
         """
 
 
+@six.add_metaclass(ABCMeta)
 class Dependency(Dictifiable, object):
     dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version', 'cacheable']
-    __metaclass__ = ABCMeta
     cacheable = False
 
     @abstractmethod

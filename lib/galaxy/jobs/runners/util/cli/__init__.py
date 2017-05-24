@@ -1,8 +1,11 @@
 """
 """
 from glob import glob
-from os.path import basename, join
 from os import getcwd
+from os.path import (
+    basename,
+    join
+)
 
 DEFAULT_SHELL_PLUGIN = 'LocalShell'
 
@@ -61,7 +64,7 @@ class CliInterface(object):
             raise ValueError(ERROR_MESSAGE_NO_JOB_PLUGIN)
         job_plugin_class = self.cli_job_interfaces.get(job_plugin, None)
         if not job_plugin_class:
-            raise ValueError(ERROR_MESSAGE_NO_SUCH_JOB_PLUGIN % (job_plugin, self.cli_job_interfaces.keys()))
+            raise ValueError(ERROR_MESSAGE_NO_SUCH_JOB_PLUGIN % (job_plugin, list(self.cli_job_interfaces.keys())))
         job_interface = job_plugin_class(**job_params)
 
         return job_interface

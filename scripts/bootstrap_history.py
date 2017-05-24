@@ -100,15 +100,17 @@ Highlights
 **Feature3**
   Feature description.
 
-`Github <https://github.com/galaxyproject/galaxy>`__
-===========================================================
+Get Galaxy
+==========
 
-New Galaxy repository
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
   .. code-block:: shell
 
       $$ git clone -b release_${release} https://github.com/galaxyproject/galaxy.git
 
-Update of existing Galaxy repository
+To update an existing Galaxy repository run:
   .. code-block:: shell
 
       $$ git checkout release_${release} && git pull --ff-only origin release_${release}
@@ -141,103 +143,98 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [X] **Prep**
 
-      - [X] ~~Create this release issue ``make release-issue RELEASE_CURR=${version}``.~~
-      - [X] ~~Set freeze date (${freeze_date}).~~
+    - [X] ~~Create this release issue ``make release-issue RELEASE_CURR=${version}``.~~
+    - [X] ~~Set freeze date (${freeze_date}).~~
 
 - [ ] **Branch Release (on or around ${freeze_date})**
 
-      - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged, delayed, or closed.
+    - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged, delayed, or closed.
 
-            make release-check-blocking-prs RELEASE_CURR=${version}
-      - [ ] Merge the latest release into dev and push upstream.
+          make release-check-blocking-prs RELEASE_CURR=${version}
+    - [ ] Merge the latest release into dev and push upstream.
 
-            make release-merge-stable-to-next RELEASE_PREVIOUS=release_${previous_version}
-            make release-push-dev
+          make release-merge-stable-to-next RELEASE_PREVIOUS=release_${previous_version}
+          make release-push-dev
 
-      - [ ] Create and push release branch:
+    - [ ] Create and push release branch:
 
-            make release-create-rc RELEASE_CURR=${version} RELEASE_NEXT=${next_version}
+          make release-create-rc RELEASE_CURR=${version} RELEASE_NEXT=${next_version}
 
-      - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
-
-      - [ ] Open PR against ``release_${version}`` branch to pin flake8 deps in tox.ini to the latest available version.
-
-      - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `${next_version}` so it properly tags new PRs.
+    - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
+    - [ ] Open PR against ``release_${version}`` branch to pin flake8 deps in tox.ini to the latest available version. See [example](https://github.com/galaxyproject/galaxy/pull/3476).
+    - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `${next_version}` so it properly tags new PRs.
+    - [ ] Set the ``release_${version}`` branch in GitHub [settings](https://github.com/galaxyproject/galaxy/settings/branches) as protected.
 
 - [ ] **Deploy and Test Release**
 
-      - [ ] Update test.galaxyproject.org to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
-      - [ ] Update testtoolshed.g2.bx.psu.edu to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
-      - [ ] Deploy to usegalaxy.org (${freeze_date} + 1 week).
-      - [ ] Deploy to toolshed.g2.bx.psu.edu (${freeze_date} + 1 week).
-      - [ ] [Update BioBlend CI testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target: add ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to the ``env`` list in ``.travis.yml`` .
+    - [ ] Update test.galaxyproject.org to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
+    - [ ] Update testtoolshed.g2.bx.psu.edu to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
+    - [ ] Deploy to usegalaxy.org (${freeze_date} + 1 week).
+    - [ ] Deploy to toolshed.g2.bx.psu.edu (${freeze_date} + 1 week).
+    - [ ] [Update BioBlend CI testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target: add ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to the ``env`` list in ``.travis.yml`` .
 
 - [ ] **Create Release Notes**
 
-      - [ ] Review merged PRs and ensure they all have a milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Amerged+no%3Amilestone)
-      - [ ] Checkout release branch
+    - [ ] Review merged PRs and ensure they all have a milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Amerged+no%3Amilestone)
+    - [ ] Checkout release branch
 
-            git checkout release_${version} -b ${version}_release_notes
-      - [ ] Check for obvious missing metadata in release PRs
+          git checkout release_${version} -b ${version}_release_notes
+    - [ ] Check for obvious missing metadata in release PRs
 
-            make release-check-metadata RELEASE_CURR=${version}
-      - [ ] Bootstrap the release notes
+          make release-check-metadata RELEASE_CURR=${version}
+    - [ ] Bootstrap the release notes
 
-            make release-bootstrap-history RELEASE_CURR=${version}
-      - [ ] Open newly created files and manually curate major topics and release notes.
+          make release-bootstrap-history RELEASE_CURR=${version}
+    - [ ] Open newly created files and manually curate major topics and release notes.
+    - [ ] Commit release notes.
 
-            - [ ] inject 3 witty comments
-            - [ ] inject one whimsical story
-            - [ ] inject one topical reference (preferably satirical in nature) to contemporary world event
-      - [ ] Commit release notes.
-
-            git add docs/; git commit -m "Release notes for $version"; git push upstream ${version}_release_notes
-      - [ ] Open a pull request for new release note branch.
-      - [ ] Merge release note pull request.
+          git add docs/; git commit -m "Release notes for $version"; git push upstream ${version}_release_notes
+    - [ ] Open a pull request for new release note branch.
+    - [ ] Merge release note pull request.
 
 - [ ] **Do Release**
 
-      - [ ] Ensure all [blocking milestone issues](https://github.com/galaxyproject/galaxy/issues?q=is%3Aopen+is%3Aissue+milestone%3A${version}) have been resolved.
+    - [ ] Ensure all [blocking milestone issues](https://github.com/galaxyproject/galaxy/issues?q=is%3Aopen+is%3Aissue+milestone%3A${version}) have been resolved.
 
-            make release-check-blocking-issues RELEASE_CURR=${version}
-      - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged or closed.
+          make release-check-blocking-issues RELEASE_CURR=${version}
+    - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged or closed.
 
-            make release-check-blocking-prs RELEASE_CURR=${version}
-      - [ ] Ensure previous release is merged into current. (TODO: Add Makefile target or this.)
-      - [ ] Create and push release tag:
+          make release-check-blocking-prs RELEASE_CURR=${version}
+    - [ ] Ensure previous release is merged into current. (TODO: Add Makefile target or this.)
+    - [ ] Create and push release tag:
 
-            make release-create RELEASE_CURR=${version}
+          make release-create RELEASE_CURR=${version}
+
+    - [ ] Switch Jenkins documentation build [branch specifier](https://jenkins.galaxyproject.org/job/Sphinx-Docs/configure) to `*/release_{version}`.
+    - [ ] Trigger the documentation build.
 
 - [ ] **Do Docker Release**
 
-      - [ ] Change the [dev branch](https://github.com/bgruening/docker-galaxy-stable/tree/dev
-) of the Galaxy Docker container to ${next_version}
-      - [ ] Merge dev into master
+    - [ ] Change the [dev branch](https://github.com/bgruening/docker-galaxy-stable/tree/dev) of the Galaxy Docker container to ${next_version}
+    - [ ] Merge dev into master
 
 - [ ] **Ensure Tool Tests use Latest Release**
 
-      - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-iuc/blob/master/.travis.yml#L6
-
-      - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-devteam/blob/master/.travis.yml#L6
+    - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-iuc/blob/master/.travis.yml#L6
+    - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-devteam/blob/master/.travis.yml#L6
 
 - [ ] **Announce Release**
 
-      - [ ] Verify release included in https://docs.galaxyproject.org/en/master/releases/index.html
-      - [ ] Review announcement in https://github.com/galaxyproject/galaxy/blob/dev/doc/source/releases/${version}_announce.rst
-      - [ ] Stage annoucement content (Wiki, Biostars, Bit.ly link) on annouce date to capture date tags. Note: all final content does not need to be completed to do this.
-      - [ ] Create wiki *highlights* and post to http://galaxyproject.org News (w/ RSS) and NewsBriefs. [An Example](https://wiki.galaxyproject.org/News/2016_04_GalaxyRelease).
-      - [ ] Tweet docs news *highlights* via bit.ly link to https://twitter.com/galaxyproject/ (As user ``galaxyproject``, password in Galaxy password store under ``twitter.com / galaxyproject`` ). [An Example](https://twitter.com/galaxyproject/status/733029921316986881).
-      - [ ] Post *highlights* type News to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/17712/).
-      - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An Example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)
-      - [ ] Adjust http://getgalaxy.org text and links to match current master branch (TODO: describe how to do this)
+    - [ ] Verify release included in https://docs.galaxyproject.org/en/master/releases/index.html
+    - [ ] Review announcement in https://github.com/galaxyproject/galaxy/blob/dev/doc/source/releases/${version}_announce.rst
+    - [ ] Stage annoucement content (Wiki, Biostars, Bit.ly link) on annouce date to capture date tags. Note: all final content does not need to be completed to do this.
+    - [ ] Create wiki *highlights* and post to http://galaxyproject.org News (w/ RSS) and NewsBriefs. [An Example](https://wiki.galaxyproject.org/News/2016_04_GalaxyRelease).
+    - [ ] Tweet docs news *highlights* via bit.ly link to https://twitter.com/galaxyproject/ (As user ``galaxyproject``, password in Galaxy password store under ``twitter.com / galaxyproject`` ). [An Example](https://twitter.com/galaxyproject/status/733029921316986881).
+    - [ ] Post *highlights* type News to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/17712/).
+    - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An Example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)
+    - [ ] Adjust http://getgalaxy.org text and links to match current master branch by opening a PR for https://github.com/galaxyproject/galaxy-hub/
 
 - [ ] **Prepare for next release**
 
-      - [ ] Ensure milestone ``${next_version}`` exists.
-      - [ ] Create release issue for next version ``make release-issue RELEASE_CURR=${next_version}``.
-      - [ ] Schedule committer meeting to discuss re-alignment of priorities.
-      - [ ] Close this issue.
-
+    - [ ] Ensure milestone ``${next_version}`` exists.
+    - [ ] Create release issue for next version ``make release-issue RELEASE_CURR=${next_version}``.
+    - [ ] Schedule committer meeting to discuss re-alignment of priorities.
+    - [ ] Close this issue.
 """)
 
 # https://api.github.com/repos/galaxyproject/galaxy/pulls?base=dev&state=closed

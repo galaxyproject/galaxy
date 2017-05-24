@@ -13,6 +13,7 @@ from base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_tool,
+    wait_on,
     WorkflowPopulator
 )
 from galaxy.exceptions import error_codes
@@ -259,6 +260,10 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
     def _history_jobs( self, history_id ):
         return self._get("jobs", { "history_id": history_id, "order_by": "create_time" } ).json()
 
+    def _assert_history_job_count( self, history_id, n ):
+        jobs = self._history_jobs( history_id )
+        self.assertEqual( len( jobs ), n )
+
 
 # Workflow API TODO:
 # - Allow history_id as param to workflow run action. (hist_id)
@@ -500,7 +505,6 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
                 'tool_version',
                 'name',
                 'tool_state',
-                'tool_errors',
                 'annotation',
                 'inputs',
                 'workflow_outputs',
@@ -522,10 +526,9 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
                 'name',
                 'tool_state',
                 'tooltip',
-                'tool_errors',
                 'data_inputs',
                 'data_outputs',
-                'form_html',
+                'config_form',
                 'annotation',
                 'post_job_actions',
                 'workflow_outputs',
@@ -859,8 +862,6 @@ test_data:
     @skip_without_tool( "cat1" )
     @skip_without_tool( "collection_paired_test" )
     def test_workflow_run_zip_collections( self ):
-        # A more advanced output collection workflow, testing regression of
-        # https://github.com/galaxyproject/galaxy/issues/776
         history_id = self.dataset_populator.new_history()
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -898,6 +899,50 @@ steps:
         self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
         content = self.dataset_populator.get_history_dataset_content( history_id )
         self.assertEqual(content.strip(), "samp1\t10.0\nsamp2\t20.0\nsamp1\t20.0\nsamp2\t40.0")
+
+    def test_filter_failed_mapping( self ):
+        history_id = self.dataset_populator.new_history()
+        summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - type: collection
+    label: input_c
+steps:
+  - label: mixed_collection
+    tool_id: exit_code_from_file
+    state:
+       input:
+         $link: input_c
+
+  - label: filtered_collection
+    tool_id: "__FILTER_FAILED_DATASETS__"
+    state:
+      input:
+        $link: mixed_collection#out_file1
+
+  - tool_id: cat1
+    state:
+      input1:
+        $link: filtered_collection
+test_data:
+  input_c:
+    type: list
+    elements:
+      - identifier: i1
+        content: "0"
+      - identifier: i2
+        content: "1"
+""", history_id=history_id, wait=True, assert_ok=False)
+        jobs = summary.jobs
+
+        def filter_jobs_by_tool(tool_id):
+            return [j for j in summary.jobs if j["tool_id"] == tool_id]
+
+        assert len(filter_jobs_by_tool("upload1")) == 2, jobs
+        assert len(filter_jobs_by_tool("exit_code_from_file")) == 2, jobs
+        assert len(filter_jobs_by_tool("__FILTER_FAILED_DATASETS__")) == 1, jobs
+        # Follow proves one job was filtered out of the result of cat1
+        assert len(filter_jobs_by_tool("cat1")) == 1, jobs
 
     def test_workflow_request( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_queue" )
@@ -995,9 +1040,7 @@ steps:
         assert invocation[ 'state' ] != 'scheduled'
 
         self.__review_paused_steps( uploaded_workflow_id, invocation_id, order_index=4, action=True )
-
-        time.sleep( 5 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.wait_for_invocation_and_jobs( history_id, uploaded_workflow_id, invocation_id )
         invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
         assert invocation[ 'state' ] == 'scheduled'
         self.assertEqual("reviewed\n1\nreviewed\n4\n", self.dataset_populator.get_history_dataset_content( history_id ) )
@@ -1066,20 +1109,21 @@ steps:
 test_data:
   test_input: "hello world"
 """, history_id=history_id, wait=False)
-        time.sleep( 2 )
         history_id = run_summary.history_id
         workflow_id = run_summary.workflow_id
         invocation_id = run_summary.invocation_id
+        # Wait for first two jobs to be scheduled - upload and first cat.
+        wait_on( lambda: len( self._history_jobs( history_id ) ) >= 2 or None, "history jobs" )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         invocation = self._invocation_details( workflow_id, invocation_id )
-        assert invocation[ 'state' ] != 'scheduled'
+        assert invocation[ 'state' ] != 'scheduled', invocation
         # Expect two jobs - the upload and first cat. randomlines shouldn't run
         # it is implicitly dependent on second cat.
-        assert len(  self._history_jobs( history_id ) ) == 2
+        self._assert_history_job_count( history_id, 2 )
 
         self.__review_paused_steps( workflow_id, invocation_id, order_index=2, action=True )
         self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
-        assert len(  self._history_jobs( history_id ) ) == 4
+        self._assert_history_job_count( history_id, 4 )
 
     def test_run_with_validated_parameter_connection_valid( self ):
         history_id = self.dataset_populator.new_history()

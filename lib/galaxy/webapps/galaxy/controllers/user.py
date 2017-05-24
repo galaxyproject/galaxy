@@ -2,21 +2,17 @@
 Contains the user interface in the Universe class
 """
 
-import glob
 import logging
-import os
 import random
 import socket
 import urllib
 from datetime import datetime, timedelta
-from json import dumps, loads
 
 from markupsafe import escape
 from sqlalchemy import and_, or_, func, true
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy.exceptions import ObjectInvalid
 from galaxy.queue_worker import send_local_control_task
 from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
@@ -968,156 +964,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if trans.user:
             trans.log_action( trans.get_user(), action, context, params )
 
-    @web.expose
-    @web.require_login()
-    def dbkeys( self, trans, **kwds ):
-        """ Handle custom builds. """
-
-        #
-        # Process arguments and add/delete build.
-        #
-        user = trans.user
-        message = None
-        lines_skipped = 0
-        if self.installed_len_files is None:
-            installed_builds = []
-            for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
-                installed_builds.append( os.path.basename(build).split(".len")[0] )
-            self.installed_len_files = ", ".join(installed_builds)
-        if 'dbkeys' not in user.preferences:
-            dbkeys = {}
-        else:
-            dbkeys = loads(user.preferences['dbkeys'])
-        if 'delete' in kwds:
-            # Delete a build.
-            key = kwds.get('key', '')
-            if key and key in dbkeys:
-                del dbkeys[key]
-        elif 'add' in kwds:
-            # Add new custom build.
-            name = kwds.get('name', '')
-            key = kwds.get('key', '')
-
-            # Look for build's chrom info in len_file and len_text.
-            len_file = kwds.get( 'len_file', None )
-            if getattr( len_file, "file", None ):  # Check if it's a FieldStorage object
-                len_text = len_file.file.read()
-            else:
-                len_text = kwds.get( 'len_text', None )
-
-            if not len_text:
-                # Using FASTA from history.
-                dataset_id = kwds.get('dataset_id', '')
-
-            if not name or not key or not ( len_text or dataset_id ):
-                message = "You must specify values for all the fields."
-            elif key in dbkeys:
-                message = "There is already a custom build with that key. Delete it first if you want to replace it."
-            else:
-                # Have everything needed; create new build.
-                build_dict = { "name": name }
-                if len_text:
-                    # Create new len file
-                    new_len = trans.app.model.HistoryDatasetAssociation( extension="len", create_dataset=True, sa_session=trans.sa_session )
-                    trans.sa_session.add( new_len )
-                    new_len.name = name
-                    new_len.visible = False
-                    new_len.state = trans.app.model.Job.states.OK
-                    new_len.info = "custom build .len file"
-                    try:
-                        trans.app.object_store.create( new_len.dataset )
-                    except ObjectInvalid:
-                        raise Exception( 'Unable to create output dataset: object store is full' )
-
-                    trans.sa_session.flush()
-                    counter = 0
-                    f = open(new_len.file_name, "w")
-                    # LEN files have format:
-                    #   <chrom_name><tab><chrom_length>
-                    for line in len_text.split("\n"):
-                        lst = line.strip().rsplit(None, 1)  # Splits at the last whitespace in the line
-                        if not lst or len(lst) < 2:
-                            lines_skipped += 1
-                            continue
-                        chrom, length = lst[0], lst[1]
-                        try:
-                            length = int(length)
-                        except ValueError:
-                            lines_skipped += 1
-                            continue
-
-                        if chrom != escape(chrom):
-                            message = 'Invalid chromosome(s) with HTML detected and skipped'
-                            lines_skipped += 1
-                            continue
-
-                        counter += 1
-                        f.write("%s\t%s\n" % (chrom, length))
-                    f.close()
-
-                    build_dict.update( { "len": new_len.id, "count": counter } )
-                else:
-                    dataset_id = trans.security.decode_id( dataset_id )
-                    build_dict[ "fasta" ] = dataset_id
-                dbkeys[key] = build_dict
-        # Save builds.
-        # TODO: use database table to save builds.
-        user.preferences['dbkeys'] = dumps(dbkeys)
-        trans.sa_session.flush()
-
-        #
-        # Display custom builds page.
-        #
-
-        # Add chrom/contig count to dbkeys dict.
-        updated = False
-        for key, attributes in dbkeys.items():
-            if 'count' in attributes:
-                # Already have count, so do nothing.
-                continue
-
-            # Get len file.
-            fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( attributes[ 'fasta' ] )
-            len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
-            # HACK: need to request dataset again b/c get_converted_dataset()
-            # doesn't return dataset (as it probably should).
-            len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
-            if len_dataset.state == trans.app.model.Job.states.ERROR:
-                # Can't use len dataset.
-                continue
-
-            # Get chrom count file.
-            chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
-            if not chrom_count_dataset or chrom_count_dataset.state != trans.app.model.Job.states.OK:
-                # No valid linecount dataset.
-                continue
-            else:
-                # Set chrom count.
-                try:
-                    chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
-                    attributes[ 'count' ] = chrom_count
-                    updated = True
-                except Exception as e:
-                    log.error( "Failed to open chrom count dataset: %s", e )
-
-        if updated:
-            user.preferences['dbkeys'] = dumps(dbkeys)
-            trans.sa_session.flush()
-
-        # Potential genome data for custom builds is limited to fasta datasets in current history for now.
-        fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-                          .filter_by( history=trans.history, extension="fasta", deleted=False ) \
-                          .order_by( model.HistoryDatasetAssociation.hid.desc() )
-
-        return trans.fill_template( 'user/dbkeys.mako',
-                                    user=user,
-                                    dbkeys=dbkeys,
-                                    message=message,
-                                    installed_len_files=self.installed_len_files,
-                                    lines_skipped=lines_skipped,
-                                    fasta_hdas=fasta_hdas,
-                                    use_panels=kwds.get( 'use_panels', False ) )
-
     def __get_redirect_url( self, redirect ):
         root_url = url_for( '/', qualified=True )
         # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
@@ -1299,104 +1145,3 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                                           action='manage_user_info',
                                                           cntrller=cntrller,
                                                           **kwd ) )
-
-    @web.expose
-    @web.require_admin
-    def manage_user_info( self, trans, cntrller, **kwd ):
-        '''TEMPORARY ENDPOINT - added back to support admin-level user info
-        editing prior to adminjs.  This is code that was prematurely removed
-        from the user controller when the user-side editing functionality was
-        replaced.
-
-        When this is removed, templates/webapps/galaxy/user/manage_info.mako
-        should go as well.
-
-        Manage a user's login, password, public username, type,
-        addresses, etc.'''
-
-        def __get_user_type_form_definition( trans, user=None, **kwd ):
-            params = util.Params( kwd )
-            if user and user.values:
-                user_type_fd_id = trans.security.encode_id( user.values.form_definition.id )
-            else:
-                user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-            if user_type_fd_id not in [ 'none' ]:
-                user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
-            else:
-                user_type_form_definition = None
-            return user_type_form_definition
-
-        def __get_widgets( trans, user_type_form_definition, user=None, **kwd ):
-            widgets = []
-            if user_type_form_definition:
-                if user:
-                    if user.values:
-                        widgets = user_type_form_definition.get_widgets( user=user,
-                                                                         contents=user.values.content,
-                                                                         **kwd )
-                    else:
-                        widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
-                else:
-                    widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
-            return widgets
-
-        def __build_user_type_fd_id_select_field( trans, selected_value ):
-            from galaxy.web.form_builder import build_select_field
-            # Get all the user information forms
-            user_info_forms = self.get_all_forms( trans,
-                                                  filter=dict( deleted=False ),
-                                                  form_type=trans.model.FormDefinition.types.USER_INFO )
-            return build_select_field( trans,
-                                       objs=user_info_forms,
-                                       label_attr='name',
-                                       select_field_name='user_type_fd_id',
-                                       initial_value='none',
-                                       selected_value=selected_value,
-                                       refresh_on_change=True )
-
-        params = util.Params( kwd )
-        user_id = params.get( 'id', None )
-        if user_id:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
-        if not user:
-            raise AssertionError("The user id (%s) is not valid" % str( user_id ))
-        email = util.restore_text( params.get( 'email', user.email ) )
-        username = util.restore_text( params.get( 'username', '' ) )
-        if not username:
-            username = user.username
-        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
-        status = params.get( 'status', 'done' )
-        user_type_form_definition = __get_user_type_form_definition( trans, user=user, **kwd )
-        user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-        if user_type_fd_id == 'none' and user_type_form_definition is not None:
-            user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
-        user_type_fd_id_select_field = __build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
-        widgets = __get_widgets( trans, user_type_form_definition, user=user, **kwd )
-        # user's addresses
-        show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
-        if show_filter == 'All':
-            addresses = [address for address in user.addresses]
-        elif show_filter == 'Deleted':
-            addresses = [address for address in user.addresses if address.deleted]
-        else:
-            addresses = [address for address in user.addresses if not address.deleted]
-        user_info_forms = self.get_all_forms( trans,
-                                              filter=dict( deleted=False ),
-                                              form_type=trans.app.model.FormDefinition.types.USER_INFO )
-        return trans.fill_template( '/webapps/galaxy/user/manage_info.mako',
-                                    cntrller=cntrller,
-                                    user=user,
-                                    email=email,
-                                    is_admin=True,
-                                    username=username,
-                                    user_type_fd_id_select_field=user_type_fd_id_select_field,
-                                    user_info_forms=user_info_forms,
-                                    user_type_form_definition=user_type_form_definition,
-                                    user_type_fd_id=user_type_fd_id,
-                                    widgets=widgets,
-                                    addresses=addresses,
-                                    show_filter=show_filter,
-                                    message=message,
-                                    status=status )

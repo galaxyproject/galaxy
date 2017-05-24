@@ -1,6 +1,7 @@
 """Integration tests for maximum workflow invocation duration configuration option."""
 
 import os
+import re
 
 from json import dumps
 
@@ -12,6 +13,10 @@ from base.populators import (
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 WORKFLOW_HANDLER_CONFIGURATION_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "workflow_handler_configuration_job_conf.xml")
+WORKFLOW_HANDLER_CONFIGURATION_WORKFLOW_SCHEDULER_CONF = os.path.join(SCRIPT_DIRECTORY, "workflow_handler_configuration_workflow_scheduler_conf.xml")
+
+JOB_HANDLER_PATTERN = re.compile(r"handler\d")
+WORKFLOW_SCHEDULER_HANDLER_PATTERN = re.compile(r"work\d")
 
 PAUSE_WORKFLOW = """
 class: GalaxyWorkflow
@@ -65,6 +70,10 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         workflow_invocations = history.workflow_invocations
         return workflow_invocations
 
+    @property
+    def is_app_workflow_scheduler(self):
+        return self._app.workflow_scheduling_manager.request_monitor is not None
+
 
 class HistoryRestrictionConfigurationTestCase( BaseWorkflowHandlerConfigurationTestCase ):
 
@@ -76,6 +85,8 @@ class HistoryRestrictionConfigurationTestCase( BaseWorkflowHandlerConfigurationT
         # 1 in 10^10 chance for this to occur randomly.
         for workflow_invocation in workflow_invocations:
             assert workflow_invocation.handler == workflow_invocations[0].handler
+
+        assert JOB_HANDLER_PATTERN.match(workflow_invocations[0].handler)
 
 
 class HistoryParallelConfigurationTestCase( BaseWorkflowHandlerConfigurationTestCase ):
@@ -92,6 +103,84 @@ class HistoryParallelConfigurationTestCase( BaseWorkflowHandlerConfigurationTest
         handlers = set()
         for workflow_invocation in workflow_invocations:
             handlers.add(workflow_invocation.handler)
+            assert JOB_HANDLER_PATTERN.match(workflow_invocation.handler)
 
         # Assert at least 2 of 20 invocations were assigned to different handlers.
         assert len(handlers) >= 1, handlers
+
+
+# Setup an explicit workflow handler and make sure this is assigned to that.
+class WorkflowSchedulerHandlerAssignment( BaseWorkflowHandlerConfigurationTestCase ):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        config["workflow_schedulers_config_file"] = WORKFLOW_HANDLER_CONFIGURATION_WORKFLOW_SCHEDULER_CONF
+
+    def test_handler_assignment(self):
+        self._invoke_n_workflows(1)
+        workflow_invocations = self._get_workflow_invocations()
+        assert WORKFLOW_SCHEDULER_HANDLER_PATTERN.match(workflow_invocations[0].handler)
+
+
+# Follow five classes test 5 different ways Galaxy processes can be workflow schedulers or not.
+#  - In single process mode, the process is a workflow scheduler.
+#  - If no workflow schedulers conf is configured and the process is a job handler, it is a workflow scheduler as well.
+#  - If no workflow schedulers conf is configured and the process is not a job handler, it is not a workflow scheduler as well.
+#  - If a workflow scheduler conf is defined and the process is listed as a handler, it is workflow scheduler.
+#  - If a workflow scheduler conf is defined and the process is not listed as a handler, it is not workflow scheduler.
+class DefaultWorkflowHandlerOnTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        # Override so we don't setup a job conf like in the base class.
+        pass
+
+    def test_default_main_process_is_handler(self):
+        assert self.is_app_workflow_scheduler
+
+
+class DefaultWorkflowHandlerIfJobHandlerOnTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        config["server_name"] = "handler0"
+
+    def test_default_job_handler_is_workflow_handler(self):
+        assert self.is_app_workflow_scheduler
+
+
+class DefaultWorkflowHandlerIfJobHandlerOffTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        config["server_name"] = "web0"
+
+    def test_default_job_handler_is_workflow_handler(self):
+        assert not self.is_app_workflow_scheduler
+
+
+class ExplicitWorkflowHandlersOnTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        config["workflow_schedulers_config_file"] = WORKFLOW_HANDLER_CONFIGURATION_WORKFLOW_SCHEDULER_CONF
+        config["server_name"] = "work1"
+
+    def test_workflows_spread_across_multiple_handlers(self):
+        assert self.is_app_workflow_scheduler
+
+
+class ExplicitWorkflowHandlersOffTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        config["workflow_schedulers_config_file"] = WORKFLOW_HANDLER_CONFIGURATION_WORKFLOW_SCHEDULER_CONF
+        config["server_name"] = "handler0"  # Configured as a job handler but not a workflow handler.
+
+    def test_workflows_spread_across_multiple_handlers(self):
+        assert not self.is_app_workflow_scheduler
