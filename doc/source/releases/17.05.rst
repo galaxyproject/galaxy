@@ -16,7 +16,7 @@ Enhancements
 
 * Recalculate user disk usage on logout.
   `Pull Request 3600`_
-* Overlay search for tools, wf, libraries and histories
+* Overlay search for tools, workflows, libraries and histories
   (thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3460`_
 * Webhook plugin: tool_list
@@ -37,27 +37,27 @@ Enhancements
 * NGL Viewer for molecule representation
   (thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3601`_
-* Util to encode or decode values
+* Add script to encode or decode the IDs that Galaxy exposes to users and admins
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3622`_
-* Support Docker Engine swarm mode for Interactive Environments
+* Support Docker Engine swarm mode for Interactive Environments.
   `Pull Request 3666`_
-* Interactive Environment container waiting and swarm management
+* Interactive Environment container waiting and swarm management.
   `Pull Request 3740`_
 * Phylocanvas as a BioJS component for the Galaxy charts
   (thanks to `@anuprulez <https://github.com/anuprulez>`__ `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3850`_
-* Container interface abstraction
+* Container interface abstraction.
   `Pull Request 3863`_
 * Graphite support
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3964`_
-* Normalize the handling of steps and missing tools for the workflow editor
+* Normalize the handling of steps and missing tools for the workflow editor.
   `Pull Request 3181`_
 * Add possibility to load collection into data library
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3559`_
-* Prefer versioned Conda dependencies to unversioned Galaxy ones
+* Prefer versioned Conda dependencies to unversioned Galaxy ones.
   `Pull Request 3708`_
 * Speedup startup and toolbox operations
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -68,7 +68,7 @@ Enhancements
 * Add missing imports for documentation builds
   (thanks to `@athos-ribeiro <https://github.com/athos-ribeiro>`__).
   `Pull Request 3104`_
-* Workflow editor UI touch up
+* Workflow editor UI touch up.
   `Pull Request 3407`_
 * Add an example group filter for displaying tool panel sections
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
@@ -76,26 +76,26 @@ Enhancements
 * Python3: use @six.add_metaclass() decorator
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3491`_
-* Improvements to build sites configuration
+* Improvements to build sites configuration.
   `Pull Request 3503`_
-* Add compressed fastq peek and preview
+* Add peek and preview for compressed FASTQ datatype
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3512`_
 * Add ``refresh_on_change`` to tool XSD.
   `Pull Request 3515`_
 * Store module step states as nested dictionaries, fix export for backward
-  compatibility
+  compatibility.
   `Pull Request 3522`_
-* add jenkins documentation tasks to the release issue
+* Add Jenkins documentation tasks to the release issue.
   `Pull Request 3523`_
 * Allow decompressing tool test outputs.
   `Pull Request 3550`_
-* add a task to protect the release branch in github
+* Add a task to protect the release branch in GitHub.
   `Pull Request 3562`_
 * Remove duplicated/unused display_migration_details() functions
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3564`_
-* Display the genbank file type in upload
+* Display the genbank datatype in upload.
   `Pull Request 3569`_
 * Database migrations: improvements and fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -105,58 +105,57 @@ Enhancements
   `Pull Request 3580`_
 * Clean up docker-compose resources better for Selenium tests.
   `Pull Request 3583`_
-* add option to send API key in header
+* Add option to send API key in header
   (thanks to `@jvolkening <https://github.com/jvolkening>`__).
   `Pull Request 3584`_
 * Increase patience of Galaxy tests throughout.
   `Pull Request 3589`_
 * Introduce label and annotation attributes to subworkflows, fix annotation
-  display, unify module form update handler
+  display, unify module form update handler.
   `Pull Request 3593`_
 * Align architecture slides with training-material remarkjs template.
   `Pull Request 3594`_
-* Revision of tool xml reloading feature
+* Revision of tool XML reloading feature.
   `Pull Request 3596`_
-* Implement Collection Operation to Relabelling Identifiers
+* Implement collection operation to relabel list identifiers from contents of a
+  file.
   `Pull Request 3603`_
-* Slow query logging
+* Slow query logging.
   `Pull Request 3616`_
-* Remove un-needed check in histories manager code
+* Remove un-needed check in histories manager code.
   `Pull Request 3618`_
 * Improve interaction between job state and purged datasets.
   `Pull Request 3619`_
-* Usable slow query logging
+* Usable slow query logging.
   `Pull Request 3625`_
 * Allow composite datatypes of type auto_primary_file to automatically
-  generate dataset
+  generate dataset.
   `Pull Request 3643`_
-* Introduce labels for all modules, remove name handling field for data inputs
+* Introduce labels for all workflow modules, remove name handling field for data
+  inputs.
   `Pull Request 3644`_
 * When using the new slow query logger, include parameters.
   `Pull Request 3649`_
-* Allow nest param in the dynamic_tool rule -> argument
+* Allow nested parameters in the dynamic_tool rule -> argument
   (thanks to `@lecorguille <https://github.com/lecorguille>`__).
   `Pull Request 3657`_
 * By default, do not allow workflow invocations to schedule indefinitely.
   `Pull Request 3659`_
-* add the mzData datatype
+* Add the mzData datatype
   (thanks to `@lecorguille <https://github.com/lecorguille>`__).
   `Pull Request 3661`_
-* Display an error message when IE loading raises an exception
+* Display an error message when GIE loading raises an exception.
   `Pull Request 3662`_
-* Set LDAP options only once.
+* Set LDAP options only once
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3663`_
-* Bump Jupyter container version to 16.01.1
+* Bump Jupyter container version to 16.01.1 .
   `Pull Request 3665`_
-* improve wording of getgalaxy in bootstrapping script for RN
+* Improve wording of getgalaxy in bootstrapping script for release notes.
   `Pull Request 3671`_
-* Only keep the last path element when naming files uploaded via the URL paste
-  method
-  `Pull Request 3674`_
-* Filter hda tags for tool parameters
+* Filter hda tags for tool parameters.
   `Pull Request 3688`_
-* Add datatypes for soon coming PlantTribes Galaxy tools.
+* Add datatypes for soon coming PlantTribes Galaxy tools
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 3698`_
 * Touch up Galaxy testing documentation.
@@ -164,44 +163,45 @@ Enhancements
 * Add API and UI to remove requirements installed by Conda
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3725`_
-* Quota recalculation logic consolidation
+* Quota recalculation logic consolidation.
   `Pull Request 3734`_
 * Percolator out datatypes
   (thanks to `@glormph <https://github.com/glormph>`__).
   `Pull Request 3737`_
-* modify our docs in preparation for restructuring
+* Modify our docs in preparation for restructuring.
   `Pull Request 3738`_
-* update xsd codefile doc with info from moin
+* Update codefile documentation in tool XSD with info from old Wiki.
   `Pull Request 3739`_
 * Mirror latest galaxy-lib changes for Conda and CWL improvements.
   `Pull Request 3742`_
-* Add the possibility to uninstall conda environments that are not in u…
+* Add the possibility to uninstall Conda environments that are not in use by
+  Galaxy
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3750`_
 * New Authentication section of the docs.
   `Pull Request 3751`_
-* Bump routes to 2.4.1
+* Bump routes requirement to 2.4.1 .
   `Pull Request 3752`_
-* Abstract uWSGI handling into new galaxy.web.stack package
+* Abstract uWSGI handling into new galaxy.web.stack package.
   `Pull Request 3759`_
-* i18n improvements and French localization
+* i18n improvements and French localization.
   `Pull Request 3762`_
 * Should exit immediately to avoid index error
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3770`_
-* made collection ops help sections slightly more readable
+* Made collection operations help sections slightly more readable.
   `Pull Request 3784`_
-* Avoid potential inconsistencies between differently stored labels
+* Avoid potential inconsistencies between differently stored labels.
   `Pull Request 3793`_
-* Remove custom builds mako
+* Remove custom builds mako.
   `Pull Request 3794`_
-* Small enhancements for collection builders
+* Small enhancements for collection builders.
   `Pull Request 3806`_
 * Small improvements for driving Qunit tests.
   `Pull Request 3810`_
 * Implement more upload testing in Selenium.
   `Pull Request 3811`_
-* api & reports documentation improvements
+* API & reports documentation improvements.
   `Pull Request 3812`_
 * Make ToolConfWatcher watch ToolCache
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -212,10 +212,10 @@ Enhancements
   `Pull Request 3820`_
 * Order processing evaluation of workflow invocations when scheduling.
   `Pull Request 3830`_
-* Stricter checks for GFF/GFF3/GTF sniffing
+* Stricter checks for GFF/GFF3/GTF datatypes sniffing
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3832`_
-* Add root redirect for backbone router
+* Add root redirect for backbone router.
   `Pull Request 3837`_
 * Allow explicit configuration of handlers for workflow scheduling.
   `Pull Request 3844`_
@@ -226,19 +226,19 @@ Enhancements
   `Pull Request 3852`_
 * Clean up old TODO into history tests.
   `Pull Request 3855`_
-* Small changes to links and add gitter
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+* Small changes to links and add Gitter
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3861`_
 * Use detect_errors="exit_code" in Trim tool
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3869`_
-* synchronise against latest UCSC versions
+* Synchronise against latest UCSC versions
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3874`_
 * Hardklor and kronik datatypes for proteomics
   (thanks to `@glormph <https://github.com/glormph>`__).
   `Pull Request 3884`_
-* History drag-and-drop feature with iframe support for run workflow form
+* History drag-and-drop feature with iframe support for run workflow form.
   `Pull Request 3886`_
 * Update to a new Docker test image to fix dependency bugs.
   `Pull Request 3890`_
@@ -251,11 +251,11 @@ Enhancements
 * Update text.py  Add interaction annotations to SnpEffDb metadata
   (thanks to `@jj-umn <https://github.com/jj-umn>`__).
   `Pull Request 3938`_
-* Collection Operation - Filtering from a File
+* Collection operation: Filtering from a file.
   `Pull Request 3940`_
 * Remove Google from OpenID providers in the sample.
   `Pull Request 3953`_
-* change 'user' menu to login or register for anons
+* Change 'User' menu to 'Login or Register' for anonymous users.
   `Pull Request 3955`_
 * Stats docs
   (thanks to `@erasche <https://github.com/erasche>`__).
@@ -263,27 +263,27 @@ Enhancements
 * Enhance filenames with collection context when downloading datasets from
   GUI.
   `Pull Request 3985`_
-* Displaying a message instead of just redirecting
+* Displaying a message instead of just redirecting.
   `Pull Request 4000`_
-* Implicitly set use_volumes = False if using Docker swarm
+* Implicitly set use_volumes = False if using Docker swarm.
   `Pull Request 4006`_
-* Update Jupyter image to 17.05
+* Update Jupyter image to 17.05 .
   `Pull Request 4007`_
 * Inline CSS in error report email
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3445`_
-* Improve routing for user preference views
+* Improve routing for user preference views.
   `Pull Request 3446`_
-* Tool Documentation and Testing Improvements
+* Tool documentation and testing improvements.
   `Pull Request 3457`_
-* update readme badges
+* Update readme badges.
   `Pull Request 3465`_
 * Lint some tools
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3468`_
-* improve release issue docs
+* Improve release issue docs.
   `Pull Request 3496`_
-* Watch tool data table *.loc files, and reload if modified.
+* Watch tool data table ``*.loc`` files, and reload if modified
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3533`_
 
@@ -297,7 +297,7 @@ Enhancements
   `Pull Request 3469`_
 * Disable transiently failing tour test.
   `Pull Request 3599`_
-* Selenium Testing Improvements
+* Selenium testing improvements.
   `Pull Request 3716`_
 * Merge ConfiguresGalaxyMixin.reload_toolbox() in _configure_toolbox()
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -310,11 +310,11 @@ Enhancements
 * Attempt to improve the robustness and verboseness of the test_sharing_valid
   Selenium test.
   `Pull Request 3841`_
-* Routes cleanup
+* Routes cleanup.
   `Pull Request 3895`_
-* Standardize usage of log.exception
+* Standardize usage of log.exception .
   `Pull Request 3933`_
-* Followup to exception refactoring
+* Followup to exception refactoring.
   `Pull Request 3959`_
 * Use container-based infrastructure (sudo: false) in TravisCI
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -331,28 +331,28 @@ Fixes
 
 .. bug
 
-* Fix tag escaping
+* Fix tag escaping.
   `Pull Request 3720`_
-* Fix kombu documentation link in galaxy.ini.sample
+* Fix kombu documentation link in galaxy.ini.sample .
   `Pull Request 3629`_
 * Fix for EtherCalc IE image specification.
   `Pull Request 3825`_
-* Fix margin style values for color picker element
+* Fix margin style values for color picker element.
   `Pull Request 3965`_
-* 17.05 rstudio fixes / one small gie fix
+* 17.05 rstudio fixes / one small GIE fix
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3975`_
 * Fix transiently failing Selenium upload test.
   `Pull Request 3587`_
-* Fix webhook search overlay interfering with masthead load
+* Fix webhook search overlay interfering with masthead load.
   `Pull Request 3731`_
 * Fix collection operations in workflows.
   `Pull Request 3848`_
 * Remove old, unused search controller.
   `Pull Request 3894`_
-* deduplicate obsolete API readme
+* Deduplicate obsolete API readme.
   `Pull Request 3777`_
-* Assorted Fixes for Dockerized Test Setup
+* Assorted fixes for dockerized test setup.
   `Pull Request 3755`_
 * Another fix for Selenium testing on Jenkins.
   `Pull Request 3422`_
@@ -370,7 +370,7 @@ Fixes
 * Fix Travix builds which use flake8-docstrings
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3981`_
-* Azure - Leasing container sometimes breaks things in docker galaxy
+* Azure - Leasing container sometimes breaks things in Docker Galaxy
   (thanks to `@zfrenchee <https://github.com/zfrenchee>`__).
   `Pull Request 3263`_
 * run_tests.sh: a small typo
@@ -383,16 +383,16 @@ Fixes
 * Bug fix in mulled.py
   (thanks to `@abdulrahmanazab <https://github.com/abdulrahmanazab>`__).
   `Pull Request 3434`_
-* Do not select first value as default if select value is optional
+* Do not select first value as default if select value is optional.
   `Pull Request 3472`_
-* jsonify initial value when returned through to_dict caller
+* jsonify initial value when returned through to_dict caller.
   `Pull Request 3513`_
-* fix <is_valid_xml> output test assert check
+* Fix <is_valid_xml> output test assert check
   (thanks to `@jvolkening <https://github.com/jvolkening>`__).
   `Pull Request 3530`_
 * Fix output tests for checksum example tools.
   `Pull Request 3545`_
-* Update Nagios check
+* Update Nagios check.
   `Pull Request 3568`_
 * Set 'deleted' to True when purging a history dataset association
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -401,9 +401,9 @@ Fixes
   `Pull Request 3579`_
 * Remove broken tour step.
   `Pull Request 3582`_
-* Avoid step duplication when ordering steps on the fly
+* Avoid step duplication when ordering steps on the fly.
   `Pull Request 3590`_
-* Minor fix of core.galaxy-ui tour
+* Minor fix of core.galaxy-ui tour.
   `Pull Request 3608`_
 * Fix RELEASE_ISSUE_TEMPLATE in bootstrap_history.py
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -411,28 +411,29 @@ Fixes
 * Update dynamic_tool_destination.py
   (thanks to `@lecorguille <https://github.com/lecorguille>`__).
   `Pull Request 3655`_
-* Ignore Node modules installed for the IE proxy when linting
+* Ignore Node modules installed for the GIE proxy when linting.
   `Pull Request 3664`_
-* Logout recalc improvements
+* Logout recalc improvements.
   `Pull Request 3669`_
-* Strip broken autocomplete feature, webbrowsers console error is an artifact
+* Strip broken autocomplete feature, webbrowsers console error is an artifact.
   `Pull Request 3676`_
 * Generate primary composite file after extra files collection.
   `Pull Request 3678`_
-* fix tool search index building for tools with slash in id and not from TS
+* Fix tool search index building for tools with slash in id and not from
+  ToolShed.
   `Pull Request 3680`_
 * Set $HOME to a temp directory rather than conda_prefix because conda_prefix
   may not be writable either.
   `Pull Request 3701`_
 * Properly handle boolean values when parsed to a string-based/default tool
-  parameter
+  parameter.
   `Pull Request 3702`_
 * Mothur datatypes: fix metadata failure for large count tables
   (thanks to `@shiltemann <https://github.com/shiltemann>`__).
   `Pull Request 3706`_
-* Filename handling for FTP upload
+* Filename handling for FTP upload.
   `Pull Request 3722`_
-* Do not require stored workflow id for subworkflows
+* Do not require stored workflow id for subworkflows.
   `Pull Request 3723`_
 * Remove outdated items from tool cache when reloading the toolbox
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -447,9 +448,9 @@ Fixes
   `Pull Request 3757`_
 * Fix for uploading rdata datasets when explicitly declaring datatype.
   `Pull Request 3766`_
-* Fixes for users API
+* Fixes for users API.
   `Pull Request 3771`_
-* fix xss vuln in grids
+* Fix XSS vulnerability in grids.
   `Pull Request 3776`_
 * Layered routing fix for when controller route fails and client route does
   not exist.
@@ -458,18 +459,19 @@ Fixes
   `Pull Request 3786`_
 * Fix problem with cleaning up jobs in local runner.
   `Pull Request 3803`_
-* Have tool-search listen to change as well as keyup
+* Have tool-search listen to change as well as keyup.
   `Pull Request 3808`_
-* fix bedfile display in trackster
+* Fix BED dataset display in Trackster
   (thanks to `@hrhotz <https://github.com/hrhotz>`__).
   `Pull Request 3822`_
 * More CONVERTER fixes for restricting tools' Python environment.
   `Pull Request 3824`_
-* Have IGV bigWig display application make use of build_sites/ site_typ…
+* Have IGV bigWig display application make use of build_sites/ site_type config
+  instead of direct filename.
   `Pull Request 3828`_
-* Properly handle multiple hidden datasets when populating data select options
+* Properly handle multiple hidden datasets when populating data select options.
   `Pull Request 3842`_
-* Fix for direct message routing using a 'real' exchange like rabbitmq
+* Fix for direct message routing using a 'real' exchange like RabbitMQ.
   `Pull Request 3846`_
 * Fix setting UUID on steps when copying steps from another workflow.
   `Pull Request 3856`_
@@ -480,25 +482,25 @@ Fixes
 * Fix inability for viz to raise loading with non-ascii messages
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3881`_
-* Fix new history endpoint providing custom builds metadata
+* Fix new history endpoint providing custom builds metadata.
   `Pull Request 3887`_
-* Remove unused model import from users api
+* Remove unused model import from users API.
   `Pull Request 3888`_
 * Cytoscape bugfix for SIF files
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3896`_
-* Add missing trigger event to drop handler in content selector
+* Add missing trigger event to drop handler in content selector.
   `Pull Request 3897`_
 * Fix Instance is not bound to a Session
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3904`_
-* Fix library parameter style width to avoid second line
+* Fix library parameter style width to avoid second line.
   `Pull Request 3926`_
 * More careful inspection of fixes for MAF tools requiring Galaxy.
   `Pull Request 3935`_
-* Containers interface and GIE bugfixes
+* Containers interface and GIE bugfixes.
   `Pull Request 3941`_
-* Show default value for runtime values
+* Show default value for runtime values.
   `Pull Request 3943`_
 * Fix JJ's column_join tool depending on Galaxy at runtime.
   `Pull Request 3961`_
@@ -510,7 +512,7 @@ Fixes
 * Fix some typos in config/galaxy.ini.sample
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3971`_
-* add two tools from str_fm repository to galaxy module whitelist
+* Add two tools from str_fm repository to galaxy module whitelist.
   `Pull Request 3973`_
 * Remote user logout fixes, rework header handling a bit.
   `Pull Request 3976`_
@@ -520,37 +522,47 @@ Fixes
   `Pull Request 3980`_
 * Update Babel to a version compat. with sphinx.
   `Pull Request 3986`_
-* Use the configured tool_path when loading data managers
+* Use the configured tool_path when loading data managers.
   `Pull Request 3989`_
-* Undo dataset renaming for URL uploads
-  `Pull Request 3996`_
 * Typo in remote user / user preferences exception
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4015`_
-* Fix setting up explicit container resolution...
+* Fix setting up explicit container resolution from a container resolution
+  config file.
   `Pull Request 4020`_
-* Fix spelling error in error message.
+* Fix spelling error in error message
   (thanks to `@pvanheus <https://github.com/pvanheus>`__).
   `Pull Request 4026`_
 * Fixes for containerized job executions.
   `Pull Request 4033`_
-* Try activating conda environment again if previous activation failed
+* Try activating Conda environment again if previous activation failed
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4035`_
-* ht-condor fixe for running containers
+* HTCondor fix for running containers
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4038`_
 * Fix destructive tag rerender to be a simpler, more precise html replacement.
   `Pull Request 4052`_
-* Fix for s3objectstore _clean_cache method
+* Fix for S3ObjectStore _clean_cache method.
   `Pull Request 4055`_
 * Correct webhooks to use Galaxy.root and be compatible with proxy_prefix
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4065`_
-* Fix global grid action event handler
+* Fix global grid action event handler.
   `Pull Request 4068`_
 * Fix various transiently failing Selenium tests.
   `Pull Request 3450`_
+* Do not modify self.app.config.tool_data_path and
+  self.app.config.tool_data_table_config_path during metadata setting
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 4089`_
+* Open Babel update for datatype converters
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 4094`_
+* Change to only inheriting 'name' tags.
+  `Pull Request 4104`_
+* Fixes repeat handling in workflow editor, store values as passed from UI.
+  `Pull Request 4107`_
 
 .. github_links
 .. _Pull Request 3104: https://github.com/galaxyproject/galaxy/pull/3104
@@ -806,4 +818,8 @@ Fixes
 .. _Pull Request 4058: https://github.com/galaxyproject/galaxy/pull/4058
 .. _Pull Request 4065: https://github.com/galaxyproject/galaxy/pull/4065
 .. _Pull Request 4068: https://github.com/galaxyproject/galaxy/pull/4068
+.. _Pull Request 4089: https://github.com/galaxyproject/galaxy/pull/4089
+.. _Pull Request 4094: https://github.com/galaxyproject/galaxy/pull/4094
+.. _Pull Request 4104: https://github.com/galaxyproject/galaxy/pull/4104
+.. _Pull Request 4107: https://github.com/galaxyproject/galaxy/pull/4107
 
