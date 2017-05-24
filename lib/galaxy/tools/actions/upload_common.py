@@ -392,7 +392,7 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
         if not dataset.dataset.external_filename:
             dataset.dataset.object_store_id = object_store_id
             try:
-                trans.app.object_store.create( dataset.dataset )
+                trans.app.object_store.create(dataset.dataset, trans.user)
             except ObjectInvalid:
                 raise Exception('Unable to create output dataset: object store is full')
             object_store_id = dataset.dataset.object_store_id

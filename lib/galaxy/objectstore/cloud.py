@@ -449,6 +449,7 @@ class CloudObjectStore(ObjectStore):
         return False
 
     def file_ready(self, obj, **kwargs):
+        print '\n\n\n\n file ready'
         """
         A helper method that checks if a file corresponding to a dataset is
         ready and available to be used. Return ``True`` if so, ``False`` otherwise.
@@ -463,6 +464,7 @@ class CloudObjectStore(ObjectStore):
         return False
 
     def exists(self, obj, **kwargs):
+        print '\n\n\n\n exists'
         in_cache = False
         print '\n\n\n'
         for line in traceback.format_stack():
@@ -504,8 +506,23 @@ class CloudObjectStore(ObjectStore):
         else:
             return False
 
-    def create(self, obj, **kwargs):
-        if not self.exists(obj, **kwargs):
+    def create(self, obj, user, **kwargs):
+        # TODO: An anonymous user call should not even reach here; it should be blocked
+        # at upload_common level based on the selected objectstore type. i.e., it should
+        # be blocked if objectstore type is set to "cloud".
+        if not user:
+            log.warning("Can not upload data to a cloud storage for an anonymous user.")
+            return
+
+        print '\n\n\n\n create'
+        for line in traceback.format_stack():
+            print(line.strip())
+        print 'obj: ', obj
+        print 'kwargs: ', kwargs
+        print 'user: ', user
+        print '\n\n\n\n\n'
+
+        if not self.exists(obj, user, **kwargs):
             # Pull out locally used fields
             extra_dir = kwargs.get('extra_dir', None)
             extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
@@ -539,6 +556,7 @@ class CloudObjectStore(ObjectStore):
                 self._push_to_os(rel_path, from_string='')
 
     def empty(self, obj, **kwargs):
+        print '\n\n\n\n empty'
         if self.exists(obj, **kwargs):
             return bool(self.size(obj, **kwargs) > 0)
         else:
@@ -546,6 +564,12 @@ class CloudObjectStore(ObjectStore):
                                  % (str(obj), str(kwargs)))
 
     def size(self, obj, **kwargs):
+        print '\n\n\n\n size'
+        for line in traceback.format_stack():
+            print(line.strip())
+        print 'obj: ', obj
+        print '\n\n\n\n\n'
+
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):
             try:
@@ -558,6 +582,7 @@ class CloudObjectStore(ObjectStore):
         return 0
 
     def delete(self, obj, entire_dir=False, **kwargs):
+        print '\n\n\n\n delete'
         rel_path = self._construct_path(obj, **kwargs)
         extra_dir = kwargs.get('extra_dir', None)
         base_dir = kwargs.get('base_dir', None)
@@ -597,6 +622,7 @@ class CloudObjectStore(ObjectStore):
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
+        print '\n\n\n\n get data'
         rel_path = self._construct_path(obj, **kwargs)
         # Check cache first and get file if not there
         if not self._in_cache(rel_path):
@@ -609,6 +635,7 @@ class CloudObjectStore(ObjectStore):
         return content
 
     def get_filename(self, obj, **kwargs):
+        print '\n\n\n\n get filename'
         base_dir = kwargs.get('base_dir', None)
         dir_only = kwargs.get('dir_only', False)
         obj_dir = kwargs.get('obj_dir', False)
@@ -646,6 +673,7 @@ class CloudObjectStore(ObjectStore):
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
+        print '\n\n\n\n update from file'
         if create:
             self.create(obj, **kwargs)
         if self.exists(obj, **kwargs):
@@ -671,6 +699,7 @@ class CloudObjectStore(ObjectStore):
                                  % (str(obj), str(kwargs)))
 
     def get_object_url(self, obj, **kwargs):
+        print '\n\n\n\n get object url'
         if self.exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
@@ -682,6 +711,7 @@ class CloudObjectStore(ObjectStore):
         return None
 
     def get_store_usage_percent(self):
+        print '\n\n\n\n get store usage percentage'
         return 0.0
 
 
