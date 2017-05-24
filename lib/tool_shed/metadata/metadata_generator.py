@@ -474,7 +474,6 @@ class MetadataGenerator( object ):
         if invalid_tool_configs:
             metadata_dict[ 'invalid_tools' ] = invalid_tool_configs
         self.metadata_dict = metadata_dict
-        # Reset the value of the app's tool_data_path  and tool_data_table_config_path to their respective original values.
         basic_util.remove_dir( work_dir )
 
     def generate_package_dependency_metadata( self, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict ):
