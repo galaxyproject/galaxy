@@ -307,7 +307,9 @@ class CloudObjectStore(ObjectStore):
                 else:
                     exists = False
             else:
-                exists = self.bucket.exists(rel_path)
+                # TODO: this is temp change:
+                exists = False
+                # exists = self.bucket.exists(rel_path)
         except S3ResponseError:
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False

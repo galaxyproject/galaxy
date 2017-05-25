@@ -1707,6 +1707,16 @@ class Dataset( StorableObject ):
         else:
             self.uuid = UUID(str(uuid))
 
+    def _get_user(self):
+        users = []
+        db_session = object_session(self)
+        # print 'self.history_associations: ', self.history_associations
+        for hda in db_session.query(HistoryDatasetAssociation).filter_by(dataset_id=self.id):
+            for history in db_session.query(History).filter_by(id=hda.history_id):
+                if history.user_id:
+                    users.extend(db_session.query(User).filter_by(id=history.user_id))
+        return users
+
     def in_ready_state( self ):
         return self.state in self.ready_states
 
@@ -1714,7 +1724,15 @@ class Dataset( StorableObject ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
             assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
-            filename = self.object_store.get_filename( self )
+            users = self._get_user()
+            if len(users) == 0:
+                print ';-('
+                # now what?! no user, then the dataset is not persisted anywhere!
+                # but the dataset exist that's why we have this call?!
+            else:
+                filename = self.object_store.get_filename(self, users[0])
+                # not even this is great!
+                # e.g., Can a dataset have multiple filenames?
             return filename
         else:
             filename = self.external_filename

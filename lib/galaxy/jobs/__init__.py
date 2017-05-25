@@ -973,9 +973,11 @@ class JobWrapper( object, HasResourceParameters ):
         job = self.get_job()
         try:
             self.app.object_store.create(
-                job, base_dir='job_work', dir_only=True, obj_dir=True )
+                job, job.user, base_dir='job_work', dir_only=True, obj_dir=True)
             self.working_directory = self.app.object_store.get_filename(
-                job, base_dir='job_work', dir_only=True, obj_dir=True )
+                job, base_dir='job_work', dir_only=True, obj_dir=True)
+            # TODO: the call should be like the following.
+            # job, job.user, base_dir='job_work', dir_only=True, obj_dir=True )
 
             # The tool execution is given a working directory beneath the
             # "job" working directory.

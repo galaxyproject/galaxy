@@ -114,7 +114,8 @@ class ObjectStore(object):
         """
         return True
 
-    def create(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
+    def create(self, obj, user, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None,
+               obj_dir=False):
         """
         Mark the object (`obj`) as existing in the store, but with no content.
 
@@ -165,7 +166,8 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
-    def get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
+    def get_filename(self, obj, user, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False,
+                     alt_name=None, obj_dir=False):
         """
         Get the expected filename with absolute path for object with id `obj.id`.
 
@@ -700,7 +702,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     Will use the `object_store_config_file` attribute of the `config` object to
     configure a new object store from the specified XML file.
 
-    Or you can specify the obect store type in the `object_store` attribute of
+    Or you can specify the object store type in the `object_store` attribute of
     the `config` object. Currently 'disk', 's3', 'swift', 'distributed',
     'hierarchical', 'irods', and 'pulsar' are supported values.
 
