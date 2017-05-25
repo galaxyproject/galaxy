@@ -236,7 +236,7 @@ class DefaultToolAction( object ):
                 incoming[ "%s|__identifier__" % name ] = identifier
 
             for tag in data.tags:
-                if tag.user_tname == 'name':
+                if tag.user_tname == 'name' and tag.value not in [t.value for t in preserved_tags]:
                     preserved_tags.append(tag)
 
         # Collect chromInfo dataset and add as parameters to incoming
