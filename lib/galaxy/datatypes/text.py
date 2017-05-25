@@ -666,7 +666,7 @@ class PlantTribesOrtho(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesOrtho, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "Proteins orthogroup fasta files: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Proteins orthogroup fasta files: %d items" % dataset.metadata.num_files
 
 
 class PlantTribesOrthoCodingSequence(PlantTribes):
@@ -678,7 +678,7 @@ class PlantTribesOrthoCodingSequence(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesOrthoCodingSequence, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "Protein and coding sequences orthogroup fasta files: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Protein and coding sequences orthogroup fasta files: %d items" % dataset.metadata.num_files
 
 
 class PlantTribesTargetedGeneFamilies(PlantTribes):
@@ -701,7 +701,7 @@ class PlantTribesPhylogeneticTree(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesPhylogeneticTree, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "Phylogenetic trees: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Phylogenetic trees: %d items" % dataset.metadata.num_files
 
 
 class PlantTribesPhylip(PlantTribes):
@@ -712,7 +712,7 @@ class PlantTribesPhylip(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesPhylip, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "Orthogroup phylip multiple sequence alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Orthogroup phylip multiple sequence alignments: %d items" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignment(PlantTribes):
@@ -723,7 +723,7 @@ class PlantTribesMultipleSequenceAlignment(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "Proteins orthogroup alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Proteins orthogroup alignments: %d items" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignmentCodonAlignment(PlantTribes):
@@ -734,7 +734,7 @@ class PlantTribesMultipleSequenceAlignmentCodonAlignment(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignmentCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "Protein and coding sequences orthogroup alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Protein and coding sequences orthogroup alignments: %d items" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignmentTrimmed(PlantTribes):
@@ -745,7 +745,7 @@ class PlantTribesMultipleSequenceAlignmentTrimmed(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignmentTrimmed, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "Trimmed proteins orthogroup alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Trimmed proteins orthogroup alignments: %d items" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment(PlantTribes):
@@ -756,7 +756,7 @@ class PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "Trimmed protein and coding sequences orthogroup alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Trimmed protein and coding sequences orthogroup alignments: %d items" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignmentFiltered(PlantTribes):
@@ -767,7 +767,7 @@ class PlantTribesMultipleSequenceAlignmentFiltered(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignmentFiltered, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "Filtered proteins orthogroup alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Filtered proteins orthogroup alignments: %d items" % dataset.metadata.num_files
 
 
 class PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment(PlantTribes):
@@ -778,4 +778,4 @@ class PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment(PlantTribes):
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
-        dataset.blurb = "Filtered protein and coding sequences orthogroup alignments: %d files" % dataset.metadata.num_files
+        dataset.blurb = "Filtered protein and coding sequences orthogroup alignments: %d items" % dataset.metadata.num_files
