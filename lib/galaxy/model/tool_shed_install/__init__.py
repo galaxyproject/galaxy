@@ -589,51 +589,33 @@ class ToolVersion( object, Dictifiable ):
         self.tool_id = tool_id
         self.tool_shed_repository = tool_shed_repository
 
+    @property
+    def version_ids(self):
+        return self.get_version_ids()
+
     def get_previous_version( self, app ):
-        parent_id = app.tool_version_cache.tool_id_to_parent_id.get(self.id, None)
-        if parent_id:
-            return app.tool_version_cache.tool_version_by_id[parent_id]
-        else:
-            return None
+        version_ids = self.version_ids
+        index = version_ids.index(self.tool_id)
+        if index > 0:
+            tool = self.app.toolbox._tools_by_id.get(version_ids[index - 1])
+            if tool:
+                return tool.tool_version
+        return None
 
     def get_next_version( self, app ):
-        child_id = app.tool_version_cache.parent_id_to_tool_id.get(self.id, None)
-        if child_id:
-            return app.tool_version_cache.tool_version_by_id[child_id]
-        else:
-            return None
-
-    def get_versions( self, app ):
-        tool_versions = []
-
-        # Prepend ancestors.
-        def __ancestors( app, tool_version ):
-            # Should we handle multiple parents at each level?
-            previous_version = tool_version.get_previous_version( app )
-            if previous_version:
-                if previous_version not in tool_versions:
-                    tool_versions.insert( 0, previous_version )
-                    __ancestors( app, previous_version )
-
-        # Append descendants.
-        def __descendants( app, tool_version ):
-            # Should we handle multiple child siblings at each level?
-            next_version = tool_version.get_next_version( app )
-            if next_version:
-                if next_version not in tool_versions:
-                    tool_versions.append( next_version )
-                    __descendants( app, next_version )
-
-        __ancestors( app, self )
-        if self not in tool_versions:
-            tool_versions.append( self )
-        __descendants( app, self )
-        return tool_versions
+        version_ids = self.version_ids
+        index = version_ids.index(self.tool_id)
+        if len(version_ids) > index + 1:
+            tool = self.app.toolbox._tools_by_id.get(version_ids[index + 1])
+            if tool:
+                return tool.tool_version
+        return None
 
     def get_version_ids( self, app, reverse=False ):
-        version_ids = [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
+        lineage = app.toolbox._lineage_map.get(self.tool_id)
+        version_ids = lineage.get_versions()
         if reverse:
-            version_ids.reverse()
+            version_ids = reversed(version_ids)
         return version_ids
 
     def to_dict( self, view='element' ):

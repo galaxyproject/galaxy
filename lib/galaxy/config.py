@@ -925,11 +925,9 @@ class ConfiguresGalaxyMixin:
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
         from galaxy.tools.deps import containers
-        from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
         import galaxy.tools.search
 
         self.citations_manager = CitationsManager( self )
-        self.tool_version_cache = ToolVersionCache(self)
 
         self._toolbox_lock = threading.RLock()
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.

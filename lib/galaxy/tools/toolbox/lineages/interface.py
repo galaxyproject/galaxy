@@ -12,7 +12,7 @@ class ToolLineage(object):
     """
 
     @abstractmethod
-    def get_versions( self, reverse=False ):
+    def get_versions( self ):
         """ Return an ordered list of lineages (ToolLineageVersion) in this
         chain, from oldest to newest.
         """

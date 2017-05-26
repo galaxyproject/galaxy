@@ -427,8 +427,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
             rval = []
             tool_lineage = self._lineage_map.get( tool_id )
-            if not tool_lineage:
-                tool_lineage = self._lineage_map.get_versionless( tool_id )
             if tool_lineage:
                 lineage_tool_versions = tool_lineage.get_versions( )
                 for lineage_tool_version in lineage_tool_versions:
@@ -568,7 +566,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     tool.guid = guid
                     tool.version = item.elem.find( "version" ).text
                 # Make sure tools have a tool_version object.
-                tool_lineage = self._lineage_map.register( tool, from_toolshed=guid )
+                tool_lineage = self._lineage_map.register( tool )
                 tool.lineage = tool_lineage
                 if item.has_elem:
                     self._tool_tag_manager.handle_tags( tool.id, item.elem )
@@ -952,7 +950,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             if not hasattr( tool, "lineage" ):
                 return None
             tool_lineage = tool.lineage
-        lineage_tool_versions = tool_lineage.get_versions( reverse=True )
+        lineage_tool_versions = reversed(tool_lineage.get_versions())
         for lineage_tool_version in lineage_tool_versions:
             lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
             if lineage_tool:
@@ -967,14 +965,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         """
         if not hasattr( tool1, "lineage" ):
             return True
-        lineage_tool_versions = tool1.lineage.get_versions()
-        for lineage_tool_version in lineage_tool_versions:
-            lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
-            if lineage_tool is tool1:
-                return False
-            if lineage_tool is tool2:
-                return True
-        return True
+        return tool1.version_object > tool2.version_object
 
     def _tool_from_lineage_version( self, lineage_tool_version ):
         if lineage_tool_version.id_based:

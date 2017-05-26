@@ -442,7 +442,7 @@ class Tool( object, Dictifiable ):
     @property
     def tool_version( self ):
         """Return a ToolVersion if one exists for our id"""
-        return self.app.tool_version_cache.tool_version_by_tool_id.get(self.id)
+        return self.app.toolbox._lineage_map.get(self.id)
 
     @property
     def tool_versions( self ):
@@ -1832,11 +1832,7 @@ class Tool( object, Dictifiable ):
             tool_help = unicodify( tool_help, 'utf-8' )
 
         # create tool versions
-        tool_versions = []
-        tools = self.app.toolbox.get_loaded_tools_by_lineage( self.id )
-        for t in tools:
-            if t.version not in tool_versions:
-                tool_versions.append( t.version )
+        tool_versions = list(self.tool_version.tool_versions)
 
         # update tool model
         tool_model.update({

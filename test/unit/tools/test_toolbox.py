@@ -12,7 +12,6 @@ from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
-from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
 from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 
@@ -79,7 +78,6 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
         repository.uninstalled = False
         self.app.install_model.context.add( repository )
         self.app.install_model.context.flush( )
-        self.app.tool_version_cache = ToolVersionCache(self.app)
         return repository
 
     def _setup_two_versions( self ):
@@ -104,7 +102,6 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
 
         self.app.install_model.context.add( version_association )
         self.app.install_model.context.flush( )
-        self.app.tool_version_cache = ToolVersionCache(self.app)
 
     def _setup_two_versions_in_config( self, section=False ):
         if section:
@@ -269,7 +266,7 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         ]
         assert self.toolbox.get_tool_id( "github.com/galaxyproject/example/test_tool/0.1" ) == "github.com/galaxyproject/example/test_tool/0.1"
         assert self.toolbox.get_tool_id( "github.com/galaxyproject/example/test_tool/0.2" ) == "github.com/galaxyproject/example/test_tool/0.2"
-        assert self.toolbox.get_tool_id( "github.com/galaxyproject/example/test_tool/0.3" ) is None
+        assert self.toolbox.get_tool_id( "github.com/galaxyproject/example/test_tool/0.3" ) != "github.com/galaxyproject/example/test_tool/0.3"
 
     def test_tool_dir( self ):
         self._init_tool()

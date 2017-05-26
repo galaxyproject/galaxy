@@ -2,6 +2,8 @@ import threading
 
 from distutils.version import LooseVersion
 
+from galaxy.util.tool_version import remove_version_from_guid
+
 from .interface import ToolLineage
 from .interface import ToolLineageVersion
 
@@ -16,6 +18,12 @@ class StockLineage(ToolLineage):
     def __init__(self, tool_id, **kwds):
         self.tool_id = tool_id
         self.tool_versions = set()
+
+    @property
+    def tool_ids(self):
+        versionless_tool_id = remove_version_from_guid(self.tool_id)
+        tool_id = versionless_tool_id or self.tool_id
+        return ["%s/%s" % (tool_id, version) for version in self.tool_versions]
 
     @staticmethod
     def from_tool( tool ):
@@ -32,11 +40,14 @@ class StockLineage(ToolLineage):
         assert tool_version is not None
         self.tool_versions.add( tool_version )
 
-    def get_versions( self, reverse=False ):
-        versions = [ ToolLineageVersion( self.tool_id, v ) for v in self.tool_versions ]
+    def get_versions( self ):
+        versions = [ ToolLineageVersion( tool_id, tool_version ) for tool_id, tool_version in zip(self.tool_ids, self.tool_versions) ]
         # Sort using LooseVersion which defines an appropriate __cmp__
         # method for comparing tool versions.
-        return sorted( versions, key=_to_loose_version, reverse=reverse )
+        return sorted( versions, key=_to_loose_version )
+
+    def get_version_ids(self):
+        return self.tool_ids
 
     def to_dict(self):
         return dict(
