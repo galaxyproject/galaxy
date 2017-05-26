@@ -37,9 +37,22 @@ def validate_paramters():
 
 def main():
     path, galaxy_user_name, gid = validate_paramters()
-    os.system('chown -Rh %s %s' % (galaxy_user_name, path))
-    os.system('chgrp -Rh %s %s' % (gid, path))
 
+    cmd = [ 'chown', '-Rh', galaxy_user_name, path ]
+    p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdoutdata, stderrdata) = p.communicate()
+    exitcode = p.returncode
+    if exitcode != 0:
+       sys.stderr.write("external_chown_script: could not chown\ncmd was %s\n"% " ".join(cmd))
+       raise exit(1)
+ 
+    cmd = [ 'chgrp', '-Rh', gid, path ]
+    p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdoutdata, stderrdata) = p.communicate()
+    exitcode = p.returncode
+    if exitcode != 0:
+       sys.stderr.write("external_chown_script: could not chgrp\ncmd was %s\n"% " ".join(cmd))
+       raise exit(1)
 
 if __name__ == "__main__":
     main()
