@@ -1306,9 +1306,9 @@ use_interactive = True
 #
 # https://galaxyproject.org/admin/config/performance/cluster
 #
-#drmaa_external_runjob_script = scripts/drmaa_external_runner.py
-#drmaa_external_killjob_script = scripts/drmaa_external_killer.py
-#external_chown_script = scripts/external_chown_script.py
+#drmaa_external_runjob_script = sudo -E scripts/drmaa_external_runner.py
+#drmaa_external_killjob_script = sudo -E scripts/drmaa_external_killer.py
+#external_chown_script = sudo -E scripts/external_chown_script.py
 
 # For the job submission as the actual system user galaxy can extract 
 # the user name from the email address (actually the local-part before the @) 

@@ -315,15 +315,8 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             if kill_script is None:
                 self.ds.kill( ext_id )
             else:
-                # FIXME: hardcoded path
-
-                command = [ '/usr/bin/sudo', '-E', ]
-                for v in ["PATH", "LD_LIBRARY_PATH", "PKG_CONFIG_PATH"]:
-                    try:
-                        command.append('%s=%s'%(v, os.environ[ v ]))
-                    except KeyError:
-                        pass
-                command.extend( [ kill_script, str( ext_id ), str( self.userid ) ])
+                command = kill_script.split()
+                command.extend( [ str( ext_id ), str( self.userid ) ])
                 subprocess.Popen( command, shell=False )
             log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.get_id(), ext_id ) )
         except drmaa.InvalidJobException:
@@ -365,21 +358,10 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
     def external_runjob(self, external_runjob_script, jobtemplate_filename, username):
         """ runs an external script the will QSUB a new job.
-        The external script will be run with sudo, and will setuid() to the specified user.
+        The external script needs to be run with sudo, and will setuid() to the specified user.
         Effectively, will QSUB as a different user (then the one used by Galaxy).
         """
-        script_parts = external_runjob_script.split()
-        script = script_parts[0]
-        command = [ '/usr/bin/sudo', '-E', ]
-        for v in ["PATH", "LD_LIBRARY_PATH", "PKG_CONFIG_PATH"]:
-            try:
-                command.append('%s=%s'%(v, os.environ[ v ]))
-            except KeyError:
-                pass
-        command.append( script )
-        for script_argument in script_parts[1:]:
-            command.append(script_argument)
-
+        command = external_runjob_script.split()
         command.extend( [ str(username), jobtemplate_filename ] )
         command.append( "--assign_all_groups"  )
         log.info("Running command %s" % command)

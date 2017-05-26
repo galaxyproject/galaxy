@@ -298,14 +298,8 @@ def create_paramfile( trans, uploaded_datasets ):
                     pass
             else:
                 log.warning("invalid configuration of real_system_username")
-
-            cmd = [ '/usr/bin/sudo', '-E', ]
-            for v in ["PATH", "LD_LIBRARY_PATH", "PKG_CONFIG_PATH"]:
-                try:
-                    cmd.append('%s=%s'%(v, os.environ[ v ]))
-                except KeyError:
-                    pass
-            cmd.extend( [ trans.app.config.external_chown_script, path, pwent[0], str( pwent[3] ) ] )
+            cmd = trans.app.config.external_chown_script.split()
+            cmd.extend( [ path, pwent[0], str( pwent[3] ) ] )
             log.debug( 'Changing ownership of %s with: %s' % ( path, ' '.join( cmd ) ) )
             p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
             stdout, stderr = p.communicate()
