@@ -1762,14 +1762,14 @@ class Dataset( StorableObject ):
             self.external_extra_files_path = extra_files_path
     extra_files_path = property( get_extra_files_path, set_extra_files_path)
 
-    def _calculate_size( self ):
+    def _calculate_size( self, user ):
         if self.external_filename:
             try:
                 return os.path.getsize(self.external_filename)
             except OSError:
                 return 0
         else:
-            return self.object_store.size(self)
+            return self.object_store.size(self, user)
 
     def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
@@ -1784,25 +1784,25 @@ class Dataset( StorableObject ):
             else:
                 return self._calculate_size()
 
-    def set_size( self ):
+    def set_size( self, user ):
         """Sets the size of the data on disk"""
         if not self.file_size:
-            self.file_size = self._calculate_size()
+            self.file_size = self._calculate_size( user )
 
-    def get_total_size( self ):
+    def get_total_size( self, user ):
         if self.total_size is not None:
             return self.total_size
         # for backwards compatibility, set if unset
-        self.set_total_size()
+        self.set_total_size( user )
         db_session = object_session( self )
         db_session.flush()
         return self.total_size
 
-    def set_total_size( self ):
+    def set_total_size( self, user ):
         if self.file_size is None:
-            self.set_size()
+            self.set_size( user )
         self.total_size = self.file_size or 0
-        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
+        if self.object_store.exists(self, user, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
             for root, dirs, files in os.walk( self.extra_files_path ):
                 self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files if os.path.exists( os.path.join( root, file ) ) ] )
 
@@ -1985,8 +1985,8 @@ class DatasetInstance( object ):
         """Returns the size of the data on disk"""
         return self.dataset.set_size()
 
-    def get_total_size( self ):
-        return self.dataset.get_total_size()
+    def get_total_size( self, user ):
+        return self.dataset.get_total_size( user )
 
     def set_total_size( self ):
         return self.dataset.set_total_size()
@@ -2474,7 +2474,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                 if not hda.purged and hda.history and hda.history.user and hda.history.user == user:
                     break
             else:
-                rval += self.get_total_size()
+                rval += self.get_total_size( user )
         for child in self.children:
             rval += child.get_disk_usage( user )
         return rval

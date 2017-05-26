@@ -88,7 +88,7 @@ class CloudObjectStore(ObjectStore):
             self.use_axel = False
 
         # THIS IS TEMP, IT HAS TO BE REPLACED WITH A DATABASE OF TEMPORARY ACCESS CREDENTIALS FOR EACH PROVIDER.
-        self.access_credentials = {'user_1_id': {'aws_access_key': 'access key 1', 'aws_secret_key': 'secret key 1'},
+        self.access_credentials = {
                                    'user_2_id': {'aws_access_key': 'access key 2', 'aws_secret_key': 'secret key 2'}}
 
         self.connections = {}
@@ -100,15 +100,16 @@ class CloudObjectStore(ObjectStore):
         #            value := Connection
         #          }
 
-    def _configure_connection(self, user_id, provider):
+    def _configure_connection(self, user, provider=ProviderList.AWS):
         # provider is of type ProviderList, and its valid values are: AWS, OPENSTACK
         # (i.e., ProviderList.AWS, ProviderList.OPENSTACK).
-        if user_id not in self.connections:
-            self.connections[user_id] = {}
-        if provider not in self.connections[user_id]:
-            log.debug("Configuring a connection to '%s' for the user with ID: '%s'", provider, user_id)
-            self.connections[user_id][provider] = \
-                CloudProviderFactory().create_provider(provider, self.access_credentials[user_id])
+        # TODO: provider should be a required parameter without a default value
+        if user.id not in self.connections:
+            self.connections[user.id] = {}
+        if provider not in self.connections[user.id]:
+            log.debug("Configuring a connection to '%s' for the user with ID: '%s'", provider, user.id)
+            self.connections[user.id][provider] = \
+                CloudProviderFactory().create_provider(provider, self.access_credentials[user.id])
 
     def _parse_config_xml(self, config_xml):
         try:
@@ -217,13 +218,13 @@ class CloudObjectStore(ObjectStore):
                 log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
                 return
 
-    def _get_bucket(self, user_id, provider, bucket_name):
+    def _get_bucket(self, user, provider, bucket_name):
         try:
-            _configure_connection(user_id, provider)
-            bucket = self.connections[user_id][provider].object_store.get(bucket_name)
+            self._configure_connection(user, provider)
+            bucket = self.connections[user][provider].object_store.get(bucket_name)
             if bucket is None:
                 log.debug("Bucket not found, creating '%s' bucket with handle '%s'", provider, bucket_name)
-                bucket = self.connections[user_id][provider].object_store.create(bucket_name)
+                bucket = self.connections[user][provider].object_store.create(bucket_name)
             log.debug("Using cloud object store with bucket '%s'", bucket.name)
             return bucket
 
@@ -451,7 +452,7 @@ class CloudObjectStore(ObjectStore):
         return False
 
     def file_ready(self, obj, **kwargs):
-        print '\n\n\n\n file ready'
+        print '\n\n\n\nfile ready'
         """
         A helper method that checks if a file corresponding to a dataset is
         ready and available to be used. Return ``True`` if so, ``False`` otherwise.
@@ -465,17 +466,19 @@ class CloudObjectStore(ObjectStore):
                       os.path.getsize(self._get_cache_path(rel_path)), self._get_size_in_s3(rel_path))
         return False
 
-    def exists(self, obj, **kwargs):
-        print '\n\n\n\n exists'
+    def exists(self, obj, user, **kwargs):
+        print '\n\n\n\nexists'
+        # for line in traceback.format_stack():
+        #     print(line.strip())
+        print 'obj:', obj
+        print 'user.username: ', user.username
+        print '\n\n\n'
         in_cache = False
-        print '\n\n\n'
-        for line in traceback.format_stack():
-            print(line.strip())
-        print '============== obj:', obj
-        print '\n\n\n'
         # print 'obj.get_user.username', obj.get_user().username
         # print 'obj.get_user_id', obj.get_user_id()
         # print 'kwargs: ', kwargs
+
+        self._configure_connection(user)
 
         rel_path = self._construct_path(obj, **kwargs)
 
@@ -516,7 +519,7 @@ class CloudObjectStore(ObjectStore):
             log.warning("Can not upload data to a cloud storage for an anonymous user.")
             return
 
-        print '\n\n\n\n create'
+        print '\n\n\n\ncreate'
         for line in traceback.format_stack():
             print(line.strip())
         print 'obj: ', obj
@@ -558,18 +561,19 @@ class CloudObjectStore(ObjectStore):
                 self._push_to_os(rel_path, from_string='')
 
     def empty(self, obj, **kwargs):
-        print '\n\n\n\n empty'
+        print '\n\n\n\nempty'
         if self.exists(obj, **kwargs):
             return bool(self.size(obj, **kwargs) > 0)
         else:
             raise ObjectNotFound('objectstore.empty, object does not exist: %s, kwargs: %s'
                                  % (str(obj), str(kwargs)))
 
-    def size(self, obj, **kwargs):
-        print '\n\n\n\n size'
-        for line in traceback.format_stack():
-            print(line.strip())
+    def size(self, obj, user, **kwargs):
+        print '\n\n\n\nsize'
+        # for line in traceback.format_stack():
+        #    print(line.strip())
         print 'obj: ', obj
+        print 'user.username: ', user.username
         print '\n\n\n\n\n'
 
         rel_path = self._construct_path(obj, **kwargs)
@@ -578,13 +582,13 @@ class CloudObjectStore(ObjectStore):
                 return os.path.getsize(self._get_cache_path(rel_path))
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s", rel_path, ex)
-        elif self.exists(obj, **kwargs):
+        elif self.exists(obj, user, **kwargs):
             return self._get_size_in_s3(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
 
     def delete(self, obj, entire_dir=False, **kwargs):
-        print '\n\n\n\n delete'
+        print '\n\n\n\ndelete'
         rel_path = self._construct_path(obj, **kwargs)
         extra_dir = kwargs.get('extra_dir', None)
         base_dir = kwargs.get('base_dir', None)
@@ -624,7 +628,7 @@ class CloudObjectStore(ObjectStore):
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
-        print '\n\n\n\n get data'
+        print '\n\n\n\nget data'
         rel_path = self._construct_path(obj, **kwargs)
         # Check cache first and get file if not there
         if not self._in_cache(rel_path):
@@ -637,7 +641,7 @@ class CloudObjectStore(ObjectStore):
         return content
 
     def get_filename(self, obj, **kwargs):
-        print '\n\n\n\n get filename'
+        print '\n\n\n\nget filename'
         base_dir = kwargs.get('base_dir', None)
         dir_only = kwargs.get('dir_only', False)
         obj_dir = kwargs.get('obj_dir', False)
@@ -675,7 +679,7 @@ class CloudObjectStore(ObjectStore):
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
-        print '\n\n\n\n update from file'
+        print '\n\n\n\nupdate from file'
         if create:
             self.create(obj, **kwargs)
         if self.exists(obj, **kwargs):
@@ -701,7 +705,7 @@ class CloudObjectStore(ObjectStore):
                                  % (str(obj), str(kwargs)))
 
     def get_object_url(self, obj, **kwargs):
-        print '\n\n\n\n get object url'
+        print '\n\n\n\nget object url'
         if self.exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
