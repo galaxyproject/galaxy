@@ -306,8 +306,7 @@ class DefaultToolAction( object ):
                     data.visible = False
                 trans.sa_session.add( data )
                 trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions, new=True )
-
-            for tag in preserved_tags:
+            for _, tag in preserved_tags.items():
                 data.tags.append(tag.copy())
 
             # Must flush before setting object store id currently.
