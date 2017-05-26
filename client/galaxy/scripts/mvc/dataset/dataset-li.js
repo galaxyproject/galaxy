@@ -307,7 +307,7 @@ var DatasetListItemView = _super.extend(
 
     _renderNametags : function(){
         var tpl =  _.template([
-            '<% _.each(tags, function(tag){ %>',
+            '<% _.each(_.uniq(tags), function(tag){ %>',
                 '<% if (tag.indexOf("name:") == 0){ %>',
                     '<span class="label label-info"><%- tag.slice(5) %></span>',
                 '<% } %>',
