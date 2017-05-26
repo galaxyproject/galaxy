@@ -214,7 +214,7 @@ class DefaultToolAction( object ):
         # format.
         input_ext = 'data' if tool.profile < 16.04 else "input"
         input_dbkey = incoming.get( "dbkey", "?" )
-        preserved_tags = []
+        preserved_tags = {}
         for name, data in reversed(inp_data.items()):
             if not data:
                 data = NoneDataset( datatypes_registry=app.datatypes_registry )
@@ -235,9 +235,8 @@ class DefaultToolAction( object ):
             if identifier is not None:
                 incoming[ "%s|__identifier__" % name ] = identifier
 
-            for tag in data.tags:
-                if tag.user_tname == 'name' and tag.value not in [t.value for t in preserved_tags]:
-                    preserved_tags.append(tag)
+            for tag in [t for t in data.tags if t.user_tname == 'name']:
+                preserved_tags[tag.value] = tag
 
         # Collect chromInfo dataset and add as parameters to incoming
         ( chrom_info, db_dataset ) = app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len' )
