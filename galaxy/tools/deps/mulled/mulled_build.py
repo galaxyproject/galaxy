@@ -12,6 +12,7 @@ from __future__ import print_function
 
 import json
 import os
+import shutil
 import string
 import subprocess
 import sys
@@ -227,8 +228,11 @@ class InvolucroContext(installable.InstallableContext):
         cmd = self.build_command(involucro_args)
         # Create ./build dir manually, otherwise Docker will do it as root
         os.mkdir('./build')
-        res = self.shell_exec(" ".join(cmd))
-        os.rmdir('./build')
+        try:
+            res = self.shell_exec(" ".join(cmd))
+        finally:
+            # delete build directory in any case
+            shutil.rmtree('./build')
         return res
 
     def is_installed(self):
