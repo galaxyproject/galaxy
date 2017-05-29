@@ -17,7 +17,11 @@ class StockLineage(ToolLineage):
 
     def __init__(self, tool_id, **kwds):
         self.tool_id = tool_id
-        self.tool_versions = set()
+        self._tool_versions = set()
+
+    @property
+    def tool_versions(self):
+        return sorted(self._tool_versions, key=LooseVersion)
 
     @property
     def tool_ids(self):
@@ -38,13 +42,10 @@ class StockLineage(ToolLineage):
 
     def register_version( self, tool_version ):
         assert tool_version is not None
-        self.tool_versions.add( tool_version )
+        self._tool_versions.add( str(tool_version) )
 
     def get_versions( self ):
-        versions = [ ToolLineageVersion( tool_id, tool_version ) for tool_id, tool_version in zip(self.tool_ids, self.tool_versions) ]
-        # Sort using LooseVersion which defines an appropriate __cmp__
-        # method for comparing tool versions.
-        return sorted( versions, key=_to_loose_version )
+        return [ ToolLineageVersion( tool_id, tool_version ) for tool_id, tool_version in zip(self.tool_ids, self.tool_versions) ]
 
     def get_version_ids(self):
         return self.tool_ids
@@ -55,8 +56,3 @@ class StockLineage(ToolLineage):
             tool_versions=list(self.tool_versions),
             lineage_type='stock',
         )
-
-
-def _to_loose_version( tool_lineage_version ):
-    version = str( tool_lineage_version.version )
-    return LooseVersion( version )

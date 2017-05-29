@@ -1832,7 +1832,7 @@ class Tool( object, Dictifiable ):
             tool_help = unicodify( tool_help, 'utf-8' )
 
         # create tool versions
-        tool_versions = list(self.tool_version.tool_versions)
+        tool_versions = self.tool_version.tool_versions
 
         # update tool model
         tool_model.update({

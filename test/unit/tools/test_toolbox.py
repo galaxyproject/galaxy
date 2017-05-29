@@ -84,7 +84,6 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
         repository1 = self._repo_install( changeset="1" )
         version1 = tool_shed_install.ToolVersion()
         version1.tool_id = "github.com/galaxyproject/example/test_tool/0.1"
-        version1.version = "0.1"
         version1.repository = repository1
         self.app.install_model.context.add( version1 )
         self.app.install_model.context.flush( )
@@ -92,7 +91,6 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
         repository2 = self._repo_install( changeset="2" )
         version2 = tool_shed_install.ToolVersion()
         version2.tool_id = "github.com/galaxyproject/example/test_tool/0.2"
-        version2.version = "0.2"
         version2.repository = repository2
 
         self.app.install_model.context.add( version2 )
