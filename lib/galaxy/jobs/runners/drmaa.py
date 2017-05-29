@@ -394,7 +394,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             job_name += '_%s' % job_wrapper.tool.old_id
         if external_runjob_script is None:
             job_name += '_%s' % job_wrapper.user
-        job_name = ''.join( x if x in ( string.letters + string.digits + '_' ) else '_' for x in job_name )
+        job_name = ''.join( x if x in ( string.ascii_letters + string.digits + '_' ) else '_' for x in job_name )
         if self.restrict_job_name_length:
             job_name = job_name[:self.restrict_job_name_length]
         return job_name
