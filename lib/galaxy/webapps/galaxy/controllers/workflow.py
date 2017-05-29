@@ -948,7 +948,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                            url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
     @web.expose
-    def run( self, trans, id, history_id=None, **kwargs ):
+    def run_workflow( self, trans, id, history_id=None, **kwargs ):
         history = None
         try:
             if history_id is not None:
@@ -965,7 +965,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         workflow_contents_manager = workflows.WorkflowContentsManager( trans.app )
         stored = workflow_manager.get_stored_accessible_workflow( trans, id )
         workflow_dict = workflow_contents_manager.workflow_to_dict( trans, stored, style='run' )
-        return trans.fill_template( 'workflow/run.mako', workflow_dict=workflow_dict )
+        wf_dict = list()
+        wf_dict.append( workflow_dict )
+        return json.dumps( wf_dict )
 
     def get_item( self, trans, id ):
         return self.get_stored_workflow( trans, id )

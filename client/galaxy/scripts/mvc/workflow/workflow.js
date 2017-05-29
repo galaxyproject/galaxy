@@ -1,5 +1,5 @@
 /** Workflow view */
-define( [], function() {
+define( [ 'mvc/tool/tool-form-composite' ], function( ToolForm ) {
 
     /** View of the main workflow list page */
     var View = Backbone.View.extend({
@@ -157,7 +157,7 @@ define( [], function() {
             if( workflow.owner === Galaxy.user.attributes.username ) {
                 return '<ul class="dropdown-menu action-dpd">' +
                            '<li><a href="'+ Galaxy.root +'workflow/editor?id='+ workflow.id +'">Edit</a></li>' +
-                           '<li><a href="'+ Galaxy.root +'workflow/run?id='+ workflow.id +'" target="galaxy_main">Run</a></li>' +
+                           '<li><a href="'+ Galaxy.root +'workflow/run?id='+ workflow.id +'">Run</a></li>' +
                            '<li><a href="'+ Galaxy.root +'workflow/sharing?id='+ workflow.id +'">Share or Download</a></li>' +
                            '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
                            '<li><a href="'+ Galaxy.root +'workflow/rename?id='+ workflow.id +'">Rename</a></li>' +
@@ -168,7 +168,7 @@ define( [], function() {
             else {
                 return '<ul class="dropdown-menu action-dpd">' +
                          '<li><a href="'+ Galaxy.root +'workflow/display_by_username_and_slug?username='+ workflow.owner +'&slug='+ workflow.slug +'">View</a></li>' +
-                         '<li><a href="'+ Galaxy.root +'workflow/run?id='+ workflow.id +'" target="galaxy_main">Run</a></li>' +
+                         '<li><a href="'+ Galaxy.root +'workflow/run?id='+ workflow.id +'">Run</a></li>' +
                          '<li><a href="'+ Galaxy.root +'workflow/copy?id='+ workflow.id +'">Copy</a></li>' +
                          '<li><a class="link-confirm-shared-'+ workflow.id +'" href="'+ Galaxy.root +'workflow/sharing?unshare_me=True&id='+ workflow.id +'">Remove</a></li>' +
                       '</ul>';
@@ -192,7 +192,33 @@ define( [], function() {
         }
     });
 
+    var Run_Workflow_View = Backbone.View.extend({
+
+        initialize: function( options ) {
+            this.setElement( '<div/>' );
+            this.run_workflow( options );
+        },
+
+        /** Open workflow to run */
+        run_workflow: function() {
+            var self = this,
+                id = self.get_querystring( 'id' ),
+                url = Galaxy.root + 'workflow/run_workflow?id=' + id;
+            $.getJSON(url, function( response ) {
+                var wf_parsed = JSON.parse( JSON.stringify( response ) );
+                var form = new ToolForm.View( wf_parsed[0] );
+                self.$el.empty().append( form.$el );
+            });
+        },
+
+        /** Get querystrings from url */
+        get_querystring: function( key ) {
+            return decodeURIComponent( window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent( key ).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1") );
+        },
+    });
+
     return {
-        View  : View
+        View  : View,
+        Run_Workflow_View : Run_Workflow_View
     };
 });

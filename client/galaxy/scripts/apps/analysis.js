@@ -79,7 +79,8 @@ window.app = function app( options, bootstrapped ){
             '(/)user(/)' : 'show_user',
             '(/)user(/)(:form_id)' : 'show_user_form',
             '(/)workflow(/)' : 'show_workflows',
-            '(/)custom_builds' : 'show_custom_builds'
+            '(/)custom_builds' : 'show_custom_builds',
+            '(/)workflow/run(/)' : 'show_run',
         },
 
         require_login: [
@@ -115,6 +116,10 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new Workflows.View() );
         },
 
+        show_run : function() {
+            this.page.display( new Workflows.Run_Workflow_View() )
+        },
+
         show_custom_builds : function() {
             var self = this;
             var historyPanel = this.page.historyPanel.historyView;
@@ -139,7 +144,7 @@ window.app = function app( options, bootstrapped ){
             } else {
                 // show the workflow run form
                 if( params.workflow_id ){
-                    this._loadCenterIframe( 'workflow/run?id=' + params.workflow_id );
+                    this.page.display( new Workflows.Run_Workflow_View() )
                 // load the center iframe with controller.action: galaxy.org/?m_c=history&m_a=list -> history/list
                 } else if( params.m_c ){
                     this._loadCenterIframe( params.m_c + '/' + params.m_a );
