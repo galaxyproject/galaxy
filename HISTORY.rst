@@ -9,7 +9,13 @@ History
 17.5.10.dev0
 ---------------------
 
-    
+* Always clean up build directory in mulled commands (thanks to @johanneskoester).
+* Expose offline mode in Conda search utility (for repeated fast searches).
+* When publishing mulled containers - use quay.io API to publish them as public.
+* Add explicit option ``--check-published`` to mulled-build-*.
+* Fix auto-installation of Involucro on first attempt.
+* Handle explicit tags in ``mulled-build-files`` and add an implicit tag of ``0`` if none found.
+* Fix tab parsing in ``mulled-build-files``.
 
 ---------------------
 17.5.9 (2017-05-16)
