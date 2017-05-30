@@ -115,8 +115,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
             kwargs[self.RUNNER_PARAM_SPEC_KEY] = {}
         kwargs[self.RUNNER_PARAM_SPEC_KEY].update(self.RUNNER_PARAM_SPEC)
         super(ChronosJobRunner, self).__init__(app, nworkers, **kwargs)
-        protocol = 'http' if self.runner_params.get('insecure', True)\
-            else 'https'
+        protocol = 'http' if self.runner_params.get('insecure', True) else 'https'
         self._chronos_client = chronos.connect(
             self.runner_params['chronos'],
             username=self.runner_params.get('username'),
