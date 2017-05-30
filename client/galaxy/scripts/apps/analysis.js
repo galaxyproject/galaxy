@@ -9,7 +9,8 @@ var jQuery = require( 'jquery' ),
     UserPreferences = require( 'mvc/user/user-preferences' ),
     CustomBuilds = require( 'mvc/user/user-custom-builds' ),
     Tours = require( 'mvc/tours' ),
-    Workflows = require( 'mvc/workflow/workflow' );
+    Workflows = require( 'mvc/workflow/workflow' ),
+    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -81,12 +82,16 @@ window.app = function app( options, bootstrapped ){
             '(/)workflow(/)' : 'show_workflows',
             '(/)custom_builds' : 'show_custom_builds',
             '(/)workflow/run(/)' : 'show_run',
+            '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)workflow/import_workflow' : 'show_import_workflow',
+            '(/)custom_builds' : 'show_custom_builds'
         },
 
         require_login: [
             'show_user',
-            'show_user_form'
+            'show_user_form',
+            'show_workflows',
+            'show_configure_menu'
         ],
 
         loginRequired: function() {
@@ -123,6 +128,10 @@ window.app = function app( options, bootstrapped ){
 
         show_import_workflow : function() {
             this.page.display( new Workflows.Import_Workflow_View() );
+        },
+
+        show_configure_menu : function(){
+            this.page.display( new WorkflowsConfigureMenu.View() );
         },
 
         show_custom_builds : function() {
