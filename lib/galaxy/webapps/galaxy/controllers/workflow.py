@@ -740,7 +740,31 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return stored_dict
 
     @web.expose
-    def import_workflow( self, trans, cntrller='workflow', **kwd ):
+    def get_import_workflow( self, trans, **kwd ):
+        """
+        Import/upload workflow page elements
+        """
+        inputs = list()
+        input_url = { 'id': 'url_input',
+            'name': 'url',
+            'type': 'text',
+            'label': 'Galaxy workflow URL:',
+            'value': '',
+            'help': 'If the workflow is accessible via a URL, enter the URL above and click <b>Import</b>.' }
+        inputs.append(input_url)
+
+        input_file = { 'id': 'file_input',
+            'name': 'file_data',
+            'type': 'file',
+            'label': 'Galaxy workflow file:',
+            'help': 'If the workflow is in a file on your computer, choose it and then click <b>Import</b>.' }
+
+        inputs.append(input_file)
+        form = { 'title': 'Import Galaxy workflow', 'icon': 'fa fa-upload', 'inputs': inputs }
+        return json.dumps(form);
+
+    @web.expose
+    def save_import_workflow( self, trans, cntrller='workflow', **kwd ):
         """
         Import a workflow by reading an url, uploading a file, opening and reading the contents
         of a local file, or receiving the textual representation of a workflow via http.

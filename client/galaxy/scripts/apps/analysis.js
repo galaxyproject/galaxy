@@ -81,6 +81,7 @@ window.app = function app( options, bootstrapped ){
             '(/)workflow(/)' : 'show_workflows',
             '(/)custom_builds' : 'show_custom_builds',
             '(/)workflow/run(/)' : 'show_run',
+            '(/)workflow/import_workflow' : 'show_import_workflow',
         },
 
         require_login: [
@@ -117,7 +118,11 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_run : function() {
-            this.page.display( new Workflows.Run_Workflow_View() )
+            this.page.display( new Workflows.Run_Workflow_View() );
+        },
+
+        show_import_workflow : function() {
+            this.page.display( new Workflows.Import_Workflow_View() );
         },
 
         show_custom_builds : function() {

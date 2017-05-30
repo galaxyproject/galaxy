@@ -1,5 +1,5 @@
 /** Workflow view */
-define( [ 'mvc/tool/tool-form-composite' ], function( ToolForm ) {
+define( [ 'mvc/tool/tool-form-composite', 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( ToolForm, Form, Ui ) {
 
     /** View of the main workflow list page */
     var View = Backbone.View.extend({
@@ -217,8 +217,43 @@ define( [ 'mvc/tool/tool-form-composite' ], function( ToolForm ) {
         },
     });
 
+    var Import_Workflow_View = Backbone.View.extend({
+
+        initialize: function() {
+            this.setElement( '<div/>' );
+            this.render();
+        },
+
+        /** Open page to import workflow */
+        render: function() {
+            var self = this;
+            $.getJSON( Galaxy.root + 'workflow/get_import_workflow', function( options ) {
+                var form = new Form({
+                    title  : options.title,
+                    icon   : options.icon,
+                    inputs : options.inputs,
+                    operations: {
+                        'submit': new Ui.ButtonIcon({
+                            tooltip  : 'Import workflow',
+                            title    : 'Import',
+                            icon     : 'fa-upload',
+                            onclick  : function() { self.import_workflow( form, options ) }
+                        })
+                    }
+                });
+                self.$el.empty().append( form.$el );
+            });
+        },
+
+        /** Import a workflow */
+        import_workflow: function( form, options ) {
+            // TODO: Import workflow
+        }
+    });
+
     return {
         View  : View,
-        Run_Workflow_View : Run_Workflow_View
+        Run_Workflow_View : Run_Workflow_View,
+        Import_Workflow_View : Import_Workflow_View
     };
 });
