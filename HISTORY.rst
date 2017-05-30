@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.5.10.dev0
+17.5.10 (2017-05-30)
 ---------------------
 
 * Always clean up build directory in mulled commands (thanks to @johanneskoester).
