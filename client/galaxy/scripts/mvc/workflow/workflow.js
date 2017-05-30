@@ -44,7 +44,7 @@ define( [], function() {
                 message = self.get_querystring( 'message' );
 
             if( message && message !== null && message !== "" ) {
-                $el_message.addClass( _.escape(status) + 'message' );
+                $el_message.addClass( status + 'message' );
                 $el_message.html( '<p>' + _.escape(message) + '</p>' );
             }
             else {
