@@ -589,28 +589,6 @@ class ToolVersion( object, Dictifiable ):
         self.tool_id = tool_id
         self.tool_shed_repository = tool_shed_repository
 
-    @property
-    def version_ids(self):
-        return self.get_version_ids()
-
-    def get_previous_version( self, app ):
-        version_ids = self.version_ids
-        index = version_ids.index(self.tool_id)
-        if index > 0:
-            tool = self.app.toolbox._tools_by_id.get(version_ids[index - 1])
-            if tool:
-                return tool.tool_version
-        return None
-
-    def get_next_version( self, app ):
-        version_ids = self.version_ids
-        index = version_ids.index(self.tool_id)
-        if len(version_ids) > index + 1:
-            tool = self.app.toolbox._tools_by_id.get(version_ids[index + 1])
-            if tool:
-                return tool.tool_version
-        return None
-
     def get_version_ids( self, app, reverse=False ):
         lineage = app.toolbox._lineage_map.get(self.tool_id)
         version_ids = lineage.get_versions()
