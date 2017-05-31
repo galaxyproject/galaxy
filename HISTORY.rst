@@ -9,7 +9,8 @@ History
 17.5.11.dev0
 ---------------------
 
-    
+* Fix HISTORY.rst formatting to properly render release on PyPI.
+* Fix bug in new offline Conda search function introduced in 17.5.10.
 
 ---------------------
 17.5.10 (2017-05-30)
