@@ -45,7 +45,7 @@ define( [], function() {
 
             if( message && message !== null && message !== "" ) {
                 $el_message.addClass( status + 'message' );
-                $el_message.html( '<p>' + message + '</p>' );
+                $el_message.html( '<p>' + _.escape(message) + '</p>' );
             }
             else {
                 $el_message.html("");

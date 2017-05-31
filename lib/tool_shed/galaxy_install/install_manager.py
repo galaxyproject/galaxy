@@ -174,7 +174,7 @@ class InstallToolDependencyManager( object ):
                 attr_tup = ( name, version, type )
                 try:
                     index = attr_tups_of_dependencies_for_install.index( attr_tup )
-                except Exception as e:
+                except ValueError:
                     index = None
                 if index is not None:
                     tool_dependency = tool_dependencies[ index ]
