@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.5.11.dev0
+17.5.11 (2017-05-31)
 ---------------------
 
 * Fix HISTORY.rst formatting to properly render release on PyPI.
