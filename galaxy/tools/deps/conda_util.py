@@ -498,7 +498,7 @@ def best_search_result(conda_target, conda_context=None, channels_override=None,
 
     search_cmd = [conda_context.conda_exec, "search", "--full-name", "--json"]
     if offline:
-        search_cmd += "--offline"
+        search_cmd.append("--offline")
     if channels_override:
         search_cmd.append("--override-channels")
         for channel in channels_override:
