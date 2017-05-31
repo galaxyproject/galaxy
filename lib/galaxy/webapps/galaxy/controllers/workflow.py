@@ -740,31 +740,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return stored_dict
 
     @web.expose
-    def get_import_workflow( self, trans, **kwd ):
-        """
-        Import/upload workflow page elements
-        """
-        inputs = list()
-        input_url = { 'id': 'url_input',
-            'name': 'url',
-            'type': 'text',
-            'label': 'Galaxy workflow URL:',
-            'value': '',
-            'help': 'If the workflow is accessible via a URL, enter the URL above and click <b>Import</b>.' }
-        inputs.append(input_url)
-
-        input_file = { 'id': 'file_input',
-            'name': 'file_data',
-            'type': 'file',
-            'label': 'Galaxy workflow file:',
-            'help': 'If the workflow is in a file on your computer, choose it and then click <b>Import</b>.' }
-
-        inputs.append(input_file)
-        form = { 'title': 'Import Galaxy workflow', 'icon': 'fa fa-upload', 'inputs': inputs }
-        return json.dumps(form);
-
-    @web.expose
-    def save_import_workflow( self, trans, cntrller='workflow', **kwd ):
+    def upload_import_workflow( self, trans, cntrller='workflow', **kwd ):
         """
         Import a workflow by reading an url, uploading a file, opening and reading the contents
         of a local file, or receiving the textual representation of a workflow via http.
@@ -927,12 +903,12 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                     return self.list( trans )
         if cntrller == 'api':
             return status, message
-        return trans.fill_template( "workflow/import.mako",
-                                    url=url,
-                                    message=message,
-                                    status=status,
-                                    use_panels=True,
-                                    myexperiment_target_url=myexperiment_target_url )
+        return json.dumps({
+            'url' : url,
+            'message' : message,
+            'status' : status,
+            'myexperiment_target_url' : myexperiment_target_url
+        })
 
     @web.expose
     def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None ):
