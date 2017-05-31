@@ -269,7 +269,7 @@
 
                  This runner requires a shared file system where the directories of
                  `job_working_directory`, `file_path` and `new_file_path` settings defined on
-                 the `galaxy.ini` file are shared amongst the Mesos agents (i.e. nodes wich
+                 the `galaxy.ini` file are shared amongst the Mesos agents (i.e. nodes which
                  actually run the jobs).
             -->
             <param id="chronos">`chronos_host`</param>
