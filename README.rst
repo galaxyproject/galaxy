@@ -49,7 +49,7 @@ done in the ``config/galaxy.ini`` file. Tools can be either installed
 from the Tool Shed or added manually. For details please see the Galaxy
 wiki:
 
-https://wiki.galaxyproject.org/Admin/Tools/AddToolFromToolShedTutorial
+https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/
 
 Not all dependencies are included for the tools provided in the sample
 ``tool_conf.xml``. A full list of external dependencies is available at:
