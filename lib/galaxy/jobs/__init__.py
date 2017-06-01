@@ -975,7 +975,7 @@ class JobWrapper( object, HasResourceParameters ):
             self.app.object_store.create(
                 job, job.user, base_dir='job_work', dir_only=True, obj_dir=True)
             self.working_directory = self.app.object_store.get_filename(
-                job, base_dir='job_work', dir_only=True, obj_dir=True)
+                job, job.user, base_dir='job_work', dir_only=True, obj_dir=True)
             # TODO: the call should be like the following.
             # job, job.user, base_dir='job_work', dir_only=True, obj_dir=True )
 
@@ -1070,14 +1070,14 @@ class JobWrapper( object, HasResourceParameters ):
                 dataset.state = dataset.states.ERROR
                 dataset.blurb = 'tool error'
                 dataset.info = message
-                dataset.set_size()
-                dataset.dataset.set_total_size()
+                dataset.set_size( job.user )
+                dataset.dataset.set_total_size( job.user )
                 dataset.mark_unhidden()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file(dataset.dataset, create=True)
+                    self.app.object_store.update_from_file(dataset.dataset, job.user, create=True)
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause( dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state." )
@@ -1286,12 +1286,12 @@ class JobWrapper( object, HasResourceParameters ):
                 while trynum < self.app.config.retry_job_output_collection:
                     try:
                         # Attempt to short circuit NFS attribute caching
-                        os.stat( dataset.dataset.file_name )
-                        os.chown( dataset.dataset.file_name, os.getuid(), -1 )
+                        os.stat( dataset.dataset.get_file_name( job.user ) )
+                        os.chown( dataset.dataset.get_file_name( job.user ), os.getuid(), -1 )
                         trynum = self.app.config.retry_job_output_collection
                     except ( OSError, ObjectNotFound ) as e:
                         trynum += 1
-                        log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
+                        log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.get_file_name( job.user ), e )
                         time.sleep( 2 )
                 if getattr( dataset, "hidden_beneath_collection_instance", None ):
                     dataset.visible = False
@@ -1305,17 +1305,17 @@ class JobWrapper( object, HasResourceParameters ):
                     # Ensure white space between entries
                     dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
                 dataset.tool_version = self.version_string
-                dataset.set_size()
+                dataset.set_size( job.user )
                 if 'uuid' in context:
                     dataset.dataset.uuid = context['uuid']
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file(dataset.dataset, create=True)
+                    self.app.object_store.update_from_file(dataset.dataset, job.user, create=True)
                 self._collect_extra_files(dataset.dataset, self.working_directory)
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()
-                elif dataset.has_data():
+                elif dataset.has_data( job.user ):
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
                         dataset.extension = context.get( 'ext', 'data' )
@@ -1328,11 +1328,11 @@ class JobWrapper( object, HasResourceParameters ):
                     if retry_internally and not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session ):
                         # If Galaxy was expected to sniff type and didn't - do so.
                         if dataset.ext == "_sniff_":
-                            extension = sniff.handle_uploaded_dataset_file( dataset.dataset.file_name, self.app.datatypes_registry )
+                            extension = sniff.handle_uploaded_dataset_file( dataset.dataset.get_file_name( job.user ), self.app.datatypes_registry )
                             dataset.extension = extension
 
                         # call datatype.set_meta directly for the initial set_meta call during dataset creation
-                        dataset.datatype.set_meta( dataset, overwrite=False )
+                        dataset.datatype.set_meta( dataset, job.user, overwrite=False )
                     elif ( job.states.ERROR != final_job_state and
                             not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) ):
                         dataset._state = model.Dataset.states.FAILED_METADATA
@@ -1364,7 +1364,7 @@ class JobWrapper( object, HasResourceParameters ):
                         else:
                             dataset.set_peek( line_count=context['line_count'] )
                     except:
-                        if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte() ) or self.tool.is_multi_byte:
+                        if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte( job.user ) ) or self.tool.is_multi_byte:
                             dataset.set_peek( is_multi_byte=True )
                         else:
                             dataset.set_peek()
@@ -1459,8 +1459,8 @@ class JobWrapper( object, HasResourceParameters ):
         collected_bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
-            dataset_assoc.dataset.dataset.set_total_size()
-            collected_bytes += dataset_assoc.dataset.dataset.get_total_size()
+            dataset_assoc.dataset.dataset.set_total_size( job.user )
+            collected_bytes += dataset_assoc.dataset.dataset.get_total_size( job.user )
 
         if job.user:
             job.user.adjust_total_disk_usage(collected_bytes)
@@ -1618,6 +1618,7 @@ class JobWrapper( object, HasResourceParameters ):
 
     def get_output_fnames( self ):
         if self.output_paths is None:
+            job = self.get_job()
             self.compute_outputs()
         return self.output_paths
 
@@ -1643,14 +1644,14 @@ class JobWrapper( object, HasResourceParameters ):
         for da in job.output_datasets + job.output_library_datasets:
             da_false_path = dataset_path_rewriter.rewrite_dataset_path( da.dataset, 'output' )
             mutable = da.dataset.dataset.external_filename is None
-            dataset_path = DatasetPath( da.dataset.dataset.id, da.dataset.file_name, false_path=da_false_path, mutable=mutable )
+            dataset_path = DatasetPath( da.dataset.dataset.id, da.dataset.get_file_name( job.user ), false_path=da_false_path, mutable=mutable )
             results.append( ( da.name, da.dataset, dataset_path ) )
 
         self.output_paths = [t[2] for t in results]
         self.output_hdas_and_paths = dict([(t[0], t[1:]) for t in results])
         if special:
             false_path = dataset_path_rewriter.rewrite_dataset_path( special.dataset, 'output' )
-            dsp = DatasetPath( special.dataset.id, special.dataset.file_name, false_path )
+            dsp = DatasetPath( special.dataset.id, special.dataset.get_file_name( job.user ), false_path )
             self.output_paths.append( dsp )
         return self.output_paths
 

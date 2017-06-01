@@ -117,7 +117,7 @@ class CloudObjectStore(ObjectStore):
             self.access_key = a_xml.get('access_key')
             self.secret_key = a_xml.get('secret_key')
             b_xml = config_xml.findall('bucket')[0]
-            self.bucket = b_xml.get('name')
+            self.bucket_name = b_xml.get('name')
             self.use_rr = string_as_bool(b_xml.get('use_reduced_redundancy', "False"))
             self.max_chunk_size = int(b_xml.get('max_chunk_size', 250))
             cn_xml = config_xml.findall('connection')
@@ -218,10 +218,11 @@ class CloudObjectStore(ObjectStore):
                 log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
                 return
 
-    def _get_bucket(self, user, provider, bucket_name):
+    def _get_bucket(self, user, provider=ProviderList.AWS, bucket_name=""):
         try:
+            bucket_name = self.bucket_name
             self._configure_connection(user, provider)
-            bucket = self.connections[user][provider].object_store.get(bucket_name)
+            bucket = self.connections[user.id][provider].object_store.get(bucket_name)
             if bucket is None:
                 log.debug("Bucket not found, creating '%s' bucket with handle '%s'", provider, bucket_name)
                 bucket = self.connections[user][provider].object_store.create(bucket_name)
@@ -296,13 +297,14 @@ class CloudObjectStore(ObjectStore):
             log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1
 
-    def _key_exists(self, rel_path):
+    def _key_exists(self, rel_path, user):
         exists = False
         try:
             # A hackish way of testing if the rel_path is a folder vs a file
             is_dir = rel_path[-1] == '/'
             if is_dir:
-                keyresult = self.bucket.list(prefix=rel_path)
+                bucket = self._get_bucket(user)
+                keyresult = bucket.list(prefix=rel_path)
                 if len(keyresult) > 0:
                     exists = True
                 else:
@@ -314,13 +316,9 @@ class CloudObjectStore(ObjectStore):
         except S3ResponseError:
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False
-        print '------------------------------------------------'
         if rel_path[0] == '/':
-            print 'here'
+            print '------------------------------------- here'
             # raise
-        print 'rel path: ', rel_path
-        print 'exist: ', exists
-        print '------------------------------------------------'
         return exists
 
     def _in_cache(self, rel_path):
@@ -365,9 +363,10 @@ class CloudObjectStore(ObjectStore):
     def _transfer_cb(self, complete, total):
         self.transfer_progress += 10
 
-    def _download(self, rel_path):
+    def _download(self, user, rel_path):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+            self.bucket = self._get_bucket(user)
             key = self.bucket.get(rel_path)
 
             # Test if cache is large enough to hold the new file
@@ -393,7 +392,7 @@ class CloudObjectStore(ObjectStore):
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.bucket.name)
         return False
 
-    def _push_to_os(self, rel_path, source_file=None, from_string=None):
+    def _push_to_os(self, bucket, rel_path, source_file=None, from_string=None):
         """
         Push the file pointed to by ``rel_path`` to the object store naming the key
         ``rel_path``. If ``source_file`` is provided, push that file instead while
@@ -405,7 +404,7 @@ class CloudObjectStore(ObjectStore):
             source_file = source_file if source_file else self._get_cache_path(rel_path)
             if os.path.exists(source_file):
                 # TODO: is it necessary to check for existence of the bucket ?
-                if os.path.getsize(source_file) == 0 and self.bucket.exists(rel_path):
+                if os.path.getsize(source_file) == 0 and bucket.exists(rel_path):
                     log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file,
                               rel_path)
                     return True
@@ -413,32 +412,33 @@ class CloudObjectStore(ObjectStore):
                 # because CloudBridge handles this internally.
                 if from_string:
                     # TODO: The upload function of CloudBridge should be updated to accept the following parameters.
-                    if not self.bucket.get(rel_path):
-                        created_obj = self.bucket.create_object(rel_path)
+                    if not bucket.get(rel_path):
+                        created_obj = bucket.create_object(rel_path)
                         created_obj.upload(source_file)
                     else:
-                        self.bucket.get(rel_path).upload(source_file)
+                        bucket.get(rel_path).upload(source_file)
                     log.debug("Pushed data from string '%s' to key '%s'", from_string, rel_path)
                 else:
                     start_time = datetime.now()
                     log.debug("Pushing cache file '%s' of size %s bytes to key '%s'", source_file,
                               os.path.getsize(source_file), rel_path)
                     mb_size = os.path.getsize(source_file) / 1e6
-                    if mb_size < 10 or (not self.multipart):
-                        self.transfer_progress = 0  # Reset transfer progress counter
+                    # if mb_size < 10 or (not self.multipart):
+                    # TODO: check if cloudbridge is taking care of uploading large files in multi part
+                    self.transfer_progress = 0  # Reset transfer progress counter
 
-                        # TODO: The upload function of CloudBridge should be updated to accept the following parameters.
-                        # key.set_contents_from_filename(source_file,
-                        #                               reduced_redundancy=self.use_rr,
-                        #                               cb=self._transfer_cb,
-                        #                               num_cb=10)
-                        if not self.bucket.get(rel_path):
-                            created_obj = self.bucket.create_object(rel_path)
-                            created_obj.upload(source_file)
-                        else:
-                            self.bucket.get(rel_path).upload(source_file)
+                    # TODO: The upload function of CloudBridge should be updated to accept the following parameters.
+                    # key.set_contents_from_filename(source_file,
+                    #                               reduced_redundancy=self.use_rr,
+                    #                               cb=self._transfer_cb,
+                    #                               num_cb=10)
+                    if not bucket.get(rel_path):
+                        created_obj = bucket.create_object(rel_path)
+                        created_obj.upload(source_file)
                     else:
-                        multipart_upload(self.s3server, self.bucket, self.bucket.get(rel_path).name, source_file, mb_size)
+                        bucket.get(rel_path).upload(source_file)
+                    # else:
+                        # multipart_upload(self.s3server, bucket, bucket.get(rel_path).name, source_file, mb_size)
 
                     end_time = datetime.now()
                     log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
@@ -452,7 +452,6 @@ class CloudObjectStore(ObjectStore):
         return False
 
     def file_ready(self, obj, **kwargs):
-        print '\n\n\n\nfile ready'
         """
         A helper method that checks if a file corresponding to a dataset is
         ready and available to be used. Return ``True`` if so, ``False`` otherwise.
@@ -467,26 +466,16 @@ class CloudObjectStore(ObjectStore):
         return False
 
     def exists(self, obj, user, **kwargs):
-        print '\n\n\n\nexists'
-        # for line in traceback.format_stack():
-        #     print(line.strip())
-        print 'obj:', obj
-        print 'user.username: ', user.username
-        print '\n\n\n'
         in_cache = False
-        # print 'obj.get_user.username', obj.get_user().username
-        # print 'obj.get_user_id', obj.get_user_id()
-        # print 'kwargs: ', kwargs
-
         self._configure_connection(user)
-
+        bucket = self._get_bucket(user)
         rel_path = self._construct_path(obj, **kwargs)
 
         # Check cache
         if self._in_cache(rel_path):
             in_cache = True
         # Check S3
-        in_cloud = self._key_exists(rel_path)
+        in_cloud = self._key_exists(rel_path, user)
         # log.debug("~~~~~~ File '%s' exists in cache: %s; in s3: %s" % (rel_path, in_cache, in_s3))
         # dir_only does not get synced so shortcut the decision
         dir_only = kwargs.get('dir_only', False)
@@ -504,7 +493,7 @@ class CloudObjectStore(ObjectStore):
 
         # TODO: Sync should probably not be done here. Add this to an async upload stack?
         if in_cache and not in_cloud:
-            self._push_to_os(rel_path, source_file=self._get_cache_path(rel_path))
+            self._push_to_os(bucket, rel_path, source_file=self._get_cache_path(rel_path))
             return True
         elif in_cloud:
             return True
@@ -519,13 +508,7 @@ class CloudObjectStore(ObjectStore):
             log.warning("Can not upload data to a cloud storage for an anonymous user.")
             return
 
-        print '\n\n\n\ncreate'
-        for line in traceback.format_stack():
-            print(line.strip())
-        print 'obj: ', obj
-        print 'kwargs: ', kwargs
-        print 'user: ', user
-        print '\n\n\n\n\n'
+        self._configure_connection(user)
 
         if not self.exists(obj, user, **kwargs):
             # Pull out locally used fields
@@ -558,10 +541,10 @@ class CloudObjectStore(ObjectStore):
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
-                self._push_to_os(rel_path, from_string='')
+                bucket = self._get_bucket(user)
+                self._push_to_os(bucket, rel_path, from_string='')
 
     def empty(self, obj, **kwargs):
-        print '\n\n\n\nempty'
         if self.exists(obj, **kwargs):
             return bool(self.size(obj, **kwargs) > 0)
         else:
@@ -569,13 +552,6 @@ class CloudObjectStore(ObjectStore):
                                  % (str(obj), str(kwargs)))
 
     def size(self, obj, user, **kwargs):
-        print '\n\n\n\nsize'
-        # for line in traceback.format_stack():
-        #    print(line.strip())
-        print 'obj: ', obj
-        print 'user.username: ', user.username
-        print '\n\n\n\n\n'
-
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):
             try:
@@ -588,7 +564,6 @@ class CloudObjectStore(ObjectStore):
         return 0
 
     def delete(self, obj, entire_dir=False, **kwargs):
-        print '\n\n\n\ndelete'
         rel_path = self._construct_path(obj, **kwargs)
         extra_dir = kwargs.get('extra_dir', None)
         base_dir = kwargs.get('base_dir', None)
@@ -628,7 +603,6 @@ class CloudObjectStore(ObjectStore):
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
-        print '\n\n\n\nget data'
         rel_path = self._construct_path(obj, **kwargs)
         # Check cache first and get file if not there
         if not self._in_cache(rel_path):
@@ -640,8 +614,7 @@ class CloudObjectStore(ObjectStore):
         data_file.close()
         return content
 
-    def get_filename(self, obj, **kwargs):
-        print '\n\n\n\nget filename'
+    def get_filename(self, obj, user, **kwargs):
         base_dir = kwargs.get('base_dir', None)
         dir_only = kwargs.get('dir_only', False)
         obj_dir = kwargs.get('obj_dir', False)
@@ -678,11 +651,10 @@ class CloudObjectStore(ObjectStore):
                              % (str(obj), str(kwargs)))
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
-    def update_from_file(self, obj, file_name=None, create=False, **kwargs):
-        print '\n\n\n\nupdate from file'
+    def update_from_file(self, obj, user, file_name=None, create=False, **kwargs):
         if create:
-            self.create(obj, **kwargs)
-        if self.exists(obj, **kwargs):
+            self.create(obj, user, **kwargs)
+        if self.exists(obj, user, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             # Chose whether to use the dataset file itself or an alternate file
             if file_name:
@@ -699,13 +671,13 @@ class CloudObjectStore(ObjectStore):
             else:
                 source_file = self._get_cache_path(rel_path)
             # Update the file on S3
-            self._push_to_os(rel_path, source_file)
+            bucket = self._get_bucket(user)
+            self._push_to_os(bucket, rel_path, source_file)
         else:
             raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s'
                                  % (str(obj), str(kwargs)))
 
     def get_object_url(self, obj, **kwargs):
-        print '\n\n\n\nget object url'
         if self.exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
@@ -717,7 +689,6 @@ class CloudObjectStore(ObjectStore):
         return None
 
     def get_store_usage_percent(self):
-        print '\n\n\n\n get store usage percentage'
         return 0.0
 
 

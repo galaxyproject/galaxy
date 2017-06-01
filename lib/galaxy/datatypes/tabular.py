@@ -240,7 +240,7 @@ class TabularData( data.Text ):
 class Tabular( TabularData ):
     """Tab delimited data"""
 
-    def set_meta( self, dataset, overwrite=True, skip=None, max_data_lines=100000, max_guess_type_data_lines=None, **kwd ):
+    def set_meta( self, dataset, user, overwrite=True, skip=None, max_data_lines=100000, max_guess_type_data_lines=None, **kwd ):
         """
         Tries to determine the number of columns as well as those columns that
         contain numerical values in the dataset.  A skip parameter is used
@@ -324,7 +324,7 @@ class Tabular( TabularData ):
         comment_lines = 0
         column_types = []
         first_line_column_types = [default_column_type]  # default value is one column of type str
-        if dataset.has_data():
+        if dataset.has_data( user ):
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
             dataset_fh = open( dataset.file_name )
             i = 0

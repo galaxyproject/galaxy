@@ -704,7 +704,7 @@ class Gff( Tabular, _RemoteCallMixin ):
         dataset.metadata.attribute_types = attribute_types
         dataset.metadata.attributes = len( attribute_types )
 
-    def set_meta( self, dataset, overwrite=True, **kwd ):
+    def set_meta( self, dataset, user, overwrite=True, **kwd ):
         self.set_attribute_metadata( dataset )
 
         i = 0
@@ -719,7 +719,7 @@ class Gff( Tabular, _RemoteCallMixin ):
                         break
                     except:
                         pass
-        Tabular.set_meta( self, dataset, overwrite=overwrite, skip=i )
+        Tabular.set_meta( self, dataset, user, overwrite=overwrite, skip=i )
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""

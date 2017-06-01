@@ -41,6 +41,8 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
 
+import traceback
+
 log = logging.getLogger( __name__ )
 
 _datatypes_registry = None
@@ -1710,7 +1712,6 @@ class Dataset( StorableObject ):
     def _get_user(self):
         users = []
         db_session = object_session(self)
-        # print 'self.history_associations: ', self.history_associations
         for hda in db_session.query(HistoryDatasetAssociation).filter_by(dataset_id=self.id):
             for history in db_session.query(History).filter_by(id=hda.history_id):
                 if history.user_id:
@@ -1720,20 +1721,21 @@ class Dataset( StorableObject ):
     def in_ready_state( self ):
         return self.state in self.ready_states
 
-    def get_file_name( self ):
+    def get_file_name( self, user=None ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
             assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
-            users = self._get_user()
-            if len(users) == 0:
-                print ';-('
+            # users = self._get_user()
+            # if len(users) == 0:
+            #    print ';-('
                 # now what?! no user, then the dataset is not persisted anywhere!
                 # but the dataset exist that's why we have this call?!
-            else:
-                filename = self.object_store.get_filename(self, users[0])
+            # else:
+            #    filename = self.object_store.get_filename(self, users[0])
                 # not even this is great!
                 # e.g., Can a dataset have multiple filenames?
-            return filename
+            #return filename
+            return self.object_store.get_filename(self, user )
         else:
             filename = self.external_filename
         # Make filename absolute
@@ -1771,7 +1773,7 @@ class Dataset( StorableObject ):
         else:
             return self.object_store.size(self, user)
 
-    def get_size( self, nice_size=False ):
+    def get_size( self, user, nice_size=False ):
         """Returns the size of the data on disk"""
         if self.file_size:
             if nice_size:
@@ -1780,9 +1782,9 @@ class Dataset( StorableObject ):
                 return self.file_size
         else:
             if nice_size:
-                return galaxy.util.nice_size( self._calculate_size() )
+                return galaxy.util.nice_size( self._calculate_size( user ) )
             else:
-                return self._calculate_size()
+                return self._calculate_size( user )
 
     def set_size( self, user ):
         """Sets the size of the data on disk"""
@@ -1806,15 +1808,15 @@ class Dataset( StorableObject ):
             for root, dirs, files in os.walk( self.extra_files_path ):
                 self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files if os.path.exists( os.path.join( root, file ) ) ] )
 
-    def has_data( self ):
+    def has_data( self, user ):
         """Detects whether there is any data"""
-        return self.get_size() > 0
+        return self.get_size( user ) > 0
 
     def mark_deleted( self, include_children=True ):
         self.deleted = True
 
-    def is_multi_byte( self ):
-        if not self.has_data():
+    def is_multi_byte( self, user ):
+        if not self.has_data( user ):
             return False
         try:
             return is_multi_byte( codecs.open( self.file_name, 'r', 'utf-8' ).read( 100 ) )
@@ -1926,8 +1928,8 @@ class DatasetInstance( object ):
             object_session( self ).flush()  # flush here, because hda.flush() won't flush the Dataset object
     state = property( get_dataset_state, set_dataset_state )
 
-    def get_file_name( self ):
-        return self.dataset.get_file_name()
+    def get_file_name( self, user=None ):
+        return self.dataset.get_file_name( user )
 
     def set_file_name(self, filename):
         return self.dataset.set_file_name( filename )
@@ -1975,15 +1977,15 @@ class DatasetInstance( object ):
         self.clear_associated_files()
         _get_datatypes_registry().change_datatype( self, new_ext )
 
-    def get_size( self, nice_size=False ):
+    def get_size( self, user, nice_size=False ):
         """Returns the size of the data on disk"""
         if nice_size:
-            return galaxy.util.nice_size( self.dataset.get_size() )
-        return self.dataset.get_size()
+            return galaxy.util.nice_size( self.dataset.get_size( user ) )
+        return self.dataset.get_size( user )
 
-    def set_size( self ):
+    def set_size( self, user ):
         """Returns the size of the data on disk"""
-        return self.dataset.set_size()
+        return self.dataset.set_size( user )
 
     def get_total_size( self, user ):
         return self.dataset.get_total_size( user )
@@ -1991,9 +1993,9 @@ class DatasetInstance( object ):
     def set_total_size( self ):
         return self.dataset.set_total_size()
 
-    def has_data( self ):
+    def has_data( self, user ):
         """Detects whether there is any data"""
-        return self.dataset.has_data()
+        return self.dataset.has_data( user )
 
     def get_raw_data( self ):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
@@ -2479,7 +2481,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
             rval += child.get_disk_usage( user )
         return rval
 
-    def to_dict( self, view='collection', expose_dataset_path=False ):
+    def to_dict( self, user, view='collection', expose_dataset_path=False ):
         """
         Return attributes of this HDA that are exposed using the API.
         """
@@ -2500,7 +2502,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      visible=hda.visible,
                      state=hda.state,
                      history_content_type=hda.history_content_type,
-                     file_size=int( hda.get_size() ),
+                     file_size=int( hda.get_size( user ) ),
                      create_time=hda.create_time.isoformat(),
                      update_time=hda.update_time.isoformat(),
                      data_type=hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
