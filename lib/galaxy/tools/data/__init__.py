@@ -312,7 +312,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
         super( TabularToolDataTable, self ).__init__( config_element, tool_data_path, from_shed_config, filename, tool_data_path_files)
         self.config_element = config_element
         self.data = []
-        self.configure_and_load( config_element, tool_data_path, from_shed_config, self.tool_data_path_files)
+        self.configure_and_load( config_element, tool_data_path, from_shed_config )
 
     def configure_and_load( self, config_element, tool_data_path, from_shed_config=False, url_timeout=10 ):
         """
