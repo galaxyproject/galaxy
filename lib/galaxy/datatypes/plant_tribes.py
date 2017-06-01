@@ -53,24 +53,24 @@ class Smat(Text):
         """
         line_no = 0
         with open(filename, "r") as fh:
-            line_no += 1
-            if line_no > 10000:
-                return True
-            line = fh.readline(500)
-            if line_no == 1 and not line.startswith('FORMAT'):
-                # The first line is always the start of a format section.
-                return False
-            if not line.startswith('FORMAT'):
-                if line.find('\t') >= 0:
-                    # Smat files are not tabular.
+            for line in fh:
+                line_no += 1
+                if line_no > 10000:
+                    return True
+                if line_no == 1 and not line.startswith('FORMAT'):
+                    # The first line is always the start of a format section.
                     return False
-                items = line.split()
-                if len(items) != 4:
-                    return False
-                for item in items:
-                    # Make sure each item is an integer.
-                    if re.match(r"[-+]?\d+$", item) is None:
+                if not line.startswith('FORMAT'):
+                    if line.find('\t') >= 0:
+                        # Smat files are not tabular.
                         return False
+                    items = line.split()
+                    if len(items) != 4:
+                        return False
+                    for item in items:
+                        # Make sure each item is an integer.
+                        if re.match(r"[-+]?\d+$", item) is None:
+                            return False
         return True
 
 
