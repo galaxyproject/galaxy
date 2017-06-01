@@ -331,6 +331,7 @@ class TagDatasetAction(DefaultJobAction):
     def execute(cls, app, sa_session, action, job, replacement_dict):
         if action.action_arguments:
             tags = [t.strip() for t in action.action_arguments.get('tags', '').split(',') if t.strip()]
+            tags = [t.replace('#', 'name:') if t.startswith('#') else t for t in tags]
             if tags:
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
