@@ -6,6 +6,6 @@ January 2015 Galaxy Release (v 15.01)
 
 Please see the `Galaxy wiki`_ for announcement and release notes.
 
-.. _Galaxy wiki: https://wiki.galaxyproject.org/News/2015_01_13_Galaxy_Distribution
+.. _Galaxy wiki: https://galaxyproject.org/news/2015-01-13-galaxy-distribution/
 
 .. include:: _thanks.rst

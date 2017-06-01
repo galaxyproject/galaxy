@@ -443,7 +443,7 @@ def handle_request(self, environ, start_response):
 
 ### Database Diagram
 
-https://wiki.galaxyproject.org/Admin/Internals/DataModel
+https://galaxyproject.org/admin/internals/data-model/
 
 ---
 

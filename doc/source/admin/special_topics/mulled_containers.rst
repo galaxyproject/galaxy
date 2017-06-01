@@ -120,7 +120,7 @@ you could do something along these lines.
 
 
 .. _Galaxy Conda documentation: ./conda_faq.rst
-.. _IUC: https://wiki.galaxyproject.org/IUC
+.. _IUC: https://galaxyproject.org/iuc/
 .. _container annotation:  https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/catDocker.xml#L4
 .. _BioContainers: https://github.com/biocontainers
 .. _bioconda: https://github.com/bioconda/bioconda-recipes

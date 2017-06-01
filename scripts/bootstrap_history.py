@@ -114,7 +114,7 @@ To update an existing Galaxy repository run:
 
       $$ git checkout release_${release} && git pull --ff-only origin release_${release}
 
-See our community `hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
 Release Notes
 ===========================================================
@@ -174,7 +174,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [ ] **Create Release Notes**
 
-    - [ ] Review merged PRs and ensure they all have a milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Amerged+no%3Amilestone%20-label%3Amerge)
+    - [ ] Review merged PRs and ensure they all have a milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Amerged+no%3Amilestone)
     - [ ] Checkout release branch
 
           git checkout release_${version} -b ${version}_release_notes
@@ -185,9 +185,6 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
           make release-bootstrap-history RELEASE_CURR=${version}
     - [ ] Open newly created files and manually curate major topics and release notes.
-    - [ ] Check ``diff`` of ``galaxy.ini.sample`` against last release and include any important changes.
-    - [ ] Check ``diff`` of ``datatypes_conf.xml.sample`` against last release and include any important changes.
-    - [ ] Check if there were database migrations and include a high-profile note about it if so.
     - [ ] Commit release notes.
 
           git add docs/; git commit -m "Release notes for $version"; git push upstream ${version}_release_notes
@@ -207,7 +204,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
           make release-create RELEASE_CURR=${version}
 
-    - [ ] Switch Jenkins documentation build [branch specifier](https://jenkins.galaxyproject.org/job/Sphinx-Docs/configure) to `*/release_${version}`.
+    - [ ] Switch Jenkins documentation build [branch specifier](https://jenkins.galaxyproject.org/job/Sphinx-Docs/configure) to `*/release_{version}`.
     - [ ] Trigger the documentation build.
 
 - [ ] **Do Docker Release**
@@ -225,7 +222,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Verify release included in https://docs.galaxyproject.org/en/master/releases/index.html
     - [ ] Review announcement in https://github.com/galaxyproject/galaxy/blob/dev/doc/source/releases/${version}_announce.rst
     - [ ] Stage annoucement content (Wiki, Biostars, Bit.ly link) on annouce date to capture date tags. Note: all final content does not need to be completed to do this.
-    - [ ] Create wiki *highlights* and post to http://galaxyproject.org News (w/ RSS) and NewsBriefs. [An Example](https://wiki.galaxyproject.org/News/2016_04_GalaxyRelease).
+    - [ ] Create wiki *highlights* and post to http://galaxyproject.org News (w/ RSS) and NewsBriefs. [An Example](https://galaxyproject.org/news/2016-04-galaxy-release).
     - [ ] Tweet docs news *highlights* via bit.ly link to https://twitter.com/galaxyproject/ (As user ``galaxyproject``, password in Galaxy password store under ``twitter.com / galaxyproject`` ). [An Example](https://twitter.com/galaxyproject/status/733029921316986881).
     - [ ] Post *highlights* type News to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/17712/).
     - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An Example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)
