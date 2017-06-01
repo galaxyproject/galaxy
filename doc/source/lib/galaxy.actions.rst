@@ -1,5 +1,5 @@
-galaxy.actions package
-======================
+galaxy\.actions package
+=======================
 
 .. automodule:: galaxy.actions
     :members:
@@ -9,8 +9,8 @@ galaxy.actions package
 Submodules
 ----------
 
-galaxy.actions.admin module
----------------------------
+galaxy\.actions\.admin module
+-----------------------------
 
 .. automodule:: galaxy.actions.admin
     :members:

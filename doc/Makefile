@@ -6,8 +6,6 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = build
-UPDATEWORKDIR = /tmp/galaxySphinxUpdate
-UPDATEWORKSOURCELIB = $(UPDATEWORKDIR)/source/lib
 SPHINXAPIDOC  = sphinx-apidoc
 
 # Internal variables.
@@ -42,7 +40,7 @@ help:
 	@echo "  changes    to make an overview of all changed/added/deprecated items"
 	@echo "  linkcheck  to check all external links for integrity"
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
-	@echo "  updaterst  to update sphinx rst to reflect code structure changes"
+	@echo "  updaterst  to update Sphinx RST files for lib/ to reflect code structure changes"
 
 schema.md: parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd ## Build Github-flavored Markdown from Galaxy Tool XSD (expects libxml in environment)
 	python parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd > $@
@@ -54,7 +52,7 @@ source/dev/schema.rst: schema.md ## Convert Galaxy Tool XSD Markdown docs into r
 # might also want to do
 # cd source/lib; hg revert; rm *.rst.orig;  or not.
 clean:
-	-rm -rf $(BUILDDIR)/* $(UPDATEWORKDIR) schema.md $(GENERATED_RST)
+	-rm -rf $(BUILDDIR)/* schema.md $(GENERATED_RST)
 
 html: $(GENERATED_RST)
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
@@ -167,19 +165,6 @@ doctest: $(GENERATED_RST)
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
-# Targets for updating the structure of the Sphinx RST doc for lib/
-
-$(UPDATEWORKSOURCELIB):
-	mkdir -p $(UPDATEWORKSOURCELIB)
-
-# Create a fresh version of the RST files for the lib, and then create a 
-# unified patch file (ignore all emacs leftovers).
-# Feed that to our custom version of patch.py, which applies patches that
-# are only adds, and reports everything else to the user to deal with manually
-#
-# Note: this is still a very rough process.  the run of patch.py gets some 
-# errors that don't mean anything to us.  And the manual process is not fun.
-updaterst: $(UPDATEWORKSOURCELIB)
-	$(SPHINXAPIDOC) -o $(UPDATEWORKSOURCELIB) ../lib
-	-diff -x '*.rst~' -ru source/lib $(UPDATEWORKSOURCELIB) >  $(UPDATEWORKDIR)/alldifs.patch
-	./patch.py $(UPDATEWORKDIR)/alldifs.patch
+# Update Sphinx RST files for lib/ to reflect code structure changes
+updaterst:
+	$(SPHINXAPIDOC) -M --force -o source/lib/ ../lib/
