@@ -790,7 +790,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 try:
                     workflow_data = urllib2.urlopen( url ).read()
                 except Exception as e:
-                    message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( escape( url ), escape( str( e ) ) )
+                    message = "Failed to open URL: %s. Exception: %s" % ( escape( url ), escape( str( e ) ) )
                     status = 'error'
             elif workflow_text:
                 # This case occurs when the workflow_text was sent via http from the tool shed.
@@ -839,7 +839,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         message += "Imported, but this workflow contains cycles.  "
                         status = "error"
                     else:
-                        message += "Workflow <b>%s</b> imported successfully.  " % escape( workflow.name )
+                        message += "Workflow %s imported successfully.  " % escape( workflow.name )
                     if missing_tool_tups:
                         if trans.user_is_admin():
                             # A required tool is not available in the local Galaxy instance.
@@ -853,7 +853,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             message += "You can likely install the required tools from one of the Galaxy tool sheds listed below.<br/>"
                             for missing_tool_tup in missing_tool_tups:
                                 missing_tool_id, missing_tool_name, missing_tool_version, step_id = missing_tool_tup
-                                message += "<b>Tool name</b> %s, <b>id</b> %s, <b>version</b> %s<br/>" % (
+                                message += "Tool name: %s, id: %s, version: %s." % (
                                            escape( missing_tool_name ),
                                            escape( missing_tool_id ),
                                            escape( missing_tool_version ) )
@@ -867,7 +867,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     for missing_tool_tup in missing_tool_tups:
                                         missing_tool_id = missing_tool_tup[0]
                                         url += '%s,' % escape( missing_tool_id )
-                                message += '<a href="%s">%s</a><br/>' % ( url, shed_name )
+                                message += 'url: %s, shed name: %s.' % ( url, shed_name )
                                 status = 'error'
                             if installed_repository_file or tool_shed_url:
                                 # Another Galaxy panels Hack: The request did not originate from the Galaxy
@@ -886,13 +886,13 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             pass
                     if tool_shed_url:
                         # We've received the textual representation of a workflow from a Galaxy tool shed.
-                        message = "Workflow <b>%s</b> imported successfully." % escape( workflow.name )
+                        message = "Workflow %s imported successfully." % escape( workflow.name )
                         url = '%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&message=%s' % \
                             ( tool_shed_url, repository_metadata_id, encoding_util.tool_shed_encode( workflow_name ), message )
                         return trans.response.send_redirect( url )
                     elif installed_repository_file:
                         # The workflow was read from a file included with an installed tool shed repository.
-                        message = "Workflow <b>%s</b> imported successfully." % escape( workflow.name )
+                        message = "Workflow %s imported successfully." % escape( workflow.name )
                         if cntrller == 'api':
                             return status, message
                         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -900,15 +900,20 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                                                           id=repository_id,
                                                                           message=message,
                                                                           status=status ) )
-                    return self.list( trans )
+                    redirect_url = url_for( '/' ) + 'workflow?status=' + status + '&message=%s' % escape( message )
+                    return trans.response.send_redirect( redirect_url )
         if cntrller == 'api':
             return status, message
-        return json.dumps({
-            'url' : url,
-            'message' : message,
-            'status' : status,
-            'myexperiment_target_url' : myexperiment_target_url
-        })
+        if status == 'error':
+            redirect_url = url_for( '/' ) + 'workflow?status=' + status + '&message=%s' % escape( message )
+            return trans.response.send_redirect( redirect_url )
+        else:
+            return json.dumps({
+                'url' : url,
+                'message' : message,
+                'status' : status,
+                'myexperiment_target_url' : myexperiment_target_url
+            })
 
     @web.expose
     def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None ):

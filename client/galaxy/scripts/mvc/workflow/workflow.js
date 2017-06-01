@@ -1,6 +1,26 @@
 /** Workflow view */
 define( [ 'mvc/tool/tool-form-composite', 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( ToolForm, Form, Ui ) {
 
+    /** Get querystrings from url */
+    function get_querystring( key ) {
+        return decodeURIComponent( window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent( key ).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1") );
+    }
+
+    /** Build messages after user action */
+    function build_messages( self ) {
+        var $el_message = self.$el.find( '.response-message' ),
+        status = get_querystring( 'status' ),
+        message = get_querystring( 'message' );
+
+        if( message && message !== null && message !== "" ) {
+            $el_message.addClass( status + 'message' );
+            $el_message.html( '<p>' + _.escape( message ) + '</p>' );
+        }
+        else {
+            $el_message.html("");
+        }
+    }
+ 
     /** View of the main workflow list page */
     var View = Backbone.View.extend({
 
@@ -17,7 +37,7 @@ define( [ 'mvc/tool/tool-form-composite', 'mvc/form/form-view', 'mvc/ui/ui-misc'
                 // Add workflow header
                 self.$el.empty().append( self._templateHeader() );
                 // Add user actions message if any
-                self.build_messages( self );
+                build_messages( self );
                 $el_workflow = self.$el.find( '.user-workflows' );
                 // Add the actions buttons
                 $el_workflow.append( self._templateActionButtons() );
@@ -35,21 +55,6 @@ define( [ 'mvc/tool/tool-form-composite', 'mvc/form/form-view', 'mvc/ui/ui-misc'
                     $el_workflow.append( self._templateNoWorkflow() );
                 }
             });
-        },
-
-        /** Build messages after user action */
-        build_messages: function( self ) {
-            var $el_message = self.$el.find( '.response-message' ),
-                status = self.get_querystring( 'status' ),
-                message = self.get_querystring( 'message' );
-
-            if( message && message !== null && message !== "" ) {
-                $el_message.addClass( status + 'message' );
-                $el_message.html( '<p>' + _.escape(message) + '</p>' );
-            }
-            else {
-                $el_message.html("");
-            }
         },
 
         /** Add confirm box before removing/unsharing workflow */
@@ -84,11 +89,6 @@ define( [ 'mvc/tool/tool-form-composite', 'mvc/form/form-view', 'mvc/ui/ui-misc'
                     $el_tabletr.show();
                 }
             });
-        },
-
-        /** Get querystrings from url */
-        get_querystring: function( key ) {
-            return decodeURIComponent( window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent( key ).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1") );
         },
 
         /** Ajust the position of dropdown with respect to table */
@@ -202,19 +202,15 @@ define( [ 'mvc/tool/tool-form-composite', 'mvc/form/form-view', 'mvc/ui/ui-misc'
         /** Open workflow to run */
         run_workflow: function() {
             var self = this,
-                id = self.get_querystring( 'id' ),
+                id = get_querystring( 'id' ),
                 url = Galaxy.root + 'workflow/run_workflow?id=' + id;
             $.getJSON(url, function( response ) {
                 var wf_parsed = JSON.parse( JSON.stringify( response ) );
                 var form = new ToolForm.View( wf_parsed[0] );
+                build_messages( self );
                 self.$el.empty().append( form.$el );
             });
-        },
-
-        /** Get querystrings from url */
-        get_querystring: function( key ) {
-            return decodeURIComponent( window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent( key ).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1") );
-        },
+        }
     });
 
     var Import_Workflow_View = Backbone.View.extend({
@@ -234,8 +230,8 @@ define( [ 'mvc/tool/tool-form-composite', 'mvc/form/form-view', 'mvc/ui/ui-misc'
 
         /** Template for the import workflow page */
         _mainTemplate: function( self, options ) {
-            return "<div class='toolForm'>" + 
-                        "<div class='toolFormTitle'>Import Galaxy workflow</div>" +
+            return "<div class='toolForm'>" +
+                       "<div class='toolFormTitle'>Import Galaxy workflow</div>" +
                         "<div class='toolFormBody'>" +
                             "<form name='import_workflow' id='import_workflow' action='"+ Galaxy.root + 'workflow/upload_import_workflow' +"' enctype='multipart/form-data' method='POST'>" +
                             "<div class='form-row'>" +
