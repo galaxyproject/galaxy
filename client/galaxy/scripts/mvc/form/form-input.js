@@ -44,6 +44,11 @@ define([], function() {
                 app.trigger && app.trigger( 'change' );
                 self.render();
             });
+
+            // hide error on value change
+            if ( this.field.model && !this.model.get( 'always_refresh' ) ) {
+                this.listenTo( this.field.model, 'change', function() { self.reset() } );
+            }
         },
 
         /** Set backdrop for input element */
