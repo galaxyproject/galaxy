@@ -389,6 +389,8 @@ def populate_api_routes( webapp, app ):
     # route for creating/getting converted datasets
     webapp.mapper.connect( '/api/datasets/{dataset_id}/converted', controller='datasets', action='converted', ext=None )
     webapp.mapper.connect( '/api/datasets/{dataset_id}/converted/{ext}', controller='datasets', action='converted' )
+    webapp.mapper.connect( '/api/datasets/{dataset_id}/stdout', controller='datasets', action='stdout' )
+    webapp.mapper.connect( '/api/datasets/{dataset_id}/stderr', controller='datasets', action='stderr' )
 
     # API refers to usages and invocations - these mean the same thing but the
     # usage routes should be considered deprecated.

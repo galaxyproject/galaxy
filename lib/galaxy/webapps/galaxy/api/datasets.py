@@ -88,6 +88,36 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             trans.response.status = 500
         return rval
 
+    @web.expose_api
+    def stdout( self, trans, dataset_id, hda_ldda='hda', **kwd ):
+        """
+        * GET /api/dataset/{dataset_id}/stdout
+            returns stdout of dataset's job
+
+        :type   dataset_id: string
+        :param  dataset_id: Encoded dataset id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing dataset stdout
+        """
+        dataset = self.get_hda_or_ldda( trans, hda_ldda=hda_ldda, dataset_id=dataset_id )
+        return {'stdout': dataset.creating_job.stdout}
+
+    @web.expose_api
+    def stderr( self, trans, dataset_id, hda_ldda='hda', **kwd ):
+        """
+        * GET /api/dataset/{dataset_id}/stderr
+            returns stderr of dataset's job
+
+        :type   dataset_id: string
+        :param  dataset_id: Encoded dataset id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing dataset stderr
+        """
+        dataset = self.get_hda_or_ldda( trans, hda_ldda=hda_ldda, dataset_id=dataset_id )
+        return {'stderr': dataset.creating_job.stderr}
+
     def _dataset_state( self, trans, dataset, **kwargs ):
         """
         Returns state of dataset.
