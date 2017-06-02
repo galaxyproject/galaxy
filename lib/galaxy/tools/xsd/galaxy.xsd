@@ -521,9 +521,22 @@ The content of ``stdout`` and ``stderr`` are strings containing the output of th
 ]]></xs:documentation>
 
     </xs:annotation>
+    <xs:sequence>
+      <xs:element name="hook" type="CodeHook" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
     <xs:attribute name="file" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value is the name of the executable code file, and is called in the exec_before_process(), exec_before_job(), exec_after_process() and exec_after_job()( methods.</xs:documentation>
+        <xs:documentation xml:lang="en">This value is the name of the executable code file, and is called in the ``exec_before_process()``, ``exec_before_job()``, ``exec_after_process()`` and ``exec_after_job()`` methods.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="CodeHook">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">**Deprecated** Map a hook to a function defined in the code file.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="exec_after_process" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Function defined in the code file to which the ``exec_after_process`` hook should be mapped</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
