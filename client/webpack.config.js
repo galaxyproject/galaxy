@@ -21,6 +21,7 @@ var webpack = require( 'webpack' ),
         'libs/bootstrap',
         'libs/bootstrap-tour',
         'libs/jquery.complexify',
+        'libs/jquery/jquery.autocomplete',
         // mvc
         'libs/underscore',
         'libs/backbone',

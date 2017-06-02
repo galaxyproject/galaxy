@@ -65,7 +65,7 @@ var Collection = Backbone.Collection.extend({
                     url     : 'visualization/list_published'
                 },{
                     title   : _l('Pages'),
-                    url     : 'page/list_published'
+                    url     : 'pages/list_published'
             }]
         });
 
