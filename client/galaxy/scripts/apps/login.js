@@ -1,10 +1,8 @@
-
 var jQuery = require( 'jquery' ),
     $ = jQuery,
     GalaxyApp = require( 'galaxy' ).GalaxyApp,
-    PANEL = require( 'layout/panel' ),
     _l = require( 'utils/localization' ),
-    PAGE = require( 'layout/page' );
+    Page = require( 'layout/page' );
 
 window.app = function app( options, bootstrapped ){
     window.Galaxy = new GalaxyApp( options, bootstrapped );
@@ -19,26 +17,24 @@ window.app = function app( options, bootstrapped ){
         return;
     }
 
-    var loginPage = new PAGE.PageLayoutView( _.extend( options, {
-        el      : 'body',
-        center  : new PANEL.CenterPanel({ el : '#center' }),
-        right   : new PANEL.RightPanel({
-            title : _l( 'Login required' ),
-            el : '#right'
-        }),
-    }));
+    var LoginPage = Backbone.View.extend({
+        initialize: function( page ) {
+            this.page = page;
+            this.model = new Backbone.Model({ title : _l( 'Login required' ) } );
+            this.setElement( this._template() );
+        },
+        render: function() {
+            this.page.$( '#galaxy_main' ).prop( 'src', options.welcome_url );
+        },
+        _template : function() {
+            var login_url = options.root + 'user/login?' + $.param( { redirect : redirect } );
+            return '<iframe src="' + login_url + '" frameborder="0" style="width: 100%; height: 100%;"/>';
+        }
+    });
 
     $(function(){
-        // TODO: incorporate *actual* referrer/redirect info as the original page does
-        var params = jQuery.param({ redirect : redirect }),
-            loginUrl = Galaxy.root + 'user/login?' + params;
-        loginPage.render();
-
-        // welcome page (probably) needs to remain sandboxed
-        loginPage.center.$( '#galaxy_main' ).prop( 'src', options.welcome_url );
-
-        loginPage.right.$( '.unified-panel-body' )
-            .css( 'overflow', 'hidden' )
-            .html( '<iframe src="' + loginUrl + '" frameborder="0" style="width: 100%; height: 100%;"/>' );
+        Galaxy.page = new Page.View( _.extend( options, {
+            Right : LoginPage
+        } ) );
     });
 };

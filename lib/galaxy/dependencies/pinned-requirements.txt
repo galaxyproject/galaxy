@@ -69,3 +69,6 @@ ecdsa==0.13
 
 # Flexible BAM index naming
 pysam==0.8.4+gx5
+
+# Chronos client
+chronos-python==0.38.0

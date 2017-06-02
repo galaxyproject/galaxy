@@ -112,6 +112,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                              title      : options.title,
                              target     : options.target || '_top',
                              disabled   : options.disabled } )
+                    .tooltip( { placement: 'bottom' } )
                     .off( 'click' ).on( 'click' , function() {
                         options.onclick && !options.disabled && options.onclick();
                     });

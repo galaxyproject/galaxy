@@ -18,7 +18,7 @@ GROUP="nogroup"
 GALAXY_DIR="/home/galaxy/galaxy_dist/"
 # Galaxy releases >= 16.01 installs dependencies by default into a virtualenv in <GALAXY_DIR>/.venv
 # A simple way to activate this virtualenv is to use the python interpreter in <GALAXY_DIR>/.venv
-# See https://wiki.galaxyproject.org/News/2016_01_GalaxyRelease and
+# See https://galaxyproject.org/news/2016-01-galaxy-release/ and
 # https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/framework_dependencies.rst
 PYTHON="/home/galaxy/galaxy_dist/.venv/bin/python"
 OPTS="./scripts/paster.py serve --log-file /home/galaxy/galaxy.log config/galaxy.ini"
