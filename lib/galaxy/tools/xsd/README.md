@@ -41,5 +41,5 @@ This code is free software released under the terms of the MIT license.
 # See also:
 
 * Galaxy https://usegalaxy.org/
-* Galaxy Tool XML File https://wiki.galaxyproject.org/Admin/Tools/ToolConfigSyntax
+* Galaxy Tool XML File https://galaxyproject.org/admin/tools/tool-config-syntax/
 

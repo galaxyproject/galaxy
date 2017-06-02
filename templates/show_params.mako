@@ -188,7 +188,9 @@
         <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
         %endif
         %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-            <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
+            %if not hda.purged:
+                <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
+            %endif
         %endif
     </tbody>
 </table>

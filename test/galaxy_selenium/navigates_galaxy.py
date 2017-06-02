@@ -394,17 +394,16 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_workflow()
 
     def workflow_index_table_elements(self):
-        self.wait_for_selector_visible(".manage-table tbody")
-        table_elements = self.driver.find_elements_by_css_selector(".manage-table tbody > tr")
-        # drop header
-        return table_elements[1:]
+        self.wait_for_selector_visible("tbody.workflow-search")
+        table_elements = self.driver.find_elements_by_css_selector("tbody.workflow-search > tr")
+        return table_elements
 
     def workflow_index_click_option(self, option_title, workflow_index=0):
         table_elements = self.workflow_index_table_elements()
         workflow_row = table_elements[workflow_index]
         workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
         workflow_button.click()
-        menu_element = self.wait_for_selector_visible(".popmenu-wrapper .dropdown-menu")
+        menu_element = self.wait_for_selector_visible("ul.action-dpd")
         menu_options = menu_element.find_elements_by_css_selector("li a")
         found_option = False
         for menu_option in menu_options:
@@ -450,7 +449,8 @@ class NavigatesGalaxy(HasDriver):
         self.click_xpath(self.navigation_data["selectors"]["masthead"]["workflow"])
 
     def click_button_new_workflow(self):
-        self.click_selector(self.navigation_data["selectors"]["workflows"]["new_button"])
+        element = self.wait_for_selector_clickable(self.navigation_data["selectors"]["workflows"]["new_button"])
+        element.click()
 
     def wait_for_sizzle_selector_clickable(self, selector):
         element = self._wait_on(
@@ -666,10 +666,13 @@ class NavigatesGalaxy(HasDriver):
         return self._assert_message("warning", contains=contains)
 
     def _assert_message(self, type, contains=None):
-        element = self.wait_for_selector(self.test_data["selectors"]["messages"][type])
+        element = self.wait_for_selector_visible(self.test_data["selectors"]["messages"][type])
         assert element, "No error message found, one expected."
         if contains is not None:
-            assert contains in element.text
+            text = element.text
+            if contains not in text:
+                message = "Text [%s] expected inside of [%s] but not found." % (contains, text)
+                raise AssertionError(message)
 
     def assert_no_error_message(self):
         self.assert_selector_absent(self.test_data["selectors"]["messages"]["error"])

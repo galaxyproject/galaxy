@@ -15,36 +15,37 @@ define([ "test-app", "layout/page", "layout/panel",
     function _check( page, sidePanels ) {
         ok( page.$( '#center' ).length == 1, 'Center panel found.' );
         _.each( sidePanels, function( panelVisible, panelId ) {
-            ok( page.$( '#' + panelId ).length == panelVisible ? 1 : 0, ( panelVisible ? '' : 'No' ) + ' ' + panelId + ' panel found.' );
-            ok ( _.has( page, panelId ) == panelVisible, 'Panel attribute valid.' );
-            panelVisible && ok( page.$( '#' + panelId ).find( '.panel-header-text' ).text() == '_title', 'Title correct' );
+            ok( page.$( '#' + panelId ).css( 'display' ) == panelVisible, ( panelVisible ? '' : 'No' ) + ' ' + panelId + ' panel found.' );
         });
     }
 
     test( "test center/right", function() {
         this.$container.empty();
-        var page = new Page.PageLayoutView({
-            el      : this.$container,
-            center  : new Panel.CenterPanel({}),
-            right   : new Panel.RightPanel({ title: '_title' })
+        var page = new Page.View({
+            Right   : Backbone.View.extend({
+                initialize: function() {
+                    this.setElement( $('<div/>') );
+                    this.model = new Backbone.Model({});
+                }
+            })
         }).render();
-        _check( page, { left: false, right: true } );
+        _check( page, { left: 'none', right: 'block' } );
     });
     test( "test center", function() {
         this.$container.empty();
-        var page = new Page.PageLayoutView({
-            el      : this.$container,
-            center  : new Panel.CenterPanel({})
-        }).render();
-        _check( page, { left: false, right: false } );
+        var page = new Page.View({}).render();
+        _check( page, { left: 'none', right: 'none' } );
     });
     test( "test left/center", function() {
         this.$container.empty();
-        var page = new Page.PageLayoutView({
-            el      : this.$container,
-            center  : new Panel.CenterPanel({}),
-            left    : new Panel.LeftPanel({ title: '_title' })
+        var page = new Page.View({
+            Left   : Backbone.View.extend({
+                initialize: function() {
+                    this.setElement( $('<div/>') );
+                    this.model = new Backbone.Model({});
+                }
+            })
         }).render();
-        _check( page, { left: true, right: false } );
+        _check( page, { left: 'block', right: 'none' } );
     });
 });

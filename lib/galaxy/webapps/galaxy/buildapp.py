@@ -107,6 +107,8 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/tours/{tour_id}' )
     webapp.add_client_route( '/user' )
     webapp.add_client_route( '/user/{form_id}' )
+    webapp.add_client_route( '/workflow' )
+    webapp.add_client_route( '/workflow/configure_menu' )
     webapp.add_client_route( '/custom_builds' )
 
     # ==== Done
@@ -288,6 +290,8 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( '/api/genomes/{id}/sequences', controller='genomes', action='sequences' )
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.mapper.connect( '/api/workflows/build_module', action='build_module', controller="workflows" )
+    webapp.mapper.connect( '/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( '/api/workflows/menu', action='set_workflow_menu', controller="workflows", conditions=dict( method=[ "PUT" ] ) )
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.connect( '/api/histories/{history_id}/citations', action='citations', controller="histories" )
@@ -762,22 +766,46 @@ def populate_api_routes( webapp, app ):
                       repository_id=None,
                       image_file=None )
 
-    webapp.mapper.connect( 'shed_category',
-                           '/api/tool_shed_repositories/shed_category',
-                           controller='tool_shed_repositories',
-                           action='shed_category',
+    webapp.mapper.connect( 'tool_shed_contents',
+                           '/api/tool_shed/contents',
+                           controller='toolshed',
+                           action='show',
                            conditions=dict( method=[ "GET" ] ) )
 
-    webapp.mapper.connect( 'shed_repository',
-                           '/api/tool_shed_repositories/shed_repository',
-                           controller='tool_shed_repositories',
-                           action='shed_repository',
+    webapp.mapper.connect( 'tool_shed_category_contents',
+                           '/api/tool_shed/category',
+                           controller='toolshed',
+                           action='category',
                            conditions=dict( method=[ "GET" ] ) )
 
-    webapp.mapper.connect( 'shed_categories',
-                           '/api/tool_shed_repositories/shed_categories',
-                           controller='tool_shed_repositories',
-                           action='shed_categories',
+    webapp.mapper.connect( 'tool_shed_repository_details',
+                           '/api/tool_shed/repository',
+                           controller='toolshed',
+                           action='repository',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'tool_sheds',
+                           '/api/tool_shed',
+                           controller='toolshed',
+                           action='index',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'tool_shed_search',
+                           '/api/tool_shed/search',
+                           controller='toolshed',
+                           action='search',
+                           conditions=dict( method=[ "GET", "POST" ] ) )
+
+    webapp.mapper.connect( 'tool_shed_status',
+                           '/api/tool_shed/status',
+                           controller='toolshed',
+                           action='status',
+                           conditions=dict( method=[ "GET", "POST" ] ) )
+
+    webapp.mapper.connect( 'shed_tool_json',
+                           '/api/tool_shed/tool_json',
+                           controller='toolshed',
+                           action='tool_json',
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'tool_shed_repository',
