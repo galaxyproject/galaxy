@@ -124,6 +124,11 @@ define(['utils/utils',
                     .attr( 'placeholder', this.model.get( 'placeholder' ) )
                     .css( 'color', this.model.get( 'color' ) || '' )
                     .css( 'border-color', this.model.get( 'color' ) || '' );
+            var datalist = this.model.get( 'datalist' );
+            if ( $.isArray( datalist ) && datalist.length > 0 ) {
+                this.$el.autocomplete( { source : function( request, response ) { response( self.model.get( 'datalist' ) ) },
+                                         change : function() { self._onchange() } } );
+            }
             if ( this.model.get( 'value' ) !== this.$el.val() ) {
                 this.$el.val( this.model.get( 'value' ) );
             }
@@ -155,8 +160,46 @@ define(['utils/utils',
         render: function() {
             this.$el.attr( 'id', this.model.id );
             this.$hidden.val( this.model.get( 'value' ) );
-            this.model.get( 'info' ) ? this.$info.show().html( this.model.get( 'info' ) ) : this.$info.hide();
+            this.model.get( 'info' ) ? this.$info.show().text( this.model.get( 'info' ) ) : this.$info.hide();
             return this;
+        }
+    });
+
+    /** Creates a upload element input field */
+    var Upload = Backbone.View.extend({
+        initialize: function( options ) {
+            var self = this;
+            this.model = options && options.model || new Backbone.Model( options );
+            this.setElement( $ ( '<div/>' ).append( this.$info = $( '<div/>' ) )
+                                           .append( this.$file = $( '<input/>' ).attr( 'type', 'file' ).addClass( 'ui-margin-bottom' ) )
+                                           .append( this.$text = $( '<textarea/>' ).addClass( 'ui-textarea' ).attr( 'disabled', true ) )
+                                           .append( this.$wait = $( '<i/>' ).addClass( 'fa fa-spinner fa-spin' ) ) );
+            this.listenTo( this.model, 'change', this.render, this );
+            this.$file.on( 'change', function( e ) { self._readFile( e ) } );
+            this.render();
+        },
+        value: function( new_val ) {
+            new_val !== undefined && this.model.set( 'value', new_val );
+            return this.model.get( 'value' );
+        },
+        render: function() {
+            this.$el.attr( 'id', this.model.id );
+            this.model.get( 'info' ) ? this.$info.show().text( this.model.get( 'info' ) ) : this.$info.hide();
+            this.model.get( 'value' ) ? this.$text.text( this.model.get( 'value' ) ).show() : this.$text.hide();
+            this.model.get( 'wait' ) ? this.$wait.show() : this.$wait.hide();
+            return this;
+        },
+        _readFile: function( e ) {
+            var self = this;
+            var file = e.target.files && e.target.files[ 0 ];
+            if ( file ) {
+                var reader = new FileReader();
+                reader.onload = function() {
+                    self.model.set( { wait: false, value: this.result } );
+                }
+                this.model.set( { wait: true, value: null } );
+                reader.readAsText( file );
+            }
         }
     });
 
@@ -170,6 +213,7 @@ define(['utils/utils',
         Label            : Label,
         Message          : Message,
         UnescapedMessage : UnescapedMessage,
+        Upload           : Upload,
         Modal            : Modal,
         RadioButton      : Options.RadioButton,
         Checkbox         : Options.Checkbox,

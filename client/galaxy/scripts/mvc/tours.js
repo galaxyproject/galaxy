@@ -31,7 +31,7 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 };
             }
             if (step.postclick){
-                step.onHide = function(){
+                step.onNext = function(){
                     _.each(step.postclick, function(postclick){
                         // TODO: click delay between clicks
                         $(postclick).click();

@@ -1,0 +1,2 @@
+# See $GALAXY_ROOT/lib/galaxy/tools/deps/default_conda_mapping.yml for example mapping - 
+# additional site-specific mappings can be added to config/conda_mapping.yml.

@@ -11,6 +11,7 @@ from sqlalchemy import and_, desc, false, or_, true
 from galaxy import managers, model, util, web
 from galaxy.datatypes.interval import Bed
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.data_providers.genome import RawBedDataProvider
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
@@ -65,7 +66,7 @@ class HistorySelectionGrid( grids.Grid ):
     datasets_action = 'list_history_datasets'
     datasets_param = "f-history"
     columns = [
-        NameColumn( "History Name", key="name", filterable="standard", inbound=True ),
+        NameColumn( "History Name", key="name", filterable="standard", target="inbound" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago, visible=False ),
         DbKeyPlaceholderColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
@@ -88,7 +89,7 @@ class LibrarySelectionGrid( LibraryListGrid ):
     datasets_action = 'list_library_datasets'
     datasets_param = "f-library"
     columns = [
-        NameColumn( "Library Name", key="name", filterable="standard", inbound=True  )
+        NameColumn( "Library Name", key="name", filterable="standard", target="inbound"  )
     ]
     num_rows_per_page = 10
     use_async = True
@@ -224,12 +225,12 @@ class VisualizationListGrid( grids.Grid ):
             key="free-text-search", visible=False, filterable="standard" )
     )
     global_actions = [
-        grids.GridAction( "Create new visualization", dict( action='create' ), inbound=True )
+        grids.GridAction( "Create new visualization", dict( action='create' ), target="inbound" )
     ]
     operations = [
         grids.GridOperation( "Open", allow_multiple=False, url_args=get_url_args ),
         grids.GridOperation( "Open in Circster", allow_multiple=False, condition=( lambda item: item.type == 'trackster' ), url_args=dict( action='circster' ) ),
-        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit'), inbound=True),
+        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit'), target="inbound" ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted )),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), confirm="Are you sure you want to delete this visualization?" ),
@@ -766,13 +767,13 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         """
         Log, raise if debugging; log and show html message if not.
         """
-        log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
+        log.exception( 'error rendering visualization (%s)', visualization_name )
         if trans.debug:
             raise
         return trans.show_error_message(
             "There was an error rendering the visualization. " +
             "Contact your Galaxy administrator if the problem persists." +
-            "<br/>Details: " + str( exception ), use_panels=False )
+            "<br/>Details: " + unicodify( exception ), use_panels=False )
 
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )

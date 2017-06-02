@@ -7,6 +7,7 @@ from xml.etree import ElementTree
 
 from galaxy import model
 from galaxy.util import plugin_config
+from galaxy.util.handlers import ConfiguresHandlers
 
 import galaxy.workflow.schedulers
 
@@ -21,7 +22,7 @@ EXCEPTION_MESSAGE_NO_DEFAULT_SCHEDULER = "Failed to defined workflow schedulers 
 EXCEPTION_MESSAGE_DUPLICATE_SCHEDULERS = "Failed to defined workflow schedulers - workflow scheduling plugin id '%s' duplicated."
 
 
-class WorkflowSchedulingManager( object ):
+class WorkflowSchedulingManager( object, ConfiguresHandlers ):
     """ A workflow scheduling manager based loosely on pattern established by
     ``galaxy.manager.JobManager``. Only schedules workflows on handler
     processes.
@@ -29,12 +30,14 @@ class WorkflowSchedulingManager( object ):
 
     def __init__( self, app ):
         self.app = app
-        self.__job_config = app.job_config
+        self.__handlers_configured = False
         self.workflow_schedulers = {}
         self.active_workflow_schedulers = {}
         # Passive workflow schedulers won't need to be monitored I guess.
 
         self.request_monitor = None
+
+        self.handlers = {}
 
         self.__plugin_classes = self.__plugins_dict()
         self.__init_schedulers()
@@ -48,14 +51,30 @@ class WorkflowSchedulingManager( object ):
             # Process should not schedule workflows - do nothing.
             pass
 
-    # Provide a handler config-like interface by delegating to job handler
-    # config. Perhaps it makes sense to let there be explicit workflow
-    # handlers?
-    def _is_workflow_handler( self ):
-        return self.app.is_job_handler()
+        # When assinging handlers to workflows being queued - use job_conf
+        # if not explicit workflow scheduling handlers have be specified or
+        # else use those explicit workflow scheduling handlers (on self).
+        if self.__handlers_configured:
+            self.__has_handlers = self
+        else:
+            self.__has_handlers = app.job_config
 
-    def _get_handler( self ):
-        return self.__job_config.get_handler( None )
+    def _is_workflow_handler( self ):
+        # If we have explicitly configured handlers, check them.
+        # Else just make sure we are a job handler.
+        if self.__handlers_configured:
+            is_handler = self.is_handler(self.app.config.server_name)
+        else:
+            is_handler = self.app.is_job_handler()
+        return is_handler
+
+    def _get_handler( self, history_id ):
+        # Use random-ish integer history_id to produce a consistent index to pick
+        # job handler with.
+        random_index = history_id
+        if self.app.config.parallelize_workflow_scheduling_within_histories:
+            random_index = None
+        return self.__has_handlers.get_handler( None, index=random_index )
 
     def shutdown( self ):
         for workflow_scheduler in self.workflow_schedulers.itervalues():
@@ -72,7 +91,7 @@ class WorkflowSchedulingManager( object ):
     def queue( self, workflow_invocation, request_params ):
         workflow_invocation.state = model.WorkflowInvocation.states.NEW
         scheduler = request_params.get( "scheduler", None ) or self.default_scheduler_id
-        handler = self._get_handler()
+        handler = self._get_handler( workflow_invocation.history.id )
         log.info("Queueing workflow invocation for handler [%s]" % handler)
 
         workflow_invocation.scheduler = scheduler
@@ -113,16 +132,30 @@ class WorkflowSchedulingManager( object ):
     def __init_schedulers_for_element( self, plugins_element ):
         plugins_kwds = dict( plugins_element.items() )
         self.default_scheduler_id = plugins_kwds.get( 'default', DEFAULT_SCHEDULER_ID )
-        for plugin_element in plugins_element:
-            plugin_type = plugin_element.tag
-            plugin_kwds = dict( plugin_element.items() )
-            workflow_scheduler_id = plugin_kwds.get( 'id', None )
-            self.__init_plugin( plugin_type, workflow_scheduler_id, **plugin_kwds )
+        for config_element in plugins_element:
+            config_element_tag = config_element.tag
+            if config_element_tag == "handlers":
+                self.__init_handlers(config_element)
+
+                # Determine the default handler(s)
+                self.default_handler_id = self._get_default(self.app.config, config_element, list(self.handlers.keys()))
+            else:
+                plugin_type = config_element_tag
+                plugin_element = config_element
+                # Configuring a scheduling plugin...
+                plugin_kwds = dict( plugin_element.items() )
+                workflow_scheduler_id = plugin_kwds.get( 'id', None )
+                self.__init_plugin( plugin_type, workflow_scheduler_id, **plugin_kwds )
 
         if not self.workflow_schedulers:
             raise Exception( EXCEPTION_MESSAGE_NO_SCHEDULERS )
         if self.default_scheduler_id not in self.workflow_schedulers:
             raise Exception( EXCEPTION_MESSAGE_NO_DEFAULT_SCHEDULER % self.default_scheduler_id )
+
+    def __init_handlers(self, config_element):
+        assert not self.__handlers_configured
+        self._init_handlers(config_element)
+        self.__handlers_configured = True
 
     def __init_plugin( self, plugin_type, workflow_scheduler_id=None, **kwds ):
         workflow_scheduler_id = workflow_scheduler_id or self.default_scheduler_id
@@ -175,6 +208,13 @@ class WorkflowRequestMonitor( object ):
             return False
 
         try:
+            # This ensures we're only ever working on the 'first' active
+            # workflow invocation in a given history, to force sequential
+            # activation.
+            if self.app.config.history_local_serial_workflow_scheduling:
+                for i in workflow_invocation.history.workflow_invocations:
+                    if i.active and i.id < workflow_invocation.id:
+                        return False
             workflow_scheduler.schedule( workflow_invocation )
         except Exception:
             # TODO: eventually fail this - or fail it right away?

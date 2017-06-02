@@ -40,7 +40,7 @@ class DeferredJobQueue( object ):
                 try:
                     module = __import__( module_name )
                 except:
-                    log.exception( 'Deferred job plugin appears to exist but is not loadable: %s' % module_name )
+                    log.exception( 'Deferred job plugin appears to exist but is not loadable: %s', module_name )
                     continue
                 for comp in module_name.split( "." )[1:]:
                     module = getattr( module, comp )
@@ -105,16 +105,16 @@ class DeferredJobQueue( object ):
             if job.is_check_time:
                 try:
                     job_state = self.plugins[job.plugin].check_job( job )
-                except Exception as e:
+                except Exception:
                     self.__fail_job( job )
-                    log.exception( 'Set deferred job %s to error because of an exception in check_job(): %s' % ( job.id, str( e ) ) )
+                    log.exception( 'Set deferred job %s to error because of an exception in check_job()' % job.id )
                     continue
                 if job_state == self.job_states.READY:
                     try:
                         self.plugins[job.plugin].run_job( job )
-                    except Exception as e:
+                    except Exception:
                         self.__fail_job( job )
-                        log.exception( 'Set deferred job %s to error because of an exception in run_job(): %s' % ( job.id, str( e ) ) )
+                        log.exception( 'Set deferred job %s to error because of an exception in run_job()' % job.id )
                         continue
                 elif job_state == self.job_states.INVALID:
                     self.__fail_job( job )

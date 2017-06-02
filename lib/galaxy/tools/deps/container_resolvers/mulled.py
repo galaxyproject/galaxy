@@ -3,6 +3,8 @@
 import collections
 import logging
 
+import six
+
 from ..container_resolvers import (
     ContainerResolver,
 )
@@ -102,6 +104,7 @@ def cached_container_description(targets, namespace):
     return container
 
 
+@six.python_2_unicode_compatible
 class CachedMulledContainerResolver(ContainerResolver):
 
     resolver_type = "cached_mulled"
@@ -111,10 +114,17 @@ class CachedMulledContainerResolver(ContainerResolver):
         self.namespace = namespace
 
     def resolve(self, enabled_container_types, tool_info):
+        if tool_info.requires_galaxy_python_environment:
+            return None
+
         targets = mulled_targets(tool_info)
         return cached_container_description(targets, self.namespace)
 
+    def __str__(self):
+        return "CachedMulledContainerResolver[namespace=%s]" % self.namespace
 
+
+@six.python_2_unicode_compatible
 class MulledContainerResolver(ContainerResolver):
     """Look for mulled images matching tool dependencies."""
 
@@ -125,6 +135,9 @@ class MulledContainerResolver(ContainerResolver):
         self.namespace = namespace
 
     def resolve(self, enabled_container_types, tool_info):
+        if tool_info.requires_galaxy_python_environment:
+            return None
+
         targets = mulled_targets(tool_info)
         if len(targets) == 0:
             return None
@@ -160,7 +173,11 @@ class MulledContainerResolver(ContainerResolver):
                 type="docker",
             )
 
+    def __str__(self):
+        return "MulledContainerResolver[namespace=%s]" % self.namespace
 
+
+@six.python_2_unicode_compatible
 class BuildMulledContainerResolver(ContainerResolver):
     """Look for mulled images matching tool dependencies."""
 
@@ -179,6 +196,9 @@ class BuildMulledContainerResolver(ContainerResolver):
         self.auto_init = self._get_config_option("auto_init", DEFAULT_CHANNELS, prefix="involucro")
 
     def resolve(self, enabled_container_types, tool_info):
+        if tool_info.requires_galaxy_python_environment:
+            return None
+
         targets = mulled_targets(tool_info)
         if len(targets) == 0:
             return None
@@ -194,6 +214,9 @@ class BuildMulledContainerResolver(ContainerResolver):
         involucro_context = InvolucroContext(**self._involucro_context_kwds)
         self.enabled = ensure_installed(involucro_context, self.auto_init)
         return involucro_context
+
+    def __str__(self):
+        return "BuildContainerResolver[namespace=%s]" % self.namespace
 
 
 def mulled_targets(tool_info):

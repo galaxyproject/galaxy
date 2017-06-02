@@ -61,6 +61,13 @@ class ContainerFinder(object):
     def __enabled_container_types(self, destination_info):
         return [t for t in ALL_CONTAINER_TYPES if self.__container_type_enabled(t, destination_info)]
 
+    def find_best_container_description(self, enabled_container_types, tool_info):
+        """Regardless of destination properties - find best container for tool.
+
+        Given container types and container.ToolInfo description of the tool."""
+        container_description = self.container_registry.find_best_container_description(enabled_container_types, tool_info)
+        return container_description
+
     def find_container(self, tool_info, destination_info, job_info):
         enabled_container_types = self.__enabled_container_types(destination_info)
 
@@ -89,7 +96,7 @@ class ContainerFinder(object):
                 if container:
                     return container
 
-        # Is destination forcing Galaxy to use a particular container do it,
+        # If destination forcing Galaxy to use a particular container do it,
         # this is likely kind of a corner case. For instance if deployers
         # do not trust the containers annotated in tools.
         for container_type in CONTAINER_CLASSES.keys():
@@ -100,7 +107,7 @@ class ContainerFinder(object):
                     return container
 
         # Otherwise lets see if we can find container for the tool.
-        container_description = self.container_registry.find_best_container_description(enabled_container_types, tool_info)
+        container_description = self.find_best_container_description(enabled_container_types, tool_info)
         container = __destination_container(container_description)
         if container:
             return container
@@ -262,9 +269,10 @@ class ToolInfo(object):
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=[], requirements=[]):
+    def __init__(self, container_descriptions=[], requirements=[], requires_galaxy_python_environment=False):
         self.container_descriptions = container_descriptions
         self.requirements = requirements
+        self.requires_galaxy_python_environment = requires_galaxy_python_environment
         self.env_pass_through = ["GALAXY_SLOTS"]
 
 
@@ -279,8 +287,8 @@ class JobInfo(object):
         self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 
+@six.add_metaclass(ABCMeta)
 class Container( object ):
-    __metaclass__ = ABCMeta
 
     def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description):
         self.container_id = container_id
@@ -445,8 +453,9 @@ class NullContainer(object):
     def __init__(self):
         pass
 
-    def __nonzero__(self):
+    def __bool__(self):
         return False
+    __nonzero__ = __bool__
 
 
 NULL_CONTAINER = NullContainer()

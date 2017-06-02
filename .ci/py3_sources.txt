@@ -6,6 +6,7 @@ doc/patch.py
 lib/galaxy/actions/
 lib/galaxy/auth/
 lib/galaxy/config.py
+lib/galaxy/containers/
 lib/galaxy/dataset_collections/
 lib/galaxy/datatypes/assembly.py
 lib/galaxy/datatypes/binary.py
@@ -13,7 +14,9 @@ lib/galaxy/datatypes/constructive_solid_geometry.py
 lib/galaxy/datatypes/converters/
 lib/galaxy/datatypes/dataproviders/
 lib/galaxy/datatypes/data.py
+lib/galaxy/datatypes/genetics.py
 lib/galaxy/datatypes/images.py
+lib/galaxy/datatypes/interval.py
 lib/galaxy/datatypes/msa.py
 lib/galaxy/datatypes/ngsindex.py
 lib/galaxy/datatypes/proteomics.py
@@ -45,11 +48,14 @@ lib/galaxy/tours/
 lib/galaxy/util/
 lib/galaxy/visualization/
 lib/galaxy/web/buildapp.py
+lib/galaxy/web/framework/base.py
+lib/galaxy/web/framework/decorators.py
 lib/galaxy/web/framework/__init__.py
 lib/galaxy/web/framework/middleware/error.py
 lib/galaxy/web/framework/middleware/static.py
 lib/galaxy/web/framework/middleware/statsd.py
 lib/galaxy/web/__init__.py
+lib/galaxy/webapps/galaxy/api/histories.py
 lib/galaxy/webapps/galaxy/api/tours.py
 lib/galaxy/webapps/galaxy/api/workflows.py
 lib/galaxy/webapps/galaxy/controllers/external_services.py
@@ -65,10 +71,9 @@ lib/galaxy/webapps/tool_shed/util/ratings_util.py
 lib/galaxy/work/
 lib/galaxy/workflow/extract.py
 lib/galaxy/workflow/run.py
-lib/galaxy/workflow/schedulers/core.py
+lib/galaxy/workflow/schedulers/
 lib/galaxy/workflow/steps.py
 lib/galaxy_ext/
-lib/galaxy_utils/
 lib/log_tempfile.py
 lib/psyco_full.py
 lib/tool_shed/

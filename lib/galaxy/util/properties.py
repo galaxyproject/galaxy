@@ -10,6 +10,28 @@ from six import iteritems
 from six.moves.configparser import ConfigParser
 
 
+def find_config_file(default, old_default, explicit, cwd=None):
+    if cwd is not None:
+        default = os.path.join(cwd, default)
+        old_default = os.path.join(cwd, old_default)
+        if explicit is not None:
+            explicit = os.path.join(cwd, explicit)
+
+    if explicit:
+        if os.path.exists(explicit):
+            config_file = explicit
+        else:
+            raise Exception("Problem determining Galaxy's configuration - the specified configuration file cannot be found.")
+    else:
+        if not os.path.exists( default ) and os.path.exists( old_default ):
+            config_file = old_default
+        elif os.path.exists( default ):
+            config_file = default
+        else:
+            config_file = default + ".sample"
+    return config_file
+
+
 def load_app_properties(
     kwds={},
     ini_file=None,
@@ -97,4 +119,4 @@ class NicerConfigParser(ConfigParser):
                 raise
 
 
-__all__ = ('load_app_properties', 'NicerConfigParser')
+__all__ = ('find_config_file', 'load_app_properties', 'NicerConfigParser')

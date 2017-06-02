@@ -446,6 +446,7 @@ def __parse_test_attributes( output_elem, attrib, parse_elements=False, parse_di
     # Allow a file size to vary if sim_size compare
     attributes['delta'] = int( attrib.pop( 'delta', '10000' ) )
     attributes['sort'] = string_as_bool( attrib.pop( 'sort', False ) )
+    attributes['decompress'] = string_as_bool( attrib.pop( 'decompress', False ) )
     extra_files = []
     if 'ftype' in attrib:
         attributes['ftype'] = attrib['ftype']
@@ -495,9 +496,8 @@ def __parse_assert_list_from_elem( assert_elem ):
         """ Converts and XML element to a dictionary format, used by assertion checking code. """
         tag = elem.tag
         attributes = dict( elem.attrib )
-        child_elems = list( elem.getchildren() )
         converted_children = []
-        for child_elem in child_elems:
+        for child_elem in elem:
             converted_children.append( convert_elem(child_elem) )
         return {"tag": tag, "attributes": attributes, "children": converted_children}
     if assert_elem is not None:
@@ -593,8 +593,8 @@ def __parse_param_elem( param_elem, i=0 ):
         value = attrib['value']
     else:
         value = None
-    attrib['children'] = list( param_elem.getchildren() )
-    if attrib['children']:
+    attrib['children'] = param_elem
+    if attrib['children'] is not None:
         # At this time, we can assume having children only
         # occurs on DataToolParameter test items but this could
         # change and would cause the below parsing to change

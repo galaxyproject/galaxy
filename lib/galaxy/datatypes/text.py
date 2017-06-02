@@ -138,7 +138,7 @@ class Ipynb( Json ):
     def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         preview = string_as_bool( preview )
         if to_ext or not preview:
-            return self._serve_raw(trans, dataset, to_ext)
+            return self._serve_raw(trans, dataset, to_ext, **kwd)
         else:
             ofile_handle = tempfile.NamedTemporaryFile(delete=False)
             ofilename = ofile_handle.name
@@ -150,7 +150,7 @@ class Ipynb( Json ):
                 ofilename = '%s.html' % ofilename
             except:
                 ofilename = dataset.file_name
-                log.exception( 'Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.' % cmd )
+                log.exception( 'Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', cmd )
             return open( ofilename )
 
     def set_meta( self, dataset, **kwd ):
@@ -424,7 +424,7 @@ class SnpEffDb( Text ):
         # search data_dir/genome_version for files
         regulation_pattern = 'regulation_(.+).bin'
         #  annotation files that are included in snpEff by a flag
-        annotations_dict = {'nextProt.bin': '-nextprot', 'motif.bin': '-motif'}
+        annotations_dict = {'nextProt.bin': '-nextprot', 'motif.bin': '-motif', 'interactions.bin': '-interaction'}
         regulations = []
         annotations = []
         genome_version = None
@@ -605,3 +605,50 @@ class Smat(Text):
                     if re.match(r"[-+]?\d+$", item) is None:
                         return False
         return True
+
+
+class PlantTribesOrtho(Html):
+    """
+    PlantTribes sequences classified into precomputed, orthologous gene family
+    clusters.
+    """
+    file_ext = "ptortho"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesOrtho, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes gene family clusters: %d files" % dataset.metadata.data_lines
+
+
+class PlantTribesOrthoCodingSequence(Html):
+    """
+    PlantTribes sequences classified into precomputed, orthologous gene family
+    clusters and corresponding coding sequences.
+    """
+    file_ext = "ptorthocs"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesOrthoCodingSequence, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes gene family clusters with corresponding coding sequences: %d files" % dataset.metadata.data_lines
+
+
+class PlantTribesPhylogeneticTree(Html):
+    """
+    PlantTribes multiple sequence alignments and inferred maximum likelihood
+    phylogenies for orthogroups.
+    """
+    file_ext = "pttree"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesPhylogeneticTree, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes phylogenetic trees: %d files" % dataset.metadata.data_lines
+
+
+class PlantTribesMultipleSequenceAlignment(Html):
+    """
+    PlantTribes multiple sequence alignments for orthogroups.
+    """
+    file_ext = "ptalign"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(PlantTribesMultipleSequenceAlignment, self).set_peek(dataset, is_multi_byte=is_multi_byte)
+        dataset.blurb = "PlantTribes multiple sequence alignments: %d files" % dataset.metadata.data_lines

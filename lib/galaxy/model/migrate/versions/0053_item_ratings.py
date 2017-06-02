@@ -51,9 +51,8 @@ def upgrade(migrate_engine):
     # Create history_rating_association table.
     try:
         HistoryRatingAssociation_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating history_rating_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating history_rating_association table failed.")
 
     # Create history_dataset_association_rating_association table.
     try:
@@ -65,33 +64,28 @@ def upgrade(migrate_engine):
             i = Index( "ix_hda_rating_association_hda_id", HistoryDatasetAssociationRatingAssociation_table.c.history_dataset_association_id )
             try:
                 i.create()
-            except Exception as e:
-                print(str(e))
-                log.debug( "Adding index 'ix_hda_rating_association_hda_id' to table 'history_dataset_association_rating_association' table failed: %s" % str( e ) )
+            except Exception:
+                log.exception("Adding index 'ix_hda_rating_association_hda_id' to table 'history_dataset_association_rating_association' table failed.")
         else:
-            print(str(e))
-            log.debug( "Creating history_dataset_association_rating_association table failed: %s" % str( e ) )
+            log.exception("Creating history_dataset_association_rating_association table failed.")
 
     # Create stored_workflow_rating_association table.
     try:
         StoredWorkflowRatingAssociation_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating stored_workflow_rating_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating stored_workflow_rating_association table failed.")
 
     # Create page_rating_association table.
     try:
         PageRatingAssociation_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating page_rating_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating page_rating_association table failed.")
 
     # Create visualization_rating_association table.
     try:
         VisualizationRatingAssociation_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating visualization_rating_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating visualization_rating_association table failed.")
 
 
 def downgrade(migrate_engine):
@@ -101,34 +95,29 @@ def downgrade(migrate_engine):
     # Drop history_rating_association table.
     try:
         HistoryRatingAssociation_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping history_rating_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping history_rating_association table failed.")
 
     # Drop history_dataset_association_rating_association table.
     try:
         HistoryDatasetAssociationRatingAssociation_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping history_dataset_association_rating_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping history_dataset_association_rating_association table failed.")
 
     # Drop stored_workflow_rating_association table.
     try:
         StoredWorkflowRatingAssociation_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping stored_workflow_rating_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping stored_workflow_rating_association table failed.")
 
     # Drop page_rating_association table.
     try:
         PageRatingAssociation_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping page_rating_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping page_rating_association table failed.")
 
     # Drop visualization_rating_association table.
     try:
         VisualizationRatingAssociation_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping visualization_rating_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping visualization_rating_association table failed.")

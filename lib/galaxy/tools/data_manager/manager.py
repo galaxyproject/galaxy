@@ -7,11 +7,9 @@ from six import string_types
 
 from galaxy import util
 from galaxy.queue_worker import (
-    reload_data_managers,
     send_control_task
 )
 from galaxy.tools.data import TabularToolDataTable
-from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from tool_shed.util import (
@@ -27,7 +25,7 @@ DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
 
 
 class DataManagers( object ):
-    def __init__( self, app, xml_filename=None, conf_watchers=None ):
+    def __init__( self, app, xml_filename=None):
         self.app = app
         self.data_managers = odict()
         self.managed_data_tables = odict()
@@ -39,24 +37,9 @@ class DataManagers( object ):
                 continue
             self.load_from_xml( filename )
         if self.app.config.shed_data_manager_config_file:
-            self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=False, replace_existing=True )
-        if conf_watchers:
-            self.conf_watchers = conf_watchers
-        else:
-            self.conf_watchers = self.get_conf_watchers()
+            self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=True )
 
-    def get_conf_watchers(self):
-        conf_watchers = []
-        conf_watchers.extend([(get_tool_conf_watcher(lambda: reload_data_managers(self.app)), filename) for filename in util.listify(self.filename) if filename])
-        if self.app.config.shed_data_manager_config_file:
-            conf_watchers.append((get_tool_conf_watcher(lambda: reload_data_managers(self.app)), self.app.config.shed_data_manager_config_file))
-        [watcher.watch_file(filename) for watcher, filename in conf_watchers]
-        return [watcher for watcher, filename in conf_watchers]
-
-    def shutdown(self):
-        [watcher.shutdown() for watcher in self.conf_watchers]
-
-    def load_from_xml( self, xml_filename, store_tool_path=True, replace_existing=False ):
+    def load_from_xml( self, xml_filename, store_tool_path=True ):
         try:
             tree = util.parse_xml( xml_filename )
         except Exception as e:
@@ -74,26 +57,22 @@ class DataManagers( object ):
                 tool_path = '.'
             self.tool_path = tool_path
         for data_manager_elem in root.findall( 'data_manager' ):
-            self.load_manager_from_elem( data_manager_elem, replace_existing=replace_existing )
+            self.load_manager_from_elem( data_manager_elem, tool_path=self.tool_path )
 
-    def load_manager_from_elem( self, data_manager_elem, tool_path=None, add_manager=True, replace_existing=False ):
+    def load_manager_from_elem( self, data_manager_elem, tool_path=None, add_manager=True ):
         try:
             data_manager = DataManager( self, data_manager_elem, tool_path=tool_path )
         except Exception as e:
             log.error( "Error loading data_manager '%s':\n%s" % ( e, util.xml_to_string( data_manager_elem ) ) )
             return None
         if add_manager:
-            self.add_manager( data_manager, replace_existing=replace_existing )
+            self.add_manager( data_manager )
         log.debug( 'Loaded Data Manager: %s' % ( data_manager.id ) )
         return data_manager
 
-    def add_manager( self, data_manager, replace_existing=False ):
-        if not replace_existing:
-            assert data_manager.id not in self.data_managers, "A data manager has been defined twice: %s" % ( data_manager.id )
-        elif data_manager.id in self.data_managers:
-            # Data Manager already exists, remove first one and replace with new one
-            log.warning( "A data manager has been defined twice and will be replaced with the last loaded version: %s" % ( data_manager.id ) )
-            self.remove_manager( data_manager.id  )
+    def add_manager( self, data_manager ):
+        if data_manager.id in self.data_managers:
+            log.warning( "A data manager has been defined twice: %s " % ( data_manager.id ) )
         self.data_managers[ data_manager.id ] = data_manager
         for data_table_name in data_manager.data_tables.keys():
             if data_table_name not in self.managed_data_tables:
@@ -153,46 +132,58 @@ class DataManager( object ):
         self.version = elem.get( 'version', self.version )
         tool_shed_repository_id = None
         tool_guid = None
+
         if path is None:
             tool_elem = elem.find( 'tool' )
             assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % ( util.xml_to_string( elem ) )
             path = tool_elem.get( "file", None )
             tool_guid = tool_elem.get( "guid", None )
             # need to determine repository info so that dependencies will work correctly
-            tool_shed_url = tool_elem.find( 'tool_shed' ).text
-            # Handle protocol changes.
-            tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.data_managers.app, tool_shed_url )
-            # The protocol is not stored in the database.
-            tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed_url )
-            repository_name = tool_elem.find( 'repository_name' ).text
-            repository_owner = tool_elem.find( 'repository_owner' ).text
-            installed_changeset_revision = tool_elem.find( 'installed_changeset_revision' ).text
-            self.tool_shed_repository_info_dict = dict( tool_shed=tool_shed,
-                                                        name=repository_name,
-                                                        owner=repository_owner,
-                                                        installed_changeset_revision=installed_changeset_revision )
-            tool_shed_repository = \
-                repository_util.get_installed_repository( self.data_managers.app,
-                                                          tool_shed=tool_shed,
-                                                          name=repository_name,
-                                                          owner=repository_owner,
-                                                          installed_changeset_revision=installed_changeset_revision )
-            if tool_shed_repository is None:
-                log.warning( 'Could not determine tool shed repository from database. This should only ever happen when running tests.' )
-                # we'll set tool_path manually here from shed_conf_file
-                tool_shed_repository_id = None
-                try:
-                    tool_path = util.parse_xml( elem.get( 'shed_conf_file' ) ).getroot().get( 'tool_path', tool_path )
-                except Exception as e:
-                    log.error( 'Error determining tool_path for Data Manager during testing: %s', e )
+            if hasattr(self.data_managers.app, 'tool_cache') and tool_guid in self.data_managers.app.tool_cache._tool_paths_by_id:
+                path = self.data_managers.app.tool_cache._tool_paths_by_id[tool_guid]
+                tool = self.data_managers.app.tool_cache.get_tool(path)
+                tool_shed_repository = tool.tool_shed_repository
+                self.tool_shed_repository_info_dict = dict(tool_shed=tool_shed_repository.tool_shed,
+                                                           name=tool_shed_repository.name,
+                                                           owner=tool_shed_repository.owner,
+                                                           installed_changeset_revision=tool_shed_repository.installed_changeset_revision)
+                tool_shed_repository_id = self.data_managers.app.security.encode_id(tool_shed_repository.id)
+                tool_path = ""
             else:
-                tool_shed_repository_id = self.data_managers.app.security.encode_id( tool_shed_repository.id )
-            # use shed_conf_file to determine tool_path
-            shed_conf_file = elem.get( "shed_conf_file", None )
-            if shed_conf_file:
-                shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename( shed_conf_file, None )
-                if shed_conf:
-                    tool_path = shed_conf.get( "tool_path", tool_path )
+                tool_shed_url = tool_elem.find( 'tool_shed' ).text
+                # Handle protocol changes.
+                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.data_managers.app, tool_shed_url )
+                # The protocol is not stored in the database.
+                tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed_url )
+                repository_name = tool_elem.find( 'repository_name' ).text
+                repository_owner = tool_elem.find( 'repository_owner' ).text
+                installed_changeset_revision = tool_elem.find( 'installed_changeset_revision' ).text
+                self.tool_shed_repository_info_dict = dict( tool_shed=tool_shed,
+                                                            name=repository_name,
+                                                            owner=repository_owner,
+                                                            installed_changeset_revision=installed_changeset_revision )
+                tool_shed_repository = \
+                    repository_util.get_installed_repository( self.data_managers.app,
+                                                              tool_shed=tool_shed,
+                                                              name=repository_name,
+                                                              owner=repository_owner,
+                                                              installed_changeset_revision=installed_changeset_revision )
+                if tool_shed_repository is None:
+                    log.warning( 'Could not determine tool shed repository from database. This should only ever happen when running tests.' )
+                    # we'll set tool_path manually here from shed_conf_file
+                    tool_shed_repository_id = None
+                    try:
+                        tool_path = util.parse_xml( elem.get( 'shed_conf_file' ) ).getroot().get( 'tool_path', tool_path )
+                    except Exception as e:
+                        log.error( 'Error determining tool_path for Data Manager during testing: %s', e )
+                else:
+                    tool_shed_repository_id = self.data_managers.app.security.encode_id( tool_shed_repository.id )
+                # use shed_conf_file to determine tool_path
+                shed_conf_file = elem.get( "shed_conf_file", None )
+                if shed_conf_file:
+                    shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename( shed_conf_file, None )
+                    if shed_conf:
+                        tool_path = shed_conf.get( "tool_path", tool_path )
         assert path is not None, "A tool file path could not be determined:\n%s" % ( util.xml_to_string( elem ) )
         self.load_tool( os.path.join( tool_path, path ),
                         guid=tool_guid,
@@ -274,7 +265,8 @@ class DataManager( object ):
         tool = toolbox.load_hidden_tool( tool_filename,
                                          guid=guid,
                                          data_manager_id=data_manager_id,
-                                         repository_id=tool_shed_repository_id )
+                                         repository_id=tool_shed_repository_id,
+                                         use_cached=True )
         self.data_managers.app.toolbox.data_manager_tools[ tool.id ] = tool
         self.tool = tool
         return tool

@@ -1,17 +1,20 @@
 layout: true
-class: inverse, middle, large
+name: left-aligned
+class: left, middle
 
 ---
-class: special
+
+layout: true
+class: center, middle
+
+---
+
+layout: introduction_slides
+topic_name: Galaxy Architecture
+
 # Galaxy Architecture
 
-Nate, James, John, Rémi
-
-.footnote[\#usegalaxy / @galaxyproject]
-
 ---
-
-class: larger
 
 ### Please Interrupt!
 
@@ -23,13 +26,13 @@ We're here to answer your questions about Galaxy architecture!
 
 ---
 
-class: larger
+**Gitter:** [galaxyproject/Lobby](https://gitter.im/galaxyproject/Lobby)
 
-**IRC:** irc.freenode.net#galaxyproject
+**IRC:** [irc.freenode.net#galaxyproject](https://webchat.freenode.net/?channels=galaxyproject)
 
-**GitHub:** github.com/galaxyproject
+**GitHub:** [github.com/galaxyproject](https://github.com/galaxyproject)
 
-**Twitter:**: #usegalaxy, @galaxyproject
+**Twitter:** #usegalaxy, @galaxyproject
 
 ---
 
@@ -45,33 +48,37 @@ Contribution guidelines: http://bit.ly/gx-CONTRIBUTING-md
 
 ---
 
-github.com/galaxyproject/**galaxy**
+[github.com/galaxyproject/**galaxy**](https://github.com/galaxyproject/galaxy)
 
-The main Galaxy application. Web interface, database model, job running, etc. Also includes other web applications including the **ToolShed** and **Reports**
+The main Galaxy application.
+
+Web interface, database model, job running, etc...
+
+Also includes other web applications including the **ToolShed** and **Reports**
 
 ---
 
-github.com/galaxyproject/**cloudman**
+[github.com/galaxyproject/**cloudman**](https://github.com/galaxyproject/cloudman)
 
 Galaxy CloudMan - a web application which manages a Galaxy cluster in
 the cloud.
 
-github.com/galaxyproject/**cloudlaunch**
+[github.com/galaxyproject/**cloudlaunch**](https://github.com/galaxyproject/cloudlaunch)
 
 CloudLaunch web application to make it wasy to launch images on a cloud, drives *https://launch.usegalaxy.org*
 
 ---
 
-github.com/galaxyproject/**tools-iuc**
+[github.com/galaxyproject/**tools-iuc**](https://github.com/galaxyproject/tools-iuc)
 
-Galaxy tools maintained by *iuc* (the "Intergalactic Utilities Commission").
+Galaxy tools maintained by the *IUC* ("Intergalactic Utilities Commission").
 
 A variety of tools, generally of high quality including many of the core tools for Galaxy main.
 
 Demonstrates *current tool development best practices* - development on
 github and then deployed to test/main ToolSheds
 
-github.com/galaxyproject/**tools-devteam**
+[github.com/galaxyproject/**tools-devteam**](https://github.com/galaxyproject/tools-devteam)
 
 Many older tools appearing on usegalaxy.org.
 
@@ -99,7 +106,7 @@ Other repositories with high quality tools:
 
 ---
 
-github.com/galaxyproject/**starforge**
+[github.com/galaxyproject/**starforge**](https://github.com/galaxyproject/starforge)
 
 Build Galaxy Tool dependencies for the ToolShed in Docker containers
 
@@ -107,11 +114,12 @@ Build Galaxy framework dependencies as Python wheels
 
 ---
 
-github.com/galaxyproject/**planemo**
+[github.com/galaxyproject/**planemo**](https://github.com/galaxyproject/planemo)
 
 Commande line utilities to assist in the development of Galaxy tools.
-Linting, testing, deploying to ToolSheds... *The best practice approach
-for Galaxy tool development!*
+Linting, testing, deploying to ToolSheds...
+
+*The best practice approach for Galaxy tool development!*
 
 github.com/galaxyproject/**planemo-machine**
 
@@ -122,15 +130,15 @@ container, virtual machines, Google compute images
 
 github.com/galaxyproject/**{ansible-\*, \*-playbook}**
 
-Ansible components to automate almost every aspect of Galaxy installation and maintenance.
+[Ansible](https://www.ansible.com/) components to automate almost every aspect of Galaxy installation and maintenance.
 
 Ansible is an advanced configuration management system
 
-These playbooks are used to maintain Galaxy main, cloud images, virtual machines, ...
+These playbooks are used to maintain Galaxy main, cloud and Docker images, virtual machines, ...
 
 ---
 
-github.com/galaxyproject/**pulsar**
+[github.com/galaxyproject/**pulsar**](https://github.com/galaxyproject/pulsar)
 
 Distributed job execution engine for Galaxy.
 
@@ -142,7 +150,7 @@ Can act as its own queuing system or access an existing cluster DRM.
 
 ---
 
-github.com/galaxyproject/**bioblend**
+[github.com/galaxyproject/**bioblend**](https://github.com/galaxyproject/bioblend)
 
 Official Python client for the Galaxy, ToolShed, and CloudMan APIs.
 
@@ -150,15 +158,15 @@ Best documented path to scripting the Galaxy API.
 
 ---
 
-- github.com/galaxyproject/**blend4php**
-- github.com/**jmchilton/blend4j**
-- github.com/**chapmanb/clj-blend**
+- [github.com/galaxyproject/**blend4php**](https://github.com/galaxyproject/blend4php)
+- [github.com/**jmchilton/blend4j**](https://github.com/jmchilton/blend4j)
+- [github.com/**chapmanb/clj-blend**](https://github.com/chapmanb/clj-blend)
 
 Galaxy API bindings for other languages.
 
 ---
 
-github.com/**bgruening/docker-galaxy-stable**
+[github.com/**bgruening/docker-galaxy-stable**](https://github.com/bgruening/docker-galaxy-stable)
 
 High quality Docker containers for stable Galaxy environments.
 
@@ -235,7 +243,7 @@ the `run.sh` should "just work" and should work quickly.
 
 So by default Galaxy does not require:
 
- - Compilation - it fetches *binary wheels*.
+ - Compilation - it fetches *binary wheels* for your platform.
  - A job manager - Galaxy can act as one.
  - An external database server - Galaxy can use an sqlite database.
  - A web proxy or external Python web server.
@@ -251,7 +259,7 @@ So by default Galaxy does not require:
 ???
 
 Workflow, Data Libraries, Visualization, History, Tool Menu,
-Many Grids
+Many Grids, User and preference management.
 
 ---
 
@@ -267,8 +275,7 @@ class: white
 
 ???
 
-User management and admin things, Reports and Tool Shed
-Webapp
+Admin things, Reports and Tool Shed Webapp
 
 ---
 
@@ -291,6 +298,8 @@ Webapp
 
 ---
 
+template: left-aligned
+
 ### Galaxy WSGI Middleware
 
 A WSGI function:
@@ -303,7 +312,7 @@ A WSGI function:
 
 ---
 
-class: normal
+template: left-aligned
 
 ### Galaxy's WSGI Middleware
 
@@ -320,11 +329,11 @@ Middleware configured in `galaxy.webapps.galaxy.buildapp#wrap_in_middleware`.
 
 ---
 
-background-image: url(images/webapp.plantuml.svg)
+![webapp](images/webapp.plantuml.svg)
 
 ---
 
-class: normal
+template: left-aligned
 
 ### Routes
 
@@ -348,7 +357,7 @@ Uses popular Routes library (https://pypi.python.org/pypi/Routes).
 
 ---
 
-class: normal
+template: left-aligned
 
 Simplified `handle_request` from `lib/galaxy/web/framework/base.py`.
 
@@ -413,8 +422,6 @@ def handle_request(self, environ, start_response):
 
 ---
 
-class: white, widen_image
-
 ![SQLAlchemy Architecture](images/sqla_arch_small.png)
 
 ---
@@ -432,12 +439,11 @@ class: white, widen_image
 
 ---
 
-class: white, narrow_image
 ![Galaxy Schema](images/galaxy_schema.png)
 
 ### Database Diagram
 
-https://wiki.galaxyproject.org/Admin/Internals/DataModel
+https://galaxyproject.org/admin/internals/data-model/
 
 ---
 
@@ -494,8 +500,6 @@ Slides for datatypes, example of meta data definitions...
 
 ---
 
-class: normal
-
 ### Object Store
 
 .strike[```
@@ -514,9 +518,11 @@ class: normal
 
 ---
 
-background-image: url(images/objectstore.plantuml.svg)
+![Object Store](images/objectstore.plantuml.svg)
 
 ---
+
+template: left-aligned
 
 ### Visualization Plugins
 
@@ -528,7 +534,7 @@ Adding new visualizations to a Galaxy instance
 
 ---
 
-class: smaller
+class: reduce70
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -550,6 +556,8 @@ class: smaller
 ```
 
 ---
+
+template: left-aligned
 
 ### Visualization Examples
 
@@ -586,6 +594,8 @@ Build a UI that accesses that process through a proxy
 
 ---
 
+template: left-aligned
+
 ### Interactive Environments - Examples
 
 All in `config/plugins/interactive_environments`:
@@ -611,6 +621,8 @@ in a manager instead of in the model.
 ## Client Architecture
 
 ---
+
+template: left-aligned
 
 ### Client Directories
 
@@ -642,11 +654,13 @@ npm-deps: ## Install NodeJS dependencies.
 
 ---
 
+template: left-aligned
+
 ### grunt
 
 Build tool for node/JavaScript, tasks in `client/Gruntfile.js`. Default task is
 
-.smaller[```grunt.registerTask( 'default', [ 'check-modules', 'uglify', 'webpack' ] );```]
+.center[`grunt.registerTask( 'default', [ 'check-modules', 'uglify', 'webpack' ] );`]
 
 - `check-modules` Verifies node dependencies are correct and exact.
 - [`uglify`](https://github.com/mishoo/UglifyJS) Compresses JavaScript modules in `client` and move to `static` and creates source maps.
@@ -655,6 +669,8 @@ Build tool for node/JavaScript, tasks in `client/Gruntfile.js`. Default task is
 - `webpack` Bundles modules together into a single JavaScript file - quickly loadable.
 
 ---
+
+template: left-aligned
 
 ### JavaScript Modules - The Problem
 
@@ -668,6 +684,8 @@ From http://requirejs.org/docs/why.html:
 
 ---
 
+template: left-aligned
+
 ### JavaScript Modules - The Solution
 
 From http://requirejs.org/docs/why.html:
@@ -680,8 +698,6 @@ RequireJS an implementation of AMD.
 
 
 ---
-
-class: normal
 
 ### JavaScript Modules - Galaxy AMD Example
 
@@ -737,6 +753,8 @@ class: white
 
 ---
 
+template: left-aligned
+
 ### Dependencies - Python
 
 `script/common_startup.sh` sets up a `virtualenv` with required dependencies in `$GALAXY_ROOT/.venv` (or `$GALAXY_VIRTUAL_ENV` if set).
@@ -749,6 +767,8 @@ class: white
 - Install dozens of dependencies.
 
 ---
+
+template: left-aligned
 
 ### Dependencies - JavaScript
 
@@ -763,8 +783,6 @@ These come bundled with Galaxy, so do not need to be fetched at runtime.
 ## Galaxy Startup Process
 
 ---
-
-class: normal
 
 ### Cloning Galaxy
 
@@ -785,7 +803,7 @@ $ sh run.sh
 
 ---
 
-class: normal
+class: reduce90
 
 ### Copying Configs
 
@@ -823,7 +841,7 @@ Successfully installed pip-8.1.2
 
 ---
 
-class: normal
+class: reduce70
 
 ### Installing Dependencies
 
@@ -851,7 +869,7 @@ Successfully installed Babel-2.0 Beaker-1.7.0 Cheetah-2.4.4 Fabric-1.10.2 Mako-1
 
 ---
 
-class: smaller
+class: reduce70
 
 ### Initial Debugging as App Starts
 
@@ -871,7 +889,7 @@ galaxy.app DEBUG 2016-06-23 19:11:51,956 Using "galaxy.ini" config file:
 
 ---
 
-class: normal
+class: reduce70
 
 ### Database Migrations
 
@@ -905,7 +923,7 @@ Everything after here happens every time
 
 ---
 
-class: smaller
+class: reduce70
 
 .code[```
 migrate.versioning.repository DEBUG 2016-06-23 19:13:35,635 Loading repository lib/tool_shed/galaxy_install/migrate...
@@ -928,7 +946,7 @@ galaxy.config INFO 2016-06-23 19:13:35,679 Install database targetting Galaxy's 
 
 ---
 
-class: smaller
+class: reduce70
 
 .code[```
 galaxy.datatypes.registry DEBUG 2016-06-23 19:13:35,748 Loading datatypes from ./config/datatypes_conf.xml.sample
@@ -956,7 +974,7 @@ galaxy.datatypes.registry DEBUG 2016-06-23 19:13:35,824 Retrieved datatype modul
 
 ---
 
-class: smaller
+class: reduce70
 
 .code[```
 galaxy.datatypes.registry DEBUG 2016-06-23 19:13:35,824 Loaded sniffer for datatype 'galaxy.datatypes.mothur:Sabund'
@@ -1001,7 +1019,7 @@ galaxy.datatypes.registry DEBUG 2016-06-23 19:13:35,833 Loaded sniffer for datat
 
 ---
 
-class: smaller
+class: reduce70
 
 .code[```
 galaxy.datatypes.registry DEBUG 2016-06-23 19:13:35,833 Loaded build site 'ucsc': tool-data/shared/ucsc/ucsc_build_sites.txt with display sites: main,test,archaea,ucla
@@ -1014,7 +1032,7 @@ galaxy.datatypes.registry DEBUG 2016-06-23 19:13:35,834 Loaded build site 'rview
 
 ---
 
-class: smaller
+class: reduce70
 
 .code[```
 galaxy.tools.data INFO 2016-06-23 19:13:35,871 Could not find tool data tool-data/all_fasta.loc, reading sample
@@ -1031,7 +1049,7 @@ galaxy.tools.data DEBUG 2016-06-23 19:13:36,211 Loaded tool data table 'biom_sim
 
 ---
 
-class: normal
+class: reduce70
 
 ### Job Configuration, Citation Cache
 
@@ -1043,7 +1061,7 @@ beaker.container DEBUG 2016-06-23 19:13:36,278 data file ./database/citations/da
 
 ---
 
-class: smaller
+class: reduce70
 
 ### Load Toolbox
 
@@ -1062,7 +1080,7 @@ galaxy.tools.toolbox.base INFO 2016-06-23 19:13:36,497 Parsing the tool configur
 
 ---
 
-class: smaller
+class: reduce90
 
 ### Tool Dependency Resolution and Indexing 
 
@@ -1076,7 +1094,7 @@ galaxy.tools.search DEBUG 2016-06-23 19:13:37,789 Toolbox index finished. It too
 
 ---
 
-class: smaller
+class: reduce70
 
 ### Display Applications
 
@@ -1098,7 +1116,7 @@ galaxy.datatypes.registry DEBUG 2016-06-23 19:13:38,007 Adding inherited display
 
 ---
 
-class: smaller
+class: reduce70
 
 ### Datatype Converters
 
@@ -1117,7 +1135,7 @@ galaxy.datatypes.registry DEBUG 2016-06-23 19:13:38,099 Loaded converter: CONVER
 
 ---
 
-class: normal
+class: reduce90
 
 ### Special Tools
 
@@ -1129,7 +1147,7 @@ galaxy.tools.special_tools DEBUG 2016-06-23 19:13:38,108 Loaded history export t
 
 ---
 
-class: normal
+class: reduce70
 
 ### Vizualization Plugins
 
@@ -1148,8 +1166,6 @@ galaxy.web.base.pluginframework INFO 2016-06-23 19:13:38,114 VisualizationsRegis
 
 ---
 
-class: normal
-
 ### Tours
 
 .code[```
@@ -1160,7 +1176,7 @@ galaxy.tours INFO 2016-06-23 19:13:38,183 Loaded tour 'core.history'
 
 ---
 
-class: normal
+class: reduce90
 
 ### Job Handler and Runners
 
@@ -1178,7 +1194,7 @@ galaxy.jobs.handler INFO 2016-06-23 19:13:38,222 job handler queue started
 
 ---
 
-class: normal
+class: reduce70
 
 ### Ignore this...
 
@@ -1189,7 +1205,7 @@ galaxy.sample_tracking.external_service_types DEBUG 2016-06-23 19:13:38,230 Load
 
 ---
 
-class: normal
+class: reduce90
 
 ### Workflow Scheduler
 
@@ -1199,7 +1215,7 @@ galaxy.workflow.scheduling_manager DEBUG 2016-06-23 19:13:38,254 Starting workfl
 
 ---
 
-class: normal
+class: reduce90
 
 ### Controllers
 
@@ -1218,7 +1234,7 @@ galaxy.web.framework.base DEBUG 2016-06-23 19:13:38,728 Enabling 'workflow_tags'
 
 ---
 
-class: normal
+class: reduce90
 
 ### Middleware
 
@@ -1233,7 +1249,7 @@ galaxy.webapps.galaxy.buildapp DEBUG 2016-06-23 19:13:39,044 Enabling 'Request I
 
 ---
 
-class: normal
+class: reduce70
 
 ### Static Paths for Viz
 
@@ -1245,6 +1261,8 @@ galaxy.webapps.galaxy.buildapp DEBUG 2016-06-23 19:13:39,049 added url, path to 
 ```]
 
 ---
+
+class: reduce90
 
 ### It is Up!
 

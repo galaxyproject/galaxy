@@ -34,12 +34,13 @@
             </output_collection>
         </test>
     </tests>
-    <help>
-        This tool takes a list dataset collection and filters out the failed
-        datasets from it. This is useful for continuing a multi-sample analysis
-        when one of more of the samples fails at some point.
+    <help><![CDATA[
 
-        This tool will create new history datasets from your collection
-        but your quota usage will not increase.
-    </help>
+This tool takes a list dataset collection and filters out datasets in the failed state. This is useful for continuing a multi-sample analysis when one of more of the samples fails at some point.
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+
+      ]]></help>
 </tool>

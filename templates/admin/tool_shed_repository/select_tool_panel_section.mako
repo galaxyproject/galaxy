@@ -51,11 +51,11 @@
         repository tools may include code that produces malicious behavior, so be aware of what you are installing.
     </p>
     <p>
-        If you discover a repository that causes problems after installation, contact <a href="https://wiki.galaxyproject.org/Support" target="_blank">Galaxy support</a>,
+        If you discover a repository that causes problems after installation, contact <a href="https://galaxyproject.org/support" target="_blank">Galaxy support</a>,
         sending all necessary information, and appropriate action will be taken.
     </p>
     <p>
-        <a href="https://wiki.galaxyproject.org/ToolShedRepositoryFeatures#Contact_repository_owner" target="_blank">Contact the repository owner</a> for
+        <a href="https://galaxyproject.org/toolshed/repository-features/#contact-repository-owner" target="_blank">Contact the repository owner</a> for
         general questions or concerns.
     </p>
 </div>
@@ -131,12 +131,14 @@ or manually satisfy the dependencies listed below.</p>
                 <div style="clear: both"></div>
             %endif
             %if shed_tool_conf_select_field:
-                <div class="form-row">
-                    <table class="colored" width="100%">
-                        <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
-                    </table>
-                </div>
+                %if includes_tools_for_display_in_tool_panel:
+                    <div class="form-row">
+                        <table class="colored" width="100%">
+                            <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
+                        </table>
+                    </div>
                 <div class="detail-section">
+                %endif
                 <%
                     if len( shed_tool_conf_select_field.options ) == 1:
                         select_help = "Your Galaxy instance is configured with 1 shed-related tool configuration file, so repositories will be "
@@ -157,24 +159,28 @@ or manually satisfy the dependencies listed below.</p>
             %else:
                 <input type="hidden" name="shed_tool_conf" value="${shed_tool_conf|h}"/>
             %endif
-            <div class="form-row">
-                <label>Add new tool panel section:</label>
-                <input name="new_tool_panel_section_label" type="textfield" value="${new_tool_panel_section_label|h}" size="40"/>
-                <div class="toolParamHelp" style="clear: both;">
-                    Add a new tool panel section to contain the installed tools (optional).
+            %if includes_tools_for_display_in_tool_panel:
+                <div class="form-row">
+                    <label>Add new tool panel section:</label>
+                    <input name="new_tool_panel_section_label" type="textfield" value="${new_tool_panel_section_label|h}" size="40"/>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Add a new tool panel section to contain the installed tools (optional).
+                    </div>
                 </div>
-            </div>
-            <div class="form-row">
-                <label>Select existing tool panel section:</label>
-                ${tool_panel_section_select_field.get_html()}
-                <div class="toolParamHelp" style="clear: both;">
-                    Choose an existing section in your tool panel to contain the installed tools (optional).
+                <div class="form-row">
+                    <label>Select existing tool panel section:</label>
+                    ${tool_panel_section_select_field.get_html()}
+                    <div class="toolParamHelp" style="clear: both;">
+                        Choose an existing section in your tool panel to contain the installed tools (optional).
+                    </div>
                 </div>
-            </div>
+            %endif
             <div class="form-row">
                 <input type="submit" name="select_tool_panel_section_button" value="Install"/>
                 <div class="toolParamHelp" style="clear: both;">
-                    Clicking <b>Install</b> without selecting a tool panel section will load the installed tools into the tool panel outside of any sections.
+                    %if includes_tools_for_display_in_tool_panel:
+                        Clicking <b>Install</b> without selecting a tool panel section will load the installed tools into the tool panel outside of any sections.
+                    %endif
                 </div>
             </div>
         </form>

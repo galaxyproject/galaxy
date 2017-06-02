@@ -14,22 +14,34 @@ class DataManagerHandler( object ):
     def __init__( self, app ):
         self.app = app
 
+    @property
+    def data_managers_path( self ):
+        tree, error_message = xml_util.parse_xml( self.app.config.shed_data_manager_config_file )
+        if tree:
+            root = tree.getroot()
+            return root.get( 'tool_path', None )
+        return None
+
     def data_manager_config_elems_to_xml_file( self, config_elems, config_filename ):
         """
         Persist the current in-memory list of config_elems to a file named by the value
         of config_filename.
         """
+        data_managers_path = self.data_managers_path
         lock = threading.Lock()
         lock.acquire( True )
         try:
             fh = open( config_filename, 'wb' )
-            fh.write( '<?xml version="1.0"?>\n<data_managers>\n' )
+            if data_managers_path is not None:
+                fh.write( '<?xml version="1.0"?>\n<data_managers tool_path="%s">\n    ' % data_managers_path )
+            else:
+                fh.write( '<?xml version="1.0"?>\n<data_managers>\n    ' )
             for elem in config_elems:
                 fh.write( xml_util.xml_to_string( elem ) )
             fh.write( '</data_managers>\n' )
             fh.close()
-        except Exception as e:
-            log.exception( "Exception in DataManagerHandler.data_manager_config_elems_to_xml_file: %s" % str( e ) )
+        except Exception:
+            log.exception( "Exception in DataManagerHandler.data_manager_config_elems_to_xml_file" )
         finally:
             lock.release()
 
@@ -104,8 +116,7 @@ class DataManagerHandler( object ):
                     elem.insert( 0, tool_elem )
                     data_manager = \
                         self.app.data_managers.load_manager_from_elem( elem,
-                                                                       tool_path=shed_config_dict.get( 'tool_path', '' ),
-                                                                       replace_existing=True )
+                                                                       tool_path=shed_config_dict.get( 'tool_path', '' ))
                     if data_manager:
                         rval.append( data_manager )
                 else:
@@ -117,7 +128,7 @@ class DataManagerHandler( object ):
                 reload_count = self.app.data_managers._reload_count
                 self.data_manager_config_elems_to_xml_file( config_elems, shed_data_manager_conf_filename )
                 while self.app.data_managers._reload_count <= reload_count:
-                    time.sleep(1)  # Wait for shed_data_manager watcher thread to pick up changes
+                    time.sleep(0.1)  # Wait for shed_data_manager watcher thread to pick up changes
         return rval
 
     def remove_from_data_manager( self, repository ):
@@ -158,4 +169,4 @@ class DataManagerHandler( object ):
                     self.app.data_managers.load_manager_from_elem( elem )
                 # Persist the altered shed_data_manager_config file.
                 if data_manager_config_has_changes:
-                    self.data_manager_config_elems_to_xml_file( config_elems, shed_data_manager_conf_filename  )
+                    self.data_manager_config_elems_to_xml_file( config_elems, shed_data_manager_conf_filename )

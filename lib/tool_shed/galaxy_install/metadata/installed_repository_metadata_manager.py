@@ -90,6 +90,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
                 self.update_in_shed_tool_config()
                 self.app.install_model.context.add( self.repository )
                 self.app.install_model.context.flush()
+                self.app.tool_shed_repository_cache.rebuild()
                 log.debug( 'Metadata has been reset on repository %s.' % self.repository.name )
             else:
                 log.debug( 'Metadata did not need to be reset on repository %s.' % self.repository.name )
