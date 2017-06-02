@@ -296,7 +296,7 @@ resolver.
       <xs:documentation xml:lang="en"><![CDATA[
 
 This tag set is contained within the 'requirements' tag set. Galaxy can be
-configured to run tools within Docker (https://www.docker.com/) containers -
+configured to run tools within [Docker](https://www.docker.com/) containers -
 this tag allows the tool to suggest possible valid Docker containers for this
 tool.
 
@@ -309,7 +309,7 @@ Read more about configuring Galaxy to run Docker jobs
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ContainerType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> This value describes the type of container that the tool may be executed in and currently must be 'docker'. </xs:documentation>
+            <xs:documentation xml:lang="en"> This value describes the type of container that the tool may be executed in and currently must be ``docker``. </xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -354,7 +354,7 @@ Read more about configuring Galaxy to run Docker jobs
   <xs:complexType name="Code">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-**Deprecated** do not use this unless absolutely necessary.
+**Deprecated** Do not use this unless absolutely necessary.
 
 The extensions described here can cause problems using your tool with certain components
 of Galaxy (like the workflow system). It is highly recommended to avoid these constructs
@@ -363,7 +363,7 @@ unless absolutely necessary.
 This tag set provides detailed control of the way the tool is executed. This
 (optional) code can be deployed in a separate file in the same directory as the
 tool's config file. These hooks are being replaced by new tool config features
-and methods in the ~/lib/galaxy/tools/__init__.py code file.
+and methods in the [/lib/galaxy/tools/\__init__.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/__init__.py) code file.
 
 ### Examples
 
@@ -1169,7 +1169,7 @@ it may be inconvenient to upload the entiry file and this can be used instead.
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 
-If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy 17.05+ and was introduced in ``Pull Request #3550 <https://github.com/galaxyproject/galaxy/pull/3550>`__.
+If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This flag is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy 17.05+ and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
 
 ]]></xs:documentation>
       </xs:annotation>
@@ -1956,7 +1956,7 @@ variable:
 --color $adv.plot_color
 ```
 
-Further examples can be found in the [test case](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/section.xml) from [PR #35](https://github.com/galaxyproject/galaxy/pull/35)
+Further examples can be found in the [test case](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/section.xml) from [pull request #35](https://github.com/galaxyproject/galaxy/pull/35).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -2646,7 +2646,7 @@ For newer tools with ``profile>=16.04``, the default behavior is ``exit_code``.
 Legacy tools default to ``default`` behavior described above (erroring if the tool
 produces any standard error output).
 
-See [PR 117](https://github.com/galaxyproject/galaxy/pull/117) for more implementation
+See [pull request 117](https://github.com/galaxyproject/galaxy/pull/117) for more implementation
 information and discussion on the ``detect_errors`` attribute.
 
 #### ``strict``
@@ -4972,7 +4972,7 @@ the desired input parameter (e.g. ``input="out_format"`` above).</xs:documentati
       <xs:annotation>
         <xs:documentation xml:lang="en">This must be a possible value of the ``input``
 parameter (e.g. ``value="interval"`` above), or of the deprecated ``input_dataset``'s
-``attribute.</xs:documentation>
+attribute.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format" type="xs:string" use="required">
