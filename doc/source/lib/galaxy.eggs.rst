@@ -1,5 +1,5 @@
-galaxy.eggs package
-===================
+galaxy\.eggs package
+====================
 
 .. automodule:: galaxy.eggs
     :members:
