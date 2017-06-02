@@ -324,7 +324,7 @@ class Tabular( TabularData ):
         comment_lines = 0
         column_types = []
         first_line_column_types = [default_column_type]  # default value is one column of type str
-        if dataset.has_data( user ):
+        if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
             dataset_fh = open( dataset.file_name )
             i = 0

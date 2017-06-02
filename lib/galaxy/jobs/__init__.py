@@ -1070,7 +1070,7 @@ class JobWrapper( object, HasResourceParameters ):
                 dataset.state = dataset.states.ERROR
                 dataset.blurb = 'tool error'
                 dataset.info = message
-                dataset.set_size( job.user )
+                dataset.set_size()
                 dataset.dataset.set_total_size( job.user )
                 dataset.mark_unhidden()
                 if dataset.ext == 'auto':
@@ -1305,7 +1305,7 @@ class JobWrapper( object, HasResourceParameters ):
                     # Ensure white space between entries
                     dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
                 dataset.tool_version = self.version_string
-                dataset.set_size( job.user )
+                dataset.set_size()
                 if 'uuid' in context:
                     dataset.dataset.uuid = context['uuid']
                 # Update (non-library) job output datasets through the object store
@@ -1315,7 +1315,7 @@ class JobWrapper( object, HasResourceParameters ):
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()
-                elif dataset.has_data( job.user ):
+                elif dataset.has_data():
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
                         dataset.extension = context.get( 'ext', 'data' )
@@ -1644,7 +1644,7 @@ class JobWrapper( object, HasResourceParameters ):
         for da in job.output_datasets + job.output_library_datasets:
             da_false_path = dataset_path_rewriter.rewrite_dataset_path( da.dataset, 'output' )
             mutable = da.dataset.dataset.external_filename is None
-            dataset_path = DatasetPath( da.dataset.dataset.id, da.dataset.get_file_name( job.user ), false_path=da_false_path, mutable=mutable )
+            dataset_path = DatasetPath( da.dataset.dataset.id, da.dataset.get_file_name(), false_path=da_false_path, mutable=mutable )
             results.append( ( da.name, da.dataset, dataset_path ) )
 
         self.output_paths = [t[2] for t in results]

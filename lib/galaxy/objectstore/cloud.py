@@ -88,7 +88,7 @@ class CloudObjectStore(ObjectStore):
             self.use_axel = False
 
         # THIS IS TEMP, IT HAS TO BE REPLACED WITH A DATABASE OF TEMPORARY ACCESS CREDENTIALS FOR EACH PROVIDER.
-        self.access_credentials = {
+        self.access_credentials = {1: {'aws_access_key': 'AKIAJVK5VV3P3IZMAK5A', 'aws_secret_key': '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'},
                                    'user_2_id': {'aws_access_key': 'access key 2', 'aws_secret_key': 'secret key 2'}}
 
         self.connections = {}

@@ -1929,6 +1929,10 @@ class DatasetInstance( object ):
     state = property( get_dataset_state, set_dataset_state )
 
     def get_file_name( self, user=None ):
+        print ('1. '* 80)
+        for line in traceback.format_stack():
+            print(line.strip())
+        print ('- '*80)
         return self.dataset.get_file_name( user )
 
     def set_file_name(self, filename):
@@ -1979,15 +1983,18 @@ class DatasetInstance( object ):
 
     def get_size( self, user, nice_size=False ):
         """Returns the size of the data on disk"""
+        print ('2. ' * 80)
         if nice_size:
             return galaxy.util.nice_size( self.dataset.get_size( user ) )
         return self.dataset.get_size( user )
 
     def set_size( self, user ):
+        print ('3. ' * 80)
         """Returns the size of the data on disk"""
         return self.dataset.set_size( user )
 
     def get_total_size( self, user ):
+        print ('4. ' * 80)
         return self.dataset.get_total_size( user )
 
     def set_total_size( self ):
@@ -1995,6 +2002,7 @@ class DatasetInstance( object ):
 
     def has_data( self, user ):
         """Detects whether there is any data"""
+        print ('5. ' * 80)
         return self.dataset.has_data( user )
 
     def get_raw_data( self ):
@@ -2476,7 +2484,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                 if not hda.purged and hda.history and hda.history.user and hda.history.user == user:
                     break
             else:
-                rval += self.get_total_size( user )
+                rval += self.get_total_size()
         for child in self.children:
             rval += child.get_disk_usage( user )
         return rval
@@ -2502,7 +2510,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      visible=hda.visible,
                      state=hda.state,
                      history_content_type=hda.history_content_type,
-                     file_size=int( hda.get_size( user ) ),
+                     file_size=int( hda.get_size() ),
                      create_time=hda.create_time.isoformat(),
                      update_time=hda.update_time.isoformat(),
                      data_type=hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
@@ -2567,6 +2575,30 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
             new_tag_assoc = source_tag_assoc.copy()
             new_tag_assoc.user = target_user
             self.tags.append( new_tag_assoc )
+
+    def get_file_name( self ):
+        return self.dataset.get_file_name( self.history.user )
+
+    def get_size( self, nice_size=False ):
+        """Returns the size of the data on disk"""
+        if nice_size:
+            return galaxy.util.nice_size( self.dataset.get_size( self.history.user ) )
+        return self.dataset.get_size( self.history.user )
+
+    def set_size( self ):
+        """Returns the size of the data on disk"""
+        return self.dataset.set_size( self.history.user )
+
+    def get_total_size( self ):
+        return self.dataset.get_total_size( self.history.user )
+
+    def has_data( self ):
+        """Detects whether there is any data"""
+        return self.dataset.has_data( self.history.user )
+
+    def set_file_name(self, filename):
+        return self.dataset.set_file_name( filename )
+    file_name = property(get_file_name, set_file_name)
 
 
 class HistoryDatasetAssociationDisplayAtAuthorization( object ):
