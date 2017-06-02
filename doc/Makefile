@@ -15,7 +15,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) sou
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
-GENERATED_RST = source/dev/schema.rst
+GENERATED_RST = source/api/api.rst source/api/ts_api.rst source/dev/schema.rst
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext updaterst
 
@@ -44,6 +44,18 @@ help:
 
 schema.md: parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd ## Build Github-flavored Markdown from Galaxy Tool XSD (expects libxml in environment)
 	python parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd > $@
+
+source/api/api.rst: source/lib/galaxy.webapps.galaxy.api.rst
+	printf "Galaxy API\n==========\n" > $@
+	tail -n +11 source/lib/galaxy.webapps.galaxy.api.rst >> $@
+	sed -i.bak -e 's/^galaxy\\\.webapps\\\.galaxy\\\.api\\\.//' $@
+	rm -f $@.bak
+
+source/api/ts_api.rst: source/lib/galaxy.webapps.tool_shed.api.rst
+	printf "Tool Shed API\n=============\n" > $@
+	tail -n +11 source/lib/galaxy.webapps.tool_shed.api.rst >> $@
+	sed -i.bak -e 's/^galaxy\\\.webapps\\\.tool\\_shed\\\.api\\\.//' $@
+	rm -f $@.bak
 
 source/dev/schema.rst: schema.md ## Convert Galaxy Tool XSD Markdown docs into reStructuredText (expects pandoc in environment)
 	pandoc schema.md -f markdown_github-hard_line_breaks -s -o $@
