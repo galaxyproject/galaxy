@@ -1,6 +1,6 @@
 /* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
-define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
-], function( testApp, Ui, SelectContent, Drilldown, Thumbnails, Tabs ){
+define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-slider', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
+], function( testApp, Ui, SelectContent, Drilldown, Slider, Thumbnails, Tabs ){
     'use strict';
     module( 'Ui test', {
         setup: function() {
@@ -579,6 +579,12 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         ok( label.$el.html() === '_title', 'Correct title' );
         label.model.set( 'title', '_new_title' );
         ok( label.$el.html() === '_new_title', 'Correct new title' );
+    } );
+
+    test( 'slider', function() {
+        var input = new Slider.View( { min: 1, max: 100, value: 5 } );
+        $( 'body' ).prepend( input.$el );
+        ok( true );
     } );
 
     test( 'input', function() {

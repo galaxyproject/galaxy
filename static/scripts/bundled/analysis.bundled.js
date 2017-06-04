@@ -3095,17 +3095,14 @@ webpackJsonp([4,1],[
 	                max: null,
 	                step: null,
 	                precise: false,
-	                split: 10000
+	                split: 10000,
+	                value: null
 	            }).set(options);
 	
 	            // create new element
 	            this.setElement(this._template(this.model.attributes));
-	            this.$text = this.$('#text');
-	            this.$slider = this.$('#slider');
-	            this.$slider_text = this.$('.ui-form-slider-text');
-	
-	            // set initial value
-	            this.options.value !== undefined && this.value(this.options.value);
+	            this.$text = this.$('.ui-form-slider-text');
+	            this.$slider = this.$('.ui-form-slider-element');
 	
 	            // add text field event
 	            var pressed = [];
@@ -3125,11 +3122,13 @@ webpackJsonp([4,1],[
 	                }
 	            });
 	
+	            // add change listener
 	            this.listenTo(this.model, 'change', this.render, this);
 	            this.render();
 	        },
 	
 	        render: function () {
+	            var self = this;
 	            var options = this.model.attributes;
 	            var useslider = options.max !== null && options.min !== null && options.max > options.min;
 	            var step = options.step;
@@ -3144,9 +3143,10 @@ webpackJsonp([4,1],[
 	                this.$slider.slider({ min: options.min, max: options.max, step: step }).on('slide', function (event, ui) {
 	                    self.value(ui.value);
 	                }).show();
+	                this.$text.css('width', 'auto');
 	            } else {
 	                this.$slider.hide();
-	                this.$slide_text.css('width', '100%');
+	                this.$text.css('width', '100%');
 	            }
 	        },
 	
@@ -3173,7 +3173,7 @@ webpackJsonp([4,1],[
 	
 	        /** Slider template */
 	        _template: function (options) {
-	            return '<div id="' + options.id + '" class="ui-form-slider">' + '<input id="text" type="text" class="ui-form-slider-text"/>' + '<div id="slider" class="ui-form-slider-element"/>' + '</div>';
+	            return '<div id="' + options.id + '" class="ui-form-slider">' + '<input type="text" class="ui-form-slider-text"/>' + '<div class="ui-form-slider-element"/>' + '</div>';
 	        }
 	    });
 	

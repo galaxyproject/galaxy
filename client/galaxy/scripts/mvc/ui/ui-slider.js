@@ -14,8 +14,8 @@ define([ 'utils/utils' ], function( Utils ) {
 
             // create new element
             this.setElement( this._template( this.model.attributes ) );
-            this.$text      = this.$( '.ui-form-slider-text' );
-            this.$slider    = this.$( '.ui-form-slider-element' );
+            this.$text   = this.$( '.ui-form-slider-text' );
+            this.$slider = this.$( '.ui-form-slider-element' );
 
             // add text field event
             var pressed = [];
@@ -45,6 +45,7 @@ define([ 'utils/utils' ], function( Utils ) {
         },
 
         render: function() {
+            var self = this;
             var options = this.model.attributes;
             var useslider = options.max !== null && options.min !== null && options.max > options.min;
             var step = options.step;
@@ -55,16 +56,10 @@ define([ 'utils/utils' ], function( Utils ) {
                     step = 1.0;
                 }
             }
-            if ( useslider ) {
-                this.$slider.slider( { min: options.min, max: options.max, step: step } )
-                            .on( 'slide', function ( event, ui ) {
-                                self.value( ui.value );
-                            }).show();
-                this.$text.css( 'width', 'auto' );
-            } else {
-                this.$slider.hide();
-                this.$text.css( 'width', '100%' );
-            }
+            this.$text[ useslider ? 'addClass' : 'removeClass' ]( 'ui-form-slider-left' );
+            this.$slider[ useslider ? 'show' : 'hide' ]();
+            useslider && this.$slider.slider( { min: options.min, max: options.max, step: step } )
+                                     .on( 'slide', function ( event, ui ) { self.value( ui.value ) } );
         },
 
         /** Set and Return the current value */
