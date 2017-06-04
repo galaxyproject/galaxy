@@ -13,31 +13,9 @@ var View = Backbone.View.extend({
 
         // create new element
         this.setElement( this._template( this.model.attributes ) );
-
-        // determine wether to use the slider
-        var useslider = this.options.max !== null && this.options.min !== null && this.options.max > this.options.min;
-
-        // set default step size
-        if ( this.options.step === null ) {
-            this.options.step = 1.0;
-            if ( this.options.precise && useslider ) {
-                this.options.step = ( this.options.max - this.options.min ) / this.options.split;
-            }
-        }
-
-        // create slider if min and max are defined properly
-        if ( useslider ) {
-            this.$slider = this.$( '#slider' );
-            this.$slider.slider( this.options );
-            this.$slider.on( 'slide', function ( event, ui ) {
-                self.value( ui.value );
-            });
-        } else {
-            this.$( '.ui-form-slider-text' ).css( 'width', '100%' );
-        }
-
-        // link text input field
-        this.$text = this.$( '#text' );
+        this.$text          = this.$( '#text' );
+        this.$slider        = this.$( '#slider' );
+        this.$slider_text   = this.$( '.ui-form-slider-text' );
 
         // set initial value
         this.options.value !== undefined && ( this.value( this.options.value ) );
@@ -46,12 +24,10 @@ var View = Backbone.View.extend({
         var pressed = [];
         this.$text.on( 'change', function () {
             self.value( $( this ).val() );
-        });
-        this.$text.on( 'keyup', function( e ) {
+        }).on( 'keyup', function( e ) {
             pressed[e.which] = false;
             self.options.onchange && self.options.onchange( $( this ).val() );
-        });
-        this.$text.on( 'keydown', function ( e ) {
+        }).on( 'keydown', function ( e ) {
             var v = e.which;
             pressed[ v ] = true;
             if ( self.options.is_workflow && pressed[ 16 ] && v == 52 ) {
@@ -68,6 +44,29 @@ var View = Backbone.View.extend({
 
         this.listenTo( this.model, 'change', this.render, this );
         this.render();
+    },
+
+    render: function() {
+        var options = this.model.attributes;
+        var useslider = options.max !== null && options.min !== null && options.max > options.min;
+        var step = options.step;
+        if ( !step ) {
+            if ( options.precise && useslider ) {
+                step = ( options.max - options.min ) / options.split;
+            } else {
+                step = 1.0;
+            }
+        }
+        if ( useslider ) {
+            this.$slider.show();
+            this.$slider.slider( { min: options.min, max: options.max, step: step } );
+            this.$slider.on( 'slide', function ( event, ui ) {
+                self.value( ui.value );
+            });
+        } else {
+            this.$slider.hide();
+            this.$slide_text.css( 'width', '100%' );
+        }
     },
 
     /** Set and Return the current value */
