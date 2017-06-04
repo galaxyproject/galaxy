@@ -2,31 +2,31 @@ define([ 'utils/utils' ], function( Utils ) {
 var View = Backbone.View.extend({
     initialize : function( options ) {
         var self = this;
-        this.options = Utils.merge( options, {
+        this.model = options && options.model || new Backbone.Model({
             id      : Utils.uid(),
             min     : null,
             max     : null,
             step    : null,
             precise : false,
             split   : 10000
-        } );
+        }).set( options );
 
         // create new element
-        this.setElement( this._template( this.options ) );
+        this.setElement( this._template( this.model.attributes ) );
 
         // determine wether to use the slider
-        this.useslider = this.options.max !== null && this.options.min !== null && this.options.max > this.options.min;
+        var useslider = this.options.max !== null && this.options.min !== null && this.options.max > this.options.min;
 
         // set default step size
         if ( this.options.step === null ) {
             this.options.step = 1.0;
-            if ( this.options.precise && this.useslider ) {
+            if ( this.options.precise && useslider ) {
                 this.options.step = ( this.options.max - this.options.min ) / this.options.split;
             }
         }
 
         // create slider if min and max are defined properly
-        if ( this.useslider ) {
+        if ( useslider ) {
             this.$slider = this.$( '#slider' );
             this.$slider.slider( this.options );
             this.$slider.on( 'slide', function ( event, ui ) {
@@ -65,10 +65,12 @@ var View = Backbone.View.extend({
                 event.preventDefault();
             }
         });
+
+        this.listenTo( this.model, 'change', this.render, this );
+        this.render();
     },
 
-    /** Set and Return the current value
-    */
+    /** Set and Return the current value */
     value : function ( new_val ) {
         if ( new_val !== undefined ) {
             if ( new_val !== null && new_val !== '' && !this._isParameter( new_val ) ) {
@@ -83,14 +85,12 @@ var View = Backbone.View.extend({
         return this.$text.val();
     },
 
-    /** Return true if the field contains a workflow parameter i.e. $('name')
-    */
+    /** Return true if the field contains a workflow parameter i.e. $('name') */
     _isParameter: function( value ) {
         return this.options.is_workflow && String( value ).substring( 0, 1 ) === '$';
     },
 
-    /** Slider template
-    */
+    /** Slider template */
     _template: function( options ) {
         return  '<div id="' + options.id + '" class="ui-form-slider">' +
                     '<input id="text" type="text" class="ui-form-slider-text"/>' +
