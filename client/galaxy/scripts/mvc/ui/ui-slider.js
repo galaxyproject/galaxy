@@ -14,9 +14,8 @@ define([ 'utils/utils' ], function( Utils ) {
 
             // create new element
             this.setElement( this._template( this.model.attributes ) );
-            this.$text          = this.$( '#text' );
-            this.$slider        = this.$( '#slider' );
-            this.$slider_text   = this.$( '.ui-form-slider-text' );
+            this.$text      = this.$( '.ui-form-slider-text' );
+            this.$slider    = this.$( '.ui-form-slider-element' );
 
             // add text field event
             var pressed = [];
@@ -61,10 +60,10 @@ define([ 'utils/utils' ], function( Utils ) {
                             .on( 'slide', function ( event, ui ) {
                                 self.value( ui.value );
                             }).show();
-                this.$slide_text.css( 'width', 'auto' );
+                this.$text.css( 'width', 'auto' );
             } else {
                 this.$slider.hide();
-                this.$slide_text.css( 'width', '100%' );
+                this.$text.css( 'width', '100%' );
             }
         },
 
@@ -92,8 +91,8 @@ define([ 'utils/utils' ], function( Utils ) {
         /** Slider template */
         _template: function( options ) {
             return  '<div id="' + options.id + '" class="ui-form-slider">' +
-                        '<input id="text" type="text" class="ui-form-slider-text"/>' +
-                        '<div id="slider" class="ui-form-slider-element"/>' +
+                        '<input type="text" class="ui-form-slider-text"/>' +
+                        '<div class="ui-form-slider-element"/>' +
                     '</div>';
         }
     });
