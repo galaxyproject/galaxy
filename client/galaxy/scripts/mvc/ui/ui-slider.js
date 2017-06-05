@@ -25,7 +25,6 @@ define([ 'utils/utils' ], function( Utils ) {
                 self.value( $( this ).val() );
             }).on( 'keyup', function( e ) {
                 pressed[e.which] = false;
-                self.model.get( 'onchange' )( $( this ).val() );
             }).on( 'keydown', function ( e ) {
                 var v = e.which;
                 pressed[ v ] = true;
