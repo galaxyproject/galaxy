@@ -76,10 +76,12 @@ define([ 'utils/utils' ], function( Utils ) {
             if ( new_val !== undefined ) {
                 if ( new_val !== null && new_val !== '' && !this._isParameter( new_val ) ) {
                     isNaN( new_val ) && ( new_val = 0 );
+                    !options.precise && ( new_val = Math.round( new_val ) );
                     options.max !== null && ( new_val = Math.min( new_val, options.max ) );
                     options.min !== null && ( new_val = Math.max( new_val, options.min ) );
                 }
                 this.model.set( 'value', new_val );
+                this.model.trigger( 'change' );
                 options.onchange( new_val );
             }
             return this.model.get( 'value' );
