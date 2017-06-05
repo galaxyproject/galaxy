@@ -46,7 +46,7 @@ class PageListGrid( grids.Grid ):
                     key="free-text-search", visible=False, filterable="standard" )
                     )
     global_actions = [
-        grids.GridAction( "Add new page", dict( action='create' ) )
+        grids.GridAction( "Add new page", dict( action='create' ), target="inbound" )
     ]
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation( "View", allow_multiple=False ),
@@ -382,7 +382,7 @@ class PageController( BaseUIController, SharableMixin,
                 session.flush()
                 # Display the management page
                 # trans.set_message( "Page '%s' created" % page.title )
-                return trans.response.send_redirect( web.url_for(controller='page', action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='pages', action='list' ) )
         return trans.show_form(
             web.FormBuilder( web.url_for(controller='page', action='create'), "Create new page", submit_text="Submit" )
             .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
