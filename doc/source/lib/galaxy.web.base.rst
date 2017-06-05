@@ -1,5 +1,5 @@
-galaxy.web.base package
-=======================
+galaxy\.web\.base package
+=========================
 
 .. automodule:: galaxy.web.base
     :members:
@@ -16,24 +16,24 @@ Subpackages
 Submodules
 ----------
 
-galaxy.web.base.controller module
----------------------------------
+galaxy\.web\.base\.controller module
+------------------------------------
 
 .. automodule:: galaxy.web.base.controller
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.web.base.interactive_environments module
------------------------------------------------
+galaxy\.web\.base\.interactive\_environments module
+---------------------------------------------------
 
 .. automodule:: galaxy.web.base.interactive_environments
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.web.base.pluginframework module
---------------------------------------
+galaxy\.web\.base\.pluginframework module
+-----------------------------------------
 
 .. automodule:: galaxy.web.base.pluginframework
     :members:

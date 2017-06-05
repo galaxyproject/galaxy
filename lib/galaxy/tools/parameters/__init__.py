@@ -274,7 +274,7 @@ def populate_state( request_context, inputs, incoming, state, errors={}, prefix=
                 if rep_index < input.max:
                     new_state = { '__index__' : rep_index }
                     group_state.append( new_state )
-                    populate_state( request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context )
+                    populate_state( request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context, check=check )
                 rep_index += 1
         elif input.type == 'conditional':
             if input.value_ref and not input.value_ref_in_group:
@@ -289,14 +289,14 @@ def populate_state( request_context, inputs, incoming, state, errors={}, prefix=
                 try:
                     current_case = input.get_current_case( value )
                     group_state = state[ input.name ] = {}
-                    populate_state( request_context, input.cases[ current_case ].inputs, incoming, group_state, errors, prefix=group_prefix, context=context )
+                    populate_state( request_context, input.cases[ current_case ].inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check )
                     group_state[ '__current_case__' ] = current_case
                 except Exception:
                     errors[ test_param_key ] = 'The selected case is unavailable/invalid.'
                     pass
             group_state[ input.test_param.name ] = value
         elif input.type == 'section':
-            populate_state( request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context )
+            populate_state( request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check )
         elif input.type == 'upload_dataset':
             d_type = input.get_datatype( request_context, context=context )
             writable_files = d_type.writable_files
@@ -310,7 +310,7 @@ def populate_state( request_context, inputs, incoming, state, errors={}, prefix=
             for i, rep_state in enumerate( group_state ):
                 rep_index = rep_state[ '__index__' ]
                 rep_prefix = '%s_%d|' % ( key, rep_index )
-                populate_state( request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context )
+                populate_state( request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context, check=check )
         else:
             param_value = _get_incoming_value( incoming, key, state.get( input.name ) )
             value, error = check_param( request_context, input, param_value, context ) if check else [ param_value, None ]

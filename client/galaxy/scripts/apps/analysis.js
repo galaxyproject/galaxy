@@ -9,7 +9,9 @@ var jQuery = require( 'jquery' ),
     UserPreferences = require( 'mvc/user/user-preferences' ),
     CustomBuilds = require( 'mvc/user/user-custom-builds' ),
     Tours = require( 'mvc/tours' ),
-    Workflows = require( 'mvc/workflow/workflow' );
+    GridView = require( 'mvc/grid/grid-view' )
+    Workflows = require( 'mvc/workflow/workflow' ),
+    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -79,12 +81,16 @@ window.app = function app( options, bootstrapped ){
             '(/)user(/)' : 'show_user',
             '(/)user(/)(:form_id)' : 'show_user_form',
             '(/)workflow(/)' : 'show_workflows',
+            '(/)pages(/)(:action_id)' : 'show_pages',
+            '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)custom_builds' : 'show_custom_builds'
         },
 
         require_login: [
             'show_user',
-            'show_user_form'
+            'show_user_form',
+            'show_workflows',
+            'show_configure_menu'
         ],
 
         loginRequired: function() {
@@ -111,8 +117,16 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
         },
 
+        show_pages : function( action_id ) {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'page/list_published', dict_format: true } ) );
+        },
+
         show_workflows : function(){
             this.page.display( new Workflows.View() );
+        },
+
+        show_configure_menu : function(){
+            this.page.display( new WorkflowsConfigureMenu.View() );
         },
 
         show_custom_builds : function() {

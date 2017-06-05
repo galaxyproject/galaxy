@@ -352,7 +352,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                     var wp_field = self.wp_form.field_list[ self.wp_form.data.match( match[ 1 ] ) ];
                                     var wp_value = wp_field && wp_field.value();
                                     if ( wp_value ) {
-                                        new_value = new_value.replace( new RegExp( '\\' + match[ 0 ], 'g' ), wp_value );
+                                        new_value = new_value.split( match[ 0 ] ).join( wp_value );
                                     }
                                 }
                             }

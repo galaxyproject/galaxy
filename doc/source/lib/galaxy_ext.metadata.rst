@@ -1,5 +1,5 @@
-galaxy_ext.metadata package
-===========================
+galaxy\_ext\.metadata package
+=============================
 
 .. automodule:: galaxy_ext.metadata
     :members:
@@ -9,8 +9,8 @@ galaxy_ext.metadata package
 Submodules
 ----------
 
-galaxy_ext.metadata.set_metadata module
----------------------------------------
+galaxy\_ext\.metadata\.set\_metadata module
+-------------------------------------------
 
 .. automodule:: galaxy_ext.metadata.set_metadata
     :members:
