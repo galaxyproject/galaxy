@@ -9,7 +9,8 @@ var jQuery = require( 'jquery' ),
     UserPreferences = require( 'mvc/user/user-preferences' ),
     CustomBuilds = require( 'mvc/user/user-custom-builds' ),
     Tours = require( 'mvc/tours' ),
-    GridView = require( 'mvc/grid/grid-view' )
+    GridView = require( 'mvc/grid/grid-view' ),
+    PageList = require( 'mvc/page/page-list' ),
     Workflows = require( 'mvc/workflow/workflow' ),
     WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' );
 
@@ -118,7 +119,11 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_pages : function( action_id ) {
-            this.page.display( new GridView( { url_base: Galaxy.root + 'page/list_published', dict_format: true } ) );
+            if ( action_id == 'list' ) {
+                this.page.display( new PageList.View() );
+            } else {
+                this.page.display( new GridView( { url_base: Galaxy.root + 'page/list_published', dict_format: true } ) );
+            }
         },
 
         show_workflows : function(){

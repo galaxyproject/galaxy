@@ -50,9 +50,9 @@ class PageListGrid( grids.Grid ):
     ]
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation( "View", allow_multiple=False ),
-        grids.GridOperation( "Edit content", allow_multiple=False, url_args=dict( action='edit_content') ),
-        grids.GridOperation( "Edit attributes", allow_multiple=False, url_args=dict( action='edit') ),
-        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Edit content", allow_multiple=False, url_args=dict( action='edit_content' ) ),
+        grids.GridOperation( "Edit attributes", allow_multiple=False, url_args=dict( action='edit' ) ),
+        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), url_args=dict( action='sharing' ) ),
         grids.GridOperation( "Delete", confirm="Are you sure you want to delete this page?" ),
     ]
 
@@ -321,8 +321,6 @@ class PageController( BaseUIController, SharableMixin,
                 item = session.query( model.Page ).get( self.decode_id( id ) )
                 if operation == "delete":
                     item.deleted = True
-                if operation == "share or publish":
-                    return self.sharing( trans, **kwargs )
             session.flush()
 
         # Build grid dictionary.
@@ -339,7 +337,7 @@ class PageController( BaseUIController, SharableMixin,
             .all()
 
         # Render grid wrapped in panels
-        return { 'embedded_grid': grid, 'shared_by_others': [] }   # shared_by_others }
+        return grid   # shared_by_others }
 
     @web.expose
     @web.json
