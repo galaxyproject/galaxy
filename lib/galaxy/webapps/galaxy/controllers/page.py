@@ -427,7 +427,7 @@ class PageController( BaseUIController, SharableMixin,
                 self.add_item_annotation( trans.sa_session, trans.get_user(), page, page_annotation )
                 session.flush()
                 # Redirect to page list.
-                return trans.response.send_redirect( web.url_for(controller='page', action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='pages', action='list' ) )
         else:
             page_title = page.title
             page_slug = page.slug
