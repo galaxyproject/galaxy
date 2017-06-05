@@ -280,6 +280,8 @@
             <!-- Username to access Mesos cluster. -->
             <param id="password">password</param>
             <!-- Password to access Mesos cluster. -->
+            <param id="insecure">true</param>
+            <!-- True to communicate with Chronos over HTTPS; false otherwise-->
         </plugin>
 
     </plugins>
