@@ -308,6 +308,7 @@ class PageController( BaseUIController, SharableMixin,
         self.hda_manager = managers.hdas.HDAManager( app )
 
     @web.expose
+    @web.json
     @web.require_login()
     def list( self, trans, *args, **kwargs ):
         """ List user's pages. """
@@ -324,9 +325,8 @@ class PageController( BaseUIController, SharableMixin,
                     return self.sharing( trans, **kwargs )
             session.flush()
 
-        # HACK: to prevent the insertion of an entire html document inside another
-        kwargs[ 'embedded' ] = True
-        # Build grid HTML.
+        # Build grid dictionary.
+        kwargs[ 'dict_format' ] = True
         grid = self._page_list( trans, *args, **kwargs )
 
         # Build list of pages shared with user.
@@ -339,7 +339,7 @@ class PageController( BaseUIController, SharableMixin,
             .all()
 
         # Render grid wrapped in panels
-        return trans.fill_template( "page/index.mako", embedded_grid=grid, shared_by_others=shared_by_others )
+        return { 'embedded_grid': grid, 'shared_by_others': [] }   # shared_by_others }
 
     @web.expose
     @web.json
