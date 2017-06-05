@@ -584,7 +584,13 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
     test( 'slider', function() {
         var input = new Slider.View( { min: 1, max: 100, value: 5 } );
         $( 'body' ).prepend( input.$el );
-        ok( true );
+        ok( input.$slider.slider( 'value' ) == 5 );
+        ok( input.value( 1000 ) == 100 );
+        ok( input.$slider.slider( 'value' ) == 100 );
+        var input1 = new Slider.View( { value: 5 } );
+        $( 'body' ).prepend( input1.$el );
+        ok( input1.$slider.css( 'display' ) == 'none' );
+
     } );
 
     test( 'input', function() {
