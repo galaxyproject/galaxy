@@ -623,7 +623,7 @@
     defined format first, followed by next-most rigidly defined,
     and so on.
     -->
-    <sniffer type="galaxy.datatypes.text:Smat"/>
+    <sniffer type="galaxy.datatypes.plant_tribes:Smat"/>
     <sniffer type="galaxy.datatypes.mothur:Sabund"/>
     <sniffer type="galaxy.datatypes.mothur:Otu"/>
     <sniffer type="galaxy.datatypes.mothur:GroupAbund"/>
