@@ -220,6 +220,9 @@ class DatasetPopulator( BaseDatasetPopulator ):
     def _summarize_history_errors( self, history_id ):
         self.galaxy_interactor._summarize_history_errors( history_id )
 
+    def wait_for_dataset(self, history_id, dataset_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+        return wait_on_state(lambda: self._get("histories/%s/contents/%s" % (history_id, dataset_id)), assert_ok=assert_ok, timeout=timeout)
+
 
 class BaseWorkflowPopulator( object ):
 
