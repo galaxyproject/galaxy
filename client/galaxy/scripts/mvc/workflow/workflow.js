@@ -182,12 +182,6 @@ define( [ 'mvc/tool/tool-form-composite', 'mvc/form/form-view', 'mvc/ui/ui-misc'
                            '<div class="response-message"></div>' +
                            '<h2>Your workflows</h2>' +
                        '</div>'+
-                       '<div class="other-options wf">' +
-                           '<h2>Other options</h2>' +
-                           '<a class="action-button fa fa-cog wf-action" href="'+ Galaxy.root +'workflow/configure_menu" title="Configure your workflow menu">' +
-                               '<span>Configure your workflow menu</span>' +
-                           '</a>' +
-                       '</div>' +
                    '</div>';
         }
     });
