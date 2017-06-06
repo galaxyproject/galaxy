@@ -40,6 +40,7 @@ def test_tool_conf_watcher():
 
     with __test_directory() as t:
         tool_conf_path = path.join(t, "test_conf.xml")
+        open(tool_conf_path, "w").write("a")
         conf_watcher.watch_file(tool_conf_path)
         time.sleep(1)
         open(tool_conf_path, "w").write("b")

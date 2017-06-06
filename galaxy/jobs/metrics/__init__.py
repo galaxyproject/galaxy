@@ -94,7 +94,7 @@ class JobInstrumenter(object):
                 if plugin_commands:
                     commands.extend(util.listify(plugin_commands))
             except Exception:
-                log.exception("Failed to generate pre-execute commands for plugin %s" % plugin)
+                log.exception("Failed to generate pre-execute commands for plugin %s", plugin)
         return "\n".join([ c for c in commands if c ])
 
     def post_execute_commands(self, job_directory):
@@ -105,7 +105,7 @@ class JobInstrumenter(object):
                 if plugin_commands:
                     commands.extend(util.listify(plugin_commands))
             except Exception:
-                log.exception("Failed to generate post-execute commands for plugin %s" % plugin)
+                log.exception("Failed to generate post-execute commands for plugin %s", plugin)
         return "\n".join([ c for c in commands if c ])
 
     def collect_properties(self, job_id, job_directory):
@@ -116,7 +116,7 @@ class JobInstrumenter(object):
                 if properties:
                     per_plugin_properites[ plugin.plugin_type ] = properties
             except Exception:
-                log.exception("Failed to collect job properties for plugin %s" % plugin)
+                log.exception("Failed to collect job properties for plugin %s", plugin)
         return per_plugin_properites
 
     def __plugins_from_source(self, plugins_source):
