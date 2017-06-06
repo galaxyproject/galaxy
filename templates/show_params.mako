@@ -47,6 +47,12 @@
         min-width: 40px;
         margin-left: -33px;
         padding-right: 1em;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -o-user-select: none;
+        user-select: none;
     }
 </style>
 
