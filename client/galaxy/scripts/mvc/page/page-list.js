@@ -22,8 +22,9 @@ define( [ 'utils/utils', 'mvc/grid/grid-view' ], function( Utils, GridView ) {
         },
 
         _templateShared: function() {
-            var $tmpl = $( '<div/>' );
-            $tmpl.append( '<h2>Pages shared with you by others</h2>' );
+            var $tmpl = $(  '<div>' +
+                                '<h2>Pages shared with you by others</h2>' +
+                            '</div>' );
             var options = this.model.attributes;
             if ( options.shared_by_others && options.shared_by_others.length > 0 ) {
                 var $table = $( '<table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">' +
