@@ -19,10 +19,34 @@
     }
 
     .code {
+        font-family: monospace;
         white-space: pre-wrap;
         background: #1d1f21;
         color: white;
-        padding: 1em;
+        line-height: 0px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        padding-top: 10px;
+    }
+
+    .code div {
+        padding-left: 55px;
+        margin: 0;
+        min-height: 16px;
+        line-height: 2em;
+    }
+
+    .code div:hover {
+        background: #333;
+    }
+
+    .code div .lineno{
+        color: #aaa;
+        display: inline-block;
+        text-align: right;
+        min-width: 40px;
+        margin-left: -33px;
+        padding-right: 1em;
     }
 </style>
 
@@ -234,8 +258,13 @@
 
 %if job and job.command_line and (trans.user_is_admin() or trans.app.config.expose_dataset_path):
 <h3>Command Line</h3>
-<pre class="code">
-${ job.command_line | h }</pre>
+<div class="code">
+% for idx, line in enumerate(job.command_line.split(';')):
+% for subidx, subline in enumerate(line.split('&&')):
+<div><span class="lineno">${idx + subidx + 1}</span><span>${ subline.strip() | h }</span></div>
+% endfor
+% endfor
+</div>
 %endif
 
 %if job and (trans.user_is_admin() or trans.app.config.expose_potentially_sensitive_job_metrics):
