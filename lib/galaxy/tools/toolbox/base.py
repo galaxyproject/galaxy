@@ -534,7 +534,11 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     # In that case recreating the tool will correct the cached version.
                     from_cache = False
             if guid and not from_cache:  # tool was not in cache and is a tool shed tool
-                tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
+                tool_shed, name, owner, installed_changeset_revision = self.get_repository_identifiers_from_xml_item(item, path)
+                tool_shed_repository = self._get_tool_shed_repository(tool_shed=tool_shed,
+                                                                      name=name,
+                                                                      owner=owner,
+                                                                      installed_changeset_revision=installed_changeset_revision)
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
@@ -547,10 +551,10 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             key = 'tool_%s' % str(tool.id)
             if can_load_into_panel_dict:
                 if guid and not from_cache:
-                    tool.tool_shed = tool_shed_repository.tool_shed
-                    tool.repository_name = tool_shed_repository.name
-                    tool.repository_owner = tool_shed_repository.owner
-                    tool.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+                    tool.tool_shed = tool_shed
+                    tool.repository_name = name
+                    tool.repository_owner = owner
+                    tool.installed_changeset_revision = installed_changeset_revision
                     tool.guid = guid
                     tool.version = item.elem.find( "version" ).text
                 # Make sure tools have a tool_version object.
@@ -571,7 +575,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         except Exception:
             log.exception( "Error reading tool from path: %s", path )
 
-    def get_tool_repository_from_xml_item(self, item, path):
+    def get_repository_identifiers_from_xml_item(self, item, path):
         tool_shed = item.elem.find("tool_shed").text
         repository_name = item.elem.find("repository_name").text
         repository_owner = item.elem.find("repository_owner").text
@@ -597,14 +601,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             except AssertionError:
                 log.debug("Error while loading tool %s", path)
                 pass
-        repository = self._get_tool_shed_repository(tool_shed=tool_shed,
-                                                    name=repository_name,
-                                                    owner=repository_owner,
-                                                    installed_changeset_revision=installed_changeset_revision)
-        if not repository:
-            msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found in database" % (repository_name, repository_owner)
-            raise Exception(msg)
-        return repository
+        return tool_shed, repository_name, repository_owner, installed_changeset_revision
 
     def _get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
         # Abstract class doesn't have a dependency on the database, for full Tool Shed
