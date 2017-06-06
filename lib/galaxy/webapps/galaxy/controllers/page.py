@@ -496,7 +496,7 @@ class PageController( BaseUIController, SharableMixin,
         session.flush()
 
         return trans.fill_template( "/sharing_base.mako",
-                                    item=page, use_panels=True )
+                                    item=page, controller_list='pages', use_panels=True )
 
     @web.expose
     @web.require_login( "use Galaxy pages" )
