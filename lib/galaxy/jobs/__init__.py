@@ -180,6 +180,8 @@ class JobConfiguration( object, ConfiguresHandlers ):
                 if plugin.get('type') == 'runner':
                     workers = plugin.get('workers', plugins.get('workers', JobConfiguration.DEFAULT_NWORKERS))
                     runner_kwds = self.__get_params(plugin)
+                    if not self.__is_enabled(runner_kwds):
+                        continue
                     runner_info = dict(id=plugin.get('id'),
                                        load=plugin.get('load'),
                                        workers=int(workers),
@@ -223,7 +225,11 @@ class JobConfiguration( object, ConfiguresHandlers ):
                 if metrics_elements:
                     job_metrics.set_destination_conf_element( id, metrics_elements[ 0 ] )
             job_destination = JobDestination(**dict(destination.items()))
-            job_destination['params'] = self.__get_params(destination)
+            params = self.__get_params(destination)
+            if not self.__is_enabled(params):
+                continue
+
+            job_destination['params'] = params
             job_destination['env'] = self.__get_envs(destination)
             destination_resubmits = self.__get_resubmits(destination)
             if destination_resubmits:
@@ -489,6 +495,15 @@ class JobConfiguration( object, ConfiguresHandlers ):
                 delay=resubmit.get('delay'),
             ) )
         return rval
+
+    def __is_enabled(self, params):
+        """Check for an enabled parameter - pop it out - and return as boolean."""
+        enabled = True
+        if "enabled" in params:
+            raw_enabled = params.pop("enabled")
+            enabled = util.asbool(raw_enabled)
+
+        return enabled
 
     @property
     def default_job_tool_configuration(self):

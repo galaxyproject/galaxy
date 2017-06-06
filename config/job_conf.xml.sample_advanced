@@ -283,7 +283,13 @@
             <param id="insecure">true</param>
             <!-- True to communicate with Chronos over HTTPS; false otherwise-->
         </plugin>
-
+        <!-- Additionally any plugin or destination (below) may define an "enabled" parameter that should
+             evaluate to True or False. When setup using
+                <param id="enabled" from_environ="<VAR>">True|False</param>
+             plugins and destinations can be conditionally loaded using environment variables.
+             Setting the param body above to True or False is required and specifies the default
+             used by Galaxy is no environment variable of the specified name is found.
+        -->
     </plugins>
     <handlers default="handlers">
         <!-- Additional job handlers - the id should match the name of a
