@@ -1,5 +1,5 @@
 name: tool_list
-type: 
+type:
   - masthead
 activate: true
 
@@ -13,10 +13,10 @@ function: >
     'be patient, this might take a moment.');
   }, 1);
 
-  $.getJSON(Galaxy.root + "/api/webhooks/tool_list/get_data", function(data) {
+  $.getJSON(Galaxy.root + "api/webhooks/tool_list/get_data", function(data) {
     var popup = window.open('tool_list.html');
-    var html = '<!DOCTYPE html><body><h2>' + 
-      'Create a Docker flavour of this instance:</h2>' + 
+    var html = '<!DOCTYPE html><body><h2>' +
+      'Create a Docker flavour of this instance:</h2>' +
       '<table style="width:100%"><tr><td width="50%">The textarea on ' +
       'the right shows the list of installed tools on this Galaxy instance.' +
       'You can use it to build a custom Galaxy flavour based on the same ' +
@@ -30,8 +30,8 @@ function: >
       'with <br><br><b>ADD my_tool_list.yml $GALAXY_ROOT/my_tool_list.yml' +
       '</b> <br><br> and <br><br><b>' +
       'RUN install-tools $GALAXY_ROOT/my_tool_list.yml</b></td>' +
-      '<td width="50%"><textarea rows="30" cols="78">' + 
-      data.yaml + 
+      '<td width="50%"><textarea rows="30" cols="78">' +
+      data.yaml +
       '</textarea></td></tr></table></body>';
 
     popup.document.write(html);
