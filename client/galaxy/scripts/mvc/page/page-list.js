@@ -1,13 +1,23 @@
 /** This class renders the page list. */
-define( [ 'mvc/grid/grid-view' ], function( GridView ) {
+define( [ 'utils/utils', 'mvc/grid/grid-view' ], function( Utils, GridView ) {
     var View = Backbone.View.extend({
         initialize: function( options ) {
+            var self = this;
             this.setElement( $( '<div/>' ) );
-            grid = new GridView( { url_base: Galaxy.root + 'page/list', dict_format: true } );
-            this.$el.append( grid.$el );
+            this.model = new Backbone.Model();
+            Utils.get({
+                url     : Galaxy.root + 'page/list',
+                success : function( response ) {
+                    response[ 'dict_format' ] = true;
+                    self.model.set( response );
+                    self.render();
+                }
+            });
         },
 
         render: function() {
+            grid = new GridView( this.model.attributes );
+            this.$el.empty().append( grid.$el );
         }
     });
 

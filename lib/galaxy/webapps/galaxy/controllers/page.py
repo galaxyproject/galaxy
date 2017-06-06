@@ -337,7 +337,11 @@ class PageController( BaseUIController, SharableMixin,
             .all()
 
         # Render grid wrapped in panels
-        return grid   # shared_by_others }
+        grid[ 'shared_by_others' ] = [ {
+            'username' : p.page.user.username,
+            'slug'     : p.page.slug,
+            'title'    : p.page.title } for p in shared_by_others ]
+        return grid
 
     @web.expose
     @web.json
