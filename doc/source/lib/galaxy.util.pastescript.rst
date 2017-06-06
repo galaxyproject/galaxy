@@ -1,5 +1,5 @@
-galaxy.util.pastescript package
-===============================
+galaxy\.util\.pastescript package
+=================================
 
 .. automodule:: galaxy.util.pastescript
     :members:
@@ -9,16 +9,16 @@ galaxy.util.pastescript package
 Submodules
 ----------
 
-galaxy.util.pastescript.loadwsgi module
----------------------------------------
+galaxy\.util\.pastescript\.loadwsgi module
+------------------------------------------
 
 .. automodule:: galaxy.util.pastescript.loadwsgi
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.util.pastescript.serve module
-------------------------------------
+galaxy\.util\.pastescript\.serve module
+---------------------------------------
 
 .. automodule:: galaxy.util.pastescript.serve
     :members:

@@ -104,7 +104,7 @@ Smtp server takes care of the email sending and the activation_email email is us
 
 You can also set the instance_resource_url which is shown in the activation emails so you can point users to your wiki or other materials.
 ```
-instance_resource_url = http://wiki.galaxyproject.org/
+instance_resource_url = http://galaxyproject.org/
 ```
 
 

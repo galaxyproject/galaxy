@@ -129,14 +129,14 @@ define( [ 'mvc/tool/tool-form-composite', 'mvc/form/form-view', 'mvc/ui/ui-misc'
             var tableHtml = "", trHtml = "";
             tableHtml = tableHtml + '<table class="table colored"><thead>' +
                     '<tr class="header">' +
-                        '<th class="wf-td">Name</th>' +
-                        '<th class="wf-td">Owner</th>' +
-                        '<th class="wf-td"># of Steps</th>' +
-                        '<th class="wf-td">Published</th>' +
+                        '<th>Name</th>' +
+                        '<th>Owner</th>' +
+                        '<th># of Steps</th>' +
+                        '<th>Published</th>' +
                     '</tr></thead>';
             _.each( workflows, function( wf ) {
                 trHtml = trHtml + '<tr>' +
-                             '<td class="wf-td wf-dpd">' +
+                             '<td>' +
                                  '<div class="dropdown">' +
                                      '<button class="menubutton" type="button" data-toggle="dropdown">' +
                                          _.escape( wf.name ) + '<span class="caret"></span>' +
@@ -145,8 +145,8 @@ define( [ 'mvc/tool/tool-form-composite', 'mvc/form/form-view', 'mvc/ui/ui-misc'
                                  '</div>' +
                               '</td>' +
                               '<td>' + ( wf.owner === Galaxy.user.attributes.username ? "You" : wf.owner ) +'</td>' +
-                              '<td class="wf-td">' + wf.number_of_steps + '</td>' +
-                              '<td class="wf-td">' + ( wf.published ? "Yes" : "No" ) + '</td>' +
+                              '<td>' + wf.number_of_steps + '</td>' +
+                              '<td>' + ( wf.published ? "Yes" : "No" ) + '</td>' +
                          '</tr>';
             });
             return tableHtml + '<tbody class="workflow-search">' + trHtml + '</tbody></table>';

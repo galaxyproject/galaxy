@@ -16,9 +16,9 @@ define([
         config : {
             "allow_user_deletion": false,
             "allow_user_creation": true,
-            "wiki_url": "https://wiki.galaxyproject.org/",
+            "wiki_url": "https://galaxyproject.org/",
             "ftp_upload_site": null,
-            "support_url": "https://wiki.galaxyproject.org/Support",
+            "support_url": "https://galaxyproject.org/support/",
             "allow_user_dataset_purge": false,
             "allow_library_path_paste": false,
             "user_library_import_dir": null,
@@ -96,7 +96,7 @@ define([
         ok( app.hasOwnProperty( 'config' ) && typeof app.config === 'object' );
         equal( app.config.allow_user_deletion,  false );
         equal( app.config.allow_user_creation,  true );
-        equal( app.config.wiki_url,             "https://wiki.galaxyproject.org/" );
+        equal( app.config.wiki_url,             "https://galaxyproject.org/" );
         equal( app.config.ftp_upload_site,      null );
         //...
     });

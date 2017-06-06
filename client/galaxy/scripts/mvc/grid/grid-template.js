@@ -215,7 +215,7 @@ return {
         }
         return tmpl;
     },
-    
+
     // template
     footer: function(options) {
     
@@ -304,7 +304,7 @@ return {
                         '<input type="hidden" id="operation" name="operation" value="">' +
                         '<td></td>' +
                         '<td colspan="100">' +
-                            'For <span class="grid-selected-count"></span> selected ' + options.get_class_plural + ': ';
+                            'For <span class="grid-selected-count"></span> selected items: ';
             
             // configure buttons for operations
             for (i in options.operations) {

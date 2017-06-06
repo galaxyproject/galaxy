@@ -110,6 +110,7 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/workflow' )
     webapp.add_client_route( '/workflow/run' )
     webapp.add_client_route( '/workflow/import_workflow' )
+    webapp.add_client_route( '/pages/{action_id}' )
     webapp.add_client_route( '/workflow/configure_menu' )
     webapp.add_client_route( '/custom_builds' )
 
@@ -346,6 +347,10 @@ def populate_api_routes( webapp, app ):
                            controller='history_contents', action='archive')
     webapp.mapper.connect( '/api/histories/{history_id}/contents/archive/{filename}{.format}',
                            controller='history_contents', action='archive')
+    webapp.mapper.connect("/api/histories/{history_id}/contents/dataset_collections/{id}/download",
+                          controller='history_contents',
+                          action='download_dataset_collection',
+                          conditions=dict(method=["GET"]))
 
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated

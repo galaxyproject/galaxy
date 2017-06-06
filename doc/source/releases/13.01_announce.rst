@@ -6,6 +6,6 @@ January 2013 Galaxy Release (v 13.01)
 
 Please see the `Galaxy wiki`_ for announcement and release notes.
 
-.. _Galaxy wiki: https://wiki.galaxyproject.org/News/2013_01_11_DistributionNewsBrief
+.. _Galaxy wiki: https://galaxyproject.org/news/2013-01-11-distribution-news-brief/
 
 .. include:: _thanks.rst
