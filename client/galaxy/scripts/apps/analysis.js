@@ -11,6 +11,7 @@ var jQuery = require( 'jquery' ),
     Tours = require( 'mvc/tours' ),
     GridView = require( 'mvc/grid/grid-view' )
     Workflows = require( 'mvc/workflow/workflow' ),
+    HistoryList = require( 'mvc/history/history-list' ),
     WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
@@ -119,7 +120,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_histories : function( action_id ) {
-            this.page.display( new GridView( { url_base: Galaxy.root + 'history/list', dict_format: true } ) );
+            this.page.display( new HistoryList.View() );
         },
 
         show_pages : function( action_id ) {
