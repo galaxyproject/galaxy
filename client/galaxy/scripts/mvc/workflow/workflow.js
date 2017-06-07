@@ -1,5 +1,5 @@
 /** Workflow view */
-define( [ 'mvc/tool/tool-form-composite', 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( ToolForm, Form, Ui ) {
+define( [ 'mvc/tool/tool-form-composite' ], function( ToolForm ) {
 
     /** Get querystrings from url */
     function get_querystring( key ) {
