@@ -110,7 +110,7 @@ class HistoryListGrid( grids.Grid ):
         grids.GridOperation( "View", allow_multiple=False ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), url_args=dict( action='sharing' ) ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, target="inbound"  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), url_args=dict( action='rename' )  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "Delete Permanently", condition=( lambda item: not item.purged ), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), async_compatible=True ),
@@ -256,10 +256,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         status = message = None
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
-            if operation == "rename" and kwargs.get('id', None):  # Don't call rename if no ids
-                if 'name' in kwargs:
-                    del kwargs['name']  # Remove ajax name param that rename method uses
-                return self.rename( trans, **kwargs )
             if operation == "view":
                 decoded_id = self.decode_id( kwargs.get( 'id', None ) )
                 history = self.history_manager.get_owned( decoded_id, trans.user, current_history=trans.history )
