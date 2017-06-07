@@ -16,7 +16,7 @@ var menu = [
     },
     {
         html    : _l( 'Saved Histories' ),
-        href    : 'history/list',
+        href    : 'histories/list',
     },
     {
         html    : _l( 'Histories Shared with Me' ),
