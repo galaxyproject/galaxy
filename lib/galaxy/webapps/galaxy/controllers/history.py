@@ -107,7 +107,7 @@ class HistoryListGrid( grids.Grid ):
     )
     operations = [
         grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=True ),
-        grids.GridOperation( "View", allow_multiple=False ),
+        grids.GridOperation( "View", allow_multiple=False, url_args=dict( action='view' ) ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), url_args=dict( action='sharing' ) ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), url_args=dict( action='rename' )  ),
@@ -256,14 +256,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         status = message = None
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
-            if operation == "view":
-                decoded_id = self.decode_id( kwargs.get( 'id', None ) )
-                history = self.history_manager.get_owned( decoded_id, trans.user, current_history=trans.history )
-                return trans.response.send_redirect( url_for( controller='history',
-                                                              action='view',
-                                                              id=kwargs['id'],
-                                                              show_deleted=history.deleted,
-                                                              use_panels=False ) )
             history_ids = galaxy.util.listify( kwargs.get( 'id', [] ) )
             # Display no message by default
             status, message = None, None
