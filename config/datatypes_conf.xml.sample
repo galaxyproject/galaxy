@@ -603,8 +603,15 @@
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true" />
     <!-- PlantTribes datatypes -->
     <datatype extension="ptalign" type="galaxy.datatypes.text:PlantTribesMultipleSequenceAlignment" />
+    <datatype extension="ptalignca" type="galaxy.datatypes.text:PlantTribesMultipleSequenceAlignmentCodonAlignment" />
+    <datatype extension="ptaligntrimmed" type="galaxy.datatypes.text:PlantTribesMultipleSequenceAlignmentTrimmed" />
+    <datatype extension="ptaligntrimmedca" type="galaxy.datatypes.text:PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment" />
+    <datatype extension="ptalignfiltered" type="galaxy.datatypes.text:PlantTribesMultipleSequenceAlignmentFiltered" />
+    <datatype extension="ptalignfilteredca" type="galaxy.datatypes.text:PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment" />
     <datatype extension="ptortho" type="galaxy.datatypes.text:PlantTribesOrtho" />
     <datatype extension="ptorthocs" type="galaxy.datatypes.text:PlantTribesOrthoCodingSequence" />
+    <datatype extension="ptphylip" type="galaxy.datatypes.text:PlantTribesPhylip" />
+    <datatype extension="pttgf" type="galaxy.datatypes.text:PlantTribesTargetedGeneFamilies" />
     <datatype extension="pttree" type="galaxy.datatypes.text:PlantTribesPhylogeneticTree" />
     <datatype extension="smat" type="galaxy.datatypes.text:Smat" display_in_upload="true" />
   </registration>
