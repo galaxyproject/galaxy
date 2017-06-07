@@ -271,7 +271,7 @@ var Collection = Backbone.Collection.extend({
                         target  : 'galaxy_main'
                     },{
                         title   : _l('Saved Datasets'),
-                        url     : 'dataset/list',
+                        url     : 'datasets/list',
                         target  : 'galaxy_main'
                     },{
                         title   : _l('Saved Pages'),
