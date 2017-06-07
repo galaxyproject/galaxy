@@ -502,7 +502,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     status, message = trans.webapp.controllers['history']._list_switch( trans, histories )
 
                     # Current history changed, refresh history frame; if switching to a dataset, set hda seek.
-                    trans.template_context['refresh_frames'] = ['history']
+                    kwargs['refresh_frames'] = ['history']
                     if operation == "switch":
                         hda_ids = [ trans.security.encode_id( hda.id ) for hda in hdas ]
                         trans.template_context[ 'seek_hda_ids' ] = hda_ids
@@ -518,7 +518,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     status, message = self._copy_datasets( trans, hda_ids, target_histories )
 
                     # Current history changed, refresh history frame.
-                    trans.template_context['refresh_frames'] = ['history']
+                    kwargs['refresh_frames'] = ['history']
 
         # Render the list view
         kwargs[ 'dict_format' ] = True
