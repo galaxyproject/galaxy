@@ -11,7 +11,7 @@ from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
-from galaxy.tools.toolbox.cache import ToolCache
+from galaxy.tools.cache import ToolCache
 from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
 from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers

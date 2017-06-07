@@ -105,7 +105,7 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is(create_response, 200)
         tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
         namelist = tar_contents.getnames()
-        assert len(namelist) == 3
+        assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_datasets, namelist):
             assert "%s/%s.%s" % (collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
@@ -120,7 +120,7 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is(create_response, 200)
         tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
         namelist = tar_contents.getnames()
-        assert len(namelist) == 2
+        assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_datasets, namelist):
             assert "%s/%s.%s" % (collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
@@ -137,7 +137,7 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is(create_response, 200)
         tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
         namelist = tar_contents.getnames()
-        assert len(namelist) == 2
+        assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         pair_collection_name = pair['element_identifier']
         for element, zip_path in zip(pair['object']['elements'], namelist):
             assert "%s/%s/%s.%s" % (list_collection_name, pair_collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
