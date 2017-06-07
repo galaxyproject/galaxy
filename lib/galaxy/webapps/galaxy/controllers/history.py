@@ -166,7 +166,6 @@ class SharedHistoryListGrid( grids.Grid ):
     operations = [
         grids.GridOperation( "View", allow_multiple=False, target="_top" ),
         grids.GridOperation( "Copy" ),
-        # grids.GridOperation( "Copy", allow_multiple=False ),
         grids.GridOperation( "Unshare" )
     ]
     standard_filters = []
