@@ -69,6 +69,10 @@ class Json( Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'application/json'
+
     def sniff( self, filename ):
         """
             Try to load the string with the json module. If successful it's a json file.
