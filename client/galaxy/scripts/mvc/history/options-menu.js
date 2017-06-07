@@ -17,6 +17,8 @@ var menu = [
     {
         html    : _l( 'Saved Histories' ),
         href    : 'histories/list',
+        target  : '_top'
+
     },
     {
         html    : _l( 'Histories Shared with Me' ),
@@ -205,7 +207,7 @@ function buildMenu( isAnon, purgeAllowed, urlRoot ){
         //TODO:?? hard-coded galaxy_main
         if( menuOption.href ){
             menuOption.href = urlRoot + menuOption.href;
-            menuOption.target = 'galaxy_main';
+            menuOption.target = menuOption.target || 'galaxy_main';
         }
 
         if( menuOption.confirm ){
