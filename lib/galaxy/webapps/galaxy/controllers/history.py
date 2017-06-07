@@ -109,7 +109,7 @@ class HistoryListGrid( grids.Grid ):
     operations = [
         grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "View", allow_multiple=False ),
-        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), url_args=dict( action='sharing' ) ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, target="inbound"  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
@@ -257,8 +257,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         status = message = None
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
-            if operation == "share or publish":
-                return self.sharing( trans, **kwargs )
             if operation == "rename" and kwargs.get('id', None):  # Don't call rename if no ids
                 if 'name' in kwargs:
                     del kwargs['name']  # Remove ajax name param that rename method uses
@@ -743,8 +741,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     history_name = escape( history.name )
                     user_email = escape( user.email )
                     message = "History '%s' does not seem to be shared with user '%s'" % ( history_name, user_email )
-                    return trans.fill_template( '/sharing_base.mako', item=history,
-                                                message=message, status='error' )
+                    return trans.fill_template( '/sharing_base.mako', controller_list='histories', item=history,
+                                                message=message, status='error', use_panels=True )
 
         # Legacy issue: histories made accessible before recent updates may not have a slug. Create slug for any histories that need them.
         for history in histories:
@@ -753,7 +751,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         session.flush()
 
-        return trans.fill_template( "/sharing_base.mako", item=history )
+        return trans.fill_template( "/sharing_base.mako", controller_list='histories', item=history, use_panels=True )
 
     @web.expose
     @web.require_login( "share histories with other users" )
