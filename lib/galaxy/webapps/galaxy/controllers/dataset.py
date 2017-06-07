@@ -463,6 +463,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( dataset_id ) )
 
     @web.expose
+    @web.json
     @web.require_login( "see all available datasets" )
     def list( self, trans, **kwargs ):
         """List all available datasets"""
@@ -520,6 +521,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     trans.template_context['refresh_frames'] = ['history']
 
         # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self.stored_list_grid( trans, status=status, message=message, **kwargs )
 
     @web.expose
