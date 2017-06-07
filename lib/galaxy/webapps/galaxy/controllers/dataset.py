@@ -505,6 +505,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     kwargs['refresh_frames'] = ['history']
                     if operation == "switch":
                         hda_ids = [ trans.security.encode_id( hda.id ) for hda in hdas ]
+                        # TODO: Highlighting does not work, has to be revisited
                         trans.template_context[ 'seek_hda_ids' ] = hda_ids
                 elif operation == "copy to current history":
                     #
