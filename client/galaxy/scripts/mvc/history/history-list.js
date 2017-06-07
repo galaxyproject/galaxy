@@ -1,7 +1,7 @@
 /** This class renders the page list. */
 define( [ 'utils/utils', 'mvc/grid/grid-view' ], function( Utils, GridView ) {
 
-    // define a module that has:
+    /*/ define a module that has:
     // an hack for which to override the url based history copy function in the popupmenus
     // and replace it with a dialog that uses the API instead
     define( 'copy-dialog-hack', [
@@ -87,7 +87,7 @@ define( [ 'utils/utils', 'mvc/grid/grid-view' ], function( Utils, GridView ) {
                     originalInitGrid.call( gridView, json );
                     replaceCopyFunction();
                 };
-            });
+            });*/
 
     var View = Backbone.View.extend({
         initialize: function( options ) {
@@ -98,6 +98,14 @@ define( [ 'utils/utils', 'mvc/grid/grid-view' ], function( Utils, GridView ) {
                 url     : Galaxy.root + 'history/list',
                 success : function( response ) {
                     response[ 'dict_format' ] = true;
+                    window.console.log( response );
+                    _.each( response[ 'operations' ], function( operation ) {
+                        if ( operation.label == 'Copy' ) {
+                            operation.onclick = function( id ) {
+                                alert( id );
+                            }
+                        }
+                    });
                     self.model.set( response );
                     self.render();
                 }
