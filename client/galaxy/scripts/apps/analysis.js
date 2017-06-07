@@ -81,7 +81,6 @@ window.app = function app( options, bootstrapped ){
             '(/)user(/)' : 'show_user',
             '(/)user(/)(:form_id)' : 'show_user_form',
             '(/)workflow(/)' : 'show_workflows',
-            '(/)custom_builds' : 'show_custom_builds',
             '(/)workflow/run(/)' : 'show_run',
             '(/)pages(/)(:action_id)' : 'show_pages',
             '(/)workflow/configure_menu(/)' : 'show_configure_menu',
