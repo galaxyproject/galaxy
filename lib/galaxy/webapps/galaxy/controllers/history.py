@@ -297,7 +297,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     if use_panels:
                         return trans.response.send_redirect( url_for( "/" ) )
                     else:
-                        trans.template_context['refresh_frames'] = ['history']
+                        kwargs['refresh_frames'] = ['history']
                 elif operation in ( "delete", "delete permanently" ):
                     if operation == "delete permanently":
                         status, message = self._list_delete( trans, histories, purge=True )
@@ -306,7 +306,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     if current_history in histories:
                         # Deleted the current history, so a new, empty history was
                         # created automatically, and we need to refresh the history frame
-                        trans.template_context['refresh_frames'] = ['history']
+                        kwargs['refresh_frames'] = ['history']
                 elif operation == "undelete":
                     status, message = self._list_undelete( trans, histories )
                 elif operation == "unshare":
