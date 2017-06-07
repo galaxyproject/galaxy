@@ -249,6 +249,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.fill_template( "history/list_published.mako", embedded_grid=grid )
 
     @web.expose
+    @web.json
     @web.require_login( "work with multiple histories" )
     def list( self, trans, **kwargs ):
         """List all available histories"""
@@ -328,6 +329,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
                 trans.sa_session.flush()
         # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self.stored_list_grid( trans, status=status, message=message, **kwargs )
 
     def _list_delete( self, trans, histories, purge=False ):
