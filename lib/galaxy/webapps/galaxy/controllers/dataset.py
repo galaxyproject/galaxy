@@ -53,7 +53,6 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     # Grid definition
     title = "Saved Datasets"
     model_class = model.HistoryDatasetAssociation
-    template = '/dataset/grid.mako'
     default_sort_key = "-update_time"
     columns = [
         grids.TextColumn( "Name", key="name",
