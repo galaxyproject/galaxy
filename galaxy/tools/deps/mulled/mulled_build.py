@@ -26,7 +26,14 @@ except ImportError:
 from galaxy.tools.deps import commands, installable
 
 from ._cli import arg_parser
-from .util import build_target, conda_build_target_str, create_repository, image_name, quay_repository
+from .util import (
+    build_target,
+    conda_build_target_str,
+    create_repository,
+    quay_repository,
+    v1_image_name,
+    v2_image_name,
+)
 from ..conda_compat import MetaData
 
 DIRNAME = os.path.dirname(__file__)
@@ -127,15 +134,17 @@ def mull_targets(
     test='true', test_files=None, image_build=None, name_override=None,
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
     conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
-    oauth_token=None,
+    oauth_token=None, hash_func="v2",
 ):
     targets = list(targets)
     if involucro_context is None:
         involucro_context = InvolucroContext()
 
+    image_function = v1_image_name if hash_func == "v1" else v2_image_name
+
     repo_template_kwds = {
         "namespace": namespace,
-        "image": image_name(targets, image_build=image_build, name_override=name_override)
+        "image": image_function(targets, image_build=image_build or '0', name_override=name_override)
     }
     repo = string.Template(repository_template).safe_substitute(repo_template_kwds)
 
@@ -279,6 +288,7 @@ def add_build_arguments(parser):
     parser.add_argument('--oauth-token', dest="oauth_token", default=None,
                         help="If set, use this token when communicating with quay.io API.")
     parser.add_argument('--check-published', dest="rebuild", action='store_false')
+    parser.add_argument('--hash', dest="hash", choices=["v1", "v2"], default="v2")
 
 
 def add_single_image_arguments(parser):
@@ -334,6 +344,8 @@ def args_to_mull_targets_kwds(args):
         kwds["oauth_token"] = args.oauth_token
     if hasattr(args, "rebuild"):
         kwds["rebuild"] = args.rebuild
+    if hasattr(args, "hash"):
+        kwds["hash_func"] = args.hash
 
     kwds["involucro_context"] = context_from_args(args)
 
