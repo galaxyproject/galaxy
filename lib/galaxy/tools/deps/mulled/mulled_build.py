@@ -12,6 +12,7 @@ from __future__ import print_function
 
 import json
 import os
+import shutil
 import string
 import subprocess
 import sys
@@ -25,7 +26,14 @@ except ImportError:
 from galaxy.tools.deps import commands, installable
 
 from ._cli import arg_parser
-from .util import build_target, conda_build_target_str, image_name
+from .util import (
+    build_target,
+    conda_build_target_str,
+    create_repository,
+    quay_repository,
+    v1_image_name,
+    v2_image_name,
+)
 from ..conda_compat import MetaData
 
 DIRNAME = os.path.dirname(__file__)
@@ -37,6 +45,7 @@ DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = '/source/'
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
+DEST_BASE_IMAGE = os.environ.get('DEST_BASE_IMAGE', None)
 
 
 def involucro_link():
@@ -111,22 +120,51 @@ def conda_versions(pkg_name, file_name):
     return ret
 
 
+class BuildExistsException(Exception):
+    """Exception indicating mull_targets is skipping an existing build.
+
+    If mull_targets is called with rebuild=False and the target built is already published
+    an instance of this exception is thrown.
+    """
+
+
 def mull_targets(
     targets, involucro_context=None,
-    command="build", channels=DEFAULT_CHANNELS, namespace="mulled",
+    command="build", channels=DEFAULT_CHANNELS, namespace="biocontainers",
     test='true', test_files=None, image_build=None, name_override=None,
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
-    conda_version=None, verbose=False, binds=DEFAULT_BINDS
+    conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
+    oauth_token=None, hash_func="v2",
 ):
     targets = list(targets)
     if involucro_context is None:
         involucro_context = InvolucroContext()
 
+    image_function = v1_image_name if hash_func == "v1" else v2_image_name
+
     repo_template_kwds = {
         "namespace": namespace,
-        "image": image_name(targets, image_build=image_build, name_override=name_override)
+        "image": image_function(targets, image_build=image_build or '0', name_override=name_override)
     }
     repo = string.Template(repository_template).safe_substitute(repo_template_kwds)
+
+    if not rebuild or "push" in command:
+        repo_name = repo_template_kwds["image"].split(":", 1)[0]
+        repo_data = quay_repository(repo_template_kwds["namespace"], repo_name)
+        if not rebuild:
+            tags = repo_data.get("tags", [])
+
+            target_tag = None
+            if ":" in repo_template_kwds["image"]:
+                image_name_parts = repo_template_kwds["image"].split(":")
+                assert len(image_name_parts) == 2, ": not allowed in image name [%s]" % repo_template_kwds["image"]
+                target_tag = image_name_parts[1]
+
+            if tags and (target_tag is None or target_tag in tags):
+                raise BuildExistsException()
+        if "push" in command and "error_type" in repo_data and oauth_token:
+            # Explicitly create the repository so it can be built as public.
+            create_repository(repo_template_kwds["namespace"], repo_name, oauth_token)
 
     for channel in channels:
         if channel.startswith('file://'):
@@ -144,6 +182,9 @@ def mull_targets(
         '-set', "REPO='%s'" % repo,
         '-set', "BINDS='%s'" % bind_str,
     ]
+
+    if DEST_BASE_IMAGE:
+        involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % DEST_BASE_IMAGE])
     if verbose:
         involucro_args.extend(["-set", "VERBOSE='1'"])
     if conda_version is not None:
@@ -194,7 +235,14 @@ class InvolucroContext(installable.InstallableContext):
 
     def exec_command(self, involucro_args):
         cmd = self.build_command(involucro_args)
-        return self.shell_exec(" ".join(cmd))
+        # Create ./build dir manually, otherwise Docker will do it as root
+        os.mkdir('./build')
+        try:
+            res = self.shell_exec(" ".join(cmd))
+        finally:
+            # delete build directory in any case
+            shutil.rmtree('./build')
+        return res
 
     def is_installed(self):
         return os.path.exists(self.involucro_bin)
@@ -212,9 +260,10 @@ def ensure_installed(involucro_context, auto_init):
 
 
 def install_involucro(involucro_context=None, to_path=None):
-    to_path = involucro_context.involucro_bin
-    download_cmd = " ".join(commands.download_command(involucro_link(), to=to_path, quote_url=True))
-    full_cmd = "%s && chmod +x %s" % (download_cmd, to_path)
+    install_path = os.path.abspath(involucro_context.involucro_bin)
+    involucro_context.involucro_bin = install_path
+    download_cmd = " ".join(commands.download_command(involucro_link(), to=install_path, quote_url=True))
+    full_cmd = "%s && chmod +x %s" % (download_cmd, install_path)
     return involucro_context.shell_exec(full_cmd)
 
 
@@ -222,13 +271,11 @@ def add_build_arguments(parser):
     """Base arguments describing how to 'mull'."""
     parser.add_argument('--involucro-path', dest="involucro_path", default=None,
                         help="Path to involucro (if not set will look in working directory and on PATH).")
-    parser.add_argument('--force-rebuild', dest="force_rebuild", action="store_true",
-                        help="Rebuild package even if already published.")
     parser.add_argument('--dry-run', dest='dry_run', action="store_true",
                         help='Just print commands instead of executing them.')
     parser.add_argument('--verbose', dest='verbose', action="store_true",
                         help='Cause process to be verbose.')
-    parser.add_argument('-n', '--namespace', dest='namespace', default="mulled",
+    parser.add_argument('-n', '--namespace', dest='namespace', default="biocontainers",
                         help='quay.io namespace.')
     parser.add_argument('-r', '--repository_template', dest='repository_template', default=DEFAULT_REPOSITORY_TEMPLATE,
                         help='Docker repository target for publication (only quay.io or compat. API is currently supported).')
@@ -238,6 +285,10 @@ def add_build_arguments(parser):
                         help='Dependent conda channels.')
     parser.add_argument('--conda-version', dest="conda_version", default=None,
                         help="Change to specified version of Conda before installing packages.")
+    parser.add_argument('--oauth-token', dest="oauth_token", default=None,
+                        help="If set, use this token when communicating with quay.io API.")
+    parser.add_argument('--check-published', dest="rebuild", action='store_false')
+    parser.add_argument('--hash', dest="hash", choices=["v1", "v2"], default="v2")
 
 
 def add_single_image_arguments(parser):
@@ -289,6 +340,12 @@ def args_to_mull_targets_kwds(args):
         kwds["repository_template"] = args.repository_template
     if hasattr(args, "conda_version"):
         kwds["conda_version"] = args.conda_version
+    if hasattr(args, "oauth_token"):
+        kwds["oauth_token"] = args.oauth_token
+    if hasattr(args, "rebuild"):
+        kwds["rebuild"] = args.rebuild
+    if hasattr(args, "hash"):
+        kwds["hash_func"] = args.hash
 
     kwds["involucro_context"] = context_from_args(args)
 
