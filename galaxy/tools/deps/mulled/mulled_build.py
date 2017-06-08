@@ -40,6 +40,23 @@ IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 DEST_BASE_IMAGE = os.environ.get('DEST_BASE_IMAGE', None)
 
+SINGULARITY_TEMPLATE = """Bootstrap: docker
+From: bgruening/busybox-bash:0.1
+
+%%setup
+
+    echo "Copying conda environment"
+    mkdir -p /tmp/conda
+    cp -r /data/dist/* /tmp/conda/
+
+%%post
+    mkdir -p /usr/local
+    cp -R /tmp/conda/* /usr/local/
+
+%%test
+    %(container_test)s
+"""
+
 
 def involucro_link():
     if IS_OS_X:
@@ -127,7 +144,7 @@ def mull_targets(
     test='true', test_files=None, image_build=None, name_override=None,
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
     conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
-    oauth_token=None,
+    oauth_token=None, singularity=False,
 ):
     targets = list(targets)
     if involucro_context is None:
@@ -178,6 +195,10 @@ def mull_targets(
         involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % DEST_BASE_IMAGE])
     if verbose:
         involucro_args.extend(["-set", "VERBOSE='1'"])
+    if singularity:
+        singularity_image_name = repo_template_kwds['image']
+        involucro_args.extend(["-set", "SINGULARITY='1'"])
+        involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME='%s'" % singularity_image_name])
     if conda_version is not None:
         verbose = "--verbose" if verbose else "--quiet"
         involucro_args.extend(["-set", "PREINSTALL='conda install %s --yes conda=%s'" % (verbose, conda_version)])
@@ -197,7 +218,18 @@ def mull_targets(
     print(" ".join(involucro_context.build_command(involucro_args)))
     if not dry_run:
         ensure_installed(involucro_context, True)
-        return involucro_context.exec_command(involucro_args)
+        if singularity:
+            if not os.path.exists('./singularity_import'):
+                os.mkdir('./singularity_import')
+            with open('./singularity_import/Singularity', 'w+') as sin_def:
+                fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
+                sin_def.write(fill_template)
+        ret = involucro_context.exec_command(involucro_args)
+        if singularity:
+            # we can not remove this folder as it contains the image wich is owned by root
+            pass
+            # shutil.rmtree('./singularity_import')
+        return ret
     return 0
 
 
@@ -266,6 +298,8 @@ def add_build_arguments(parser):
                         help='Just print commands instead of executing them.')
     parser.add_argument('--verbose', dest='verbose', action="store_true",
                         help='Cause process to be verbose.')
+    parser.add_argument('--singularity', action="store_true",
+                        help='Additionally build a singularity image.')
     parser.add_argument('-n', '--namespace', dest='namespace', default="mulled",
                         help='quay.io namespace.')
     parser.add_argument('-r', '--repository_template', dest='repository_template', default=DEFAULT_REPOSITORY_TEMPLATE,
@@ -314,6 +348,8 @@ def args_to_mull_targets_kwds(args):
         kwds["namespace"] = args.namespace
     if hasattr(args, "dry_run"):
         kwds["dry_run"] = args.dry_run
+    if hasattr(args, "singularity"):
+        kwds["singularity"] = args.singularity
     if hasattr(args, "test"):
         kwds["test"] = args.test
     if hasattr(args, "test_files"):
