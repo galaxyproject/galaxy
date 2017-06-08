@@ -275,7 +275,7 @@ var Collection = Backbone.Collection.extend({
                         target  : '_top'
                     },{
                         title   : _l('Saved Pages'),
-                        url     : 'page/list',
+                        url     : 'pages/list',
                         target  : '_top'
                     }]
             };
