@@ -130,7 +130,7 @@ class BuildExistsException(Exception):
 
 def mull_targets(
     targets, involucro_context=None,
-    command="build", channels=DEFAULT_CHANNELS, namespace="mulled",
+    command="build", channels=DEFAULT_CHANNELS, namespace="biocontainers",
     test='true', test_files=None, image_build=None, name_override=None,
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
     conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
@@ -275,7 +275,7 @@ def add_build_arguments(parser):
                         help='Just print commands instead of executing them.')
     parser.add_argument('--verbose', dest='verbose', action="store_true",
                         help='Cause process to be verbose.')
-    parser.add_argument('-n', '--namespace', dest='namespace', default="mulled",
+    parser.add_argument('-n', '--namespace', dest='namespace', default="biocontainers",
                         help='quay.io namespace.')
     parser.add_argument('-r', '--repository_template', dest='repository_template', default=DEFAULT_REPOSITORY_TEMPLATE,
                         help='Docker repository target for publication (only quay.io or compat. API is currently supported).')
