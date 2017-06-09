@@ -208,7 +208,7 @@ def mull_targets(
         singularity_image_name = repo_template_kwds['image']
         involucro_args.extend(["-set", "SINGULARITY='1'"])
         involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME='%s'" % singularity_image_name])
-        involucro_args.extend(["-set", "USER_ID='%s:%s'" % (os.getuid(),os.getgid() )])
+        involucro_args.extend(["-set", "USER_ID='%s:%s'" % (os.getuid(), os.getgid() )])
     if conda_version is not None:
         verbose = "--verbose" if verbose else "--quiet"
         involucro_args.extend(["-set", "PREINSTALL='conda install %s --yes conda=%s'" % (verbose, conda_version)])
