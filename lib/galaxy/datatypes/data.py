@@ -367,7 +367,28 @@ class Data( object ):
             file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists( file_path ):
                 if os.path.isdir( file_path ):
-                    return trans.show_error_message( "Directory listing is not allowed." )  # TODO: Reconsider allowing listing of directories?
+                    tmp_fh = tempfile.NamedTemporaryFile(delete=False)
+                    tmp_file_name = tmp_fh.name
+                    dir_items = sorted(os.listdir(file_path))
+                    base_path, item_name = os.path.split(file_path)
+                    tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (item_name, len(dir_items)))
+                    tmp_fh.write('<body><p/><table cellpadding="2">\n')
+                    for index, fname in enumerate(dir_items):
+                        if index % 2 == 0:
+                            bgcolor = '#D8D8D8'
+                        else:
+                            bgcolor = '#FFFFFF'
+                        # Can't have an href link here because there is no route
+                        # defined for files contained within multiple subdirectory
+                        # levels of the primary dataset.  Something like this is
+                        # close, but not quite correct:
+                        # href = url_for(controller='dataset', action='display',
+                        # dataset_id=trans.security.encode_id(data.dataset.id),
+                        # preview=preview, filename=fname, to_ext=to_ext)
+                        tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, fname))
+                    tmp_fh.write('</table></body></html>\n')
+                    tmp_fh.close()
+                    return open(tmp_file_name)
                 mime = mimetypes.guess_type( file_path )[0]
                 if not mime:
                     try:
