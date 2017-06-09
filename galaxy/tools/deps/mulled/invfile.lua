@@ -95,13 +95,14 @@ inv.task('build')
 if VAR.SINGULARITY ~= '' then
     inv.task('singularity')
         .using(singularity_image)
-        .withHostConfig({binds = {"build:/data","singularity_import:/import"}, privileged = true})
+        .withHostConfig({binds = {"build:/data","singularity_import:/import"}, privileged = true, user=1001)})
         .withConfig({entrypoint = {'/bin/sh', '-c'}})
         -- this will create a container that is the size of our conda dependencies + 20MiB
         -- The 20 MiB can be improved at some point, but this seems to work for now.
         .run("du -sc  /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)+20}'")
         .run("singularity create --size `du -sc  /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)+20}'` /import/" .. VAR.SINGULARITY_IMAGE_NAME)
         .run('mkdir -p /usr/local/var/singularity/mnt/container && singularity bootstrap /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity')
+        .run('chown ' .. VAR.USER_ID .. ' /import/' .. VAR.SINGULARITY_IMAGE_NAME)
 end
 
 inv.task('cleanup')
