@@ -95,7 +95,7 @@ inv.task('build')
 if VAR.SINGULARITY ~= '' then
     inv.task('singularity')
         .using(singularity_image)
-        .withHostConfig({binds = {"build:/data","singularity_import:/import"}, privileged = true)})
+        .withHostConfig({binds = {"build:/data","singularity_import:/import"}, privileged = true})
         .withConfig({entrypoint = {'/bin/sh', '-c'}})
         -- this will create a container that is the size of our conda dependencies + 20MiB
         -- The 20 MiB can be improved at some point, but this seems to work for now.
