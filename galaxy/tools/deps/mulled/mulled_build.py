@@ -158,10 +158,14 @@ def mull_targets(
         involucro_context = InvolucroContext()
 
     image_function = v1_image_name if hash_func == "v1" else v2_image_name
+    if len(targets) > 2 and image_build is None:
+        # Force an image build in this case - this seems hacky probably
+        # shouldn't work this way but single case broken else wise.
+        image_build = "0"
 
     repo_template_kwds = {
         "namespace": namespace,
-        "image": image_function(targets, image_build=image_build or '0', name_override=name_override)
+        "image": image_function(targets, image_build=image_build, name_override=name_override)
     }
     repo = string.Template(repository_template).safe_substitute(repo_template_kwds)
 
