@@ -740,6 +740,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return stored_dict
 
     @web.expose
+    @web.json
     def upload_import_workflow( self, trans, cntrller='workflow', **kwd ):
         """
         Import a workflow by reading an url, uploading a file, opening and reading the contents
@@ -908,12 +909,12 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             redirect_url = url_for( '/' ) + 'workflow?status=' + status + '&message=%s' % escape( message )
             return trans.response.send_redirect( redirect_url )
         else:
-            return json.dumps({
+            return {
                 'url' : url,
                 'message' : message,
                 'status' : status,
                 'myexperiment_target_url' : myexperiment_target_url
-            })
+            }
 
     @web.expose
     def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None ):
@@ -953,6 +954,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                            url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
     @web.expose
+    @web.json
     def run_workflow( self, trans, id, history_id=None, **kwargs ):
         history = None
         try:
@@ -970,9 +972,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         workflow_contents_manager = workflows.WorkflowContentsManager( trans.app )
         stored = workflow_manager.get_stored_accessible_workflow( trans, id )
         workflow_dict = workflow_contents_manager.workflow_to_dict( trans, stored, style='run' )
-        wf_dict = list()
-        wf_dict.append( workflow_dict )
-        return json.dumps( wf_dict )
+        return workflow_dict
 
     def get_item( self, trans, id ):
         return self.get_stored_workflow( trans, id )

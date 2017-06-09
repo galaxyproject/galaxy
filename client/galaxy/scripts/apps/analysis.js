@@ -11,7 +11,9 @@ var jQuery = require( 'jquery' ),
     Tours = require( 'mvc/tours' ),
     GridView = require( 'mvc/grid/grid-view' )
     Workflows = require( 'mvc/workflow/workflow' ),
-    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' );
+    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' ),
+    ToolFormComposite = require( 'mvc/tool/tool-form-composite' ),
+    Utils = require( 'utils/utils' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -128,11 +130,11 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_run : function() {
-            this.page.display( new Workflows.Run_Workflow_View() );
+            this._loadWorkflow();
         },
 
         show_import_workflow : function() {
-            this.page.display( new Workflows.Import_Workflow_View() );
+            this.page.display( new Workflows.ImportWorkflowView() );
         },
 
         show_configure_menu : function(){
@@ -163,7 +165,7 @@ window.app = function app( options, bootstrapped ){
             } else {
                 // show the workflow run form
                 if( params.workflow_id ){
-                    this.page.display( new Workflows.Run_Workflow_View() )
+                    this._loadWorkflow();
                 // load the center iframe with controller.action: galaxy.org/?m_c=history&m_a=list -> history/list
                 } else if( params.m_c ){
                     this._loadCenterIframe( params.m_c + '/' + params.m_a );
@@ -188,6 +190,23 @@ window.app = function app( options, bootstrapped ){
             this.page.$( '#galaxy_main' ).prop( 'src', url );
         },
 
+        /** load workflow by its url in run mode */
+        _loadWorkflow: function() {
+            var self = this;
+            self.page.$( '#galaxy-main' ).hide();
+            self.page.$( "#center-panel" ).show();
+            Utils.get({
+                url : Galaxy.root + 'workflow/run_workflow?id=' + Utils.getQueryString( 'id' ),
+                success : function( response ) {
+                    var form = new ToolFormComposite.View( response );
+                    self.page.$( "#center-panel" ).empty().append( form.$el )
+                },
+                error : function( response ) {
+                    var $el_error = "<div class='response-message errormessage'><p>Error occurred while loading the resource.</p></div>";
+                    self.page.$( "#center-panel" ).empty().append( $el_error );
+                }
+            });
+        }
     });
 
     // render and start the router

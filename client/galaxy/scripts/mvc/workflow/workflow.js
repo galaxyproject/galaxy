@@ -1,16 +1,11 @@
 /** Workflow view */
-define( [ 'mvc/tool/tool-form-composite' ], function( ToolForm ) {
-
-    /** Get querystrings from url */
-    function get_querystring( key ) {
-        return decodeURIComponent( window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent( key ).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1") );
-    }
+define( [ 'utils/utils' ], function( Utils ) {
 
     /** Build messages after user action */
     function build_messages( self ) {
         var $el_message = self.$el.find( '.response-message' ),
-        status = get_querystring( 'status' ),
-        message = get_querystring( 'message' );
+            status = Utils.getQueryString( 'status' ),
+            message = Utils.getQueryString( 'message' );
 
         if( message && message !== null && message !== "" ) {
             $el_message.addClass( status + 'message' );
@@ -186,28 +181,7 @@ define( [ 'mvc/tool/tool-form-composite' ], function( ToolForm ) {
         }
     });
 
-    var Run_Workflow_View = Backbone.View.extend({
-
-        initialize: function( options ) {
-            this.setElement( '<div/>' );
-            this.run_workflow( options );
-        },
-
-        /** Open workflow to run */
-        run_workflow: function() {
-            var self = this,
-                id = get_querystring( 'id' ),
-                url = Galaxy.root + 'workflow/run_workflow?id=' + id;
-            $.getJSON(url, function( response ) {
-                var wf_parsed = JSON.parse( JSON.stringify( response ) );
-                var form = new ToolForm.View( wf_parsed[0] );
-                build_messages( self );
-                self.$el.empty().append( form.$el );
-            });
-        }
-    });
-
-    var Import_Workflow_View = Backbone.View.extend({
+    var ImportWorkflowView = Backbone.View.extend({
 
         initialize: function() {
             this.setElement( '<div/>' );
@@ -269,7 +243,6 @@ define( [ 'mvc/tool/tool-form-composite' ], function( ToolForm ) {
 
     return {
         View  : View,
-        Run_Workflow_View : Run_Workflow_View,
-        Import_Workflow_View : Import_Workflow_View
+        ImportWorkflowView : ImportWorkflowView
     };
 });
