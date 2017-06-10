@@ -309,7 +309,7 @@ class JobHandlerQueue( object ):
                     log.error( "(%d) Job in unknown state '%s'" % ( job.id, job_state ) )
                     new_waiting_jobs.append( job.id )
             except Exception:
-                log.exception( "failure running job %d" % job.id )
+                log.exception( "failure running job %d", job.id )
         # Update the waiting list
         if not self.track_jobs_in_database:
             self.waiting_jobs = new_waiting_jobs
@@ -784,8 +784,8 @@ class DefaultJobDispatcher( object ):
         runner_name = url.split(':', 1)[0]
         try:
             return self.job_runners[runner_name].url_to_destination(url)
-        except Exception as e:
-            log.exception("Unable to convert legacy job runner URL '%s' to job destination, destination will be the '%s' runner with no params: %s" % (url, runner_name, e))
+        except Exception:
+            log.exception("Unable to convert legacy job runner URL '%s' to job destination, destination will be the '%s' runner with no params", url, runner_name)
             return JobDestination(runner=runner_name)
 
     def put( self, job_wrapper ):

@@ -13,11 +13,6 @@ log = logging.getLogger( __name__ )
 dataset_uuid_column = Column( "uuid", UUIDType, nullable=True )
 
 
-def display_migration_details():
-    print("")
-    print("This migration adds uuid column to dataset table")
-
-
 def upgrade(migrate_engine):
     print(__doc__)
     metadata = MetaData()
@@ -29,10 +24,8 @@ def upgrade(migrate_engine):
         dataset_table = Table( "dataset", metadata, autoload=True )
         dataset_uuid_column.create( dataset_table )
         assert dataset_uuid_column is dataset_table.c.uuid
-    except Exception as e:
-        print(str(e))
-        log.error( "Adding column 'uuid' to dataset table failed: %s" % str( e ) )
-        return
+    except Exception:
+        log.exception("Adding column 'uuid' to dataset table failed.")
 
 
 def downgrade(migrate_engine):
@@ -45,5 +38,5 @@ def downgrade(migrate_engine):
         dataset_table = Table( "dataset", metadata, autoload=True )
         dataset_uuid = dataset_table.c.uuid
         dataset_uuid.drop()
-    except Exception as e:
-        log.debug( "Dropping 'uuid' column from dataset table failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Dropping 'uuid' column from dataset table failed.")

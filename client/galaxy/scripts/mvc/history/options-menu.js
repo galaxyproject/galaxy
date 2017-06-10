@@ -110,17 +110,11 @@ var menu = [
         html    : _l( 'Unhide Hidden Datasets' ),
         anon    : true,
         func    : function() {
+            // TODO: Deprecate this functionality and replace with group dataset selector and action combination
             if( Galaxy && Galaxy.currHistoryPanel && confirm( _l( 'Really unhide all hidden datasets?' ) ) ){
-                var filtered = Galaxy.currHistoryPanel.model.contents.hidden();
-                //TODO: batch
-                filtered.ajaxQueue( Backbone.Model.prototype.save, { visible : true })
-                    .done( function(){
-                        Galaxy.currHistoryPanel.renderItems();
-                    })
-                    .fail( function(){
-                        alert( 'There was an error unhiding the datasets' );
-                        console.error( arguments );
-                    });
+                $.post(Galaxy.root + "history/adjust_hidden",
+                       { 'user_action' : 'unhide' },
+                       function(){Galaxy.currHistoryPanel.loadCurrentHistory();});
             }
         },
     },
@@ -128,18 +122,11 @@ var menu = [
         html    : _l( 'Delete Hidden Datasets' ),
         anon    : true,
         func    : function() {
+            // TODO: Deprecate this functionality and replace with group dataset selector and action combination
             if( Galaxy && Galaxy.currHistoryPanel && confirm( _l( 'Really delete all hidden datasets?' ) ) ){
-                var filtered = Galaxy.currHistoryPanel.model.contents.hidden();
-                //TODO: batch
-                // both delete *and* unhide them
-                filtered.ajaxQueue( Backbone.Model.prototype.save, { deleted : true, visible: true })
-                    .done( function(){
-                        Galaxy.currHistoryPanel.renderItems();
-                    })
-                    .fail( function(){
-                        alert( 'There was an error deleting the datasets' );
-                        console.error( arguments );
-                    });
+                $.post(Galaxy.root + "history/adjust_hidden",
+                       { 'user_action' : 'delete' },
+                       function(){Galaxy.currHistoryPanel.loadCurrentHistory();});
             }
         },
     },

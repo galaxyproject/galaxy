@@ -1,3 +1,6 @@
+"""
+This script drops tables that were associated with the old Galaxy Cloud functionality.
+"""
 from __future__ import print_function
 
 import datetime
@@ -8,14 +11,6 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData,
 now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
-
-
-def display_migration_details():
-    print
-    print("========================================")
-    print("This script drops tables that were associated with the old Galaxy Cloud functionality.")
-    print("========================================")
-
 
 CloudImage_table = Table( "cloud_image", metadata,
                           Column( "id", Integer, primary_key=True ),
@@ -129,21 +124,31 @@ CloudProvider_table = Table( "cloud_provider", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     metadata.reflect()
     try:
         CloudSnapshot_table.drop()
         CloudStore_table.drop()
         CloudInstance_table.drop()
-        CloudImage_table.drop()
         UCI_table.drop()
+        CloudImage_table.drop()
         CloudUserCredentials_table.drop()
         CloudProvider_table.drop()
-    except Exception as e:
-        log.debug( "Dropping cloud tables failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping cloud tables failed.")
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    pass
+    metadata.reflect()
+    try:
+        CloudProvider_table.create()
+        CloudUserCredentials_table.create()
+        CloudImage_table.create()
+        UCI_table.create()
+        CloudInstance_table.create()
+        CloudStore_table.create()
+        CloudSnapshot_table.create()
+    except Exception:
+        log.exception("Creating cloud tables failed.")

@@ -59,11 +59,11 @@ class BatchMiddleware( object ):
         ]
     }
 
-    def __init__( self, galaxy, application, config=None ):
-        #: the original galaxy webapp
-        self.galaxy = galaxy
+    def __init__( self, application, galaxy, config=None ):
         #: the wrapped webapp
         self.application = application
+        #: the original galaxy webapp
+        self.galaxy = galaxy
         self.config = self.DEFAULT_CONFIG.copy()
         self.config.update( config )
         self.base_url = routes.url_for( '/' )

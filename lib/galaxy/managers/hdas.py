@@ -254,13 +254,18 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'id',
             'type_id',
             'name',
-            'history_id', 'hid',
+            'history_id',
+            'hid',
             'history_content_type',
             'dataset_id',
-            'state', 'extension',
+            'state',
+            'extension',
             'deleted', 'purged', 'visible',
-            'type', 'url',
-            'create_time', 'update_time',
+            'tags',
+            'type',
+            'url',
+            'create_time',
+            'update_time',
         ])
         self.add_view( 'detailed', [
             'model_class',
@@ -292,7 +297,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             # 'url',
             'download_url',
 
-            'annotation', 'tags',
+            'annotation',
 
             'api_type'
         ], include_keys_from='summary' )
@@ -326,7 +331,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'misc_blurb'    : self._remap_from( 'blurb' ),
             'file_ext'      : self._remap_from( 'extension' ),
             'file_path'     : self._remap_from( 'file_name' ),
-
             'resubmitted'   : lambda i, k, **c: self.hda_manager.has_been_resubmitted( i ),
             'display_apps'  : self.serialize_display_apps,
             'display_types' : self.serialize_old_display_applications,

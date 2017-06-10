@@ -1,7 +1,14 @@
 """
 Condor helper utilities.
 """
-from subprocess import Popen, PIPE, STDOUT, check_call, CalledProcessError
+from subprocess import (
+    CalledProcessError,
+    check_call,
+    PIPE,
+    Popen,
+    STDOUT
+)
+
 from ..external import parse_external_id
 
 DEFAULT_QUERY_CLASSAD = dict(

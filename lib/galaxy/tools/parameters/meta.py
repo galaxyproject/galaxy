@@ -62,7 +62,7 @@ def expand_workflow_inputs( inputs ):
         for ( step_id, key ), value in list(zip( linked_keys, linked_values )) + list(zip( product_keys, product_values )):
             if step_id is not None:
                 new_params[ step_id ][ key ] = value
-                new_keys.append( value[ 'hid' ] )
+                new_keys.append( str( value[ 'hid' ] ) )
         params_keys.append( new_keys )
         params.append( new_params )
     return params, params_keys

@@ -164,8 +164,7 @@ def expose_api( func, to_json=True, user_required=True ):
 
 
 def __extract_payload_from_request( trans, func, kwargs ):
-
-    content_type = trans.request.headers[ 'content-type' ]
+    content_type = trans.request.headers.get('content-type', '')
     if content_type.startswith( 'application/x-www-form-urlencoded' ) or content_type.startswith( 'multipart/form-data' ):
         # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
         # and loads all field values into kwargs. However, kwargs also contains formal method parameters etc. which
@@ -177,7 +176,7 @@ def __extract_payload_from_request( trans, func, kwargs ):
         named_args, _, _, _ = inspect.getargspec( func )
         for arg in named_args:
             payload.pop( arg, None )
-        for k, v in payload.iteritems():
+        for k, v in payload.items():
             if isinstance( v, string_types ):
                 try:
                     # note: parse_non_hex_float only needed here for single string values where something like

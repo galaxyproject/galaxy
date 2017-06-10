@@ -6,21 +6,23 @@ import math
 import os
 import sys
 import tempfile
-import urllib
 
 import numpy
 from bx.intervals.io import GenomicIntervalReader, ParseError
+from six.moves.urllib.parse import quote_plus
 
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.tabular import Tabular
-from galaxy.datatypes.util.gff_util import parse_gff_attributes
+from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
 from galaxy.web import url_for
 
-import data
-import dataproviders
+from . import (
+    data,
+    dataproviders
+)
 
 log = logging.getLogger(__name__)
 
@@ -86,7 +88,7 @@ class Interval( Tabular ):
                         self.init_meta( dataset )
                         line = line.strip( '#' )
                         elems = line.split( '\t' )
-                        for meta_name, header_list in alias_spec.iteritems():
+                        for meta_name, header_list in alias_spec.items():
                             for header_val in header_list:
                                 if header_val in elems:
                                     # found highest priority header to meta_name
@@ -239,7 +241,7 @@ class Interval( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return Tabular.make_html_table( self, dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'endCol': 'End', 'strandCol': 'Strand', 'nameCol': 'Name'} )
+        return self.make_html_table( dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'endCol': 'End', 'strandCol': 'Strand', 'nameCol': 'Name'} )
 
     def ucsc_links( self, dataset, type, app, base_url ):
         """
@@ -263,10 +265,10 @@ class Interval( Tabular ):
         for site_name, site_url in valid_sites:
             internal_url = url_for( controller='dataset', dataset_id=dataset.id,
                                     action='display_at', filename='ucsc_' + site_name )
-            display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
-                                             % (base_url, url_for( controller='root' ), dataset.id, type) )
-            redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s"
-                                              % (site_url, dataset.dbkey, chrom, start, stop ) )
+            display_url = quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
+                                      (base_url, url_for( controller='root' ), dataset.id, type) )
+            redirect_url = quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
+                                       (site_url, dataset.dbkey, chrom, start, stop ) )
             link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
             ret_val.append( ( site_name, link ) )
         return ret_val
@@ -286,7 +288,7 @@ class Interval( Tabular ):
 
         while True:
             try:
-                reader.next()
+                next(reader)
             except ParseError as e:
                 errors.append(e)
             except StopIteration:
@@ -635,8 +637,8 @@ class _RemoteCallMixin:
         """
         internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='%s_%s' % ( type, site_name ) )
         base_url = app.config.get( "display_at_callback", base_url )
-        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
-                                         ( base_url, url_for( controller='root' ), dataset.id, type ) )
+        display_url = quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
+                                  ( base_url, url_for( controller='root' ), dataset.id, type ) )
         link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
         return link
 
@@ -647,6 +649,7 @@ class Gff( Tabular, _RemoteCallMixin ):
     edam_data = "data_1255"
     edam_format = "format_2305"
     file_ext = "gff"
+    valid_gff_frame = ['.', '0', '1', '2']
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
     data_sources = { "data": "interval_index", "index": "bigwig", "feature_search": "fli" }
     track_type = Interval.track_type
@@ -723,7 +726,7 @@ class Gff( Tabular, _RemoteCallMixin ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return Tabular.make_html_table( self, dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def get_estimated_display_viewport( self, dataset ):
         """
@@ -808,7 +811,7 @@ class Gff( Tabular, _RemoteCallMixin ):
         if seqid is not None:
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey ):
                 if site_name in app.datatypes_registry.get_display_sites('ucsc'):
-                    redirect_url = urllib.quote_plus(
+                    redirect_url = quote_plus(
                         "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
                         ( site_url, dataset.dbkey, seqid, start, stop ) )
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
@@ -823,7 +826,7 @@ class Gff( Tabular, _RemoteCallMixin ):
                 if site_name in app.datatypes_registry.get_display_sites('gbrowse'):
                     if seqid.startswith( 'chr' ) and len( seqid ) > 3:
                         seqid = seqid[3:]
-                    redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s&eurl=%%s" % ( site_url, seqid, start, stop ) )
+                    redirect_url = quote_plus( "%s/?q=%s:%s..%s&eurl=%%s" % ( site_url, seqid, start, stop ) )
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                     ret_val.append( ( site_name, link ) )
         return ret_val
@@ -866,6 +869,8 @@ class Gff( Tabular, _RemoteCallMixin ):
                             return False
                     if hdr[6] not in data.valid_strand:
                         return False
+                    if hdr[7] not in self.valid_gff_frame:
+                        return False
             return True
         except:
             return False
@@ -900,7 +905,7 @@ class Gff3( Gff ):
     edam_format = "format_1975"
     file_ext = "gff3"
     valid_gff3_strand = ['+', '-', '.', '?']
-    valid_gff3_phase = ['.', '0', '1', '2']
+    valid_gff3_phase = Gff.valid_gff_frame
     column_names = [ 'Seqid', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes' ]
     track_type = Interval.track_type
 
@@ -943,7 +948,7 @@ class Gff3( Gff ):
 
     def sniff( self, filename ):
         """
-        Determines whether the file is in gff version 3 format
+        Determines whether the file is in GFF version 3 format
 
         GFF 3 format:
 
@@ -965,6 +970,9 @@ class Gff3( Gff ):
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'test.gff' )
+        >>> Gff3().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'test.gtf' )
         >>> Gff3().sniff( fname )
         False
         >>> fname = get_test_fname('gff_version_3.gff')
@@ -1003,6 +1011,7 @@ class Gff3( Gff ):
                         return False
                     if hdr[7] not in self.valid_gff3_phase:
                         return False
+                    parse_gff3_attributes(hdr[8])
             return True
         except:
             return False
@@ -1066,6 +1075,8 @@ class Gtf( Gff ):
                         except:
                             return False
                     if hdr[6] not in data.valid_strand:
+                        return False
+                    if hdr[7] not in self.valid_gff_frame:
                         return False
 
                     # Check attributes for gene_id, transcript_id
@@ -1170,7 +1181,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
                 if site_name in app.datatypes_registry.get_display_sites('gbrowse'):
                     if chrom.startswith( 'chr' ) and len( chrom ) > 3:
                         chrom = chrom[3:]
-                    redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s&eurl=%%s" % ( site_url, chrom, start, stop ) )
+                    redirect_url = quote_plus( "%s/?q=%s:%s..%s&eurl=%%s" % ( site_url, chrom, start, stop ) )
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                     ret_val.append( ( site_name, link ) )
         return ret_val
@@ -1181,14 +1192,14 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         if chrom is not None:
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey ):
                 if site_name in app.datatypes_registry.get_display_sites('ucsc'):
-                    redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % ( site_url, dataset.dbkey, chrom, start, stop ) )
+                    redirect_url = quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % ( site_url, dataset.dbkey, chrom, start, stop ) )
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                     ret_val.append( ( site_name, link ) )
         return ret_val
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
+        return self.make_html_table( dataset, skipchars=['track', '#'] )
 
     def set_meta( self, dataset, overwrite=True, **kwd ):
         max_data_lines = None
@@ -1266,7 +1277,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         x = numpy.arange( t_start, t_end ) * resolution
         y = data[ t_start : t_end ]
 
-        return zip(x.tolist(), y.tolist())
+        return list(zip(x.tolist(), y.tolist()))
 
     def get_track_resolution( self, dataset, start, end):
         range = end - start
@@ -1305,7 +1316,7 @@ class CustomTrack ( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
+        return self.make_html_table( dataset, skipchars=['track', '#'] )
 
     def get_estimated_display_viewport( self, dataset, chrom_col=None, start_col=None, end_col=None ):
         """Return a chrom, start, stop tuple for viewing a file."""
@@ -1372,8 +1383,8 @@ class CustomTrack ( Tabular ):
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites('ucsc'):
                     internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
-                    display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )
-                    redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop ) )
+                    display_url = quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )
+                    redirect_url = quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop ) )
                     link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
                     ret_val.append( (site_name, link) )
         return ret_val
@@ -1519,6 +1530,14 @@ class ScIdx(Tabular):
             fh = open(filename, "r")
             while True:
                 line = fh.readline()
+                if not line:
+                    # EOF
+                    if count > 1:
+                        # The second line is always the labels:
+                        # chrom index forward reverse value
+                        # We need at least the column labels and a data line.
+                        return True
+                    return False
                 line = line.strip()
                 # The first line is always a comment like this:
                 # 2015-11-23 20:18:56.51;input.bam;READ1
@@ -1528,14 +1547,6 @@ class ScIdx(Tabular):
                         continue
                     else:
                         return False
-                if not line:
-                    # EOF
-                    if count > 1:
-                        # The second line is always the labels:
-                        # chrom index forward reverse value
-                        # We need at least the column labels and a data line.
-                        return True
-                    return False
                 # Skip first line.
                 if count > 1:
                     items = line.split('\t')

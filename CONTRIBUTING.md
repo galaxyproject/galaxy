@@ -6,26 +6,25 @@ galaxy project](https://github.com/galaxyproject/galaxy) -
 also checkout our 2013 Galaxy Community
 Conference presentation on the topic
 ([video](https://vimeo.com/channels/581875/73486255),
-[presentation](https://wiki.galaxyproject.org/Documents/Presentations/GCC2013?action=AttachFile&do=view&target=BakerContribute.pdf)). For
+[presentation](https://depot.galaxyproject.org/hub/attachments/documents/presentations/gcc2013/BakerContribute.pdf)). For
 information on contributing more broadly to the Galaxy ecosystem and a
 deeper discussion of some of these points - please see the
-[Develop](https://wiki.galaxyproject.org/Develop/) section of the
-[Galaxy Wiki](https://wiki.galaxyproject.org/).
+[Develop](https://galaxyproject.org/develop) section of the
+[Galaxy Community Hub](https://galaxyproject.org).
 
 ## Before you Begin
 
 If you have an idea for a feature to add or an approach for a bugfix,
 it is best to communicate with Galaxy developers early. The most
 common venues for this are
-[GitHub issues](https://github.com/galaxyproject/galaxy/issues) and the
-[Galaxy and Tool Shed Trello boards](https://wiki.galaxyproject.org/Issues).
+[GitHub issues](https://github.com/galaxyproject/galaxy/issues).
 Browse through existing GitHub issues and Trello cards and if one seems related,
-comment on it. We also maintain a [card](https://trello.com/c/eFdPIdIB) with
-links to smaller issues we believe would make the best entry points for new
+comment on it. We also maintain a [tag](https://github.com/galaxyproject/galaxy/issues?q=is%3Aissue+is%3Aopen+label%3Afriendliness%2Ffriendly) on Github for
+smaller issues we believe would make the best entry points for new
 developers.
 Galaxy developers are generally available via
-[IRC](https://wiki.galaxyproject.org/GetInvolved#IRC_Channel) and on
-the [development mailing list](http://dev.list.galaxyproject.org/).
+[IRC](https://galaxyproject.org/get-involved), [Gitter](https://gitter.im/galaxyproject/Lobby)
+and on the [development mailing list](http://dev.list.galaxyproject.org).
 
 ## Reporting a new issue
 
@@ -75,13 +74,13 @@ opened using [this form](https://github.com/galaxyproject/galaxy/issues/new).
 
 * If your changes modify code - please ensure the resulting files
   conform to Galaxy [style
-  guidelines](https://wiki.galaxyproject.org/Develop/BestPractices).
+  guidelines](https://galaxyproject.org/develop/best-practices).
 
 * Galaxy contains hundreds of tests of different types and complexity
   and running each is difficult and probably not reasonable at this
   time (someday we will provide a holistic test procedure to make this
   possible). For now, please just review the [running tests
-  documentation](https://wiki.galaxyproject.org/Admin/RunningTests)
+  documentation](https://galaxyproject.org/admin/running-tests)
   and run any that seem relevant. Developers reviewing your pull
   request will be happy to help guide you to running the most relevant
   tests as part of the pull request review process and may request the
@@ -110,11 +109,10 @@ opened using [this form](https://github.com/galaxyproject/galaxy/issues/new).
 ## A Quick Note about Tools
 
   For the most part, Galaxy tools should be published to the
-  [Tool Shed](https://wiki.galaxyproject.org/ToolShed) and not in this
-  repository directly. If you are looking to supply fixes for migrated
+  [Tool Shed](https://galaxyproject.org/toolshed) and not in this
+  repository directly. If you are looking for migrated
   core tools that used to exist in this repository - please checkout
-  the [tools-devteam](https://github.com/galaxyproject/tools-devteam)
+  the [tools-iuc](https://github.com/galaxyproject/tools-iuc)
   repository on GitHub.
 
-  More information about tool development can be found [on the
-  wiki](https://wiki.galaxyproject.org/Develop).
+  More information about tool development can be found [on the comunity hub](https://galaxyproject.org/develop).

@@ -741,7 +741,7 @@ var HeaderButtons = Backbone.View.extend({
                 $("#nodeSelectionView").show();
             } },
             { icon_class: 'information', title: 'Phyloviz Help', on_click: function() {
-                window.open('https://wiki.galaxyproject.org/Learn/Visualization/PhylogeneticTree');
+                window.open('https://galaxyproject.org/learn/visualization/phylogenetic-tree/');
                 // https://docs.google.com/document/d/1AXFoJgEpxr21H3LICRs3EyMe1B1X_KFPouzIgrCz3zk/edit
             } }
         ],

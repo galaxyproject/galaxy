@@ -1,47 +1,51 @@
-Galaxy Code Documentation
-*************************
+Galaxy Documentation
+********************
 
-Galaxy_ is an open, web-based platform for accessible, reproducible, and
-transparent computational biomedical research.
+Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational biomedical research.
 
-- *Accessible:* Users without programming experience can easily specify parameters and run tools and workflows.
-- *Reproducible:* Galaxy captures information so that any user can repeat and understand a complete computational analysis.
-- *Transparent:* Users share and publish analyses via the web and create Pages, interactive, web-based documents that describe a complete analysis.
-
-Things to know:
-
-- There are multiple choices_ when it comes to using Galaxy.
-- You can explore the `current code in the development branch`_ on GitHub.
-- This documentation is hosted at readthedocs_.
-
-For more information on the Galaxy Project, please visit the `project home page`_.
-
-.. _Galaxy: http://galaxyproject.org
-.. _choices: https://wiki.galaxyproject.org/BigPicture/Choices
-.. _current code in the development branch: https://github.com/galaxyproject/galaxy
-.. _readthedocs: http://galaxy.readthedocs.org
-.. _project home page: http://galaxyproject.org
+For more information on the Galaxy Project, please visit the https://galaxyproject.org
 
 
-Contents
-========
+* :ref:`release-docs`
+* :ref:`admin-docs`
+* :ref:`dev-docs`
+* :ref:`about-docs`
+
+.. _release-docs:
+
 .. toctree::
-   :maxdepth: 5
-
-   Galaxy API Documentation <api_doc>
-
-   Tool Shed API Documentation <ts_api_doc>
-
-   Application Documentation <lib/modules>
+   :maxdepth: 2
+   :caption: Release Notes
 
    Releases <releases/index>
 
-   Developer Documentation <dev/index>
+.. _admin-docs:
 
-   Special topics in Administration <admin/index>
+.. toctree::
+   :maxdepth: 2
+   :caption: Admin Documentation
+
+   Administration <admin/index>
+   Special topics <admin/special_topics/index>
+
+.. _dev-docs:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Developer Documentation
+
+   Development <dev/index>
+   Galaxy API <api_doc>
+   Tool Shed API <ts_api_doc>
+   Application Documentation <lib/modules>
+
+.. _about-docs:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: About Project
 
    Project Governance <project/organization>
-
    Issue Management <project/issues>
 
 Indices and tables
@@ -49,15 +53,14 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
 
 Building this Documentation
 ===========================
 
-If you have your own copy of the Galaxy source code, you can also generate your own version of this documentation:
+If you have your own copy of the Galaxy source code, you can also generate your own version of this documentation. Run the following command from the Galaxy's root:
 
 ::
 
-    $ make -C doc/ html
+    $ make docs
 
-The generated documentation will be in ``doc/build/html/`` and can be viewed with a web browser.  Note that you will need to install Sphinx and a fair number of module dependencies before this will produce output.
+The generated documentation will be in ``doc/build/html/`` and can be viewed with a web browser. Note that you will need to install Sphinx and a other module dependencies which are listed in the Makefile in the Galaxy root folder.

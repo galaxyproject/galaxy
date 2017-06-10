@@ -3,13 +3,14 @@ Created on 15/07/2014
 
 @author: Andrew Robinson
 """
-
 import abc
 
+import six
 
+
+@six.add_metaclass(abc.ABCMeta)
 class AuthProvider(object):
     """A base class for all Auth Providers."""
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractproperty
     def plugin_type(self):

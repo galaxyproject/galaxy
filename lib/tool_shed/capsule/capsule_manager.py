@@ -507,8 +507,8 @@ class ImportRepositoryManager( object ):
             tar_archive.extractall( path=file_path )
             try:
                 tar_archive.close()
-            except Exception as e:
-                log.exception( "Cannot close tar_archive: %s" % str( e ) )
+            except Exception:
+                log.exception( "Cannot close tar_archive" )
             del return_dict[ 'tar_archive' ]
         return return_dict
 

@@ -64,66 +64,42 @@ define(['utils/utils'], function( Utils ) {
 
         /** Build color panel */
         _build: function() {
-            var $content = this._content({
-                label       : 'Theme Colors',
-                colors      : this.colors.base,
-                padding     : 10
-            });
+            this._content( { colors : this.colors.base } );
             for ( var i in this.colors.theme ) {
                 var line_def = {};
                 if ( i == 0 ) {
                     line_def[ 'bottom' ] = true;
+                } else if ( i != this.colors.theme.length - 1 ) {
+                    line_def[ 'top' ]     = true;
+                    line_def[ 'bottom' ]  = true;
                 } else {
-                    if ( i != this.colors.theme.length - 1 ) {
-                        line_def[ 'top' ]     = true;
-                        line_def[ 'bottom' ]  = true;
-                    } else {
-                        line_def[ 'top' ]     = true;
-                        line_def[ 'padding' ] = 5;
-                    }
+                    line_def[ 'top' ]     = true;
                 }
                 line_def[ 'colors' ] = this.colors.theme[ i ];
                 this._content( line_def );
             }
-            this._content({
-                label       : 'Standard Colors',
-                colors      : this.colors.standard,
-                padding     : 5
-            });
+            this._content( { colors : this.colors.standard } );
         },
 
         /** Create content */
         _content: function( options ) {
-            var label       = options.label;
-            var colors      = options.colors;
-            var padding     = options.padding;
-            var top         = options.top;
-            var bottom      = options.bottom;
+            var colors   = options.colors;
             var $content = $( this._templateContent() );
-            var $label = $content.find( '.label' );
-            if ( options.label ) {
-                $label.html( options.label );
-            } else {
-                $label.hide();
-            }
             var $line = $content.find( '.line' );
             this.$panel.append( $content );
             for ( var i in colors ) {
                 var $box = $( this._templateBox( colors[ i ] ) );
-                if ( top ) {
+                if ( options.top ) {
                     $box.css( 'border-top', 'none' );
                     $box.css( 'border-top-left-radius', '0px' );
                     $box.css( 'border-top-right-radius', '0px' );
                 }
-                if ( bottom ) {
+                if ( options.bottom ) {
                     $box.css( 'border-bottom', 'none' );
                     $box.css( 'border-bottom-left-radius', '0px' );
                     $box.css( 'border-bottom-right-radius', '0px' );
                 }
                 $line.append( $box );
-            }
-            if (padding) {
-                $line.css( 'padding-bottom', padding );
             }
             return $content;
         },
@@ -136,7 +112,6 @@ define(['utils/utils'], function( Utils ) {
         /** Content template */
         _templateContent: function() {
             return  '<div class="ui-color-picker-content">' +
-                        '<div class="label"/>' +
                         '<div class="line"/>' +
                     '</div>';
         },

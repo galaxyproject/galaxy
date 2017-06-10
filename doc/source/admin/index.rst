@@ -1,27 +1,15 @@
-Special Topics in Galaxy Administration & Deployment Documentation
-==================================================================
+Galaxy Deployment & Administration
+==================================
 
-This documentation intends to function as a version-specific supplement to the
-`wiki <https://wiki.galaxyproject.org/Admin/>`__, not the primary admin
-documentation. These resources should be used together.
+This documentation is in the midst of being ported and unified based on resources from `old wiki <https://moin.galaxyproject.org/Admin/>`__ and `new hub <https://galaxyproject.org/admin/>`__. These resources should be used together for now.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
-   dependency_resolvers.rst
-
-   conda_faq.rst
-
-   mulled_containers.rst
-
-   interactive_environments.rst
-
-   framework_dependencies.rst
-
-   useful_scripts.rst
-
-   grt.rst
-
-   chat.rst
-
-   webhooks.rst
+   tool_panel
+   authentication
+   dependency_resolvers
+   conda_faq
+   framework_dependencies
+   reports
+   useful_scripts

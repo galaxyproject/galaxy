@@ -1,10 +1,8 @@
 import logging
 import os
-import tempfile
 
-from galaxy.util import asbool
 from tool_shed.util import basic_util, hg_util, shed_util_common as suc
-from tool_shed.util import tool_util, xml_util
+from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -33,7 +31,6 @@ class CustomDatatypeLoader( object ):
         if registration is None:
             # We have valid XML, but not a valid custom datatypes definition.
             return None, None
-        sniffers = datatypes_config_root.find( 'sniffers' )
         converter_path, display_path = self.get_converter_and_display_paths( registration,
                                                                              relative_install_dir )
         if converter_path:
@@ -81,45 +78,12 @@ class CustomDatatypeLoader( object ):
                             # The value of proprietary_path must be an absolute path due to job_working_directory.
                             elem.attrib[ 'proprietary_path' ] = os.path.abspath( datatype_file_name_path )
                             elem.attrib[ 'proprietary_datatype_module' ] = proprietary_datatype_module
-        # Temporarily persist the custom datatypes configuration file so it can be loaded into the
-        # datatypes registry.
-        fd, proprietary_datatypes_config = tempfile.mkstemp( prefix="tmp-toolshed-acalpd" )
-        os.write( fd, '<?xml version="1.0"?>\n' )
-        os.write( fd, '<datatypes>\n' )
-        os.write( fd, '%s' % xml_util.xml_to_string( registration ) )
-        if sniffers is not None:
-            os.write( fd, '%s' % xml_util.xml_to_string( sniffers ) )
-        os.write( fd, '</datatypes>\n' )
-        os.close( fd )
-        os.chmod( proprietary_datatypes_config, 0o644 )
         # Load custom datatypes
         self.app.datatypes_registry.load_datatypes( root_dir=self.app.config.root,
-                                                    config=proprietary_datatypes_config,
+                                                    config=datatypes_config_root,
                                                     deactivate=deactivate,
                                                     override=override )
-        if deactivate:
-            # Reload the upload tool to eliminate deactivated datatype extensions from the file_type
-            # select list.
-            tool_util.reload_upload_tools( self.app )
-        else:
-            self.append_to_datatypes_registry_upload_file_formats( registration )
-            tool_util.reload_upload_tools( self.app )
-        if datatype_files is not None:
-            try:
-                os.unlink( proprietary_datatypes_config )
-            except:
-                pass
         return converter_path, display_path
-
-    def append_to_datatypes_registry_upload_file_formats( self, elem ):
-        # See if we have any datatypes that should be displayed in the upload tool's file_type select list.
-        for datatype_elem in elem.findall( 'datatype' ):
-            extension = datatype_elem.get( 'extension', None )
-            display_in_upload = datatype_elem.get( 'display_in_upload', None )
-            if extension is not None and display_in_upload is not None:
-                display_in_upload = asbool( str( display_in_upload ) )
-                if display_in_upload and extension not in self.app.datatypes_registry.upload_file_formats:
-                    self.app.datatypes_registry.upload_file_formats.append( extension )
 
     def create_repository_dict_for_proprietary_datatypes( self, tool_shed, name, owner, installed_changeset_revision,
                                                           tool_dicts, converter_path=None, display_path=None ):

@@ -1,12 +1,16 @@
 <tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.3">
   <description>using coordinates from assembled/unassembled genomes</description>
-  <command interpreter="python">
-      extract_genomic_dna.py "${input}" "${out_file1}" -o "${out_format}" -d "${dbkey}" 
-      
+  <requirements>
+      <requirement type="package">ucsc_tools</requirement>
+      <requirement type="binary">faToTwoBit</requirement>
+  </requirements>
+  <command>
+      python '$__tool_directory__/extract_genomic_dna.py' '${input}' '${out_file1}' -o ${out_format} -d '${dbkey}'
+
       #if str( $interpret_features ) == "yes":
         -I
       #end if
-      
+
       ## Columns to use in input file.
       #if isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
         -1 "1,4,5,7" --gff
@@ -16,10 +20,10 @@
 
       #if $seq_source.index_source == "cached":
         ## Genomic data from cache.
-        -g "${GALAXY_DATA_INDEX_DIR}"
+        -g '${GALAXY_DATA_INDEX_DIR}'
       #else:
         ## Genomic data from history.
-        -F "${seq_source.ref_file}"
+        -F '${seq_source.ref_file}'
       #end if
   </command>
   <inputs>
@@ -45,16 +49,12 @@
       </param>
   </inputs>
   <outputs>
-      <data format="input" name="out_file1" metadata_source="input">
+      <data format_source="input" name="out_file1" metadata_source="input">
           <change_format>
               <when input="out_format" value="fasta" format="fasta" />
           </change_format>
       </data>
   </outputs>
-  <requirements>
-      <requirement type="package">ucsc_tools</requirement>
-      <requirement type="binary">faToTwoBit</requirement>
-  </requirements>
   <tests>
     <test>
       <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
@@ -125,26 +125,25 @@
     </test>
   </tests>
   <help>
-
 .. class:: warningmark
 
 This tool requires interval or gff (special tabular formatted data).  If your data is not TAB delimited, first use *Text Manipulation-&gt;Convert*.
 
 .. class:: warningmark
 
-Make sure that the genome build is specified for the dataset from which you are extracting sequences (click the pencil icon in the history item if it is not specified). 
+Make sure that the genome build is specified for the dataset from which you are extracting sequences (click the pencil icon in the history item if it is not specified).
 
 .. class:: warningmark
 
 All of the following will cause a line from the input dataset to be skipped and a warning generated.  The number of warnings and skipped lines is documented in the resulting history item.
  - Any lines that do not contain at least 3 columns, a chromosome and numerical start and end coordinates.
- - Sequences that fall outside of the range of a line's start and end coordinates. 
+ - Sequences that fall outside of the range of a line's start and end coordinates.
  - Chromosome, start or end coordinates that are invalid for the specified build.
  - Any lines whose data columns are not separated by a **TAB** character ( other white-space characters are invalid ).
 
 .. class:: infomark
 
- **Extract genomic DNA using coordinates from ASSEMBLED genomes and UNassembled genomes** previously were achieved by two separate tools. 
+ **Extract genomic DNA using coordinates from ASSEMBLED genomes and UNassembled genomes** previously were achieved by two separate tools.
 
 -----
 
@@ -184,6 +183,5 @@ Extracting sequences with **Interval** output data type returns::
     chr7    127475281       127475310       NM_000230       0       +       GTAGGAATCGCAGCGCCAGCGGTTGCAAG
     chr7    127485994       127486166       NM_000230       0       +       GCCCAAGAAGCCCATCCTGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
     chr7    127486011       127486166       D49487  0       +       TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
-
-</help>
+  </help>
 </tool>

@@ -256,7 +256,7 @@ class ToolEvaluator( object ):
                 input_values[ input.name ] = wrapper
             elif isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = SelectToolParameterWrapper(
-                    input, value, self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
+                    input, value, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
             else:
                 input_values[ input.name ] = InputValueWrapper(
                     input, value, param_dict )
@@ -400,7 +400,7 @@ class ToolEvaluator( object ):
         def rewrite_unstructured_paths( input_values, input ):
             if isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = SelectToolParameterWrapper(
-                    input, input_values[ input.name ], self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
+                    input, input_values[ input.name ], other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
 
         if not self.tool.check_values and self.unstructured_path_rewriter:
             # The tools weren't "wrapped" yet, but need to be in order to get

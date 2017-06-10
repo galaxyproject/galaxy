@@ -5,9 +5,9 @@ define({
 // ---- history-model
 // ---- history-view
 "This history is empty" :
-"ヒストリーは空です",
+    "ヒストリーは空です",
 "No matching datasets found" :
-"一致するデータセットが見つかりませんでした",
+    "一致するデータセットが見つかりませんでした",
 //"An error occurred while getting updates from the server" :
 //false,
 //"Please contact a Galaxy administrator if the problem persists" :
@@ -16,19 +16,19 @@ define({
 //"An error was encountered while <% where %>" :
 //false,
 "Search datasets" :
-"データセットを検索する",
+    "データセットを検索する",
 "You are currently viewing a deleted history!" :
-"消去したヒストリーをみています。",
+    "消去したヒストリーをみています。",
 "You are over your disk quota" :
-"あなたはディスククォータを超えている",
+    "あなたはディスククォータを超えている",
 //"Tool execution is on hold until your disk usage drops below your allocated quota" :
 //false,
 "All" :
-"一式",
+    "一式",
 "None" :
-"なし",
+    "なし",
 "For all selected" :
-"各項目を",
+    "各項目を",
 
 // ---- history-view-edit
 //"Edit history tags" :
@@ -36,10 +36,10 @@ define({
 //"Edit history Annotation" :
 //false,
 "Click to rename history" :
-"ヒストリーの名前を変更するにはクリック",
+    "ヒストリーの名前を変更するにはクリック",
 // multi operations
 "Operations on multiple datasets" :
-"複数のデータセットに対する操作",
+    "複数のデータセットに対する操作",
 //"Hide datasets" :
 //false,
 //"Unhide datasets" :
@@ -49,23 +49,21 @@ define({
 //"Undelete datasets" :
 //false,
 "Permanently delete datasets" :
-"永久にデータセットを削除",
+    "永久にデータセットを削除",
 "This will permanently remove the data in your datasets. Are you sure?" :
-"これは永久にあなたのデータセット内のデータを削除します。本当に？",
+    "これは永久にあなたのデータセット内のデータを削除します。本当に？",
 
 // ---- history-view-annotated
 "Dataset" :
-"データセット",
+    "データセット",
 //"Annotation" :
 //false,
 
 // ---- history-view-edit-current
 "This history is empty. Click 'Get Data' on the left tool menu to start" :
-"ヒストリーは空です。解析をはじめるには、左パネルの 'データ取得' をクリック",
-"No matching datasets found" :
-"一致するデータセットが見つかりませんでした",
+    "ヒストリーは空です。解析をはじめるには、左パネルの 'データ取得' をクリック",
 "You must be logged in to create histories" :
-"ヒストリーを作成するためにはログインする必要があります",
+    "ヒストリーを作成するためにはログインする必要があります",
 //TODO:
 //"You can <% loadYourOwn %> or <% externalSource %>" :
 //false,
@@ -95,17 +93,17 @@ define({
 //"This dataset is not yet viewable" :
 //false,
 "View data" :
-"データを表示",
+    "データを表示",
 // download button
 "Download" :
-"ダウンロード",
+    "ダウンロード",
 "Download dataset" :
-"データセットをダウンロード",
+    "データセットをダウンロード",
 //"Additional files" :
 //false,
 // info/show_params
 "View details" :
-"細部を表示",
+    "細部を表示",
 
 // dataset states
 // state: new
@@ -119,7 +117,7 @@ define({
 //false,
 // state: queued
 "This job is waiting to run" :
-"ジョブは実行待ちです",
+    "ジョブは実行待ちです",
 // state: upload
 //"This dataset is currently uploading" :
 //false,
@@ -128,16 +126,16 @@ define({
 //false,
 // state: running
 "This job is currently running" :
-"ジョブは実行中です",
+    "ジョブは実行中です",
 // state: paused
 //"This job is paused. Use the \"Resume Paused Jobs\" in the history menu to resume" :
 //false,
 // state: error
 "An error occurred with this dataset" :
-"このジョブの実行中に発生したエラー",
+    "このジョブの実行中に発生したエラー",
 // state: empty
 "No data" :
-"データ無し",
+    "データ無し",
 // state: failed_metadata
 //"An error occurred setting the metadata for this dataset" :
 //false,
@@ -148,20 +146,20 @@ define({
 
 // purged'd/del'd msg
 "This dataset has been deleted and removed from disk" :
-"このデータセットは、永続的にディスクから削除されました",
+    "このデータセットは、永続的にディスクから削除されました",
 "This dataset has been deleted" :
-"このデータセットは削除されました",
+    "このデータセットは削除されました",
 "This dataset has been hidden" :
-"このデータセットは、非表示にされた",
+    "このデータセットは、非表示にされた",
 
 "format" :
-"フォーマット",
+    "フォーマット",
 "database" :
-"データベース",
+    "データベース",
 
 // ---- hda-edit
 "Edit attributes" :
-"変数を編集する",
+    "変数を編集する",
 //"Cannot edit attributes of datasets removed from disk" :
 //false,
 //"Undelete dataset to edit attributes" :
@@ -172,27 +170,27 @@ define({
 //false,
 
 "Delete" :
-"削除する",
+    "削除する",
 //"Dataset is already deleted" :
 //false,
 
 "View or report this error" :
-"このエラーを届け出る",
+    "このエラーを届け出る",
 
 "Run this job again" :
-"もう一度このジョブを実行する",
+    "もう一度このジョブを実行する",
 
 "Visualize" :
-"可視化する",
+    "可視化する",
 //"Visualize in" :
 //false,
 
 "Undelete it" :
-"復元する",
+    "復元する",
 "Permanently remove it from disk" :
-"永久にディスクから削除",
+    "永久にディスクから削除",
 "Unhide it" :
-"非表示解除する",
+    "非表示解除する",
 
 //"You may be able to" :
 //false,

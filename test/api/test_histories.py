@@ -83,6 +83,14 @@ class HistoriesApiTestCase( api.ApiTestCase ):
         index_response = self._get("histories", {"deleted": "true"}).json()
         assert index_response[0]["id"] == history_id
 
+    def test_purge(self):
+        history_id = self._create_history("TestHistoryForPurge")["id"]
+        data = {'purge': True}
+        self._delete("histories/%s" % history_id, data=data)
+        show_response = self._show(history_id)
+        assert show_response["deleted"]
+        assert show_response["purged"]
+
     def test_undelete(self):
         history_id = self._create_history("TestHistoryForDeleteAndUndelete")["id"]
         self._delete("histories/%s" % history_id)
@@ -177,7 +185,7 @@ class HistoriesApiTestCase( api.ApiTestCase ):
 
         def history_names():
             history_index = self._get( "histories" )
-            return dict( map( lambda h: ( h[ "name" ], h ), history_index.json() ) )
+            return dict((h["name"], h) for h in history_index.json())
 
         import_name = "imported from archive: for_export"
         assert import_name not in history_names()

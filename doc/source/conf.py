@@ -15,6 +15,8 @@ import datetime
 import os
 import sys
 
+import sphinx_rtd_theme
+
 # Library to make .md to slideshow
 from recommonmark.parser import CommonMarkParser
 
@@ -44,8 +46,10 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo', 'sp
 templates_path = ['_templates']
 
 # Configure default autodoc's action
-autodoc_default_flags = [ 'members', 'undoc-members', 'show-inheritance' ]
+autodoc_default_flags = [ 'members', 'undoc-members' ]
 
+# Prevent alphabetical reordering of module members.
+autodoc_member_order = 'bysource'
 
 def dont_skip_init(app, what, name, obj, skip, options):
     if name == "__init__":
@@ -67,8 +71,8 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = u'Galaxy Code'
-copyright = str( datetime.datetime.now().year ) + u', Galaxy Team'
+project = u'Galaxy Project'
+copyright = str( datetime.datetime.now().year ) + u', Galaxy Committers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -123,10 +127,15 @@ html_theme = 'sphinx_rtd_theme'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+html_theme_options = {
+    'collapse_navigation': False,
+    'display_version': True,
+    'navigation_depth': 2,
+    'canonical_url': 'https://docs.galaxyproject.org/en/master/',
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
-#html_theme_path = []
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -240,7 +249,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'galaxy', u'Galaxy Code Documentation',
+    ('index', 'galaxy', u'Galaxy Documentation',
      [u'Galaxy Team'], 1)
 ]
 
@@ -254,7 +263,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'Galaxy', u'Galaxy Code Documentation',
+    ('index', 'Galaxy', u'Galaxy Documentation',
      u'Galaxy Team', 'Galaxy', 'Data intensive biology for everyone.',
      'Miscellaneous'),
 ]

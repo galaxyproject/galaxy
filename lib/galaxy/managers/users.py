@@ -188,7 +188,6 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
 
     # ---- preferences
     def preferences( self, user ):
-        log.warn(dict( (key, value) for key, value in user.preferences.items() ))
         return dict( (key, value) for key, value in user.preferences.items() )
 
     # ---- roles and permissions

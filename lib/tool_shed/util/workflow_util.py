@@ -35,6 +35,7 @@ class RepoToolModule( ToolModule ):
         self.tool_id = tool_id
         self.tool = None
         self.errors = None
+        self.tool_version = None
         self.tv = tool_validator.ToolValidator( trans.app )
         if trans.webapp.name == 'tool_shed':
             # We're in the tool shed.
@@ -69,11 +70,8 @@ class RepoToolModule( ToolModule ):
     def from_workflow_step( Class, trans, step, repository_id, changeset_revision, tools_metadata ):
         module = Class( trans, repository_id, changeset_revision, tools_metadata, step.tool_id )
         module.state = galaxy.tools.DefaultToolState()
-        if module.tool:
-            module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
-        else:
-            module.state.inputs = {}
-        module.errors = step.tool_errors
+        module.recover_state( step.tool_inputs )
+        module.errors = module.get_errors()
         return module
 
     def get_data_inputs( self ):
@@ -90,7 +88,7 @@ class RepoToolModule( ToolModule ):
             except:
                 # TODO have this actually use default parameters?  Fix at
                 # refactor, needs to be discussed wrt: reproducibility though.
-                log.exception("Tool parse failed for %s -- this indicates incompatibility of local tool version with expected version by the workflow." % self.tool.id)
+                log.exception("Tool parse failed for %s -- this indicates incompatibility of local tool version with expected version by the workflow.", self.tool.id)
         return data_inputs
 
     def get_data_outputs( self ):
@@ -235,7 +233,7 @@ def get_workflow_data_outputs( step, module, steps ):
             found = False
             for workflow_step in steps:
                 for wfsc in workflow_step.input_connections:
-                    if step.name == wfsc.output_step.name:
+                    if step.label == wfsc.output_step.label:
                         data_outputs_dict[ 'name' ] = wfsc.output_name
                         found = True
                         break
@@ -271,7 +269,6 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
         # Create the model class for the step
         step = trans.model.WorkflowStep()
         step.label = step_dict.get('label', None)
-        step.name = step_dict[ 'name' ]
         step.position = step_dict[ 'position' ]
         module = module_factory.from_dict( trans, repository_id, changeset_revision, step_dict, tools_metadata=tools_metadata )
         if module.type == 'tool' and module.tool is None:

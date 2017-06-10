@@ -5,3 +5,4 @@ database/
 doc/source/conf.py
 eggs/
 lib/galaxy/util/jstree.py
+lib/galaxy/web/proxy/js/node_modules/

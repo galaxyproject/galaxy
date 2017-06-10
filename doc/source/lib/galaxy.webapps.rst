@@ -1,5 +1,5 @@
-galaxy.webapps package
-======================
+galaxy\.webapps package
+=======================
 
 .. automodule:: galaxy.webapps
     :members:
@@ -18,8 +18,8 @@ Subpackages
 Submodules
 ----------
 
-galaxy.webapps.util module
---------------------------
+galaxy\.webapps\.util module
+----------------------------
 
 .. automodule:: galaxy.webapps.util
     :members:

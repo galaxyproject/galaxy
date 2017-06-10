@@ -362,7 +362,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         """
         Authenticate for the API via key or session (if available).
         """
-        api_key = self.request.params.get('key', None)
+        api_key = self.request.params.get('key', None) or self.request.headers.get( 'x-api-key', None )
         secure_id = self.get_cookie( name=session_cookie )
         api_key_supplied = self.environ.get('is_api_request', False) and api_key
         if api_key_supplied and self._check_master_api_key( api_key ):
@@ -385,7 +385,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         elif secure_id:
             # API authentication via active session
             # Associate user using existing session
-            self._ensure_valid_session( session_cookie )
+            # This will throw an exception under remote auth with anon users.
+            try:
+                self._ensure_valid_session( session_cookie )
+            except Exception:
+                log.exception("Exception during Session-based API authentication, this was most likely an attempt to use an anonymous cookie under remote authentication (so, no user), which we don't support.")
+                self.user = None
+                self.galaxy_session = None
         else:
             # Anonymous API interaction -- anything but @expose_api_anonymous will fail past here.
             self.user = None
@@ -435,17 +441,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         # cases won't have a cookie set above, so we need to to check some
         # things now.
         if self.app.config.use_remote_user:
-            # If this is an api request, and they've passed a key, we let this go.
-            assert self.app.config.remote_user_header in self.environ, \
-                "use_remote_user is set but %s header was not provided" % self.app.config.remote_user_header
-            remote_user_email = self.environ[ self.app.config.remote_user_header ]
+            remote_user_email = self.environ.get( self.app.config.remote_user_header, None)
             if galaxy_session:
-                # An existing session, make sure correct association exists
-                if galaxy_session.user is None:
+                if remote_user_email and galaxy_session.user is None:
                     # No user, associate
                     galaxy_session.user = self.get_or_create_remote_user( remote_user_email )
                     galaxy_session_requires_flush = True
-                elif (not remote_user_email.startswith('(null)') and  # Apache does this, see remoteuser.py
+                elif (remote_user_email and
                       (galaxy_session.user.email != remote_user_email) and
                       ((not self.app.config.allow_user_impersonation) or
                        (remote_user_email not in self.app.config.admin_users_list))):
@@ -456,9 +458,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                     user_for_new_session = self.get_or_create_remote_user( remote_user_email )
                     log.warning( "User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
                                  remote_user_email, galaxy_session.user.email )
-            else:
+            elif remote_user_email:
                 # No session exists, get/create user for new session
                 user_for_new_session = self.get_or_create_remote_user( remote_user_email )
+            if ((galaxy_session and galaxy_session.user is None) and user_for_new_session is None):
+                raise Exception("Remote Authentication Failure - user is unknown and/or not supplied.")
         else:
             if galaxy_session is not None and galaxy_session.user and galaxy_session.user.external:
                 # Remote user support is not enabled, but there is an existing

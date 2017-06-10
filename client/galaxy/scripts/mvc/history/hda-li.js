@@ -16,7 +16,7 @@ var _super = DATASET_LI.DatasetListItemView;
 var HDAListItemView = _super.extend(
 /** @lends HDAListItemView.prototype */{
 
-    className   : _super.prototype.className + " history-content",
+    className : _super.prototype.className + " history-content",
 
     initialize : function( attributes, options ){
         _super.prototype.initialize.call( this, attributes, options );
@@ -43,6 +43,14 @@ HDAListItemView.prototype.templates = (function(){
                 '<span class="hid"><%- dataset.hid %></span> ',
                 '<span class="name"><%- dataset.name %></span>',
             '</div>',
+            '</br>',
+            '<span class="nametags">',
+                '<% _.each(_.sortBy(_.uniq(dataset.tags), function(x) { return x }), function(tag){ %>',
+                    '<% if (tag.indexOf("name:") == 0){ %>',
+                        '<span class="label label-info"><%- tag.slice(5) %></span>',
+                    '<% } %>',
+                '<% }); %>',
+            '</span>',
         '</div>'
     ], 'dataset' );
 
