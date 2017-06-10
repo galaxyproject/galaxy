@@ -21,12 +21,14 @@ from .container_resolvers.mulled import (
 from .requirements import ContainerDescription
 from .requirements import DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES, DEFAULT_CONTAINER_SHELL
 from ..deps import docker_util
+from ..deps import singularity_util
 
 log = logging.getLogger(__name__)
 
 DOCKER_CONTAINER_TYPE = "docker"
+SINGULARITY_CONTAINER_TYPE = "singularity"
 DEFAULT_CONTAINER_TYPE = DOCKER_CONTAINER_TYPE
-ALL_CONTAINER_TYPES = [DOCKER_CONTAINER_TYPE]
+ALL_CONTAINER_TYPES = [DOCKER_CONTAINER_TYPE, SINGULARITY_CONTAINER_TYPE]
 
 LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = '''
 python << EOF
@@ -315,7 +317,56 @@ class Container( object ):
         """
 
 
-class DockerContainer(Container):
+class HasDockerLikeVolumes:
+    """Mixin to share functionality related to Docker volume handling.
+
+    Singularity seems to have a fairly compatible syntax for volume handling.
+    """
+
+    def _expand_volume_str(self, value):
+        if not value:
+            return value
+
+        template = string.Template(value)
+        variables = dict()
+
+        def add_var(name, value):
+            if value:
+                variables[name] = os.path.abspath(value)
+
+        add_var("working_directory", self.job_info.working_directory)
+        add_var("job_directory", self.job_info.job_directory)
+        add_var("tool_directory", self.job_info.tool_directory)
+        add_var("galaxy_root", self.app_info.galaxy_root_dir)
+        add_var("default_file_path", self.app_info.default_file_path)
+        add_var("library_import_dir", self.app_info.library_import_dir)
+
+        if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
+            # We have a Pulsar job directory, so everything needed (excluding index
+            # files) should be available in job_directory...
+            defaults = "$job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw"
+        else:
+            defaults = "$galaxy_root:ro,$tool_directory:ro"
+            if self.job_info.job_directory:
+                defaults += ",$job_directory:ro"
+            if self.app_info.outputs_to_working_directory:
+                # Should need default_file_path (which is a course estimate given
+                # object stores anyway).
+                defaults += ",$working_directory:rw,$default_file_path:ro"
+            else:
+                defaults += ",$working_directory:rw,$default_file_path:rw"
+
+        if self.app_info.library_import_dir:
+            defaults += ",$library_import_dir:ro"
+
+        # Define $defaults that can easily be extended with external library and
+        # index data without deployer worrying about above details.
+        variables["defaults"] = string.Template(defaults).safe_substitute(variables)
+
+        return template.safe_substitute(variables)
+
+
+class DockerContainer(Container, HasDockerLikeVolumes):
 
     def containerize_command(self, command):
         def prop(name, default):
@@ -338,7 +389,7 @@ class DockerContainer(Container):
         if not working_directory:
             raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
 
-        volumes_raw = self.__expand_str(self.destination_info.get("docker_volumes", "$defaults"))
+        volumes_raw = self._expand_volume_str(self.destination_info.get("docker_volumes", "$defaults"))
         # TODO: Remove redundant volumes...
         volumes = docker_util.DockerVolume.volumes_from_str(volumes_raw)
         volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
@@ -394,48 +445,6 @@ class DockerContainer(Container):
         else:
             return getattr(self.app_info, name)
 
-    def __expand_str(self, value):
-        if not value:
-            return value
-
-        template = string.Template(value)
-        variables = dict()
-
-        def add_var(name, value):
-            if value:
-                variables[name] = os.path.abspath(value)
-
-        add_var("working_directory", self.job_info.working_directory)
-        add_var("job_directory", self.job_info.job_directory)
-        add_var("tool_directory", self.job_info.tool_directory)
-        add_var("galaxy_root", self.app_info.galaxy_root_dir)
-        add_var("default_file_path", self.app_info.default_file_path)
-        add_var("library_import_dir", self.app_info.library_import_dir)
-
-        if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
-            # We have a Pulsar job directory, so everything needed (excluding index
-            # files) should be available in job_directory...
-            defaults = "$job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw"
-        else:
-            defaults = "$galaxy_root:ro,$tool_directory:ro"
-            if self.job_info.job_directory:
-                defaults += ",$job_directory:ro"
-            if self.app_info.outputs_to_working_directory:
-                # Should need default_file_path (which is a course estimate given
-                # object stores anyway).
-                defaults += ",$working_directory:rw,$default_file_path:ro"
-            else:
-                defaults += ",$working_directory:rw,$default_file_path:rw"
-
-        if self.app_info.library_import_dir:
-            defaults += ",$library_import_dir:ro"
-
-        # Define $defaults that can easily be extended with external library and
-        # index data without deployer worrying about above details.
-        variables["defaults"] = string.Template(defaults).safe_substitute(variables)
-
-        return template.safe_substitute(variables)
-
 
 def docker_cache_path(cache_directory, container_id):
     file_container_id = container_id.replace("/", "_slash_")
@@ -443,8 +452,52 @@ def docker_cache_path(cache_directory, container_id):
     return os.path.join(cache_directory, cache_file_name)
 
 
+class SingularityContainer(Container, HasDockerLikeVolumes):
+
+    def containerize_command(self, command):
+        def prop(name, default):
+            destination_name = "singularity_%s" % name
+            return self.destination_info.get(destination_name, default)
+
+        env = []
+        for pass_through_var in self.tool_info.env_pass_through:
+            env.append((pass_through_var, "$%s" % pass_through_var))
+
+        # Allow destinations to explicitly set environment variables just for
+        # docker container. Better approach is to set for destination and then
+        # pass through only what tool needs however. (See todo in ToolInfo.)
+        for key, value in six.iteritems(self.destination_info):
+            if key.startswith("singularity_env_"):
+                real_key = key[len("singularity_env_"):]
+                env.append((real_key, value))
+
+        working_directory = self.job_info.working_directory
+        if not working_directory:
+            raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
+
+        volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
+        volumes = docker_util.DockerVolume.volumes_from_str(volumes_raw)
+
+        singularity_target_kwds = dict(
+            singularity_cmd=prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
+            sudo=asbool(prop("sudo", singularity_util.DEFAULT_SUDO)),
+            sudo_cmd=prop("sudo_cmd", singularity_util.DEFAULT_SUDO_COMMAND),
+        )
+        run_command = singularity_util.build_singularity_run_command(
+            command,
+            self.container_id,
+            volumes=volumes,
+            env=env,
+            working_directory=working_directory,
+            run_extra_arguments=prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
+            **singularity_target_kwds
+        )
+        return run_command
+
+
 CONTAINER_CLASSES = dict(
     docker=DockerContainer,
+    singularity=SingularityContainer,
 )
 
 
