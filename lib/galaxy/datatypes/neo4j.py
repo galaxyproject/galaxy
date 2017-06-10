@@ -15,7 +15,7 @@ from galaxy.util.checkers import (
     is_gzip
 )
 
-from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
+from galaxy.datatypes.metadata import MetadataElement
 
 gal_Log = logging.getLogger(__name__)
 verbose = True
@@ -50,13 +50,6 @@ class Neo4j(Html):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'text/html'
-
-    def sniff(self, filename):
-        compressed = is_gzip(filename) or is_bz2(filename)
-        if compressed and not isinstance(self, Binary):
-            return False
-        else:
-            return True
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
@@ -174,7 +167,7 @@ class Neo4jDBzip(Neo4j, Data):
     MetadataElement(name='reference_name', default='neostore', desc='Reference Name',
                     readonly=True, visible=True, set_in_upload=True, no_value='neostore')
     MetadataElement(name="neostore_zip", default=None, desc="Neostore zip",
-                    readonly=True, visible=True, set_in_upload=True, no_value=None,  optional=True)
+                    readonly=True, visible=True, set_in_upload=True, no_value=None, optional=True)
 
     file_ext = "noestore.zip"
     allow_datatype_change = False
