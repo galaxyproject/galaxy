@@ -14,7 +14,8 @@ var jQuery = require( 'jquery' ),
     Workflows = require( 'mvc/workflow/workflow' ),
     WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' ),
     ToolFormComposite = require( 'mvc/tool/tool-form-composite' ),
-    Utils = require( 'utils/utils' );
+    Utils = require( 'utils/utils' ),
+    Ui = require( 'mvc/ui/ui-misc' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -198,17 +199,16 @@ window.app = function app( options, bootstrapped ){
         /** load workflow by its url in run mode */
         _loadWorkflow: function() {
             var self = this;
-            self.page.$( '#galaxy-main' ).hide();
-            self.page.$( "#center-panel" ).show();
             Utils.get({
-                url : Galaxy.root + 'workflow/run_workflow?id=' + Utils.getQueryString( 'id' ),
-                success : function( response ) {
-                    var form = new ToolFormComposite.View( response );
-                    self.page.$( "#center-panel" ).empty().append( form.$el )
+                url: Galaxy.root + 'api/workflows/' + Utils.getQueryString( 'id' ) + '/download',
+                data: { 'style': 'run' },
+                success: function( response ) {
+                    self.page.display( new ToolFormComposite.View( response ) );
                 },
-                error : function( response ) {
-                    var $el_error = "<div class='response-message errormessage'><p>Error occurred while loading the resource.</p></div>";
-                    self.page.$( "#center-panel" ).empty().append( $el_error );
+                error: function( response ) {
+                    var error_msg = "Error occurred while loading the resource.",
+                        options = { 'message': error_msg, 'status': 'error', 'persistent': true, 'cls': 'errormessage' };
+                    self.page.display( new Ui.Message( options ) );
                 }
             });
         }
