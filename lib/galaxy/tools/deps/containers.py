@@ -14,9 +14,10 @@ from galaxy.util import plugin_config
 
 from .container_resolvers.explicit import ExplicitContainerResolver
 from .container_resolvers.mulled import (
-    BuildMulledContainerResolver,
-    CachedMulledContainerResolver,
-    MulledContainerResolver,
+    BuildMulledDockerContainerResolver,
+    CachedMulledDockerContainerResolver,
+    CachedMulledSingularityContainerResolver,
+    MulledDockerContainerResolver,
 )
 from .requirements import ContainerDescription
 from .requirements import DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES, DEFAULT_CONTAINER_SHELL
@@ -218,9 +219,10 @@ class ContainerRegistry(object):
         ]
         if self.enable_beta_mulled_containers:
             default_resolvers.extend([
-                CachedMulledContainerResolver(self.app_info),
-                MulledContainerResolver(self.app_info, namespace="biocontainers"),
-                BuildMulledContainerResolver(self.app_info),
+                CachedMulledDockerContainerResolver(self.app_info),
+                MulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
+                BuildMulledDockerContainerResolver(self.app_info),
+                CachedMulledSingularityContainerResolver(self.app_info),
             ])
         return default_resolvers
 
@@ -231,6 +233,9 @@ class ContainerRegistry(object):
     def find_best_container_description(self, enabled_container_types, tool_info):
         """Yield best container description of supplied types matching tool info."""
         for container_resolver in self.container_resolvers:
+            if hasattr(container_resolver, "container_type"):
+                if container_resolver.container_type not in enabled_container_types:
+                    continue
             container_description = container_resolver.resolve(enabled_container_types, tool_info)
             log.info("Checking with container resolver [%s] found description [%s]" % (container_resolver, container_description))
             if container_description:

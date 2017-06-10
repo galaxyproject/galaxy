@@ -2,6 +2,7 @@
 
 import collections
 import logging
+import os
 
 import six
 
@@ -37,7 +38,7 @@ CachedV1MulledImageMultiTarget.multi_target = "v1"
 CachedV2MulledImageMultiTarget.multi_target = "v2"
 
 
-def list_cached_mulled_images(namespace=None, hash_func="v2"):
+def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
     command = build_docker_images_command(truncate=True, sudo=False)
     command = "%s | tail -n +2 | tr -s ' ' | cut -d' ' -f1,2" % command
     images_and_versions = check_output(command)
@@ -46,46 +47,58 @@ def list_cached_mulled_images(namespace=None, hash_func="v2"):
     def output_line_to_image(line):
         image_name, version = line.split(" ", 1)
         identifier = "%s:%s" % (image_name, version)
-        url, namespace, package_description = image_name.split("/")
-        if not version or version == "latest":
-            version = None
-
-        image = None
-        if package_description.startswith("mulled-v1-"):
-            if hash_func == "v2":
-                return None
-
-            hash = package_description
-            build = None
-            if version and version.isdigit():
-                build = version
-            image = CachedV1MulledImageMultiTarget(hash, build, identifier)
-        elif package_description.startswith("mulled-v2-"):
-            if hash_func == "v1":
-                return None
-
-            version_hash = None
-            build = None
-
-            if version and "-" in version:
-                version_hash, build = version.rsplit("-", 1)
-            elif version.isdigit():
-                version_hash, build = None, version
-            elif version:
-                log.debug("Unparsable mulled image tag encountered [%s]" % version)
-
-            image = CachedV2MulledImageMultiTarget(package_description, version_hash, build, identifier)
-        else:
-            build = None
-            if version and "--" in version:
-                version, build = split_tag(version)
-
-            image = CachedMulledImageSingleTarget(image_name, version, build, identifier)
-
+        image = identifier_to_cached_target(identifier, hash_func)
         return image
 
     # TODO: Sort on build ...
     raw_images = [output_line_to_image(_) for _ in filter(name_filter, images_and_versions.splitlines())]
+    return [i for i in raw_images if i is not None]
+
+
+def identifier_to_cached_target(identifier, hash_func):
+    image_name, version = identifier.rsplit(":", 1)
+    _, package_description = image_name.rsplit("/", 1)
+    if not version or version == "latest":
+        version = None
+
+    image = None
+    if package_description.startswith("mulled-v1-"):
+        if hash_func == "v2":
+            return None
+
+        hash = package_description
+        build = None
+        if version and version.isdigit():
+            build = version
+        image = CachedV1MulledImageMultiTarget(hash, build, identifier)
+    elif package_description.startswith("mulled-v2-"):
+        if hash_func == "v1":
+            return None
+
+        version_hash = None
+        build = None
+
+        if version and "-" in version:
+            version_hash, build = version.rsplit("-", 1)
+        elif version.isdigit():
+            version_hash, build = None, version
+        elif version:
+            log.debug("Unparsable mulled image tag encountered [%s]" % version)
+
+        image = CachedV2MulledImageMultiTarget(package_description, version_hash, build, identifier)
+    else:
+        build = None
+        if version and "--" in version:
+            version, build = split_tag(version)
+
+        image = CachedMulledImageSingleTarget(image_name, version, build, identifier)
+
+    return image
+
+
+def list_cached_mulled_images_from_path(directory, hash_func="v2"):
+    contents = os.listdir(directory)
+    raw_images = map(lambda name: identifier_to_cached_target(name, hash_func), contents)
     return [i for i in raw_images if i is not None]
 
 
@@ -94,11 +107,10 @@ def get_filter(namespace):
     return lambda name: name.startswith(prefix) and name.count("/") == 2
 
 
-def cached_container_description(targets, namespace, hash_func="v2"):
+def find_best_matching_cached_image(targets, cached_images, hash_func):
     if len(targets) == 0:
         return None
 
-    cached_images = list_cached_mulled_images(namespace, hash_func=hash_func)
     image = None
     if len(targets) == 1:
         target = targets[0]
@@ -142,6 +154,16 @@ def cached_container_description(targets, namespace, hash_func="v2"):
                 image = cached_image
                 break
 
+    return image
+
+
+def docker_cached_container_description(targets, namespace, hash_func="v2"):
+    if len(targets) == 0:
+        return None
+
+    cached_images = list_docker_cached_mulled_images(namespace, hash_func=hash_func)
+    image = find_best_matching_cached_image(targets, cached_images, hash_func)
+
     container = None
     if image:
         container = ContainerDescription(
@@ -152,13 +174,34 @@ def cached_container_description(targets, namespace, hash_func="v2"):
     return container
 
 
+def singularity_cached_container_description(targets, cache_directory, hash_func="v2"):
+    if len(targets) == 0:
+        return None
+
+    if not os.path.exists(cache_directory):
+        return None
+
+    cached_images = list_cached_mulled_images_from_path(cache_directory, hash_func=hash_func)
+    image = find_best_matching_cached_image(targets, cached_images, hash_func)
+
+    container = None
+    if image:
+        container = ContainerDescription(
+            os.path.join(cache_directory, image.image_identifier),
+            type="singularity",
+        )
+
+    return container
+
+
 @six.python_2_unicode_compatible
-class CachedMulledContainerResolver(ContainerResolver):
+class CachedMulledDockerContainerResolver(ContainerResolver):
 
     resolver_type = "cached_mulled"
+    container_type = "docker"
 
     def __init__(self, app_info=None, namespace=None, hash_func="v2"):
-        super(CachedMulledContainerResolver, self).__init__(app_info)
+        super(CachedMulledDockerContainerResolver, self).__init__(app_info)
         self.namespace = namespace
         self.hash_func = hash_func
 
@@ -167,20 +210,43 @@ class CachedMulledContainerResolver(ContainerResolver):
             return None
 
         targets = mulled_targets(tool_info)
-        return cached_container_description(targets, self.namespace, hash_func=self.hash_func)
+        return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func)
 
     def __str__(self):
-        return "CachedMulledContainerResolver[namespace=%s]" % self.namespace
+        return "CachedMulledDockerContainerResolver[namespace=%s]" % self.namespace
 
 
 @six.python_2_unicode_compatible
-class MulledContainerResolver(ContainerResolver):
+class CachedMulledSingularityContainerResolver(ContainerResolver):
+
+    resolver_type = "cached_mulled_singularity"
+    container_type = "singularity"
+
+    def __init__(self, app_info=None, hash_func="v2"):
+        super(CachedMulledDockerContainerResolver, self).__init__(app_info)
+        self.cache_directory = os.path.join(app_info.container_image_cache_path, "singularity", "mulled")
+        self.hash_func = hash_func
+
+    def resolve(self, enabled_container_types, tool_info):
+        if tool_info.requires_galaxy_python_environment:
+            return None
+
+        targets = mulled_targets(tool_info)
+        return singularity_cached_container_description(targets, hash_func=self.hash_func)
+
+    def __str__(self):
+        return "CachedMulledSingularityContainerResolver[namespace=%s]" % self.namespace
+
+
+@six.python_2_unicode_compatible
+class MulledDockerContainerResolver(ContainerResolver):
     """Look for mulled images matching tool dependencies."""
 
     resolver_type = "mulled"
+    container_type = "docker"
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2"):
-        super(MulledContainerResolver, self).__init__(app_info)
+        super(MulledDockerContainerResolver, self).__init__(app_info)
         self.namespace = namespace
         self.hash_func = hash_func
 
@@ -235,21 +301,22 @@ class MulledContainerResolver(ContainerResolver):
         if name:
             return ContainerDescription(
                 "quay.io/%s/%s" % (self.namespace, name),
-                type="docker",
+                type=self.container_type,
             )
 
     def __str__(self):
-        return "MulledContainerResolver[namespace=%s]" % self.namespace
+        return "MulledDockerContainerResolver[namespace=%s]" % self.namespace
 
 
 @six.python_2_unicode_compatible
-class BuildMulledContainerResolver(ContainerResolver):
+class BuildMulledDockerContainerResolver(ContainerResolver):
     """Look for mulled images matching tool dependencies."""
 
     resolver_type = "build_mulled"
+    container_type = "docker"
 
     def __init__(self, app_info=None, namespace="local", hash_func="v2", **kwds):
-        super(BuildMulledContainerResolver, self).__init__(app_info)
+        super(BuildMulledDockerContainerResolver, self).__init__(app_info)
         self._involucro_context_kwds = {
             'involucro_bin': self._get_config_option("involucro_path", None)
         }
@@ -275,7 +342,7 @@ class BuildMulledContainerResolver(ContainerResolver):
             hash_func=self.hash_func,
             **self._mulled_kwds
         )
-        return cached_container_description(targets, self.namespace, hash_func=self.hash_func)
+        return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func)
 
     def _get_involucro_context(self):
         involucro_context = InvolucroContext(**self._involucro_context_kwds)
@@ -283,7 +350,7 @@ class BuildMulledContainerResolver(ContainerResolver):
         return involucro_context
 
     def __str__(self):
-        return "BuildContainerResolver[namespace=%s]" % self.namespace
+        return "BuildDockerContainerResolver[namespace=%s]" % self.namespace
 
 
 def mulled_targets(tool_info):
@@ -291,7 +358,8 @@ def mulled_targets(tool_info):
 
 
 __all__ = (
-    "CachedMulledContainerResolver",
-    "MulledContainerResolver",
-    "BuildMulledContainerResolver",
+    "CachedMulledDockerContainerResolver",
+    "CachedMulledSingularityContainerResolver",
+    "MulledDockerContainerResolver",
+    "BuildMulledDockerContainerResolver",
 )
