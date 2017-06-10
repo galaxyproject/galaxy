@@ -15,8 +15,7 @@ from tool_shed.util import encoding_util
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy import exceptions
-from galaxy.managers import workflows, histories
+from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.util import unicodify, FILENAME_VALID_CHARS
