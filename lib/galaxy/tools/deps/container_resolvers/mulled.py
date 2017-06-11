@@ -54,24 +54,22 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
     raw_images = [output_line_to_image(_) for _ in filter(name_filter, images_and_versions.splitlines())]
     return [i for i in raw_images if i is not None]
 
-
 def identifier_to_cached_target(identifier, hash_func):
     image_name, version = identifier.rsplit(":", 1)
-    _, package_description = image_name.rsplit("/", 1)
     if not version or version == "latest":
         version = None
 
     image = None
-    if package_description.startswith("mulled-v1-"):
+    if image_name.startswith("mulled-v1-"):
         if hash_func == "v2":
             return None
 
-        hash = package_description
+        hash = image_name
         build = None
         if version and version.isdigit():
             build = version
         image = CachedV1MulledImageMultiTarget(hash, build, identifier)
-    elif package_description.startswith("mulled-v2-"):
+    elif image_name.startswith("mulled-v2-"):
         if hash_func == "v1":
             return None
 
@@ -85,14 +83,13 @@ def identifier_to_cached_target(identifier, hash_func):
         elif version:
             log.debug("Unparsable mulled image tag encountered [%s]" % version)
 
-        image = CachedV2MulledImageMultiTarget(package_description, version_hash, build, identifier)
+        image = CachedV2MulledImageMultiTarget(image_name, version_hash, build, identifier)
     else:
         build = None
         if version and "--" in version:
             version, build = split_tag(version)
 
         image = CachedMulledImageSingleTarget(image_name, version, build, identifier)
-
     return image
 
 
@@ -153,7 +150,6 @@ def find_best_matching_cached_image(targets, cached_images, hash_func):
             if name == cached_image.hash:
                 image = cached_image
                 break
-
     return image
 
 
@@ -187,7 +183,7 @@ def singularity_cached_container_description(targets, cache_directory, hash_func
     container = None
     if image:
         container = ContainerDescription(
-            os.path.join(cache_directory, image.image_identifier),
+            os.path.abspath(os.path.join(cache_directory, image.image_identifier)),
             type="singularity",
         )
 
@@ -223,7 +219,7 @@ class CachedMulledSingularityContainerResolver(ContainerResolver):
     container_type = "singularity"
 
     def __init__(self, app_info=None, hash_func="v2"):
-        super(CachedMulledDockerContainerResolver, self).__init__(app_info)
+        super(CachedMulledSingularityContainerResolver, self).__init__(app_info)
         self.cache_directory = os.path.join(app_info.container_image_cache_path, "singularity", "mulled")
         self.hash_func = hash_func
 
@@ -232,10 +228,10 @@ class CachedMulledSingularityContainerResolver(ContainerResolver):
             return None
 
         targets = mulled_targets(tool_info)
-        return singularity_cached_container_description(targets, hash_func=self.hash_func)
+        return singularity_cached_container_description(targets, self.cache_directory, hash_func=self.hash_func)
 
     def __str__(self):
-        return "CachedMulledSingularityContainerResolver[namespace=%s]" % self.namespace
+        return "CachedMulledSingularityContainerResolver[cache_directory=%s]" % self.cache_directory
 
 
 @six.python_2_unicode_compatible
