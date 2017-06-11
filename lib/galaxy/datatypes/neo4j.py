@@ -107,8 +107,8 @@ class Neo4jDB(Neo4j, Data):
         Data.__init__(self, **kwd)
         self.add_composite_file('neostore', is_binary=True)
         self.add_composite_file('neostore.id', is_binary=True)
-        self.add_composite_file('neostore.counts.db.a', is_binary=True)
-        self.add_composite_file('neostore.counts.db.b', is_binary=True)
+        self.add_composite_file('neostore.counts.db.a', optional=True, is_binary=True)
+        self.add_composite_file('neostore.counts.db.b', optional=True, is_binary=True)
         self.add_composite_file('neostore.labeltokenstore.db', is_binary=True)
         self.add_composite_file(
             'neostore.labeltokenstore.db.id', is_binary=True)
