@@ -697,7 +697,6 @@
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
     <sniffer type="galaxy.datatypes.sequence:FastqGz"/>
     <sniffer type="galaxy.datatypes.sequence:FastqBz2"/>
-    <sniffer type="galaxy.datatypes.neo4j:Neo4jDBzip"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
     <sniffer type="galaxy.datatypes.text:Html"/>
     <sniffer type="galaxy.datatypes.images:Pdf"/>
@@ -757,5 +756,6 @@
     <sniffer type="galaxy.datatypes.binary:OxliStopTags"/>
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
+    <sniffer type="galaxy.datatypes.neo4j:Neo4jDBzip"/>
   </sniffers>
 </datatypes>

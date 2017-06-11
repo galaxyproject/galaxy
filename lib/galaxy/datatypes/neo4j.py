@@ -10,10 +10,6 @@ from galaxy.datatypes.data import Data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.images import Html
 from galaxy.util import FILENAME_VALID_CHARS
-from galaxy.util.checkers import (
-    is_bz2,
-    is_gzip
-)
 
 from galaxy.datatypes.metadata import MetadataElement
 
