@@ -10,6 +10,7 @@ from abc import (
 import six
 
 from galaxy.util import asbool
+from galaxy.util import in_directory
 from galaxy.util import plugin_config
 
 from .container_resolvers.explicit import ExplicitContainerResolver
@@ -317,6 +318,53 @@ class Container( object ):
         """
 
 
+def preprocess_volumes(volumes_raw_str, container_type):
+    """Process Galaxy volume specification string to either Docker or Singularity specification.
+
+    Galaxy allows the mount try "default_ro" which translates to ro for Docker and
+    ro for Singularity iff no subdirectories are rw (Singularity does not allow ro
+    parent directories with rw subdirectories).
+
+    >>> preprocess_volumes("/a/b", DOCKER_CONTAINER_TYPE)
+    '/a/b:rw'
+    >>> preprocess_volumes("/a/b:ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
+    '/a/b:ro,/a/b/c:rw'
+    >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
+    '/a/b:ro,/a/b/c:rw'
+    >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
+    '/a/b:rw,/a/b/c:rw'
+    """
+
+    volumes_raw_strs = [v.strip() for v in volumes_raw_str.split(",")]
+    volumes = []
+    rw_paths = []
+
+    for volume_raw_str in volumes_raw_strs:
+        volume_parts = volume_raw_str.split(":")
+        if len(volume_parts) > 2:
+            raise Exception("Unparsable volumes string in configuration [%s]" % volumes_raw_str)
+        if len(volume_parts) == 1:
+            volume_parts.append("rw")
+        volumes.append(volume_parts)
+        if volume_parts[1] == "rw":
+            rw_paths.append(volume_parts[0])
+
+    for volume in volumes:
+        path = volume[0]
+        how = volume[1]
+
+        if how == "default_ro":
+            how = "ro"
+            if container_type == SINGULARITY_CONTAINER_TYPE:
+                for rw_path in rw_paths:
+                    if in_directory(rw_path, path):
+                        how = "rw"
+
+        volume[1] = how
+
+    return ",".join([":".join(v) for v in volumes])
+
+
 class HasDockerLikeVolumes:
     """Mixin to share functionality related to Docker volume handling.
 
@@ -344,20 +392,20 @@ class HasDockerLikeVolumes:
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
             # files) should be available in job_directory...
-            defaults = "$job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw"
+            defaults = "$job_directory:default_ro,$tool_directory:default_ro,$job_directory/outputs:rw,$working_directory:rw"
         else:
-            defaults = "$galaxy_root:ro,$tool_directory:ro"
+            defaults = "$galaxy_root:default_ro,$tool_directory:default_ro"
             if self.job_info.job_directory:
-                defaults += ",$job_directory:ro"
+                defaults += ",$job_directory:default_ro"
             if self.app_info.outputs_to_working_directory:
-                # Should need default_file_path (which is a course estimate given
+                # Should need default_file_path (which is of course an estimate given
                 # object stores anyway).
-                defaults += ",$working_directory:rw,$default_file_path:ro"
+                defaults += ",$working_directory:rw,$default_file_path:default_ro"
             else:
                 defaults += ",$working_directory:rw,$default_file_path:rw"
 
         if self.app_info.library_import_dir:
-            defaults += ",$library_import_dir:ro"
+            defaults += ",$library_import_dir:default_ro"
 
         # Define $defaults that can easily be extended with external library and
         # index data without deployer worrying about above details.
@@ -367,6 +415,8 @@ class HasDockerLikeVolumes:
 
 
 class DockerContainer(Container, HasDockerLikeVolumes):
+
+    container_type = DOCKER_CONTAINER_TYPE
 
     def containerize_command(self, command):
         def prop(name, default):
@@ -390,8 +440,9 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
 
         volumes_raw = self._expand_volume_str(self.destination_info.get("docker_volumes", "$defaults"))
+        preprocessed_volumes_str = preprocess_volumes(volumes_raw, self.container_type)
         # TODO: Remove redundant volumes...
-        volumes = docker_util.DockerVolume.volumes_from_str(volumes_raw)
+        volumes = docker_util.DockerVolume.volumes_from_str(preprocessed_volumes_str)
         volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
 
         docker_host_props = dict(
@@ -453,6 +504,8 @@ def docker_cache_path(cache_directory, container_id):
 
 
 class SingularityContainer(Container, HasDockerLikeVolumes):
+
+    container_type = SINGULARITY_CONTAINER_TYPE
 
     def containerize_command(self, command):
         def prop(name, default):
