@@ -87,6 +87,8 @@ def add_channel_arguments(parser):
     parser.add_argument('--diff-hours', dest='diff_hours', default="25",
                         help='If finding all recently changed recipes, use this number of hours.')
     parser.add_argument('--recipes-dir', dest="recipes_dir", default="./bioconda-recipes")
+    parser.add_argument('--force-rebuild', dest="force_rebuild", action="store_true",
+                        help="Rebuild package even if already published.")
 
 
 def main(argv=None):
