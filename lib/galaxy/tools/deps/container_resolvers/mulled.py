@@ -54,6 +54,7 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
     raw_images = [output_line_to_image(_) for _ in filter(name_filter, images_and_versions.splitlines())]
     return [i for i in raw_images if i is not None]
 
+
 def identifier_to_cached_target(identifier, hash_func):
     image_name, version = identifier.rsplit(":", 1)
     if not version or version == "latest":
