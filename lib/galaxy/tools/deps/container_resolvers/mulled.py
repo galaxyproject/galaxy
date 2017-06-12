@@ -56,7 +56,12 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
 
 
 def identifier_to_cached_target(identifier, hash_func):
-    image_name, version = identifier.rsplit(":", 1)
+    if ":" in identifier:
+        image_name, version = identifier.rsplit(":", 1)
+    else:
+        image_name = identifier
+        version = None
+
     if not version or version == "latest":
         version = None
 
@@ -307,7 +312,7 @@ class MulledDockerContainerResolver(ContainerResolver):
 
 @six.python_2_unicode_compatible
 class BuildMulledDockerContainerResolver(ContainerResolver):
-    """Look for mulled images matching tool dependencies."""
+    """Build for Docker mulled images matching tool dependencies."""
 
     resolver_type = "build_mulled"
     container_type = "docker"
@@ -322,6 +327,8 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
         self._mulled_kwds = {
             'namespace': namespace,
             'channels': self._get_config_option("channels", DEFAULT_CHANNELS, prefix="mulled"),
+            'hash_func': self.hash_func,
+            'command': 'build-and-test',
         }
         self.auto_init = self._get_config_option("auto_init", DEFAULT_CHANNELS, prefix="involucro")
 
@@ -336,7 +343,6 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
         mull_targets(
             targets,
             involucro_context=self._get_involucro_context(),
-            hash_func=self.hash_func,
             **self._mulled_kwds
         )
         return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func)
@@ -350,6 +356,53 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
         return "BuildDockerContainerResolver[namespace=%s]" % self.namespace
 
 
+@six.python_2_unicode_compatible
+class BuildMulledSingularityContainerResolver(ContainerResolver):
+    """Build for Singularity mulled images matching tool dependencies."""
+
+    resolver_type = "build_mulled_singularity"
+    container_type = "singularity"
+
+    def __init__(self, app_info=None, hash_func="v2", **kwds):
+        super(BuildMulledSingularityContainerResolver, self).__init__(app_info)
+        self._involucro_context_kwds = {
+            'involucro_bin': self._get_config_option("involucro_path", None)
+        }
+        self.cache_directory = os.path.join(app_info.container_image_cache_path, "singularity", "mulled")
+        self.hash_func = hash_func
+        self._mulled_kwds = {
+            'channels': self._get_config_option("channels", DEFAULT_CHANNELS, prefix="mulled"),
+            'hash_func': self.hash_func,
+            'command': 'build-and-test',
+            'singularity': True,
+            'singularity_image_dir': self.cache_directory,
+        }
+        self.auto_init = self._get_config_option("auto_init", DEFAULT_CHANNELS, prefix="involucro")
+
+    def resolve(self, enabled_container_types, tool_info):
+        if tool_info.requires_galaxy_python_environment:
+            return None
+
+        targets = mulled_targets(tool_info)
+        if len(targets) == 0:
+            return None
+
+        mull_targets(
+            targets,
+            involucro_context=self._get_involucro_context(),
+            **self._mulled_kwds
+        )
+        return singularity_cached_container_description(targets, self.cache_directory, hash_func=self.hash_func)
+
+    def _get_involucro_context(self):
+        involucro_context = InvolucroContext(**self._involucro_context_kwds)
+        self.enabled = ensure_installed(involucro_context, self.auto_init)
+        return involucro_context
+
+    def __str__(self):
+        return "BuildDockerContainerResolver[cache_directory=%s]" % self.cache_directory
+
+
 def mulled_targets(tool_info):
     return requirements_to_mulled_targets(tool_info.requirements)
 
@@ -359,4 +412,5 @@ __all__ = (
     "CachedMulledSingularityContainerResolver",
     "MulledDockerContainerResolver",
     "BuildMulledDockerContainerResolver",
+    "BuildMulledSingularityContainerResolver",
 )
