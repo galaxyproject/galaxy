@@ -152,6 +152,7 @@ def mull_targets(
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
     conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
     oauth_token=None, hash_func="v2", singularity=False,
+    singularity_image_dir="singularity_import",
 ):
     targets = list(targets)
     if involucro_context is None:
@@ -212,6 +213,7 @@ def mull_targets(
         singularity_image_name = repo_template_kwds['image']
         involucro_args.extend(["-set", "SINGULARITY='1'"])
         involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME='%s'" % singularity_image_name])
+        involucro_args.extend(["-set", "SINGULARITY_IMAGE_DIR='%s'" % singularity_image_dir])
         involucro_args.extend(["-set", "USER_ID='%s:%s'" % (os.getuid(), os.getgid() )])
     if conda_version is not None:
         verbose = "--verbose" if verbose else "--quiet"
@@ -233,9 +235,9 @@ def mull_targets(
     if not dry_run:
         ensure_installed(involucro_context, True)
         if singularity:
-            if not os.path.exists('./singularity_import'):
-                os.mkdir('./singularity_import')
-            with open('./singularity_import/Singularity', 'w+') as sin_def:
+            if not os.path.exists(singularity_image_dir):
+                os.mkdir(singularity_image_dir)
+            with open(os.path.join(singularity_image_dir, 'Singularity'), 'w+') as sin_def:
                 fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
                 sin_def.write(fill_template)
         ret = involucro_context.exec_command(involucro_args)
@@ -314,6 +316,8 @@ def add_build_arguments(parser):
                         help='Cause process to be verbose.')
     parser.add_argument('--singularity', action="store_true",
                         help='Additionally build a singularity image.')
+    parser.add_argument('--singularity-image-dir', dest="singularity_image_dir",
+                        help="Directory to write singularity images too.")
     parser.add_argument('-n', '--namespace', dest='namespace', default="biocontainers",
                         help='quay.io namespace.')
     parser.add_argument('-r', '--repository_template', dest='repository_template', default=DEFAULT_REPOSITORY_TEMPLATE,
@@ -387,6 +391,8 @@ def args_to_mull_targets_kwds(args):
         kwds["rebuild"] = args.rebuild
     if hasattr(args, "hash"):
         kwds["hash_func"] = args.hash
+    if hasattr(args, "singularity_image_dir"):
+        kwds["singularity_image_dir"] = args.singularity_image_dir
 
     kwds["involucro_context"] = context_from_args(args)
 
