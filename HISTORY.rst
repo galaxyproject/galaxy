@@ -6,10 +6,13 @@ History
 .. to_doc
 
 ---------------------
-17.5.12.dev0
+17.9.0.dev0
 ---------------------
 
-    
+* Bring in latest Galaxy dev changes.
+* Implement support for building Singularity mulled containers.
+* Implement mulled version 2 package hashing.
+* Fix default namespace for mulled operations from mulled to biocontainers.
 
 ---------------------
 17.5.11 (2017-05-31)
