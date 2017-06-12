@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.9.0.dev0
+17.9.0 (2017-06-11)
 ---------------------
 
 * Bring in latest Galaxy dev changes.
