@@ -1771,12 +1771,12 @@ class JobWrapper( object, HasResourceParameters ):
         if self.__user_system_pwent is None:
             job = self.get_job()
 
-            if self.app.config.real_system_username == 'user_email': 
+            if self.app.config.real_system_username == 'user_email':
                 try:
                     self.__user_system_pwent = pwd.getpwnam( job.user.email.split('@')[0] )
                 except KeyError:
                     pass
-            elif self.app.config.real_system_username == 'username': 
+            elif self.app.config.real_system_username == 'username':
                 try:
                     self.__user_system_pwent = pwd.getpwnam( job.user.username )
                 except KeyError:

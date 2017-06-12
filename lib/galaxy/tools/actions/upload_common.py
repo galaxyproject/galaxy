@@ -283,15 +283,15 @@ def create_paramfile( trans, uploaded_datasets ):
     def _chown( path ):
         try:
             # get username from email/username
-            pwent = None        
+            pwent = None
 
-            if trans.app.config.real_system_username == 'user_email': 
+            if trans.app.config.real_system_username == 'user_email':
                 try:
                     pwent = pwd.getpwnam( trans.user.email.split('@')[0] )
                 except KeyError:
                     pass
 
-            elif trans.app.config.real_system_username == 'username': 
+            elif trans.app.config.real_system_username == 'username':
                 try:
                     pwent = pwd.getpwnam( trans.user.username )
                 except KeyError:
