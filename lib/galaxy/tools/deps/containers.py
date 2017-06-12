@@ -10,8 +10,8 @@ from abc import (
 import six
 
 from galaxy.util import asbool
-from galaxy.util import plugin_config
 from galaxy.util import in_directory
+from galaxy.util import plugin_config
 
 from .container_resolvers.explicit import ExplicitContainerResolver
 from .container_resolvers.mulled import (
