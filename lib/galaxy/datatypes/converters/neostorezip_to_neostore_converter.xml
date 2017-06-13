@@ -1,5 +1,8 @@
 <tool id="CONVERTER_neostorezip_to_neostore" name="Convert neostore.zip files to neostore" version="1.0.0" hidden="true">
-  <command>unzip '$input1' -d '$output1.files_path' > $output1</command>
+  <command><![CDATA[
+        unzip '${input1.extra_files_path}/neostore_file.zip' -d '${output1.files_path}' > $output1
+        ]]>
+  </command>
   <inputs>
     <param format="neostore.zip" name="input1" type="data" label="Choose neostore database file"/>
   </inputs>

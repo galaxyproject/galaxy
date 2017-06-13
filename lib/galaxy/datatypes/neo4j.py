@@ -73,7 +73,7 @@ class Neo4j(Html):
             trans.log_event("Display dataset id: %s" % str(data.id))
 
             # the target directory name
-            neo4j_dir_name = '/dataset_{}_files/neo4jdb'.format(
+            neo4j_dir_name = '/dataset_{}_files'.format(
                 data.dataset.id)
             dir_name = str(os.path.dirname(
                 trans.app.object_store.get_filename(data.dataset))) + neo4j_dir_name
@@ -160,12 +160,13 @@ class Neo4jDB(Neo4j, Data):
 
 class Neo4jDBzip(Neo4j, Data):
     """Class for neo4jDB database files."""
-    MetadataElement(name='reference_name', default='neostore', desc='Reference Name',
+    MetadataElement(name='reference_name', default='neostore_file', desc='Reference Name',
                     readonly=True, visible=True, set_in_upload=True, no_value='neostore')
     MetadataElement(name="neostore_zip", default=None, desc="Neostore zip",
                     readonly=True, visible=True, set_in_upload=True, no_value=None, optional=True)
 
-    file_ext = "noestore.zip"
+    file_ext = "neostore.zip"
+    composite_type = 'auto_primary_file'
     allow_datatype_change = False
 
     def __init__(self, **kwd):
