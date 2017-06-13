@@ -1,6 +1,5 @@
 import logging
 import os
-import pwd
 import subprocess
 import tempfile
 from cgi import FieldStorage
@@ -283,21 +282,7 @@ def create_paramfile( trans, uploaded_datasets ):
     def _chown( path ):
         try:
             # get username from email/username
-            pwent = None
-
-            if trans.app.config.real_system_username == 'user_email':
-                try:
-                    pwent = pwd.getpwnam( trans.user.email.split('@')[0] )
-                except KeyError:
-                    pass
-
-            elif trans.app.config.real_system_username == 'username':
-                try:
-                    pwent = pwd.getpwnam( trans.user.username )
-                except KeyError:
-                    pass
-            else:
-                log.warning("invalid configuration of real_system_username")
+            pwent = trans.user.system_user_pwent(trans.app.config.real_system_username)
             cmd = trans.app.config.external_chown_script.split()
             cmd.extend( [ path, pwent[0], str( pwent[3] ) ] )
             log.debug( 'Changing ownership of %s with: %s' % ( path, ' '.join( cmd ) ) )
