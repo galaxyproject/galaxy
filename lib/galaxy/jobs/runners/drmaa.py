@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import json
 import logging
 import os
+import shlex
 import string
 import subprocess
 import time
@@ -315,7 +316,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             if kill_script is None:
                 self.ds.kill( ext_id )
             else:
-                command = kill_script.split()
+                command = shlex.split( kill_script )
                 command.extend( [ str( ext_id ), str( self.userid ) ])
                 subprocess.Popen( command, shell=False )
             log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.get_id(), ext_id ) )
@@ -361,7 +362,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         The external script needs to be run with sudo, and will setuid() to the specified user.
         Effectively, will QSUB as a different user (then the one used by Galaxy).
         """
-        command = external_runjob_script.split()
+        command = shlex.split( external_runjob_script )
         command.extend( [ str(username), jobtemplate_filename ] )
         command.append( "--assign_all_groups"  )
         log.info("Running command %s" % command)
