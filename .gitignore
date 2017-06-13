@@ -135,5 +135,3 @@ doc/source/dev/schema.rst
 .DS_Store
 *.rej
 *~
-.idea/
-.vscode/
