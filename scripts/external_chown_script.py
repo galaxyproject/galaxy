@@ -12,7 +12,7 @@ import sys
 ALLOWED_PATHS = None
 
 
-def validate_paramters():
+def validate_paramaters():
     if len(sys.argv) < 4:
         sys.stderr.write("usage: %s path user_name gid\n" % sys.argv[0])
         exit(1)
@@ -37,7 +37,7 @@ def validate_paramters():
 
 
 def main():
-    path, galaxy_user_name, gid = validate_paramters()
+    path, galaxy_user_name, gid = validate_paramaters()
 
     cmd = [ 'chown', '-Rh', galaxy_user_name, path ]
     p = os.subprocess.Popen(cmd, shell=False, stdout=os.subprocess.PIPE, stderr=os.subprocess.PIPE)
