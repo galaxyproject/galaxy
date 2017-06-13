@@ -14,7 +14,7 @@
     <script type="text/javascript">
         // Define variables needed by galaxy.pages script.
         var page_id = "${trans.security.encode_id(page.id)}",
-            page_list_url = '${h.url_for( controller='page', action='list' )}',
+            page_list_url = '${h.url_for( controller='pages', action='list' )}',
             list_objects_url = "${h.url_for(controller='page', action='LIST_ACTION' )}",
             set_accessible_url = "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}",
             get_name_and_link_url = "${h.url_for( controller='ITEM_CONTROLLER', action='get_name_and_link_async' )}?id=",

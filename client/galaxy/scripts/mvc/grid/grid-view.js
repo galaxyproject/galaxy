@@ -639,7 +639,7 @@ return Backbone.View.extend({
                 var insert = self.grid.get('insert');
 
                 // request new configuration
-                var json = self.dict_format ? response_text.embedded_grid || response_text : $.parseJSON(response_text);
+                var json = self.dict_format ? response_text : $.parseJSON(response_text);
 
                 // update
                 json.embedded = embedded;

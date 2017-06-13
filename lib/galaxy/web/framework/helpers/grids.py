@@ -339,7 +339,8 @@ class Grid( object ):
             'default_filter_dict'           : self.default_filter,
             'advanced_search'               : self.advanced_search,
             'info_text'                     : self.info_text,
-            'url'                           : url(dict())
+            'url'                           : url(dict()),
+            'refresh_frames'                : kwargs.get( 'refresh_frames', [] )
         }
         if current_item:
             grid_config['current_item_id'] = current_item.id

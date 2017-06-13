@@ -9,7 +9,8 @@ var jQuery = require( 'jquery' ),
     UserPreferences = require( 'mvc/user/user-preferences' ),
     CustomBuilds = require( 'mvc/user/user-custom-builds' ),
     Tours = require( 'mvc/tours' ),
-    GridView = require( 'mvc/grid/grid-view' )
+    GridView = require( 'mvc/grid/grid-view' ),
+    PageList = require( 'mvc/page/page-list' ),
     Workflows = require( 'mvc/workflow/workflow' ),
     HistoryList = require( 'mvc/history/history-list' ),
     WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' );
@@ -84,6 +85,7 @@ window.app = function app( options, bootstrapped ){
             '(/)workflow(/)' : 'show_workflows',
             '(/)pages(/)(:action_id)' : 'show_pages',
             '(/)histories(/)(:action_id)' : 'show_histories',
+            '(/)datasets(/)(:action_id)' : 'show_datasets',
             '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)custom_builds' : 'show_custom_builds'
         },
@@ -123,8 +125,16 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new HistoryList.View() );
         },
 
+        show_datasets : function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'dataset/list', dict_format: true } ) );
+        },
+
         show_pages : function( action_id ) {
-            this.page.display( new GridView( { url_base: Galaxy.root + 'page/list_published', dict_format: true } ) );
+            if ( action_id == 'list' ) {
+                this.page.display( new PageList.View() );
+            } else {
+                this.page.display( new GridView( { url_base: Galaxy.root + 'page/list_published', dict_format: true } ) );
+            }
         },
 
         show_workflows : function(){

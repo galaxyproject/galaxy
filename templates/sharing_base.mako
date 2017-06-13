@@ -73,6 +73,7 @@
     ## Set use_panels var for use in page's URLs.
     <% use_panels = context.get('use_panels', False)  %>
     <% controller_name = get_controller_name( item ) %>
+    <% controller_list = context.get('controller_list', controller_name)  %>
 
     ## Render message.
     %if message:
@@ -142,7 +143,7 @@
                         </blockquote>
 
                         %if item.published:
-                            This ${item_class_name_lc} is publicly listed and searchable in Galaxy's <a href='${h.url_for( controller=controller_name, action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section.
+                            This ${item_class_name_lc} is publicly listed and searchable in Galaxy's <a href='${h.url_for( controller=controller_list, action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section.
                         %endif
                     </div>
 
@@ -155,16 +156,16 @@
                             <div class="toolParamHelp">Disables ${item_class_name_lc}'s link so that it is not accessible.</div>
                             <br />
                             <input class="action-button" type="submit" name="publish" value="Publish ${item_class_name}" method="POST">
-                            <div class="toolParamHelp">Publishes the ${item_class_name_lc} to Galaxy's <a href='${h.url_for( controller=controller_name, action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section, where it is publicly listed and searchable.</div>
+                            <div class="toolParamHelp">Publishes the ${item_class_name_lc} to Galaxy's <a href='${h.url_for( controller=controller_list, action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section, where it is publicly listed and searchable.</div>
 
                         <br />
                         %else: ## item.published == True
                             ## Item is importable and published. User can unpublish or disable import and unpublish.
                             <input class="action-button" type="submit" name="unpublish" value="Unpublish ${item_class_name}">
-                            <div class="toolParamHelp">Removes this ${item_class_name_lc} from Galaxy's <a href='${h.url_for(controller=controller_name, action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
+                            <div class="toolParamHelp">Removes this ${item_class_name_lc} from Galaxy's <a href='${h.url_for(controller=controller_list, action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
                             <br />
                             <input class="action-button" type="submit" name="disable_link_access_and_unpublish" value="Disable Access to ${item_class_name} via Link and Unpublish">
-                            <div class="toolParamHelp">Disables this ${item_class_name_lc}'s link so that it is not accessible and removes ${item_class_name_lc} from Galaxy's <a href='${h.url_for(controller=controller_name, action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
+                            <div class="toolParamHelp">Disables this ${item_class_name_lc}'s link so that it is not accessible and removes ${item_class_name_lc} from Galaxy's <a href='${h.url_for(controller=controller_list, action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
                         %endif
                     </form>
                     </div>
@@ -179,7 +180,7 @@
 
                         <br />
                         <input class="action-button" type="submit" name="make_accessible_and_publish" value="Make ${item_class_name} Accessible and Publish" method="POST">
-                        <div class="toolParamHelp">Makes the ${item_class_name_lc} accessible via link (see above) and publishes the ${item_class_name_lc} to Galaxy's <a href='${h.url_for(controller=controller_name, action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section, where it is publicly listed and searchable.</div>
+                        <div class="toolParamHelp">Makes the ${item_class_name_lc} accessible via link (see above) and publishes the ${item_class_name_lc} to Galaxy's <a href='${h.url_for(controller=controller_list, action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section, where it is publicly listed and searchable.</div>
                     </form>
 
                 %endif
@@ -239,5 +240,5 @@
     %endif
 
     <br /><br />
-    <a href="${h.url_for(controller=controller_name, action="list" )}">Back to ${item_class_plural_name} List</a>
+    <a href="${h.url_for(controller=controller_list, action="list" )}">Back to ${item_class_plural_name} List</a>
 </%def>
