@@ -13,6 +13,7 @@ import operator
 import os
 import socket
 import time
+import pwd
 from datetime import datetime, timedelta
 from string import Template
 from uuid import UUID, uuid4
@@ -185,6 +186,23 @@ class User( object, Dictifiable ):
         Check if `cleartext` matches user password when hashed.
         """
         return galaxy.security.passwords.check_password( cleartext, self.password )
+
+    def system_user_pwent(self, real_system_username):
+        '''Gives the system user pwent entry based on e-mail or username depending on the value in real_system_username'''
+        if real_system_username == 'user_email':
+            try:
+                system_user_pwent = pwd.getpwnam(self.email.split('@')[0])
+            except KeyError:
+                pass
+        elif real_system_username == 'username':
+            try:
+                system_user_pwent = pwd.getpwnam(self.username)
+            except KeyError:
+                pass
+        else:
+            log.warning("invalid configuration of real_system_username")
+            system_user_pwent = None
+        return system_user_pwent
 
     def all_roles( self ):
         """
