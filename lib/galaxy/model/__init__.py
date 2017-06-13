@@ -188,7 +188,11 @@ class User( object, Dictifiable ):
         return galaxy.security.passwords.check_password( cleartext, self.password )
 
     def system_user_pwent(self, real_system_username):
-        '''Gives the system user pwent entry based on e-mail or username depending on the value in real_system_username'''
+        """
+        Gives the system user pwent entry based on e-mail or username depending
+        on the value in real_system_username
+        """
+        system_user_pwent = None
         if real_system_username == 'user_email':
             try:
                 system_user_pwent = pwd.getpwnam(self.email.split('@')[0])

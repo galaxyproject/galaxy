@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import subprocess
 import sys
 
 # you may configure the paths below which modifications are allowed.
@@ -12,7 +13,7 @@ import sys
 ALLOWED_PATHS = None
 
 
-def validate_paramaters():
+def validate_parameters():
     if len(sys.argv) < 4:
         sys.stderr.write("usage: %s path user_name gid\n" % sys.argv[0])
         exit(1)
@@ -37,9 +38,9 @@ def validate_paramaters():
 
 
 def main():
-    path, galaxy_user_name, gid = validate_paramaters()
+    path, galaxy_user_name, gid = validate_parameters()
     for cmd in [[ 'chown', '-Rh', galaxy_user_name, path ], [ 'chgrp', '-Rh', gid, path ]]:
-        p = os.subprocess.Popen(cmd, shell=False, stdout=os.subprocess.PIPE, stderr=os.subprocess.PIPE)
+        p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdoutdata, stderrdata) = p.communicate()
         exitcode = p.returncode
         if exitcode != 0:
