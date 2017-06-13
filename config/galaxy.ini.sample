@@ -1306,7 +1306,7 @@ use_interactive = True
 #
 # https://galaxyproject.org/admin/config/performance/cluster
 #
-#drmaa_external_runjob_script = sudo -E scripts/drmaa_external_runner.py
+#drmaa_external_runjob_script = sudo -E scripts/drmaa_external_runner.py --assign_all_groups
 #drmaa_external_killjob_script = sudo -E scripts/drmaa_external_killer.py
 #external_chown_script = sudo -E scripts/external_chown_script.py
 
