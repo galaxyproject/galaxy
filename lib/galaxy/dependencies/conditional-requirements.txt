@@ -9,6 +9,7 @@ raven
 pbs_python
 drmaa
 statsd
+graphitesend
 azure-storage==0.32.0
 # PyRods not in PyPI
 python-ldap==2.4.27

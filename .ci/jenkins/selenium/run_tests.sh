@@ -36,6 +36,12 @@ docker-compose down | true
 docker-compose build galaxy
 docker-compose up -d
 
+function tear_down {
+    docker-compose down
+}
+
+trap tear_down EXIT
+
 for service_name in postgres galaxy selenium
 do
     echo "Waiting on service ${service_name}"
@@ -79,7 +85,6 @@ do
                 docker logs "${container_id}"
                 echo "---"
             done
-            docker-compose down | true
             exit 1
         fi
     done
@@ -91,6 +96,12 @@ done;
 # Access Selenium on localhost via port $SELENIUM_PORT
 export GALAXY_TEST_SELENIUM_REMOTE=1
 export GALAXY_TEST_SELENIUM_REMOTE_PORT="${SELENIUM_PORT}"
+
+# Retry all failed Selenium tests a second time to deal
+# with transiently failing tests. Failure information for
+# first tests is still populated in database/test_errors
+# and available at the top of the Jenkins test report.
+export GALAXY_TEST_SELENIUM_RETRIES=1
 
 # Access Galaxy on localhost via port $GALAXY_PORT
 export GALAXY_TEST_PORT="${GALAXY_PORT}"
@@ -104,7 +115,5 @@ cd ../../..
 exit_code=$?
 
 cd $TEST_DIRECTORY
-
-docker-compose down
 
 exit $exit_code

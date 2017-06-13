@@ -6,13 +6,12 @@ define([
     'mvc/workflow/workflow-canvas',
     'mvc/workflow/workflow-node',
     'mvc/workflow/workflow-icons',
-    'mvc/tool/tool-form-workflow',
-    'mvc/form/form-view',
+    'mvc/workflow/workflow-forms',
     'mvc/ui/ui-misc',
     'utils/async-save-text',
     'libs/toastr',
     'ui/editable-text'
-], function( Utils, Globals, Workflow, WorkflowCanvas, Node, WorkflowIcons, ToolForm, Form, Ui, async_save_text, Toastr ){
+], function( Utils, Globals, Workflow, WorkflowCanvas, Node, WorkflowIcons, FormWrappers, Ui, async_save_text, Toastr ){
 
     // Reset tool search to start state.
     function reset_tool_search( initValue ) {
@@ -62,7 +61,6 @@ define([
             var self = Globals.app = this;
             this.options = options;
             this.urls = options && options.urls || {};
-            this.active_ajax_call = false;
             var close_editor = function() {
                 self.workflow.check_changes_in_active_form();
                 if ( workflow && self.workflow.has_changes ) {
@@ -95,56 +93,37 @@ define([
                     return;
                 }
                 self.workflow.rectify_workflow_outputs();
-                var savefn = function(callback) {
-                    $.ajax( {
-                        url: self.urls.save_workflow,
-                        type: "POST",
-                        data: {
-                            id: self.options.id,
-                            workflow_data: function() { return JSON.stringify( self.workflow.to_simple() ); },
-                            "_": "true"
-                        },
-                        dataType: 'json',
-                        success: function( data ) {
-                            var body = $("<div></div>").text( data.message );
-                            if ( data.errors ) {
-                                body.addClass( "warningmark" );
-                                var errlist = $( "<ul/>" );
-                                $.each( data.errors, function( i, v ) {
-                                    $("<li></li>").text( v ).appendTo( errlist );
-                                });
-                                body.append( errlist );
-                            } else {
-                                body.addClass( "donemark" );
-                            }
-                            self.workflow.name = data.name;
-                            self.workflow.has_changes = false;
-                            self.workflow.stored = true;
-                            self.showWorkflowParameters();
-                            if ( data.errors ) {
-                                window.show_modal( "Saving workflow", body, { "Ok" : hide_modal } );
-                            } else {
-                                if (callback) {
-                                    callback();
-                                }
-                                hide_modal();
-                            }
+                Utils.request( {
+                    url: Galaxy.root + 'api/workflows/' + self.options.id,
+                    type: "PUT",
+                    data: { workflow: self.workflow.to_simple() },
+                    success: function( data ) {
+                        var body = $( "<div/>" ).text( data.message );
+                        if ( data.errors ) {
+                            body.addClass( "warningmark" );
+                            var errlist = $( "<ul/>" );
+                            $.each( data.errors, function( i, v ) {
+                                $( "<li/>" ).text( v ).appendTo( errlist );
+                            });
+                            body.append( errlist );
+                        } else {
+                            body.addClass( "donemark" );
                         }
-                    });
-                };
-
-                // We bind to ajaxStop because of auto-saving, since the form submission ajax
-                // call needs to be completed so that the new data is saved
-                if (self.active_ajax_call) {
-                    $(document).bind('ajaxStop.save_workflow', function() {
-                        $(document).unbind('ajaxStop.save_workflow');
-                        savefn();
-                        $(document).unbind('ajaxStop.save_workflow'); // IE7 needs it here
-                        self.active_ajax_call = false;
-                    });
-                } else {
-                    savefn(success_callback);
-                }
+                        self.workflow.name = data.name;
+                        self.workflow.has_changes = false;
+                        self.workflow.stored = true;
+                        self.showWorkflowParameters();
+                        if ( data.errors ) {
+                            window.show_modal( "Saving workflow", body, { "Ok" : hide_modal } );
+                        } else {
+                            success_callback && success_callback();
+                            hide_modal();
+                        }
+                    },
+                    error: function( response ) {
+                        window.show_modal( "Saving workflow failed.", response.err_msg, { "Ok" : hide_modal } );
+                    }
+                });
             };
 
             // Init searching.
@@ -273,21 +252,6 @@ define([
                  }
             });
 
-            // For autosave purposes
-            $(document).ajaxStart( function() {
-                self.active_ajax_call = true;
-                $(document).bind( "ajaxStop.global", function() {
-                    self.active_ajax_call = false;
-                });
-            });
-
-            $(document).ajaxError( function ( e, x ) {
-                // console.log( e, x );
-                var message = x.responseText || x.statusText || "Could not connect to server";
-                window.show_modal( "Server error", message, { "Ignore error" : hide_modal } );
-                return false;
-            });
-
             window.make_popupmenu && make_popupmenu( $("#workflow-options-button"), {
                 "Save" : save_current_workflow,
                 "Save As": workflow_save_as,
@@ -317,7 +281,7 @@ define([
                                 }
                             }).done(function(id){
                                 window.onbeforeunload = undefined;
-                                window.location = "/workflow/editor?id=" + id;
+                                window.location = Galaxy.root + "workflow/editor?id=" + id;
                                 hide_modal();
                             }).fail(function(){
                                 hide_modal();
@@ -690,57 +654,70 @@ define([
         },
 
         showForm: function ( content, node ) {
+            var self = this;
             var cls = 'right-content';
             var id  = cls + '-' + node.id;
             var $container = $( '#' + cls );
             if ( content && $container.find( '#' + id ).length == 0 ) {
                 var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );
-                var form = null;
-                if ( node.type == 'tool' ) {
-                    var options = content;
-                    options.node = node;
-                    options.workflow = this.workflow;
-                    options.datatypes = this.datatypes;
-                    form = new ToolForm.View( options );
-                } else {
-                    content.cls = 'ui-portlet-narrow';
-                    if ( content.inputs && content.inputs.length > 0 ) {
-                        content.inputs.unshift({
-                            type    : 'text',
-                            name    : 'label',
-                            label   : 'Label',
-                            value   : node.label,
-                            help    : 'Add a step label.'
-                        });
-                        content.inputs.push({
-                            type    : 'text',
-                            name    : 'annotation',
-                            label   : 'Annotation',
-                            value   : node.annotation,
-                            area    : true,
-                            help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
-                        });
-                        content.onchange = function() {
-                            Utils.request({
-                                type    : 'POST',
-                                url     :  Galaxy.root + 'api/workflows/build_module',
-                                data    : {
-                                    id      : node.id,
-                                    type    : node.type,
-                                    inputs  : form.data.create()
-                                },
-                                success : function( data ) {
-                                    node.update_field_data( data );
-                                }
-                            });
-                        };
-                    } else {
-                        content.message = 'No inputs available for this module.';
-                        content.message_status = 'info';
+                var form_wrapper = null;
+                content.node = node;
+                content.workflow = this.workflow;
+                content.datatypes = this.datatypes;
+                content.icon = WorkflowIcons[ node.type ];
+                content.cls = 'ui-portlet-narrow';
+                content.inputs.unshift({
+                    type    : 'text',
+                    name    : '__annotation',
+                    label   : 'Annotation',
+                    fixed   : true,
+                    value   : node.annotation,
+                    area    : true,
+                    help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
+                });
+                content.inputs.unshift({
+                    type    : 'text',
+                    name    : '__label',
+                    label   : 'Label',
+                    value   : node.label,
+                    help    : 'Add a step label.',
+                    fixed   : true,
+                    onchange: function( new_label ) {
+                        var duplicate = false;
+                        for ( var i in self.workflow.nodes ) {
+                            var n = self.workflow.nodes[ i ];
+                            if ( n.label && n.label == new_label && n.id != node.id ) {
+                                duplicate = true;
+                                break;
+                            }
+                        }
+                        var input_id = form_wrapper.form.data.match( '__label' );
+                        var input_element = form_wrapper.form.element_list[ input_id ];
+                        input_element.model.set( 'error_text', duplicate && 'Duplicate label. Please fix this before saving the workflow.' );
+                        form_wrapper.form.trigger( 'change' );
                     }
-                    form = new Form( content );
+                });
+                content.onchange = function() {
+                    Utils.request({
+                        type    : 'POST',
+                        url     :  Galaxy.root + 'api/workflows/build_module',
+                        data    : {
+                            id          : node.id,
+                            type        : node.type,
+                            content_id  : node.content_id,
+                            inputs      : form_wrapper.form.data.create()
+                        },
+                        success : function( data ) {
+                            node.update_field_data( data );
+                        }
+                    });
+                };
+                if ( node.type == 'tool' ) {
+                    form_wrapper = new FormWrappers.Tool( content );
+                } else {
+                    form_wrapper = new FormWrappers.Default( content );
                 }
-                $el.append( form.$el );
+                $el.append( form_wrapper.form.$el );
                 $container.append( $el );
             }
             $( '.' + cls ).hide();

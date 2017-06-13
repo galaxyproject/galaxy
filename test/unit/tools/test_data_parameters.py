@@ -163,7 +163,7 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         self._param = None
 
     def stub_active_datasets( self, *hdas ):
-        self.test_history._active_datasets_children_and_roles = [ h for h in hdas if not h.deleted ]
+        self.test_history._active_datasets_and_roles = [ h for h in hdas if not h.deleted ]
 
     def _simple_field( self, **kwds ):
         return self.param.to_dict( trans=self.trans, **kwds )
@@ -204,11 +204,11 @@ class MockHistoryDatasetAssociation( object ):
         )
         self.dbkey = "hg19"
         self.implicitly_converted_parent_datasets = False
-
         self.name = name
         self.hid = id
         self.id = id
         self.children = []
+        self.tags = []
 
     @property
     def state( self ):

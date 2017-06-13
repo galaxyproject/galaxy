@@ -37,16 +37,16 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         Run_table.create()
-    except Exception as e:
-        log.debug( "Creating Run_table table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating Run_table table failed.")
     try:
         RequestTypeRunAssociation_table.create()
-    except Exception as e:
-        log.debug( "Creating RequestTypeRunAssociation table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating RequestTypeRunAssociation table failed.")
     try:
         SampleRunAssociation_table.create()
-    except Exception as e:
-        log.debug( "Creating SampleRunAssociation table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating SampleRunAssociation table failed.")
 
 
 def downgrade(migrate_engine):
@@ -55,13 +55,13 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         SampleRunAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping SampleRunAssociation table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping SampleRunAssociation table failed.")
     try:
         RequestTypeRunAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping RequestTypeRunAssociation table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping RequestTypeRunAssociation table failed.")
     try:
         Run_table.drop()
-    except Exception as e:
-        log.debug( "Dropping Run_table table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping Run_table table failed.")

@@ -22,9 +22,8 @@ def upgrade(migrate_engine):
         c = Column( "info", TrimmedString(255), nullable=True )
         c.create( task_table )
         assert c is task_table.c.info
-    except Exception as e:
-        print("Adding info column to table table failed: %s" % str( e ))
-        log.debug( "Adding info column to task table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding info column to task table failed.")
 
 
 def downgrade(migrate_engine):
@@ -33,6 +32,5 @@ def downgrade(migrate_engine):
     try:
         task_table = Table( "task", metadata, autoload=True )
         task_table.c.info.drop()
-    except Exception as e:
-        print("Dropping info column from task table failed: %s" % str( e ))
-        log.debug( "Dropping info column from task table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping info column from task table failed.")

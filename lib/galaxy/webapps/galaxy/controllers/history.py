@@ -111,7 +111,7 @@ class HistoryListGrid( grids.Grid ):
         grids.GridOperation( "View", allow_multiple=False ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, inbound=True  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, target="inbound"  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "Delete Permanently", condition=( lambda item: not item.purged ), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), async_compatible=True ),
@@ -630,7 +630,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         except Exception as exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
-            log.exception( 'Error bootstrapping history for user %s: %s', user_id, exc )
+            log.exception( 'Error bootstrapping history for user %s', user_id )
             if isinstance( exc, exceptions.ItemAccessibilityException ):
                 error_msg = 'You do not have permission to view this history.'
             else:
@@ -825,6 +825,20 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                     histories=histories,
                                     email=email,
                                     send_to_err=send_to_err )
+
+    @web.expose
+    def adjust_hidden( self, trans, id=None, **kwd ):
+        """ THIS METHOD IS A TEMPORARY ADDITION. It'll allow us to fix the
+        regression in history-wide actions, and will be removed in the first
+        release after 17.01 """
+        action = kwd.get('user_action', None)
+        if action == 'delete':
+            for hda in trans.history.datasets:
+                if not hda.visible:
+                    hda.mark_deleted()
+        elif action == 'unhide':
+            trans.history.unhide_datasets()
+        trans.sa_session.flush()
 
     @web.expose
     @web.require_login( "share restricted histories with other users" )
@@ -1246,21 +1260,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             trans.sa_session.flush()
         return
         # TODO: used in page/editor.mako
-
-    @web.expose
-    def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
-        """Return autocomplete data for history names"""
-        user = trans.get_user()
-        if not user:
-            return
-
-        ac_data = ""
-        for history in ( trans.sa_session.query( model.History )
-                         .filter_by( user=user )
-                         .filter( func.lower( model.History.name ).like(q.lower() + "%") ) ):
-            ac_data = ac_data + history.name + "\n"
-        return ac_data
-        # TODO: used in grid_base.mako
 
     @web.expose
     @web.require_login( "rename histories" )

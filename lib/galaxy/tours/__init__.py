@@ -74,7 +74,7 @@ class ToursRegistry(object):
                 log.info("Loaded tour '%s'" % tour_id)
                 return tour
         except IOError:
-            log.exception("Tour '%s' could not be loaded, error reading file." % tour_id)
+            log.exception("Tour '%s' could not be loaded, error reading file.", tour_id)
         except yaml.error.YAMLError:
-            log.exception("Tour '%s' could not be loaded, error within file.  Please check your yaml syntax." % tour_id)
+            log.exception("Tour '%s' could not be loaded, error within file.  Please check your yaml syntax.", tour_id)
         return None

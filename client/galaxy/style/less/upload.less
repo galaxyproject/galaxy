@@ -86,6 +86,13 @@
                 font-size : @font-size-small;
                 float: left;
             }
+            /* Add back in lenght of extension, genome, and settings. */
+            .upload-title-extended {
+                width: 380px;
+                word-wrap: break-word;
+                font-size : @font-size-small;
+                float: left;            
+            }
             .upload-size {
                 width: 60px;
                 white-space: nowrap;
@@ -258,9 +265,20 @@
         padding-left: 60px;
         padding-right: 20px;
     }
+    .upload-footer-title-compressed {
+        font-weight: bold;
+        padding-left: 20px;
+        padding-right: 10px;
+    }
     .upload-footer-selection{
         width:200px;
         min-width:200px;
+        font-size:11px;
+        padding-right: 10px;
+    }
+    .upload-footer-selection-compressed{
+        width:120px;
+        min-width:120px;
         font-size:11px;
         padding-right: 10px;
     }

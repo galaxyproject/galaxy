@@ -10,17 +10,18 @@ from galaxy import web
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import MessageException
 from galaxy.model import tool_shed_install as install_model
-from galaxy.model.util import pgcalc
 from galaxy.util import nice_size, sanitize_text, url_get
 from galaxy.util.odict import odict
 from galaxy.web import url_for
-from galaxy.web.base.controller import BaseUIController, UsesQuotaMixin
+from galaxy.web.base import controller
+from galaxy.web.base.controller import UsesQuotaMixin
 from galaxy.web.base.controllers.admin import Admin
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
 from galaxy.tools import global_tool_errors
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
+from tool_shed.util import repository_util
 from tool_shed.util.web_util import escape
 
 log = logging.getLogger( __name__ )
@@ -92,7 +93,8 @@ class UserListGrid( grids.Grid ):
                      model_class=model.User,
                      link=( lambda item: dict( operation="information", id=item.id, webapp="galaxy" ) ),
                      attach_popup=True,
-                     filterable="advanced" ),
+                     filterable="advanced",
+                     target="top" ),
         UserNameColumn( "User Name",
                         key="username",
                         model_class=model.User,
@@ -490,7 +492,7 @@ class ToolVersionListGrid( grids.Grid ):
         return trans.install_model.context.query( self.model_class )
 
 
-class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaParamParser ):
+class AdminGalaxy( controller.JSAppLauncher, Admin, AdminActions, UsesQuotaMixin, QuotaParamParser ):
 
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
@@ -500,6 +502,18 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     delete_operation = grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True )
     undelete_operation = grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
     purge_operation = grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True )
+
+    @web.expose
+    @web.require_admin
+    def index( self, trans, **kwd ):
+        message = escape( kwd.get( 'message', ''  ) )
+        status = kwd.get( 'status', 'done' )
+        settings = {
+            'is_repo_installed'          : trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None,
+            'installing_repository_ids'  : repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True ),
+            'is_tool_shed_installed'     : bool( trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds )
+        }
+        return self.template( trans, 'admin', settings=settings, message=message, status=status )
 
     @web.expose
     @web.require_admin
@@ -874,27 +888,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
         if not user:
             return trans.show_error_message( "User not found for id (%s)" % sanitize_text( str( user_id ) ) )
-        engine = None
-        if trans.app.config.database_connection:
-            engine = trans.app.config.database_connection.split(':')[0]
-        if engine not in ( 'postgres', 'postgresql' ):
-            done = False
-            while not done:
-                current = user.get_disk_usage()
-                new = user.calculate_disk_usage()
-                trans.sa_session.refresh( user )
-                # make sure usage didn't change while calculating, set done
-                if user.get_disk_usage() == current:
-                    done = True
-                if new not in (current, None):
-                    user.set_disk_usage( new )
-                    trans.sa_session.add( user )
-                    trans.sa_session.flush()
-        else:
-            # We can use the lightning fast pgcalc!
-            current = user.get_disk_usage()
-            new = pgcalc( self.sa_session, user.id )
-        # yes, still a small race condition between here and the flush
+        current = user.get_disk_usage()
+        user.calculate_and_set_disk_usage()
+        new = user.get_disk_usage()
         if new in ( current, None ):
             message = 'Usage is unchanged at %s.' % nice_size( current )
         else:

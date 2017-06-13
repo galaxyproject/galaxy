@@ -34,34 +34,109 @@ for i = 1, #binds_table do
     table.insert(bind_args, binds_table[i])
 end
 
+local test_bind_args = {}
+local test_binds_table = VAR.TEST_BINDS:split(",")
+for i = 1, #test_binds_table do
+    table.insert(test_bind_args, test_binds_table[i])
+end
+
+local conda_image = VAR.CONDA_IMAGE
+if conda_image == '' then
+    conda_image = 'continuumio/miniconda:latest'
+end
+
+
+local singularity_image = VAR.SINGULARITY_IMAGE
+if singularity_image == '' then
+    singularity_image = 'quay.io/biocontainers/singularity:2.3--0'
+end
+
+
+local destination_base_image = VAR.DEST_BASE_IMAGE
+if destination_base_image == '' then
+    destination_base_image = 'bgruening/busybox-bash:0.1'
+end
+
+local verbose = VAR.VERBOSE
+if verbose == '' then
+    verbose = '--quiet'
+else
+    verbose = '--verbose'
+end
+
+local preinstall = VAR.PREINSTALL
+if preinstall ~= '' then
+    preinstall = preinstall .. ' && '
+end
+
+local postinstall = VAR.POSTINSTALL
+if postinstall ~= '' then
+    postinstall = '&&' .. postinstall
+end
+
 inv.task('build')
-    .using('continuumio/miniconda:latest')
+    .using(conda_image)
         .withHostConfig({binds = {"build:/data"}})
         .run('rm', '-rf', '/data/dist')
-    .using('continuumio/miniconda:latest')
+    .using(conda_image)
         .withHostConfig({binds = bind_args})
-        .run('/bin/sh', '-c', 'conda install '
+        .run('/bin/sh', '-c', preinstall
+            .. 'conda install '
             .. channel_args .. ' '
             .. target_args
-            .. ' -p /usr/local --copy --yes --quiet')
+            .. ' -p /usr/local --copy --yes '
+            .. verbose
+            .. postinstall)
     .wrap('build/dist')
         .at('/usr/local')
-        .inImage('bgruening/busybox-bash:0.1')
+        .inImage(destination_base_image)
         .as(repo)
 
-inv.task('test')
-    .using(repo)
-    .withConfig({entrypoint = {'/bin/sh', '-c'}})
-    .run(VAR.TEST)
+if VAR.SINGULARITY ~= '' then
+    inv.task('singularity')
+        .using(singularity_image)
+        .withHostConfig({binds = {"build:/data","singularity_import:/import"}, privileged = true})
+        .withConfig({entrypoint = {'/bin/sh', '-c'}})
+        -- this will create a container that is the size of our conda dependencies + 20MiB
+        -- The 20 MiB can be improved at some point, but this seems to work for now.
+        .run("du -sc  /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)+20}'")
+        .run("singularity create --size `du -sc  /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)+20}'` /import/" .. VAR.SINGULARITY_IMAGE_NAME)
+        .run('mkdir -p /usr/local/var/singularity/mnt/container && singularity bootstrap /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity')
+        .run('chown ' .. VAR.USER_ID .. ' /import/' .. VAR.SINGULARITY_IMAGE_NAME)
+end
+
+inv.task('cleanup')
+    .using(conda_image)
+    .withHostConfig({binds = {"build:/data"}})
+    .run('rm', '-rf', '/data/dist')
+
+
+if VAR.TEST_BINDS == '' then
+    inv.task('test')
+        .using(repo)
+        .withConfig({entrypoint = {'/bin/sh', '-c'}})
+        .run(VAR.TEST)
+else
+    inv.task('test')
+        .using(repo)
+        .withHostConfig({binds = test_bind_args})
+        .withConfig({entrypoint = {'/bin/sh', '-c'}})
+        .run(VAR.TEST)
+end
 
 inv.task('push')
     .push(repo)
 
 inv.task('build-and-test')
     .runTask('build')
+    .runTask('singularity')
+    .runTask('cleanup')
     .runTask('test')
+
 
 inv.task('all')
     .runTask('build')
+    .runTask('singularity')
+    .runTask('cleanup')
     .runTask('test')
     .runTask('push')

@@ -13,6 +13,7 @@ from galaxy import model
 from galaxy import util
 from galaxy import exceptions
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.util.json import safe_loads
 from galaxy.workflow import modules
 from .base import decode_id
 
@@ -337,7 +338,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow = stored.latest_workflow
         if len( workflow.steps ) == 0:
             raise exceptions.MessageException( 'Workflow cannot be run because it does not have any steps.' )
-        if workflow.has_cycles:
+        if attach_ordered_steps( workflow, workflow.steps ):
             raise exceptions.MessageException( 'Workflow cannot be run because it contains cycles.' )
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector( trans )
@@ -370,10 +371,6 @@ class WorkflowContentsManager(UsesAnnotations):
         step_models = []
         for i, step in enumerate( workflow.steps ):
             step_model = None
-
-            def step_title(step, default_name):
-                return "%d: %s" % (step.order_index + 1, step.label or default_name)
-
             if step.type == 'tool':
                 incoming = {}
                 tool = trans.app.toolbox.get_tool( step.tool_id )
@@ -385,14 +382,15 @@ class WorkflowContentsManager(UsesAnnotations):
                     'output_name'       : pja.output_name,
                     'action_arguments'  : pja.action_arguments
                 } for pja in step.post_job_actions ]
-                step_model["name"] = step_title(step, step_model.get("name"))
             else:
                 inputs = step.module.get_runtime_inputs( connections=step.output_connections )
                 step_model = {
-                    'name'   : step_title(step, step.module.name),
                     'inputs' : [ input.to_dict( trans ) for input in inputs.itervalues() ]
                 }
             step_model[ 'step_type' ] = step.type
+            step_model[ 'step_label' ] = step.label
+            step_model[ 'step_name' ] = step.module.get_name()
+            step_model[ 'step_version' ] = step.module.get_version()
             step_model[ 'step_index' ] = step.order_index
             step_model[ 'output_connections' ] = [ {
                 'input_step_index'  : step_order_indices.get( oc.input_step_id ),
@@ -415,8 +413,6 @@ class WorkflowContentsManager(UsesAnnotations):
         }
 
     def _workflow_to_dict_editor(self, trans, stored):
-        """
-        """
         workflow = stored.latest_workflow
         # Pack workflow data into a dictionary and return
         data = {}
@@ -429,6 +425,8 @@ class WorkflowContentsManager(UsesAnnotations):
             module = module_factory.from_workflow_step( trans, step )
             if not module:
                 raise exceptions.MessageException( 'Unrecognized step type: %s' % step.type )
+            # Load label from state of data input modules, necessary for backward compatibility
+            self.__set_default_label( step, module, step.tool_inputs )
             # Fix any missing parameters
             upgrade_message = module.check_and_update_state()
             if upgrade_message:
@@ -452,6 +450,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict = {
                 'id': step.order_index,
                 'type': module.type,
+                'label': module.label,
                 'content_id': module.get_content_id(),
                 'name': module.get_name(),
                 'tool_state': module.get_state(),
@@ -463,7 +462,6 @@ class WorkflowContentsManager(UsesAnnotations):
                 'annotation': annotation_str,
                 'post_job_actions': {},
                 'uuid': str(step.uuid) if step.uuid else None,
-                'label': step.label or None,
                 'workflow_outputs': []
             }
             # Connections
@@ -563,10 +561,10 @@ class WorkflowContentsManager(UsesAnnotations):
                 annotation_str = step_annotation.annotation
             content_id = module.get_content_id()
             # Export differences for backward compatibility
-            if module.type != 'tool':
-                tool_state = json.dumps( module.state.inputs )
+            if module.type == 'tool':
+                tool_state = module.get_state( nested=False )
             else:
-                tool_state = module.get_state()
+                tool_state = module.state.inputs
             # Step info
             step_dict = {
                 'id': step.order_index,
@@ -576,7 +574,7 @@ class WorkflowContentsManager(UsesAnnotations):
                                         # eliminate after a few years...
                 'tool_version': step.tool_version,
                 'name': module.get_name(),
-                'tool_state': tool_state,
+                'tool_state': json.dumps( tool_state ),
                 'errors': module.get_errors(),
                 'uuid': str(step.uuid),
                 'label': step.label or None,
@@ -615,7 +613,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # Data inputs
             input_dicts = []
-            step_state = module.state.inputs
+            step_state = module.state.inputs or {}
             if "name" in step_state:
                 name = step_state.get( "name" )
                 input_dicts.append( { "name": name, "description": annotation_str } )
@@ -711,9 +709,9 @@ class WorkflowContentsManager(UsesAnnotations):
         inputs = {}
         for step in workflow.input_steps:
             step_type = step.type
-            step_name = step.name
-            if step_name:
-                label = step_name
+            step_label = step.label or step.tool_inputs.get( 'name' )
+            if step_label:
+                label = step_label
             elif step_type == "data_input":
                 label = "Input Dataset"
             elif step_type == "data_collection_input":
@@ -748,9 +746,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 del step_dict['tool_id']
                 del step_dict['tool_version']
                 del step_dict['tool_inputs']
-                workflow = step.subworkflow
-                step_dict['stored_workflow_id'] = encode(workflow.stored_workflow.id)
-                step_dict['workflow_id'] = encode(workflow.id)
+                step_dict['workflow_id'] = encode(step.subworkflow.id)
 
             for conn in step.input_connections:
                 step_id = step.id if legacy else step.order_index
@@ -826,7 +822,7 @@ class WorkflowContentsManager(UsesAnnotations):
         step = model.WorkflowStep()
         # TODO: Consider handling position inside module.
         step.position = step_dict['position']
-        if "uuid" in step_dict and step_dict['uuid'] != "None":
+        if step_dict.get("uuid", None) and step_dict['uuid'] != "None":
             step.uuid = step_dict["uuid"]
         if "label" in step_dict:
             step.label = step_dict["label"]
@@ -838,6 +834,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict["subworkflow"] = subworkflow
 
         module = module_factory.from_dict( trans, step_dict, **kwds )
+        self.__set_default_label( step, module, step_dict.get( 'tool_state' ) )
         module.save_to_step( step )
 
         annotation = step_dict[ 'annotation' ]
@@ -926,6 +923,16 @@ class WorkflowContentsManager(UsesAnnotations):
                         conn.input_subworkflow_step = step.subworkflow.step_by_index(input_subworkflow_step_index)
 
             del step.temp_input_connections
+
+    def __set_default_label( self, step, module, state ):
+        """ Previously data input modules had a `name` attribute to rename individual steps. Here, this value is transferred
+        to the actual `label` attribute which is available for all module types, unique, and mapped to its own database column.
+        """
+        if not module.label and module.type in [ 'data_input', 'data_collection_input' ]:
+            new_state = safe_loads( state )
+            default_label = new_state.get( 'name' )
+            if str( default_label ).lower() not in [ 'input dataset', 'input dataset collection' ]:
+                step.label = module.label = default_label
 
 
 class MissingToolsException(exceptions.MessageException):

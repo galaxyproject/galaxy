@@ -10,6 +10,7 @@ from sqlalchemy import false, true
 from galaxy import datatypes, model, util, web
 from galaxy import managers
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import inflector, smart_str
 from galaxy.util.sanitize_html import sanitize_html
@@ -52,13 +53,12 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     # Grid definition
     title = "Saved Datasets"
     model_class = model.HistoryDatasetAssociation
-    template = '/dataset/grid.mako'
     default_sort_key = "-update_time"
     columns = [
         grids.TextColumn( "Name", key="name",
                           # Link name to dataset's history.
                           link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True ),
-        HistoryColumn( "History", key="history", sortable=False, inbound=True,
+        HistoryColumn( "History", key="history", sortable=False, target="inbound",
                        link=( lambda item: iff( item.history.deleted, None, dict( operation="switch_history", id=item.id ) ) ) ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid" ),
         StatusColumn( "Status", key="deleted", attach_popup=False ),
@@ -235,6 +235,13 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         data = self._check_dataset(trans, dataset_id)
         if not isinstance( data, trans.app.model.DatasetInstance ):
             return data
+        if "hdca" in kwd:
+            raise RequestParameterInvalidException("Invalid request parameter 'hdca' encountered.")
+        hdca_id = kwd.get("hdca_id", None)
+        if hdca_id:
+            hdca = self.app.dataset_collections_service.get_dataset_collection_instance( trans, "history", hdca_id )
+            del kwd["hdca_id"]
+            kwd["hdca"] = hdca
         # Ensure offset is an integer before passing through to datatypes.
         if offset:
             offset = int(offset)
@@ -455,6 +462,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( dataset_id ) )
 
     @web.expose
+    @web.json
     @web.require_login( "see all available datasets" )
     def list( self, trans, **kwargs ):
         """List all available datasets"""
@@ -493,9 +501,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     status, message = trans.webapp.controllers['history']._list_switch( trans, histories )
 
                     # Current history changed, refresh history frame; if switching to a dataset, set hda seek.
-                    trans.template_context['refresh_frames'] = ['history']
+                    kwargs['refresh_frames'] = ['history']
                     if operation == "switch":
                         hda_ids = [ trans.security.encode_id( hda.id ) for hda in hdas ]
+                        # TODO: Highlighting does not work, has to be revisited
                         trans.template_context[ 'seek_hda_ids' ] = hda_ids
                 elif operation == "copy to current history":
                     #
@@ -509,9 +518,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     status, message = self._copy_datasets( trans, hda_ids, target_histories )
 
                     # Current history changed, refresh history frame.
-                    trans.template_context['refresh_frames'] = ['history']
+                    kwargs['refresh_frames'] = ['history']
 
         # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self.stored_list_grid( trans, status=status, message=message, **kwargs )
 
     @web.expose

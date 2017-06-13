@@ -274,7 +274,16 @@ class InteractiveEnvironmentPlugin( VisualizationPlugin ):
             render_vars[ 'plugin_path' ] = os.path.abspath( self.path )
 
         if self.config.get( 'plugin_type', 'visualization' ) == "interactive_environment":
-            request = self.INTENV_REQUEST_FACTORY( trans, self )
+            try:
+                request = self.INTENV_REQUEST_FACTORY( trans, self )
+            except:
+                log.exception("IE plugin request handling failed")
+                return trans.fill_template( 'message.mako',
+                    message='Loading the interactive environment failed, please contact the {admin_tag} for assistance'.format(
+                        admin_tag='<a href="mailto:{admin_mail}">Galaxy administrator</a>'.format(
+                            admin_mail=trans.app.config.error_email_to)
+                        if trans.app.config.error_email_to else 'Galaxy administrator'),
+                    status='error')
             render_vars[ "ie_request" ] = request
 
         template_filename = self.config[ 'entry_point' ][ 'file' ]

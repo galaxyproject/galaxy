@@ -80,7 +80,7 @@ class TabularData( data.Text ):
             return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(trans, dataset, to_ext)
+            return self._serve_raw(trans, dataset, to_ext, **kwd)
         elif dataset.metadata.columns > 50:
             # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
@@ -167,7 +167,7 @@ class TabularData( data.Text ):
                 out.append( '</th>' )
             out.append( '</tr>' )
         except Exception as exc:
-            log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
+            log.exception( 'make_html_peek_header failed on HDA %s', dataset.id )
             raise Exception( "Can't create peek header %s" % str( exc ) )
         return "".join( out )
 
@@ -198,7 +198,7 @@ class TabularData( data.Text ):
                             out.append( '<td>%s</td>' % escape( elem ) )
                         out.append( '</tr>' )
         except Exception as exc:
-            log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
+            log.exception( 'make_html_peek_rows failed on HDA %s', dataset.id )
             raise Exception( "Can't create peek rows %s" % str( exc ) )
         return "".join( out )
 
@@ -407,7 +407,7 @@ class Taxonomy( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super(Taxonomy, self).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
 
 @dataproviders.decorators.has_dataproviders
@@ -427,7 +427,7 @@ class Sam( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Sam, self ).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def sniff( self, filename ):
         """
@@ -613,7 +613,7 @@ class Pileup( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Pileup, self ).make_html_table( dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'baseCol': 'Base'} )
+        return self.make_html_table( dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'baseCol': 'Base'} )
 
     def repair_methods( self, dataset ):
         """Return options for removing errors along with a description"""
@@ -690,7 +690,7 @@ class Vcf( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Vcf, self ).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def set_meta( self, dataset, **kwd ):
         super( Vcf, self ).set_meta( dataset, **kwd )

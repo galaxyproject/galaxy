@@ -21,12 +21,14 @@ from datetime import timedelta
 from six import string_types
 from six.moves import configparser
 
+from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
+from galaxy.util import ExecutionTimer
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.util.postfork import register_postfork_function
 from galaxy.web.formatting import expand_pretty_datetime_format
+from galaxy.web.stack import register_postfork_function
 from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
@@ -52,6 +54,7 @@ PATH_DEFAULTS = dict(
     workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
     modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
     local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
+    containers_config_file=['config/containers_conf.yml'],
 )
 
 PATH_LIST_DEFAULTS = dict(
@@ -124,6 +127,7 @@ class Configuration( object ):
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         self.database_query_profiling_proxy = string_as_bool( kwargs.get( "database_query_profiling_proxy", "False" ) )
+        self.slow_query_log_threshold = float( kwargs.get( "slow_query_log_threshold", 0) )
 
         # Don't set this to true for production databases, but probably should
         # default to True for sqlite databases.
@@ -243,7 +247,11 @@ class Configuration( object ):
             log.warn("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             preserve_python_environment = "legacy_only"
         self.preserve_python_environment = preserve_python_environment
+        # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
+        # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
+        if not os.path.exists( self.container_image_cache_path ):
+            self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_cache" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
         self.retry_job_output_collection = int( kwargs.get( 'retry_job_output_collection', 0 ) )
@@ -304,7 +312,7 @@ class Configuration( object ):
 
         # Enable new interface for API installations from TS.
         # Admin menu will list both if enabled.
-        self.enable_beta_ts_api_install = string_as_bool( kwargs.get( 'enable_beta_ts_api_install', 'False' ) )
+        self.enable_beta_ts_api_install = string_as_bool( kwargs.get( 'enable_beta_ts_api_install', 'True' ) )
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
         # These workflow modules should not be considered part of Galaxy's
@@ -315,6 +323,8 @@ class Configuration( object ):
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool( kwargs.get( 'enable_beta_tool_formats', 'False' ) )
+        # Beta containers interface used by GIEs
+        self.enable_beta_containers_interface = string_as_bool( kwargs.get( 'enable_beta_containers_interface', 'False' ) )
 
         # Certain modules such as the pause module will automatically cause
         # workflows to be scheduled in job handlers the way all workflows will
@@ -325,6 +335,8 @@ class Configuration( object ):
         self.force_beta_workflow_scheduled_for_collections = string_as_bool( kwargs.get( 'force_beta_workflow_scheduled_for_collections', 'False' ) )
 
         self.history_local_serial_workflow_scheduling = string_as_bool( kwargs.get( 'history_local_serial_workflow_scheduling', 'False' ) )
+        self.parallelize_workflow_scheduling_within_histories = string_as_bool( kwargs.get( 'parallelize_workflow_scheduling_within_histories', 'False' ) )
+        self.maximum_workflow_invocation_duration = int( kwargs.get( "maximum_workflow_invocation_duration", 2678400 ) )
 
         # Per-user Job concurrency limitations
         self.cache_user_job_count = string_as_bool( kwargs.get( 'cache_user_job_count', False ) )
@@ -362,8 +374,9 @@ class Configuration( object ):
         self.message_box_visible = string_as_bool( kwargs.get( 'message_box_visible', False ) )
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
-        self.support_url = kwargs.get( 'support_url', 'https://wiki.galaxyproject.org/Support' )
-        self.wiki_url = kwargs.get( 'wiki_url', 'https://wiki.galaxyproject.org/' )
+        self.support_url = kwargs.get( 'support_url', 'https://galaxyproject.org/support' )
+        self.citation_url = kwargs.get( 'citation_url', 'https://galaxyproject.org/citing-galaxy' )
+        self.wiki_url = kwargs.get( 'wiki_url', 'https://galaxyproject.org/' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.library_import_dir = kwargs.get( 'library_import_dir', None )
@@ -380,6 +393,7 @@ class Configuration( object ):
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
         self.watch_tools = kwargs.get( 'watch_tools', 'false' )
+        self.watch_tool_data_dir = kwargs.get( 'watch_tool_data_dir', 'false' )
         # On can mildly speed up Galaxy startup time by disabling index of help,
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool( kwargs.get( "index_tool_help", True ) )
@@ -561,6 +575,10 @@ class Configuration( object ):
         self.statsd_host = kwargs.get( 'statsd_host', '')
         self.statsd_port = int( kwargs.get( 'statsd_port', 8125 ) )
         self.statsd_prefix = kwargs.get( 'statsd_prefix', 'galaxy' )
+        # Statistics and profiling with graphite
+        self.graphite_host = kwargs.get( 'graphite_host', '')
+        self.graphite_port = int( kwargs.get( 'graphite_port', 2003 ) )
+        self.graphite_prefix = kwargs.get( 'graphite_prefix', 'galaxy' )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
@@ -574,6 +592,8 @@ class Configuration( object ):
             self.visualization_plugins_directory = ie_dirs
         elif ie_dirs:
             self.visualization_plugins_directory += ",%s" % ie_dirs
+
+        self.gie_swarm_mode = string_as_bool( kwargs.get( 'interactive_environment_swarm_mode', False ) )
 
         self.proxy_session_map = self.resolve_path( kwargs.get( "dynamic_proxy_session_map", "database/session_map.sqlite" ) )
         self.manage_dynamic_proxy = string_as_bool( kwargs.get( "dynamic_proxy_manage", "True" ) )  # Set to false if being launched externally
@@ -595,6 +615,8 @@ class Configuration( object ):
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = self.resolve_path( kwargs.get( "citation_cache_data_dir", "database/citations/data" ) )
         self.citation_cache_lock_dir = self.resolve_path( kwargs.get( "citation_cache_lock_dir", "database/citations/locks" ) )
+
+        self.containers_conf = parse_containers_config(self.containers_config_file)
 
     @property
     def sentry_dsn_public( self ):
@@ -891,42 +913,30 @@ class ConfiguresGalaxyMixin:
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
     def wait_for_toolbox_reload(self, old_toolbox):
+        timer = ExecutionTimer()
         while True:
             # Wait till toolbox reload has been triggered
-            # and make sure toolbox has finished reloading)
-            if self.toolbox.has_reloaded(old_toolbox):
+            # (or more than 60 seconds have passed)
+            if self.toolbox.has_reloaded(old_toolbox) or timer.elapsed > 60:
                 break
-
-            time.sleep(1)
-
-    def reload_toolbox(self):
-        # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
-
-        tool_configs = self.config.tool_configs
-        if self.config.migrated_tools_config not in tool_configs:
-            tool_configs.append( self.config.migrated_tools_config )
-
-        from galaxy import tools
-        old_toolbox = self.toolbox
-        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-        self.reindex_tool_search()
-        if old_toolbox:
-            old_toolbox.shutdown()
+            time.sleep(0.1)
 
     def _configure_toolbox( self ):
+        from galaxy import tools
         from galaxy.managers.citations import CitationsManager
-        self.citations_manager = CitationsManager( self )
-
-        from galaxy.tools.toolbox.cache import ToolCache
+        from galaxy.tools.deps import containers
         from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
-        self.tool_cache = ToolCache()
+        import galaxy.tools.search
+
+        self.citations_manager = CitationsManager( self )
         self.tool_version_cache = ToolVersionCache(self)
 
         self._toolbox_lock = threading.RLock()
-        self.toolbox = None
-        self.reload_toolbox()
-
-        from galaxy.tools.deps import containers
+        # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
+        tool_configs = self.config.tool_configs
+        if self.config.migrated_tools_config not in tool_configs:
+            tool_configs.append( self.config.migrated_tools_config )
+        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
         app_info = containers.AppInfo(
@@ -941,14 +951,14 @@ class ConfiguresGalaxyMixin:
             involucro_auto_init=self.config.involucro_auto_init,
         )
         self.container_finder = containers.ContainerFinder(app_info)
+        index_help = getattr(self.config, "index_tool_help", True)
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch(self.toolbox, index_help)
+        self.reindex_tool_search()
 
-    def reindex_tool_search( self, toolbox=None ):
+    def reindex_tool_search( self ):
         # Call this when tools are added or removed.
-        import galaxy.tools.search
-        index_help = getattr( self.config, "index_tool_help", True )
-        if not toolbox:
-            toolbox = self.toolbox
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( toolbox, index_help )
+        self.toolbox_search.build_index(tool_cache=self.tool_cache)
+        self.tool_cache.reset_status()
 
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager
@@ -1038,7 +1048,8 @@ class ConfiguresGalaxyMixin:
                                    database_query_profiling_proxy=self.config.database_query_profiling_proxy,
                                    object_store=self.object_store,
                                    trace_logger=getattr(self, "trace_logger", None),
-                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ) )
+                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ),
+                                   slow_query_log_threshold=self.config.slow_query_log_threshold )
 
         if combined_install_database:
             log.info("Install database targetting Galaxy's database configuration.")

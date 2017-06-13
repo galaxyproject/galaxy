@@ -7,7 +7,7 @@ from six import string_types, text_type
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
 from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
-from galaxy.util import sanitize_text, unicodify
+from galaxy.util import restore_text, sanitize_text, unicodify
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
 from galaxy.web.framework.helpers import iff
@@ -65,6 +65,7 @@ class Grid( object ):
         # FIXME: pretty sure this is only here to pass along, can likely be eliminated
         status = kwargs.get( 'status', None )
         message = kwargs.get( 'message', None )
+        dict_format = kwargs.get( 'dict_format', False )
         # Build a base filter and sort key that is the combination of the saved state and defaults.
         # Saved state takes preference over defaults.
         base_filter = {}
@@ -285,31 +286,147 @@ class Grid( object ):
         # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
         # results via a controller method, which is require substantial changes. Hence, for now, return grid
         # as str.
-        page = trans.fill_template( iff( async_request, self.async_template, self.template ),
-                                    grid=self,
-                                    query=query,
-                                    cur_page_num=page_num,
-                                    num_pages=num_pages,
-                                    num_page_links=self.num_page_links,
-                                    default_filter_dict=self.default_filter,
-                                    cur_filter_dict=cur_filter_dict,
-                                    sort_key=sort_key,
-                                    current_item=current_item,
-                                    ids=kwargs.get( 'id', [] ),
-                                    url=url,
-                                    status=status,
-                                    message=message,
-                                    info_text=self.info_text,
-                                    use_panels=self.use_panels,
-                                    use_hide_message=self.use_hide_message,
-                                    advanced_search=self.advanced_search,
-                                    show_item_checkboxes=( self.show_item_checkboxes or
-                                                           kwargs.get( 'show_item_checkboxes', '' ) in [ 'True', 'true' ] ),
-                                    # Pass back kwargs so that grid template can set and use args without
-                                    # grid explicitly having to pass them.
-                                    kwargs=kwargs )
+        if not dict_format:
+            page = trans.fill_template( iff( async_request, self.async_template, self.template ),
+                                        grid=self,
+                                        query=query,
+                                        cur_page_num=page_num,
+                                        num_pages=num_pages,
+                                        num_page_links=self.num_page_links,
+                                        default_filter_dict=self.default_filter,
+                                        cur_filter_dict=cur_filter_dict,
+                                        sort_key=sort_key,
+                                        current_item=current_item,
+                                        ids=kwargs.get( 'id', [] ),
+                                        url=url,
+                                        status=status,
+                                        message=message,
+                                        info_text=self.info_text,
+                                        use_panels=self.use_panels,
+                                        use_hide_message=self.use_hide_message,
+                                        advanced_search=self.advanced_search,
+                                        show_item_checkboxes=( self.show_item_checkboxes or
+                                                               kwargs.get( 'show_item_checkboxes', '' ) in [ 'True', 'true' ] ),
+                                        # Pass back kwargs so that grid template can set and use args without
+                                        # grid explicitly having to pass them.
+                                        kwargs=kwargs )
+            trans.log_action( trans.get_user(), text_type( "grid.view" ), context, params )
+            return page
+
+        grid_config = {
+            'title'                         : self.title,
+            'url_base'                      : trans.request.path_url,
+            'async'                         : self.use_async,
+            'async_ops'                     : [],
+            'categorical_filters'           : {},
+            'filters'                       : cur_filter_dict,
+            'sort_key'                      : sort_key,
+            'show_item_checkboxes'          : self.show_item_checkboxes or kwargs.get( 'show_item_checkboxes', '' ) in [ 'True', 'true' ],
+            'cur_page_num'                  : page_num,
+            'num_pages'                     : num_pages,
+            'num_page_links'                : self.num_page_links,
+            'status'                        : status,
+            'message'                       : restore_text(message),
+            'global_actions'                : [],
+            'operations'                    : [],
+            'items'                         : [],
+            'columns'                       : [],
+            'model_class'                   : str( self.model_class ),
+            'use_paging'                    : self.use_paging,
+            'legend'                        : self.legend,
+            'current_item_id'               : False,
+            'use_hide_message'              : self.use_hide_message,
+            'default_filter_dict'           : self.default_filter,
+            'advanced_search'               : self.advanced_search,
+            'info_text'                     : self.info_text,
+            'url'                           : url(dict()),
+            'refresh_frames'                : kwargs.get( 'refresh_frames', [] )
+        }
+        if current_item:
+            grid_config['current_item_id'] = current_item.id
+        for column in self.columns:
+            href = None
+            extra = ''
+            if column.sortable:
+                if sort_key.endswith(column.key):
+                    if not sort_key.startswith("-"):
+                        href = url( sort=( "-" + column.key ) )
+                        extra = "&darr;"
+                    else:
+                        href = url( sort=( column.key ) )
+                        extra = "&uarr;"
+                else:
+                    href = url( sort=column.key )
+            grid_config['columns'].append({
+                'key'               : column.key,
+                'visible'           : column.visible,
+                'nowrap'            : column.nowrap,
+                'attach_popup'      : column.attach_popup,
+                'label_id_prefix'   : column.label_id_prefix,
+                'sortable'          : column.sortable,
+                'label'             : column.label,
+                'filterable'        : column.filterable,
+                'is_text'           : isinstance(column, TextColumn),
+                'href'              : href,
+                'extra'             : extra
+            })
+        for operation in self.operations:
+            grid_config['operations'].append({
+                'allow_multiple'        : operation.allow_multiple,
+                'allow_popup'           : operation.allow_popup,
+                'target'                : operation.target,
+                'label'                 : operation.label,
+                'confirm'               : operation.confirm,
+                'global_operation'      : False
+            })
+            if operation.allow_multiple:
+                grid_config['show_item_checkboxes'] = True
+            if operation.global_operation:
+                grid_config['global_operation'] = url( ** (operation.global_operation()) )
+        for action in self.global_actions:
+            grid_config['global_actions'].append({
+                'url_args'  : url(**action.url_args),
+                'label'     : action.label,
+                'target'    : action.target
+            })
+        for operation in [op for op in self.operations if op.async_compatible]:
+            grid_config['async_ops'].append(operation.label.lower())
+        for column in self.columns:
+            if column.filterable is not None and not isinstance( column, TextColumn ):
+                grid_config['categorical_filters'][column.key] = dict([ (filter.label, filter.args) for filter in column.get_accepted_filters() ])
+        for i, item in enumerate( query ):
+            item_dict = {
+                'id'                    : item.id,
+                'encode_id'             : trans.security.encode_id(item.id),
+                'link'                  : [],
+                'operation_config'      : {},
+                'column_config'         : {}
+            }
+            for column in self.columns:
+                if column.visible:
+                    link = column.get_link(trans, self, item)
+                    if link:
+                        link = url(**link)
+                    else:
+                        link = None
+                    target = column.target
+                    value = column.get_value( trans, self, item )
+                    if isinstance(value, str):
+                        value = unicode(value, 'utf-8')
+                        value = value.replace('/', '//')
+                    item_dict['column_config'][column.label] = {
+                        'link'      : link,
+                        'value'     : value,
+                        'target'    : target
+                    }
+            for operation in self.operations:
+                item_dict['operation_config'][operation.label] = {
+                    'allowed'   : operation.allowed(item),
+                    'url_args'  : url( **operation.get_url_args( item ) )
+                }
+            grid_config['items'].append(item_dict)
         trans.log_action( trans.get_user(), text_type( "grid.view" ), context, params )
-        return page
+        return grid_config
 
     def get_ids( self, **kwargs ):
         id = []
@@ -346,7 +463,7 @@ class GridColumn( object ):
     def __init__( self, label, key=None, model_class=None, method=None, format=None,
                   link=None, attach_popup=False, visible=True, nowrap=False,
                   # Valid values for filterable are ['standard', 'advanced', None]
-                  filterable=None, sortable=True, label_id_prefix=None, inbound=False ):
+                  filterable=None, sortable=True, label_id_prefix=None, target=None ):
         """Create a grid column."""
         self.label = label
         self.key = key
@@ -354,7 +471,7 @@ class GridColumn( object ):
         self.method = method
         self.format = format
         self.link = link
-        self.inbound = inbound
+        self.target = target
         self.nowrap = nowrap
         self.attach_popup = attach_popup
         self.visible = visible
@@ -565,7 +682,7 @@ class OwnerAnnotationColumn( TextColumn, UsesAnnotations ):
                 ann_snippet += "..."
         else:
             ann_snippet = ""
-        return ann_snippet
+        return escape( ann_snippet )
 
     def get_single_filter( self, user, a_filter ):
         """ Filter by annotation and annotation owner. """
@@ -603,7 +720,7 @@ class CommunityTagsColumn( TextColumn ):
                 column_filter = ",".join( column_filter )
             raw_tags = trans.app.tag_handler.parse_tags( column_filter.encode( "utf-8" ) )
             clause_list = []
-            for name, value in raw_tags.items():
+            for name, value in raw_tags:
                 if name:
                     # Filter by all tags.
                     clause_list.append( self.model_class.tags.any( func.lower( self.model_tag_association_class.user_tname ).like( "%" + name.lower() + "%" ) ) )
@@ -633,7 +750,7 @@ class IndividualTagsColumn( CommunityTagsColumn ):
                 column_filter = ",".join( column_filter )
             raw_tags = trans.app.tag_handler.parse_tags( column_filter.encode( "utf-8" ) )
             clause_list = []
-            for name, value in raw_tags.items():
+            for name, value in raw_tags:
                 if name:
                     # Filter by individual's tag names.
                     clause_list.append( self.model_class.tags.any( and_( func.lower( self.model_tag_association_class.user_tname ).like( "%" + name.lower() + "%" ), self.model_tag_association_class.user == user ) ) )
@@ -799,7 +916,7 @@ class SharingStatusColumn( GridColumn ):
 class GridOperation( object ):
     def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True,
                   target=None, url_args=None, async_compatible=False, confirm=None,
-                  global_operation=None, inbound=False ):
+                  global_operation=None ):
         self.label = label
         self.key = key
         self.allow_multiple = allow_multiple
@@ -808,7 +925,6 @@ class GridOperation( object ):
         self.target = target
         self.url_args = url_args
         self.async_compatible = async_compatible
-        self.inbound = inbound
         # if 'confirm' is set, then ask before completing the operation
         self.confirm = confirm
         # specify a general operation that acts on the full grid
@@ -842,10 +958,10 @@ class DisplayByUsernameAndSlugGridOperation( GridOperation ):
 
 
 class GridAction( object ):
-    def __init__( self, label=None, url_args=None, inbound=False ):
+    def __init__( self, label=None, url_args=None, target=None ):
         self.label = label
         self.url_args = url_args
-        self.inbound = inbound
+        self.target = target
 
 
 class GridColumnFilter( object ):

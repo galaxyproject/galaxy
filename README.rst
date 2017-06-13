@@ -1,4 +1,4 @@
-.. figure:: https://wiki.galaxyproject.org/Images/GalaxyLogo?action=AttachFile&do=get&target=galaxy_project_logo.jpg
+.. figure:: https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo.jpg
    :alt: Galaxy Logo
 
 The latest information about Galaxy is available via `https://galaxyproject.org/ <https://galaxyproject.org/>`__
@@ -49,7 +49,7 @@ done in the ``config/galaxy.ini`` file. Tools can be either installed
 from the Tool Shed or added manually. For details please see the Galaxy
 wiki:
 
-https://wiki.galaxyproject.org/Admin/Tools/AddToolFromToolShedTutorial
+https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/
 
 Not all dependencies are included for the tools provided in the sample
 ``tool_conf.xml``. A full list of external dependencies is available at:

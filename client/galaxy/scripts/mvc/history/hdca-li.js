@@ -20,9 +20,8 @@ var HDCAListItemView = _super.extend(
     /** event listeners */
     _setUpListeners : function(){
         _super.prototype._setUpListeners.call( this );
-
         this.listenTo( this.model, {
-            'change:populated change:visible' : function( model, options ){ this.render(); },
+            'change:tags change:populated change:visible' : function( model, options ){ this.render(); },
         });
     },
 
@@ -85,6 +84,13 @@ HDCAListItemView.prototype.templates = (function(){
                 '<span class="name"><%- collection.name %></span>',
             '</div>',
             '<div class="subtitle"></div>',
+            '<span class="nametags">',
+                '<% _.each(_.sortBy(_.uniq(collection.tags), function(x) { return x }), function(tag){ %>',
+                    '<% if (tag.indexOf("name:") == 0){ %>',
+                        '<span class="label label-info"><%- tag.slice(5) %></span>',
+                    '<% } %>',
+                '<% }); %>',
+            '</span>',
         '</div>'
     ], 'collection' );
 

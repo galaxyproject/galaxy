@@ -12,6 +12,7 @@ import os
 import os.path
 import re
 import string
+import time
 from glob import glob
 from tempfile import NamedTemporaryFile
 
@@ -26,6 +27,37 @@ log = logging.getLogger( __name__ )
 DEFAULT_TABLE_TYPE = 'tabular'
 
 
+class ToolDataPathFiles(object):
+
+    def __init__(self, tool_data_path):
+        self.tool_data_path = os.path.abspath(tool_data_path)
+        self.update_time = 0
+
+    @property
+    def tool_data_path_files(self):
+        if time.time() - self.update_time > 1:
+            self.update_files()
+        return self._tool_data_path_files
+
+    def update_files(self):
+        try:
+            content = os.walk(self.tool_data_path)
+            self._tool_data_path_files = set(os.path.join(dirpath, fn) for dirpath, _, fn_list in content for fn in fn_list if fn and fn.endswith('.loc') or fn.endswith('.loc.sample'))
+            self.update_time = time.time()
+        except Exception:
+            log.exception()
+            self._tool_data_path_files = set()
+
+    def exists(self, path):
+        path = os.path.abspath(path)
+        if path in self.tool_data_path_files:
+            return True
+        elif self.tool_data_path not in path:
+            return os.path.exists(path)
+        else:
+            return False
+
+
 class ToolDataTableManager( object ):
     """Manages a collection of tool data tables"""
 
@@ -35,6 +67,7 @@ class ToolDataTableManager( object ):
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
         # from that file are inserted into this dict at the time of installation.
         self.data_tables = {}
+        self.tool_data_path_files = ToolDataPathFiles(self.tool_data_path)
         for single_config_filename in util.listify( config_filename ):
             if not single_config_filename:
                 continue
@@ -61,7 +94,7 @@ class ToolDataTableManager( object ):
     def get_tables( self ):
         return self.data_tables
 
-    def load_from_config_file( self, config_filename, tool_data_path, from_shed_config=False ):
+    def load_from_config_file( self, config_filename, tool_data_path, from_shed_config=False):
         """
         This method is called under 3 conditions:
 
@@ -78,7 +111,7 @@ class ToolDataTableManager( object ):
             tree = util.parse_xml( filename )
             root = tree.getroot()
             for table_elem in root.findall( 'table' ):
-                table = ToolDataTable.from_elem( table_elem, tool_data_path, from_shed_config, filename=filename )
+                table = ToolDataTable.from_elem( table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files )
                 table_elems.append( table_elem )
                 if table.name not in self.data_tables:
                     self.data_tables[ table.name ] = table
@@ -152,20 +185,26 @@ class ToolDataTableManager( object ):
                 remove_elems.remove( elem )
         # add new elems
         out_elems.extend( new_elems )
+        out_path_is_new = not os.path.exists(full_path)
         with open( full_path, 'wb' ) as out:
             out.write( '<?xml version="1.0"?>\n<tables>\n' )
             for elem in out_elems:
                 out.write( util.xml_to_string( elem, pretty=True ) )
             out.write( '</tables>\n' )
         os.chmod( full_path, 0o644 )
+        if out_path_is_new:
+            self.tool_data_path_files.update_files()
 
-    def reload_tables( self, table_names=None ):
+    def reload_tables( self, table_names=None, path=None ):
         """
-        Reload tool data tables.
+        Reload tool data tables. If neither table_names nor path is given, reloads all tool data tables.
         """
         tables = self.get_tables()
         if not table_names:
-            table_names = list(tables.keys())
+            if path:
+                table_names = self.get_table_names_by_path(path)
+            else:
+                table_names = list(tables.keys())
         elif not isinstance( table_names, list ):
             table_names = [ table_names ]
         for table_name in table_names:
@@ -173,16 +212,24 @@ class ToolDataTableManager( object ):
             log.debug( "Reloaded tool data table '%s' from files.", table_name )
         return table_names
 
+    def get_table_names_by_path(self, path):
+        """Returns a list of table names given a path"""
+        table_names = set()
+        for name, data_table in self.data_tables.items():
+            if path in data_table.filenames:
+                table_names.add(name)
+        return list(table_names)
+
 
 class ToolDataTable( object ):
 
     @classmethod
-    def from_elem( cls, table_elem, tool_data_path, from_shed_config, filename ):
+    def from_elem( cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files ):
         table_type = table_elem.get( 'type', 'tabular' )
         assert table_type in tool_data_table_types, "Unknown data table type '%s'" % type
-        return tool_data_table_types[ table_type ]( table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename )
+        return tool_data_table_types[ table_type ]( table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files )
 
-    def __init__( self, config_element, tool_data_path, from_shed_config=False, filename=None ):
+    def __init__( self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None ):
         self.name = config_element.get( 'name' )
         self.comment_char = config_element.get( 'comment_char' )
         self.empty_field_value = config_element.get( 'empty_field_value', '' )
@@ -191,11 +238,12 @@ class ToolDataTable( object ):
         self.here = filename and os.path.dirname(filename)
         self.filenames = odict()
         self.tool_data_path = tool_data_path
+        self.tool_data_path_files = tool_data_path_files
         self.missing_index_file = None
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-        self._load_info = ( [ config_element, tool_data_path ], { 'from_shed_config': from_shed_config } )
+        self._load_info = ( [ config_element, tool_data_path ], { 'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files } )
         self._merged_load_info = []
 
     def _update_version( self, version=None ):
@@ -260,11 +308,11 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
 
     type_key = 'tabular'
 
-    def __init__( self, config_element, tool_data_path, from_shed_config=False, filename=None ):
-        super( TabularToolDataTable, self ).__init__( config_element, tool_data_path, from_shed_config, filename)
+    def __init__( self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None ):
+        super( TabularToolDataTable, self ).__init__( config_element, tool_data_path, from_shed_config, filename, tool_data_path_files)
         self.config_element = config_element
         self.data = []
-        self.configure_and_load( config_element, tool_data_path, from_shed_config)
+        self.configure_and_load( config_element, tool_data_path, from_shed_config )
 
     def configure_and_load( self, config_element, tool_data_path, from_shed_config=False, url_timeout=10 ):
         """
@@ -318,9 +366,9 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 # directory which is hard-coded into the tool_data_table_conf.xml entries.
                 filename = os.path.split( file_path )[ 1 ]
                 filename = os.path.join( tool_data_path, filename )
-            if os.path.exists( filename ):
+            if self.tool_data_path_files.exists( filename ):
                 found = True
-            elif os.path.exists( "%s.sample" % filename ) and not from_shed_config:
+            elif self.tool_data_path_files.exists( "%s.sample" % filename ) and not from_shed_config:
                 log.info("Could not find tool data %s, reading sample" % filename)
                 filename = "%s.sample" % filename
                 found = True
@@ -332,7 +380,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 file_path, file_name = os.path.split( filename )
                 if file_path and file_path != self.tool_data_path:
                     corrected_filename = os.path.join( self.tool_data_path, file_name )
-                    if os.path.exists( corrected_filename ):
+                    if self.tool_data_path_files.exists( corrected_filename ):
                         filename = corrected_filename
                         found = True
 

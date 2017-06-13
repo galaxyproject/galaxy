@@ -51,6 +51,10 @@ def contains_workflow_parameter( value, search=False ):
     return False
 
 
+def is_runtime_value( value ):
+    return isinstance( value, RuntimeValue ) or ( isinstance( value, dict ) and value.get( '__class__' ) == 'RuntimeValue' )
+
+
 def parse_dynamic_options( param, input_source ):
     options_elem = input_source.parse_dynamic_options_elem()
     if options_elem is not None:
@@ -133,16 +137,13 @@ class ToolParameter( object, Dictifiable ):
         return value
 
     def value_to_basic( self, value, app, use_security=False ):
-        if isinstance( value, RuntimeValue ):
+        if is_runtime_value( value ):
             return { '__class__': 'RuntimeValue' }
-        elif isinstance( value, dict ):
-            if value.get( '__class__' ) == 'RuntimeValue':
-                return value
         return self.to_json( value, app, use_security )
 
     def value_from_basic( self, value, app, ignore_errors=False ):
         # Handle Runtime and Unvalidated values
-        if isinstance( value, dict ) and value.get( '__class__' ) == 'RuntimeValue':
+        if is_runtime_value( value ):
             return RuntimeValue()
         elif isinstance( value, dict ) and value.get( '__class__' ) == 'UnvalidatedValue':
             return value[ 'value' ]
@@ -155,22 +156,27 @@ class ToolParameter( object, Dictifiable ):
         else:
             return self.to_python( value, app )
 
-    def value_to_display_text( self, value, app=None ):
+    def value_to_display_text( self, value ):
+        if is_runtime_value( value ):
+            return "Not available."
+        return self.to_text( value )
+
+    def to_text( self, value ):
         """
         Convert a value to a text representation suitable for displaying to
         the user
         >>> p = ToolParameter( None, XML( '<param name="_name" />' ) )
-        >>> print p.value_to_display_text( None )
+        >>> print p.to_text( None )
         Not available.
-        >>> print p.value_to_display_text( '' )
+        >>> print p.to_text( '' )
         Empty.
-        >>> print p.value_to_display_text( 'text' )
+        >>> print p.to_text( 'text' )
         text
-        >>> print p.value_to_display_text( True )
+        >>> print p.to_text( True )
         True
-        >>> print p.value_to_display_text( False )
+        >>> print p.to_text( False )
         False
-        >>> print p.value_to_display_text( 0 )
+        >>> print p.to_text( 0 )
         0
         """
         if value is not None:
@@ -806,7 +812,7 @@ class SelectToolParameter( ToolParameter ):
         legal_values = self.get_legal_values( trans, other_values )
         workflow_building_mode = trans.workflow_building_mode
         for context_value in other_values.values():
-            if isinstance( context_value, RuntimeValue ):
+            if is_runtime_value( context_value ):
                 workflow_building_mode = True
                 break
         if len( list( legal_values ) ) == 0 and workflow_building_mode:
@@ -886,7 +892,7 @@ class SelectToolParameter( ToolParameter ):
             value = value[ 0 ]
         return value
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         if not isinstance( value, list ):
             value = [ value ]
         # FIXME: Currently only translating values back to labels if they
@@ -1351,7 +1357,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             initial_values = None
         return initial_values
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         def get_option_display( value, options ):
             for option in options:
                 if value == option['value']:
@@ -1451,7 +1457,7 @@ class BaseDataToolParameter( ToolParameter ):
         if history is not None:
             dataset_matcher = DatasetMatcher( trans, self, None, other_values )
             if isinstance( self, DataToolParameter ):
-                for hda in reversed( history.active_datasets_children_and_roles ):
+                for hda in reversed( history.active_datasets_and_roles ):
                     match = dataset_matcher.hda_match( hda, check_security=False )
                     if match:
                         return match.hda
@@ -1572,25 +1578,6 @@ class DataToolParameter( BaseDataToolParameter ):
             if dataset_collection_matcher.hdca_match( history_dataset_collection, reduction=reduction ):
                 yield history_dataset_collection
 
-    def match_datasets( self, history, dataset_matcher ):
-
-        def dataset_collector( hdas, parent_hid ):
-            for i, hda in enumerate( hdas ):
-                if parent_hid is not None:
-                    hid = "%s.%d" % ( parent_hid, i + 1 )
-                else:
-                    hid = str( hda.hid )
-                hda_match = dataset_matcher.hda_match( hda )
-                if not hda_match:
-                    continue
-                yield (hda_match, hid)
-                # Also collect children via association object
-                for item in dataset_collector( hda.children, hid ):
-                    yield item
-
-        for item in dataset_collector( history.active_datasets_children_and_roles, None ):
-            yield item
-
     def from_json( self, value, trans, other_values={} ):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
@@ -1670,7 +1657,7 @@ class DataToolParameter( BaseDataToolParameter ):
             return "None"
         return value.file_name
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         if value and not isinstance( value, list ):
             value = [ value ]
         if value:
@@ -1783,33 +1770,38 @@ class DataToolParameter( BaseDataToolParameter ):
         multiple = self.multiple
 
         # build and append a new select option
-        def append( list, id, hid, name, src, keep=False ):
-            return list.append( { 'id' : trans.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src, 'keep': keep } )
+        def append( list, hda, name, src, keep=False ):
+            return list.append( { 'id'   : trans.security.encode_id( hda.id ),
+                                  'hid'  : hda.hid,
+                                  'name' : name,
+                                  'tags' : [ t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hda.tags ],
+                                  'src'  : src,
+                                  'keep' : keep } )
 
         # add datasets
-        visible_hda = other_values.get( self.name )
-        has_matched = False
-        for hda in history.active_datasets_children_and_roles:
+        hda_list = util.listify( other_values.get( self.name ) )
+        for hda in history.active_datasets_and_roles:
             match = dataset_matcher.hda_match( hda, check_security=False )
             if match:
                 m = match.hda
-                has_matched = has_matched or visible_hda == m or visible_hda == hda
+                hda_list = [ h for h in hda_list if h != m and h != hda ]
                 m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
-                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m_name, 'hda' )
-        if not has_matched and hasattr( visible_hda, 'hid' ):
-            if visible_hda.deleted:
-                hda_state = 'deleted'
-            elif not visible_hda.visible:
-                hda_state = 'hidden'
-            else:
-                hda_state = 'unavailable'
-            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(%s) %s' % ( hda_state, visible_hda.name ), 'hda', True )
+                append( d[ 'options' ][ 'hda' ], m, m_name, 'hda' )
+        for hda in hda_list:
+            if hasattr( hda, 'hid' ):
+                if hda.deleted:
+                    hda_state = 'deleted'
+                elif not hda.visible:
+                    hda_state = 'hidden'
+                else:
+                    hda_state = 'unavailable'
+                append( d[ 'options' ][ 'hda' ], hda, '(%s) %s' % ( hda_state, hda.name ), 'hda', True )
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
         for hdca in history.active_dataset_collections:
             if dataset_collection_matcher.hdca_match( hdca, reduction=multiple ):
-                append( d[ 'options' ][ 'hdca' ], hdca.id, hdca.hid, hdca.name, 'hdca' )
+                append( d[ 'options' ][ 'hdca' ], hdca, hdca.name, 'hdca' )
 
         # sort both lists
         d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k['hid'], reverse=True)
@@ -1904,7 +1896,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             # TODO: Handle error states, implement error states ...
         return rval
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         try:
             if isinstance( value, galaxy.model.HistoryDatasetCollectionAssociation ):
                 display_text = "%s: %s" % ( value.hid, value.name )
@@ -1936,20 +1928,22 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         # append directly matched collections
         for hdca in self.match_collections( trans, history, dataset_matcher ):
             d['options']['hdca'].append({
-                'id': trans.security.encode_id( hdca.id ),
-                'hid': hdca.hid,
-                'name': hdca.name,
-                'src': 'hdca'
+                'id'   : trans.security.encode_id( hdca.id ),
+                'hid'  : hdca.hid,
+                'name' : hdca.name,
+                'src'  : 'hdca',
+                'tags' : [ t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags ]
             })
 
         # append matching subcollections
         for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
             subcollection_type = self._history_query( trans ).can_map_over( hdca ).collection_type
             d['options']['hdca'].append({
-                'id': trans.security.encode_id( hdca.id ),
-                'hid': hdca.hid,
-                'name': hdca.name,
-                'src': 'hdca',
+                'id'   : trans.security.encode_id( hdca.id ),
+                'hid'  : hdca.hid,
+                'name' : hdca.name,
+                'src'  : 'hdca',
+                'tags' : [ t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags ],
                 'map_over_type': subcollection_type
             })
 

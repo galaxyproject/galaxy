@@ -1,5 +1,5 @@
-galaxy.work package
-===================
+galaxy\.work package
+====================
 
 .. automodule:: galaxy.work
     :members:
@@ -9,8 +9,8 @@ galaxy.work package
 Submodules
 ----------
 
-galaxy.work.context module
---------------------------
+galaxy\.work\.context module
+----------------------------
 
 .. automodule:: galaxy.work.context
     :members:

@@ -4,10 +4,11 @@ jQuery.ajaxSettings.traditional = true;
 
 // dependencies
 define([
+    'utils/utils',
     'mvc/grid/grid-model',
     'mvc/grid/grid-template',
     "mvc/ui/popup-menu"
-], function(GridModel, Templates, PopupMenu) {
+], function(Utils, GridModel, Templates, PopupMenu) {
 
 // grid view
 return Backbone.View.extend({
@@ -18,8 +19,36 @@ return Backbone.View.extend({
     // Initialize
     initialize: function(grid_config)
     {
+        this.dict_format = grid_config.dict_format;
+        var self = this;
+        window.add_tag_to_grid_filter = function( tag_name, tag_value ){
+            // Put tag name and value together.
+            var tag = tag_name + ( tag_value !== undefined && tag_value !== "" ? ":" + tag_value : "" );
+            var advanced_search = $( '#advanced-search').is(":visible" );
+            if( !advanced_search ){
+                $('#standard-search').slideToggle('fast');
+                $('#advanced-search').slideToggle('fast');
+            }
+            self.add_filter_condition( "tags", tag );
+        };
+
         // set element
-        this.setElement('#grid-container');
+        if ( this.dict_format ) {
+            this.setElement('<div/>');
+            if ( grid_config.url_base && !grid_config.items ) {
+                Utils.get({
+                    url: grid_config.url_base,
+                    success: function( response ) {
+                        self.init_grid( response );
+                    }
+                });
+            } else {
+                this.init_grid(grid_config);
+            }
+        } else {
+            this.setElement('#grid-container');
+            this.init_grid(grid_config);
+        }
 
         // fix padding
         if (grid_config.use_panels) {
@@ -28,9 +57,6 @@ return Backbone.View.extend({
                 overflow    : 'auto'
             });
         }
-
-        // initialize controls
-        this.init_grid(grid_config);
     },
 
     // refresh frames
@@ -155,18 +181,6 @@ return Backbone.View.extend({
             });
         });
 
-        // Initialize autocomplete for text inputs in search UI.
-        var t1 = this.$el.find('#input-tags-filter');
-        if (t1.length) {
-            t1.autocomplete(this.grid.history_tag_autocomplete_url,
-                { selectFirst: false, autoFill: false, highlight: false, mustMatch: false });
-        }
-        var t2 = this.$el.find('#input-name-filter');
-        if (t2.length) {
-            t2.autocomplete(this.grid.history_name_autocomplete_url,
-                { selectFirst: false, autoFill: false, highlight: false, mustMatch: false });
-        }
-
         // Initialize standard, advanced search toggles.
         this.$el.find('.advanced-search-toggle').each( function() {
             $(this).off();
@@ -221,23 +235,14 @@ return Backbone.View.extend({
         //
         // add inbound/outbound events
         //
-        this.$el.find('.use-inbound').each( function() {
+        this.$el.find('.use-target').each( function() {
             $(this).click( function(e) {
                 self.execute({
                     href : $(this).attr('href'),
-                    inbound : true
+                    target : $(this).attr('target')
                 });
                 return false;
 
-            });
-        });
-
-        this.$el.find('.use-outbound').each( function() {
-            $(this).click( function(e) {
-                self.execute({
-                    href : $(this).attr('href')
-                });
-                return false;
             });
         });
 
@@ -278,8 +283,7 @@ return Backbone.View.extend({
                         html : operation['label'],
                         href : operation_settings['url_args'],
                         target : operation_settings['target'],
-                        confirmation_text : operation['confirm'],
-                        inbound : operation['inbound']
+                        confirmation_text : operation['confirm']
                     };
 
                     // add popup function
@@ -518,17 +522,16 @@ return Backbone.View.extend({
         var href = null;
         var operation = null;
         var confirmation_text = null;
-        var inbound = null;
+        var target = null;
 
         // check for options
-        if (options)
-        {
+        if (options) {
             // get options
             href = options.href;
             operation = options.operation;
             id = options.id;
             confirmation_text = options.confirmation_text;
-            inbound = options.inbound;
+            target = options.target;
 
             // check if input contains the operation tag
             if (href !== undefined && href.indexOf('operation=') != -1) {
@@ -568,10 +571,10 @@ return Backbone.View.extend({
             });
 
             // Do operation. If operation cannot be performed asynchronously, redirect to location.
-            if (this.grid.can_async_op(operation)) {
+            if (this.grid.can_async_op(operation) || this.dict_format) {
                 this.update_grid();
             } else {
-                this.go_to(inbound, href);
+                this.go_to(target, href);
             }
 
             // done
@@ -580,15 +583,15 @@ return Backbone.View.extend({
 
         // refresh grid
         if (href) {
-            this.go_to(inbound, href);
+            this.go_to(target, href);
             return false;
         }
 
         // refresh grid
-        if (this.grid.get('async')) {
+        if (this.grid.get('async') || this.dict_format) {
             this.update_grid();
         } else {
-            this.go_to(inbound, href);
+            this.go_to(target, href);
         }
 
         // done
@@ -596,7 +599,7 @@ return Backbone.View.extend({
     },
 
     // go to url
-    go_to: function (inbound, href) {
+    go_to: function (target, href) {
         // get aysnc status
         var async = this.grid.get('async');
         this.grid.set('async', false);
@@ -616,17 +619,21 @@ return Backbone.View.extend({
             item_ids: undefined,
             async: async
         });
-
-        if (inbound) {
-            // this currently assumes that there is only a single grid shown at a time
-            var $div = $('.grid-header').closest('.inbound');
-            if ($div.length !== 0) {
-                $div.load(href);
-                return;
-            }
+        switch (target) {
+            case 'inbound':
+                // this currently assumes that there is only a single grid shown at a time
+                var $div = $('.grid-header').closest('.inbound');
+                if ($div.length !== 0) {
+                    $div.load(href);
+                    return;
+                }
+                break;
+            case 'top':
+                window.top.location = href;
+                break;
+            default:
+                window.location = href;
         }
-
-        window.location = href;
     },
 
     // Update grid.
@@ -649,7 +656,7 @@ return Backbone.View.extend({
                 var insert = self.grid.get('insert');
 
                 // request new configuration
-                var json = $.parseJSON(response_text);
+                var json = self.dict_format ? response_text : $.parseJSON(response_text);
 
                 // update
                 json.embedded = embedded;

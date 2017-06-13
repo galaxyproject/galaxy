@@ -24,14 +24,6 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 metadata = MetaData()
 
-
-def display_migration_details():
-    print("========================================")
-    print("This migration script adds the request_event table and")
-    print("removes the state field in the request table")
-    print("========================================")
-
-
 RequestEvent_table = Table('request_event', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -43,7 +35,7 @@ RequestEvent_table = Table('request_event', metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
 
     def localtimestamp():
         if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
@@ -65,8 +57,8 @@ def upgrade(migrate_engine):
     # Add new request_event table
     try:
         RequestEvent_table.create()
-    except Exception as e:
-        log.debug( "Creating request_event table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating request_event table failed.")
     # move the current state of all existing requests to the request_event table
 
     cmd = \
@@ -91,8 +83,8 @@ def upgrade(migrate_engine):
         if Request_table is not None:
             try:
                 Request_table.c.state.drop()
-            except Exception as e:
-                log.debug( "Deleting column 'state' to request table failed: %s" % ( str( e ) ) )
+            except Exception:
+                log.exception("Deleting column 'state' to request table failed.")
 
 
 def downgrade(migrate_engine):

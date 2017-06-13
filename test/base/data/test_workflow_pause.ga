@@ -107,7 +107,7 @@
             }, 
             "post_job_actions": {}, 
             "tool_errors": null, 
-            "tool_id": "cat1", 
+            "tool_id": "cat", 
             "tool_state": "{\"__page__\": 0, \"__rerun_remap_job_id__\": null, \"input1\": \"null\", \"queries\": \"[]\"}", 
             "tool_version": "1.0.0", 
             "type": "tool", 

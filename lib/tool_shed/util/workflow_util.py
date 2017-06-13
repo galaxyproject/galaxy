@@ -88,7 +88,7 @@ class RepoToolModule( ToolModule ):
             except:
                 # TODO have this actually use default parameters?  Fix at
                 # refactor, needs to be discussed wrt: reproducibility though.
-                log.exception("Tool parse failed for %s -- this indicates incompatibility of local tool version with expected version by the workflow." % self.tool.id)
+                log.exception("Tool parse failed for %s -- this indicates incompatibility of local tool version with expected version by the workflow.", self.tool.id)
         return data_inputs
 
     def get_data_outputs( self ):
@@ -233,7 +233,7 @@ def get_workflow_data_outputs( step, module, steps ):
             found = False
             for workflow_step in steps:
                 for wfsc in workflow_step.input_connections:
-                    if step.name == wfsc.output_step.name:
+                    if step.label == wfsc.output_step.label:
                         data_outputs_dict[ 'name' ] = wfsc.output_name
                         found = True
                         break

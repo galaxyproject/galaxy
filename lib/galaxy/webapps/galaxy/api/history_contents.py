@@ -12,6 +12,7 @@ from galaxy.util.json import safe_dumps
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_raw as expose_api_raw
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_raw_anonymous as expose_api_raw_anonymous
 
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesLibraryMixin
@@ -23,8 +24,11 @@ from galaxy.managers import history_contents
 from galaxy.managers import hdas
 from galaxy.managers import hdcas
 from galaxy.managers import folders
-from galaxy.managers.collections_util import api_payload_to_create_params
-from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.managers.collections_util import (
+    api_payload_to_create_params,
+    dictify_dataset_collection_instance,
+    get_hda_and_element_identifiers
+)
 
 import logging
 log = logging.getLogger( __name__ )
@@ -130,7 +134,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         .. note:: Anonymous users are allowed to get their current history contents
 
         :type   id:         str
-        :param  ids:        the encoded id of the HDA to return
+        :param  id:        the encoded id of the HDA to return
         :type   history_id: str
         :param  history_id: encoded id string of the HDA's History
 
@@ -162,9 +166,54 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             )
             return self.__collection_dict( trans, dataset_collection_instance, view="element" )
         except Exception as e:
-            log.exception( "Error in history API at listing dataset collection: %s", e )
+            log.exception( "Error in history API at listing dataset collection" )
             trans.response.status = 500
             return { 'error': str( e ) }
+
+    @expose_api_raw_anonymous
+    def download_dataset_collection(self, trans, id, history_id, **kwd):
+        """
+        * GET /api/histories/{history_id}/contents/{id}/download
+
+        Download the content of a HistoryDatasetCollection as a tgz archive
+        while maintaining approximate collection structure.
+
+        :param id: encoded HistoryDatasetCollectionAssociation (HDCA) id
+        :param history_id: encoded id string of the HDCA's History
+        """
+        try:
+            service = trans.app.dataset_collections_service
+            dataset_collection_instance = service.get_dataset_collection_instance(
+                trans=trans,
+                instance_type='history',
+                id=id,
+            )
+            return self.__stream_dataset_collection(trans, dataset_collection_instance)
+
+        except Exception as e:
+            log.exception( "Error in API while creating dataset collection archive" )
+            trans.response.status = 500
+            return { 'error': str( e ) }
+
+    def __stream_dataset_collection(self, trans, dataset_collection_instance):
+        archive_type_string = 'w|gz'
+        archive_ext = 'tgz'
+        if self.app.config.upstream_gzip:
+            archive_type_string = 'w|'
+            archive_ext = 'tar'
+        archive = StreamBall(mode=archive_type_string)
+        names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
+        for name, hda in zip(names, hdas):
+            if hda.state != hda.states.OK:
+                continue
+            for file_path, relpath in hda.datatype.to_archive(trans=trans, dataset=hda, name=name):
+                archive.add(file=file_path, relpath=relpath)
+        archive_name = "%s: %s.%s" % (dataset_collection_instance.hid, dataset_collection_instance.name, archive_ext)
+        trans.response.set_content_type("application/x-tar")
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="{}"'.format(archive_name)
+        archive.wsgi_status = trans.response.wsgi_status()
+        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+        return archive.stream
 
     @expose_api_anonymous
     def create( self, trans, history_id, payload, **kwd ):
@@ -404,8 +453,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 hda = self.hda_manager.error_if_uploading( hda )
 
         # make the actual changes
-        # TODO: is this if still needed?
-        if hda and isinstance( hda, trans.model.HistoryDatasetAssociation ):
+        if hda:
             self.hda_deserializer.deserialize( hda, payload, user=trans.user, trans=trans )
             # TODO: this should be an effect of deleting the hda
             if payload.get( 'deleted', False ):

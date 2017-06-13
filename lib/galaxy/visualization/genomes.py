@@ -214,9 +214,9 @@ class Genomes( object ):
                     if len( val ) == 2:
                         key, path = val
                         twobit_fields[ key ] = path
-            except IOError as e:
+            except IOError:
                 # Thrown if twobit.loc does not exist.
-                log.exception( "Error reading twobit.loc: %s", e )
+                log.exception( "Error reading twobit.loc" )
         for key, description in self.app.genome_builds.get_genome_build_names():
             self.genomes[ key ] = Genome( key, description )
             # Add len files to genomes.
@@ -329,7 +329,7 @@ class Genomes( object ):
         if genome:
             rval = genome.to_dict( num=num, chrom=chrom, low=low )
         else:
-            log.exception( 'genome not found for key %s' % dbkey )
+            log.exception( 'genome not found for key %s', dbkey )
 
         return rval
 
