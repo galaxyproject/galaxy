@@ -52,7 +52,7 @@ def main():
     (stdoutdata, stderrdata) = p.communicate()
     exitcode = p.returncode
     if exitcode != 0:
-        sys.stderr.write("external_chown_script: could not chgrp\ncmd was % s\n" % " ".join(cmd))
+        sys.stderr.write("external_chown_script: could not chgrp\ncmd was %s\n" % " ".join(cmd))
         raise exit(1)
 
 
