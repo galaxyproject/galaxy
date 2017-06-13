@@ -5,7 +5,6 @@
 # to be reflected in galaxy.web.controllers.tool_runner and galaxy.tools
 from __future__ import print_function
 
-import logging
 import codecs
 import gzip
 import os
@@ -24,8 +23,6 @@ from galaxy.datatypes.registry import Registry
 from galaxy.util import multi_byte
 from galaxy.util.checkers import check_binary, check_bz2, check_gzip, check_html, check_zip
 from galaxy.util.image_util import get_image_ext
-
-log = logging.getLogger( __name__ )
 
 try:
     import bz2
