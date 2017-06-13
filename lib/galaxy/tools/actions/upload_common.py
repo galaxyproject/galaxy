@@ -1,5 +1,6 @@
 import logging
 import os
+import shlex
 import subprocess
 import tempfile
 from cgi import FieldStorage
@@ -283,7 +284,7 @@ def create_paramfile( trans, uploaded_datasets ):
         try:
             # get username from email/username
             pwent = trans.user.system_user_pwent(trans.app.config.real_system_username)
-            cmd = trans.app.config.external_chown_script.split()
+            cmd = shlex.split(trans.app.config.external_chown_script)
             cmd.extend( [ path, pwent[0], str( pwent[3] ) ] )
             log.debug( 'Changing ownership of %s with: %s' % ( path, ' '.join( cmd ) ) )
             p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )

@@ -43,9 +43,7 @@ def main():
         (stdoutdata, stderrdata) = p.communicate()
         exitcode = p.returncode
         if exitcode != 0:
-            sys.stderr.write("external_chown_script: could not chown\ncmd was %s\n" % " ".join(cmd))
-            raise exit(1)
-
+            sys.exit("external_chown_script: could not chown\ncmd was %s\n" % " ".join(cmd))
 
 if __name__ == "__main__":
     main()

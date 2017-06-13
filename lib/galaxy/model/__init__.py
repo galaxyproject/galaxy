@@ -11,9 +11,9 @@ import logging
 import numbers
 import operator
 import os
+import pwd
 import socket
 import time
-import pwd
 from datetime import datetime, timedelta
 from string import Template
 from uuid import UUID, uuid4

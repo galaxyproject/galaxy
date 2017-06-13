@@ -6,6 +6,7 @@ import datetime
 import logging
 import os
 import pwd
+import shlex
 import shutil
 import string
 import subprocess
@@ -1742,13 +1743,14 @@ class JobWrapper( object, HasResourceParameters ):
     def _change_ownership( self, username, gid ):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        cmd = external_chown_script.split()
-        cmd.extend( [ self.working_directory, username, str( gid ) ] )
-        log.debug( '(%s) Changing ownership of working directory with: %s' % ( job.id, ' '.join( cmd ) ) )
-        p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-        # TODO: log stdout/stderr
-        stdout, stderr = p.communicate()
-        assert p.returncode == 0
+        if external_chown_script != None
+            cmd = shlex.split(external_chown_script)
+            cmd.extend( [ self.working_directory, username, str( gid ) ] )
+            log.debug( '(%s) Changing ownership of working directory with: %s' % ( job.id, ' '.join( cmd ) ) )
+            p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            # TODO: log stdout/stderr
+            stdout, stderr = p.communicate()
+            assert p.returncode == 0
 
     def change_ownership_for_run( self ):
         job = self.get_job()
