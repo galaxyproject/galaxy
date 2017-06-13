@@ -37,10 +37,14 @@ class TagManager( object ):
         # Initialize with known classes - add to this in subclasses.
         self.item_tag_assoc_info = {}
 
+    def add_tags_from_list( self, user, item, new_tags_list ):
+        new_tags_set = set(self.get_tags_str( item.tags ).split(','))
+        new_tags_set.update(new_tags_list)
+        return self.set_tags_from_list( user, item, new_tags_set )
+
     def set_tags_from_list( self, user, item, new_tags_list ):
         # precondition: item is already security checked against user
         # precondition: incoming tags is a list of sanitized/formatted strings
-
         self.delete_item_tags( user, item )
         new_tags_str = ','.join( new_tags_list )
         self.apply_item_tags( user, item, unicodify( new_tags_str, 'utf-8' ) )
