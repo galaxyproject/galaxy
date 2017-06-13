@@ -38,22 +38,13 @@ def validate_paramaters():
 
 def main():
     path, galaxy_user_name, gid = validate_paramaters()
-
-    cmd = [ 'chown', '-Rh', galaxy_user_name, path ]
-    p = os.subprocess.Popen(cmd, shell=False, stdout=os.subprocess.PIPE, stderr=os.subprocess.PIPE)
-    (stdoutdata, stderrdata) = p.communicate()
-    exitcode = p.returncode
-    if exitcode != 0:
-        sys.stderr.write("external_chown_script: could not chown\ncmd was %s\n" % " ".join(cmd))
-        raise exit(1)
-
-    cmd = [ 'chgrp', '-Rh', gid, path ]
-    p = os.subprocess.Popen(cmd, shell=False, stdout=os.subprocess.PIPE, stderr=os.subprocess.PIPE)
-    (stdoutdata, stderrdata) = p.communicate()
-    exitcode = p.returncode
-    if exitcode != 0:
-        sys.stderr.write("external_chown_script: could not chgrp\ncmd was %s\n" % " ".join(cmd))
-        raise exit(1)
+    for cmd in [[ 'chown', '-Rh', galaxy_user_name, path ],[ 'chgrp', '-Rh', gid, path ]]:
+        p = os.subprocess.Popen(cmd, shell=False, stdout=os.subprocess.PIPE, stderr=os.subprocess.PIPE)
+        (stdoutdata, stderrdata) = p.communicate()
+        exitcode = p.returncode
+        if exitcode != 0:
+            sys.stderr.write("external_chown_script: could not chown\ncmd was %s\n" % " ".join(cmd))
+            raise exit(1)
 
 
 if __name__ == "__main__":
