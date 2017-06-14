@@ -84,8 +84,8 @@ window.app = function app( options, bootstrapped ){
             '(/)user(/)(:form_id)' : 'show_user_form',
             '(/)workflow(/)' : 'show_workflows',
             '(/)pages(/)(:action_id)' : 'show_pages',
-            '(/)histories(/)(:action_id)' : 'show_histories',
-            '(/)datasets(/)(:action_id)' : 'show_datasets',
+            '(/)histories(/)list(/)' : 'show_histories',
+            '(/)datasets(/)list(/)' : 'show_datasets',
             '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)custom_builds' : 'show_custom_builds'
         },
@@ -121,7 +121,7 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
         },
 
-        show_histories : function( action_id ) {
+        show_histories : function() {
             this.page.display( new HistoryList.View() );
         },
 
