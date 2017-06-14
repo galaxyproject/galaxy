@@ -1,4 +1,4 @@
-def main(trans, webhook):
+def main(trans, webhook, params):
     if trans.user:
         user = trans.user.username
     else:
