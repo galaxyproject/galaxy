@@ -117,13 +117,13 @@
           -->
           <!-- <param id="pulsar_config">path/to/pulsar/app.yml</param> -->
         </plugin>
-        <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:kubernetes">
+        <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
             <!-- The Kubernetes (k8s) plugin allows to send jobs to a k8s cluster which shares filesystem with Galaxy.
 
                  This requires installing pykube. Install pykube by activating Galaxy's virtual
                  and then executing the following pip command:
 
-                 pip install -e git+https://github.com/pcm32/pykube.git@feature/allMergedFeatures#egg=pykube
+                 pip install pykube==0.15.0
 
                  The shared file system needs to be exposed to k8s through a Persistent Volume (rw) and a Persistent
                  Volume Claim. An example of a Persistent Volume could be, in yaml (access modes, reclaim policy and
@@ -178,11 +178,24 @@
                  your installation. This is the file that tells the plugin where the k8s cluster is, access credentials,
                  etc. This parameter is not necessary and ignored if k8s_use_service_account is set to True -->
 
-            <param id="k8s_use_service_account">false</param>
+            <!-- <param id="k8s_pull_policy">Default</param> -->
+            <!-- Sets the pull policy to be used for all containers invoked for jobs by the Kubernetes cluster. Can take
+                 any value among the possible Kubernetes container image pull policies: Always, IfNotPresent or Never
+                 (respecting capitalization). Any other value, such as "Default", will not change the setting on k8s and
+                 leave for the containers to run with the default pull policy specified at the cluster (this is normally
+                 IfNotPresent). Container images using latest are by default always pulled, so you need to use defined
+                 versions for offline cases to work (and images need to be previously pulled). -->
+
+            <!-- <param id="k8s_use_service_account">false</param> -->
             <!-- For use when Kubernetes should be accessed from inside a Pod running Galaxy (that is,
                  galaxy is running inside Kubernetes). If this variable is True, then the previous k8s_config_path is
                  not required and actually ignored. It is not necessary to set this value if not setting it to true -->
 
+            <!-- <param id="k8s_job_api_version">batch/v1</param> -->
+            <!-- Version of the Kubernetes Job API object to use, the default one batch/v1 should be supported from
+                 Kubernetes 1.2 and on. Changing this a much newer version in the future might require changes to the
+                 plugin runner code. Value extensions/v1beta1 is also supported for pre 1.2 legacy installations.
+                 -->
             <param id="k8s_persistent_volume_claim_name">galaxy_pvc</param>
             <!-- The name of the Persisten Volume Claim (PVC) to be used, details above, needs to match the PVC's
                  metadata:name -->
@@ -192,11 +205,11 @@
                  set in universe_wsgi.ini (or equivalent general galaxy config file). This is the mount path of the
                  PVC within the docker container that will be actually running the tool -->
 
-            <param id="k8s_namespace">galaxy-instanceA</param>
+            <!-- <param id="k8s_namespace">default</param> -->
             <!-- The namespace to be used on the Kubernetes cluster, if different from default, this needs to be set
                  accordingly in the PV and PVC detailed above -->
 
-            <param id="k8s_pod_retrials">4</param>
+            <!-- <param id="k8s_pod_retrials">4</param> -->
             <!-- Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
                  setter essentially, so by default it will try to take a job submitted to successful completion. A job
                  submits pods, until the number of successes (1 in this use case) is achieved, assuming that whatever is
@@ -204,6 +217,37 @@
                  This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed) -->
+
+            <!-- <param id="k8s_supplemental_group_id">0</param> -->
+            <!-- <param id="k8s_fs_group_id">0</param> -->
+            <!-- If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access
+                 to a DEFINED user/group, these variables set the group id that Pods need to use to be able to read and
+                 write from that mount. If left to zero or deleted, these parameters are neglected. Integer values
+                 above zero trigger the addition of a security context on each Pod created to dispatch jobs:
+
+                 securityContext:
+                    supplementalGroups: [value-set-goes-here]
+                    fsGroup: fs-group-integer-value
+
+                 inside the Pod spec, applicable for all containers on the pod. Just one of them set to >0 will generate
+                 the security context.
+
+                 Using this requires that the Kubernetes cluster is not running the admission controller
+                 "SecurityContextDeny". To check this, look at the admission-control= variable setup for the
+                 api-server pod definition (normally in /etc/kubernetes/manifests/kube-apiserver.manifest), it shouldn't
+                 have the mentioned admission controller. Pods with the securityContext set will fail if such admission
+                 controller is present. Removing that admission controller from the manifest should provoke kubelet
+                 to restart the api-server pod running on that machine (although this might vary on your Kubernetes
+                 installation).
+
+                 For more information see point 21.2.4.1 Group IDs on:
+                 https://access.redhat.com/documentation/en-us/openshift_container_platform/3.4/html/
+                 installation_and_configuration/configuring-persistent-storage
+
+                 Different storage strategies might or might not require supplemental groups or fs groups, one is not
+                 a requirement of the other.
+
+                 -->
         </plugin>
         <plugin id="godocker" type="runner" load="galaxy.jobs.runners.godocker:GodockerJobRunner">
             <!-- Go-Docker is a batch computing/cluster management tool using Docker
@@ -218,7 +262,34 @@
             <param id="godocker_project">galaxy</param>
             <!-- Specify the project present in the GoDocker setup -->
         </plugin>
+        <plugin id="chronos" type="runner" load="galaxy.jobs.runners.chronos:ChronosJobRunner">
+            <!-- Chronos is a framework for the Apache Mesos software; a software which manages
+                 computer clusters. Specifically, Chronos runs of top of Mesos and it's used
+                 for job orchestration.
 
+                 This runner requires a shared file system where the directories of
+                 `job_working_directory`, `file_path` and `new_file_path` settings defined on
+                 the `galaxy.ini` file are shared amongst the Mesos agents (i.e. nodes which
+                 actually run the jobs).
+            -->
+            <param id="chronos">`chronos_host`</param>
+            <!-- Hostname which runs Chronos instance. -->
+            <param id="owner">foo@bar.com</param>
+            <!-- The email address of the person responsible for the job. -->
+            <param id="username">username</param>
+            <!-- Username to access Mesos cluster. -->
+            <param id="password">password</param>
+            <!-- Password to access Mesos cluster. -->
+            <param id="insecure">true</param>
+            <!-- True to communicate with Chronos over HTTPS; false otherwise-->
+        </plugin>
+        <!-- Additionally any plugin or destination (below) may define an "enabled" parameter that should
+             evaluate to True or False. When setup using
+                <param id="enabled" from_environ="<VAR>">True|False</param>
+             plugins and destinations can be conditionally loaded using environment variables.
+             Setting the param body above to True or False is required and specifies the default
+             used by Galaxy is no environment variable of the specified name is found.
+        -->
     </plugins>
     <handlers default="handlers">
         <!-- Additional job handlers - the id should match the name of a
@@ -361,6 +432,53 @@
                configured to run in a container the following option can provide
                a fallback. -->
           <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
+
+          <!-- If the destination should be secured to only allow containerized jobs
+               the following parameter may be set for the job destination. Not all,
+               or even most, tools available in Galaxy core or in the Tool Shed
+               support Docker yet so this option may require a lot of extra work for
+               the deployer. -->
+          <!-- <param id="require_container">true</param> -->
+        </destination>
+        <destination id="singularity_local" runner="local">
+          <param id="singularity_enabled">true</param>
+          <!-- See the above documentation for docker_volumes, singularity_volumes works
+               almost the same way. The only difference is that $default will expand with
+               rw directories that in Docker would expand as ro if any of subdirectories are rw.
+
+               As an example consider that Docker mounts the parent of the working directory
+               (this is known as the job directory) as ro and the working directory itself as rw.
+               This doesn't work in Singularity because if any parent directory is mounted as ro
+               none of its children will be rw. So the job directory will be mounted rw for
+               Singularity.
+          -->
+          <!--
+          <param id="singularity_volumes">$defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
+          -->
+          <!-- You can configure singularity to run using sudo - this probably should not
+               be set and may be removed in the future.
+          -->
+          <!-- <param id="singularity_sudo">false</param> -->
+          <!-- Following option can be used to tweak sudo command used by
+               default. -->
+          <!-- <param id="singularity_sudo_cmd">/usr/bin/sudo -extra_param</param> -->
+          <!-- Pass extra arguments to the singularity exec command not covered by the
+               above options. -->
+          <!-- <param id="singularity_run_extra_arguments"></param> -->
+          <!-- Following command can be used to tweak singularity command. -->
+          <!-- <param id="singularity_cmd">/usr/local/custom_docker/docker</param> -->
+
+          <!-- If deployer wants to use singularity for isolation, but does not
+               trust tool's specified container - a destination wide override
+               can be set. This will cause all jobs on this destination to use
+               that singularity image. -->
+          <!-- <param id="singularity_container_id_override">/path/to/singularity/image</param> -->
+
+          <!-- Likewise, if deployer wants to use singularity for isolation and
+               does trust tool's specified container - but also wants tool's not
+               configured to run in a container the following option can provide
+               a fallback. -->
+          <!-- <param id="singularity_default_container_id">/path/to/singularity/image</param> -->
 
           <!-- If the destination should be secured to only allow containerized jobs
                the following parameter may be set for the job destination. Not all,
@@ -702,6 +820,18 @@
                  then enable it by setting the value to true.
                  Disable venv by setting the value to false.
             -->
+        </destination>
+        <destination id="chronos_dest" runner="chronos">
+            <param id="docker_enabled">true</param>
+            <param id="docker_memory">512</param>
+            <param id="docker_cpu">2</param>
+            <param id="volumes">/directory/</param>
+            <!-- Directory which is mounted to the container and is parent of
+                 the  `job_working_directory`, `file_path`, `new_file_path`
+                 directories. Directories of the data used by tools are
+                 included as well.-->
+            <param id="max_retries">2</param>
+            <!-- Number of retries to attempt if a command returns a non-zero status -->
         </destination>
 
         <!-- Templatized destinations - macros can be used to create templated

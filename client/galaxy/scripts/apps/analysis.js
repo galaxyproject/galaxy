@@ -1,16 +1,18 @@
-
 var jQuery = require( 'jquery' ),
     $ = jQuery,
     GalaxyApp = require( 'galaxy' ).GalaxyApp,
     QUERY_STRING = require( 'utils/query-string-parsing' ),
-    PANEL = require( 'layout/panel' ),
-    ToolPanel = require( './tool-panel' ),
-    HistoryPanel = require( './history-panel' ),
-    PAGE = require( 'layout/page' ),
+    ToolPanel = require( './panels/tool-panel' ),
+    HistoryPanel = require( './panels/history-panel' ),
+    Page = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
-    UserPreferences = require( 'mvc/user/user-preferences' );
-    CustomBuilds = require( 'mvc/user/user-custom-builds' );
-    Tours = require( 'mvc/tours' );
+    UserPreferences = require( 'mvc/user/user-preferences' ),
+    CustomBuilds = require( 'mvc/user/user-custom-builds' ),
+    Tours = require( 'mvc/tours' ),
+    GridView = require( 'mvc/grid/grid-view' ),
+    PageList = require( 'mvc/page/page-list' ),
+    Workflows = require( 'mvc/workflow/workflow' ),
+    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -26,55 +28,25 @@ var jQuery = require( 'jquery' ),
 window.app = function app( options, bootstrapped ){
     window.Galaxy = new GalaxyApp( options, bootstrapped );
     Galaxy.debug( 'analysis app' );
-    // TODO: use router as App base (combining with Galaxy)
-
-    // .................................................... panels and page
-    var config = options.config,
-        toolPanel = new ToolPanel({
-            el                  : '#left',
-            userIsAnonymous     : Galaxy.user.isAnonymous(),
-            toolbox             : config.toolbox,
-            toolbox_in_panel    : config.toolbox_in_panel,
-            stored_workflow_menu_entries : config.stored_workflow_menu_entries,
-            nginx_upload_path   : config.nginx_upload_path,
-            ftp_upload_site     : config.ftp_upload_site,
-            default_genome      : config.default_genome,
-            default_extension   : config.default_extension,
-        }),
-        centerPanel = new PANEL.CenterPanel({
-            el              : '#center'
-        }),
-        historyPanel = new HistoryPanel({
-            el              : '#right',
-            galaxyRoot      : Galaxy.root,
-            userIsAnonymous : Galaxy.user.isAnonymous(),
-            allow_user_dataset_purge: config.allow_user_dataset_purge,
-        }),
-        analysisPage = new PAGE.PageLayoutView( _.extend( options, {
-            el              : 'body',
-            left            : toolPanel,
-            center          : centerPanel,
-            right           : historyPanel,
-        }));
-
-    // .................................................... decorate the galaxy object
-    // TODO: most of this is becoming unnecessary as we move to apps
-    Galaxy.page = analysisPage;
     Galaxy.params = Galaxy.config.params;
 
-    // add tool panel to Galaxy object
-    Galaxy.toolPanel = toolPanel.tool_panel;
-    Galaxy.upload = toolPanel.uploadButton;
+    var routingMessage = Backbone.View.extend({
+        initialize: function(options) {
+            this.message = options.message || "Undefined Message";
+            this.msg_status = options.type || 'info';
+            this.render();
+		},
+        render: function(){
+            this.$el.html(_.escape(this.message)).addClass(this.msg_status + "message");
+        }
+    });
 
-    Galaxy.currHistoryPanel = historyPanel.historyView;
-    Galaxy.currHistoryPanel.listenToGalaxy( Galaxy );
-
-    // .................................................... routes
-    /**  */
-    Galaxy.router = new ( Backbone.Router.extend({
+    /** Routes */
+    var Router = Backbone.Router.extend({
         // TODO: not many client routes at this point - fill and remove from server.
         // since we're at root here, this may be the last to be routed entirely on the client.
-        initialize : function( options ){
+        initialize : function( page, options ){
+            this.page = page;
             this.options = options;
         },
 
@@ -95,43 +67,86 @@ window.app = function app( options, bootstrapped ){
             var queryObj = QUERY_STRING.parse( args.pop() );
             args.push( queryObj );
             if( callback ){
-                callback.apply( this, args );
+                if ( this.authenticate( args, name ) ) {
+                    callback.apply( this, args );
+                } else {
+                    this.loginRequired();
+                }
             }
         },
 
         routes : {
             '(/)' : 'home',
-            // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
             '(/)tours(/)(:tour_id)' : 'show_tours',
             '(/)user(/)' : 'show_user',
             '(/)user(/)(:form_id)' : 'show_user_form',
+            '(/)workflow(/)' : 'show_workflows',
+            '(/)pages(/)(:action_id)' : 'show_pages',
+            '(/)datasets(/)(:action_id)' : 'show_datasets',
+            '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)custom_builds' : 'show_custom_builds'
+        },
+
+        require_login: [
+            'show_user',
+            'show_user_form',
+            'show_workflows',
+            'show_configure_menu'
+        ],
+
+        loginRequired: function() {
+            this.page.display( new routingMessage({type: 'error', message: "You must be logged in to make this request."}) );
+        },
+
+        authenticate: function( args, name ) {
+            return ( Galaxy.user && Galaxy.user.id ) || this.require_login.indexOf( name ) == -1;
         },
 
         show_tours : function( tour_id ){
             if ( tour_id ){
                 Tours.giveTour( tour_id );
             } else {
-                centerPanel.display( new Tours.ToursView() );
+                this.page.display( new Tours.ToursView() );
             }
         },
 
         show_user : function(){
-            centerPanel.display( new UserPreferences.View() );
+            this.page.display( new UserPreferences.View() );
         },
 
         show_user_form : function( form_id ) {
-            centerPanel.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+            this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+        },
+
+        show_datasets : function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'dataset/list', dict_format: true } ) );
+        },
+
+        show_pages : function( action_id ) {
+            if ( action_id == 'list' ) {
+                this.page.display( new PageList.View() );
+            } else {
+                this.page.display( new GridView( { url_base: Galaxy.root + 'page/list_published', dict_format: true } ) );
+            }
+        },
+
+        show_workflows : function(){
+            this.page.display( new Workflows.View() );
+        },
+
+        show_configure_menu : function(){
+            this.page.display( new WorkflowsConfigureMenu.View() );
         },
 
         show_custom_builds : function() {
             var self = this;
-            if ( !Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model || !Galaxy.currHistoryPanel.model.id ) {
+            var historyPanel = this.page.historyPanel.historyView;
+            if ( !historyPanel || !historyPanel.model || !historyPanel.model.id ) {
                 window.setTimeout(function() { self.show_custom_builds() }, 500)
                 return;
             }
-            centerPanel.display( new CustomBuilds.View() );
+            this.page.display( new CustomBuilds.View() );
         },
 
         /**  */
@@ -140,7 +155,7 @@ window.app = function app( options, bootstrapped ){
             // load a tool by id (tool_id) or rerun a previous tool execution (job_id)
             if( params.tool_id || params.job_id ) {
                 if ( params.tool_id === 'upload1' ) {
-                    Galaxy.upload.show();
+                    this.page.toolPanel.upload.show();
                     this._loadCenterIframe( 'welcome' );
                 } else {
                     this._loadToolForm( params );
@@ -163,33 +178,26 @@ window.app = function app( options, bootstrapped ){
         _loadToolForm : function( params ){
             //TODO: load tool form code async
             params.id = params.tool_id;
-            centerPanel.display( new ToolForm.View( params ) );
+            this.page.display( new ToolForm.View( params ) );
         },
 
         /** load the center panel iframe using the given url */
         _loadCenterIframe : function( url, root ){
             root = root || Galaxy.root;
             url = root + url;
-            centerPanel.$( '#galaxy_main' ).prop( 'src', url );
+            this.page.$( '#galaxy_main' ).prop( 'src', url );
         },
 
-    }))( options );
+    });
 
-    // .................................................... when the page is ready
     // render and start the router
     $(function(){
-        analysisPage.render();
-        analysisPage.right.historyView.loadCurrentHistory();
 
-        // use galaxy to listen to history size changes and then re-fetch the user's total size (to update the quota meter)
-        // TODO: we have to do this here (and after every page.render()) because the masthead is re-created on each
-        // page render. It's re-created each time because there is no render function and can't be re-rendered without
-        // re-creating it.
-        Galaxy.listenTo( analysisPage.right.historyView, 'history-size-change', function(){
-            // fetch to update the quota meter adding 'current' for any anon-user's id
-            Galaxy.user.fetch({ url: Galaxy.user.urlRoot() + '/' + ( Galaxy.user.id || 'current' ) });
-        });
-        analysisPage.right.historyView.connectToQuotaMeter( analysisPage.masthead.quotaMeter );
+        Galaxy.page = new Page.View( _.extend( options, {
+            Left   : ToolPanel,
+            Right  : HistoryPanel,
+            Router : Router
+        } ) );
 
         // start the router - which will call any of the routes above
         Backbone.history.start({

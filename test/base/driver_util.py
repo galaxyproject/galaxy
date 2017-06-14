@@ -271,7 +271,12 @@ def copy_database_template( source, db_path ):
         shutil.copy(source, db_path)
         assert os.path.exists(db_path)
     elif source.lower().startswith(("http://", "https://", "ftp://")):
-        download_to_file(source, db_path)
+        try:
+            download_to_file(source, db_path)
+        except Exception as e:
+            # We log the exception but don't fail startup, since we can
+            # do all migration steps instead of downloading a template.
+            log.exception(e)
     else:
         raise Exception( "Failed to copy database template from source %s" % source )
 

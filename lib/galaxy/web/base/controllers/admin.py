@@ -33,18 +33,9 @@ class Admin( object ):
     def index( self, trans, **kwd ):
         message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
-        if trans.webapp.name == 'galaxy':
-            is_repo_installed = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None
-            installing_repository_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
-            return trans.fill_template( '/webapps/galaxy/admin/index.mako',
-                                        is_repo_installed=is_repo_installed,
-                                        installing_repository_ids=installing_repository_ids,
-                                        message=message,
-                                        status=status )
-        else:
-            return trans.fill_template( '/webapps/tool_shed/admin/index.mako',
-                                        message=message,
-                                        status=status )
+        return trans.fill_template( '/webapps/tool_shed/admin/index.mako',
+                                    message=message,
+                                    status=status )
 
     @web.expose
     @web.require_admin
@@ -1041,7 +1032,7 @@ class Admin( object ):
                 stop_msg += '.'
             for job_id in job_ids:
                 error_msg = "This job was stopped by an administrator: %s  <a href='%s' target='_blank'>Contact support</a> for additional help." \
-                    % ( stop_msg, self.app.config.get("support_url", "https://wiki.galaxyproject.org/Support" ) )
+                    % ( stop_msg, self.app.config.get("support_url", "https://galaxyproject.org/support/" ) )
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
                     job.stderr = error_msg

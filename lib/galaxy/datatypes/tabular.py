@@ -80,7 +80,7 @@ class TabularData( data.Text ):
             return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(trans, dataset, to_ext)
+            return self._serve_raw(trans, dataset, to_ext, **kwd)
         elif dataset.metadata.columns > 50:
             # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.

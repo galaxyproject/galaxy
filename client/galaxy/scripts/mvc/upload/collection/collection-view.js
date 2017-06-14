@@ -130,10 +130,9 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui, LIST_CO
         /** Success */
         _eventSuccess: function( index, message ) {
             // var hdaId = message["outputs"][0]["id"];
-            var hid = message["outputs"][0]["hid"];
-            console.log(message["outputs"][0]);       
+            var hids = _.pluck(message["outputs"], "hid");
             var it = this.collection.get( index );
-            it.set( { 'percentage': 100, 'status': 'success', 'hid': hid } );
+            it.set( { 'percentage': 100, 'status': 'success', 'hids': hids } );
             this.ui_button.model.set( 'percentage', this._uploadPercentage( 100, it.get( 'file_size' ) ) );
             this.upload_completed += it.get( 'file_size' ) * 100;
             this.counter.announce--;
@@ -161,7 +160,9 @@ function( Utils, UploadModel, UploadRow, UploadFtp, Popover, Select, Ui, LIST_CO
         },
 
         _eventBuild: function() {
-            var models = this.collection.map( function( upload ) { return Galaxy.currHistoryPanel.collection.getByHid( upload.get( 'hid' ) ) } );
+            var allHids = [];
+            _.forEach( this.collection.models, function( upload ) { allHids.push.apply(allHids, upload.get( 'hids' )); } );
+            var models = _.map( allHids, function( hid ) { return Galaxy.currHistoryPanel.collection.getByHid( hid ) } );
             var selection = new Galaxy.currHistoryPanel.collection.constructor( models );
             // I'm building the selection wrong because I need to set this historyId directly.
             selection.historyId = Galaxy.currHistoryPanel.collection.historyId;

@@ -6,7 +6,9 @@ import random
 import stat
 import tempfile
 import uuid
+
 from subprocess import PIPE, Popen
+from sys import platform as _platform
 
 import yaml
 
@@ -17,6 +19,8 @@ from galaxy.tools.deps.docker_util import DockerVolume
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 
+
+IS_OS_X = _platform == "darwin"
 
 CONTAINER_NAME_PREFIX = 'gie_'
 
@@ -50,7 +54,8 @@ class InteractiveEnvironmentRequest(object):
         self.load_container_interface()
 
         self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
-        self.attr.docker_connect_port = int(self.attr.viz_config.get("docker", "docker_connect_port")) or None
+        raw_docker_connect_port = self.attr.viz_config.get("docker", "docker_connect_port")
+        self.attr.docker_connect_port = int(raw_docker_connect_port) if raw_docker_connect_port else None
 
         # Generate per-request passwords the IE plugin can use to configure
         # the destination container.
@@ -251,7 +256,7 @@ class InteractiveEnvironmentRequest(object):
         return dict([(key.upper(), item) for key, item in conf.items()])
 
     def _get_import_volume_for_run(self):
-        if self.attr.import_volume:
+        if self.use_volumes and self.attr.import_volume:
             return '{temp_dir}:/import/'.format(temp_dir=self.temp_dir)
         return ''
 
@@ -267,7 +272,7 @@ class InteractiveEnvironmentRequest(object):
         env = self._get_env_for_run(env_override)
         import_volume_def = self._get_import_volume_for_run()
         env_str = ' '.join(['-e "%s=%s"' % (key, item) for key, item in env.items()])
-        volume_str = ' '.join(['-v "%s"' % volume for volume in volumes])
+        volume_str = ' '.join(['-v "%s"' % volume for volume in volumes]) if self.use_volumes else ''
         import_volume_str = '-v "{import_volume}"'.format(import_volume=import_volume_def) if import_volume_def else ''
         name = None
         # This is the basic docker command such as "sudo -u docker docker {docker_args}"
@@ -292,6 +297,15 @@ class InteractiveEnvironmentRequest(object):
             image=image,
         )
         return command
+
+    @property
+    def use_volumes(self):
+        if self.attr.container_interface and not self.attr.container_interface.supports_volumes:
+            return False
+        elif self.attr.viz_config.has_option("docker", "use_volumes"):
+            return string_as_bool_or_none(self.attr.viz_config.get("docker", "use_volumes"))
+        else:
+            return True
 
     def container_run_args(self, image, env_override=None, volumes=None):
         if volumes is None:
@@ -429,6 +443,8 @@ class InteractiveEnvironmentRequest(object):
         :param volumes: dictionary of docker volume mounts
 
         """
+        if volumes is None:
+            volumes = []
         if image is None:
             image = self.default_image
 
@@ -437,6 +453,10 @@ class InteractiveEnvironmentRequest(object):
             # requesting images we have not specifically allowed.
             raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]"
                             % (image, ', '.join(self.allowed_images)))
+
+        # Do not allow a None volumes
+        if not volumes:
+            volumes = []
 
         if additional_ids is not None:
             volumes += self._idsToVolumes(additional_ids)
@@ -485,7 +505,10 @@ class InteractiveEnvironmentRequest(object):
         inspect_data = inspect_data[0]
         if 'Node' in inspect_data:
             return inspect_data['Node']['IP']
-        elif self.attr.docker_hostname == "localhost":
+        elif self.attr.docker_hostname == "localhost" and not IS_OS_X:
+            # If this is on Docker of Mac OS X that Gateway will be an
+            # IP address only available in the Docker host VM - so we
+            # stick with localhost.
             return inspect_data['NetworkSettings']['Gateway']
         else:
             return self.attr.docker_hostname

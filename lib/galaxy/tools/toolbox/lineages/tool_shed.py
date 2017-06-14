@@ -61,6 +61,7 @@ class ToolShedLineage(ToolLineage):
             tool_version = ToolVersion( tool_id=tool.id, tool_shed_repository=tool.tool_shed_repository )
             app.install_model.context.add( tool_version )
             app.install_model.context.flush()
+            app.tool_version_cache = ToolVersionCache(app)
         return ToolShedLineage( app, tool.tool_version )
 
     @staticmethod

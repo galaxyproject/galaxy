@@ -169,7 +169,7 @@ class S3ObjectStore(ObjectStore):
         # exceed delete_this_much; start deleting from the front of the file list,
         # which assumes the oldest files come first on the list.
         deleted_amount = 0
-        for entry in enumerate(file_list):
+        for entry in file_list:
             if deleted_amount < delete_this_much:
                 deleted_amount += entry[2]
                 os.remove(entry[1])

@@ -97,6 +97,12 @@ done;
 export GALAXY_TEST_SELENIUM_REMOTE=1
 export GALAXY_TEST_SELENIUM_REMOTE_PORT="${SELENIUM_PORT}"
 
+# Retry all failed Selenium tests a second time to deal
+# with transiently failing tests. Failure information for
+# first tests is still populated in database/test_errors
+# and available at the top of the Jenkins test report.
+export GALAXY_TEST_SELENIUM_RETRIES=1
+
 # Access Galaxy on localhost via port $GALAXY_PORT
 export GALAXY_TEST_PORT="${GALAXY_PORT}"
 

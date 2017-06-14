@@ -22,12 +22,18 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
-from galaxy.tools.toolbox.cache import ToolCache
+from galaxy.tools.cache import (
+    ToolCache,
+    ToolShedRepositoryCache
+)
 from galaxy.jobs import metrics as job_metrics
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
 from galaxy.queue_worker import GalaxyQueueWorker
-from galaxy.util import heartbeat
+from galaxy.util import (
+    ExecutionTimer,
+    heartbeat
+)
 from tool_shed.galaxy_install import update_repository_manager
 
 
@@ -45,6 +51,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             logging.basicConfig(level=logging.DEBUG)
         log.debug( "python path is: %s", ", ".join( sys.path ) )
         self.name = 'galaxy'
+        self.startup_timer = ExecutionTimer()
         self.new_installation = False
         self.application_stack = application_stack_instance()
         # Read config file and check for errors
@@ -100,6 +107,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
 
         # Setup a Tool Cache
         self.tool_cache = ToolCache()
+        self.tool_shed_repository_cache = ToolShedRepositoryCache(self)
         # Watch various config files for immediate reload
         self.watchers = ConfigWatchers(self)
         self._configure_toolbox()
@@ -197,6 +205,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
 
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
+        log.info("Galaxy app startup finished %s" % self.startup_timer)
 
     def shutdown( self ):
         self.workflow_scheduling_manager.shutdown()

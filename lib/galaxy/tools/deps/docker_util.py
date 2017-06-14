@@ -28,7 +28,7 @@ class DockerVolume(object):
         self.from_path = path
         self.to_path = to_path or path
         if not DockerVolume.__valid_how(how):
-            raise ValueError("Invalid way to specify docker volume %s" % how)
+            raise ValueError("Invalid way to specify Docker volume %s" % how)
         self.how = how
 
     @staticmethod
@@ -41,7 +41,7 @@ class DockerVolume(object):
     @staticmethod
     def volume_from_str(as_str):
         if not as_str:
-            raise ValueError("Failed to parse docker volume from %s" % as_str)
+            raise ValueError("Failed to parse Docker volume from %s" % as_str)
         parts = as_str.split(":", 2)
         kwds = dict(path=parts[0])
         if len(parts) == 2:

@@ -6,8 +6,6 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = build
-UPDATEWORKDIR = /tmp/galaxySphinxUpdate
-UPDATEWORKSOURCELIB = $(UPDATEWORKDIR)/source/lib
 SPHINXAPIDOC  = sphinx-apidoc
 
 # Internal variables.
@@ -17,7 +15,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) sou
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
-GENERATED_RST = source/dev/schema.rst
+GENERATED_RST = source/api/api.rst source/api/ts_api.rst source/dev/schema.rst
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext updaterst
 
@@ -42,10 +40,22 @@ help:
 	@echo "  changes    to make an overview of all changed/added/deprecated items"
 	@echo "  linkcheck  to check all external links for integrity"
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
-	@echo "  updaterst  to update sphinx rst to reflect code structure changes"
+	@echo "  updaterst  to update Sphinx RST files for lib/ to reflect code structure changes"
 
 schema.md: parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd ## Build Github-flavored Markdown from Galaxy Tool XSD (expects libxml in environment)
 	python parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd > $@
+
+source/api/api.rst: source/lib/galaxy.webapps.galaxy.api.rst
+	printf "Galaxy API\n==========\n" > $@
+	tail -n +11 source/lib/galaxy.webapps.galaxy.api.rst >> $@
+	sed -i.bak -e 's/^galaxy\\\.webapps\\\.galaxy\\\.api\\\.//' $@
+	rm -f $@.bak
+
+source/api/ts_api.rst: source/lib/galaxy.webapps.tool_shed.api.rst
+	printf "Tool Shed API\n=============\n" > $@
+	tail -n +11 source/lib/galaxy.webapps.tool_shed.api.rst >> $@
+	sed -i.bak -e 's/^galaxy\\\.webapps\\\.tool\\_shed\\\.api\\\.//' $@
+	rm -f $@.bak
 
 source/dev/schema.rst: schema.md ## Convert Galaxy Tool XSD Markdown docs into reStructuredText (expects pandoc in environment)
 	pandoc schema.md -f markdown_github-hard_line_breaks -s -o $@
@@ -54,7 +64,7 @@ source/dev/schema.rst: schema.md ## Convert Galaxy Tool XSD Markdown docs into r
 # might also want to do
 # cd source/lib; hg revert; rm *.rst.orig;  or not.
 clean:
-	-rm -rf $(BUILDDIR)/* $(UPDATEWORKDIR) schema.md $(GENERATED_RST)
+	-rm -rf $(BUILDDIR)/* schema.md $(GENERATED_RST)
 
 html: $(GENERATED_RST)
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
@@ -167,19 +177,6 @@ doctest: $(GENERATED_RST)
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
-# Targets for updating the structure of the Sphinx RST doc for lib/
-
-$(UPDATEWORKSOURCELIB):
-	mkdir -p $(UPDATEWORKSOURCELIB)
-
-# Create a fresh version of the RST files for the lib, and then create a 
-# unified patch file (ignore all emacs leftovers).
-# Feed that to our custom version of patch.py, which applies patches that
-# are only adds, and reports everything else to the user to deal with manually
-#
-# Note: this is still a very rough process.  the run of patch.py gets some 
-# errors that don't mean anything to us.  And the manual process is not fun.
-updaterst: $(UPDATEWORKSOURCELIB)
-	$(SPHINXAPIDOC) -o $(UPDATEWORKSOURCELIB) ../lib
-	-diff -x '*.rst~' -ru source/lib $(UPDATEWORKSOURCELIB) >  $(UPDATEWORKDIR)/alldifs.patch
-	./patch.py $(UPDATEWORKDIR)/alldifs.patch
+# Update Sphinx RST files for lib/ to reflect code structure changes
+updaterst:
+	$(SPHINXAPIDOC) -M --force -o source/lib/ ../lib/

@@ -48,7 +48,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     burst_at = getattr( config, 'tool_submission_burst_at', 10 )
     burst_threads = getattr( config, 'tool_submission_burst_threads', 1 )
 
-    tool_action = tool.action
+    tool_action = tool.tool_action
     if hasattr( tool_action, "check_inputs_ready" ):
         for params in execution_tracker.param_combinations:
             # This will throw an exception if the tool is not ready.
@@ -86,7 +86,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     if collection_info:
         history = history or tool.get_default_history_by_trans( trans )
         if len(param_combinations) == 0:
-            template = "Attempting to map over an empty collection, this is not yet implemented. colleciton_info is [%s]"
+            template = "Attempting to map over an empty collection, this is not yet implemented. collection_info is [%s]"
             message = template % collection_info
             log.warn(message)
             raise Exception(message)

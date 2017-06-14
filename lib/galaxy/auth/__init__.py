@@ -25,7 +25,7 @@ class AuthManager(object):
 
         authenticators = []
         # process authenticators
-        for auth_elem in conf_root.getchildren():
+        for auth_elem in conf_root:
             type_elem = auth_elem.find('type')
             plugin = self.__plugins_dict.get(type_elem.text)()
 
