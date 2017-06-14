@@ -131,7 +131,7 @@ class JobsApiTestCase( api.ApiTestCase ):
         self._assert_has_keys( show_jobs_response.json(), "command_line", "external_id" )
 
     def test_deleting_output_keep_running_until_all_deleted( self ):
-        history_id, job_state, outputs = self._setup_running_two_output_job( 60 )
+        history_id, job_state, outputs = self._setup_running_two_output_job( 120 )
 
         # Delete one of the two outputs and make sure the job is still running.
         self._raw_update_history_item( history_id, outputs[0]["id"], {"deleted": True} )
@@ -145,7 +145,7 @@ class JobsApiTestCase( api.ApiTestCase ):
         assert final_state in ["deleted_new", "deleted"], final_state
 
     def test_purging_output_keep_running_until_all_purged( self ):
-        history_id, job_state, outputs = self._setup_running_two_output_job( 60 )
+        history_id, job_state, outputs = self._setup_running_two_output_job( 120 )
 
         # Pretty much right away after the job is running, these paths should be populated -
         # if they are grab them and make sure they are deleted at the end of the job.

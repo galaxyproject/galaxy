@@ -5,7 +5,6 @@ reloading the toolbox, etc., across multiple processes.
 
 import logging
 import threading
-import time
 
 import galaxy.queues
 from galaxy import util
@@ -85,12 +84,15 @@ def reload_tool(app, **kwargs):
 
 
 def reload_toolbox(app, **kwargs):
+    reload_timer = util.ExecutionTimer()
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
-    if app.tool_cache:
+    if hasattr(app, 'tool_cache'):
         app.tool_cache.cleanup()
-    app.toolbox = _get_new_toolbox(app)
+    _get_new_toolbox(app)
     app.toolbox._reload_count = reload_count + 1
+    send_local_control_task(app, 'rebuild_toolbox_search_index')
+    log.debug("Toolbox reload %s", reload_timer)
 
 
 def _get_new_toolbox(app):
@@ -101,33 +103,38 @@ def _get_new_toolbox(app):
     from galaxy import tools
     from galaxy.tools.special_tools import load_lib_tools
     from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
+    if hasattr(app, 'tool_shed_repository_cache'):
+                app.tool_shed_repository_cache.rebuild()
     app.tool_version_cache = ToolVersionCache(app)  # Load new tools into version cache
     tool_configs = app.config.tool_configs
     if app.config.migrated_tools_config not in tool_configs:
         tool_configs.append(app.config.migrated_tools_config)
-    start = time.time()
+
     new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
+    app.datatypes_registry.load_external_metadata_tool(new_toolbox)
     load_lib_tools(new_toolbox)
-    new_toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
-    end = time.time() - start
-    log.debug("Toolbox reload took %d seconds", end)
-    app.reindex_tool_search(new_toolbox)
-    return new_toolbox
+    app.toolbox = new_toolbox
 
 
 def reload_data_managers(app, **kwargs):
+    reload_timer = util.ExecutionTimer()
     from galaxy.tools.data_manager.manager import DataManagers
     from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
+    if hasattr(app, 'tool_shed_repository_cache'):
+        app.tool_shed_repository_cache.rebuild()
     app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
     reload_count = app.data_managers._reload_count
     app.data_managers = DataManagers(app)
     app.data_managers._reload_count = reload_count + 1
     app.tool_version_cache = ToolVersionCache(app)
+    if hasattr(app, 'tool_cache'):
+        app.tool_cache.reset_status()
+    log.debug("Data managers reloaded %s", reload_timer)
 
 
 def reload_display_application(app, **kwargs):
@@ -161,6 +168,11 @@ def reload_tool_data_tables(app, **kwargs):
     log.debug("Finished data table reload for %s" % table_names)
 
 
+def rebuild_toolbox_search_index(app, **kwargs):
+    if app.toolbox_search.index_count < app.toolbox._reload_count:
+        app.reindex_tool_search()
+
+
 def admin_job_lock(app, **kwargs):
     job_lock = kwargs.get('job_lock', False)
     # job_queue is exposed in the root app, but this will be 'fixed' at some
@@ -178,7 +190,8 @@ control_message_to_task = { 'create_panel_section': create_panel_section,
                             'reload_tool_data_tables': reload_tool_data_tables,
                             'admin_job_lock': admin_job_lock,
                             'reload_sanitize_whitelist': reload_sanitize_whitelist,
-                            'recalculate_user_disk_usage': recalculate_user_disk_usage}
+                            'recalculate_user_disk_usage': recalculate_user_disk_usage,
+                            'rebuild_toolbox_search_index': rebuild_toolbox_search_index}
 
 
 class GalaxyQueueWorker(ConsumerMixin, threading.Thread):

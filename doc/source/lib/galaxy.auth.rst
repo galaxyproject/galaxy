@@ -1,5 +1,5 @@
-galaxy.auth package
-===================
+galaxy\.auth package
+====================
 
 .. automodule:: galaxy.auth
     :members:

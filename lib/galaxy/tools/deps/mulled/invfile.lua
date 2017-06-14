@@ -45,6 +45,13 @@ if conda_image == '' then
     conda_image = 'continuumio/miniconda:latest'
 end
 
+
+local singularity_image = VAR.SINGULARITY_IMAGE
+if singularity_image == '' then
+    singularity_image = 'quay.io/biocontainers/singularity:2.3--0'
+end
+
+
 local destination_base_image = VAR.DEST_BASE_IMAGE
 if destination_base_image == '' then
     destination_base_image = 'bgruening/busybox-bash:0.1'
@@ -85,6 +92,25 @@ inv.task('build')
         .inImage(destination_base_image)
         .as(repo)
 
+if VAR.SINGULARITY ~= '' then
+    inv.task('singularity')
+        .using(singularity_image)
+        .withHostConfig({binds = {"build:/data","singularity_import:/import"}, privileged = true})
+        .withConfig({entrypoint = {'/bin/sh', '-c'}})
+        -- this will create a container that is the size of our conda dependencies + 20MiB
+        -- The 20 MiB can be improved at some point, but this seems to work for now.
+        .run("du -sc  /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)+20}'")
+        .run("singularity create --size `du -sc  /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)+20}'` /import/" .. VAR.SINGULARITY_IMAGE_NAME)
+        .run('mkdir -p /usr/local/var/singularity/mnt/container && singularity bootstrap /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity')
+        .run('chown ' .. VAR.USER_ID .. ' /import/' .. VAR.SINGULARITY_IMAGE_NAME)
+end
+
+inv.task('cleanup')
+    .using(conda_image)
+    .withHostConfig({binds = {"build:/data"}})
+    .run('rm', '-rf', '/data/dist')
+
+
 if VAR.TEST_BINDS == '' then
     inv.task('test')
         .using(repo)
@@ -103,9 +129,14 @@ inv.task('push')
 
 inv.task('build-and-test')
     .runTask('build')
+    .runTask('singularity')
+    .runTask('cleanup')
     .runTask('test')
+
 
 inv.task('all')
     .runTask('build')
+    .runTask('singularity')
+    .runTask('cleanup')
     .runTask('test')
     .runTask('push')

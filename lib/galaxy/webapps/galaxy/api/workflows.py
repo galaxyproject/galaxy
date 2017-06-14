@@ -43,17 +43,78 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         self.workflow_manager = workflows.WorkflowsManager( app )
         self.workflow_contents_manager = workflows.WorkflowContentsManager( app )
 
+    def __get_full_shed_url( self, url ):
+        for name, shed_url in self.app.tool_shed_registry.tool_sheds.items():
+            if url in shed_url:
+                return shed_url
+        return None
+
     @expose_api
     def index(self, trans, **kwd):
         """
         GET /api/workflows
+        """
+        return self.get_workflows_list( trans, False, kwd )
 
+    @expose_api
+    def get_workflow_menu( self, trans, **kwd ):
+        """
+        Get workflows present in the tools panel
+        GET /api/workflows/menu
+        """
+        user = trans.get_user()
+        ids_in_menu = [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ]
+        return {
+            'ids_in_menu': ids_in_menu,
+            'workflows': self.get_workflows_list( trans, True, kwd )
+        }
+
+    @expose_api
+    def set_workflow_menu( self, trans, **kwd ):
+        """
+        Save workflow menu to be shown in the tool panel
+        PUT /api/workflows/menu
+        """
+        payload = kwd.get( 'payload' )
+        user = trans.get_user()
+        workflow_ids = payload.get( 'workflow_ids' )
+        if workflow_ids is None:
+            workflow_ids = []
+        elif type( workflow_ids ) != list:
+            workflow_ids = [ workflow_ids ]
+        sess = trans.sa_session
+        # This explicit remove seems like a hack, need to figure out
+        # how to make the association do it automatically.
+        for m in user.stored_workflow_menu_entries:
+            sess.delete( m )
+        user.stored_workflow_menu_entries = []
+        q = sess.query( model.StoredWorkflow )
+        # To ensure id list is unique
+        seen_workflow_ids = set()
+        for id in workflow_ids:
+            if id in seen_workflow_ids:
+                continue
+            else:
+                seen_workflow_ids.add( id )
+            m = model.StoredWorkflowMenuEntry()
+            m.stored_workflow = q.get( id )
+            user.stored_workflow_menu_entries.append( m )
+        sess.flush()
+        message = "Menu updated."
+        trans.set_message( message )
+        return { 'message': message, 'status': 'done' }
+
+    def get_workflows_list( self, trans, for_menu, kwd ):
+        """
         Displays a collection of workflows.
 
         :param  show_published:      if True, show also published workflows
         :type   show_published:      boolean
+        :param  missing_tools:       if True, include a list of missing tools per workflow
+        :type   missing_tools:       boolean
         """
         show_published = util.string_as_bool( kwd.get( 'show_published', 'False' ) )
+        missing_tools = util.string_as_bool( kwd.get( 'missing_tools', 'False' ) )
         rval = []
         filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
         if show_published:
@@ -61,20 +122,59 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
                 filter1, trans.app.model.StoredWorkflow.table.c.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.table.c.update_time ) ).all():
-            item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-            encoded_id = trans.security.encode_id(wf.id)
-            item['url'] = url_for('workflow', id=encoded_id)
+            if for_menu:
+                item = wf.to_dict()
+            else:
+                item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+                encoded_id = trans.security.encode_id(wf.id)
+                item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
+            item['number_of_steps'] = len( wf.latest_workflow.steps )
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
                 trans.app.model.StoredWorkflow.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
-            item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-            encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
-            item['url'] = url_for( 'workflow', id=encoded_id )
+            if for_menu:
+                item = wf_sa.stored_workflow.to_dict()
+            else:
+                item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+                encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
+                item['url'] = url_for( 'workflow', id=encoded_id )
+                item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
+            item['number_of_steps'] = len( wf_sa.stored_workflow.latest_workflow.steps )
             rval.append(item)
+        if missing_tools:
+            workflows_missing_tools = []
+            workflows = []
+            workflows_by_toolshed = dict()
+            for key, value in enumerate(rval):
+                tool_ids = []
+                workflow_details = self.workflow_contents_manager.workflow_to_dict( trans, self.__get_stored_workflow( trans, value[ 'id' ] ), style='instance' )
+                if 'steps' in workflow_details:
+                    for step in workflow_details[ 'steps' ]:
+                        tool_id = workflow_details[ 'steps' ][ step ][ 'tool_id' ]
+                        if tool_id not in tool_ids and self.app.toolbox.is_missing_shed_tool( tool_id ):
+                            tool_ids.append( tool_id )
+                if len( tool_ids ) > 0:
+                    value[ 'missing_tools' ] = tool_ids
+                    workflows_missing_tools.append( value )
+            for workflow in workflows_missing_tools:
+                for tool_id in workflow[ 'missing_tools' ]:
+                    toolshed, _, owner, name, tool, version = tool_id.split( '/' )
+                    shed_url = self.__get_full_shed_url( toolshed )
+                    repo_identifier = '/'.join( [ toolshed, owner, name ] )
+                    if repo_identifier not in workflows_by_toolshed:
+                        workflows_by_toolshed[ repo_identifier ] = dict( shed=shed_url.rstrip('/'), repository=name, owner=owner, tools=[ tool_id ], workflows=[ workflow[ 'name' ] ] )
+                    else:
+                        if tool_id not in workflows_by_toolshed[ repo_identifier ][ 'tools' ]:
+                            workflows_by_toolshed[ repo_identifier ][ 'tools' ].append( tool_id )
+                        if workflow[ 'name' ] not in workflows_by_toolshed[ repo_identifier ][ 'workflows' ]:
+                            workflows_by_toolshed[ repo_identifier ][ 'workflows' ].append( workflow[ 'name' ] )
+            for repo_tag in workflows_by_toolshed:
+                workflows.append( workflows_by_toolshed[ repo_tag ] )
+            return workflows
         return rval
 
     @expose_api

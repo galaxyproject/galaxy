@@ -32,16 +32,18 @@ class EnvManager( object ):
             else:
                 env_var_text = elem.text.replace( '$INSTALL_DIR', tool_shed_repository_install_dir )
                 return dict( name=env_var_name, action=env_var_action, value=env_var_text )
-        if elem.text:
-            # Allow for environment variables that contain neither REPOSITORY_INSTALL_DIR nor INSTALL_DIR
-            # since there may be command line parameters that are tuned for a Galaxy instance.  Allowing them
-            # to be set in one location rather than being hard coded into each tool config is the best approach.
-            # For example:
-            # <environment_variable name="GATK2_SITE_OPTIONS" action="set_to">
-            #    "--num_threads 4 --num_cpu_threads_per_data_thread 3 --phone_home STANDARD"
-            # </environment_variable>
-            return dict( name=env_var_name, action=env_var_action, value=elem.text)
-        return None
+        # Allow for environment variables that contain neither REPOSITORY_INSTALL_DIR nor INSTALL_DIR
+        # since there may be command line parameters that are tuned for a Galaxy instance.  Allowing them
+        # to be set in one location rather than being hard coded into each tool config is the best approach.
+        # For example:
+        # <environment_variable name="GATK2_SITE_OPTIONS" action="set_to">
+        #    "--num_threads 4 --num_cpu_threads_per_data_thread 3 --phone_home STANDARD"
+        # </environment_variable>
+        if elem.text is None:
+            # Also allow for an empty value for the environment variable, which
+            # may makes sense especially for the 'set_to' action
+            elem.text = ''
+        return dict( name=env_var_name, action=env_var_action, value=elem.text)
 
     def get_env_shell_file_path( self, installation_directory ):
         env_shell_file_name = 'env.sh'

@@ -69,7 +69,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
             container = self._find_container( job_wrapper )
             if container:
                 # HTCondor needs the image as 'docker_image'
-                query_params.update({'docker_image': container})
+                query_params.update({'docker_image': container.container_id})
 
         galaxy_slots = query_params.get('request_cpus', None)
         if galaxy_slots:

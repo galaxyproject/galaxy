@@ -72,6 +72,7 @@ class CategoriesController( BaseAPIController ):
 
         Example: GET localhost:9009/api/categories/f9cad7b01a472135/repositories
         """
+        installable = util.asbool( kwd.get( 'installable', 'false' ) )
         category = suc.get_category( self.app, category_id )
         if category is None:
             category_dict = dict( message='Unable to locate category record for id %s.' % ( str( id ) ),
@@ -82,7 +83,7 @@ class CategoriesController( BaseAPIController ):
         category_dict[ 'url' ] = web.url_for( controller='categories',
                                               action='show',
                                               id=trans.security.encode_id( category.id ) )
-        repositories = repository_util.get_repositories_by_category( self.app, category.id )
+        repositories = repository_util.get_repositories_by_category( self.app, category.id, installable=installable )
         category_dict[ 'repositories' ] = repositories
         return category_dict
 

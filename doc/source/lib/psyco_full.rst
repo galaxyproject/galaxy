@@ -1,5 +1,5 @@
-psyco_full module
-=================
+psyco\_full module
+==================
 
 .. automodule:: psyco_full
     :members:

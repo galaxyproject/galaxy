@@ -153,7 +153,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             return  '<p class="ui-panel-footer">' +
                         'You are using <strong>' + options.nice_total_disk_usage + '</strong> of disk space in this Galaxy instance. ' +
                         ( Galaxy.config.enable_quotas ? 'Your disk quota is: <strong>' + options.quota + '</strong>. ' : '' ) +
-                        'Is your usage more than expected? See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.' +
+                        'Is your usage more than expected? See the <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank">documentation</a> for tips on how to find all of the data in your account.' +
                     '</p>';
         }
     });

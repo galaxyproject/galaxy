@@ -100,6 +100,8 @@
   <tool file="collection_creates_dynamic_nested.xml" />
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="collection_type_source.xml" />
+  <tool file="collection_creates_list_fail.xml" />
+  <tool file="collection_creates_dynamic_nested_fail.xml" />
   <tool file="cheetah_casting.xml" />
 
   <tool file="cheetah_problem_unbound_var.xml" />
@@ -133,6 +135,7 @@
   <!-- Tools for dependency and container testing. -->
   <tool file="legacy_r.xml" />
   <tool file="mulled_example_multi_1.xml" />
+  <tool file="mulled_example_multi_versionless.xml" />
   <tool file="mulled_example_multi_incomplete.xml" />
   <tool file="mulled_example_conflict.xml" />
 

@@ -115,6 +115,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
     }
     option_map = {}
     publish_port_list_required = False
+    supports_volumes = True
 
     def __init__(self, conf, key, containers_config_file):
         self._key = key
