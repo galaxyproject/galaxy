@@ -22,7 +22,7 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
-from galaxy.tools.toolbox.cache import (
+from galaxy.tools.cache import (
     ToolCache,
     ToolShedRepositoryCache
 )

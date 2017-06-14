@@ -247,7 +247,11 @@ class Configuration( object ):
             log.warn("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             preserve_python_environment = "legacy_only"
         self.preserve_python_environment = preserve_python_environment
+        # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
+        # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
+        if not os.path.exists( self.container_image_cache_path ):
+            self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_cache" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
         self.retry_job_output_collection = int( kwargs.get( 'retry_job_output_collection', 0 ) )

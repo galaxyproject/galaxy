@@ -1033,55 +1033,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             incoming=kwargs
         )
 
-    @web.expose
-    def configure_menu( self, trans, workflow_ids=None ):
-        user = trans.get_user()
-        if trans.request.method == "POST":
-            if workflow_ids is None:
-                workflow_ids = []
-            elif type( workflow_ids ) != list:
-                workflow_ids = [ workflow_ids ]
-            sess = trans.sa_session
-            # This explicit remove seems like a hack, need to figure out
-            # how to make the association do it automatically.
-            for m in user.stored_workflow_menu_entries:
-                sess.delete( m )
-            user.stored_workflow_menu_entries = []
-            q = sess.query( model.StoredWorkflow )
-            # To ensure id list is unique
-            seen_workflow_ids = set()
-            for id in workflow_ids:
-                if id in seen_workflow_ids:
-                    continue
-                else:
-                    seen_workflow_ids.add( id )
-                m = model.StoredWorkflowMenuEntry()
-                m.stored_workflow = q.get( id )
-                user.stored_workflow_menu_entries.append( m )
-            sess.flush()
-            message = "Menu updated"
-            refresh_frames = ['tools']
-        else:
-            message = None
-            refresh_frames = []
-        user = trans.get_user()
-        ids_in_menu = set( [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ] )
-        workflows = trans.sa_session.query( model.StoredWorkflow ) \
-            .filter_by( user=user, deleted=False ) \
-            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
-            .all()
-        shared_by_others = trans.sa_session \
-            .query( model.StoredWorkflowUserShareAssociation ) \
-            .filter_by( user=user ) \
-            .filter( model.StoredWorkflow.deleted == expression.false() ) \
-            .all()
-        return trans.fill_template( "workflow/configure_menu.mako",
-                                    workflows=workflows,
-                                    shared_by_others=shared_by_others,
-                                    ids_in_menu=ids_in_menu,
-                                    message=message,
-                                    refresh_frames=refresh_frames )
-
     def _workflow_to_svg_canvas( self, trans, stored ):
         workflow = stored.latest_workflow
         workflow_canvas = WorkflowCanvas()

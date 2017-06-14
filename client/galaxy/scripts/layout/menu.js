@@ -65,7 +65,7 @@ var Collection = Backbone.Collection.extend({
                     url     : 'visualization/list_published'
                 },{
                     title   : _l('Pages'),
-                    url     : 'page/list_published'
+                    url     : 'pages/list_published'
             }]
         });
 
@@ -271,11 +271,11 @@ var Collection = Backbone.Collection.extend({
                         target  : 'galaxy_main'
                     },{
                         title   : _l('Saved Datasets'),
-                        url     : 'dataset/list',
-                        target  : 'galaxy_main'
+                        url     : 'datasets/list',
+                        target  : '_top'
                     },{
                         title   : _l('Saved Pages'),
-                        url     : 'page/list',
+                        url     : 'pages/list',
                         target  : '_top'
                     }]
             };

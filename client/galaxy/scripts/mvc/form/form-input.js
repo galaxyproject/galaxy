@@ -11,7 +11,8 @@ define([], function() {
                 text_enable     : this.app_options.text_enable   || 'Enable',
                 text_disable    : this.app_options.text_disable  || 'Disable',
                 cls_enable      : this.app_options.cls_enable    || 'fa fa-caret-square-o-down',
-                cls_disable     : this.app_options.cls_disable   || 'fa fa-caret-square-o-up'
+                cls_disable     : this.app_options.cls_disable   || 'fa fa-caret-square-o-up',
+                always_refresh  : this.app_options.always_refresh
             }).set( options );
 
             // set element and link components
@@ -44,6 +45,11 @@ define([], function() {
                 app.trigger && app.trigger( 'change' );
                 self.render();
             });
+
+            // hide error on value change
+            if ( this.field.model && !this.model.get( 'always_refresh' ) ) {
+                this.listenTo( this.field.model, 'change:value', function() { self.reset() } );
+            }
         },
 
         /** Set backdrop for input element */

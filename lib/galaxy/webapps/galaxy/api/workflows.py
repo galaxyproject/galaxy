@@ -53,7 +53,59 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def index(self, trans, **kwd):
         """
         GET /api/workflows
+        """
+        return self.get_workflows_list( trans, False, kwd )
 
+    @expose_api
+    def get_workflow_menu( self, trans, **kwd ):
+        """
+        Get workflows present in the tools panel
+        GET /api/workflows/menu
+        """
+        user = trans.get_user()
+        ids_in_menu = [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ]
+        return {
+            'ids_in_menu': ids_in_menu,
+            'workflows': self.get_workflows_list( trans, True, kwd )
+        }
+
+    @expose_api
+    def set_workflow_menu( self, trans, **kwd ):
+        """
+        Save workflow menu to be shown in the tool panel
+        PUT /api/workflows/menu
+        """
+        payload = kwd.get( 'payload' )
+        user = trans.get_user()
+        workflow_ids = payload.get( 'workflow_ids' )
+        if workflow_ids is None:
+            workflow_ids = []
+        elif type( workflow_ids ) != list:
+            workflow_ids = [ workflow_ids ]
+        sess = trans.sa_session
+        # This explicit remove seems like a hack, need to figure out
+        # how to make the association do it automatically.
+        for m in user.stored_workflow_menu_entries:
+            sess.delete( m )
+        user.stored_workflow_menu_entries = []
+        q = sess.query( model.StoredWorkflow )
+        # To ensure id list is unique
+        seen_workflow_ids = set()
+        for id in workflow_ids:
+            if id in seen_workflow_ids:
+                continue
+            else:
+                seen_workflow_ids.add( id )
+            m = model.StoredWorkflowMenuEntry()
+            m.stored_workflow = q.get( id )
+            user.stored_workflow_menu_entries.append( m )
+        sess.flush()
+        message = "Menu updated."
+        trans.set_message( message )
+        return { 'message': message, 'status': 'done' }
+
+    def get_workflows_list( self, trans, for_menu, kwd ):
+        """
         Displays a collection of workflows.
 
         :param  show_published:      if True, show also published workflows
@@ -70,9 +122,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
                 filter1, trans.app.model.StoredWorkflow.table.c.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.table.c.update_time ) ).all():
-            item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-            encoded_id = trans.security.encode_id(wf.id)
-            item['url'] = url_for('workflow', id=encoded_id)
+            if for_menu:
+                item = wf.to_dict()
+            else:
+                item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+                encoded_id = trans.security.encode_id(wf.id)
+                item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
             item['number_of_steps'] = len( wf.latest_workflow.steps )
             rval.append(item)
@@ -80,12 +135,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 user=trans.user ).join( 'stored_workflow' ).filter(
                 trans.app.model.StoredWorkflow.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
-            item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-            encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
-            item['url'] = url_for( 'workflow', id=encoded_id )
+            if for_menu:
+                item = wf_sa.stored_workflow.to_dict()
+            else:
+                item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+                encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
+                item['url'] = url_for( 'workflow', id=encoded_id )
+                item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
             item['number_of_steps'] = len( wf_sa.stored_workflow.latest_workflow.steps )
-            item['slug'] = wf_sa.stored_workflow.slug
             rval.append(item)
         if missing_tools:
             workflows_missing_tools = []
@@ -117,9 +175,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             for repo_tag in workflows_by_toolshed:
                 workflows.append( workflows_by_toolshed[ repo_tag ] )
             return workflows
-            # import json
-            # log.debug(json.dumps(workflows_by_toolshed, indent=2))
-            # return workflows_by_toolshed
         return rval
 
     @expose_api

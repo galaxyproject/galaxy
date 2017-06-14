@@ -269,7 +269,7 @@
 
                  This runner requires a shared file system where the directories of
                  `job_working_directory`, `file_path` and `new_file_path` settings defined on
-                 the `galaxy.ini` file are shared amongst the Mesos agents (i.e. nodes wich
+                 the `galaxy.ini` file are shared amongst the Mesos agents (i.e. nodes which
                  actually run the jobs).
             -->
             <param id="chronos">`chronos_host`</param>
@@ -280,8 +280,16 @@
             <!-- Username to access Mesos cluster. -->
             <param id="password">password</param>
             <!-- Password to access Mesos cluster. -->
+            <param id="insecure">true</param>
+            <!-- True to communicate with Chronos over HTTPS; false otherwise-->
         </plugin>
-
+        <!-- Additionally any plugin or destination (below) may define an "enabled" parameter that should
+             evaluate to True or False. When setup using
+                <param id="enabled" from_environ="<VAR>">True|False</param>
+             plugins and destinations can be conditionally loaded using environment variables.
+             Setting the param body above to True or False is required and specifies the default
+             used by Galaxy is no environment variable of the specified name is found.
+        -->
     </plugins>
     <handlers default="handlers">
         <!-- Additional job handlers - the id should match the name of a
@@ -424,6 +432,53 @@
                configured to run in a container the following option can provide
                a fallback. -->
           <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
+
+          <!-- If the destination should be secured to only allow containerized jobs
+               the following parameter may be set for the job destination. Not all,
+               or even most, tools available in Galaxy core or in the Tool Shed
+               support Docker yet so this option may require a lot of extra work for
+               the deployer. -->
+          <!-- <param id="require_container">true</param> -->
+        </destination>
+        <destination id="singularity_local" runner="local">
+          <param id="singularity_enabled">true</param>
+          <!-- See the above documentation for docker_volumes, singularity_volumes works
+               almost the same way. The only difference is that $default will expand with
+               rw directories that in Docker would expand as ro if any of subdirectories are rw.
+
+               As an example consider that Docker mounts the parent of the working directory
+               (this is known as the job directory) as ro and the working directory itself as rw.
+               This doesn't work in Singularity because if any parent directory is mounted as ro
+               none of its children will be rw. So the job directory will be mounted rw for
+               Singularity.
+          -->
+          <!--
+          <param id="singularity_volumes">$defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
+          -->
+          <!-- You can configure singularity to run using sudo - this probably should not
+               be set and may be removed in the future.
+          -->
+          <!-- <param id="singularity_sudo">false</param> -->
+          <!-- Following option can be used to tweak sudo command used by
+               default. -->
+          <!-- <param id="singularity_sudo_cmd">/usr/bin/sudo -extra_param</param> -->
+          <!-- Pass extra arguments to the singularity exec command not covered by the
+               above options. -->
+          <!-- <param id="singularity_run_extra_arguments"></param> -->
+          <!-- Following command can be used to tweak singularity command. -->
+          <!-- <param id="singularity_cmd">/usr/local/custom_docker/docker</param> -->
+
+          <!-- If deployer wants to use singularity for isolation, but does not
+               trust tool's specified container - a destination wide override
+               can be set. This will cause all jobs on this destination to use
+               that singularity image. -->
+          <!-- <param id="singularity_container_id_override">/path/to/singularity/image</param> -->
+
+          <!-- Likewise, if deployer wants to use singularity for isolation and
+               does trust tool's specified container - but also wants tool's not
+               configured to run in a container the following option can provide
+               a fallback. -->
+          <!-- <param id="singularity_default_container_id">/path/to/singularity/image</param> -->
 
           <!-- If the destination should be secured to only allow containerized jobs
                the following parameter may be set for the job destination. Not all,

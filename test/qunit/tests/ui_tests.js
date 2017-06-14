@@ -1,6 +1,6 @@
 /* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
-define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
-], function( testApp, Ui, SelectContent, Drilldown, Thumbnails, Tabs ){
+define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-slider', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
+], function( testApp, Ui, SelectContent, Drilldown, Slider, Thumbnails, Tabs ){
     'use strict';
     module( 'Ui test', {
         setup: function() {
@@ -579,6 +579,22 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         ok( label.$el.html() === '_title', 'Correct title' );
         label.model.set( 'title', '_new_title' );
         ok( label.$el.html() === '_new_title', 'Correct new title' );
+    } );
+
+    test( 'slider', function() {
+        var input = new Slider.View( { min: 1, max: 100, value: 10 } );
+        $( 'body' ).prepend( input.$el );
+        ok( input.$slider.slider( 'value' ) == 10, 'Correct value.' );
+        ok( input.value( 1000 ) == 100, 'Correct upper limit.' );
+        ok( input.$slider.slider( 'value' ) == 100, 'Correct slider value.' );
+        ok( input.$slider.slider( 'option', 'step' ) == 1, 'Correct default step size.' );
+        var input1 = new Slider.View( { value: 10 } );
+        $( 'body' ).prepend( input1.$el );
+        ok( input1.$slider.css( 'display' ) == 'none', 'Slider hidden.' );
+        var input2 = new Slider.View( { min: 0, max: 100, value: 10.1, precise: true } );
+        $( 'body' ).prepend( input2.$el );
+        ok( input2.$slider.slider( 'option', 'step' ) == 0.01, 'Correct float step size.' );
+        ok( input2.$slider.slider( 'value' ) == 10.1, 'Correct float slider value.' );
     } );
 
     test( 'input', function() {

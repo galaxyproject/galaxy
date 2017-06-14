@@ -349,10 +349,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Interactive environment plugins root directory: where to look for interactive
 # environment plugins.  By default none will be loaded.  Set to
-# config/plugins/interactive_environments to load Galaxy's stock plugins
-# (currently just Jupyter).  These will require Docker to be configured and
-# have security considerations, so proceed with caution. The path is relative to the
-# Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
+# config/plugins/interactive_environments to load Galaxy's stock plugins.
+# These will require Docker to be configured and have security considerations,
+# so proceed with caution. The path is relative to the Galaxy root dir.  To use
+# an absolute path begin the path with '/'.  This is a comma
 # separated list.
 #interactive_environment_plugins_directory =
 
