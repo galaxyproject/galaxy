@@ -4,8 +4,8 @@
 # the update fails, not replace current data/tables with error
 # messages.
 
-## Uncomment and edit this line to refer to galaxy's path:
-#GALAXY=/galaxy/path
+## Change the Galaxy path on the next line if needed:
+GALAXY=$(dirname "$0")/..
 PYTHONPATH=${GALAXY}/lib
 export PYTHONPATH
 
