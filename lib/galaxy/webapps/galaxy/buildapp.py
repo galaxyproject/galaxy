@@ -82,29 +82,6 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_route( '/activate', controller='user', action='activate' )
     webapp.add_route( '/login', controller='root', action='login' )
 
-    # OpenID Connect endpoints
-    # webapp.add_route( '/oidc/{sub1}/{sub2}', controller='oidc_provider', action='oidc' )
-    webapp.add_route('/oidc/.well-known/openid-configuration', controller='oidc_provider', action='op_info')
-    webapp.add_route('/oidc/.well-known/simple-web-discovery', controller='oidc_provider', action='swd_info')
-    webapp.add_route('/oidc/.well-known/host-meta.json', controller='oidc_provider', action='meta_info')
-    webapp.add_route('/oidc/.well-known/webfinger', controller='oidc_provider', action='webfinger')
-    webapp.add_route('/oidc/.+\.css$', controller='oidc_provider', action='css')
-    webapp.add_route('/oidc/safe', controller='oidc_provider', action='safe')
-    webapp.add_route('/oidc/keyrollover', controller='oidc_provider', action='key_rollover')
-    webapp.add_route('/oidc/clearkeys', controller='oidc_provider', action='clear_keys')
-    webapp.add_route('/oidc/check_session', controller='oidc_provider', action='check_session_iframe')
-    webapp.add_route('/oidc/registration', controller='oidc_provider', action='registration')
-    webapp.add_route('/oidc/authorization', controller='oidc_provider', action='authorization')
-    webapp.add_route('/oidc/verify', controller='oidc_provider', action='verify')
-
-
-
-
-
-
-
-
-
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/{controller}/{action}', action='index' )
