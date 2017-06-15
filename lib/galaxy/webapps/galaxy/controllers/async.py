@@ -36,7 +36,7 @@ class ASync( BaseUIController ):
         STATUS = params.STATUS
         URL = params.URL
         data_id = params.data_id
-
+        
         log.debug('async dataid -> %s' % data_id)
         trans.log_event( 'Async dataid -> %s' % str(data_id) )
 
@@ -68,9 +68,22 @@ class ASync( BaseUIController ):
                 galaxy_url = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, key )
                 galaxy_url = params.get("GALAXY_URL", galaxy_url)
                 params = dict( URL=URL, GALAXY_URL=galaxy_url, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext )
+                
                 # Assume there is exactly one output file possible
-                params[tool.outputs.keys()[0]] = data.id
-                tool.execute( trans, incoming=params )
+                TOOL_OUTPUT_TYPE = None
+                for idx, obj in enumerate(tool.outputs.values()):
+                    try:
+                        TOOL_OUTPUT_TYPE = obj.format
+                        params[tool.outputs.keys()[idx]] = data.id
+                        break
+                    except:
+                        # exclude outputs different from ToolOutput (e.g. collections) from the previous assumption
+                        continue
+                if TOOL_OUTPUT_TYPE is None:
+                    raise Exception( "Error: ToolOutput object not found" )
+                
+                original_history = trans.sa_session.query( trans.app.model.History ).get( data.history_id )
+                tool.execute( trans, incoming=params, history=original_history )
             else:
                 log.debug('async error -> %s' % STATUS)
                 trans.log_event( 'Async error -> %s' % STATUS )
@@ -84,12 +97,27 @@ class ASync( BaseUIController ):
             #
             # no data_id must be parameter submission
             #
+            GALAXY_TYPE = None
             if params.data_type:
                 GALAXY_TYPE = params.data_type
             elif params.galaxyFileFormat == 'wig':  # this is an undocumented legacy special case
                 GALAXY_TYPE = 'wig'
             else:
-                GALAXY_TYPE = params.GALAXY_TYPE or tool.outputs.values()[0].format
+                # Assume there is exactly one output
+                outputs_count = 0
+                for obj in tool.outputs.values():
+                    try:
+                        GALAXY_TYPE = params.GALAXY_TYPE or obj.format
+                        outputs_count += 1
+                        break
+                    except:
+                        # exclude outputs different from ToolOutput (e.g. collections) from the previous assumption
+                        continue
+                if outputs_count > 1:
+                    raise Exception( "Error: the tool should have just one output" )
+                                
+            if GALAXY_TYPE is None:
+                raise Exception( "Error: ToolOutput object not found" )
 
             GALAXY_NAME = params.name or params.GALAXY_NAME or '%s query' % tool.name
             GALAXY_INFO = params.info or params.GALAXY_INFO or params.galaxyDescription or ''
@@ -121,6 +149,7 @@ class ASync( BaseUIController ):
                 galaxy_url = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, key )
                 params.update( { 'GALAXY_URL': galaxy_url } )
                 params.update( { 'data_id': data.id } )
+                
                 # Use provided URL or fallback to tool action
                 url = URL or tool.action
                 # Does url already have query params?
