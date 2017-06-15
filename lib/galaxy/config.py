@@ -513,11 +513,6 @@ class Configuration( object ):
         self.citation_cache_data_dir = self.resolve_path( kwargs.get( "citation_cache_data_dir", "database/citations/data" ) )
         self.citation_cache_lock_dir = self.resolve_path( kwargs.get( "citation_cache_lock_dir", "database/citations/locks" ) )
 
-        # OIDC IdP (OpenID Connect Identity Provider) configuration
-        self.oidc_idp_config_file = kwargs.get('oidc_idp_config_file', None)
-        if self.oidc_idp_config_file is not None:
-            self.oidc_idp_config_file = resolve_path(self.oidc_idp_config_file, self.root)
-
     @property
     def sentry_dsn_public( self ):
         """
@@ -557,7 +552,6 @@ class Configuration( object ):
             migrated_tools_config=[ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],
             object_store_config_file=[ 'config/object_store_conf.xml', 'object_store_conf.xml' ],
             openid_config_file=[ 'config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample' ],
-            oidc_idp_config_file=['config/oidc_idp_conf.py', 'config/oidc_idp_conf.py.sample'],
             shed_data_manager_config_file=[ 'shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml' ],
             shed_tool_data_table_config=[ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
             tool_sheds_config_file=[ 'config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample' ],
