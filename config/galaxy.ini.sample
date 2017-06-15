@@ -1310,9 +1310,9 @@ use_interactive = True
 #drmaa_external_killjob_script = sudo -E scripts/drmaa_external_killer.py
 #external_chown_script = sudo -E scripts/external_chown_script.py
 
-# For the job submission as the actual system user galaxy can extract 
+# For the job submission as the actual system user, Galaxy can extract 
 # the user name from the email address (actually the local-part before the @) 
-# or the usename which are both stored in the galaxy data base. 
+# or the username which are both stored in the Galaxy data base. 
 # The latter option is particularly useful for installations that get the 
 # authentication from LDAP.
 # Possible values are user_email (default) and username.  
