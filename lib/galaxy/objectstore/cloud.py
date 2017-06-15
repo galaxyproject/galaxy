@@ -87,10 +87,6 @@ class CloudObjectStore(ObjectStore):
         except OSError:
             self.use_axel = False
 
-        # THIS IS TEMP, IT HAS TO BE REPLACED WITH A DATABASE OF TEMPORARY ACCESS CREDENTIALS FOR EACH PROVIDER.
-        self.access_credentials = {
-                                   'user_2_id': {'aws_access_key': 'access key 2', 'aws_secret_key': 'secret key 2'}}
-
         self.connections = {}
         # This dictionary caches connections to various providers for each user.
         # The structure is as it follows:
@@ -100,16 +96,21 @@ class CloudObjectStore(ObjectStore):
         #            value := Connection
         #          }
 
-    def _configure_connection(self, user, provider=ProviderList.AWS):
-        # provider is of type ProviderList, and its valid values are: AWS, OPENSTACK
-        # (i.e., ProviderList.AWS, ProviderList.OPENSTACK).
-        # TODO: provider should be a required parameter without a default value
+    def _configure_connection(self, user, pluggedMedia):
+        print '\n\n\n'
+        print '~~~~~~~~~~~~~~~~~~ pluggedMedia: ', pluggedMedia
+        print '~~~~~~~~~~~~~~~~~~ pluggedMedia.id: ', pluggedMedia.id
+        print '~~~~~~~~~~~~~~~~~~ pluggedMedia.user_id: ', pluggedMedia.user_id
+        print '~~~~~~~~~~~~~~~~~~ pluggedMedia.type: ', pluggedMedia.type
+        print '\n\n\n'
+
+        provider = self._convert_pluggedMedia_type_to_provider( pluggedMedia.type )
         if user.id not in self.connections:
             self.connections[user.id] = {}
         if provider not in self.connections[user.id]:
             log.debug("Configuring a connection to '%s' for the user with ID: '%s'", provider, user.id)
-            self.connections[user.id][provider] = \
-                CloudProviderFactory().create_provider(provider, self.access_credentials[user.id])
+            credentials = {'aws_access_key': pluggedMedia.access_key, 'aws_secret_key': pluggedMedia.secret_key}
+            self.connections[user.id][provider] = CloudProviderFactory().create_provider(provider, credentials)
 
     def _parse_config_xml(self, config_xml):
         try:
@@ -218,10 +219,11 @@ class CloudObjectStore(ObjectStore):
                 log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
                 return
 
-    def _get_bucket(self, user, provider=ProviderList.AWS, bucket_name=""):
+    def _get_bucket(self, user, pluggedMedia):
         try:
             bucket_name = self.bucket_name
-            self._configure_connection(user, provider)
+            provider = self._convert_pluggedMedia_type_to_provider( pluggedMedia.type )
+            self._configure_connection(user, pluggedMedia)
             bucket = self.connections[user.id][provider].object_store.get(bucket_name)
             if bucket is None:
                 log.debug("Bucket not found, creating '%s' bucket with handle '%s'", provider, bucket_name)
@@ -297,13 +299,13 @@ class CloudObjectStore(ObjectStore):
             log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1
 
-    def _key_exists(self, rel_path, user):
+    def _key_exists( self, rel_path, user, pluggedMedia ):
         exists = False
         try:
             # A hackish way of testing if the rel_path is a folder vs a file
             is_dir = rel_path[-1] == '/'
             if is_dir:
-                bucket = self._get_bucket(user)
+                bucket = self._get_bucket( user, pluggedMedia )
                 keyresult = bucket.list(prefix=rel_path)
                 if len(keyresult) > 0:
                     exists = True
@@ -317,7 +319,7 @@ class CloudObjectStore(ObjectStore):
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False
         if rel_path[0] == '/':
-            print '------------------------------------- here'
+            print '\n\n\n------------------------------------- I should be fixed!!\n\n\n'
             # raise
         return exists
 
@@ -363,10 +365,10 @@ class CloudObjectStore(ObjectStore):
     def _transfer_cb(self, complete, total):
         self.transfer_progress += 10
 
-    def _download(self, user, rel_path):
+    def _download(self, user, pluggedMedia, rel_path):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-            self.bucket = self._get_bucket(user)
+            self.bucket = self._get_bucket(user, pluggedMedia)
             key = self.bucket.get(rel_path)
 
             # Test if cache is large enough to hold the new file
@@ -451,6 +453,18 @@ class CloudObjectStore(ObjectStore):
             log.exception("Trouble pushing S3 key '%s' from file '%s'", rel_path, source_file)
         return False
 
+    def _convert_pluggedMedia_type_to_provider( self, type ):
+        if type == "AWS-S3":
+            return ProviderList.AWS
+        elif type == "OpenStack-Swift":
+            return ProviderList.OPENSTACK
+        else:
+            # Since pluggedMedia.type is set by Galaxy, without letting user/admin setting it manually,
+            # then this case is expected to met. If it is, then there should be an error setting
+            # PluggedMedia.type.
+            log.exception("Invalid PluggedMedia type (%s) -- unable to continue" % type)
+            raise
+
     def file_ready(self, obj, **kwargs):
         """
         A helper method that checks if a file corresponding to a dataset is
@@ -465,17 +479,17 @@ class CloudObjectStore(ObjectStore):
                       os.path.getsize(self._get_cache_path(rel_path)), self._get_size_in_s3(rel_path))
         return False
 
-    def exists(self, obj, user, **kwargs):
+    def exists(self, obj, user, pluggedMedia, **kwargs):
         in_cache = False
-        self._configure_connection(user)
-        bucket = self._get_bucket(user)
+        self._configure_connection(user, pluggedMedia)
+        bucket = self._get_bucket(user, pluggedMedia)
         rel_path = self._construct_path(obj, **kwargs)
 
         # Check cache
         if self._in_cache(rel_path):
             in_cache = True
         # Check S3
-        in_cloud = self._key_exists(rel_path, user)
+        in_cloud = self._key_exists( rel_path, user, pluggedMedia )
         # log.debug("~~~~~~ File '%s' exists in cache: %s; in s3: %s" % (rel_path, in_cache, in_s3))
         # dir_only does not get synced so shortcut the decision
         dir_only = kwargs.get('dir_only', False)
@@ -500,7 +514,9 @@ class CloudObjectStore(ObjectStore):
         else:
             return False
 
-    def create(self, obj, user, **kwargs):
+    def create(self, obj, user, pluggedMedia, **kwargs):
+        # for line in traceback.format_stack():
+        #     print(line.strip())
         # TODO: An anonymous user call should not even reach here; it should be blocked
         # at upload_common level based on the selected objectstore type. i.e., it should
         # be blocked if objectstore type is set to "cloud".
@@ -508,9 +524,9 @@ class CloudObjectStore(ObjectStore):
             log.warning("Can not upload data to a cloud storage for an anonymous user.")
             return
 
-        self._configure_connection(user)
+        self._configure_connection(user, pluggedMedia)
 
-        if not self.exists(obj, user, **kwargs):
+        if not self.exists(obj, user, pluggedMedia, **kwargs):
             # Pull out locally used fields
             extra_dir = kwargs.get('extra_dir', None)
             extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
@@ -541,7 +557,7 @@ class CloudObjectStore(ObjectStore):
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
-                bucket = self._get_bucket(user)
+                bucket = self._get_bucket(user, pluggedMedia)
                 self._push_to_os(bucket, rel_path, from_string='')
 
     def empty(self, obj, **kwargs):
@@ -551,14 +567,14 @@ class CloudObjectStore(ObjectStore):
             raise ObjectNotFound('objectstore.empty, object does not exist: %s, kwargs: %s'
                                  % (str(obj), str(kwargs)))
 
-    def size(self, obj, user, **kwargs):
+    def size(self, obj, user, pluggedMedia, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):
             try:
                 return os.path.getsize(self._get_cache_path(rel_path))
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s", rel_path, ex)
-        elif self.exists(obj, user, **kwargs):
+        elif self.exists(obj, user, pluggedMedia, **kwargs):
             return self._get_size_in_s3(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
@@ -614,7 +630,7 @@ class CloudObjectStore(ObjectStore):
         data_file.close()
         return content
 
-    def get_filename(self, obj, user, **kwargs):
+    def get_filename(self, obj, user, pluggedMedia, **kwargs):
         base_dir = kwargs.get('base_dir', None)
         dir_only = kwargs.get('dir_only', False)
         obj_dir = kwargs.get('obj_dir', False)
@@ -651,10 +667,10 @@ class CloudObjectStore(ObjectStore):
                              % (str(obj), str(kwargs)))
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
-    def update_from_file(self, obj, user, file_name=None, create=False, **kwargs):
+    def update_from_file(self, obj, user, pluggedMedia, file_name=None, create=False, **kwargs):
         if create:
-            self.create(obj, user, **kwargs)
-        if self.exists(obj, user, **kwargs):
+            self.create(obj, user, pluggedMedia, **kwargs)
+        if self.exists(obj, user, pluggedMedia, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             # Chose whether to use the dataset file itself or an alternate file
             if file_name:
@@ -671,7 +687,7 @@ class CloudObjectStore(ObjectStore):
             else:
                 source_file = self._get_cache_path(rel_path)
             # Update the file on S3
-            bucket = self._get_bucket(user)
+            bucket = self._get_bucket( user, pluggedMedia )
             self._push_to_os(bucket, rel_path, source_file)
         else:
             raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s'

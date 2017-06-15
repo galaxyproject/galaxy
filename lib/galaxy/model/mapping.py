@@ -47,7 +47,7 @@ metadata = MetaData()
 
 model.User.table = Table(
     "galaxy_user", metadata,
-    Column( "id", Integer, primary_key=True),
+    Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "email", TrimmedString( 255 ), index=True, nullable=False ),
@@ -62,21 +62,30 @@ model.User.table = Table(
     Column( "active", Boolean, index=True, default=True, nullable=False ),
     Column( "activation_token", TrimmedString( 64 ), nullable=True, index=True ) )
 
+model.PluggedMedia.table = Table(
+    "pluggedMedia", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "type", TEXT, nullable=False ),
+    Column( "path", TEXT ),
+    Column( "secret_key", TEXT ),
+    Column( "access_key", TEXT ) )
+
 model.UserAddress.table = Table(
     "user_address", metadata,
-    Column( "id", Integer, primary_key=True),
+    Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "desc", TrimmedString( 255 )),
-    Column( "name", TrimmedString( 255 ), nullable=False),
+    Column( "desc", TrimmedString( 255 ) ),
+    Column( "name", TrimmedString( 255 ), nullable=False ),
     Column( "institution", TrimmedString( 255 )),
-    Column( "address", TrimmedString( 255 ), nullable=False),
-    Column( "city", TrimmedString( 255 ), nullable=False),
-    Column( "state", TrimmedString( 255 ), nullable=False),
-    Column( "postal_code", TrimmedString( 255 ), nullable=False),
-    Column( "country", TrimmedString( 255 ), nullable=False),
-    Column( "phone", TrimmedString( 255 )),
+    Column( "address", TrimmedString( 255 ), nullable=False ),
+    Column( "city", TrimmedString( 255 ), nullable=False ),
+    Column( "state", TrimmedString( 255 ), nullable=False ),
+    Column( "postal_code", TrimmedString( 255 ), nullable=False ),
+    Column( "country", TrimmedString( 255 ), nullable=False ),
+    Column( "phone", TrimmedString( 255 ) ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
@@ -98,7 +107,7 @@ model.PasswordResetToken.table = Table(
 
 model.History.table = Table(
     "history", metadata,
-    Column( "id", Integer, primary_key=True),
+    Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
@@ -145,7 +154,9 @@ model.HistoryDatasetAssociation.table = Table(
     Column( "hid", Integer ),
     Column( "purged", Boolean, index=True, default=False ),
     Column( "hidden_beneath_collection_instance_id",
-            ForeignKey( "history_dataset_collection_association.id" ), nullable=True ) )
+            ForeignKey( "history_dataset_collection_association.id" ), nullable=True ),
+    Column( "plugged_media_id", Integer, ForeignKey( "pluggedMedia.id" ) ),
+    Column( "dataset_path_on_media", TEXT ) )
 
 model.Dataset.table = Table(
     "dataset", metadata,
@@ -1624,7 +1635,9 @@ simple_mapping( model.HistoryDatasetAssociation,
                         model.HistoryDatasetCollectionAssociation.table.c.id ) ),
         uselist=False,
         backref="hidden_dataset_instances"),
-    _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata)
+    _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata),
+    pluggedMedia=relation( model.PluggedMedia,
+                           primaryjoin=(model.HistoryDatasetAssociation.table.c.plugged_media_id == model.PluggedMedia.table.c.id ))
 )
 
 simple_mapping( model.Dataset,
@@ -1765,6 +1778,11 @@ mapper( model.User, model.User.table, properties=dict(
     api_keys=relation( model.APIKeys,
         backref="user",
         order_by=desc( model.APIKeys.table.c.create_time ) ),
+    pluggedMedia=relation( model.PluggedMedia )
+) )
+
+mapper( model.PluggedMedia, model.PluggedMedia.table, properties=dict(
+    user=relation( model.User )
 ) )
 
 mapper( model.PasswordResetToken, model.PasswordResetToken.table,

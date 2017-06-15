@@ -972,10 +972,17 @@ class JobWrapper( object, HasResourceParameters ):
     def _create_working_directory( self ):
         job = self.get_job()
         try:
+            # TEMP BLOCK --- START
+            pluggedMedia = None
+            for pM in job.user.pluggedMedia:
+                pluggedMedia = pM
+                break
+            # TEMP BLOCK --- END
+
             self.app.object_store.create(
-                job, job.user, base_dir='job_work', dir_only=True, obj_dir=True)
+                job, job.user, pluggedMedia, base_dir='job_work', dir_only=True, obj_dir=True)
             self.working_directory = self.app.object_store.get_filename(
-                job, job.user, base_dir='job_work', dir_only=True, obj_dir=True)
+                job, job.user, pluggedMedia, base_dir='job_work', dir_only=True, obj_dir=True)
             # TODO: the call should be like the following.
             # job, job.user, base_dir='job_work', dir_only=True, obj_dir=True )
 
@@ -1071,13 +1078,13 @@ class JobWrapper( object, HasResourceParameters ):
                 dataset.blurb = 'tool error'
                 dataset.info = message
                 dataset.set_size()
-                dataset.dataset.set_total_size( job.user )
+                dataset.dataset.set_total_size( job.user, dataset.pluggedMedia )
                 dataset.mark_unhidden()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file(dataset.dataset, job.user, create=True)
+                    self.app.object_store.update_from_file( dataset.dataset, job.user, dataset.pluggedMedia, create=True )
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause( dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state." )
@@ -1281,6 +1288,7 @@ class JobWrapper( object, HasResourceParameters ):
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
             # lets not allow this to occur
             # need to update all associated output hdas, i.e. history was shared with job running
+            #TODO: the following object called dataset, should be named hda indeed.
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
                 trynum = 0
                 while trynum < self.app.config.retry_job_output_collection:
@@ -1310,7 +1318,7 @@ class JobWrapper( object, HasResourceParameters ):
                     dataset.dataset.uuid = context['uuid']
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file(dataset.dataset, job.user, create=True)
+                    self.app.object_store.update_from_file(dataset.dataset, job.user, dataset.pluggedMedia, create=True)
                 self._collect_extra_files(dataset.dataset, self.working_directory)
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
@@ -1364,7 +1372,7 @@ class JobWrapper( object, HasResourceParameters ):
                         else:
                             dataset.set_peek( line_count=context['line_count'] )
                     except:
-                        if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte( job.user ) ) or self.tool.is_multi_byte:
+                        if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte( job.user, dataset.pluggedMedia ) ) or self.tool.is_multi_byte:
                             dataset.set_peek( is_multi_byte=True )
                         else:
                             dataset.set_peek()
@@ -1459,8 +1467,8 @@ class JobWrapper( object, HasResourceParameters ):
         collected_bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
-            dataset_assoc.dataset.dataset.set_total_size( job.user )
-            collected_bytes += dataset_assoc.dataset.dataset.get_total_size( job.user )
+            dataset_assoc.dataset.dataset.set_total_size( job.user, dataset.pluggedMedia )
+            collected_bytes += dataset_assoc.dataset.dataset.get_total_size( job.user, dataset.pluggedMedia )
 
         if job.user:
             job.user.adjust_total_disk_usage(collected_bytes)

@@ -124,12 +124,21 @@ def cleanup_unused_precreated_datasets( precreated_datasets ):
 def __new_history_upload( trans, uploaded_dataset, history=None, state=None ):
     if not history:
         history = trans.history
+
+    # TEMP BLOCK --- START
+    pluggedMedia = None
+    for pM in trans.user.pluggedMedia:
+        pluggedMedia = pM
+        break
+    # TEMP BLOCK --- END
+
     hda = trans.app.model.HistoryDatasetAssociation( name=uploaded_dataset.name,
                                                      extension=uploaded_dataset.file_type,
                                                      dbkey=uploaded_dataset.dbkey,
                                                      history=history,
                                                      create_dataset=True,
-                                                     sa_session=trans.sa_session )
+                                                     sa_session=trans.sa_session,
+                                                     pluggedMedia=pluggedMedia )
     if state:
         hda.state = state
     else:
@@ -392,7 +401,14 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
         if not dataset.dataset.external_filename:
             dataset.dataset.object_store_id = object_store_id
             try:
-                trans.app.object_store.create(dataset.dataset, trans.user)
+                # TEMP BLOCK --- START
+                pluggedMedia = None
+                for pM in trans.user.pluggedMedia:
+                    pluggedMedia = pM
+                    break
+                # TEMP BLOCK --- END
+
+                trans.app.object_store.create( dataset.dataset, trans.user, pluggedMedia )
             except ObjectInvalid:
                 raise Exception('Unable to create output dataset: object store is full')
             object_store_id = dataset.dataset.object_store_id
