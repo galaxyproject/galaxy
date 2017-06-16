@@ -1125,12 +1125,12 @@ class Xls( Binary ):
     file_ext = "xls"
 
     def sniff( self, filename ):
-       ret = os.popen("file -i " + filename)
-       mimeType = ret.read().rstrip()
-       if (mimeType.find("application/vnd.ms-excel") != -1):
-          return True
-       else:
-          return False
+        ret = os.popen("file -i " + filename)
+        mimeType = ret.read().rstrip()
+        if (mimeType.find("application/vnd.ms-excel") != -1):
+            return True
+        else:
+            return False
 
     def get_mime( self ):
         """Returns the mime type of the datatype"""
@@ -1138,7 +1138,7 @@ class Xls( Binary ):
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            dataset.peek  = "Microsoft Excel 2003 file"
+            dataset.peek = "Microsoft Excel 2003 file"
             dataset.blurb = data.nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
