@@ -84,6 +84,7 @@ window.app = function app( options, bootstrapped ){
             '(/)workflow(/)' : 'show_workflows',
             '(/)pages(/)(:action_id)' : 'show_pages',
             '(/)datasets(/)(:action_id)' : 'show_datasets',
+            '(/)visualizations/list_published(/)' : 'show_visualizations',
             '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)custom_builds' : 'show_custom_builds'
         },
@@ -117,6 +118,10 @@ window.app = function app( options, bootstrapped ){
 
         show_user_form : function( form_id ) {
             this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+        },
+
+        show_visualizations : function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'visualization/list_published', dict_format: true } ) );
         },
 
         show_datasets : function() {
