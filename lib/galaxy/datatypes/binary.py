@@ -1125,9 +1125,8 @@ class Xls( Binary ):
     file_ext = "xls"
 
     def sniff( self, filename ):
-        ret = os.popen("file -i " + filename)
-        mimeType = ret.read().rstrip()
-        if (mimeType.find("application/vnd.ms-excel") != -1):
+        mimeType = subprocess.check_output("file -i {}".format(filename), shell=True).rstrip()
+        if mimeType.find("application/vnd.ms-excel") != -1:
             return True
         else:
             return False
