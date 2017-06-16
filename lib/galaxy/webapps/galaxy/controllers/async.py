@@ -36,7 +36,7 @@ class ASync( BaseUIController ):
         STATUS = params.STATUS
         URL = params.URL
         data_id = params.data_id
-        
+
         log.debug('async dataid -> %s' % data_id)
         trans.log_event( 'Async dataid -> %s' % str(data_id) )
 
@@ -68,7 +68,7 @@ class ASync( BaseUIController ):
                 galaxy_url = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, key )
                 galaxy_url = params.get("GALAXY_URL", galaxy_url)
                 params = dict( URL=URL, GALAXY_URL=galaxy_url, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext )
-                
+
                 # Assume there is exactly one output file possible
                 TOOL_OUTPUT_TYPE = None
                 for idx, obj in enumerate(tool.outputs.values()):
@@ -81,7 +81,7 @@ class ASync( BaseUIController ):
                         continue
                 if TOOL_OUTPUT_TYPE is None:
                     raise Exception( "Error: ToolOutput object not found" )
-                
+
                 original_history = trans.sa_session.query( trans.app.model.History ).get( data.history_id )
                 tool.execute( trans, incoming=params, history=original_history )
             else:
@@ -115,7 +115,7 @@ class ASync( BaseUIController ):
                         continue
                 if outputs_count > 1:
                     raise Exception( "Error: the tool should have just one output" )
-                                
+
             if GALAXY_TYPE is None:
                 raise Exception( "Error: ToolOutput object not found" )
 
@@ -149,7 +149,7 @@ class ASync( BaseUIController ):
                 galaxy_url = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, key )
                 params.update( { 'GALAXY_URL': galaxy_url } )
                 params.update( { 'data_id': data.id } )
-                
+
                 # Use provided URL or fallback to tool action
                 url = URL or tool.action
                 # Does url already have query params?
