@@ -1120,6 +1120,40 @@ class Xlsx(Binary):
 Binary.register_sniffable_binary_format("xlsx", "xlsx", Xlsx)
 
 
+class Xls( Binary ):
+    """Class describing an Excel (xls) file"""
+    file_ext = "xls"
+
+    def sniff( self, filename ):
+       ret = os.popen("file -i " + filename)
+       mimeType = ret.read().rstrip()
+       if (mimeType.find("application/vnd.ms-excel") != -1):
+          return True
+       else:
+          return False
+
+    def get_mime( self ):
+        """Returns the mime type of the datatype"""
+        return 'application/vnd.ms-excel'
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek  = "Microsoft Excel 2003 file"
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Microsoft Excel 2003 file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
+
+Binary.register_sniffable_binary_format("xls", "xls", Xls)
+
+
 class Sra( Binary ):
     """ Sequence Read Archive (SRA) datatype originally from mdshw5/sra-tools-galaxy"""
     file_ext = 'sra'
