@@ -9,7 +9,7 @@ History
 17.9.1.dev0
 ---------------------
 
-    
+* Various small Singularity fixes and enhancements.
 
 ---------------------
 17.9.0 (2017-06-11)
