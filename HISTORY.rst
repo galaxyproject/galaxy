@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.9.1.dev0
+17.9.1 (2017-06-17)
 ---------------------
 
 * Various small Singularity fixes and enhancements.
