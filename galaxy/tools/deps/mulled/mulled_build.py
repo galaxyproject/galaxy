@@ -25,6 +25,8 @@ except ImportError:
 
 from galaxy.tools.deps import commands, installable
 
+from galaxy.util import safe_makedirs
+
 from ._cli import arg_parser
 from .util import (
     build_target,
@@ -159,7 +161,7 @@ def mull_targets(
         involucro_context = InvolucroContext()
 
     image_function = v1_image_name if hash_func == "v1" else v2_image_name
-    if len(targets) > 2 and image_build is None:
+    if len(targets) > 1 and image_build is None:
         # Force an image build in this case - this seems hacky probably
         # shouldn't work this way but single case broken else wise.
         image_build = "0"
@@ -236,7 +238,7 @@ def mull_targets(
         ensure_installed(involucro_context, True)
         if singularity:
             if not os.path.exists(singularity_image_dir):
-                os.mkdir(singularity_image_dir)
+                safe_makedirs(singularity_image_dir)
             with open(os.path.join(singularity_image_dir, 'Singularity'), 'w+') as sin_def:
                 fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
                 sin_def.write(fill_template)
