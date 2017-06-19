@@ -457,7 +457,9 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         if ($.isArray( response ) && response.length > 0) {
                             self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
                             var WebhookApp = new Webhooks.WebhookView({
-                                urlRoot: Galaxy.root + 'api/webhooks/workflow'
+                                urlRoot: Galaxy.root + 'api/webhooks/workflow',
+                                toolId: job_def.tool_id,
+                                toolVersion: job_def.tool_version,
                             });
                         }
 

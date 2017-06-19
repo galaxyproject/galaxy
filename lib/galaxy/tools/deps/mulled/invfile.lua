@@ -51,6 +51,12 @@ if singularity_image == '' then
     singularity_image = 'quay.io/biocontainers/singularity:2.3--0'
 end
 
+local singularity_image_dir = VAR.SINGULARITY_IMAGE_DIR
+if singularity_image_dir == '' then
+    singularity_image_dir = 'singularity_import'
+end
+
+
 
 local destination_base_image = VAR.DEST_BASE_IMAGE
 if destination_base_image == '' then
@@ -95,7 +101,7 @@ inv.task('build')
 if VAR.SINGULARITY ~= '' then
     inv.task('singularity')
         .using(singularity_image)
-        .withHostConfig({binds = {"build:/data","singularity_import:/import"}, privileged = true})
+        .withHostConfig({binds = {"build:/data",singularity_image_dir .. ":/import"}, privileged = true})
         .withConfig({entrypoint = {'/bin/sh', '-c'}})
         -- this will create a container that is the size of our conda dependencies + 20MiB
         -- The 20 MiB can be improved at some point, but this seems to work for now.
