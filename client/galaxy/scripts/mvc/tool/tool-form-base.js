@@ -243,6 +243,22 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 });
             }
 
+            // add tool menu webhooks
+            $.getJSON('/api/webhooks/tool-menu/all', function(webhooks) {
+                _.each(webhooks, function(webhook) {
+                    if (webhook.activate && webhook.config.function) {
+                        menu_button.addMenu({
+                            icon    : webhook.config.icon,
+                            title   : webhook.config.title,
+                            onclick : function() {
+                                var func = new Function('options', webhook.config.function);
+                                func(options);
+                            }
+                        });
+                    }
+                });
+            });
+
             return {
                 menu        : menu_button,
                 versions    : versions_button
