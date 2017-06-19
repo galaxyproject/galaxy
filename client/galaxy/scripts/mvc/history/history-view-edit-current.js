@@ -338,7 +338,7 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
             // compare the url to the following list and if there's a match
             // pull the id from url and indicate in the history view that
             // the dataset with that id is the 'current'ly active dataset
-            'galaxy_main:load': function( data ){
+            'center-frame:load': function( data ){
                 var pathToMatch = data.fullpath;
                 var hdaId = null;
                 var useToURLRegexMap = {

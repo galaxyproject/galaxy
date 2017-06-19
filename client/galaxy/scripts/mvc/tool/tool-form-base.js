@@ -27,12 +27,13 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
 
         /** Wait for deferred build processes before removal */
         remove: function() {
+            window.console.log( 'destroy' );
             var self = this;
             this.$el.hide();
-            this.deferred.execute( function() {
+            /*this.deferred.execute( function() {
                 FormBase.prototype.remove.call( self );
                 Galaxy.emit.debug( 'tool-form-base::remove()', 'Destroy view.' );
-            });
+            });*/
         },
 
         /** Build form */
