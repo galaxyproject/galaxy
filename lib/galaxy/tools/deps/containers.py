@@ -221,7 +221,7 @@ class ContainerRegistry(object):
         ]
         if self.enable_beta_mulled_containers:
             default_resolvers.extend([
-                CachedMulledDockerContainerResolver(self.app_info),
+                CachedMulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
                 MulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
                 BuildMulledDockerContainerResolver(self.app_info),
                 CachedMulledSingularityContainerResolver(self.app_info),
