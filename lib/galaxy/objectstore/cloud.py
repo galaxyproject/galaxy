@@ -97,13 +97,6 @@ class CloudObjectStore(ObjectStore):
         #          }
 
     def _configure_connection(self, user, pluggedMedia):
-        print '\n\n\n'
-        print '~~~~~~~~~~~~~~~~~~ pluggedMedia: ', pluggedMedia
-        print '~~~~~~~~~~~~~~~~~~ pluggedMedia.id: ', pluggedMedia.id
-        print '~~~~~~~~~~~~~~~~~~ pluggedMedia.user_id: ', pluggedMedia.user_id
-        print '~~~~~~~~~~~~~~~~~~ pluggedMedia.type: ', pluggedMedia.type
-        print '\n\n\n'
-
         provider = self._convert_pluggedMedia_type_to_provider( pluggedMedia.type )
         if user.id not in self.connections:
             self.connections[user.id] = {}
@@ -410,10 +403,7 @@ class CloudObjectStore(ObjectStore):
                     log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file,
                               rel_path)
                     return True
-                # TODO: don't need to differenciate between uploading from a string or file,
-                # because CloudBridge handles this internally.
                 if from_string:
-                    # TODO: The upload function of CloudBridge should be updated to accept the following parameters.
                     if not bucket.get(rel_path):
                         created_obj = bucket.create_object(rel_path)
                         created_obj.upload(source_file)
@@ -436,9 +426,9 @@ class CloudObjectStore(ObjectStore):
                     #                               num_cb=10)
                     if not bucket.get(rel_path):
                         created_obj = bucket.create_object(rel_path)
-                        created_obj.upload(source_file)
+                        created_obj.upload_from_file(source_file)
                     else:
-                        bucket.get(rel_path).upload(source_file)
+                        bucket.get(rel_path).upload_from_file(source_file)
                     # else:
                         # multipart_upload(self.s3server, bucket, bucket.get(rel_path).name, source_file, mb_size)
 

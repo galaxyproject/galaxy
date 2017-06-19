@@ -1340,7 +1340,7 @@ class JobWrapper( object, HasResourceParameters ):
                             dataset.extension = extension
 
                         # call datatype.set_meta directly for the initial set_meta call during dataset creation
-                        dataset.datatype.set_meta( dataset, job.user, overwrite=False )
+                        dataset.datatype.set_meta( dataset, overwrite=False )
                     elif ( job.states.ERROR != final_job_state and
                             not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) ):
                         dataset._state = model.Dataset.states.FAILED_METADATA

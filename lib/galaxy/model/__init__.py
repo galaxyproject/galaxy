@@ -1731,11 +1731,11 @@ class Dataset( StorableObject ):
         return self.state in self.ready_states
 
     def get_file_name( self, user=None, pluggedMedia=None ):
-        print '\n\n%%%%%%%%%%%%%%%%% THIS SHOULD NOT BE CALLED\n\n'
-        print '_____________________________________'
-        for line in traceback.format_stack():
-            print(line.strip())
-        print '_____________________________________\n\n'
+        # print '\n\n%%%%%%%%%%%%%%%%% THIS SHOULD NOT BE CALLED --- Get'
+        # print '___________________________________________________'
+        # for line in traceback.format_stack():
+        #     print(line.strip())
+        # print '___________________________________________________\n\n'
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
             assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
@@ -1756,6 +1756,11 @@ class Dataset( StorableObject ):
         return os.path.abspath( filename )
 
     def set_file_name( self, filename ):
+        # print '\n\n%%%%%%%%%%%%%%%%% THIS SHOULD NOT BE CALLED --- Set\n\n'
+        # print '____________________________________________________'
+        # for line in traceback.format_stack():
+        #     print(line.strip())
+        # print '____________________________________________________\n\n'
         if not filename:
             self.external_filename = None
         else:
@@ -1763,7 +1768,6 @@ class Dataset( StorableObject ):
     file_name = property( get_file_name, set_file_name )
 
     def get_extra_files_path( self ):
-        print '\n\n%%%%%%%%%%%%%%%%% THIS SHOULD NOT BE CALLED\n\n'
         # Unlike get_file_name - external_extra_files_path is not backed by an
         # actual database column so if SA instantiates this object - the
         # attribute won't exist yet.
@@ -1834,11 +1838,12 @@ class Dataset( StorableObject ):
         if not self.has_data( user, pluggedMedia ):
             return False
         try:
-            return is_multi_byte( codecs.open( self.file_name, 'r', 'utf-8' ).read( 100 ) )
+            return is_multi_byte( codecs.open( self.get_file_name( user, pluggedMedia ), 'r', 'utf-8' ).read( 100 ) )
         except UnicodeDecodeError:
             return False
     # FIXME: sqlalchemy will replace this
 
+    # TODO: is this function ever called ? I don't see the call.
     def _delete(self):
         """Remove the file that corresponds to this data"""
         self.object_store.delete(self)
@@ -2506,7 +2511,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
             rval += child.get_disk_usage( user )
         return rval
 
-    def to_dict( self, user, view='collection', expose_dataset_path=False ):
+    def to_dict( self, view='collection', expose_dataset_path=False ):
         """
         Return attributes of this HDA that are exposed using the API.
         """
