@@ -441,7 +441,7 @@ class Tool( object, Dictifiable ):
 
     @property
     def tool_version( self ):
-        """Return a ToolVersion if one exists for our id"""
+        """Return a StockLineage if one exists for our id."""
         return self.app.toolbox._lineage_map.get(self.id)
 
     @property
