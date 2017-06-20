@@ -137,6 +137,12 @@ var Collection = Backbone.Collection.extend({
                             else if( Galaxy.masthead ) {
                                 Galaxy.masthead.collection.add(obj);
                             }
+                             
+                            // Pull the script and styles for masthead overlay search plugin
+                            if( webhook.name === "searchover" ) {
+                                $(  '<script/>', { type: 'text/javascript' } ).text( webhook.script ).appendTo( 'head' );
+                                $( '<style/>', { type: 'text/css' } ).text( webhook.styles ).appendTo( 'head' );
+                            }
                         }
                     });
                 });
