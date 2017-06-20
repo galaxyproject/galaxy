@@ -339,11 +339,13 @@ class CreatesUsersMixin:
             trans.app.security_agent.user_set_default_permissions( user,
                                                                    default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
         # TEST CODE BLOCK - START
-        print '++++++++++++++ creating plugged media --- START!'
-        pluggedMedia = trans.app.model.PluggedMedia( user_id=user.id, type="AWS-S3", access_key="AKIAIQSFRFKXZNSNYA5Q", secret_key="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" )
+        print '\n++++++++++++++ creating plugged media --- START!'
+        pluggedMedia = trans.app.model.PluggedMedia( user_id=user.id, type="AWS-S3", path="",
+                                                     access_key="",
+                                                     secret_key="" )
         trans.sa_session.add( pluggedMedia )
         trans.sa_session.flush()
-        print '++++++++++++++ creating plugged media --- END!'
+        print '++++++++++++++ creating plugged media --- END!\n'
         # TEST CODE BLOCK - END
         return user
 

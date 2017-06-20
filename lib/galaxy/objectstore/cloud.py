@@ -101,17 +101,17 @@ class CloudObjectStore(ObjectStore):
         if user.id not in self.connections:
             self.connections[user.id] = {}
         if provider not in self.connections[user.id]:
-            log.debug("Configuring a connection to '%s' for the user with ID: '%s'", provider, user.id)
-            credentials = {'aws_access_key': pluggedMedia.access_key, 'aws_secret_key': pluggedMedia.secret_key}
-            self.connections[user.id][provider] = CloudProviderFactory().create_provider(provider, credentials)
+            log.debug( "Configuring a connection to '%s' for the user with ID: '%s'", provider, user.id )
+            credentials = { 'aws_access_key': pluggedMedia.access_key, 'aws_secret_key': pluggedMedia.secret_key }
+            self.connections[user.id][provider] = CloudProviderFactory().create_provider( provider, credentials )
 
     def _parse_config_xml(self, config_xml):
         try:
             a_xml = config_xml.findall('auth')[0]
-            self.access_key = a_xml.get('access_key')
-            self.secret_key = a_xml.get('secret_key')
+            # self.access_key = a_xml.get('access_key')
+            # self.secret_key = a_xml.get('secret_key')
             b_xml = config_xml.findall('bucket')[0]
-            self.bucket_name = b_xml.get('name')
+            # self.bucket_name = b_xml.get('name')
             self.use_rr = string_as_bool(b_xml.get('use_reduced_redundancy', "False"))
             self.max_chunk_size = int(b_xml.get('max_chunk_size', 250))
             cn_xml = config_xml.findall('connection')
@@ -135,14 +135,14 @@ class CloudObjectStore(ObjectStore):
             log.debug("       job work dir: %s", self.extra_dirs['job_work'])
 
             # for multipart upload
-            self.s3server = {'access_key': self.access_key,
-                             'secret_key': self.secret_key,
-                             'is_secure': self.is_secure,
-                             'max_chunk_size': self.max_chunk_size,
-                             'host': self.host,
-                             'port': self.port,
-                             'use_rr': self.use_rr,
-                             'conn_path': self.conn_path}
+            # self.s3server = {'access_key': self.access_key,
+            #                 'secret_key': self.secret_key,
+            #                 'is_secure': self.is_secure,
+            #                 'max_chunk_size': self.max_chunk_size,
+            #                 'host': self.host,
+            #                 'port': self.port,
+            #                 'use_rr': self.use_rr,
+            #                 'conn_path': self.conn_path}
         except Exception:
             # Toss it back up after logging, we can't continue loading at this point.
             log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
@@ -214,7 +214,7 @@ class CloudObjectStore(ObjectStore):
 
     def _get_bucket(self, user, pluggedMedia):
         try:
-            bucket_name = self.bucket_name
+            bucket_name = pluggedMedia.path
             provider = self._convert_pluggedMedia_type_to_provider( pluggedMedia.type )
             self._configure_connection(user, pluggedMedia)
             bucket = self.connections[user.id][provider].object_store.get(bucket_name)
@@ -240,7 +240,7 @@ class CloudObjectStore(ObjectStore):
                 umask_fix_perms(path, self.config.umask, 0o666, self.config.gid)
 
     def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None,
-                        obj_dir=False, **kwargs):
+                        obj_dir=False):
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
@@ -293,28 +293,27 @@ class CloudObjectStore(ObjectStore):
             return -1
 
     def _key_exists( self, rel_path, user, pluggedMedia ):
-        exists = False
         try:
+            bucket = self._get_bucket(user, pluggedMedia)
             # A hackish way of testing if the rel_path is a folder vs a file
             is_dir = rel_path[-1] == '/'
             if is_dir:
-                bucket = self._get_bucket( user, pluggedMedia )
                 keyresult = bucket.list(prefix=rel_path)
                 if len(keyresult) > 0:
-                    exists = True
+                    return True
                 else:
-                    exists = False
+                    return False
             else:
-                # TODO: this is temp change:
-                exists = False
-                # exists = self.bucket.exists(rel_path)
+                return bucket.exists(rel_path)
         except S3ResponseError:
-            log.exception("Trouble checking existence of S3 key '%s'", rel_path)
+            log.exception("Trouble checking existence of '%s' key '%s'", pluggedMedia.type, rel_path)
             return False
-        if rel_path[0] == '/':
-            print '\n\n\n------------------------------------- I should be fixed!!\n\n\n'
-            # raise
-        return exists
+
+        # TODO: I don't know why the following condition should `raise` an exception.
+        # rel_path commonly starts with `/` (absolute path).
+        # if rel_path[0] == '/':
+        #   raise
+        # return exists
 
     def _in_cache(self, rel_path):
         """ Check if the given dataset is in the local cache and return True if so. """
@@ -361,8 +360,8 @@ class CloudObjectStore(ObjectStore):
     def _download(self, user, pluggedMedia, rel_path):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-            self.bucket = self._get_bucket(user, pluggedMedia)
-            key = self.bucket.get(rel_path)
+            bucket = self._get_bucket(user, pluggedMedia)
+            key = bucket.get(rel_path)
 
             # Test if cache is large enough to hold the new file
             if self.cache_size > 0 and key.size > self.cache_size:
@@ -384,7 +383,7 @@ class CloudObjectStore(ObjectStore):
 
                 return True
         except S3ResponseError:
-            log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.bucket.name)
+            log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, bucket.name)
         return False
 
     def _push_to_os(self, bucket, rel_path, source_file=None, from_string=None):
@@ -569,7 +568,7 @@ class CloudObjectStore(ObjectStore):
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
 
-    def delete(self, obj, entire_dir=False, **kwargs):
+    def delete(self, obj, user, pluggedMedia, entire_dir=False, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         extra_dir = kwargs.get('extra_dir', None)
         base_dir = kwargs.get('base_dir', None)
@@ -578,34 +577,37 @@ class CloudObjectStore(ObjectStore):
         try:
             # Remove temparory data in JOB_WORK directory
             if base_dir and dir_only and obj_dir:
-                shutil.rmtree(os.path.abspath(rel_path))
+                shutil.rmtree( os.path.abspath( rel_path ) )
                 return True
+
+            self._configure_connection( user, pluggedMedia )
+            bucket = self._get_bucket( user, pluggedMedia )
 
             # For the case of extra_files, because we don't have a reference to
             # individual files/keys we need to remove the entire directory structure
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path))
-                results = self.bucket.list(prefix=rel_path)
+                shutil.rmtree( self._get_cache_path(rel_path ) )
+                keys = bucket.list( prefix=rel_path )
 
-                for key in results:
-                    log.debug("Deleting key %s", key.name)
+                for key in keys:
+                    log.debug( "Deleting key %s", key.name )
                     key.delete()
                 return True
             else:
                 # Delete from cache first
-                os.unlink(self._get_cache_path(rel_path))
-                # Delete from S3 as well
-                if self._key_exists(rel_path):
-                    key = self.bucket.get(rel_path)
-                    log.debug("Deleting key %s", key.name)
+                os.unlink( self._get_cache_path( rel_path ) )
+                # Delete from pluggedMedia as well
+                if self._key_exists( rel_path, user, pluggedMedia ):
+                    key = bucket.get( rel_path )
+                    log.debug( "Deleting key %s", key.name )
                     key.delete()
                     return True
         except S3ResponseError:
-            log.exception("Could not delete key '%s' from S3", rel_path)
+            log.exception( "Could not delete key '%s' from S3", rel_path )
         except OSError:
-            log.exception('%s delete error', self.get_filename(obj, **kwargs))
+            log.exception( '%s delete error', self.get_filename( obj, user, pluggedMedia, **kwargs ) )
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
@@ -683,12 +685,12 @@ class CloudObjectStore(ObjectStore):
             raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s'
                                  % (str(obj), str(kwargs)))
 
-    def get_object_url(self, obj, **kwargs):
-        if self.exists(obj, **kwargs):
+    def get_object_url(self, obj, user, pluggedMedia, **kwargs):
+        if self.exists(obj, user, pluggedMedia, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
-                key = self.bucket.get(rel_path)
-
+                bucket = self._get_bucket(user, pluggedMedia)
+                key = bucket.get(rel_path)
                 return key.generate_url(expires_in=86400)  # 24hrs
             except S3ResponseError:
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)

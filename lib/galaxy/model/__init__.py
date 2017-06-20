@@ -1844,9 +1844,9 @@ class Dataset( StorableObject ):
     # FIXME: sqlalchemy will replace this
 
     # TODO: is this function ever called ? I don't see the call.
-    def _delete(self):
+    def _delete( self, user, pluggedMedia ):
         """Remove the file that corresponds to this data"""
-        self.object_store.delete(self)
+        self.object_store.delete( self, user, pluggedMedia )
 
     @property
     def user_can_purge( self ):
@@ -1854,12 +1854,12 @@ class Dataset( StorableObject ):
             and not bool( self.library_associations ) \
             and len( self.history_associations ) == len( self.purged_history_associations )
 
-    def full_delete( self ):
+    def full_delete( self, user, pluggedMedia ):
         """Remove the file and extra files, marks deleted and purged"""
         # os.unlink( self.file_name )
-        self.object_store.delete(self)
-        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
-            self.object_store.delete(self, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
+        self.object_store.delete( self, user, pluggedMedia )
+        if self.object_store.exists( self, user, pluggedMedia, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True ):
+            self.object_store.delete( self, user, pluggedMedia, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True )
         # if os.path.exists( self.extra_files_path ):
         #     shutil.rmtree( self.extra_files_path )
         # TODO: purge metadata files

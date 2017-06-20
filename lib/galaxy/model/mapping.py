@@ -67,7 +67,7 @@ model.PluggedMedia.table = Table(
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "type", TEXT, nullable=False ),
-    Column( "path", TEXT ),
+    Column( "path", TEXT, nullable=False ),
     Column( "secret_key", TEXT ),
     Column( "access_key", TEXT ) )
 

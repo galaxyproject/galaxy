@@ -1506,7 +1506,7 @@ class JobWrapper( object, HasResourceParameters ):
 
     def cleanup( self, delete_files=True ):
         # At least one of these tool cleanup actions (job import), is needed
-        # for thetool to work properly, that is why one might want to run
+        # for the tool to work properly, that is why one might want to run
         # cleanup but not delete files.
         try:
             if delete_files:
@@ -1516,7 +1516,15 @@ class JobWrapper( object, HasResourceParameters ):
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.app, self.job_id ).cleanup_after_job()
             if delete_files:
-                self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
+                # TEMP BLOCK --- START
+                print '\n\n--------------------- MAKE SURE TO REPLACE ME !!!\n\n'
+                pluggedMedia = None
+                for pM in self.get_job().user.pluggedMedia:
+                    pluggedMedia = pM
+                    break
+                # TEMP BLOCK --- END
+                self.app.object_store.delete(self.get_job(), user=self.user, pluggedMedia=pluggedMedia,
+                                             base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
 
