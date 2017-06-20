@@ -1,5 +1,5 @@
-galaxy.external_services.result_handlers package
-================================================
+galaxy\.external\_services\.result\_handlers package
+====================================================
 
 .. automodule:: galaxy.external_services.result_handlers
     :members:
@@ -9,8 +9,8 @@ galaxy.external_services.result_handlers package
 Submodules
 ----------
 
-galaxy.external_services.result_handlers.basic module
------------------------------------------------------
+galaxy\.external\_services\.result\_handlers\.basic module
+----------------------------------------------------------
 
 .. automodule:: galaxy.external_services.result_handlers.basic
     :members:

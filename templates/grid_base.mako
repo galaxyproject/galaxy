@@ -64,22 +64,9 @@
 
     ## load javascript
     <script type="text/javascript">
-        var gridView = null;
-        function add_tag_to_grid_filter( tag_name, tag_value ){
-            // Put tag name and value together.
-            var tag = tag_name + ( tag_value !== undefined && tag_value !== "" ? ":" + tag_value : "" );
-            var advanced_search = $( '#advanced-search').is(":visible" );
-            if( !advanced_search ){
-                $('#standard-search').slideToggle('fast');
-                $('#advanced-search').slideToggle('fast');
-            }
-            gridView.add_filter_condition( "tags", tag );
-        };
-
-        // load grid viewer
         require(['mvc/grid/grid-view'], function(GridView) {
             $(function() {
-                gridView = new GridView( ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) } );
+                var gridView = new GridView( ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) } );
             });
         });
     </script>
@@ -107,7 +94,7 @@
         'operations'                    : [],
         'items'                         : [],
         'columns'                       : [],
-        'get_class_plural'              : get_class_plural( grid.model_class ).lower(),
+        'model_class'                   : str( grid.model_class ),
         'use_paging'                    : grid.use_paging,
         'legend'                        : grid.legend,
         'current_item_id'               : False,

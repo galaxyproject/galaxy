@@ -1,5 +1,5 @@
-galaxy.tools.toolbox package
-============================
+galaxy\.tools\.toolbox package
+==============================
 
 .. automodule:: galaxy.tools.toolbox
     :members:
@@ -17,40 +17,56 @@ Subpackages
 Submodules
 ----------
 
-galaxy.tools.toolbox.base module
---------------------------------
+galaxy\.tools\.toolbox\.base module
+-----------------------------------
 
 .. automodule:: galaxy.tools.toolbox.base
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.toolbox.integrated_panel module
---------------------------------------------
+galaxy\.tools\.toolbox\.cache module
+------------------------------------
+
+.. automodule:: galaxy.tools.toolbox.cache
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.tools\.toolbox\.integrated\_panel module
+------------------------------------------------
 
 .. automodule:: galaxy.tools.toolbox.integrated_panel
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.toolbox.panel module
----------------------------------
+galaxy\.tools\.toolbox\.panel module
+------------------------------------
 
 .. automodule:: galaxy.tools.toolbox.panel
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.toolbox.tags module
---------------------------------
+galaxy\.tools\.toolbox\.parser module
+-------------------------------------
+
+.. automodule:: galaxy.tools.toolbox.parser
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.tools\.toolbox\.tags module
+-----------------------------------
 
 .. automodule:: galaxy.tools.toolbox.tags
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.toolbox.watcher module
------------------------------------
+galaxy\.tools\.toolbox\.watcher module
+--------------------------------------
 
 .. automodule:: galaxy.tools.toolbox.watcher
     :members:

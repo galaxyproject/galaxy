@@ -7,7 +7,7 @@ icon: fa-search
 tooltip: Click to activate search and press Ctrl + Alt + q to open the overlay
 
 function: >
-  $.getJSON(Galaxy.root + "/api/webhooks", function( data ) {
+  $.getJSON(Galaxy.root + "api/webhooks", function( data ) {
       for( var item in data ) {
           var webhook = data[item];
           if( webhook.name === "searchover" ) {

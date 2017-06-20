@@ -53,7 +53,6 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     # Grid definition
     title = "Saved Datasets"
     model_class = model.HistoryDatasetAssociation
-    template = '/dataset/grid.mako'
     default_sort_key = "-update_time"
     columns = [
         grids.TextColumn( "Name", key="name",
@@ -463,6 +462,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( dataset_id ) )
 
     @web.expose
+    @web.json
     @web.require_login( "see all available datasets" )
     def list( self, trans, **kwargs ):
         """List all available datasets"""
@@ -501,9 +501,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     status, message = trans.webapp.controllers['history']._list_switch( trans, histories )
 
                     # Current history changed, refresh history frame; if switching to a dataset, set hda seek.
-                    trans.template_context['refresh_frames'] = ['history']
+                    kwargs['refresh_frames'] = ['history']
                     if operation == "switch":
                         hda_ids = [ trans.security.encode_id( hda.id ) for hda in hdas ]
+                        # TODO: Highlighting does not work, has to be revisited
                         trans.template_context[ 'seek_hda_ids' ] = hda_ids
                 elif operation == "copy to current history":
                     #
@@ -517,9 +518,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     status, message = self._copy_datasets( trans, hda_ids, target_histories )
 
                     # Current history changed, refresh history frame.
-                    trans.template_context['refresh_frames'] = ['history']
+                    kwargs['refresh_frames'] = ['history']
 
         # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self.stored_list_grid( trans, status=status, message=message, **kwargs )
 
     @web.expose

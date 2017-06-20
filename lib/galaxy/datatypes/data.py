@@ -269,7 +269,6 @@ class Data( object ):
             if not error:
                 ext = data.extension
                 path = data.file_name
-                fname = os.path.split(path)[-1]
                 efp = data.extra_files_path
                 # Add any central file to the archive,
 
@@ -280,17 +279,14 @@ class Data( object ):
                 error, msg = self._archive_main_file(archive, display_name, path)[:2]
                 if not error:
                     # Add any child files to the archive,
-                    for root, dirs, files in os.walk(efp):
-                        for fname in files:
-                            fpath = os.path.join(root, fname)
-                            rpath = os.path.relpath(fpath, efp)
-                            try:
-                                archive.add( fpath, rpath )
-                            except IOError:
-                                error = True
-                                log.exception( "Unable to add %s to temporary library download archive", rpath)
-                                msg = "Unable to create archive for download, please report this error"
-                                continue
+                    for fpath, rpath in self.__archive_extra_files_path(extra_files_path=efp):
+                        try:
+                            archive.add(fpath, rpath)
+                        except IOError:
+                            error = True
+                            log.exception("Unable to add %s to temporary library download archive", rpath)
+                            msg = "Unable to create archive for download, please report this error"
+                            continue
                 if not error:
                     if params.do_action == 'zip':
                         archive.close()
@@ -310,12 +306,44 @@ class Data( object ):
                         return archive.stream
         return trans.show_error_message( msg )
 
+    def __archive_extra_files_path(self, extra_files_path):
+        """Yield filepaths and relative filepaths for files in extra_files_path"""
+        for root, dirs, files in os.walk(extra_files_path):
+            for fname in files:
+                fpath = os.path.join(root, fname)
+                rpath = os.path.relpath(fpath, extra_files_path)
+                yield fpath, rpath
+
     def _serve_raw(self, trans, dataset, to_ext, **kwd):
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
         filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
         return open( dataset.file_name )
+
+    def to_archive(self, trans, dataset, name=""):
+        """
+        Collect archive paths and file handles that need to be exported when archiving `dataset`.
+
+        :param dataset: HistoryDatasetAssociation
+        :param name: archive name, in collection context corresponds to collection name(s) and element_identifier,
+                     joined by '/', e.g 'fastq_collection/sample1/forward'
+        """
+        composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
+        composite_extensions.append('html')  # for archiving composite datatypes
+        rel_paths = []
+        file_paths = []
+        if dataset.extension in composite_extensions:
+            main_file = "%s.%s" % (name, 'html')
+            rel_paths.append(main_file)
+            file_paths.append(dataset.file_name)
+            for fpath, rpath in self.__archive_extra_files_path(dataset.extra_files_path):
+                rel_paths.append(os.path.join(name, rpath))
+                file_paths.append(fpath)
+        else:
+            rel_paths.append("%s.%s" % (name or dataset.file_name, dataset.extension))
+            file_paths.append(dataset.file_name)
+        return zip(file_paths, rel_paths)
 
     def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
         """ Old display method, for transition - though still used by API and
@@ -339,7 +367,28 @@ class Data( object ):
             file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists( file_path ):
                 if os.path.isdir( file_path ):
-                    return trans.show_error_message( "Directory listing is not allowed." )  # TODO: Reconsider allowing listing of directories?
+                    tmp_fh = tempfile.NamedTemporaryFile(delete=False)
+                    tmp_file_name = tmp_fh.name
+                    dir_items = sorted(os.listdir(file_path))
+                    base_path, item_name = os.path.split(file_path)
+                    tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (item_name, len(dir_items)))
+                    tmp_fh.write('<body><p/><table cellpadding="2">\n')
+                    for index, fname in enumerate(dir_items):
+                        if index % 2 == 0:
+                            bgcolor = '#D8D8D8'
+                        else:
+                            bgcolor = '#FFFFFF'
+                        # Can't have an href link here because there is no route
+                        # defined for files contained within multiple subdirectory
+                        # levels of the primary dataset.  Something like this is
+                        # close, but not quite correct:
+                        # href = url_for(controller='dataset', action='display',
+                        # dataset_id=trans.security.encode_id(data.dataset.id),
+                        # preview=preview, filename=fname, to_ext=to_ext)
+                        tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, fname))
+                    tmp_fh.write('</table></body></html>\n')
+                    tmp_fh.close()
+                    return open(tmp_file_name)
                 mime = mimetypes.guess_type( file_path )[0]
                 if not mime:
                     try:
