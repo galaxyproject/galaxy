@@ -87,7 +87,6 @@ class HistoryListGrid( grids.Grid ):
     # Grid definition
     title = "Saved Histories"
     model_class = model.History
-    template = '/history/grid.mako'
     default_sort_key = "-update_time"
     columns = [
         HistoryListNameColumn( "Name", key="name", attach_popup=True, filterable="advanced" ),
@@ -108,10 +107,10 @@ class HistoryListGrid( grids.Grid ):
     )
     operations = [
         grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=True ),
-        grids.GridOperation( "View", allow_multiple=False ),
-        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "View", allow_multiple=False, url_args=dict( action='view' ) ),
+        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), url_args=dict( action='sharing' ) ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, target="inbound"  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), url_args=dict( action='rename' )  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "Delete Permanently", condition=( lambda item: not item.purged ), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), async_compatible=True ),
@@ -167,7 +166,6 @@ class SharedHistoryListGrid( grids.Grid ):
     operations = [
         grids.GridOperation( "View", allow_multiple=False, target="_top" ),
         grids.GridOperation( "Copy" ),
-        # grids.GridOperation( "Copy", allow_multiple=False ),
         grids.GridOperation( "Unshare" )
     ]
     standard_filters = []
@@ -249,6 +247,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.fill_template( "history/list_published.mako", embedded_grid=grid )
 
     @web.expose
+    @web.json
     @web.require_login( "work with multiple histories" )
     def list( self, trans, **kwargs ):
         """List all available histories"""
@@ -256,20 +255,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         status = message = None
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
-            if operation == "share or publish":
-                return self.sharing( trans, **kwargs )
-            if operation == "rename" and kwargs.get('id', None):  # Don't call rename if no ids
-                if 'name' in kwargs:
-                    del kwargs['name']  # Remove ajax name param that rename method uses
-                return self.rename( trans, **kwargs )
-            if operation == "view":
-                decoded_id = self.decode_id( kwargs.get( 'id', None ) )
-                history = self.history_manager.get_owned( decoded_id, trans.user, current_history=trans.history )
-                return trans.response.send_redirect( url_for( controller='history',
-                                                              action='view',
-                                                              id=kwargs['id'],
-                                                              show_deleted=history.deleted,
-                                                              use_panels=False ) )
             history_ids = galaxy.util.listify( kwargs.get( 'id', [] ) )
             # Display no message by default
             status, message = None, None
@@ -296,7 +281,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     if use_panels:
                         return trans.response.send_redirect( url_for( "/" ) )
                     else:
-                        trans.template_context['refresh_frames'] = ['history']
+                        kwargs['refresh_frames'] = ['history']
                 elif operation in ( "delete", "delete permanently" ):
                     if operation == "delete permanently":
                         status, message = self._list_delete( trans, histories, purge=True )
@@ -305,7 +290,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     if current_history in histories:
                         # Deleted the current history, so a new, empty history was
                         # created automatically, and we need to refresh the history frame
-                        trans.template_context['refresh_frames'] = ['history']
+                        kwargs['refresh_frames'] = ['history']
                 elif operation == "undelete":
                     status, message = self._list_undelete( trans, histories )
                 elif operation == "unshare":
@@ -328,6 +313,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
                 trans.sa_session.flush()
         # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self.stored_list_grid( trans, status=status, message=message, **kwargs )
 
     def _list_delete( self, trans, histories, purge=False ):
@@ -741,8 +727,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     history_name = escape( history.name )
                     user_email = escape( user.email )
                     message = "History '%s' does not seem to be shared with user '%s'" % ( history_name, user_email )
-                    return trans.fill_template( '/sharing_base.mako', item=history,
-                                                message=message, status='error' )
+                    return trans.fill_template( '/sharing_base.mako', controller_list='histories', item=history,
+                                                message=message, status='error', use_panels=True )
 
         # Legacy issue: histories made accessible before recent updates may not have a slug. Create slug for any histories that need them.
         for history in histories:
@@ -751,7 +737,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         session.flush()
 
-        return trans.fill_template( "/sharing_base.mako", item=history )
+        return trans.fill_template( "/sharing_base.mako", controller_list='histories', item=history, use_panels=True )
 
     @web.expose
     @web.require_login( "share histories with other users" )

@@ -12,6 +12,7 @@ var jQuery = require( 'jquery' ),
     GridView = require( 'mvc/grid/grid-view' ),
     PageList = require( 'mvc/page/page-list' ),
     Workflows = require( 'mvc/workflow/workflow' ),
+    HistoryList = require( 'mvc/history/history-list' ),
     WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
@@ -83,7 +84,8 @@ window.app = function app( options, bootstrapped ){
             '(/)user(/)(:form_id)' : 'show_user_form',
             '(/)workflow(/)' : 'show_workflows',
             '(/)pages(/)(:action_id)' : 'show_pages',
-            '(/)datasets(/)(:action_id)' : 'show_datasets',
+            '(/)histories(/)list(/)' : 'show_histories',
+            '(/)datasets(/)list(/)' : 'show_datasets',
             '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)custom_builds' : 'show_custom_builds'
         },
@@ -117,6 +119,10 @@ window.app = function app( options, bootstrapped ){
 
         show_user_form : function( form_id ) {
             this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+        },
+
+        show_histories : function() {
+            this.page.display( new HistoryList.View() );
         },
 
         show_datasets : function() {
