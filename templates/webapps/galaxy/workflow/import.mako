@@ -48,6 +48,14 @@
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
+                    <label>Install missing tool:</label>
+                    <input type='checkbox' name='import_tools' />
+                    <div class="toolParamHelp" style="clear: both;">
+                        Install missing tool which workflow has.
+                    </div>
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
                     <input type="submit" class="primary-button" name="import_button" value="Import">
                 </div>
             </form>

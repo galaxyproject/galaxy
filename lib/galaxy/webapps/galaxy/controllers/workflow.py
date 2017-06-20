@@ -30,6 +30,7 @@ from galaxy.workflow.extract import summarize
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.workflow.render import WorkflowCanvas, STANDALONE_SVG_TEMPLATE
+from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 
 log = logging.getLogger( __name__ )
 
@@ -760,6 +761,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         repository_metadata_id = kwd.get( 'repository_metadata_id', '' )
         add_to_menu = util.string_as_bool( kwd.get( 'add_to_menu', False ) )
+        # option for install missing tool
+        import_tools = util.string_as_bool( kwd.get( "import_tools", False ) )
         # The workflow_name parameter is in the request only if the import originated
         # from a Galaxy tool shed, in which case the value was encoded.
         workflow_name = kwd.get( 'workflow_name', '' )
@@ -877,6 +880,20 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                 # Another Galaxy panels hack: The request originated from the Galaxy
                                 # workflow view, so we need to render the Galaxy panels.
                                 action = 'index'
+                            # install missing tools
+                            if import_tools:
+                                irm = InstallRepositoryManager( self.app )
+                                for k in missing_tool_tups:
+                                    missing_tool_id, missing_tool_name, missing_tool_version, step_id = k
+                                    item=data["steps"][str(step_id)]["tool_shed_repository"]
+
+                                    irm_ret = irm.install(
+                                        'https://'+item['tool_shed']+'/',
+                                        item['name'],
+                                        item['owner'],
+                                        item['changeset_revision'],
+                                        {})
+
                             return trans.response.send_redirect( web.url_for( controller='admin',
                                                                               action=action,
                                                                               message=message,
