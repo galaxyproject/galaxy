@@ -252,53 +252,36 @@ return Backbone.View.extend({
             return;
         }
 
-        //
         // add operation popup menus
-        //
-        for (var i in options.items)
-        {
-            // get items
-            var item = options.items[i];
+        _.each( options.items, function( item, index ) {
+            var button = self.$( '#grid-' + index + '-popup' ).off();
+            var popup = new PopupMenu( button );
+            _.each( options[ 'operations' ], function( operation ) {
+                self._add_operation( popup, operation, item );
+            });
+        });
+    },
 
-            // get identifiers
-            var button = this.$el.find('#grid-' + i + '-popup');
-            button.off();
-            var popup = new PopupMenu(button);
-
-            // load details
-            for (var j in options['operations'])
-            {
-                // get operation details
-                var operation = options['operations'][j];
-                var operation_id = operation['label'];
-                var operation_settings = item['operation_config'][operation_id];
-                var encode_id = item['encode_id'];
-
-                // check
-                if (operation_settings['allowed'] && operation['allow_popup'])
-                {
-                    // popup configuration
-                    var popupConfig =
-                    {
-                        html : operation['label'],
-                        href : operation_settings['url_args'],
-                        target : operation_settings['target'],
-                        confirmation_text : operation['confirm']
-                    };
-
-                    // add popup function
-                    popupConfig.func = function(e)
-                    {
-                        e.preventDefault();
-                        var label = $(e.target).html();
-                        var options = this.findItemByHtml(label);
-                        self.execute(options);
-                    };
-
-                    // add item
-                    popup.addItem(popupConfig);
+    /** Add an operation to the items menu */
+    _add_operation: function( popup, operation, item ) {
+        var self = this;
+        var settings = item.operation_config[ operation.label ];
+        if ( settings.allowed && operation.allow_popup ) {
+            popup.addItem({
+                html                : operation.label,
+                href                : settings.url_args,
+                target              : settings.target,
+                confirmation_text   : operation.confirm,
+                func                : function( e ) {
+                    e.preventDefault();
+                    var label = $( e.target ).html();
+                    if ( operation.onclick ) {
+                        operation.onclick( item.encode_id );
+                    } else {
+                        self.execute( this.findItemByHtml( label ) );
+                    }
                 }
-            }
+            });
         }
     },
 

@@ -19,18 +19,19 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
             Galaxy.display = this.display = function( view ) { self.center.display( view ) };
             Galaxy.router = this.router = options.Router && new options.Router( self, options );
             this.masthead = new Masthead.View( this.config );
+            this.center = new Panel.CenterPanel();
 
             // build page template
             this.$el.attr( 'scroll', 'no' );
             this.$el.html( this._template() );
             this.$( '#masthead' ).replaceWith( this.masthead.$el );
+            this.$( '#center' ).append( this.center.$el );
             this.$el.append( this.masthead.frame.$el );
             this.$el.append( this.modal.$el );
             this.$messagebox = this.$( '#messagebox' );
             this.$inactivebox = this.$( '#inactivebox' );
 
             // build panels
-            this.center = new Panel.CenterPanel();
             this.panels = {};
             _.each( this._panelids, function( panel_id ) {
                 var panel_class_name = panel_id.charAt( 0 ).toUpperCase() + panel_id.slice( 1 );
@@ -98,14 +99,12 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
         /** Render panels */
         renderPanels : function() {
             var self = this;
-            this.center.setElement( '#center' );
-            this.center.render();
             _.each( this._panelids, function( panel_id ) {
                 var panel = self.panels[ panel_id ];
                 if ( panel ) {
                     panel.render();
                 } else {
-                    self.center.$el.css( panel_id, 0 );
+                    self.$( '#center' ).css( panel_id, 0 );
                     self.$( '#' + panel_id ).hide();
                 }
             });

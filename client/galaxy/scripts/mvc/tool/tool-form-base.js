@@ -22,16 +22,16 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 });
             }
             // destroy dom elements
-            this.$el.on( 'remove', function() { self.remove() } );
+            this.$el.on( 'remove', function() { self._destroy() } );
         },
 
         /** Wait for deferred build processes before removal */
-        remove: function() {
+        _destroy: function() {
             var self = this;
-            this.$el.hide();
+            this.$el.off().hide();
             this.deferred.execute( function() {
                 FormBase.prototype.remove.call( self );
-                Galaxy.emit.debug( 'tool-form-base::remove()', 'Destroy view.' );
+                Galaxy.emit.debug( 'tool-form-base::_destroy()', 'Destroy view.' );
             });
         },
 

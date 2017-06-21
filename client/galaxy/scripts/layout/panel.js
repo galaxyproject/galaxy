@@ -189,29 +189,20 @@ define( [ 'jquery', 'libs/underscore', 'libs/backbone' ], function( $, _, Backbo
     var CenterPanel = Backbone.View.extend({
 
         initialize : function( options ){
-            /** previous view contained in the center panel - cached for removal later */
-            this.prev = null;
+            this.setElement( $( this.template() ) );
+            this.$frame = this.$( '.center-frame' );
+            this.$panel = this.$( '.center-panel' );
+            this.$frame.on( 'load', _.bind( this._iframeChangeHandler, this ) );
         },
 
-        render : function(){
-            this.$el.html( this.template() );
-            // ?: doesn't work/listen in events map
-            this.$( '#galaxy_main' ).on( 'load', _.bind( this._iframeChangeHandler, this ) );
-        },
-
-        /**   */
-        _iframeChangeHandler : function( ev ){
+        /** Display iframe if its target url changes, hide center panel */
+        _iframeChangeHandler : function( ev ) {
             var iframe = ev.currentTarget;
             var location = iframe.contentWindow && iframe.contentWindow.location;
-            if( location && location.host ){
-                // show the iframe and hide MVCview div, remove any views in the MVCview div
+            if( location && location.host ) {
                 $( iframe ).show();
-                if( this.prev ){
-                    this.prev.remove();
-                }
-                this.$( '#center-panel' ).hide();
-                // TODO: move to Galaxy
-                Galaxy.trigger( 'galaxy_main:load', {
+                this.$panel.empty().hide();
+                Galaxy.trigger( 'center-frame:load', {
                     fullpath: location.pathname + location.search + location.hash,
                     pathname: location.pathname,
                     search  : location.search,
@@ -220,43 +211,26 @@ define( [ 'jquery', 'libs/underscore', 'libs/backbone' ], function( $, _, Backbo
             }
         },
 
-        /**   */
+        /** Display a view in the center panel, hide iframe */
         display: function( view ) {
-            // we need to display an MVC view: hide the iframe and show the other center panel
-            // first checking for any onbeforeunload handlers on the iframe
-            var contentWindow = this.$( '#galaxy_main' )[ 0 ].contentWindow || {};
+            var contentWindow = this.$frame[ 0 ].contentWindow || {};
             var message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
             if ( !message || confirm( message ) ) {
                 contentWindow.onbeforeunload = undefined;
-                // remove any previous views
-                if( this.prev ){
-                    this.prev.remove();
-                }
-                this.prev = view;
-                this.$( '#galaxy_main' ).attr( 'src', 'about:blank' ).hide();
-                this.$( '#center-panel' ).scrollTop( 0 ).append( view.$el ).show();
+                this.$frame.attr( 'src', 'about:blank' ).hide();
+                this.$panel.empty().scrollTop( 0 ).append( view.$el ).show();
                 Galaxy.trigger( 'center-panel:load', view );
-
-            } else {
-                if( view ){
-                    view.remove();
-                }
             }
         },
 
-        template: function(){
-            return [
-                //TODO: remove inline styling
-                '<div style="position: absolute; width: 100%; height: 100%">',
-                    '<iframe name="galaxy_main" id="galaxy_main" frameborder="0" ',
-                            'style="position: absolute; width: 100%; height: 100%;"/>',
-                    '<div id="center-panel" ',
-                         'style="display: none; position: absolute; width: 100%; height: 100%; padding: 10px; overflow: auto;"/>',
-                '</div>'
-            ].join('');
+        template: function() {
+            return  '<div class="center-container">' +
+                        '<iframe id="galaxy_main" name="galaxy_main" frameborder="0" class="center-frame" />' +
+                        '<div class="center-panel" />' +
+                    '</div>';
         },
 
-        toString : function(){ return 'CenterPanel' }
+        toString : function() { return 'CenterPanel' }
     });
 
     return {
