@@ -104,7 +104,7 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
                 if ( panel ) {
                     panel.render();
                 } else {
-                    self.center.$el.css( panel_id, 0 );
+                    self.$( '#center' ).css( panel_id, 0 );
                     self.$( '#' + panel_id ).hide();
                 }
             });
