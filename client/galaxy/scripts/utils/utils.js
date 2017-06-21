@@ -277,6 +277,18 @@ define( [], function() {
                     + minutes;
     };
 
+    /** Append script and style tags to Galaxy main application */
+    function appendScriptStyle( data ) {
+        // create a script tag inside head tag
+        if( data.script && data.script !== "" ) {
+            $(  '<script/>', { type: 'text/javascript' } ).text( data.script ).appendTo( 'head' );
+        }
+        // create a style tag inside head tag
+        if( data.styles && data.styles !== "" ) {
+            $( '<style/>', { type: 'text/css' } ).text( data.styles ).appendTo( 'head' );
+        }
+    };
+
     return {
         cssLoadFile: cssLoadFile,
         cssGetAttribute: cssGetAttribute,
@@ -293,6 +305,7 @@ define( [], function() {
         deepeach: deepeach,
         isJSON: isJSON,
         clone: clone,
-        linkify: linkify
+        linkify: linkify,
+        appendScriptStyle: appendScriptStyle
     };
 });

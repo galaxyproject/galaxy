@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-define(['layout/generic-nav-view', 'mvc/webhooks', 'utils/localization'], function( GenericNav, Webhooks, _l ) {
+define(['layout/generic-nav-view', 'mvc/webhooks', 'utils/localization', 'utils/utils'], function( GenericNav, Webhooks, _l, Utils ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -137,12 +137,9 @@ var Collection = Backbone.Collection.extend({
                             else if( Galaxy.masthead ) {
                                 Galaxy.masthead.collection.add(obj);
                             }
-                             
-                            // Pull the script and styles for masthead overlay search plugin
-                            if( webhook.name === "searchover" ) {
-                                $(  '<script/>', { type: 'text/javascript' } ).text( webhook.script ).appendTo( 'head' );
-                                $( '<style/>', { type: 'text/css' } ).text( webhook.styles ).appendTo( 'head' );
-                            }
+                            
+                            // Append masthead script and styles to Galaxy main
+                            Utils.appendScriptStyle( webhook );
                         }
                     });
                 });
