@@ -71,7 +71,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             } else {
                 build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
                 build_data = $.extend( {}, Galaxy.params );
-                build_data[ 'tool_id' ] = options.id;
+                build_data[ 'tool_id' ] && ( delete build_data[ 'tool_id' ] );
                 options.version && ( build_data[ 'tool_version' ] = options.version );
             }
 
