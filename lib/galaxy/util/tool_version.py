@@ -1,5 +1,4 @@
 def remove_version_from_guid(guid):
-
     """
     Removes version from toolshed-derived tool_id(=guid).
     """

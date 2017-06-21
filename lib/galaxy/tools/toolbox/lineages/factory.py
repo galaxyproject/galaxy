@@ -13,7 +13,7 @@ class LineageMap(object):
 
     def register(self, tool):
         tool_id = tool.id
-        versionless_tool_id = remove_version_from_guid( tool_id)
+        versionless_tool_id = remove_version_from_guid(tool_id)
         lineage = self.lineage_map.get(versionless_tool_id)
         if not lineage:
             lineage = StockLineage.from_tool( tool )

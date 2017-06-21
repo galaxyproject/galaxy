@@ -47,7 +47,9 @@ class StockLineage(ToolLineage):
     def get_versions( self ):
         return [ ToolLineageVersion( tool_id, tool_version ) for tool_id, tool_version in zip(self.tool_ids, self.tool_versions) ]
 
-    def get_version_ids(self):
+    def get_version_ids(self, reverse=False):
+        if reverse:
+            return list(reversed(self.tool_ids))
         return self.tool_ids
 
     def to_dict(self):

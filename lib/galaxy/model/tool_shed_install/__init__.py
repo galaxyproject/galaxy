@@ -589,13 +589,6 @@ class ToolVersion( object, Dictifiable ):
         self.tool_id = tool_id
         self.tool_shed_repository = tool_shed_repository
 
-    def get_version_ids( self, app, reverse=False ):
-        lineage = app.toolbox._lineage_map.get(self.tool_id)
-        version_ids = lineage.get_versions()
-        if reverse:
-            version_ids = reversed(version_ids)
-        return version_ids
-
     def to_dict( self, view='element' ):
         rval = super( ToolVersion, self ).to_dict( view=view )
         rval[ 'tool_name' ] = self.tool_id
