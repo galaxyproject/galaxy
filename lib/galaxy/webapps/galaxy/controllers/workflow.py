@@ -15,8 +15,7 @@ from tool_shed.util import encoding_util
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy import exceptions
-from galaxy.managers import workflows, histories
+from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.util import unicodify, FILENAME_VALID_CHARS
@@ -740,7 +739,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return stored_dict
 
     @web.expose
-    def import_workflow( self, trans, cntrller='workflow', **kwd ):
+    @web.json
+    def upload_import_workflow( self, trans, cntrller='workflow', **kwd ):
         """
         Import a workflow by reading an url, uploading a file, opening and reading the contents
         of a local file, or receiving the textual representation of a workflow via http.
@@ -790,7 +790,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 try:
                     workflow_data = urllib2.urlopen( url ).read()
                 except Exception as e:
-                    message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( escape( url ), escape( str( e ) ) )
+                    message = "Failed to open URL: %s. Exception: %s" % ( escape( url ), escape( str( e ) ) )
                     status = 'error'
             elif workflow_text:
                 # This case occurs when the workflow_text was sent via http from the tool shed.
@@ -839,7 +839,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         message += "Imported, but this workflow contains cycles.  "
                         status = "error"
                     else:
-                        message += "Workflow <b>%s</b> imported successfully.  " % escape( workflow.name )
+                        message += "Workflow %s imported successfully.  " % escape( workflow.name )
                     if missing_tool_tups:
                         if trans.user_is_admin():
                             # A required tool is not available in the local Galaxy instance.
@@ -853,7 +853,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             message += "You can likely install the required tools from one of the Galaxy tool sheds listed below.<br/>"
                             for missing_tool_tup in missing_tool_tups:
                                 missing_tool_id, missing_tool_name, missing_tool_version, step_id = missing_tool_tup
-                                message += "<b>Tool name</b> %s, <b>id</b> %s, <b>version</b> %s<br/>" % (
+                                message += "Tool name: %s, id: %s, version: %s." % (
                                            escape( missing_tool_name ),
                                            escape( missing_tool_id ),
                                            escape( missing_tool_version ) )
@@ -867,7 +867,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     for missing_tool_tup in missing_tool_tups:
                                         missing_tool_id = missing_tool_tup[0]
                                         url += '%s,' % escape( missing_tool_id )
-                                message += '<a href="%s">%s</a><br/>' % ( url, shed_name )
+                                message += 'url: %s, shed name: %s.' % ( url, shed_name )
                                 status = 'error'
                             if installed_repository_file or tool_shed_url:
                                 # Another Galaxy panels Hack: The request did not originate from the Galaxy
@@ -886,13 +886,13 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             pass
                     if tool_shed_url:
                         # We've received the textual representation of a workflow from a Galaxy tool shed.
-                        message = "Workflow <b>%s</b> imported successfully." % escape( workflow.name )
+                        message = "Workflow %s imported successfully." % escape( workflow.name )
                         url = '%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&message=%s' % \
                             ( tool_shed_url, repository_metadata_id, encoding_util.tool_shed_encode( workflow_name ), message )
                         return trans.response.send_redirect( url )
                     elif installed_repository_file:
                         # The workflow was read from a file included with an installed tool shed repository.
-                        message = "Workflow <b>%s</b> imported successfully." % escape( workflow.name )
+                        message = "Workflow %s imported successfully." % escape( workflow.name )
                         if cntrller == 'api':
                             return status, message
                         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -900,15 +900,20 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                                                           id=repository_id,
                                                                           message=message,
                                                                           status=status ) )
-                    return self.list( trans )
+                    redirect_url = url_for( '/' ) + 'workflow?status=' + status + '&message=%s' % escape( message )
+                    return trans.response.send_redirect( redirect_url )
         if cntrller == 'api':
             return status, message
-        return trans.fill_template( "workflow/import.mako",
-                                    url=url,
-                                    message=message,
-                                    status=status,
-                                    use_panels=True,
-                                    myexperiment_target_url=myexperiment_target_url )
+        if status == 'error':
+            redirect_url = url_for( '/' ) + 'workflow?status=' + status + '&message=%s' % escape( message )
+            return trans.response.send_redirect( redirect_url )
+        else:
+            return {
+                'url': url,
+                'message': message,
+                'status': status,
+                'myexperiment_target_url': myexperiment_target_url
+            }
 
     @web.expose
     def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None ):
@@ -946,26 +951,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                        'You can <a href="%s" target="_parent">edit</a> or <a href="%s">run</a> the workflow.'
                                        % ( escape( workflow_name ), url_for( controller='workflow', action='editor', id=workflow_id ),
                                            url_for( controller='workflow', action='run', id=workflow_id ) ) )
-
-    @web.expose
-    def run( self, trans, id, history_id=None, **kwargs ):
-        history = None
-        try:
-            if history_id is not None:
-                history_manager = histories.HistoryManager( trans.app )
-                history = history_manager.get_owned( trans.security.decode_id( history_id ), trans.user, current_history=trans.history )
-            else:
-                history = trans.get_history()
-            if history is None:
-                raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
-        except Exception as e:
-            raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
-        trans.history = history
-        workflow_manager = workflows.WorkflowsManager( trans.app )
-        workflow_contents_manager = workflows.WorkflowContentsManager( trans.app )
-        stored = workflow_manager.get_stored_accessible_workflow( trans, id )
-        workflow_dict = workflow_contents_manager.workflow_to_dict( trans, stored, style='run' )
-        return trans.fill_template( 'workflow/run.mako', workflow_dict=workflow_dict )
 
     def get_item( self, trans, id ):
         return self.get_stored_workflow( trans, id )
