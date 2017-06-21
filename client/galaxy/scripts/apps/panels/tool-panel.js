@@ -1,6 +1,7 @@
 var Tools = require( 'mvc/tool/tools' ),
     Upload = require( 'mvc/upload/upload-view' ),
-    _l = require( 'utils/localization' );
+    _l = require( 'utils/localization' ),
+    ToolForm = require( 'mvc/tool/tool-form-composite' );
 
 var ToolPanel = Backbone.View.extend({
     initialize: function( page, options ) {
@@ -58,7 +59,7 @@ var ToolPanel = Backbone.View.extend({
             href    : 'workflow'
         }));
         _.each( this.stored_workflow_menu_entries, function( menu_entry ){
-            self.$( '#internal-workflows' ).append( self._templateTool({
+            self.$( '#internal-workflows' ).append( self._templateWorkflowLink({
                 title : menu_entry.stored_workflow.name,
                 href  : 'workflow/run?id=' + menu_entry.encoded_stored_workflow_id
             }));
@@ -80,6 +81,15 @@ var ToolPanel = Backbone.View.extend({
             '<div class="toolTitle">',
                 // global
                 '<a href="', Galaxy.root, tool.href, '">', tool.title, '</a>',
+            '</div>'
+        ].join('');
+    },
+
+    /** build links to workflows in toolpanel */
+    _templateWorkflowLink: function( wf ) {
+        return [
+            '<div class="toolTitle">',
+                '<a class="'+ wf.cls +' " href="', Galaxy.root, wf.href, '">', wf.title, '</a>',
             '</div>'
         ].join('');
     },

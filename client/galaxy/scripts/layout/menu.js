@@ -278,8 +278,8 @@ var Collection = Backbone.Collection.extend({
                         divider : true
                     },{
                         title   : _l('Saved Histories'),
-                        url     : 'history/list',
-                        target  : 'galaxy_main'
+                        url     : 'histories/list',
+                        target  : '_top'
                     },{
                         title   : _l('Saved Datasets'),
                         url     : 'datasets/list',

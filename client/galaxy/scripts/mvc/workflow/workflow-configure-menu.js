@@ -80,7 +80,7 @@ define( [], function() {
                     data: JSON.stringify( { 'workflow_ids': ids } ),
                     contentType : 'application/json'
                 }).done( function( response ) {
-                    window.location = Galaxy.root + 'workflow?status='+ response.status +'&message=' + response.message;
+                    window.location = Galaxy.root + 'user';
                 });
             });
         },
@@ -121,8 +121,8 @@ define( [], function() {
             tableHtml = tableHtml + '<a class="action-button wf-save-menu wf-action fa fa-floppy-o" href="#" title="Save">' +
                                         '<span>Save</span>' +
                                     '</a>' +
-                                    '<a class="action-button wf-back wf-action fa fa-arrow-left" href="'+ Galaxy.root +'workflow" title="Back to workflow">' +
-                                        '<span>Back to workflow</span>' +
+                                    '<a class="action-button wf-back wf-action fa fa-arrow-left" href="'+ Galaxy.root +'user" title="Back to User Preferences">' +
+                                        '<span>Back to User Preferences</span>' +
                                     '</a>';
             return tableHtml;
         },

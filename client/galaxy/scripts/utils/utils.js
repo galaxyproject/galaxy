@@ -289,6 +289,11 @@ define( [], function() {
         }
     };
 
+    /** Get querystrings from url */
+    function getQueryString( key ) {
+        return decodeURIComponent( window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent( key ).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1") );
+    };
+
     return {
         cssLoadFile: cssLoadFile,
         cssGetAttribute: cssGetAttribute,
@@ -306,6 +311,7 @@ define( [], function() {
         isJSON: isJSON,
         clone: clone,
         linkify: linkify,
-        appendScriptStyle: appendScriptStyle
+        appendScriptStyle: appendScriptStyle,
+        getQueryString: getQueryString
     };
 });

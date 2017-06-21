@@ -12,7 +12,11 @@ var jQuery = require( 'jquery' ),
     GridView = require( 'mvc/grid/grid-view' ),
     PageList = require( 'mvc/page/page-list' ),
     Workflows = require( 'mvc/workflow/workflow' ),
-    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' );
+    HistoryList = require( 'mvc/history/history-list' ),
+    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' ),
+    ToolFormComposite = require( 'mvc/tool/tool-form-composite' ),
+    Utils = require( 'utils/utils' ),
+    Ui = require( 'mvc/ui/ui-misc' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -82,9 +86,12 @@ window.app = function app( options, bootstrapped ){
             '(/)user(/)' : 'show_user',
             '(/)user(/)(:form_id)' : 'show_user_form',
             '(/)workflow(/)' : 'show_workflows',
+            '(/)workflow/run(/)' : 'show_run',
             '(/)pages(/)(:action_id)' : 'show_pages',
-            '(/)datasets(/)(:action_id)' : 'show_datasets',
+            '(/)histories(/)list(/)' : 'show_histories',
+            '(/)datasets(/)list(/)' : 'show_datasets',
             '(/)workflow/configure_menu(/)' : 'show_configure_menu',
+            '(/)workflow/import_workflow' : 'show_import_workflow',
             '(/)custom_builds' : 'show_custom_builds'
         },
 
@@ -119,6 +126,10 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
         },
 
+        show_histories : function() {
+            this.page.display( new HistoryList.View() );
+        },
+
         show_datasets : function() {
             this.page.display( new GridView( { url_base: Galaxy.root + 'dataset/list', dict_format: true } ) );
         },
@@ -133,6 +144,14 @@ window.app = function app( options, bootstrapped ){
 
         show_workflows : function(){
             this.page.display( new Workflows.View() );
+        },
+
+        show_run : function() {
+            this._loadWorkflow();
+        },
+
+        show_import_workflow : function() {
+            this.page.display( new Workflows.ImportWorkflowView() );
         },
 
         show_configure_menu : function(){
@@ -163,7 +182,7 @@ window.app = function app( options, bootstrapped ){
             } else {
                 // show the workflow run form
                 if( params.workflow_id ){
-                    this._loadCenterIframe( 'workflow/run?id=' + params.workflow_id );
+                    this._loadWorkflow();
                 // load the center iframe with controller.action: galaxy.org/?m_c=history&m_a=list -> history/list
                 } else if( params.m_c ){
                     this._loadCenterIframe( params.m_c + '/' + params.m_a );
@@ -188,6 +207,22 @@ window.app = function app( options, bootstrapped ){
             this.page.$( '#galaxy_main' ).prop( 'src', url );
         },
 
+        /** load workflow by its url in run mode */
+        _loadWorkflow: function() {
+            var self = this;
+            Utils.get({
+                url: Galaxy.root + 'api/workflows/' + Utils.getQueryString( 'id' ) + '/download',
+                data: { 'style': 'run' },
+                success: function( response ) {
+                    self.page.display( new ToolFormComposite.View( response ) );
+                },
+                error: function( response ) {
+                    var error_msg = "Error occurred while loading the resource.",
+                        options = { 'message': error_msg, 'status': 'error', 'persistent': true, 'cls': 'errormessage' };
+                    self.page.display( new Ui.Message( options ) );
+                }
+            });
+        }
     });
 
     // render and start the router
