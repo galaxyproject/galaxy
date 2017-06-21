@@ -344,20 +344,20 @@ class CloudObjectStore(ObjectStore):
         # else:
         #     return False
 
-    def _pull_into_cache(self, rel_path):
+    def _pull_into_cache(self, rel_path, user, pluggedMedia):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
-        if not os.path.exists(self._get_cache_path(rel_path_dir)):
-            os.makedirs(self._get_cache_path(rel_path_dir))
+        if not os.path.exists( self._get_cache_path( rel_path_dir ) ):
+            os.makedirs( self._get_cache_path( rel_path_dir ) )
         # Now pull in the file
-        file_ok = self._download(rel_path)
-        self._fix_permissions(self._get_cache_path(rel_path_dir))
+        file_ok = self._download( rel_path, user, pluggedMedia )
+        self._fix_permissions( self._get_cache_path(rel_path_dir ) )
         return file_ok
 
     def _transfer_cb(self, complete, total):
         self.transfer_progress += 10
 
-    def _download(self, user, pluggedMedia, rel_path):
+    def _download( self, rel_path, user, pluggedMedia ):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
             bucket = self._get_bucket(user, pluggedMedia)
@@ -596,8 +596,9 @@ class CloudObjectStore(ObjectStore):
                     key.delete()
                 return True
             else:
-                # Delete from cache first
-                os.unlink( self._get_cache_path( rel_path ) )
+                # Delete from cache first, if its cached.
+                if os.path.isfile( self._get_cache_path( rel_path ) ):
+                    os.unlink( self._get_cache_path( rel_path ) )
                 # Delete from pluggedMedia as well
                 if self._key_exists( rel_path, user, pluggedMedia ):
                     key = bucket.get( rel_path )
@@ -611,10 +612,19 @@ class CloudObjectStore(ObjectStore):
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
+        print ('- '* 80)
+        print '--------------- Fixme !'
+        for line in traceback.format_stack():
+            print(line.strip())
+        print ('- '*80)
+        raise
+        user = None
+        pluggedMedia = None
+
         rel_path = self._construct_path(obj, **kwargs)
         # Check cache first and get file if not there
         if not self._in_cache(rel_path):
-            self._pull_into_cache(rel_path)
+            self._pull_into_cache(rel_path, user, pluggedMedia)
         # Read the file content from cache
         data_file = open(self._get_cache_path(rel_path), 'r')
         data_file.seek(start)
@@ -645,11 +655,11 @@ class CloudObjectStore(ObjectStore):
         if self._in_cache(rel_path):
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
-        elif self.exists(obj, **kwargs):
+        elif self.exists(obj, user, pluggedMedia, **kwargs):
             if dir_only:  # Directories do not get pulled into cache
                 return cache_path
             else:
-                if self._pull_into_cache(rel_path):
+                if self._pull_into_cache(rel_path, user, pluggedMedia):
                     return cache_path
         # For the case of retrieving a directory only, return the expected path
         # even if it does not exist.
