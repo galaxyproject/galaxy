@@ -88,6 +88,8 @@ window.app = function app( options, bootstrapped ){
             '(/)workflow(/)' : 'show_workflows',
             '(/)workflow/run(/)' : 'show_run',
             '(/)pages(/)(:action_id)' : 'show_pages',
+            '(/)visualizations/list_published(/)' : 'show_visualizations',
+            '(/)workflows/list_published(/)' : 'show_workflows_published',
             '(/)histories(/)list(/)' : 'show_histories',
             '(/)datasets(/)list(/)' : 'show_datasets',
             '(/)workflow/configure_menu(/)' : 'show_configure_menu',
@@ -124,6 +126,14 @@ window.app = function app( options, bootstrapped ){
 
         show_user_form : function( form_id ) {
             this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+        },
+
+        show_visualizations : function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'visualization/list_published', dict_format: true } ) );
+        },
+
+        show_workflows_published : function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'workflow/list_published', dict_format: true } ) );
         },
 
         show_histories : function() {

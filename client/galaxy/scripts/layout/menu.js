@@ -59,10 +59,10 @@ var Collection = Backbone.Collection.extend({
                     url     : 'history/list_published'
                 },{
                     title   : _l('Workflows'),
-                    url     : 'workflow/list_published'
+                    url     : 'workflows/list_published'
                 },{
                     title   : _l('Visualizations'),
-                    url     : 'visualization/list_published'
+                    url     : 'visualizations/list_published'
                 },{
                     title   : _l('Pages'),
                     url     : 'pages/list_published'
