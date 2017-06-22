@@ -9,7 +9,7 @@ History
 17.9.2.dev0
 ---------------------
 
-    
+* Sync with mulled enhancements and fixes from Galaxy's development branch.
 
 ---------------------
 17.9.1 (2017-06-17)
