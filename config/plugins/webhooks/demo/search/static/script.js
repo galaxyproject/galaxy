@@ -36,12 +36,16 @@ $(document).ready(function() {
             self.parentElement.find( 'ul#searchover a' ).on( 'click', function( e ) {
                 e.preventDefault();
                 e.stopPropagation();
-                self.clearSearchResults();
-                self.showOverlay();
-                self.showSearchResult();
-                // Default selected filter
-                self.setActiveFilter( '.all-filter' );
-                self.showDefaultLinks();
+                if ( $( '.search-screen-overlay' ).is( ':visible' ) ){
+                    self.removeOverlay();
+                } else{
+                    self.clearSearchResults();
+                    self.showOverlay();
+                    self.showSearchResult();
+                    // Default selected filter
+                    self.setActiveFilter( '.all-filter' );
+                    self.showDefaultLinks();
+                }
             });
 
             // Remove the overlay on escape button click
@@ -252,7 +256,7 @@ $(document).ready(function() {
         showOverlay: function() {
             var $el_search_textbox = $( '.txtbx-search-data' );
             $( '.search-screen-overlay' ).show();
-        $( '.search-screen' ).show();
+            $( '.search-screen' ).show();
             $el_search_textbox.val( "" );
             $el_search_textbox.focus();
 

@@ -4,4 +4,4 @@ type:
 activate: true
 
 icon: fa-search
-tooltip: Click to open search overlay
+tooltip: Toggle search overlay
