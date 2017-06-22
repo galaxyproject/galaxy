@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.9.2.dev0
+17.9.2 (2017-06-22)
 ---------------------
 
 * Sync with mulled enhancements and fixes from Galaxy's development branch.
