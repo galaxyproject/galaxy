@@ -415,8 +415,6 @@ class Tool( object, Dictifiable ):
         self.old_id = None
         self.version = None
         self.dependencies = []
-        # Enable easy access to this tool's version lineage.
-        self.lineage_ids = []
         # populate toolshed repository info, if available
         self.populate_tool_shed_info()
         # add tool resource parameters
