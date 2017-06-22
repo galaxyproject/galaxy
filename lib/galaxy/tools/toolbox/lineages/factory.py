@@ -17,11 +17,15 @@ class LineageMap(object):
         lineage = self.lineage_map.get(versionless_tool_id)
         if not lineage:
             lineage = ToolLineage.from_tool( tool )
+        else:
+            # A lineage for a tool with the same versionless_tool_id exists,
+            # but this lineage may not have the current tools' version,
+            # so we add tool.version to the lineage
+            lineage.register_version(tool.version)
         if versionless_tool_id and versionless_tool_id not in self.lineage_map:
             self.lineage_map[versionless_tool_id] = lineage
         if tool_id not in self.lineage_map:
             self.lineage_map[tool_id] = lineage
-        lineage.register_version(tool.version)
         return self.lineage_map[tool_id]
 
     def get(self, tool_id):
