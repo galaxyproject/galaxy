@@ -277,6 +277,18 @@ define( [], function() {
                     + minutes;
     };
 
+    /** Append script and style tags to Galaxy main application */
+    function appendScriptStyle( data ) {
+        // create a script tag inside head tag
+        if( data.script && data.script !== "" ) {
+            $(  '<script/>', { type: 'text/javascript' } ).text( data.script ).appendTo( 'head' );
+        }
+        // create a style tag inside head tag
+        if( data.styles && data.styles !== "" ) {
+            $( '<style/>', { type: 'text/css' } ).text( data.styles ).appendTo( 'head' );
+        }
+    };
+
     /** Get querystrings from url */
     function getQueryString( key ) {
         return decodeURIComponent( window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent( key ).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1") );
@@ -299,6 +311,7 @@ define( [], function() {
         isJSON: isJSON,
         clone: clone,
         linkify: linkify,
+        appendScriptStyle: appendScriptStyle,
         getQueryString: getQueryString
     };
 });
