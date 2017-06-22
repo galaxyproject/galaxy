@@ -457,7 +457,6 @@ class ToolVersionListGrid( grids.Grid ):
             toolbox = trans.app.toolbox
             tool = toolbox._tools_by_id.get(tool_version.tool_id)
             if tool:
-                tool_id = tool.id
                 for tool_id in tool.lineage.tool_ids:
                     if toolbox.has_tool( tool_id, exact=True ):
                         link = url_for( controller='tool_runner', tool_id=tool_id )
