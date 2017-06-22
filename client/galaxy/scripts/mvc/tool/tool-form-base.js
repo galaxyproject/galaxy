@@ -66,8 +66,8 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             // build request url
             var build_url = '';
             var build_data = {};
-            if ( options.job_id ) {
-                build_url = Galaxy.root + 'api/jobs/' + options.job_id + '/build_for_rerun';
+            if ( new_options.job_id ) {
+                build_url = Galaxy.root + 'api/jobs/' + new_options.job_id + '/build_for_rerun';
             } else {
                 build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
                 build_data = $.extend( {}, Galaxy.params );
