@@ -14,15 +14,6 @@ class ToolLineageVersion(object):
         self.id = id
         self.version = version
 
-    @staticmethod
-    def from_id_and_verion( id, version ):
-        assert version is not None
-        return ToolLineageVersion( id, version )
-
-    @staticmethod
-    def from_guid( guid ):
-        return ToolLineageVersion( guid, None )
-
     @property
     def id_based( self ):
         """ Return True if the lineage is defined by GUIDs (in this
