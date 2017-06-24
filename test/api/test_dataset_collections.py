@@ -1,6 +1,5 @@
 import json
 import tarfile
-import time
 
 from base import api
 from base.populators import DatasetCollectionPopulator, DatasetPopulator
@@ -102,7 +101,6 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
         assert len(returned_datasets) == 3, dataset_collection
         for element in returned_datasets:
             self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element['id'], assert_ok=True)
-        time.sleep(5)
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
         tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
@@ -117,7 +115,6 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
         returned_datasets = dataset_collection["elements"]
         for element in returned_datasets:
             self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element['id'], assert_ok=True)
-        time.sleep(5)
         hdca_id = dataset_collection['id']
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=hdca_id)
         self._assert_status_code_is(create_response, 200)
@@ -136,7 +133,6 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
         pair = returned_datasets[0]
         for element in pair['object']['elements']:
             self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element['id'], assert_ok=True)
-        time.sleep(5)
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
         tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
