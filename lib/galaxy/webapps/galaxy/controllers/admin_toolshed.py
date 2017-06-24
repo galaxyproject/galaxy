@@ -2064,7 +2064,8 @@ class AdminToolshed( AdminGalaxy ):
                         tool = trans.app.toolbox.load_tool( os.path.abspath( tool_config ), guid=tool_metadata[ 'guid' ] )
                         if tool:
                             tool._lineage = trans.app.toolbox._lineage_map.register( tool )
-                    tool_lineage = tool.lineage.get_version_ids(reverse=True)
+                    if tool:
+                        tool_lineage = tool.lineage.get_version_ids(reverse=True)
                     break
         return trans.fill_template( "/admin/tool_shed_repository/view_tool_metadata.mako",
                                     repository=repository,
