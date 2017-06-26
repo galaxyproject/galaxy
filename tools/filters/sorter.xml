@@ -36,6 +36,7 @@
             #set $other_order = '' if (str($col.other_order) == "ASC") else 'r'
             --key=${other_column},${other_column}${other_style}${other_order}
         #end for
+        --header $header_lines
     </command>
     <inputs>
         <param format="tabular" name="input" type="data" label="Sort Dataset" />
@@ -61,6 +62,7 @@
                 <option value="ASC">Ascending order</option>
             </param>
         </repeat>
+        <param name="header_lines" type="integer" value="0" label="Number of header lines to skip" help="# characters are already considered as comments and keep"/>
     </inputs>
     <outputs>
         <data format_source="input" name="out_file1" metadata_source="input"/>
@@ -96,6 +98,14 @@
             <param name="style" value="gennum"/>
             <param name="order" value="ASC"/>
             <output name="out_file1" file="sort_out3.tab"/>
+        </test>
+        <test>
+            <param name="input" value="sam_with_header.sam"/>
+            <param name="column" value="1"/>
+            <param name="style" value="alpha"/>
+            <param name="order" value="DESC"/>
+            <param name="header_lines" value="2"/>
+            <output name="out_file1" file="sort_out4.sam"/>
         </test>
     </tests>
     <help>

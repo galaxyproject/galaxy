@@ -27,6 +27,7 @@ def main():
     parser.add_option("-i", "--input")
     parser.add_option("-o", "--output")
     parser.add_option("-k", "--key", action="append")
+    parser.add_option("-H", "--header_lines", type='int')
 
     # parse
     options, args = parser.parse_args()
@@ -35,16 +36,23 @@ def main():
         # retrieve options
         input = options.input
         output = options.output
+        header_lines = options.header_lines
         key = [" -k" + k for k in options.key]
 
+        # sed header
+        if header_lines > 0:
+            sed_header = "sed -n '1,%dp' %s > %s" % (header_lines, input, output)
+            os.system(sed_header)
+
         # grep comments
-        grep_comments = "(grep '^#' %s) > %s" % (input, output)
+        grep_comments = "(grep '^#' %s) >> %s" % (input, output)
+        os.system(grep_comments)
 
         # grep and sort columns
-        sort_columns = "(grep '^[^#]' %s | sort -f -t '\t' %s) >> %s" % (input, ' '.join(key), output)
-
-        # execute
-        os.system(grep_comments)
+        sed_header_restore = ""
+        if header_lines > 0:
+            sed_header_restore = "sed '1,%dd' | " % (header_lines)
+        sort_columns = "(cat %s | %s grep '^[^#]' | sort -f -t '\t' %s) >> %s" % (input, sed_header_restore, ' '.join(key), output)
         os.system(sort_columns)
 
     except Exception as ex:
