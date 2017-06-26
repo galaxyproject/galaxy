@@ -83,7 +83,7 @@ ${json.dumps( __fill_options )}
      <data format="input" name="out_file1" metadata_source="input1" />
   </outputs>
   <tests>
-    <!--<test>
+    <test>
       <param name="input1" value="1.bed"/>
       <param name="input2" value="2.bed"/>
       <param name="field1" value="2"/>
@@ -131,7 +131,7 @@ ${json.dumps( __fill_options )}
       <param name="column_number2" value="1"/>
       <param name="fill_value2" value="NoChrom"/>
       <output name="out_file1" file="joiner_out4.bed"/>
-  </test>-->
+    </test>
     <test>
       <param name="input1" value="joiner_header_in1.tab"/>
       <param name="input2" value="joiner_header_in2.tab"/>
@@ -142,6 +142,20 @@ ${json.dumps( __fill_options )}
       <param name="header" value="-H"/>
       <param name="fill_empty_columns_switch" value="no_fill"/>
       <output name="out_file1" file="joiner_out5.tab"/>
+    </test>
+    <test>
+      <param name="input1" value="joiner_header_in1.tab"/>
+      <param name="input2" value="joiner_header_in2.tab"/>
+      <param name="field1" value="4"/>
+      <param name="field2" value="1"/>
+      <param name="unmatched" value="Yes"/>
+      <param name="partial" value="Yes"/>
+      <param name="header" value="-H"/>
+      <param name="fill_empty_columns_switch" value="fill_empty"/>
+      <param name="fill_columns_by" value="fill_all"/>
+      <param name="column_fill_type" value="single_fill_value"/>
+      <param name="fill_value" value="."/>
+      <output name="out_file1" file="joiner_out6.tab"/>
     </test>
     <test>
       <param name="input1" value="joiner_header_in1.tab"/>
