@@ -618,6 +618,9 @@ class BaseFastq ( Sequence ):
         if isinstance(self, FastqSanger) or isinstance(self, FastqSangerGz) or isinstance(self, FastqSangerBz2):
             if not self.sangerQualities(headers):
                 return False
+        else:
+            if self.sangerQualities(headers):
+                return False
 
         bases_regexp = re.compile( "^[NGTAC]*" )
         # check that first block looks like a fastq block
@@ -713,7 +716,6 @@ class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger"
-            if not self.sangerQualities(headers):
 
 
 class FastqSolexa( Fastq ):
@@ -746,10 +748,6 @@ class FastqGz ( BaseFastq, Binary ):
         return BaseFastq.sniff( self, filename )
 
 
-if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
-
-
 class FastqSangerGz( FastqGz ):
     """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
@@ -760,6 +758,11 @@ class FastqSolexaGz( FastqGz ):
     """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa.gz"
+
+
+if SNIFF_COMPRESSED_FASTQS:
+    Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
+    Binary.register_sniffable_binary_format("fastqsanger.gz", "fastqsanger.gz", FastqSangerGz)
 
 
 class FastqIlluminaGz( FastqGz ):
@@ -786,14 +789,15 @@ class FastqBz2 ( BaseFastq, Binary ):
         return BaseFastq.sniff( self, filename )
 
 
-if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
-
-
 class FastqSangerBz2( FastqBz2 ):
     """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger.bz2"
+
+
+if SNIFF_COMPRESSED_FASTQS:
+    Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
+    Binary.register_sniffable_binary_format("fastqsanger.bz2", "fastqsanger.bz2", FastqSangerBz2)
 
 
 class FastqSolexaBz2( FastqBz2 ):

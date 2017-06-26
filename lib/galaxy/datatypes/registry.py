@@ -677,6 +677,8 @@ class Registry( object ):
     def set_default_values( self ):
         # Default values.
         if not self.datatypes_by_extension:
+            #    'fastq'         : sequence.Fastq(),
+            #    'fastqsanger'   : sequence.FastqSanger(),
             self.datatypes_by_extension = {
                 'ab1'           : binary.Ab1(),
                 'axt'           : sequence.Axt(),
@@ -688,8 +690,6 @@ class Registry( object ):
                 'db3'           : binary.SQlite(),
                 'fasta'         : sequence.Fasta(),
                 'eland'         : tabular.Eland(),
-                'fastq'         : sequence.Fastq(),
-                'fastqsanger'   : sequence.FastqSanger(),
                 'gemini.sqlite' : binary.GeminiSQLite(),
                 'gtf'           : interval.Gtf(),
                 'gff'           : interval.Gff(),
@@ -761,6 +761,9 @@ class Registry( object ):
         # Default values - the order in which we attempt to determine data types is critical
         # because some formats are much more flexibly defined than others.
         if len( self.sniff_order ) < 1:
+            #after fasta
+            #    sequence.FastqSanger(),
+            #    sequence.Fastq(),
             self.sniff_order = [
                 binary.Bam(),
                 binary.Sff(),
@@ -776,8 +779,6 @@ class Registry( object ):
                 qualityscore.QualityScoreSOLiD(),
                 qualityscore.QualityScore454(),
                 sequence.Fasta(),
-                sequence.FastqSanger(),
-                sequence.Fastq(),
                 interval.Wiggle(),
                 text.Html(),
                 sequence.Axt(),
