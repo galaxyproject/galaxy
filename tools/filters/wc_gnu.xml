@@ -15,11 +15,11 @@
 
         ##Handle compressed (fastq) input
         #if $input1.is_of_type("fastq.gz"):
-            zcat $input1 |
+            zcat '$input1' |
         #else if $input1.is_of_type("fastq.bz2"):
-            bzcat $input1 |
+            bzcat '$input1' |
         #else:
-            cat $input1 |
+            cat '$input1' |
         #end if
         wc
         #for $option in $args:
