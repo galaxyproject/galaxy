@@ -1213,6 +1213,16 @@ model.HistoryDatasetAssociationTagAssociation.table = Table(
     Column( "value", TrimmedString(255), index=True ),
     Column( "user_value", TrimmedString(255), index=True ) )
 
+model.LibraryDatasetDatasetAssociationTagAssociation.table = Table(
+    "library_dataset_dataset_association_tag_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "user_tname", TrimmedString(255), index=True ),
+    Column( "value", TrimmedString(255), index=True ),
+    Column( "user_value", TrimmedString(255), index=True ) )
+
 model.StoredWorkflowTagAssociation.table = Table(
     "stored_workflow_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1990,6 +2000,9 @@ mapper( model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoc
             ( model.LibraryDatasetDatasetAssociation.table.c.visible == true() )
         ),
         remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id] ),
+    tags=relation(model.LibraryDatasetDatasetAssociationTagAssociation,
+                  order_by=model.LibraryDatasetDatasetAssociationTagAssociation.table.c.id,
+                  backref='history_tag_associations'),
     extended_metadata=relation( model.ExtendedMetadata,
         primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
     ),
@@ -2448,6 +2461,7 @@ def tag_mapping( tag_association_class, backref_name ):
 tag_mapping( model.HistoryTagAssociation, "tagged_histories" )
 tag_mapping( model.DatasetTagAssociation, "tagged_datasets" )
 tag_mapping( model.HistoryDatasetAssociationTagAssociation, "tagged_history_dataset_associations" )
+tag_mapping( model.LibraryDatasetDatasetAssociationTagAssociation, "tagged_library_dataset_dataset_associations" )
 tag_mapping( model.PageTagAssociation, "tagged_pages" )
 tag_mapping( model.StoredWorkflowTagAssociation, "tagged_workflows" )
 tag_mapping( model.WorkflowStepTagAssociation, "tagged_workflow_steps" )

@@ -12,6 +12,7 @@ from sqlalchemy.orm import eagerload_all
 from galaxy import datatypes, util
 from galaxy.exceptions import ObjectInvalid
 from galaxy.util.odict import odict
+from galaxy.managers import tags
 
 log = logging.getLogger( __name__ )
 
@@ -178,6 +179,11 @@ def __new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, stat
                                                              user=trans.user,
                                                              create_dataset=True,
                                                              sa_session=trans.sa_session )
+    if uploaded_dataset.tag_using_filenames:
+        tag_from_filename = os.path.splitext( os.path.basename( uploaded_dataset.name ))[0]
+        tag_manager = tags.GalaxyTagManager( trans.app )
+        tag_manager.apply_item_tag( item=ldda, user=trans.user, name='name', value=tag_from_filename )
+
     trans.sa_session.add( ldda )
     if state:
         ldda.state = state

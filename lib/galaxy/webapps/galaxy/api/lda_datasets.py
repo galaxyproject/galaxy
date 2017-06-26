@@ -408,7 +408,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         kwd[ 'to_posix_lines' ] = True
         kwd[ 'dbkey' ] = kwd.get( 'dbkey', '?' )
         kwd[ 'file_type' ] = kwd.get( 'file_type', 'auto' )
-        kwd[ 'link_data_only' ] = 'link_to_files' if util.asbool( kwd.get( 'link_data', False ) ) else 'copy_files'
+        kwd['link_data_only'] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
+        kwd[ 'tag_using_filenames' ] = util.string_as_bool( kwd.get( 'tag_using_filenames', None ) )
         encoded_folder_id = kwd.get( 'encoded_folder_id', None )
         if encoded_folder_id is not None:
             folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
