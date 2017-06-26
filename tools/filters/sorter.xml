@@ -67,31 +67,35 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" value="sort_in1.bed"/>
+            <param name="input" value="1.bed"/>
             <param name="column" value="1"/>
             <param name="style" value="alpha"/>
             <param name="order" value="ASC"/>
-            <param name="other_column" value="3"/>
-            <param name="other_style" value="num"/>
-            <param name="other_order" value="DESC"/>
+            <repeat name="column_set">
+                <param name="other_column" value="3"/>
+                <param name="other_style" value="num"/>
+                <param name="other_order" value="DESC"/>
+            </repeat>
             <output name="out_file1" file="sort_out1.bed"/>
         </test>
         <test>
-            <param name="input" value="sort_in1.bed"/>
-            <param name="column" value="1"/>
-            <param name="style" value="alpha"/>
-            <param name="order" value="ASC"/>
-            <param name="other_column" value="3"/>
-            <param name="other_style" value="num"/>
-            <param name="other_order" value="ASC"/>
+            <param name="input" value="1.bed"/>
+            <param name="column" value="3"/>
+            <param name="style" value="num"/>
+            <param name="order" value="DESC"/>
+            <repeat name="column_set">
+                <param name="other_column" value="1"/>
+                <param name="other_style" value="alpha"/>
+                <param name="other_order" value="ASC"/>
+            </repeat>
             <output name="out_file1" file="sort_out2.bed"/>
         </test>
         <test>
-            <param name="input" value="sort_in2.bed"/>
-            <param name="column" value="5"/>
+            <param name="input" value="a.tab"/>
+            <param name="column" value="9"/>
             <param name="style" value="gennum"/>
             <param name="order" value="ASC"/>
-            <output name="out_file1" file="sort_out3.bed"/>
+            <output name="out_file1" file="sort_out3.tab"/>
         </test>
     </tests>
     <help>
