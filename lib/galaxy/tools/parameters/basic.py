@@ -75,7 +75,7 @@ class ToolParameter( object, Dictifiable ):
         self.tool = tool
         self.refresh_on_change_values = []
         self.argument = input_source.get( "argument" )
-        self.name = ToolParameter.parse_name( input_source )
+        self.name = self.__class__.parse_name( input_source )
         self.type = input_source.get( "type" )
         self.hidden = input_source.get( "hidden", False )
         self.refresh_on_change = input_source.get_bool( "refresh_on_change", False )
@@ -227,8 +227,8 @@ class ToolParameter( object, Dictifiable ):
         else:
             return parameter_types[ param_type ]( tool, param )
 
-    @classmethod
-    def parse_name( cls, input_source ):
+    @staticmethod
+    def parse_name( input_source ):
         name = input_source.get( 'name' )
         if name is None:
             argument = input_source.get( 'argument' )
