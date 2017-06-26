@@ -978,19 +978,25 @@ class BaseCSV( TabularData ):
                 data_row = next(reader)
                 for row in reader:
                     pass
+            except StopIteration:
+                pass
             except csv.Error as e:
                 raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
 
             # Guess column types
             column_types = []
-            for cell in data_row:
-                column_types.append(self.guess_type(cell))
+            if data_row is not None:
+                for cell in data_row:
+                    column_types.append(self.guess_type(cell))
 
             # Set metadata
             dataset.metadata.data_lines = reader.line_num - 1
             dataset.metadata.comment_lines = 1
             dataset.metadata.column_types = column_types
-            dataset.metadata.columns = max( len( header_row ), len( data_row ) )
+            if data_row is None:
+                dataset.metadata.columns = len( header_row )
+            else:
+                dataset.metadata.columns = max( len( header_row ), len( data_row ) )
             dataset.metadata.column_names = header_row
             dataset.metadata.delimiter = reader.dialect.delimiter
 
