@@ -11,10 +11,10 @@ from __future__ import print_function
 import json
 import optparse
 import os
+import re
 import struct
 import sys
 import tempfile
-import re
 
 from galaxy.util import stringify_dictionary_keys
 from galaxy.util.bunch import Bunch
