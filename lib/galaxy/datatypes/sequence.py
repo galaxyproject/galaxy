@@ -615,7 +615,7 @@ class BaseFastq ( Sequence ):
         headers = get_headers( filename, None, count=1000 )
 
         # If this is a FastqSanger-derived class, then check to see if the base qualities match
-        if isinstance(self, FastqSanger):
+        if isinstance(self, FastqSanger) or isinstance(self, FastqSangerGz) or isinstance(self, FastqSangerBz2):
             if not self.sangerQualities(headers):
                 return False
 
@@ -693,6 +693,15 @@ class BaseFastq ( Sequence ):
         return True
     process_split_file = staticmethod(process_split_file)
 
+    @staticmethod
+    def sangerQualities( lines ):
+        """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
+        for line in lines[3::4]:
+            _ = [ord( c ) for c in line[0]]
+            if max( _ ) > ord( 'M' ):
+                return False
+        return True
+
 
 class Fastq( BaseFastq ):
     """Class representing a generic FASTQ sequence"""
@@ -705,15 +714,6 @@ class FastqSanger( Fastq ):
     edam_format = "format_1932"
     file_ext = "fastqsanger"
             if not self.sangerQualities(headers):
-
-    @staticmethod
-    def sangerQualities( lines ):
-        """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
-        for line in lines[0::4]:
-            _ = [ord( c ) for c in line]
-            if max( _ ) > ord( 'J' ):
-                return False
-        return True
 
 
 class FastqSolexa( Fastq ):
