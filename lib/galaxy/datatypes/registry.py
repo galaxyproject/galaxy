@@ -3,28 +3,30 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 """
 from __future__ import absolute_import
 
-import os
 import imp
 import logging
+import os
 import tempfile
-
-import yaml
 from collections import OrderedDict as odict
 from xml.etree.ElementTree import Element
 
+import yaml
+
 import galaxy.util
 
-from . import data
-from . import tabular
-from . import interval
-from . import images
-from . import sequence
-from . import qualityscore
-from . import xml
-from . import coverage
-from . import tracks
-from . import binary
-from . import text
+from . import (
+    binary,
+    coverage,
+    data,
+    images,
+    interval,
+    qualityscore,
+    sequence,
+    tabular,
+    text,
+    tracks,
+    xml
+)
 from .display_applications.application import DisplayApplication
 
 
@@ -493,11 +495,11 @@ class Registry( object ):
         return mimetype
 
     def get_datatype_by_extension( self, ext ):
-        """Returns a datatype based on an extension"""
+        """Returns a datatype object based on an extension"""
         try:
             builder = self.datatypes_by_extension[ ext ]
         except KeyError:
-            builder = data.Text()
+            builder = None
         return builder
 
     def change_datatype( self, data, ext ):
@@ -635,7 +637,7 @@ class Registry( object ):
                     else:
                         self.log.exception( "Error loading display application (%s)" % config_path )
         # Handle display_application subclass inheritance.
-        for extension, d_type1 in self.datatypes_by_extension.iteritems():
+        for extension, d_type1 in self.datatypes_by_extension.items():
             for d_type2, display_app in self.inherit_display_application_by_class:
                 current_app = d_type1.get_display_application( display_app.id, None )
                 if current_app is None and isinstance( d_type1, type( d_type2 ) ):
@@ -794,10 +796,10 @@ class Registry( object ):
         """Returns available converters by source type"""
         converters = odict()
         source_datatype = type( self.get_datatype_by_extension( ext ) )
-        for ext2, dict in self.datatype_converters.items():
+        for ext2, converters_dict in self.datatype_converters.items():
             converter_datatype = type( self.get_datatype_by_extension( ext2 ) )
             if issubclass( source_datatype, converter_datatype ):
-                converters.update( dict )
+                converters.update( converters_dict )
         # Ensure ext-level converters are present
         if ext in self.datatype_converters.keys():
             converters.update( self.datatype_converters[ ext ] )
@@ -813,7 +815,10 @@ class Registry( object ):
     def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe=True ):
         """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
-            if self.get_datatype_by_extension( convert_ext ).matches_any( accepted_formats ):
+            convert_ext_datatype = self.get_datatype_by_extension( convert_ext )
+            if convert_ext_datatype is None:
+                self.log.warning("Datatype class not found for extension '%s', which is used as target for conversion from datatype '%s'" % (convert_ext, dataset.ext))
+            elif convert_ext_datatype.matches_any( accepted_formats ):
                 converted_dataset = dataset.get_converted_files_by_type( convert_ext )
                 if converted_dataset:
                     ret_data = converted_dataset
@@ -825,14 +830,14 @@ class Registry( object ):
         return ( None, None )
 
     def get_composite_extensions( self ):
-        return [ ext for ( ext, d_type ) in self.datatypes_by_extension.iteritems() if d_type.composite_type is not None ]
+        return [ ext for ( ext, d_type ) in self.datatypes_by_extension.items() if d_type.composite_type is not None ]
 
     def get_upload_metadata_params( self, context, group, tool ):
         """Returns dict of case value:inputs for metadata conditional for upload tool"""
         rval = {}
-        for ext, d_type in self.datatypes_by_extension.iteritems():
+        for ext, d_type in self.datatypes_by_extension.items():
             inputs = []
-            for meta_name, meta_spec in d_type.metadata_spec.iteritems():
+            for meta_name, meta_spec in d_type.metadata_spec.items():
                 if meta_spec.set_in_upload:
                     help_txt = meta_spec.desc
                     if not help_txt or help_txt == meta_name:

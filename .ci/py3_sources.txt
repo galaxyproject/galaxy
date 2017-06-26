@@ -20,6 +20,7 @@ lib/galaxy/datatypes/interval.py
 lib/galaxy/datatypes/msa.py
 lib/galaxy/datatypes/ngsindex.py
 lib/galaxy/datatypes/proteomics.py
+lib/galaxy/datatypes/registry.py
 lib/galaxy/datatypes/sequence.py
 lib/galaxy/datatypes/sniff.py
 lib/galaxy/datatypes/tabular.py
