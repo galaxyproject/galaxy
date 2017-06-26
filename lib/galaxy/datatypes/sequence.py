@@ -612,7 +612,13 @@ class BaseFastq ( Sequence ):
         compressed = is_gzip(filename) or is_bz2(filename)
         if compressed and not isinstance(self, Binary):
             return False
-        headers = get_headers( filename, None )
+        headers = get_headers( filename, None, count=1000 )
+
+        # If this is a FastqSanger-derived class, then check to see if the base qualities match
+        if isinstance(self, FastqSanger):
+            if not self.sangerQualities(headers):
+                return False
+
         bases_regexp = re.compile( "^[NGTAC]*" )
         # check that first block looks like a fastq block
         try:
@@ -698,6 +704,16 @@ class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger"
+            if not self.sangerQualities(headers):
+
+    @staticmethod
+    def sangerQualities( lines ):
+        """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
+        for line in lines[0::4]:
+            _ = [ord( c ) for c in line]
+            if max( _ ) > ord( 'J' ):
+                return False
+        return True
 
 
 class FastqSolexa( Fastq ):
