@@ -76,7 +76,7 @@ class RequirementSpecification(object):
 
     @staticmethod
     def from_dict(dict):
-        uri = dict.get["uri"]
+        uri = dict.get("uri")
         version = dict.get("version", None)
         return RequirementSpecification(uri=uri, version=version)
 
