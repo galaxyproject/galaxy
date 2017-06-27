@@ -93,6 +93,7 @@ var LibraryRouter = Backbone.Router.extend({
 var LibraryPrefs = mod_baseMVC.SessionStorageModel.extend({
     defaults : {
         with_deleted      : false,
+        without_restricted: false,
         sort_order        : 'asc',
         sort_by           : 'name',
         library_page_size : 20,
