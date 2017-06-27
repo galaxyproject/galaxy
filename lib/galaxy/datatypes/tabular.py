@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import shutil
 from cgi import escape
 from json import dumps
 
@@ -670,7 +671,7 @@ class Pileup( Tabular ):
 
 
 @dataproviders.decorators.has_dataproviders
-class Vcf( Tabular ):
+class BaseVcf( Tabular ):
     """ Variant Call Format for describing SNPs and other simple genome variations. """
     edam_format = "format_3016"
     track_type = "VariantTrack"
@@ -693,7 +694,7 @@ class Vcf( Tabular ):
         return self.make_html_table( dataset, column_names=self.column_names )
 
     def set_meta( self, dataset, **kwd ):
-        super( Vcf, self ).set_meta( dataset, **kwd )
+        super( BaseVcf, self ).set_meta( dataset, **kwd )
         source = open( dataset.file_name )
 
         # Skip comments.
@@ -732,9 +733,44 @@ class Vcf( Tabular ):
         return self.genomic_region_dataprovider( dataset, **settings )
 
 
-class VcfGz( Vcf, binary.Binary):
+class Vcf ( BaseVcf ):
+    extension = 'vcf'
+
+
+class VcfGz( BaseVcf, binary.Binary):
     extension = 'vcf.gz'
     compressed = True
+
+    MetadataElement( name="vcf_gz_index", desc="Vcf Index File", param=metadata.FileParameter, file_ext="tbi", readonly=True, no_value=None, visible=False, optional=True )
+
+    def set_meta( self, dataset, **kwd ):
+        super(BaseVcf, self).set_meta(dataset, **kwd)
+        """ Creates the index for the VCF file. """
+        # These metadata values are not accessible by users, always overwrite
+        index_file = dataset.metadata.bcf_index
+        if not index_file:
+            index_file = dataset.metadata.spec['vcf_gz_index'].param.new_file( dataset=dataset )
+        # Create the bcf index
+        # $ bcftools index
+        # Usage: bcftools index <in.bcf>
+
+        dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
+                                        '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )  + ".vcf.gz"
+        os.symlink( dataset.file_name, dataset_symlink )
+
+        stderr_name = tempfile.NamedTemporaryFile( prefix="bcf_index_stderr" ).name
+        command = [ 'bcftools', 'index', '-t', dataset_symlink ]
+        try:
+            subprocess.check_call( args=command, stderr=open( stderr_name, 'wb' ) )
+            shutil.move( dataset_symlink + '.tbi', index_file.file_name )  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
+        except Exception as e:
+            stderr = open( stderr_name ).read().strip()
+            raise Exception('Error setting BCF metadata: %s' % (stderr or str(e)))
+        finally:
+            # Remove temp file and symlink
+            os.remove( stderr_name )
+            os.remove( dataset_symlink )
+        dataset.metadata.bcf_index = index_file
 
 
 class Eland( Tabular ):
