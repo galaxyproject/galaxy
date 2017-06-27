@@ -795,41 +795,40 @@ define(["libs/bbi/spans", "libs/bbi/jszlib", "libs/bbi/jquery-ajax-native"], fun
     /**
     * Automatically choose a zoom level and return data from that level.
     */
-    BigWig.prototype.readWigData = function(chrName, min, max) {
-        // If this is the first try at getting data, approximate zoom level
-        var view;
-        if ( this.zoom == null ) {
-            // Maximum number of data points to return when reading a bigwig. This is used
-            // to choose the appropriate level. One data point ~= 25-65 bytes.
-            // FIXME: For targeted sequencing, data points returned is going to be much lower,
-            // so this will need to be tuned appropriately.
-            var MAX_DATA_POINTS = 25000;
+    BigWig.prototype.readWigData = function(chrName, min, max, zoom) {
+        var view,
+            MAX_DATA_POINTS = 15000,
+            range = max - min,
+            min_zoom;
 
-            var range = max - min;
-            // If no zooming needed or available (common in bigbed), use unzoomed view.
-            if (range <= MAX_DATA_POINTS || this.zoomLevels.length === 0) {
-                view = this.getUnzoomedView();
-                this.zoom = -1;
-            }
-            else {
-                // Find reasonable zoom level. Reduction is the # of bases represented
-                // by each data point at that level.
-                for (var i = 0; i < this.zoomLevels.length; i++) {
-                    if (i == this.zoomLevels.length - 1 || range/this.zoomLevels[i].reduction < MAX_DATA_POINTS) {
-                        view = this.getZoomedView(i);
-                        this.zoom = i;
-                        break;
-                    }
+        // Maximum number of data points to return when reading a bigwig. This is used
+        // to choose the appropriate level. One data point ~= 25-65 bytes.
+        // FIXME: For targeted sequencing, data points returned is going to be much lower,
+        // so this will need to be tuned appropriately.
+        // Determine expected min-level of zoom
+        if ( this.zoomLevels.length === 0) {
+            min_zoom = -1;
+        }
+        else {
+            for (var i = 0; i < this.zoomLevels.length; i++) {
+                if (i == this.zoomLevels.length - 1 || range/this.zoomLevels[i].reduction < MAX_DATA_POINTS) {
+                    min_zoom = i;
+                    break;
                 }
             }
         }
+
+        // Check if requested zoom level is greater than min_zoom
+        if ( zoom > min_zoom ) {
+            return [];
+        }
         else {
-            this.zoom -= 1;
-            if ( this.zoom == -1 ){
+            // get view and data
+            if ( zoom == -1 ) {
                 view = this.getUnzoomedView();
             }
-            else{
-                view = this.getZoomedView(this.zoom);
+            else {
+                view = this.getZoomedView(zoom);
             }
         }
         return view.readWigData(chrName, min, max);
@@ -863,7 +862,6 @@ define(["libs/bbi/spans", "libs/bbi/jszlib", "libs/bbi/jquery-ajax-native"], fun
         var promise = $.Deferred(),
         bwg = new BigWig();
         bwg.url = url;
-        bwg.zoom = null;
 
         // Read and parse bigwig header, including chrom tree.
         $.when(read(bwg.url, 0, 512)).then(function(result) {
