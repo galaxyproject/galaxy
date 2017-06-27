@@ -827,10 +827,28 @@ def populate_api_routes( webapp, app ):
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'install_repository',
+                           '/api/tool_shed_repositories',
+                           controller='tool_shed_repositories',
+                           action='install_repository_revision',
+                           conditions=dict( method=[ 'POST' ] ) )
+
+    webapp.mapper.connect( 'install_repository',
                            '/api/tool_shed_repositories/install',
                            controller='tool_shed_repositories',
                            action='install',
                            conditions=dict( method=[ 'POST' ] ) )
+
+    webapp.mapper.connect( 'tool_shed_repository',
+                           '/api/tool_shed_repositories',
+                           controller='tool_shed_repositories',
+                           action='uninstall_repository',
+                           conditions=dict( method=[ "DELETE" ]))
+
+    webapp.mapper.connect( 'tool_shed_repository',
+                           '/api/tool_shed_repositories/{id}',
+                           controller='tool_shed_repositories',
+                           action='uninstall_repository',
+                           conditions=dict( method=[ "DELETE" ]))
 
     # Galaxy API for tool shed features.
     webapp.mapper.resource( 'tool_shed_repository',
