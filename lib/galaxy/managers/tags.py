@@ -85,8 +85,9 @@ class TagManager( object ):
         return community_tags
 
     def get_tool_tags( self ):
-        result_set = self.sa_session.execute( select( columns=[ galaxy.model.ToolTagAssociation.table.c.tag_id ],
-                                                             from_obj=galaxy.model.ToolTagAssociation.table ).distinct() )
+        query = select( columns=[ galaxy.model.ToolTagAssociation.table.c.tag_id ],
+                        from_obj=galaxy.model.ToolTagAssociation.table ).distinct()
+        result_set = self.sa_session.execute( query )
 
         tags = []
         for row in result_set:
