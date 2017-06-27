@@ -198,24 +198,34 @@ def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+", tmp_dir=None, 
         return ( i + 1, temp_name )
 
 
-def get_headers( fname, sep, count=60, is_multi_byte=False ):
+def get_headers( fname, sep, count=60, is_multi_byte=False, commentDesignator=None ):
     """
-    Returns a list with the first 'count' lines split by 'sep'
+    Returns a list with the first 'count' lines split by 'sep', ignoring lines
+    starting with 'commentDesignator'
 
     >>> fname = get_test_fname('complete.bed')
     >>> get_headers(fname,'\\t')
     [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
+    >>> fname = get_test_fname('test.gff')
+    >>> get_headers(fname, '\\t', count=5, commentDesignator='#')
+    [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
     """
     headers = []
     in_file = compression_utils.get_fileobj(fname)
     try:
-        for idx, line in enumerate(in_file):
+        idx = 0
+        for line in in_file:
             line = line.rstrip('\n\r')
             if is_multi_byte:
                 # TODO: fix this - sep is never found in line
                 line = unicodify( line, 'utf-8' )
                 sep = sep.encode( 'utf-8' )
+                if commentDesignator is not None:
+                    commentDesignator = commentDesignator.encode( 'utf-8' )
+            if commentLine is not None and line.startswith( commentDesignator ):
+                continue
             headers.append( line.split(sep) )
+            idx += 1
             if idx == count:
                 break
     finally:
