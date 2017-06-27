@@ -1841,16 +1841,19 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         // If downloading SVG, use this method
         if (options.format == 'svg') {
             var serializer = new XMLSerializer();
-            function downloadFile(fileName, urlData) {
-                var aLink = document.createElement('a');
-                var evt = document.createEvent("HTMLEvents");
-                evt.initEvent("click");
-                aLink.download = fileName;
-                aLink.href = urlData;
-                aLink.dispatchEvent(evt);
+            function downloadFile(fileName, data) {
+                var urlData = 'data:image/svg;base64,\n' + data,
+                    aLink = document.createElement('a');
+                aLink.setAttribute('href', urlData);
+                aLink.setAttribute('href-lang', 'image/svg+xml');
+                aLink.setAttribute('title', fileName);
+                aLink.setAttribute('download', fileName);
+                aLink.setAttribute('name', fileName);
+                document.body.appendChild(aLink);
+                aLink.click();
             }
-            var data = '"Column One","Column Two","Column Three"';
-            downloadFile('trackster.svg', 'data:none/none;base64,' + btoa(serializer.serializeToString(svg_container[0])));
+            var stringSVG = btoa(serializer.serializeToString(svg_container[0]));
+            downloadFile('trackster.svg', stringSVG);
         } else {
             // Export to www.highcharts.com for conversion
             var type = 'application/' + options.format,
@@ -1878,6 +1881,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
 
             // add the data
             for (name in data) {
+                console.log(name);
                 var input = $('<input/>', {
                     type    : 'hidden',
                     name    : name,
@@ -1888,6 +1892,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
 
             // submit
             try {
+                $(document.body).append(form);
                 form.submit();
             } catch(err) {
                 console.log(err);
