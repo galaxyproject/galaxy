@@ -198,16 +198,16 @@ def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+", tmp_dir=None, 
         return ( i + 1, temp_name )
 
 
-def get_headers( fname, sep, count=60, is_multi_byte=False, commentDesignator=None ):
+def get_headers( fname, sep, count=60, is_multi_byte=False, comment_designator=None ):
     """
     Returns a list with the first 'count' lines split by 'sep', ignoring lines
-    starting with 'commentDesignator'
+    starting with 'comment_designator'
 
     >>> fname = get_test_fname('complete.bed')
     >>> get_headers(fname,'\\t')
     [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
     >>> fname = get_test_fname('test.gff')
-    >>> get_headers(fname, '\\t', count=5, commentDesignator='#')
+    >>> get_headers(fname, '\\t', count=5, comment_designator='#')
     [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
     """
     headers = []
@@ -220,9 +220,9 @@ def get_headers( fname, sep, count=60, is_multi_byte=False, commentDesignator=No
                 # TODO: fix this - sep is never found in line
                 line = unicodify( line, 'utf-8' )
                 sep = sep.encode( 'utf-8' )
-                if commentDesignator is not None:
-                    commentDesignator = commentDesignator.encode( 'utf-8' )
-            if commentDesignator is not None and line.startswith( commentDesignator ):
+                if comment_designator is not None:
+                    comment_designator = comment_designator.encode( 'utf-8' )
+            if comment_designator is not None and line.startswith( comment_designator ):
                 continue
             headers.append( line.split(sep) )
             idx += 1

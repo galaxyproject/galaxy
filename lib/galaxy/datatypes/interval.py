@@ -314,7 +314,7 @@ class Interval( Tabular ):
         >>> Interval().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t', commentDesignator='#' )
+        headers = get_headers( filename, '\t', comment_designator='#' )
         try:
             """
             If we got here, we already know the file is_column_based and is not bed,
@@ -504,7 +504,7 @@ class Bed( Interval ):
         >>> Bed().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t', commentDesignator='#' )
+        headers = get_headers( filename, '\t', comment_designator='#' )
         try:
             if not headers:
                 return False
