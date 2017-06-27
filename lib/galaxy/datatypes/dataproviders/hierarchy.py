@@ -1,14 +1,17 @@
 """
 Dataproviders that iterate over lines from their sources.
 """
+import logging
+from xml.etree.ElementTree import (
+    Element,
+    iterparse
+)
 
-import line
-from xml.etree.ElementTree import Element, iterparse
+from . import line
 
 _TODO = """
 """
 
-import logging
 log = logging.getLogger( __name__ )
 
 

@@ -5,18 +5,23 @@ Dataproviders that use either:
     - or provide data in some way relevant to bioinformatic data
         (e.g. parsing genomic regions from their source)
 """
-
-
-import base
-import line
-import column
-import external
-from galaxy.util import sqlite
+import logging
 import sys
 
-from bx import seq as bx_seq
-from bx import wiggle as bx_wig
-from bx import bbi as bx_bbi
+from bx import (
+    bbi as bx_bbi,
+    seq as bx_seq,
+    wiggle as bx_wig
+)
+
+from galaxy.util import sqlite
+
+from . import (
+    base,
+    column,
+    external,
+    line
+)
 
 _TODO = """
 use bx as much as possible
@@ -25,7 +30,6 @@ gff3 hierarchies
 change SamtoolsDataProvider to use pysam
 """
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -150,7 +154,7 @@ class DatasetDataProvider( base.DataProvider ):
         """
         region_column_names = ( 'chromCol', 'startCol', 'endCol' )
         region_indices = [ self.get_metadata_column_index_by_name( name ) for name in region_column_names ]
-        if check and not all( map( lambda i: i is not None, region_indices) ):
+        if check and not all( _ is not None for _ in region_indices ):
             raise ValueError( "Could not determine proper column indices for chrom, start, end: %s" % ( str( region_indices ) ) )
         return region_indices
 
@@ -296,7 +300,7 @@ class GenomicRegionDataProvider( column.ColumnarDataProvider ):
         if end_column is None:
             end_column = dataset_source.get_metadata_column_index_by_name( 'endCol' )
         indeces = [ chrom_column, start_column, end_column ]
-        if not all( map( lambda i: i is not None, indeces ) ):
+        if not all( _ is not None for _ in indeces ):
             raise ValueError( "Could not determine proper column indeces for" +
                               " chrom, start, end: %s" % ( str( indeces ) ) )
         kwargs.update({ 'indeces' : indeces })

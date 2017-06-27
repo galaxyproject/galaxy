@@ -1,10 +1,10 @@
 """
 Determine what optional dependencies are needed.
 """
-import pkg_resources
-
 from os.path import dirname, join
 from xml.etree import ElementTree
+
+import pkg_resources
 
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties

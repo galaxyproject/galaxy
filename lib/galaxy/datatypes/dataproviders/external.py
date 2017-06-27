@@ -2,14 +2,18 @@
 Data providers that iterate over a source that is not in memory
 or not in a file.
 """
-
-import base
 import gzip
-import line
+import logging
 import subprocess
 import tempfile
-import urllib
-import urllib2
+
+from six.moves.urllib.parse import urlencode
+from six.moves.urllib.request import urlopen
+
+from . import (
+    base,
+    line
+)
 
 _TODO = """
 YAGNI: ftp, image, cryptos, sockets
@@ -17,7 +21,6 @@ job queue
 admin: admin server log rgx/stats, ps aux
 """
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -105,13 +108,13 @@ class URLDataProvider( base.DataProvider ):
         self.method = method
 
         self.data = data or {}
-        encoded_data = urllib.urlencode( self.data )
+        encoded_data = urlencode( self.data )
 
         if method == 'GET':
             self.url += '?%s' % ( encoded_data )
-            opened = urllib2.urlopen( url )
+            opened = urlopen( url )
         elif method == 'POST':
-            opened = urllib2.urlopen( url, encoded_data )
+            opened = urlopen( url, encoded_data )
         else:
             raise ValueError( 'Not a valid method: %s' % ( method ) )
 
