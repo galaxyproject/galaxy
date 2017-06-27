@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.9.3.dev0
+17.9.3 (2017-06-27)
 ---------------------
 
 * Bug fix in from_dict parsing of tool dependency specs.
