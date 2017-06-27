@@ -23,6 +23,7 @@ from galaxy.util.streamball import StreamBall
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
+from galaxy.managers import tags
 
 log = logging.getLogger( __name__ )
 
@@ -56,6 +57,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         current_user_roles = trans.get_current_user_roles()
 
+        tag_manager = tags.GalaxyTagManager(trans.app)
+
         # Build the full path for breadcrumb purposes.
         full_path = self._build_path( trans, library_dataset.folder )
         dataset_item = ( trans.security.encode_id( library_dataset.id ), library_dataset.name )
@@ -78,6 +81,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         rval[ 'date_uploaded' ] = library_dataset.library_dataset_dataset_association.create_time.strftime( "%Y-%m-%d %I:%M %p" )
         rval[ 'can_user_modify' ] = trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset) or trans.user_is_admin()
         rval[ 'is_unrestricted' ] = trans.app.security_agent.dataset_is_public( library_dataset.library_dataset_dataset_association.dataset )
+        rval[ 'tags' ] = tag_manager.get_tags_str(library_dataset.library_dataset_dataset_association.tags)
 
         #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
         rval[ 'can_user_manage' ] = trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset) or trans.user_is_admin()
@@ -396,6 +400,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             :type   file_type:              str
             :param  dbkey:                  dbkey of the loaded genome, defaults to '?' (unknown)
             :type   dbkey:                  str
+            :param  tag_using_filenames:    flag whether to generate dataset tags from filenames
+            :type   tag_using_filenames:    bool
         :type   dictionary
         :returns:   dict containing information about the created upload job
         :rtype:     dictionary
