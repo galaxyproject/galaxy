@@ -42,6 +42,7 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
                                      WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
+from galaxy.managers import tags
 
 log = logging.getLogger( __name__ )
 
@@ -2925,6 +2926,11 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                          parent_id=parent_id,
                                          copied_from_library_dataset_dataset_association=self,
                                          history=target_history )
+
+        tag_manager = tags.GalaxyTagManager( sa_session )
+        src_ldda_tags = tag_manager.get_tags_str(self.tags)
+        tag_manager.apply_item_tags( user=self.user, item=hda, tags_str=src_ldda_tags )
+
         sa_session.add( hda )
         sa_session.flush()
         hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
@@ -2952,6 +2958,11 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                                  parent_id=parent_id,
                                                  copied_from_library_dataset_dataset_association=self,
                                                  folder=target_folder )
+
+        tag_manager = tags.GalaxyTagManager( sa_session )
+        src_ldda_tags = tag_manager.get_tags_str(self.tags)
+        tag_manager.apply_item_tags( user=self.user, item=ldda, tags_str=src_ldda_tags )
+
         sa_session.add( ldda )
         sa_session.flush()
         # Need to set after flushed, as MetadataFiles require dataset.id
