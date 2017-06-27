@@ -603,16 +603,27 @@ class BaseFastq ( Sequence ):
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( '1.fastqsanger' )
-        >>> Fastq().sniff( fname )
+        >>> FastqSanger().sniff( fname )
         True
         >>> fname = get_test_fname( '2.fastqsanger' )
+        >>> FastqSanger().sniff( fname )
+        True
+        >>> fname = get_test_fname( '2.fastq' )
         >>> Fastq().sniff( fname )
         True
+        >>> FastqSanger().sniff( fname )
+        False
         """
         compressed = is_gzip(filename) or is_bz2(filename)
         if compressed and not isinstance(self, Binary):
             return False
-        headers = get_headers( filename, None )
+        headers = get_headers( filename, None, count=1000 )
+
+        # If this is a FastqSanger-derived class, then check to see if the base qualities match
+        if isinstance(self, FastqSanger) or isinstance(self, FastqSangerGz) or isinstance(self, FastqSangerBz2):
+            if not self.sangerQualities(headers):
+                return False
+
         bases_regexp = re.compile( "^[NGTAC]*" )
         # check that first block looks like a fastq block
         try:
@@ -687,6 +698,14 @@ class BaseFastq ( Sequence ):
         return True
     process_split_file = staticmethod(process_split_file)
 
+    @staticmethod
+    def sangerQualities( lines ):
+        """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
+        for line in lines[3::4]:
+            if not all(_ >= '!' and _ <= 'M' for _ in line[0]):
+                return False
+        return True
+
 
 class Fastq( BaseFastq ):
     """Class representing a generic FASTQ sequence"""
@@ -730,10 +749,6 @@ class FastqGz ( BaseFastq, Binary ):
         return BaseFastq.sniff( self, filename )
 
 
-if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
-
-
 class FastqSangerGz( FastqGz ):
     """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
@@ -744,6 +759,11 @@ class FastqSolexaGz( FastqGz ):
     """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa.gz"
+
+
+if SNIFF_COMPRESSED_FASTQS:
+    Binary.register_sniffable_binary_format("fastqsanger.gz", "fastqsanger.gz", FastqSangerGz)
+    Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
 
 
 class FastqIlluminaGz( FastqGz ):
@@ -770,14 +790,15 @@ class FastqBz2 ( BaseFastq, Binary ):
         return BaseFastq.sniff( self, filename )
 
 
-if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
-
-
 class FastqSangerBz2( FastqBz2 ):
     """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger.bz2"
+
+
+if SNIFF_COMPRESSED_FASTQS:
+    Binary.register_sniffable_binary_format("fastqsanger.bz2", "fastqsanger.bz2", FastqSangerBz2)
+    Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
 
 
 class FastqSolexaBz2( FastqBz2 ):
