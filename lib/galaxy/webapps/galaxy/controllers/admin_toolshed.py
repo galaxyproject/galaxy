@@ -252,16 +252,13 @@ class AdminToolshed( AdminGalaxy ):
         for tool_shed_repository in tool_shed_repositories:
             if kwd.get( 'deactivate_or_uninstall_repository_button', False ):
                 errors = irm.uninstall_repository(repository=tool_shed_repository, remove_from_disk=remove_from_disk_checked)
+                action = 'removed' if remove_from_disk_checked else 'uninstalled'
+                status = max( status, statuses.index( 'done' ) )
+                message += 'The repository named <b>%s</b> has been %s.  ' % (escape( tool_shed_repository.name ), action)
                 if remove_from_disk_checked:
-                    message += 'The repository named <b>%s</b> has been uninstalled.  ' % escape( tool_shed_repository.name )
                     if errors:
                         message += 'Attempting to uninstall tool dependencies resulted in errors: %s' % errors
                         status = max( status, statuses.index( 'error' ) )
-                    else:
-                        status = max( status, statuses.index( 'done' ) )
-                else:
-                    message = 'The repository named <b>%s</b> has been deactivated.  ' % escape( tool_shed_repository.name )
-                    status = max( status, statuses.index( 'done' ) )
         status = statuses[ status ]
         if kwd.get( 'deactivate_or_uninstall_repository_button', False ):
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
