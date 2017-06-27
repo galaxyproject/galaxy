@@ -793,11 +793,11 @@ define(["libs/bbi/spans", "libs/bbi/jszlib", "libs/bbi/jquery-ajax-native"], fun
     }
 
     /**
-    * Automatically choose a zoom level and return data from that level.
+    * Automatically choose a zoom level
     */
-    BigWig.prototype.readWigData = function(chrName, min, max, zoom) {
+    BigWig.prototype.check_min_zoom = function(chrName, min, max, zoom) {
         var view,
-            MAX_DATA_POINTS = 15000,
+            MAX_DATA_POINTS = 4000,
             range = max - min,
             min_zoom;
 
@@ -817,22 +817,22 @@ define(["libs/bbi/spans", "libs/bbi/jszlib", "libs/bbi/jquery-ajax-native"], fun
                 }
             }
         }
+        return min_zoom;
+    },
 
-        // Check if requested zoom level is greater than min_zoom
-        if ( zoom > min_zoom ) {
-            return [];
+    /**
+    * Return data for a given zoom level.
+    */
+    BigWig.prototype.readWigData = function(chrName, min, max, zoom) {
+        // get view and data
+        if ( zoom == -1 ) {
+            view = this.getUnzoomedView();
         }
         else {
-            // get view and data
-            if ( zoom == -1 ) {
-                view = this.getUnzoomedView();
-            }
-            else {
-                view = this.getZoomedView(zoom);
-            }
+            view = this.getZoomedView(zoom);
         }
         return view.readWigData(chrName, min, max);
-    }
+    },
 
     BigWig.prototype.getUnzoomedView = function() {
         if (!this.unzoomedView) {

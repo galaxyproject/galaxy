@@ -17,10 +17,11 @@ define( ["viz/visualization", "libs/bbi/bigwig"],
             var url = Galaxy.root + 'datasets/' + this.get('dataset').id + '/display',
                 self = this;
             $.when(bigwig.makeBwg(url)).then(function(bb, err) {
-                var start_promise = new $.Deferred(),
+                var min_zoom = bb.check_min_zoom(region.get("chrom"), region.get("start"), region.get("end")),
+                    start_promise = new $.Deferred(),
                     promise = start_promise;
-                if ( bb.zoomLevels.length > 0 ) {
-                    for (var i=bb.zoomLevels.length - 1; i >= -1; i--){
+                if ( min_zoom >= 0 ) {
+                    for (var i=min_zoom; i >= -1; i--){
                         promise = self.check_zoom_data(bb, region, i, promise);
                     }
                 }
@@ -45,7 +46,7 @@ define( ["viz/visualization", "libs/bbi/bigwig"],
 
         check_zoom_data: function(bb, region, zoom, prev_promise) {
             var promise = new $.Deferred(),
-                MIN_DATA_POINTS = 10000;
+                MIN_DATA_POINTS = 1000;
             // Wait until previous zoom level promise if fulfilled
             $.when( prev_promise ).then( function( pdata ) {
                 // Check if previous level found acceptable data
