@@ -5,7 +5,6 @@ define( ["viz/visualization", "libs/bbi/bigwig"],
      * Data manager for BBI datasets/files, including BigWig and BigBed.
      */
     var BBIDataManager = visualization.GenomeDataManager.extend({
-
         /**
          * Load data from server and manage data entries. Adds a Deferred to manager
          * for region; when data becomes available, replaces Deferred with data.
@@ -19,7 +18,19 @@ define( ["viz/visualization", "libs/bbi/bigwig"],
                 self = this;
                 var promise = new $.Deferred();
                 $.when(bigwig.makeBwg(url)).then(function(bb, err) {
-                    $.when(bb.readWigData(region.get("chrom"), region.get("start"), region.get("end"))).then(function(data) {
+                    self.load_zoom_data(bb, region, deferred);
+            });
+
+            return deferred;
+        },
+
+        load_zoom_data: function(bb, region, deferred){
+            var self = this,
+                MIN_DATA_POINTS = 15000;
+
+            $.when(bb.readWigData(region.get("chrom"), region.get("start"), region.get("end"))).then(function(data) {
+                // Check if the zoom levels exist, if we're at max zoom out, or data density is too low
+                if ( bb.zoom == -1 || data.length > MIN_DATA_POINTS) {
                     // Transform data into "bigwig" format for LinePainter. "bigwig" format is an array of 2-element arrays
                     // where each element is [position, score]; unlike real bigwig format, no gaps are allowed.
                     var result = [],
@@ -50,13 +61,13 @@ define( ["viz/visualization", "libs/bbi/bigwig"],
                             region: region,
                             dataset_type: 'bigwig'
                         };
-
                     self.set_data(region, entry);
                     deferred.resolve(entry);
-                });
+                }
+                else {
+                    self.load_zoom_data(bb, region, deferred);
+                }
             });
-
-            return deferred;
         },
     });
 
