@@ -636,6 +636,7 @@ class Tool( object, Dictifiable ):
 
         # Short description of the tool
         self.description = tool_source.parse_description()
+        self.description = self._translate( self.description )
 
         # Versioning for tools
         self.version_string_cmd = None
@@ -1041,6 +1042,9 @@ class Tool( object, Dictifiable ):
         enctypes.
         """
         param = ToolParameter.build( self, input_source )
+        if isinstance(param, DataToolParameter):
+            param.label=self._translate( param.label )
+            param.help=self._translate( param.help )
         param_enctype = param.get_required_enctype()
         if param_enctype:
             enctypes.add( param_enctype )
@@ -1093,6 +1097,25 @@ class Tool( object, Dictifiable ):
             if self.__help is HELP_UNINITIALIZED:
                 self.__inititalize_help()
 
+    def _translate( self, msg ):
+        locales = os.path.join( os.path.dirname( os.path.abspath( self.config_file ) ), "locales" )
+        if not os.path.exists( locales ):
+            return msg
+
+        import gettext
+        gettext.bindtextdomain('default', locales)
+        gettext.textdomain('default')
+
+        if not msg is None:
+            msglist = msg.split('\n')
+            newmsg = ''
+            for i in range(len(msglist)):
+                if len(msglist[i]) != 0:
+                    msglist[i] = gettext.gettext(msglist[i])
+                newmsg = newmsg + msglist[i] + '\n'
+            msg = newmsg
+        return gettext.gettext(msg)
+
     def __inititalize_help(self):
         tool_source = self.__help_source
         self.__help = None
@@ -1100,6 +1123,7 @@ class Tool( object, Dictifiable ):
         help_header = ""
         help_footer = ""
         help_text = tool_source.parse_help()
+        help_text = self._translate( help_text )
         if help_text is not None:
             if self.repository_id and help_text.find( '.. image:: ' ) >= 0:
                 # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
