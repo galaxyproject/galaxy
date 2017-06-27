@@ -222,7 +222,7 @@ def get_headers( fname, sep, count=60, is_multi_byte=False, commentDesignator=No
                 sep = sep.encode( 'utf-8' )
                 if commentDesignator is not None:
                     commentDesignator = commentDesignator.encode( 'utf-8' )
-            if commentLine is not None and line.startswith( commentDesignator ):
+            if commentDesignator is not None and line.startswith( commentDesignator ):
                 continue
             headers.append( line.split(sep) )
             idx += 1
