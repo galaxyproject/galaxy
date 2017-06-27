@@ -15,9 +15,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             $( 'body' ).append( this.$el );
             this._configure();
             this.render();
-            this._refresh();
-            this.$el.on( 'click', function() { self._refresh() } );
-            this.$steps.scroll( function() { self._refresh() } );
             $( window ).resize( function() { self._refresh() } );
         },
 
@@ -25,7 +22,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _refresh: function( step_index ) {
             var margin = _.reduce( this.$el.children(), function( memo, child ) {
                 return memo + $( child ).outerHeight();
-            }, 0 ) - this.$steps.height() + 25;
+            }, 0 ) - this.$steps.height() + 90;
             this.$steps.css( 'height', $( window ).height() - margin );
         },
 
@@ -314,6 +311,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 }
                 self.forms[ step.index ] = form;
                 self._append( self.$steps, form.$el );
+                self._refresh();
                 step.needs_refresh && self._refreshStep( step );
                 form.portlet[ !self.show_progress ? 'enable' : 'disable' ]();
                 self.show_progress && self.execute_btn.model.set( { wait        : true,
@@ -457,7 +455,9 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         if ($.isArray( response ) && response.length > 0) {
                             self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
                             var WebhookApp = new Webhooks.WebhookView({
-                                urlRoot: Galaxy.root + 'api/webhooks/workflow'
+                                urlRoot: Galaxy.root + 'api/webhooks/workflow',
+                                toolId: job_def.tool_id,
+                                toolVersion: job_def.tool_version,
                             });
                         }
 
