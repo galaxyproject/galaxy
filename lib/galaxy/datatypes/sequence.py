@@ -608,6 +608,11 @@ class BaseFastq ( Sequence ):
         >>> fname = get_test_fname( '2.fastqsanger' )
         >>> FastqSanger().sniff( fname )
         True
+        >>> fname = get_test_fname( '2.fastq' )
+        >>> Fastq().sniff( fname )
+        True
+        >>> FastqSanger().sniff( fname )
+        False
         """
         compressed = is_gzip(filename) or is_bz2(filename)
         if compressed and not isinstance(self, Binary):
