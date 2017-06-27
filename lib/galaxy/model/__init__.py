@@ -2910,6 +2910,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
         self.user = user
 
     def to_history_dataset_association( self, target_history, parent_id=None, add_to_history=False ):
+        sa_session = object_session( self )
         hda = HistoryDatasetAssociation( name=self.name,
                                          info=self.info,
                                          blurb=self.blurb,
@@ -2923,8 +2924,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                          parent_id=parent_id,
                                          copied_from_library_dataset_dataset_association=self,
                                          history=target_history )
-        object_session( self ).add( hda )
-        object_session( self ).flush()
+        sa_session.add( hda )
+        sa_session.flush()
         hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
         if add_to_history and target_history:
             target_history.add_dataset( hda )
@@ -2932,10 +2933,11 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
             child.to_history_dataset_association( target_history=target_history, parent_id=hda.id, add_to_history=False )
         if not self.datatype.copy_safe_peek:
             hda.set_peek()  # in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        object_session( self ).flush()
+        sa_session.flush()
         return hda
 
     def copy( self, copy_children=False, parent_id=None, target_folder=None ):
+        sa_session = object_session( self )
         ldda = LibraryDatasetDatasetAssociation( name=self.name,
                                                  info=self.info,
                                                  blurb=self.blurb,
@@ -2949,8 +2951,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                                  parent_id=parent_id,
                                                  copied_from_library_dataset_dataset_association=self,
                                                  folder=target_folder )
-        object_session( self ).add( ldda )
-        object_session( self ).flush()
+        sa_session.add( ldda )
+        sa_session.flush()
         # Need to set after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
         if copy_children:
@@ -2959,7 +2961,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
-        object_session( self ).flush()
+        sa_session.flush()
         return ldda
 
     def clear_associated_files( self, metadata_safe=False, purge=False ):

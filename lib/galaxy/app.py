@@ -84,7 +84,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Security helper
         self._configure_security()
         # Tag handler
-        self.tag_handler = GalaxyTagManager( self )
+        self.tag_handler = GalaxyTagManager( self.model.context )
         # Dataset Collection Plugins
         self.dataset_collections_service = DatasetCollectionManager(self)
 

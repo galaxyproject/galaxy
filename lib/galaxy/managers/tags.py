@@ -1,5 +1,6 @@
 import logging
 import re
+import galaxy.model
 
 from galaxy.util import unicodify
 from six import string_types
@@ -22,8 +23,8 @@ class TagManager( object ):
     Manages CRUD operations related to tagging objects.
     """
 
-    def __init__( self, app ):
-        self.app = app
+    def __init__( self, sa_session ):
+        self.sa_session = sa_session
         # Minimum tag length.
         self.min_tag_len = 2
         # Maximum tag length.
@@ -44,7 +45,7 @@ class TagManager( object ):
         self.delete_item_tags( user, item )
         new_tags_str = ','.join( new_tags_list )
         self.apply_item_tags( user, item, unicodify( new_tags_str, 'utf-8' ) )
-        self.app.model.context.flush()
+        self.sa_session.flush()
         return item.tags
 
     def get_tag_assoc_class( self, item_class ):
@@ -64,7 +65,7 @@ class TagManager( object ):
             return []
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count( '*' ) ]
-        from_obj = item_tag_assoc_class.table.join( item_class.table ).join( self.app.model.Tag.table )
+        from_obj = item_tag_assoc_class.table.join( item_class.table ).join( galaxy.model.Tag.table )
         where_clause = ( self.get_id_col_in_item_tag_assoc_table( item_class ) == item.id )
         order_by = [ func.count( "*" ).desc() ]
         group_by = item_tag_assoc_class.table.c.tag_id
@@ -75,7 +76,7 @@ class TagManager( object ):
                         group_by=group_by,
                         order_by=order_by,
                         limit=limit )
-        result_set = self.app.model.context.execute( query )
+        result_set = self.sa_session.execute( query )
         # Return community tags.
         community_tags = []
         for row in result_set:
@@ -84,8 +85,8 @@ class TagManager( object ):
         return community_tags
 
     def get_tool_tags( self ):
-        result_set = self.app.model.context.execute( select( columns=[ self.app.model.ToolTagAssociation.table.c.tag_id ],
-                                                             from_obj=self.app.model.ToolTagAssociation.table ).distinct() )
+        result_set = self.sa_session.execute( select( columns=[ galaxy.model.ToolTagAssociation.table.c.tag_id ],
+                                                             from_obj=galaxy.model.ToolTagAssociation.table ).distinct() )
 
         tags = []
         for row in result_set:
@@ -100,7 +101,7 @@ class TagManager( object ):
         # Remove association.
         if item_tag_assoc:
             # Delete association.
-            self.app.model.context.delete( item_tag_assoc )
+            self.sa_session.delete( item_tag_assoc )
             item.tags.remove( item_tag_assoc )
             return True
         return False
@@ -109,7 +110,7 @@ class TagManager( object ):
         """Delete tags from an item."""
         # Delete item-tag associations.
         for tag in item.tags:
-            self.app.model.context.delete( tag )
+            self.sa_session.delete( tag )
         # Delete tags from item.
         del item.tags[:]
 
@@ -118,7 +119,7 @@ class TagManager( object ):
         # Get tag name.
         if isinstance( tag, string_types ):
             tag_name = tag
-        elif isinstance( tag, self.app.model.Tag ):
+        elif isinstance( tag, galaxy.model.Tag ):
             tag_name = tag.name
         # Check for an item-tag association to see if item has a given tag.
         item_tag_assoc = self._get_item_tag_assoc( user, item, tag_name )
@@ -180,12 +181,12 @@ class TagManager( object ):
 
     def get_tag_by_id( self, tag_id ):
         """Get a Tag object from a tag id."""
-        return self.app.model.context.query( self.app.model.Tag ).filter_by( id=tag_id ).first()
+        return self.sa_session.query( galaxy.model.Tag ).filter_by( id=tag_id ).first()
 
     def get_tag_by_name( self, tag_name ):
         """Get a Tag object from a tag name (string)."""
         if tag_name:
-            return self.app.model.context.query( self.app.model.Tag ).filter_by( name=tag_name.lower() ).first()
+            return self.sa_session.query( galaxy.model.Tag ).filter_by( name=tag_name.lower() ).first()
         return None
 
     def _create_tag( self, tag_str ):
@@ -196,9 +197,9 @@ class TagManager( object ):
         for sub_tag in tag_hierarchy:
             # Get or create subtag.
             tag_name = tag_prefix + self._scrub_tag_name( sub_tag )
-            tag = self.app.model.context.query( self.app.model.Tag ).filter_by( name=tag_name).first()
+            tag = self.sa_session.query( galaxy.model.Tag ).filter_by( name=tag_name).first()
             if not tag:
-                tag = self.app.model.Tag( type=0, name=tag_name )
+                tag = galaxy.model.Tag( type=0, name=tag_name )
             # Set tag parent.
             tag.parent = parent_tag
             # Update parent and tag prefix.
@@ -296,9 +297,9 @@ class TagManager( object ):
 
 
 class GalaxyTagManager( TagManager ):
-    def __init__( self, app ):
+    def __init__( self, sa_session ):
         from galaxy import model
-        TagManager.__init__( self, app )
+        TagManager.__init__( self, sa_session )
         self.item_tag_assoc_info["History"] = ItemTagAssocInfo( model.History,
                                                                 model.HistoryTagAssociation,
                                                                 model.HistoryTagAssociation.table.c.history_id )
@@ -322,5 +323,5 @@ class GalaxyTagManager( TagManager ):
 
 
 class CommunityTagManager( TagManager):
-    def __init__( self, app ):
-        TagManager.__init__( self, app )
+    def __init__( self, sa_session ):
+        TagManager.__init__( self, sa_session )

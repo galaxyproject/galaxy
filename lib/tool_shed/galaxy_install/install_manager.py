@@ -143,7 +143,7 @@ class InstallToolDependencyManager( object ):
         """
         attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependencies ]
         installed_packages = []
-        tag_manager = TagManager( self.app )
+        tag_manager = TagManager( self.app.model.context )
         # Parse the tool_dependencies.xml config.
         tree, error_message = xml_util.parse_xml( tool_dependencies_config )
         if tree is None:
@@ -277,7 +277,7 @@ class InstallToolDependencyManager( object ):
         Install a tool dependency package defined by the XML element elem.  The value of tool_dependencies is
         a partial or full list of ToolDependency records associated with the tool_shed_repository.
         """
-        tag_manager = TagManager( self.app )
+        tag_manager = TagManager( self.app.model.context )
         # The value of package_name should match the value of the "package" type in the tool config's
         # <requirements> tag set, but it's not required.
         package_name = elem.get( 'name', None )
