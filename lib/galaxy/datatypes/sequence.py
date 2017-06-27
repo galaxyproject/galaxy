@@ -623,9 +623,6 @@ class BaseFastq ( Sequence ):
         if isinstance(self, FastqSanger) or isinstance(self, FastqSangerGz) or isinstance(self, FastqSangerBz2):
             if not self.sangerQualities(headers):
                 return False
-        else:
-            if self.sangerQualities(headers):
-                return False
 
         bases_regexp = re.compile( "^[NGTAC]*" )
         # check that first block looks like a fastq block
@@ -765,8 +762,8 @@ class FastqSolexaGz( FastqGz ):
 
 
 if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
     Binary.register_sniffable_binary_format("fastqsanger.gz", "fastqsanger.gz", FastqSangerGz)
+    Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
 
 
 class FastqIlluminaGz( FastqGz ):
@@ -800,8 +797,8 @@ class FastqSangerBz2( FastqBz2 ):
 
 
 if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
     Binary.register_sniffable_binary_format("fastqsanger.bz2", "fastqsanger.bz2", FastqSangerBz2)
+    Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
 
 
 class FastqSolexaBz2( FastqBz2 ):
