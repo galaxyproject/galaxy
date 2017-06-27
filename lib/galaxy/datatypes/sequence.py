@@ -603,10 +603,10 @@ class BaseFastq ( Sequence ):
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( '1.fastqsanger' )
-        >>> Fastq().sniff( fname )
+        >>> FastqSanger().sniff( fname )
         True
         >>> fname = get_test_fname( '2.fastqsanger' )
-        >>> Fastq().sniff( fname )
+        >>> FastqSanger().sniff( fname )
         True
         """
         compressed = is_gzip(filename) or is_bz2(filename)
