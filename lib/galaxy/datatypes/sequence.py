@@ -705,8 +705,7 @@ class BaseFastq ( Sequence ):
     def sangerQualities( lines ):
         """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
         for line in lines[3::4]:
-            _ = [ord( c ) for c in line[0]]
-            if max( _ ) > ord( 'M' ):
+            if not all(_ >= '!' and _ <= 'M' for _ in line[0]):
                 return False
         return True
 
