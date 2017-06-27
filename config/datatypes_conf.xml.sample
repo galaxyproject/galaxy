@@ -322,7 +322,7 @@
     <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="true" />
     <datatype extension="tabix" type="galaxy.datatypes.binary:Binary" subclass="true" />
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true" />
-    <datatype extension="vcf_bgzip" type_extension="bgzip" subclass="true" >
+    <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" type_extension="bgzip" subclass="true" display_in_upload="true">
       <display file="igv/vcf.xml" />
       <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>
     </datatype>

@@ -15,7 +15,7 @@ from cgi import escape
 from json import dumps
 
 from galaxy import util
-from galaxy.datatypes import data, metadata
+from galaxy.datatypes import binary, data, metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util import compression_utils
@@ -62,15 +62,15 @@ class TabularData( data.Text ):
             return False
 
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
-        with open(dataset.file_name) as f:
-            f.seek(offset)
-            ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
-            if ck_data and ck_data[-1] != '\n':
+        f = compression_utils.get_fileobj(dataset.file_name)
+        f.seek(offset)
+        ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
+        if ck_data and ck_data[-1] != '\n':
+            cursor = f.read(1)
+            while cursor and cursor != '\n':
+                ck_data += cursor
                 cursor = f.read(1)
-                while cursor and cursor != '\n':
-                    ck_data += cursor
-                    cursor = f.read(1)
-            last_read = f.tell()
+        last_read = f.tell()
         return dumps( { 'ck_data': util.unicodify( ck_data ),
                         'offset': last_read } )
 
@@ -325,7 +325,7 @@ class Tabular( TabularData ):
         first_line_column_types = [default_column_type]  # default value is one column of type str
         if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
-            dataset_fh = open( dataset.file_name )
+            dataset_fh = compression_utils.get_fileobj(dataset.file_name)
             i = 0
             while True:
                 line = dataset_fh.readline()
@@ -732,6 +732,11 @@ class Vcf( Tabular ):
         return self.genomic_region_dataprovider( dataset, **settings )
 
 
+class VcfGz( Vcf, binary.Binary):
+    extension = 'vcf.gz'
+    compressed = True
+
+
 class Eland( Tabular ):
     """Support for the export.txt.gz file used by Illumina's ELANDv2e aligner"""
     file_ext = '_export.txt.gz'
@@ -1103,7 +1108,7 @@ class ConnectivityTable( Tabular ):
 
     def get_chunk(self, trans, dataset, chunk):
         ck_index = int(chunk)
-        f = open(dataset.file_name)
+        f = compression_utils.get_fileobj(dataset.file_name)
         f.seek(ck_index * trans.app.config.display_chunk_size)
         # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
         if f.tell() != 0:
