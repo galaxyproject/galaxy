@@ -815,7 +815,7 @@ define(["libs/bbi/spans", "libs/bbi/jszlib", "libs/bbi/jquery-ajax-native"], fun
                 // Find reasonable zoom level. Reduction is the # of bases represented
                 // by each data point at that level.
                 for (var i = 0; i < this.zoomLevels.length; i++) {
-                    if (range/this.zoomLevels[i].reduction < MAX_DATA_POINTS) {
+                    if (i == this.zoomLevels.length - 1 || range/this.zoomLevels[i].reduction < MAX_DATA_POINTS) {
                         view = this.getZoomedView(i);
                         this.zoom = i;
                         break;
@@ -829,7 +829,7 @@ define(["libs/bbi/spans", "libs/bbi/jszlib", "libs/bbi/jquery-ajax-native"], fun
                 view = this.getUnzoomedView();
             }
             else{
-                view = this.getZoomedView(i);
+                view = this.getZoomedView(this.zoom);
             }
         }
         return view.readWigData(chrName, min, max);
