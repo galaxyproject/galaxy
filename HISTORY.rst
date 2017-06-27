@@ -9,7 +9,7 @@ History
 17.9.3.dev0
 ---------------------
 
-    
+* Bug fix in from_dict parsing of tool dependency specs.
 
 ---------------------
 17.9.2 (2017-06-22)
