@@ -10,8 +10,8 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 import shutil
+import tempfile
 from cgi import escape
 from json import dumps
 
