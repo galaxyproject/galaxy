@@ -11,8 +11,8 @@ from sqlalchemy.orm import eagerload_all
 
 from galaxy import datatypes, util
 from galaxy.exceptions import ObjectInvalid
-from galaxy.util.odict import odict
 from galaxy.managers import tags
+from galaxy.util.odict import odict
 
 log = logging.getLogger( __name__ )
 

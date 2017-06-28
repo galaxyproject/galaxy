@@ -16,14 +16,13 @@ from galaxy import exceptions
 from galaxy import util
 from galaxy import web
 from galaxy.exceptions import ObjectNotFound
-from galaxy.managers import folders, roles
+from galaxy.managers import folders, roles, tags
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.streamball import StreamBall
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
-from galaxy.managers import tags
 
 log = logging.getLogger( __name__ )
 

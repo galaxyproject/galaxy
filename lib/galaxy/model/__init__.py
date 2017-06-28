@@ -28,6 +28,8 @@ import galaxy.model.metadata
 import galaxy.model.orm.now
 import galaxy.security.passwords
 import galaxy.util
+
+from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
@@ -42,7 +44,6 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
                                      WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
-from galaxy.managers import tags
 
 log = logging.getLogger( __name__ )
 
