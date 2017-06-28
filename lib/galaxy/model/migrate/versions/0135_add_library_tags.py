@@ -5,7 +5,6 @@ from __future__ import print_function
 
 import logging
 
-from migrate import UniqueConstraint
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
 
 # Need our custom types, but don't import anything else from model
