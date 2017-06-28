@@ -9,8 +9,8 @@ import logging
 import os
 import re
 import subprocess
-import sys
 import shutil
+import sys
 import tempfile
 from cgi import escape
 from json import dumps
