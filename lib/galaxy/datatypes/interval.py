@@ -509,7 +509,7 @@ class Bed( Interval ):
             if not headers:
                 return False
             for hdr in headers:
-                if (hdr[0] == ''):
+                if hdr[0] == '':
                     continue
                 valid_col1 = False
                 if len(hdr) < 3 or len(hdr) > 12:

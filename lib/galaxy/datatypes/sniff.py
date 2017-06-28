@@ -220,9 +220,9 @@ def get_headers( fname, sep, count=60, is_multi_byte=False, comment_designator=N
                 # TODO: fix this - sep is never found in line
                 line = unicodify( line, 'utf-8' )
                 sep = sep.encode( 'utf-8' )
-                if comment_designator is not None:
+                if comment_designator is not None and comment_designator != '':
                     comment_designator = comment_designator.encode( 'utf-8' )
-            if comment_designator is not None and line.startswith( comment_designator ):
+            if comment_designator is not None and comment_designator != '' and line.startswith( comment_designator ):
                 continue
             headers.append( line.split(sep) )
             idx += 1
