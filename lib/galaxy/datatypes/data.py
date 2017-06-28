@@ -74,6 +74,7 @@ class Data( object ):
     """
     edam_data = "data_0006"
     edam_format = "format_1915"
+    file_ext = 'data'
     # Data is not chunkable by default.
     CHUNKABLE = False
 
@@ -682,7 +683,7 @@ class Data( object ):
         Check if this datatype is of any of the target_datatypes or is
         a subtype thereof.
         """
-        datatype_classes = tuple( [ datatype if isclass( datatype ) else datatype.__class__ for datatype in target_datatypes ] )
+        datatype_classes = tuple( datatype if isclass( datatype ) else datatype.__class__ for datatype in target_datatypes )
         return isinstance( self, datatype_classes )
 
     def merge( split_files, output_file):

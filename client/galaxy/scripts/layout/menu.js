@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-define(['layout/generic-nav-view', 'mvc/webhooks', 'utils/localization'], function( GenericNav, Webhooks, _l ) {
+define(['layout/generic-nav-view', 'mvc/webhooks', 'utils/localization', 'utils/utils'], function( GenericNav, Webhooks, _l, Utils ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -59,10 +59,10 @@ var Collection = Backbone.Collection.extend({
                     url     : 'history/list_published'
                 },{
                     title   : _l('Workflows'),
-                    url     : 'workflow/list_published'
+                    url     : 'workflows/list_published'
                 },{
                     title   : _l('Visualizations'),
-                    url     : 'visualization/list_published'
+                    url     : 'visualizations/list_published'
                 },{
                     title   : _l('Pages'),
                     url     : 'pages/list_published'
@@ -122,13 +122,24 @@ var Collection = Backbone.Collection.extend({
                     $.each(webhooks.models, function(index, model) {
                         var webhook = model.toJSON();
                         if (webhook.activate) {
-                            self.add({
+                            var obj = {
                                 id      : webhook.name,
                                 icon    : webhook.config.icon,
                                 url     : webhook.config.url,
                                 tooltip : webhook.config.tooltip,
                                 onclick : webhook.config.function && new Function(webhook.config.function),
-                            });
+                            };
+
+                            // Galaxy.page is undefined for data libraries, workflows pages
+                            if( Galaxy.page ) {
+                                Galaxy.page.masthead.collection.add(obj);
+                            }
+                            else if( Galaxy.masthead ) {
+                                Galaxy.masthead.collection.add(obj);
+                            }
+                            
+                            // Append masthead script and styles to Galaxy main
+                            Utils.appendScriptStyle( webhook );
                         }
                     });
                 });
@@ -267,8 +278,8 @@ var Collection = Backbone.Collection.extend({
                         divider : true
                     },{
                         title   : _l('Saved Histories'),
-                        url     : 'history/list',
-                        target  : 'galaxy_main'
+                        url     : 'histories/list',
+                        target  : '_top'
                     },{
                         title   : _l('Saved Datasets'),
                         url     : 'datasets/list',
