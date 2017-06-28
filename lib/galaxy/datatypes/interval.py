@@ -314,14 +314,14 @@ class Interval( Tabular ):
         >>> Interval().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t' )
+        headers = get_headers( filename, '\t', comment_designator='#' )
         try:
             """
             If we got here, we already know the file is_column_based and is not bed,
             so we'll just look for some valid data.
             """
             for hdr in headers:
-                if hdr and not hdr[0].startswith( '#' ):
+                if hdr:
                     if len(hdr) < 3:
                         return False
                     try:
@@ -504,12 +504,12 @@ class Bed( Interval ):
         >>> Bed().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t' )
+        headers = get_headers( filename, '\t', comment_designator='#' )
         try:
             if not headers:
                 return False
             for hdr in headers:
-                if (hdr[0] == '' or hdr[0].startswith( '#' )):
+                if hdr[0] == '':
                     continue
                 valid_col1 = False
                 if len(hdr) < 3 or len(hdr) > 12:
