@@ -2455,7 +2455,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
             trans.sa_session.flush()
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
         ldda.metadata = self.metadata
-        #TODO: copy #tags from history
+        # TODO: copy #tags from history
         if ldda_message:
             ldda.message = ldda_message
         if not replace_dataset:
@@ -3011,7 +3011,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
         except OSError:
             file_size = 0
 
-        #TODO: render tags here
+        # TODO: render tags here
         rval = dict( id=ldda.id,
                      hda_ldda='ldda',
                      model_class=self.__class__.__name__,
