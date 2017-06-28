@@ -755,7 +755,7 @@ class VcfGz( BaseVcf, binary.Binary):
         # Usage: bcftools index <in.bcf>
 
         dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
-                                        '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )  + ".vcf.gz"
+                                        '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) ) + ".vcf.gz"
         os.symlink( dataset.file_name, dataset_symlink )
 
         stderr_name = tempfile.NamedTemporaryFile( prefix="bcf_index_stderr" ).name
