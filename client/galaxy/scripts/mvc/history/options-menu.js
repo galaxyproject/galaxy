@@ -22,7 +22,7 @@ var menu = [
     },
     {
         html    : _l( 'Histories Shared with Me' ),
-        href    : 'history/list_shared'
+        href    : 'histories/list_shared'
     },
 
     {

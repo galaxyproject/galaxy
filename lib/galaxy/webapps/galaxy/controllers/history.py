@@ -153,7 +153,6 @@ class SharedHistoryListGrid( grids.Grid ):
     # Grid definition
     title = "Histories shared with you by others"
     model_class = model.History
-    template = '/history/shared_grid.mako'
     default_sort_key = "-update_time"
     default_filter = {}
     columns = [
@@ -424,6 +423,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return None, None
 
     @web.expose
+    @web.json
     @web.require_login( "work with shared histories" )
     def list_shared( self, trans, **kwargs ):
         """List histories shared with current user by others"""
@@ -438,6 +438,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             elif operation == 'unshare':
                 if not ids:
                     message = "Select a history to unshare"
+                    kwargs[ 'dict_format' ] = True
                     return self.shared_list_grid( trans, status='error', message=message, **kwargs )
                 for id in ids:
                     # No need to check security, association below won't yield a
@@ -451,6 +452,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 message = "Unshared %d shared histories" % len( ids )
                 status = 'done'
         # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self.shared_list_grid( trans, status=status, message=message, **kwargs )
 
     # ......................................................................... html
