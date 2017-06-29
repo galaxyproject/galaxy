@@ -137,12 +137,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_histories : function( action_id ) {
-            if ( action_id == 'list' ) {
-                this.page.display( new HistoryList.View() );
-            } else {
-                this.page.display( new HistoryList.View() );
-                this.page.display( new GridView( { url_base: Galaxy.root + 'history/' + action_id, dict_format: true } ) );
-            }
+            this.page.display( new HistoryList.View( { action_id: action_id } ) );
         },
 
         show_datasets : function() {

@@ -163,9 +163,7 @@ class SharedHistoryListGrid( grids.Grid ):
         SharedByColumn( "Shared by", key="user_id" )
     ]
     operations = [
-        grids.GridOperation( "View", allow_multiple=False, target="_top" ),
-        grids.GridOperation( "Copy" ),
-        grids.GridOperation( "Unshare" )
+        grids.GridOperation( "View", allow_multiple=False, url_args=dict( action='view' ) ),
     ]
     standard_filters = []
 
@@ -431,15 +429,10 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if 'operation' in kwargs:
             ids = galaxy.util.listify( kwargs.get( 'id', [] ) )
             operation = kwargs['operation'].lower()
-            if operation == "view":
-                # Display history.
-                history = self.history_manager.get_accessible( self.decode_id( ids[0] ), trans.user, current_history=trans.history )
-                return self.display_by_username_and_slug( trans, history.user.username, history.slug )
-            elif operation == 'unshare':
+            if operation == 'unshare':
                 if not ids:
                     message = "Select a history to unshare"
-                    kwargs[ 'dict_format' ] = True
-                    return self.shared_list_grid( trans, status='error', message=message, **kwargs )
+                    status = 'error'
                 for id in ids:
                     # No need to check security, association below won't yield a
                     # hit if this user isn't having the history shared with her.
