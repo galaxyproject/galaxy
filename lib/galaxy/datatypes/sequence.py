@@ -143,13 +143,10 @@ class Sequence( data.Text ):
         if input_datasets[0].metadata is not None and input_datasets[0].metadata.sequences is not None:
             total_sequences = input_datasets[0].metadata.sequences
         else:
-            in_file = compression_utils.get_fileobj(input_datasets[0].file_name)
-            try:
+            with compression_utils.get_fileobj(input_datasets[0].file_name) as in_file:
                 total_sequences = long(0)
                 for i, line in enumerate(in_file):
                     total_sequences += 1
-            finally:
-                in_file.close()
             total_sequences /= 4
 
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
@@ -570,8 +567,7 @@ class BaseFastq ( Sequence ):
         data_lines = 0
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long
-        in_file = compression_utils.get_fileobj(dataset.file_name)
-        try:
+        with compression_utils.get_fileobj(dataset.file_name) as in_file:
             for line in in_file:
                 line = line.strip()
                 if line and line.startswith( '#' ) and not data_lines:
@@ -590,8 +586,6 @@ class BaseFastq ( Sequence ):
                 sequences += 1
             dataset.metadata.data_lines = data_lines
             dataset.metadata.sequences = sequences
-        finally:
-            in_file.close()
 
     def sniff( self, filename ):
         """
@@ -638,15 +632,15 @@ class BaseFastq ( Sequence ):
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         if preview:
-            fh = compression_utils.get_fileobj(dataset.file_name)
-            max_peek_size = 1000000  # 1 MB
-            if os.stat( dataset.file_name ).st_size < max_peek_size:
-                mime = "text/plain"
-                self._clean_and_set_mime_type( trans, mime )
-                return fh.read()
-            return trans.stream_template_mako( "/dataset/large_file.mako",
-                                           truncated_data=fh.read(max_peek_size),
-                                           data=dataset)
+            with compression_utils.get_fileobj(dataset.file_name) as fh:
+                max_peek_size = 1000000  # 1 MB
+                if os.stat( dataset.file_name ).st_size < max_peek_size:
+                    mime = "text/plain"
+                    self._clean_and_set_mime_type( trans, mime )
+                    return fh.read()
+                return trans.stream_template_mako( "/dataset/large_file.mako",
+                                                   truncated_data=fh.read(max_peek_size),
+                                                   data=dataset)
         else:
             return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 

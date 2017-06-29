@@ -211,8 +211,7 @@ def get_headers( fname, sep, count=60, is_multi_byte=False, comment_designator=N
     [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
     """
     headers = []
-    in_file = compression_utils.get_fileobj(fname)
-    try:
+    with compression_utils.get_fileobj(fname) as in_file:
         idx = 0
         for line in in_file:
             line = line.rstrip('\n\r')
@@ -228,8 +227,6 @@ def get_headers( fname, sep, count=60, is_multi_byte=False, comment_designator=N
             idx += 1
             if idx == count:
                 break
-    finally:
-        in_file.close()
     return headers
 
 
