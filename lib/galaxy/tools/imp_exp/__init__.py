@@ -75,10 +75,10 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                 # Create history.
                 #
                 if not os.path.exists(os.path.join( archive_dir, 'history_attrs.txt')):
-                    dirs = os.listdir(archive_dir)
-                    for d in dirs:
+                    for d in os.listdir(archive_dir):
                         if os.path.isdir(os.path.join(archive_dir, d)):
-                                archive_dir = os.path.join(archive_dir, d)
+                            archive_dir = os.path.join(archive_dir, d)
+                            break
                 history_attr_file_name = os.path.join( archive_dir, 'history_attrs.txt')
                 history_attr_str = read_file_contents( history_attr_file_name )
                 history_attrs = loads( history_attr_str )
