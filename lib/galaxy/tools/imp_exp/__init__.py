@@ -71,14 +71,16 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                 archive_dir = jiha.archive_dir
                 user = jiha.job.user
 
+                # Bioblend previous to 17.01 exported histories with an extra subdir.
+                if not os.path.exists( os.path.join( archive_dir, 'history_attrs.txt' ) ):
+                    for d in os.listdir( archive_dir ):
+                        if os.path.isdir( os.path.join( archive_dir, d ) ):
+                            archive_dir = os.path.join( archive_dir, d )
+                            break
+
                 #
                 # Create history.
                 #
-                if not os.path.exists(os.path.join( archive_dir, 'history_attrs.txt')):
-                    for d in os.listdir(archive_dir):
-                        if os.path.isdir(os.path.join(archive_dir, d)):
-                            archive_dir = os.path.join(archive_dir, d)
-                            break
                 history_attr_file_name = os.path.join( archive_dir, 'history_attrs.txt')
                 history_attr_str = read_file_contents( history_attr_file_name )
                 history_attrs = loads( history_attr_str )
