@@ -72,3 +72,6 @@ pysam==0.8.4+gx5
 
 # Chronos client
 chronos-python==0.38.0
+
+#LDAP authentication
+python-ldap==2.4.27
