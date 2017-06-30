@@ -418,7 +418,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 if tool_version and tool_version in self._tool_versions_by_id[ tool_id ]:
                     return self._tool_versions_by_id[ tool_id ][ tool_version ]
                 # tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
-                return self._tools_by_id[ tool_id ]
+                if not tool_version:
+                    return self._tools_by_id[ tool_id ]
             elif exact:
                 # We're looking for an exact match, so we skip lineage and
                 # versionless mapping, though we may want to check duplicate
