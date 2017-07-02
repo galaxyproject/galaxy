@@ -66,8 +66,17 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             // build request url
             var build_url = '';
             var build_data = {};
-            if ( options.job_id ) {
-                build_url = Galaxy.root + 'api/jobs/' + options.job_id + '/build_for_rerun';
+            var job_id = '';
+            // When re-running a job the job_id is found in the new_options object.
+            // When re-running a job and requesting a new tool_version,
+            // the job_id is in the options object.
+            if ( new_options.job_id ) {
+                job_id = new_options.job_id;
+            } else if (options.job_id) {
+                job_id = options.job_id;
+            }
+            if ( job_id ) {
+                build_url = Galaxy.root + 'api/jobs/' + job_id + '/build_for_rerun';
             } else {
                 build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
                 build_data = $.extend( {}, Galaxy.params );
