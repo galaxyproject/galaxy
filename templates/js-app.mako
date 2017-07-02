@@ -14,7 +14,6 @@
             %if app.config.brand:
             | ${app.config.brand}
             %endif
-            | ${self.title()}
         </title>
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
