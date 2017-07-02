@@ -82,7 +82,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 build_data = $.extend( {}, Galaxy.params );
                 build_data[ 'tool_id' ] && ( delete build_data[ 'tool_id' ] );
             }
-           options.version && ( build_data[ 'tool_version' ] = options.version );
+            options.version && ( build_data[ 'tool_version' ] = options.version );
 
             // get initial model
             Utils.get({
