@@ -1,7 +1,13 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
     <head>
-        <title>Dataset generation errors</title>
+        <title>
+            Galaxy
+            %if app.config.brand:
+            | ${app.config.brand}
+            %endif
+            | Dataset generation errors
+        </title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <link href="/static/style/base.css" rel="stylesheet" type="text/css" />
         <style>

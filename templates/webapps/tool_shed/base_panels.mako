@@ -1,7 +1,7 @@
 <%inherit file="/base/base_panels.mako"/>
 
 ## Default title
-<%def name="title()">Galaxy Tool Shed</%def>
+<%def name="title()">Tool Shed</%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
