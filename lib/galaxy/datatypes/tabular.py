@@ -787,37 +787,34 @@ class Eland( Tabular ):
             - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
-        try:
-            with compression_utils.get_fileobj(filename, gzip_only=True) as fh:
-                count = 0
-                while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if not line:
-                        break  # EOF
-                    if line:
-                        line_pieces = line.split('\t')
-                        if len(line_pieces) != 22:
-                            return False
-                        try:
-                            if long(line_pieces[1]) < 0:
-                                raise Exception('Out of range')
-                            if long(line_pieces[2]) < 0:
-                                raise Exception('Out of range')
-                            if long(line_pieces[3]) < 0:
-                                raise Exception('Out of range')
-                            int(line_pieces[4])
-                            int(line_pieces[5])
-                            # can get a lot more specific
-                        except ValueError:
-                            return False
-                        count += 1
-                        if count == 5:
-                            break
-                if count > 0:
-                    return True
-        except Exception:
-            pass
+        with compression_utils.get_fileobj(filename, gzip_only=True) as fh:
+            count = 0
+            while True:
+                line = fh.readline()
+                line = line.strip()
+                if not line:
+                    break  # EOF
+                if line:
+                    line_pieces = line.split('\t')
+                    if len(line_pieces) != 22:
+                        return False
+                    try:
+                        if long(line_pieces[1]) < 0:
+                            raise Exception('Out of range')
+                        if long(line_pieces[2]) < 0:
+                            raise Exception('Out of range')
+                        if long(line_pieces[3]) < 0:
+                            raise Exception('Out of range')
+                        int(line_pieces[4])
+                        int(line_pieces[5])
+                        # can get a lot more specific
+                    except ValueError:
+                        return False
+                    count += 1
+                    if count == 5:
+                        break
+            if count > 0:
+                return True
         return False
 
     def set_meta( self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd ):
