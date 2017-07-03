@@ -1054,8 +1054,7 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     count = 0
     file_type = None
     data_checked = False
-    temp = compression_utils.get_fileobj( file_name, "U" )
-    try:
+    with compression_utils.get_fileobj( file_name, "U" ) as temp:
         while count < LINE_COUNT:
             line = temp.readline( WIDTH )
             if line and not is_multi_byte and not data_checked:
@@ -1083,8 +1082,6 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
             if not skip_line:
                 lines.append( line )
                 count += 1
-    finally:
-        temp.close()
     if file_type == 'binary':
         text = "%s file" % file_type
     else:
