@@ -798,18 +798,15 @@ class Eland( Tabular ):
                     line_pieces = line.split('\t')
                     if len(line_pieces) != 22:
                         return False
-                    try:
-                        if long(line_pieces[1]) < 0:
-                            raise Exception('Out of range')
-                        if long(line_pieces[2]) < 0:
-                            raise Exception('Out of range')
-                        if long(line_pieces[3]) < 0:
-                            raise Exception('Out of range')
-                        int(line_pieces[4])
-                        int(line_pieces[5])
-                        # can get a lot more specific
-                    except ValueError:
-                        return False
+                    if long(line_pieces[1]) < 0:
+                        raise Exception('Out of range')
+                    if long(line_pieces[2]) < 0:
+                        raise Exception('Out of range')
+                    if long(line_pieces[3]) < 0:
+                        raise Exception('Out of range')
+                    int(line_pieces[4])
+                    int(line_pieces[5])
+                    # can get a lot more specific
                     count += 1
                     if count == 5:
                         break
