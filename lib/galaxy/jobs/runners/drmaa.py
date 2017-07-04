@@ -226,6 +226,9 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         be overridden by subclasses to improve post-mortem and reporting of
         failures.
         Returns True if job was not actually terminal, None otherwise.
+        (Note: This function always returns None. Hence this function actually
+        does not determine if a job was terminal, but the implementation
+        in the subclasses is supposed to do this.)
         """
         if drmaa_state == drmaa.JobState.FAILED:
             if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
@@ -253,9 +256,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             try:
                 assert external_job_id not in ( None, 'None' ), '(%s/%s) Invalid job id' % ( galaxy_id_tag, external_job_id )
                 
-                retval = self.ds.session.wait(external_job_id, drmaa.Session.TIMEOUT_NO_WAIT)
-                print("exitStatus {0}\nhasCoreDump {1}\nhasExited {2}\nhasSignal {3}\njobId {4}\nresourceUsage {5}\nterminatedSignal {6}wasAborted {7}\n".format(retval.exitStatus, retval.hasCoreDump, retval.hasExited, retval.hasSignal, retval.jobId, retval.resourceUsage, retval.terminatedSignal, retval.wasAborted))
-
                 state = self.ds.job_status( external_job_id )
                 # Reset exception retries
                 for retry_exception in RETRY_EXCEPTIONS_LOWER:
