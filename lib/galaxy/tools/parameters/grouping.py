@@ -452,6 +452,7 @@ class UploadDataset( Group ):
         file_type = self.get_file_type( context )
         d_type = self.get_datatype( trans, context )
         dbkey = context.get( 'dbkey', None )
+        tag_using_filenames = context.get('tag_using_filenames', False)
         writable_files = d_type.writable_files
         writable_files_offset = 0
         groups_incoming = [ None for _ in writable_files ]
@@ -521,6 +522,7 @@ class UploadDataset( Group ):
                 dataset.datatype = d_type
                 dataset.ext = self.get_datatype_ext( trans, context )
                 dataset.dbkey = dbkey
+                dataset.tag_using_filenames = tag_using_filenames
                 rval.append( dataset )
             return rval
 
