@@ -111,7 +111,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     check_memory_limit_msg = self.__check_memory_limit( ajs.error_file )
                     if check_memory_limit_msg:
                         log.info( '(%s/%s) Job hit memory limit', ajs.job_wrapper.get_id_tag(), ajs.job_id )
-                        # this fail message is odd since check_memory_limit_msg is True or False  
+                        # this fail message is odd since check_memory_limit_msg is True or False
                         ajs.fail_message = check_memory_limit_msg
                         ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                     else:
