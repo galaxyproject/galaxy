@@ -90,7 +90,7 @@ window.app = function app( options, bootstrapped ){
             '(/)pages(/)(:action_id)' : 'show_pages',
             '(/)visualizations/list_published(/)' : 'show_visualizations',
             '(/)workflows/list_published(/)' : 'show_workflows_published',
-            '(/)histories(/)list(/)' : 'show_histories',
+            '(/)histories(/)(:action_id)' : 'show_histories',
             '(/)datasets(/)list(/)' : 'show_datasets',
             '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)workflow/import_workflow' : 'show_import_workflow',
@@ -136,8 +136,8 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new GridView( { url_base: Galaxy.root + 'workflow/list_published', dict_format: true } ) );
         },
 
-        show_histories : function() {
-            this.page.display( new HistoryList.View() );
+        show_histories : function( action_id ) {
+            this.page.display( new HistoryList.View( { action_id: action_id } ) );
         },
 
         show_datasets : function() {

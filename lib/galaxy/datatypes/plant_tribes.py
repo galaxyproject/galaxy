@@ -4,6 +4,8 @@ import re
 
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
+from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.text import Html
 from galaxy.util import nice_size
 
@@ -87,6 +89,66 @@ class PlantTribes(Html):
                 dataset.metadata.num_files = len(os.listdir(efp))
         except Exception as e:
             log.warning("set_meta fname: %s %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
+
+
+class PlantTribesKsComponents(Tabular):
+    file_ext = "ptkscmp"
+    MetadataElement(name="number_comp", default=0, desc="Number of significant components in the Ks distribution", readonly=True, visible=True, no_value=0)
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "Significant components in the Ks distribution (%s)" % (nice_size(dataset.get_size()))
+
+    def set_meta(self, dataset, **kwd):
+        """
+        Set the number of significant components in the Ks distribution.
+        The dataset will always be on the order of less than 10 lines.
+        """
+        super(PlantTribesKsComponents, self).set_meta(dataset, **kwd)
+        significant_components = []
+        with open(dataset.file_name) as fh:
+            for i, line in enumerate(fh):
+                if i == 0:
+                    # Skip the first line.
+                    continue
+                line = line.strip()
+                items = line.split()
+                try:
+                    # Could be \t.
+                    significant_components.append(int(items[2]))
+                except Exception:
+                    continue
+        if len(significant_components) > 0:
+            dataset.metadata.number_comp = max(significant_components)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            if (dataset.metadata.number_comp == 1):
+                dataset.blurb = "1 significant component"
+            else:
+                dataset.blurb = "%s significant components" % dataset.metadata.number_comp
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff(self, filename):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test_tab.bed')
+        >>> PlantTribesKsComponents().sniff(fname)
+        False
+        >>> fname = get_test_fname('1.ptkscmp')
+        >>> PlantTribesKsComponents().sniff(fname)
+        True
+        """
+        try:
+            line_item_str = get_headers(filename, '\\t', 1)[0][0]
+            return line_item_str == 'species\tn\tnumber_comp\tlnL\tAIC\tBIC\tmean\tvariance\tporportion'
+        except Exception:
+            return False
 
 
 class PlantTribesOrtho(PlantTribes):

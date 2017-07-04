@@ -2165,7 +2165,7 @@ class UsesTagsMixin( SharableItemSecurityMixin ):
 
     def set_tags_from_list( self, trans, item, new_tags_list, user=None ):
         # Method deprecated - try to use TagsHandler instead.
-        tags_manager = tags.GalaxyTagManager( trans.app )
+        tags_manager = tags.GalaxyTagManager( trans.app.model.context )
         return tags_manager.set_tags_from_list( user, item, new_tags_list )
 
     def get_user_tags_used( self, trans, user=None ):

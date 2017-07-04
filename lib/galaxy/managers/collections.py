@@ -36,7 +36,7 @@ class DatasetCollectionManager( object ):
 
         self.hda_manager = hdas.HDAManager( app )
         self.history_manager = histories.HistoryManager( app )
-        self.tag_manager = tags.GalaxyTagManager( app )
+        self.tag_manager = tags.GalaxyTagManager( app.model.context )
         self.ldda_manager = lddas.LDDAManager( app )
 
     def create( self, trans, parent, name, collection_type, element_identifiers=None,
