@@ -416,7 +416,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
                 ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
         elif job_info["state"] in [ "RUNNING", "SUSPENDED", "PENDING" ]:
             log.warning( '(%s/%s) Job is %s, returning to monitor queue', ajs.job_wrapper.get_id_tag(), ajs.job_id, job_info["state"] )
-            return True
+            return True # job was not actually terminal
         elif job_info["state"] in [ "ABORTED" ]:
             log.info( '(%s/%s) Job was cancelled (e.g. with qdel)', ajs.job_wrapper.get_id_tag(), ajs.job_id )
             ajs.fail_message = "This job failed because it was cancelled by an administrator."
@@ -425,6 +425,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             logging.error( "DRMAAUniva: job {job_id} determined unknown state {state}".format(job_id=ajs.job_id, spec=job_info["state"]) )
             drmaa_state = self.drmaa_job_states.DONE
         # by default, finish the job with the state from drmaa
+        #  
         return super( DRMAAFSJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
 
     def __check_memory_limit( self, efile_path ):
@@ -435,7 +436,6 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         checks for an error message that indicates an memory constraint violation
         returns True if such an indicator is found and False otherwise 
         """
-
         # list of error output from different programming languages in case
         # of memory allocation errors
         memerrors = set(["xrealloc: cannot allocate",   # bash 
