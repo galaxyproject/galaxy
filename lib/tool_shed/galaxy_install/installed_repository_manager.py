@@ -79,11 +79,11 @@ class InstalledRepositoryManager( object ):
 
     def activate_repository( self, repository ):
         """Activate an installed tool shed repository that has been marked as deactivated."""
-        repository_clone_url = common_util.generate_clone_url_for_installed_repository( self.app, repository )
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( self.app, repository )
         repository.deleted = False
         repository.status = self.install_model.ToolShedRepository.installation_status.INSTALLED
         if repository.includes_tools_for_display_in_tool_panel:
+            repository_clone_url = common_util.generate_clone_url_for_installed_repository( self.app, repository )
             tpm = tool_panel_manager.ToolPanelManager( self.app )
             irmm = InstalledRepositoryMetadataManager( app=self.app,
                                                        tpm=tpm,
