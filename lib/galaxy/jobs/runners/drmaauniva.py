@@ -10,12 +10,11 @@ import signal
 import subprocess
 import time
 
-from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 
 log = logging.getLogger( __name__ )
 
-__all__ = ( 'DRMAAFSJobRunner', )
+__all__ = ( 'DRMAAUnivaJobRunner', )
 
 MEMORY_LIMIT_SCAN_SIZE = 1024 * 1024  # 1MB
 
@@ -133,7 +132,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
 
             qacct = dict()
             for line in stdout:
-                #remove header
+                # remove header
                 if line.startswith("="):
                     continue
                 line = line.split()
@@ -404,7 +403,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
                 ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
         elif job_info["state"] in [ "RUNNING", "SUSPENDED", "PENDING" ]:
             log.warning( '(%s/%s) Job is %s, returning to monitor queue', ajs.job_wrapper.get_id_tag(), ajs.job_id, job_info["state"] )
-            return True# job was not actually terminal
+            return True  # job was not actually terminal
         elif job_info["state"] in [ "ABORTED" ]:
             log.info( '(%s/%s) Job was cancelled (e.g. with qdel)', ajs.job_wrapper.get_id_tag(), ajs.job_id )
             ajs.fail_message = "This job failed because it was cancelled by an administrator."
@@ -414,7 +413,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             drmaa_state = self.drmaa_job_states.DONE
         # by default, finish the job with the state from drmaa
         #
-        return super( DRMAAFSJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
+        return super( DRMAAUnivaJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
 
     def __check_memory_limit( self, efile_path ):
         """
