@@ -1795,7 +1795,7 @@ class Tool( object, Dictifiable ):
         if job:
             try:
                 job_params = job.get_param_values( self.app, ignore_errors=True )
-                tool_warnings = self.check_and_update_param_values( job_params, request_context, update_values=False )
+                tool_warnings = self.check_and_update_param_values( job_params, request_context, update_values=True )
                 self._map_source_to_history( request_context, self.inputs, job_params )
                 tool_message = self._compare_tool_version( job )
                 params_to_incoming( kwd, self.inputs, job_params, self.app )
