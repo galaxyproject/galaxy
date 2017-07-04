@@ -12,7 +12,6 @@ import time
 
 from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-from MolKit.pdb2pqr.src.server import LIMIT
 
 log = logging.getLogger( __name__ )
 
@@ -35,10 +34,11 @@ tool wrapper:
 - perl
 """
 
+
 class DRMAAUnivaJobRunner( DRMAAJobRunner ):
     runner_name = "DRMAAUnivaRunner"
-    #restrict job name length as in the DRMAAJobRunner
-    #restrict_job_name_length = 15
+    # restrict job name length as in the DRMAAJobRunner
+    # restrict_job_name_length = 15
 
     def _complete_terminal_job( self, ajs, drmaa_state, **kwargs ):
         def _get_drmaa_state_with_qstat(job_id, job_info):
@@ -68,11 +68,11 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             # t(ransfering),          job  is  about  to  be executed  or  is  already  executing
             # T(hreshold) or          shows that at least one suspend  threshold  of the  corresponding  queue was exceeded (see queue_conf(5)) and that the job has been suspended as a consequence
             # w(aiting).              or that the  job  is waiting  for  completion of the jobs to which job dependencies have been assigned to the job
-            qstat_states = dict(d="ABORTED", t="RUNNING", r="RUNNING" ,\
-                                s="SUSPENDED", S="SUSPENDED", N="SUSPENDED",\
-                                P="SUSPENDED", T="SUSPENDED",\
-                                R="RUNNING",\
-                                w="PENDING", h="PENDING",\
+            qstat_states = dict(d="ABORTED", t="RUNNING", r="RUNNING" ,
+                                s="SUSPENDED", S="SUSPENDED", N="SUSPENDED",
+                                P="SUSPENDED", T="SUSPENDED",
+                                R="RUNNING",
+                                w="PENDING", h="PENDING",
                                 E="PENDING")
             cmd = ['qstat', '-j', job_id]
             p = subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
@@ -100,8 +100,8 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
                     log.exception( "DRMAAFS: job {job_id} has unknown state '{state}".format(job_id=job_id, state=line[2]) )
                 job_info["state"].add(qstat_states[ line[-1] ])
             # check sanity of qstat output
-            if len(stderr)>0:
-                if jobnumber != None and jobnumber == str(job_id):
+            if len(stderr) > 0:
+                if jobnumber is not None and jobnumber == str(job_id):
                     job_info["state"].add( "FINISHED")
                 else:
                     stderr = stderr.strip()
@@ -162,23 +162,23 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             # bash other tests ----------------------------------------------------
             # qdel       100     137          user@mail
 
-            #deleted_by
-            #If the job (the array task) has been deleted via qdel, "<username>@<hostname>", else
-            #"NONE". If qdel was called multiple times, every invocation is recorded in a comma
-            #separated list.
-            if "deleted_by" in qacct and qacct["deleted_by"] != None:
+            # deleted_by
+            # If the job (the array task) has been deleted via qdel, "<username>@<hostname>", else
+            # "NONE". If qdel was called multiple times, every invocation is recorded in a comma
+            # separated list.
+            if "deleted_by" in qacct and qacct["deleted_by"] is not None:
                 logging.error( "DRMAAUniva: job {job_id} was aborted by {culprit}".format(job_id=job_id, culprit=qacct["deleted_by"]) )
                 job_info["state"].add( "ABORTED" )
                 return True
 
-            #exit_status
-            #Exit status of the job script (or Univa Grid Engine specific status in case of certain
-            #error conditions). The exit status is determined by following the normal shell conventions
-            #If the command terminates normally the value of the command is its exit status.
-            #However, in the case that the command exits abnormally, a value of 0200 (octal), 128
-            #(decimal) is added to the value of the command to make up the exit status.
-            #For example: If a job dies through signal 9 (SIGKILL) then the exit status
-            #becomes 128 + 9 = 137.
+            # exit_status
+            # Exit status of the job script (or Univa Grid Engine specific status in case of certain
+            # error conditions). The exit status is determined by following the normal shell conventions
+            # If the command terminates normally the value of the command is its exit status.
+            # However, in the case that the command exits abnormally, a value of 0200 (octal), 128
+            # (decimal) is added to the value of the command to make up the exit status.
+            # For example: If a job dies through signal 9 (SIGKILL) then the exit status
+            # becomes 128 + 9 = 137.
             if "exit_status" in qacct:
                 qacct["exit_status"] = int(qacct["exit_status"])
                 if qacct["exit_status"] < 1:
@@ -187,16 +187,16 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
                     logging.error( "DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=qacct["exit_status"]) )
                     job_info["state"].add("ERROR")
                 else:
-                    logging.error( "DRMAAUniva: job {job_id} was killed by signal {signal}".format(job_id=job_id, signal=qacct["exit_status"]-128) )
+                    logging.error( "DRMAAUniva: job {job_id} was killed by signal {signal}".format(job_id=job_id, signal=qacct["exit_status"] - 128) )
                     job_info["state"].add( "SIGNAL" )
                     job_info["signal"] = signals[ qacct["exit_status"] - 128 ]
 
-            #failed
-            #Indicates the problem which occurred in case a job could not be started on the execution
-            #host (e.g. because the owner of the job did not have a valid account on that
-            #machine). If Univa Grid Engine tries to start a job multiple times, this may lead to
-            #multiple entries in the accounting file corresponding to the same job ID.
-            #for the codes see https://docs.oracle.com/cd/E19957-01/820-0699/chp11-2/index.html
+            # failed
+            # Indicates the problem which occurred in case a job could not be started on the execution
+            # host (e.g. because the owner of the job did not have a valid account on that
+            # machine). If Univa Grid Engine tries to start a job multiple times, this may lead to
+            # multiple entries in the accounting file corresponding to the same job ID.
+            # for the codes see https://docs.oracle.com/cd/E19957-01/820-0699/chp11-2/index.html
             if "failed" in qacct:
                 code = int(qacct["failed"].split()[0])
                 if code == 0:
@@ -207,8 +207,8 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
                 else:
                     logging.error( "DRMAAUniva: job {job_id} failed with failure {failure}".format(job_id=job_id, failure=qacct["failed"]) )
                     job_info["state"].add("ERROR")
-            job_info["time_wasted"] =  qacct["wallclock"]
-            job_info["memory_wasted"] =  qacct["maxvmem"]
+            job_info["time_wasted"] = qacct["wallclock"]
+            job_info["memory_wasted"] = qacct["maxvmem"]
             return True
 
         def _get_drmaa_state_with_wait( job_id, ds, job_info ):
@@ -256,46 +256,46 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             except Exception as e:
                 logging.exception("could not determine status of job {jobid} using drmaa.wait error was {error}".format(jobid=job_id, error=str( e )))
                 return False
-            #documentation of the variables adapted from the drmaa C library documentation at
-            #https://linux.die.net/man/3/drmaa_wait
-            #currently not used are
-            #- rv.jobId
-            #- rv.resourceUsage (which contains info on runtime and memory usage)
-            #- rv.hasSignal (since we test the terminatedSignal anyway, and the meaning
+            # documentation of the variables adapted from the drmaa C library documentation at
+            # https://linux.die.net/man/3/drmaa_wait
+            # currently not used are
+            # - rv.jobId
+            # - rv.resourceUsage (which contains info on runtime and memory usage)
+            # - rv.hasSignal (since we test the terminatedSignal anyway, and the meaning
             #    of hasSignal=0 could be anything from success to failure)
-            #- hasExited
+            # - hasExited
             # ** wasAborted**
-            #wasAborted is a non-zero value for a job that ended before entering the running state.
-            #Note: seems to be non-zero also if it is already running
+            # wasAborted is a non-zero value for a job that ended before entering the running state.
+            # Note: seems to be non-zero also if it is already running
             # **exitStatus**
-            #If hasExited is a non-zero value, the exitStatus variable gives the
-            #exit code that the job passed to exit or the value that the child
-            #process returned from main.
+            # If hasExited is a non-zero value, the exitStatus variable gives the
+            # exit code that the job passed to exit or the value that the child
+            # process returned from main.
             # **hasCoreDump**
-            #If hasSignal is a non-zero value, hasCoreDump is a non-zero value if a core image
-            #of the terminated job was created.
+            # If hasSignal is a non-zero value, hasCoreDump is a non-zero value if a core image
+            # of the terminated job was created.
 
             # **hasExited**
-            #non-zero value for a job that terminated normally. A zero value can also indicate
-            #that although the job has terminated normally, an exit status is not available,
-            #or that it is not known whether the job terminated normally.
-            #In both cases exitStatus will not provide exit status information.
-            #A non-zero value returned in exited indicates more detailed diagnosis can be
-            #provided by means of hasSignal, terminatedSignal and hasCoreDump.
+            # non-zero value for a job that terminated normally. A zero value can also indicate
+            # that although the job has terminated normally, an exit status is not available,
+            # or that it is not known whether the job terminated normally.
+            # In both cases exitStatus will not provide exit status information.
+            # A non-zero value returned in exited indicates more detailed diagnosis can be
+            # provided by means of hasSignal, terminatedSignal and hasCoreDump.
             # **hasSignal**
-            #non-zero integer for a job that terminated due to the receipt of a signal.
-            #A zero value can also indicate that although the job has terminated due to the
-            #receipt of a signal, the signal is not available, or it is not known whether
-            #the job terminated due to the receipt of a signal.
-            #In both cases terminatedSignal will not provide signal information.
-            #A non-zero value returned in signaled indicates signal information can be
-            #retrieved from terminatedSignal.
+            # non-zero integer for a job that terminated due to the receipt of a signal.
+            # A zero value can also indicate that although the job has terminated due to the
+            # receipt of a signal, the signal is not available, or it is not known whether
+            # the job terminated due to the receipt of a signal.
+            # In both cases terminatedSignal will not provide signal information.
+            # A non-zero value returned in signaled indicates signal information can be
+            # retrieved from terminatedSignal.
             # **terminatedSignal**
-            #If hasSignal is a non-zero value, the terminatedSignal is a
-            #a string representation of the signal that caused the termination
+            # If hasSignal is a non-zero value, the terminatedSignal is a
+            # a string representation of the signal that caused the termination
             # of the job. For signals declared by POSIX.1, the symbolic names
-            #are returned (e.g., SIGABRT, SIGALRM).
-            #For signals not declared by POSIX, any other string may be returned.
+            # are returned (e.g., SIGABRT, SIGALRM).
+            # For signals not declared by POSIX, any other string may be returned.
             # check if job was aborted
             if rv.wasAborted:
                 logging.error( "DRMAAUniva: job {job_id} was aborted according to wait()".format(job_id=job_id) )
@@ -360,15 +360,15 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             mem = None
             # parse time
             m = re.search( "rt=([0-9]+):([0-9]{2}):([0-9]{2})\s", native_spec )
-            if m != None:
-                time = int(m.group(1))*3600 + int(m.group(2))*60 + int(m.group(3))
+            if m is not None:
+                time = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
             else:
                 m = re.search( "rt=([0-9]+)", native_spec )
-                if m != None:
+                if m is not None:
                     time = int(m.group(1))
             # parse memory
             m = re.search( "mem=([0-9])([KGM]*)", native_spec )
-            if m != None:
+            if m is not None:
                 mem = int(m.group(1))
                 if m.group(2) == 'K':
                     mem *= 1024
@@ -384,7 +384,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
 
         job_info = _get_drmaa_state(ajs.job_id, self.ds)
 
-        if not "state" in job_info or job_info["state"] in [ "SIGNAL", "ERROR" ]::
+        if "state" not in job_info or job_info["state"] in [ "SIGNAL", "ERROR" ]:
             # get configured job destination
             job_destination = ajs.job_wrapper.job_destination
             native_spec = job_destination.params.get('nativeSpecification', None)
@@ -404,7 +404,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
                 ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
         elif job_info["state"] in [ "RUNNING", "SUSPENDED", "PENDING" ]:
             log.warning( '(%s/%s) Job is %s, returning to monitor queue', ajs.job_wrapper.get_id_tag(), ajs.job_id, job_info["state"] )
-            return True # job was not actually terminal
+            return True# job was not actually terminal
         elif job_info["state"] in [ "ABORTED" ]:
             log.info( '(%s/%s) Job was cancelled (e.g. with qdel)', ajs.job_wrapper.get_id_tag(), ajs.job_id )
             ajs.fail_message = "This job failed because it was cancelled by an administrator."
@@ -424,12 +424,12 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         returns True if such an indicator is found and False otherwise
         """
         # list of error output from different programming languages in case
-        # of memory allocation errors
-        memerrors = set(["xrealloc: cannot allocate",   # bash
-                         "MemoryError",                 # Python
-                         "std::bad_alloc",              # C++
-                         "java.lang.OutOfMemoryError: Java heap space", # JAVA
-                         "Out of memory!"])             # Perl
+        # of memory allocation errors for bash, Python, C++, JAVA, Perl
+        memerrors = set(["xrealloc: cannot allocate",
+                         "MemoryError",
+                         "std::bad_alloc",
+                         "java.lang.OutOfMemoryError: Java heap space",
+                         "Out of memory!"])
 
         try:
             log.debug( 'Checking %s for exceeded memory messages from programs', efile_path )
