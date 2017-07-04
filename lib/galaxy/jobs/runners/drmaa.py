@@ -255,7 +255,6 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             old_state = ajs.old_state
             try:
                 assert external_job_id not in (None, 'None'), '(%s/%s) Invalid job id' % (galaxy_id_tag, external_job_id)
-                
                 state = self.ds.job_status(external_job_id)
                 # Reset exception retries
                 for retry_exception in RETRY_EXCEPTIONS_LOWER:
