@@ -31,9 +31,7 @@ log = logging.getLogger(__name__)
 
 REQUIRE_LOGIN_TEMPLATE = """
 <p>
-    You can login to this %s with your UFZ account. %s 
-    <b>But</b> you need the right to access the EVE cluster (since galaxy relies completely on it). 
-             Every researcher/employee can request this right <a rel=\"nofollow\" class=\"external text\" href=\"mailto:wkdv-cluster@ufz.de?subject=%%5BEVE%%5D%%20Account%%20Request&amp;body=Dear%%20EVE%%20Admins%%2C%%0A%%0APlease%%20create%%20a%%20new%%20account%%20for%%20...%%0A%%0AI%%20need%%20this%%20for%%20accessing%%20the%%20Galaxy%%20server.%%0A%%0AThanks%%0A\">with a short mail to the EVE admins</a>.
+    This %s has been configured such that only users who are logged in may use it.%s
 </p>
 """
 
