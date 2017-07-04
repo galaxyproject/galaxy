@@ -221,9 +221,10 @@ var Collection = Backbone.Collection.extend({
         //
         // User tab.
         //
+        var userTab = {};
         if ( !Galaxy.user.id ){
             if ( options.allow_user_creation ) {
-                var userTab = {
+                userTab = {
                     id              : 'user',
                     title           : _l('Login or Register'),
                     cls             : 'loggedout-only',
@@ -241,9 +242,8 @@ var Collection = Backbone.Collection.extend({
                         }
                     ]
                 };
-                this.add(userTab);
             } else {
-                var userTab = {
+                userTab = {
                     id: 'user',
                     title: _l('Login'),
                     cls: 'loggedout-only',
@@ -252,10 +252,9 @@ var Collection = Backbone.Collection.extend({
                     target: 'galaxy_main',
                     noscratchbook: true
                 };
-                this.add(userTab);
             }
         } else {
-            var userTab = {
+            userTab = {
                 id              : 'user',
                 title           : _l('User'),
                 cls             : 'loggedin-only',
@@ -303,8 +302,8 @@ var Collection = Backbone.Collection.extend({
                         target  : '_top'
                     }]
             };
-            this.add( userTab );
         }
+        this.add( userTab );
         var activeView = this.get( options.active_view );
         activeView && activeView.set( 'active', true );
         return new jQuery.Deferred().resolve().promise();
