@@ -153,7 +153,6 @@ class SharedHistoryListGrid( grids.Grid ):
     # Grid definition
     title = "Histories shared with you by others"
     model_class = model.History
-    template = '/history/shared_grid.mako'
     default_sort_key = "-update_time"
     default_filter = {}
     columns = [
@@ -164,9 +163,9 @@ class SharedHistoryListGrid( grids.Grid ):
         SharedByColumn( "Shared by", key="user_id" )
     ]
     operations = [
-        grids.GridOperation( "View", allow_multiple=False, target="_top" ),
-        grids.GridOperation( "Copy" ),
-        grids.GridOperation( "Unshare" )
+        grids.GridOperation( "View", allow_multiple=False, url_args=dict( action='view' ) ),
+        grids.GridOperation( "Copy", allow_multiple=False ),
+        grids.GridOperation( "Unshare", allow_multiple=False )
     ]
     standard_filters = []
 
@@ -424,6 +423,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return None, None
 
     @web.expose
+    @web.json
     @web.require_login( "work with shared histories" )
     def list_shared( self, trans, **kwargs ):
         """List histories shared with current user by others"""
@@ -431,14 +431,10 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if 'operation' in kwargs:
             ids = galaxy.util.listify( kwargs.get( 'id', [] ) )
             operation = kwargs['operation'].lower()
-            if operation == "view":
-                # Display history.
-                history = self.history_manager.get_accessible( self.decode_id( ids[0] ), trans.user, current_history=trans.history )
-                return self.display_by_username_and_slug( trans, history.user.username, history.slug )
-            elif operation == 'unshare':
+            if operation == 'unshare':
                 if not ids:
                     message = "Select a history to unshare"
-                    return self.shared_list_grid( trans, status='error', message=message, **kwargs )
+                    status = 'error'
                 for id in ids:
                     # No need to check security, association below won't yield a
                     # hit if this user isn't having the history shared with her.
@@ -451,6 +447,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 message = "Unshared %d shared histories" % len( ids )
                 status = 'done'
         # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self.shared_list_grid( trans, status=status, message=message, **kwargs )
 
     # ......................................................................... html
