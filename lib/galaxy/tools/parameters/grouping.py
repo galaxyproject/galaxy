@@ -470,6 +470,7 @@ class UploadDataset( Group ):
             dataset.metadata = {}
             dataset.composite_files = {}
             dataset.uuid = None
+            dataset.tag_using_filenames = None
             # load metadata
             files_metadata = context.get( self.metadata_ref, {} )
             metadata_name_substition_default_dict = dict( ( composite_file.substitute_name_with_metadata, d_type.metadata_spec[ composite_file.substitute_name_with_metadata ].default ) for composite_file in d_type.composite_files.values() if composite_file.substitute_name_with_metadata )
