@@ -69,6 +69,15 @@ define( [], function() {
                 data    : [ { label : 'True', value : 'true' },
                             { label : 'False', value : 'false' } ]
             },
+            show_bootstrap : {
+                label   : 'Show bootstrap confidence values',
+                help    : 'Select true to show bootstrap confidence values.',
+                type    : 'select',
+                display : 'radio',
+                value   : 'false',
+                data    : [ { label : 'True', value : 'true' },
+                            { label : 'False', value : 'false' } ]
+            },
             node_shape : {
                 label   : 'Node shapes for leaves',
                 help    : 'Select a node shape for leaves.',
