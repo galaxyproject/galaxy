@@ -10,6 +10,7 @@ import signal
 import subprocess
 import time
 
+from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 
 log = logging.getLogger( __name__ )
@@ -53,20 +54,39 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             adds the states (ABORTED|RUNNING|SUSPENDED|PENDING|FINISHED) to
                 job_info['states']
             """
-            # from man qstat
+            # from man qstat for the jobs status output if called with qstat -j ID
             # the  status of the job - one of
             # d(eletion),             qdel has been used
             # E(rror),                pending jobs hat couldn’t be started due to job properties
-            # h(old),                 job  currently  is  not  eligible  for execution due to a hold state assigned to it
-            # r(unning),              job  is  about  to  be executed or is already executing
-            # R(estarted),            the  job  was restarted.  This  can  be caused by a job migration or because of one of the reasons described in the -r section
+            # h(old),                 job currently is not eligible for execution due to a hold state assigned to it
+            # r(unning),              job is about to be executed or is already executing
+            # R(estarted),            the job was restarted. This can be caused by a job migration or because of one of the reasons described in the -r section
             # s(uspended),            caused by suspending the job via qmod -s
-            # S(uspended),            either that the queue containing the  job  is suspended ... or that a pending job got suspended due to a preemptive action that was either triggered automatically by the system or by  a manual preemption request triggered via qmod(1) -p ... S
-            # e(N)hanced suspended,   preemptive  states shown for pending jobs triggered either automatically or via qmod(1) -p ... N or -p ... P
+            # S(uspended),            either that the queue containing the job is suspended ... or that a pending job got suspended due to a preemptive action that was either triggered automatically by the system or by a manual preemption request triggered via qmod(1) -p ... S
+            # e(N)hanced suspended,   preemptive states shown for pending jobs triggered either automatically or via qmod(1) -p ... N or -p ... P
             # (P)reempted,            -"-
-            # t(ransfering),          job  is  about  to  be executed  or  is  already  executing
-            # T(hreshold) or          shows that at least one suspend  threshold  of the  corresponding  queue was exceeded (see queue_conf(5)) and that the job has been suspended as a consequence
-            # w(aiting).              or that the  job  is waiting  for  completion of the jobs to which job dependencies have been assigned to the job
+            # t(ransfering),          job is about to be executed or is already executing
+            # T(hreshold) or          shows that at least one suspend threshold of the corresponding queue was exceeded (see queue_conf(5)) and that the job has been suspended as a consequence
+            # w(aiting).              or that the job is waiting for completion of the jobs to which job dependencies have been assigned to the job
+            #
+            # Note:
+            # - For finished jobs an error message is given:
+            #   Following jobs do not exist or permissions are not sufficient:
+            #   264210
+            #   -> Hence we can not determine with qstat if the job is in DONE (successfully) or FAILED state
+            # - For queued jobs there is no output of the job_state
+            #   This could be obtained using qstat without the
+
+#             dE drmaa.JobState.UNDETERMINED: 'process status cannot be determined',
+#             drmaa.JobState.QUEUED_ACTIVE: 'job is queued and active',
+#             h drmaa.JobState.SYSTEM_ON_HOLD: 'job is queued and in system hold',
+#             w drmaa.JobState.USER_ON_HOLD: 'job is queued and in user hold',
+#             drmaa.JobState.USER_SYSTEM_ON_HOLD: 'job is queued and in user and system hold',
+#             rRt drmaa.JobState.RUNNING: 'job is running',
+#             SNPT drmaa.JobState.SYSTEM_SUSPENDED: 'job is system suspended',
+#             s drmaa.JobState.USER_SUSPENDED: 'job is user suspended',
+#             drmaa.JobState.DONE: 'job finished normally',
+#             drmaa.JobState.FAILED: 'job finished, but failed',
             qstat_states = dict(d="ABORTED", t="RUNNING", r="RUNNING" ,
                                 s="SUSPENDED", S="SUSPENDED", N="SUSPENDED",
                                 P="SUSPENDED", T="SUSPENDED",
@@ -97,11 +117,11 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
                 line = line.split()
                 if not line[-1] in qstat_states:
                     log.exception( "DRMAAFS: job {job_id} has unknown state '{state}".format(job_id=job_id, state=line[2]) )
-                job_info["state"].add(qstat_states[ line[-1] ])
+                job_info["state"] = qstat_states[ line[-1] ]
             # check sanity of qstat output
             if len(stderr) > 0:
                 if jobnumber is not None and jobnumber == str(job_id):
-                    job_info["state"].add( "FINISHED")
+                    job_info["state"] = "FINISHED"
                 else:
                     stderr = stderr.strip()
                     log.exception( '`%s` returned %s, stderr: %s' % ( ' '.join( cmd ), p.returncode, stderr ) )
@@ -167,7 +187,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             # separated list.
             if "deleted_by" in qacct and qacct["deleted_by"] is not None:
                 logging.error( "DRMAAUniva: job {job_id} was aborted by {culprit}".format(job_id=job_id, culprit=qacct["deleted_by"]) )
-                job_info["state"].add( "ABORTED" )
+                job_info["state"] = "ABORTED"
                 return True
 
             # exit_status
@@ -184,10 +204,10 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
                     pass
                 if 0 < qacct["exit_status"] < 129:
                     logging.error( "DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=qacct["exit_status"]) )
-                    job_info["state"].add("ERROR")
+                    job_info["state"] = "ERROR"
                 else:
                     logging.error( "DRMAAUniva: job {job_id} was killed by signal {signal}".format(job_id=job_id, signal=qacct["exit_status"] - 128) )
-                    job_info["state"].add( "SIGNAL" )
+                    job_info["state"] "SIGNAL"
                     job_info["signal"] = signals[ qacct["exit_status"] - 128 ]
 
             # failed
@@ -205,7 +225,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
                     pass
                 else:
                     logging.error( "DRMAAUniva: job {job_id} failed with failure {failure}".format(job_id=job_id, failure=qacct["failed"]) )
-                    job_info["state"].add("ERROR")
+                    job_info["state"] = "ERROR"
             job_info["time_wasted"] = qacct["wallclock"]
             job_info["memory_wasted"] = qacct["maxvmem"]
             return True
@@ -298,26 +318,26 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             # check if job was aborted
             if rv.wasAborted:
                 logging.error( "DRMAAUniva: job {job_id} was aborted according to wait()".format(job_id=job_id) )
-                job_info["state"].add("ABORTED")
+                job_info["state"] = "ABORTED"
 
             # determine if something went wrong. this could be application errors
             # but also violation of scheduler constraints
             if rv.exitStatus != 0:
                 logging.error( "DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=rv.exitStatus) )
-                job_info["state"].add("ERROR")
+                job_info["state"] "ERROR"
 
             #
             if not rv.hasExited or rv.hasSignal:
                 if rv.hasCoreDump != 0:
                     logging.error( "DRMAAUniva: job {job_id} has core dump".format(job_id=job_id) )
-                    job_info["state"].add("ERROR")
+                    job_info["state"] = "ERROR"
                 elif len(rv.terminatedSignal) > 0:
                     logging.error( "DRMAAUniva: job {job_id} was kill by signal {signal}".format(job_id=job_id, signal=rv.terminatedSignal) )
-                    job_info["state"].add("SIGNAL")
+                    job_info["state"] "SIGNAL"
                     job_info["signal"] = rv.terminatedSignal
                 elif rv.wasAborted == 0:
                     logging.error( "DRMAAUniva: job {job_id} has finished in unclear condition".format(job_id=job_id) )
-                    job_info["state"].add("ERROR")
+                    job_info["state"] = "ERROR"
             # make use of this
             job_info["time_wasted"] = float(rv.resourceUsage['maxvmem'])
             job_info["memory_wasted"] = float(rv.resourceUsage['wallclock'])
