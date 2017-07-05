@@ -105,13 +105,13 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             jobnumber = None
             se = []
             # try to get jobid from stderr
-            for line in stderr:
+            for line in stderr.split('\n'):
                 se.append( line )
                 if str(job_id) in line:
                     jobnumber = str(job_id)
             stderr = "\n".join(se)
             # get state
-            for line in stdout:
+            for line in stdout.split('\n'):
                 if not line.startswith("job_state"):
                     continue
                 line = line.split()
