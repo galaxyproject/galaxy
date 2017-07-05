@@ -57,7 +57,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             # from man qstat for the jobs status output if called with qstat -j ID
             # the  status of the job - one of
             # d(eletion),             qdel has been used
-            # E(rror),                pending jobs hat couldn’t be started due to job properties
+            # E(rror),                pending jobs hat couldn't be started due to job properties
             # h(old),                 job currently is not eligible for execution due to a hold state assigned to it
             # r(unning),              job is about to be executed or is already executing
             # R(estarted),            the job was restarted. This can be caused by a job migration or because of one of the reasons described in the -r section
@@ -105,13 +105,13 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             jobnumber = None
             se = []
             # try to get jobid from stderr
-            for line in stderr:
+            for line in stderr.split('\n'):
                 se.append( line )
                 if str(job_id) in line:
                     jobnumber = str(job_id)
             stderr = "\n".join(se)
             # get state
-            for line in stdout:
+            for line in stdout.split('\n'):
                 if not line.startswith("job_state"):
                     continue
                 line = line.split()
