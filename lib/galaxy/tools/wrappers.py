@@ -246,7 +246,13 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         return False
 
     def is_of_type( self, *exts ):
-        datatypes = [ self.datatypes_registry.get_datatype_by_extension( e ) for e in exts ]
+        datatypes = []
+        for e in exts:
+            datatype = self.datatypes_registry.get_datatype_by_extension(e)
+            if datatype is not None:
+                datatypes.append(datatype)
+            else:
+                log.warning("Datatype class not found for extension '%s', which is used as parameter of 'is_of_type()' method" % (e))
         return self.dataset.datatype.matches_any( datatypes )
 
     def __str__( self ):
