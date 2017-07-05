@@ -10,10 +10,12 @@ import struct
 import subprocess
 import tempfile
 import zipfile
+from json import dumps
 
 import pysam
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
+from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.tabular import Sam
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
