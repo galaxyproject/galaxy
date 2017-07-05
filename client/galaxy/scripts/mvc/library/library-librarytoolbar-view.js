@@ -17,7 +17,7 @@ var LibraryToolbarView = Backbone.View.extend({
   events: {
     'click #create_new_library_btn' : 'createLibraryFromModal',
     'click #include_deleted_chk'    : 'includeDeletedChecked',
-    'click #exclude_private_chk'    : 'excludePrivateChecked',
+    'click #exclude_restricted_chk' : 'excludeRestrictedChecked',
     'click #lib_page_size_prompt'   : 'showPageSizePrompt',
     'keyup .library-search-input'   : 'searchLibraries'
   },
@@ -38,7 +38,7 @@ var LibraryToolbarView = Backbone.View.extend({
     this.$el.html(toolbar_template( { admin_user: is_admin, anon_user: is_anonym } ) );
     if ( is_admin ){
       this.$el.find( '#include_deleted_chk' )[0].checked = Galaxy.libraries.preferences.get( 'with_deleted' );
-      this.$el.find( '#exclude_private_chk' )[0].checked = Galaxy.libraries.preferences.get( 'with_private' );
+      this.$el.find( '#exclude_restricted_chk' )[0].checked = Galaxy.libraries.preferences.get( 'without_restricted' );
     }
   },
 
@@ -157,14 +157,18 @@ var LibraryToolbarView = Backbone.View.extend({
     }
   },
 
-  excludePrivateChecked: function( event ) {
+  /**
+   * Include or exclude restricted libraries in the view.
+   */
+  excludeRestrictedChecked: function( event ) {
     if (event.target.checked){
-      Galaxy.libraries.preferences.set( { 'with_private': false } );
+      Galaxy.libraries.preferences.set( { 'without_restricted': true } );
     } else {
-      Galaxy.libraries.preferences.set( { 'with_private': true });
+      Galaxy.libraries.preferences.set( { 'without_restricted': false });
     }
     Galaxy.libraries.libraryListView.render();
   },
+
   /**
    * Take the contents of the search field and send it to the list view
    * to query the collection of libraries.
@@ -193,12 +197,12 @@ var LibraryToolbarView = Backbone.View.extend({
                   '<div class="checkbox toolbar-item" style="height: 20px;">',
                     '<label>',
                       '<input id="include_deleted_chk" type="checkbox">',
-                        '&nbsp;include deleted ',
+                        'include deleted ',
                       '</input>',
                     '</label>',
                     '<label>',
-                      '<input id="exclude_private_chk" type="checkbox">',
-                        '&nbsp;exclude private libraries',
+                      '<input id="exclude_restricted_chk" type="checkbox">',
+                        'exclude restricted',
                       '</input>',
                     '</label>',
                   '</div>',

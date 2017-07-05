@@ -78,18 +78,18 @@ var LibraryListView = Backbone.View.extend({
             } else {
               libraries_to_render = this.collection.where( { deleted: false } );
             }
-            if ( !Galaxy.libraries.preferences.get( 'with_private' ) ){
-              libraries_to_render = _.filter(libraries_to_render, is_public);
+            if ( Galaxy.libraries.preferences.get( 'without_restricted' ) ){
+              libraries_to_render = _.filter( libraries_to_render, is_public );
             }
         } else if ( models !== null ){
             if ( Galaxy.libraries.preferences.get( 'with_deleted' ) ){
                 libraries_to_render = models;
             } else {
                 var is_deleted = function(model){ return model.get('deleted') === false; }
-                libraries_to_render = _.filter(models, is_deleted );
+                libraries_to_render = _.filter( models, is_deleted );
             }
-            if ( !Galaxy.libraries.preferences.get( 'with_private' ) ) {
-              libraries_to_render = _.filter(models, is_public );
+            if ( Galaxy.libraries.preferences.get( 'without_restricted' ) ) {
+              libraries_to_render = _.filter( libraries_to_render, is_public );
             }
         } else {
             libraries_to_render = [];
