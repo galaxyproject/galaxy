@@ -188,10 +188,6 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
             message = message_template % ( filename, open( filename, "r" ).read() )
             raise AssertionError( message )
 
-    def _init_dynamic_tool_conf( self ):
-        # Add a dynamic tool conf (such as a ToolShed managed one) to list of configs.
-        self._add_config( """<toolbox tool_path="%s"></toolbox>""" % self.test_directory )
-
     def _init_ts_tool( self, guid=DEFAULT_GUID, **kwds ):
         tool = self._init_tool( **kwds )
         tool.guid = guid

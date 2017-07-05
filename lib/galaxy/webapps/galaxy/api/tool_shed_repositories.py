@@ -15,6 +15,7 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 from tool_shed.util import common_util
@@ -615,6 +616,46 @@ class ToolShedRepositoriesController( BaseAPIController ):
             elif isinstance( installed_tool_shed_repositories, list ):
                 all_installed_tool_shed_repositories.extend( installed_tool_shed_repositories )
         return all_installed_tool_shed_repositories
+
+    @expose_api
+    def uninstall_repository(self, trans, id=None, **kwd):
+        """
+        DELETE /api/tool_shed_repositories/id
+        DELETE /api/tool_shed_repositories/
+
+        :param id:  encoded repository id. Either id or name, owner, changeset_revision and tool_shed_url need to be supplied
+        :param kwd: 'remove_from_disk'  : Remove repository from disk or deactivate repository.
+                                          Defaults to `True` (= remove repository from disk).
+                    'name'   : Repository name
+                    'owner'  : Repository owner
+                    'changeset_revision': Changeset revision to uninstall
+                    'tool_shed_url'     : Tool Shed URL
+        """
+        if id:
+            try:
+                repository = repository_util.get_tool_shed_repository_by_id(self.app, id)
+            except ValueError:
+                raise HTTPBadRequest(detail="No repository with id '%s' found" % id)
+        else:
+            tsr_arguments = ['name', 'owner', 'changeset_revision', 'tool_shed_url']
+            try:
+                tsr_arguments = {key: kwd[key] for key in tsr_arguments}
+            except KeyError as e:
+                raise HTTPBadRequest(detail="Missing required parameter '%s'" % e.args[0])
+            repository = repository_util.get_installed_repository(app=self.app,
+                                                                  tool_shed=tsr_arguments['tool_shed_url'],
+                                                                  name=tsr_arguments['name'],
+                                                                  owner=tsr_arguments['owner'],
+                                                                  changeset_revision=tsr_arguments['changeset_revision'])
+            if not repository:
+                raise HTTPBadRequest(detail="Repository not found")
+        irm = InstalledRepositoryManager(app=self.app)
+        errors = irm.uninstall_repository(repository=repository, remove_from_disk=kwd.get('remove_from_disk', True))
+        if not errors:
+            action = 'removed' if kwd.get('remove_from_disk', True) else 'deactivated'
+            return {'message': 'The repository named %s has been %s.' % (repository.name, action)}
+        else:
+            raise Exception('Attempting to uninstall tool dependencies for repository named %s resulted in errors: %s' % (repository.name, errors))
 
     @expose_api
     def repair_repository_revision( self, trans, payload, **kwd ):

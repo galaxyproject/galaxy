@@ -68,8 +68,11 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
         self.__toolbox = None
         self.config_files = []
 
-    def _repo_install( self, changeset ):
-        repository = tool_shed_install.ToolShedRepository()
+    def _repo_install( self, changeset, config_filename=None ):
+        metadata = {}
+        if config_filename:
+            metadata['shed_config_filename'] = config_filename
+        repository = tool_shed_install.ToolShedRepository(metadata=metadata)
         repository.tool_shed = "github.com"
         repository.owner = "galaxyproject"
         repository.name = "example"
@@ -136,6 +139,10 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
             else:
                 json.dump(content, f)
         self.config_files.append( path )
+
+    def _init_dynamic_tool_conf( self ):
+        # Add a dynamic tool conf (such as a ToolShed managed one) to list of configs.
+        self._add_config( """<toolbox tool_path="%s"></toolbox>""" % self.test_directory )
 
     def _tool_conf_path( self, name="tool_conf.xml" ):
         path = os.path.join( self.test_directory, name )
