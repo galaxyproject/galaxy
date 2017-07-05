@@ -3382,6 +3382,15 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
             deleted=self.deleted,
             **self._base_to_dict(view=view)
         )
+
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        dict_value[ 'tags' ] = tags_str_list
+
         return dict_value
 
     def add_implicit_input_collection( self, name, history_dataset_collection ):
