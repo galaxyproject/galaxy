@@ -223,7 +223,7 @@ Binary.register_unsniffable_binary_ext("asn1-binary")
 
 
 @dataproviders.decorators.has_dataproviders
-class Bam( Binary , Sam):
+class Bam( Binary, Sam ):
     """Class describing a BAM binary file"""
     edam_format = "format_2572"
     edam_data = "data_0863"
@@ -240,7 +240,6 @@ class Bam( Binary , Sam):
     MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
 
     def __init__(self, **kwd):
-        """Initialize taxonomy datatype"""
         super( Bam, self ).__init__( **kwd )
 
     def _get_samtools_version( self ):
@@ -469,24 +468,23 @@ class Bam( Binary , Sam):
         file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
 
-
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
-        bamfile = pysam.AlignmentFile(dataset.file_name, "rb")
-        ck_size = 100 # 100 lines
-        ck_data=""
-        lineNumber=0
-        if(offset == 0):
-            ck_data = bamfile.text
-        for f in bamfile.fetch(until_eof=True):
-            lineNumber+=1
-            if (lineNumber > offset and lineNumber <= (offset + ck_size)):
-                bamline = f.tostring(bamfile)
-                # Galaxy display each tag as separate column because 'tostring()' funcition put spaces in between each tag of tags column. 
-                # Below code will remove spaces between each tag. 
-                bamlineModified = ('\t').join(bamline.split()[:11] + [('').join(bamline.split()[11:])])
-                ck_data=ck_data +"\n" + bamlineModified
-            elif (lineNumber > (offset + ck_size)):
-                break
+        index_file = dataset.metadata.bam_index
+        with pysam.AlignmentFile(dataset.file_name, "rb", index_filename=index_file.file_name) as bamfile:
+            ck_size = 1000  # 1000 lines
+            ck_data = ""
+            line_number = 0
+            if offset == 0:
+                ck_data = bamfile.text
+            for line_number, alignment,  in enumerate(bamfile):
+                if line_number > offset and line_number <= (offset + ck_size):
+                    bamline = alignment.tostring(bamfile)
+                    # Galaxy display each tag as separate column because 'tostring()' funcition put spaces in between each tag of tags column. 
+                    # Below code will remove spaces between each tag. 
+                    bamline_modified = ('\t').join(bamline.split()[:11] + [('').join(bamline.split()[11:])])
+                    ck_data = ck_data +"\n" + bamline_modified
+                elif line_number > (offset + ck_size):
+                    break
         last_read = offset + ck_size
         return dumps( { 'ck_data': util.unicodify( ck_data ),
                         'offset': last_read } )
@@ -498,7 +496,7 @@ class Bam( Binary , Sam):
         elif to_ext or not preview:
             return super( Bam, self ).display_data( trans, dataset, preview, filename, to_ext, **kwd )
         else:
-            column_names = 'null'
+            column_names = ''
             if dataset.metadata.column_names:
                 column_names = dataset.metadata.column_names
             elif hasattr(dataset.datatype, 'column_names'):
@@ -508,7 +506,7 @@ class Bam( Binary , Sam):
                 column_types = []
             column_number = dataset.metadata.columns
             if column_number is None:
-                column_number = 'null'
+                column_number = 1
             return trans.fill_template( "/dataset/tabular_chunked.mako",
                                         dataset=dataset,
                                         chunk=self.get_chunk(trans, dataset, 0),
