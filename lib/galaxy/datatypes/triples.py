@@ -1,12 +1,15 @@
 """
 Triple format classes
 """
-import re
-import data
 import logging
-import xml
-import text
-import binary
+import re
+
+from . import (
+    binary,
+    data,
+    text,
+    xml
+)
 
 log = logging.getLogger(__name__)
 

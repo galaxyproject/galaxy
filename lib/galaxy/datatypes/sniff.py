@@ -3,8 +3,9 @@ File format detector
 """
 from __future__ import absolute_import
 
-import gzip
 import bz2
+import codecs
+import gzip
 import logging
 import os
 import re
@@ -13,13 +14,13 @@ import sys
 import tempfile
 import zipfile
 
-from encodings import search_function as encodings_search_function
 from six import text_type
 
 from galaxy import util
-from galaxy.util import multi_byte
+from galaxy.datatypes.binary import Binary
 from galaxy.util import (
     compression_utils,
+    multi_byte,
     unicodify
 )
 from galaxy.util.checkers import (
@@ -28,7 +29,6 @@ from galaxy.util.checkers import (
     is_bz2,
     is_gzip
 )
-from galaxy.datatypes.binary import Binary
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +48,9 @@ def stream_to_open_named_file( stream, fd, filename, source_encoding=None, sourc
     is_compressed = False
     is_binary = False
     is_multi_byte = False
-    if not target_encoding or not encodings_search_function( target_encoding ):
+    try:
+        codecs.lookup(target_encoding)
+    except:
         target_encoding = util.DEFAULT_ENCODING  # utf-8
     if not source_encoding:
         source_encoding = util.DEFAULT_ENCODING  # sys.getdefaultencoding() would mimic old behavior (defaults to ascii)

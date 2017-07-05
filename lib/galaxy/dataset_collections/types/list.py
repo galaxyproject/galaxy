@@ -1,6 +1,6 @@
-from ..types import BaseDatasetCollectionType
-
 from galaxy.model import DatasetCollectionElement
+
+from ..types import BaseDatasetCollectionType
 
 
 class ListDatasetCollectionType( BaseDatasetCollectionType ):
@@ -12,7 +12,7 @@ class ListDatasetCollectionType( BaseDatasetCollectionType ):
         pass
 
     def generate_elements( self, elements ):
-        for identifier, element in elements.iteritems():
+        for identifier, element in elements.items():
             association = DatasetCollectionElement(
                 element=element,
                 element_identifier=identifier,

@@ -1,16 +1,24 @@
 # Contains objects for using external display applications
 import logging
-import urllib
-from six import string_types
-from urllib import quote_plus
 from copy import deepcopy
 
-from galaxy.util import parse_xml, string_as_bool
+from six import string_types
+from six.moves.urllib.parse import quote_plus
+
+from galaxy.util import (
+    parse_xml,
+    string_as_bool
+)
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
-from parameters import DisplayApplicationParameter, DisplayApplicationDataParameter, DEFAULT_DATASET_NAME
-from util import encode_dataset_user
+
+from .parameters import (
+    DEFAULT_DATASET_NAME,
+    DisplayApplicationDataParameter,
+    DisplayApplicationParameter
+)
+from .util import encode_dataset_user
 
 log = logging.getLogger( __name__ )
 
@@ -50,8 +58,8 @@ class DisplayApplicationLink( object ):
                         action="display_application",
                         dataset_id=dataset_hash,
                         user_id=user_hash,
-                        app_name=urllib.quote_plus( self.display_application.id ),
-                        link_name=urllib.quote_plus( self.id ),
+                        app_name=quote_plus( self.display_application.id ),
+                        link_name=quote_plus( self.id ),
                         app_action=None )
 
     def get_inital_values( self, data, trans ):
@@ -60,7 +68,7 @@ class DisplayApplicationLink( object ):
         else:
             rval = odict()
         rval.update( { 'BASE_URL': trans.request.base, 'APP': trans.app } )  # trans automatically appears as a response, need to add properties of trans that we want here
-        for key, value in BASE_PARAMS.iteritems():  # add helper functions/variables
+        for key, value in BASE_PARAMS.items():  # add helper functions/variables
             rval[ key ] = value
         rval[ DEFAULT_DATASET_NAME ] = data  # always have the display dataset name available
         return rval
@@ -70,7 +78,7 @@ class DisplayApplicationLink( object ):
         other_values[ 'DATASET_HASH' ] = dataset_hash
         other_values[ 'USER_HASH' ] = user_hash
         ready = True
-        for name, param in self.parameters.iteritems():
+        for name, param in self.parameters.items():
             assert name not in other_values, "The display parameter '%s' has been defined more than once." % name
             if param.ready( other_values ):
                 if name in app_kwds and param.allow_override:
@@ -142,7 +150,7 @@ class DynamicDisplayApplicationBuilder( object ):
         max_col = max( id_col, name_col )
         dynamic_params = {}
         if data_table is not None:
-            max_col = max( [ max_col ] + data_table.columns.values() )
+            max_col = max( [ max_col ] + list(data_table.columns.values()) )
             for key, value in data_table.columns.items():
                 dynamic_params[key] = { 'column': value, 'split': False, 'separator': ',' }
         for dynamic_param in elem.findall( 'dynamic_param' ):
@@ -174,7 +182,7 @@ class DynamicDisplayApplicationBuilder( object ):
                 new_elem.set( 'id', fields[id_col] )
                 new_elem.set( 'name', fields[name_col] )
                 dynamic_values = {}
-                for key, attributes in dynamic_params.iteritems():
+                for key, attributes in dynamic_params.items():
                     value = fields[ attributes[ 'column' ] ]
                     if attributes['split']:
                         value = value.split( attributes['separator'] )
@@ -210,7 +218,7 @@ class PopulatedDisplayApplicationLink( object ):
 
     def preparing_display( self ):
         if not self.ready:
-            return self.link.parameters[ self.parameters.keys()[ -1 ] ].is_preparing( self.parameters )
+            return self.link.parameters[ list(self.parameters.keys())[-1] ].is_preparing( self.parameters )
         return False
 
     def prepare_display( self ):
@@ -218,8 +226,8 @@ class PopulatedDisplayApplicationLink( object ):
         found_last = False
         if not self.ready and not self.preparing_display():
             other_values = self.parameters
-            for name, param in self.link.parameters.iteritems():
-                if found_last or other_values.keys()[ -1 ] == name:  # found last parameter to be populated
+            for name, param in self.link.parameters.items():
+                if found_last or list(other_values.keys())[-1] == name:  # found last parameter to be populated
                     found_last = True
                     value = param.prepare( other_values, self.dataset_hash, self.user_hash, self.trans )
                     rval.append( { 'name': name, 'value': value, 'param': param } )
@@ -231,7 +239,7 @@ class PopulatedDisplayApplicationLink( object ):
 
     def get_prepare_steps( self, datasets_only=True ):
         rval = []
-        for name, param in self.link.parameters.iteritems():
+        for name, param in self.link.parameters.items():
             if datasets_only and not isinstance( param, DisplayApplicationDataParameter ):
                 continue
             value = self.parameters.get( name, None )
@@ -243,7 +251,7 @@ class PopulatedDisplayApplicationLink( object ):
         return fill_template( self.link.url.text, context=self.parameters )
 
     def get_param_name_by_url( self, url ):
-        for name, parameter in self.link.parameters.iteritems():
+        for name, parameter in self.link.parameters.items():
             if parameter.build_url( self.parameters ) == url:
                 return name
         raise ValueError( "Unknown URL parameter name provided: %s" % url )
@@ -301,7 +309,7 @@ class DisplayApplication( object ):
     def filter_by_dataset( self, data, trans ):
         self._check_and_reload()
         filtered = DisplayApplication( self.id, self.name, self.app, version=self.version )
-        for link_name, link_value in self.links.iteritems():
+        for link_name, link_value in self.links.items():
             if link_value.filter_by_dataset( data, trans ):
                 filtered.links[link_name] = link_value
         return filtered
@@ -318,13 +326,11 @@ class DisplayApplication( object ):
         # We will not allow changing the id at this time (we'll need to fix several mappings upstream to handle this case)
         assert attr_dict.get( 'id' ) == self.id, ValueError( "You cannot reload a Display application where the ID has changed. You will need to restart the server instead." )
         # clear old links
-        for key in self.links.keys():
-            del self.links[key]
+        self.links = {}
         # clear data table versions:
-        for key in self._data_table_versions.keys():
-            del self._data_table_versions[ key ]
+        self._data_table_versions = {}
         # Set new attributes
-        for key, value in attr_dict.iteritems():
+        for key, value in attr_dict.items():
             setattr( self, key, value )
         # Load new links
         self._load_links_from_elem( elem )
@@ -334,7 +340,7 @@ class DisplayApplication( object ):
         self._data_table_versions[ table_name ] = version
 
     def _requires_reload( self ):
-        for key, value in self._data_table_versions.iteritems():
+        for key, value in self._data_table_versions.items():
             table = self.app.tool_data_tables.get( key, None )
             if table and not table.is_current_version( value ):
                 return True

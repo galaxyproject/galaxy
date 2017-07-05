@@ -1,10 +1,12 @@
 import logging
 import os
-from galaxy.util.dictifiable import Dictifiable
-from galaxy.util.bunch import Bunch
+
+from six.moves.urllib.parse import urljoin
+
 from galaxy.util import asbool
+from galaxy.util.bunch import Bunch
+from galaxy.util.dictifiable import Dictifiable
 from tool_shed.util import common_util
-from urlparse import urljoin
 
 log = logging.getLogger( __name__ )
 
