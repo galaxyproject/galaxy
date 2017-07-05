@@ -365,6 +365,7 @@
     <datatype extension="rgenetics" type="galaxy.datatypes.genetics:Rgenetics"/>
     <datatype extension="snptest" type="galaxy.datatypes.genetics:Snptest" display_in_upload="true"/>
     <datatype extension="snpmatrix" type="galaxy.datatypes.genetics:SNPMatrix" display_in_upload="true"/>
+    <datatype extension="xls" type="galaxy.datatypes.tabular:Tabular"/>
     <!-- End RGenetics Datatypes -->
     <datatype extension="ipynb" type="galaxy.datatypes.text:Ipynb" display_in_upload="true" />
     <datatype extension="json" type="galaxy.datatypes.text:Json" display_in_upload="true" />
@@ -380,7 +381,7 @@
     <datatype extension="rdf" type="galaxy.datatypes.triples:Rdf" display_in_upload="true"/>
     <datatype extension="jsonld" type="galaxy.datatypes.triples:Jsonld" display_in_upload="true"/>
     <!-- Excel datatypes -->
-    <datatype extension="xls" type="galaxy.datatypes.binary:Xls" display_in_upload="true"/>
+    <datatype extension="excel.xls" type="galaxy.datatypes.binary:ExcelXls" display_in_upload="true"/>
     <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true" />
     <datatype extension="btwisted" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="cai" type="galaxy.datatypes.data:Text" subclass="true"/>

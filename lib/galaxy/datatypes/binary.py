@@ -1120,13 +1120,13 @@ class Xlsx(Binary):
 Binary.register_sniffable_binary_format("xlsx", "xlsx", Xlsx)
 
 
-class Xls( Binary ):
+class ExcelXls( Binary ):
     """Class describing an Excel (xls) file"""
-    file_ext = "xls"
+    file_ext = "excel.xls"
 
     def sniff( self, filename ):
-        mimeType = subprocess.check_output("file -i {}".format(filename), shell=True).rstrip()
-        if mimeType.find("application/vnd.ms-excel") != -1:
+        mime_type = subprocess.check_output("file --mime-type '{}'".format(filename), shell=True).rstrip()
+        if mime_type.find("application/vnd.ms-excel") != -1:
             return True
         else:
             return False
@@ -1150,7 +1150,7 @@ class Xls( Binary ):
             return "Microsoft Excel 2003 file (%s)" % ( data.nice_size( dataset.get_size() ) )
 
 
-Binary.register_sniffable_binary_format("xls", "xls", Xls)
+Binary.register_sniffable_binary_format("excel.xls", "excel.xls", ExcelXls)
 
 
 class Sra( Binary ):
