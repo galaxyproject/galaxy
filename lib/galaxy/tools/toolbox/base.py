@@ -289,9 +289,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 inserted = True
             if not inserted:
                 # Check the tool's installed versions.
-                versions = []
-                if hasattr(tool, 'lineage'):
-                    versions = tool.lineage.get_versions()
+                versions = tool.lineage.get_versions()
                 for tool_lineage_version in versions:
                     lineage_id = tool_lineage_version.id
                     index = self._integrated_tool_panel.index_of_tool_id(lineage_id)
@@ -428,8 +426,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
             rval = []
             tool_lineage = self._lineage_map.get( tool_id )
-            if not tool_lineage:
-                tool_lineage = self._lineage_map.get_versionless( tool_id )
             if tool_lineage:
                 lineage_tool_versions = tool_lineage.get_versions( )
                 for lineage_tool_version in lineage_tool_versions:
@@ -568,9 +564,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     tool.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
                     tool.guid = guid
                     tool.version = item.elem.find( "version" ).text
-                # Make sure tools have a tool_version object.
-                tool_lineage = self._lineage_map.register( tool, from_toolshed=guid )
-                tool.lineage = tool_lineage
+                # Make sure tools are registered in self._lineage_map.
+                tool._lineage = self._lineage_map.register( tool )
                 if item.has_elem:
                     self._tool_tag_manager.handle_tags( tool.id, item.elem )
                 self.__add_tool( tool, load_panel_dict, panel_dict )
@@ -950,10 +945,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         """
         if tool_lineage is None:
             assert tool is not None
-            if not hasattr( tool, "lineage" ):
-                return None
             tool_lineage = tool.lineage
-        lineage_tool_versions = tool_lineage.get_versions( reverse=True )
+        lineage_tool_versions = reversed(tool_lineage.get_versions())
         for lineage_tool_version in lineage_tool_versions:
             lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
             if lineage_tool:
@@ -966,16 +959,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         """ Return True if tool1 is considered "newer" given its own lineage
         description.
         """
-        if not hasattr( tool1, "lineage" ):
-            return True
-        lineage_tool_versions = tool1.lineage.get_versions()
-        for lineage_tool_version in lineage_tool_versions:
-            lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
-            if lineage_tool is tool1:
-                return False
-            if lineage_tool is tool2:
-                return True
-        return True
+        return tool1.version_object > tool2.version_object
 
     def _tool_from_lineage_version( self, lineage_tool_version ):
         if lineage_tool_version.id_based:

@@ -154,11 +154,6 @@ class MockApp( object ):
         self.container_finder = NullContainerFinder()
         self.name = "galaxy"
         self._toolbox_lock = MockLock()
-        self.tool_version_cache = Bunch(app=self,
-                                        tool_version_by_id={},
-                                        tool_version_by_tool_id={},
-                                        tool_id_to_parent_id={},
-                                        parent_id_to_tool_id={})
 
     def wait_for_toolbox_reload(self, toolbox):
         # TODO: If the tpm test case passes, does the operation really

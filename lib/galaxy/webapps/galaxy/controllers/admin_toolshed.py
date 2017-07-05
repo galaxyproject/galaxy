@@ -1991,11 +1991,13 @@ class AdminToolshed( AdminGalaxy ):
                     tool_config = tool_metadata[ 'tool_config' ]
                     if shed_config_dict and shed_config_dict.get( 'tool_path' ):
                         tool_config = os.path.join( shed_config_dict.get( 'tool_path' ), tool_config )
-                    tool = trans.app.toolbox.load_tool( os.path.abspath( tool_config ), guid=tool_metadata[ 'guid' ] )
+                    tool = trans.app.toolbox.get_tool(tool_id=tool_metadata[ 'guid' ], exact=True)
+                    if not tool:
+                        tool = trans.app.toolbox.load_tool( os.path.abspath( tool_config ), guid=tool_metadata[ 'guid' ] )
+                        if tool:
+                            tool._lineage = trans.app.toolbox._lineage_map.register( tool )
                     if tool:
-                        tvm = tool_version_manager.ToolVersionManager( trans.app )
-                        tool_version = tvm.get_tool_version( str( tool.id ) )
-                        tool_lineage = tool_version.get_version_ids( trans.app, reverse=True )
+                        tool_lineage = tool.lineage.get_version_ids(reverse=True)
                     break
         return trans.fill_template( "/admin/tool_shed_repository/view_tool_metadata.mako",
                                     repository=repository,
