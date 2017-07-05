@@ -205,7 +205,10 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
         for name, hda in zip(names, hdas):
             if hda.state != hda.states.OK:
-                continue
+                trans.sa_session.refresh(hda)
+                if hda.state != hda.states.OK:
+                    log.info("Skipping download of '%s', because its state is '%s'" % (name, hda.state))
+                    continue
             for file_path, relpath in hda.datatype.to_archive(trans=trans, dataset=hda, name=name):
                 archive.add(file=file_path, relpath=relpath)
         archive_name = "%s: %s.%s" % (dataset_collection_instance.hid, dataset_collection_instance.name, archive_ext)
