@@ -334,7 +334,7 @@ class TagDatasetAction(DefaultJobAction):
             if tags:
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
-                        app.tag_handler.set_tags_from_list( job.user, dataset_assoc.dataset, tags)
+                        app.tag_handler.add_tags_from_list( job.user, dataset_assoc.dataset, tags)
             sa_session.flush()
 
     @classmethod
