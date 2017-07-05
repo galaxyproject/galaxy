@@ -81,8 +81,8 @@ class ToolParameter( object, Dictifiable ):
         self.refresh_on_change = input_source.get_bool( "refresh_on_change", False )
         self.optional = input_source.parse_optional()
         self.is_dynamic = False
-        self.label = input_source.parse_label()
-        self.help = input_source.parse_help()
+        self.label = tool.translate(input_source.parse_label())
+        self.help = tool.translate(input_source.parse_help())
         sanitizer_elem = input_source.parse_sanitizer_elem()
         if sanitizer_elem is not None:
             self.sanitizer = ToolParameterSanitizer.from_element( sanitizer_elem )

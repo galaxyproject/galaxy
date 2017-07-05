@@ -636,7 +636,7 @@ class Tool( object, Dictifiable ):
 
         # Short description of the tool
         self.description = tool_source.parse_description()
-        self.description = self._translate( self.description )
+        self.description = self.translate( self.description )
 
         # Versioning for tools
         self.version_string_cmd = None
@@ -1042,9 +1042,6 @@ class Tool( object, Dictifiable ):
         enctypes.
         """
         param = ToolParameter.build( self, input_source )
-        if isinstance(param, DataToolParameter):
-            param.label=self._translate( param.label )
-            param.help=self._translate( param.help )
         param_enctype = param.get_required_enctype()
         if param_enctype:
             enctypes.add( param_enctype )
@@ -1097,16 +1094,19 @@ class Tool( object, Dictifiable ):
             if self.__help is HELP_UNINITIALIZED:
                 self.__inititalize_help()
 
-    def _translate( self, msg ):
-        locales = os.path.join( os.path.dirname( os.path.abspath( self.config_file ) ), "locales" )
-        if not os.path.exists( locales ):
+    def translate(self, msg):
+        if not self.app.config.enable_beta_tool_translation:
+            return msg
+
+        locales_dir = os.path.join(os.path.dirname(os.path.abspath(self.config_file)), "locales")
+        if not os.path.exists(locales_dir):
             return msg
 
         import gettext
-        gettext.bindtextdomain('default', locales)
-        gettext.textdomain('default')
+        gettext.bindtextdomain('messages', locales_dir)
+        gettext.textdomain('messages')
 
-        if not msg is None:
+        if msg is not None:
             msglist = msg.split('\n')
             newmsg = ''
             for i in range(len(msglist)):
@@ -1114,6 +1114,7 @@ class Tool( object, Dictifiable ):
                     msglist[i] = gettext.gettext(msglist[i])
                 newmsg = newmsg + msglist[i] + '\n'
             msg = newmsg
+
         return gettext.gettext(msg)
 
     def __inititalize_help(self):
@@ -1123,7 +1124,7 @@ class Tool( object, Dictifiable ):
         help_header = ""
         help_footer = ""
         help_text = tool_source.parse_help()
-        help_text = self._translate( help_text )
+        help_text = self.translate( help_text )
         if help_text is not None:
             if self.repository_id and help_text.find( '.. image:: ' ) >= 0:
                 # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
