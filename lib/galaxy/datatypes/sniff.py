@@ -487,7 +487,7 @@ def handle_uploaded_dataset_file( filename, datatypes_registry, ext='auto', is_m
         ext = guess_ext( filename, sniff_order=datatypes_registry.sniff_order, is_multi_byte=is_multi_byte )
 
     if check_binary( filename ):
-        if not Binary.is_ext_unsniffable(ext) and not datatypes_registry.get_datatype_by_extension( ext ).sniff( filename ):
+        if not galaxy.datatypes.binary.is_ext_unsniffable(ext) and not datatypes_registry.get_datatype_by_extension( ext ).sniff( filename ):
             raise InappropriateDatasetContentError( 'The binary uploaded file contains inappropriate content.' )
     elif check_html( filename ):
         raise InappropriateDatasetContentError( 'The uploaded file contains inappropriate HTML content.' )
