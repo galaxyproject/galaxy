@@ -15,6 +15,7 @@ import pysam
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
 from galaxy.datatypes import metadata
+from galaxy.datatypes.tabular import Sam
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
 from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
 from . import data, dataproviders
@@ -220,7 +221,7 @@ Binary.register_unsniffable_binary_ext("asn1-binary")
 
 
 @dataproviders.decorators.has_dataproviders
-class Bam( Binary ):
+class Bam( Binary , Sam):
     """Class describing a BAM binary file"""
     edam_format = "format_2572"
     edam_data = "data_0863"
@@ -235,6 +236,10 @@ class Bam( Binary ):
     MetadataElement( name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
     MetadataElement( name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
     MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
+
+    def __init__(self, **kwd):
+        """Initialize taxonomy datatype"""
+        super( Bam, self ).__init__( **kwd )
 
     def _get_samtools_version( self ):
         version = '0.0.0'
@@ -461,6 +466,53 @@ class Bam( Binary ):
         rel_paths.append("%s.%s.bai" % (name or dataset.file_name, dataset.extension))
         file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
+
+
+    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
+        bamfile = pysam.AlignmentFile(dataset.file_name, "rb")
+        ck_size = 100 # 100 lines
+        ck_data=""
+        lineNumber=0
+        if(offset == 0):
+            ck_data = bamfile.text
+        for f in bamfile.fetch(until_eof=True):
+            lineNumber+=1
+            if (lineNumber > offset and lineNumber <= (offset + ck_size)):
+                bamline = f.tostring(bamfile)
+                # Galaxy display each tag as separate column because 'tostring()' funcition put spaces in between each tag of tags column. 
+                # Below code will remove spaces between each tag. 
+                bamlineModified = ('\t').join(bamline.split()[:11] + [('').join(bamline.split()[11:])])
+                ck_data=ck_data +"\n" + bamlineModified
+            elif (lineNumber > (offset + ck_size)):
+                break
+        last_read = offset + ck_size
+        return dumps( { 'ck_data': util.unicodify( ck_data ),
+                        'offset': last_read } )
+
+    def display_data( self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+        preview = util.string_as_bool( preview )
+        if offset is not None:
+            return self.get_chunk(trans, dataset, offset, ck_size)
+        elif to_ext or not preview:
+            return super( Bam, self ).display_data( trans, dataset, preview, filename, to_ext, **kwd )
+        else:
+            column_names = 'null'
+            if dataset.metadata.column_names:
+                column_names = dataset.metadata.column_names
+            elif hasattr(dataset.datatype, 'column_names'):
+                column_names = dataset.datatype.column_names
+            column_types = dataset.metadata.column_types
+            if not column_types:
+                column_types = []
+            column_number = dataset.metadata.columns
+            if column_number is None:
+                column_number = 'null'
+            return trans.fill_template( "/dataset/tabular_chunked.mako",
+                                        dataset=dataset,
+                                        chunk=self.get_chunk(trans, dataset, 0),
+                                        column_number=column_number,
+                                        column_names=column_names,
+                                        column_types=column_types )
 
     # ------------- Dataproviders
     # pipe through samtools view
