@@ -1,15 +1,13 @@
-import os
-import time
 import logging
+import os
 import threading
-
+import time
 from xml.etree import ElementTree
 
+import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.util import plugin_config
 from galaxy.util.handlers import ConfiguresHandlers
-
-import galaxy.workflow.schedulers
 
 log = logging.getLogger( __name__ )
 
@@ -77,7 +75,7 @@ class WorkflowSchedulingManager( object, ConfiguresHandlers ):
         return self.__has_handlers.get_handler( None, index=random_index )
 
     def shutdown( self ):
-        for workflow_scheduler in self.workflow_schedulers.itervalues():
+        for workflow_scheduler in self.workflow_schedulers.values():
             try:
                 workflow_scheduler.shutdown()
             except Exception:
@@ -103,7 +101,7 @@ class WorkflowSchedulingManager( object, ConfiguresHandlers ):
         return workflow_invocation
 
     def __start_schedulers( self ):
-        for workflow_scheduler in self.workflow_schedulers.itervalues():
+        for workflow_scheduler in self.workflow_schedulers.values():
             workflow_scheduler.startup( self.app )
 
     def __plugins_dict( self ):
@@ -185,7 +183,7 @@ class WorkflowRequestMonitor( object ):
     def __monitor( self ):
         to_monitor = self.workflow_scheduling_manager.active_workflow_schedulers
         while self.active:
-            for workflow_scheduler_id, workflow_scheduler in to_monitor.iteritems():
+            for workflow_scheduler_id, workflow_scheduler in to_monitor.items():
                 if not self.active:
                     return
 

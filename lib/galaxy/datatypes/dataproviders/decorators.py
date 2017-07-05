@@ -14,11 +14,12 @@ DataProvider related decorators.
 # adapted from: http://stackoverflow.com
 #    /questions/14095616/python-can-i-programmatically-decorate-class-methods-from-a-class-instance
 
-from functools import wraps
-import urllib2
 import copy
-
 import logging
+from functools import wraps
+
+from six.moves.urllib.parse import unquote
+
 log = logging.getLogger( __name__ )
 
 _DATAPROVIDER_CLASS_MAP_KEY = 'dataproviders'
@@ -65,7 +66,7 @@ def has_dataproviders( cls ):
     # scan for methods with dataprovider names and add them to the map
     # note: this has a 'cascading' effect
     #       where it's possible to override a super's provider with a sub's
-    for attr_key, attr_value in cls.__dict__.iteritems():
+    for attr_key, attr_value in cls.__dict__.items():
         # can't use isinstance( attr_value, MethodType ) bc of wrapping
         if( ( callable( attr_value ) ) and
                 ( not attr_key.startswith( "__" ) ) and
@@ -129,7 +130,7 @@ def _parse_query_string_settings( query_kwargs, settings=None ):
         'float' : float,
         'bool'  : bool,
         'list:str'      : lambda s: list_from_query_string( s ),
-        'list:escaped'  : lambda s: [ urllib2.unquote( e ) for e in list_from_query_string( s ) ],
+        'list:escaped'  : lambda s: [ unquote( e ) for e in list_from_query_string( s ) ],
         'list:int'      : lambda s: [ int( i ) for i in list_from_query_string( s ) ],
     }
     settings = settings or {}

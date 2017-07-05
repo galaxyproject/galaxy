@@ -7,7 +7,6 @@ import os
 import sys
 import tempfile
 
-import numpy
 from bx.intervals.io import GenomicIntervalReader, ParseError
 from six.moves.urllib.parse import quote_plus
 
@@ -334,20 +333,6 @@ class Interval( Tabular ):
             return True
         except:
             return False
-
-    def get_track_window(self, dataset, data, start, end):
-        """
-        Assumes the incoming track data is sorted already.
-        """
-        window = list()
-        for record in data:
-            fields = record.rstrip("\n\r").split("\t")
-            record_chrom = fields[dataset.metadata.chromCol - 1]
-            record_start = int(fields[dataset.metadata.startCol - 1])
-            record_end = int(fields[dataset.metadata.endCol - 1])
-            if record_start < end and record_end > start:
-                window.append( (record_chrom, record_start, record_end) )  # Yes I did want to use a generator here, but it doesn't work downstream
-        return window
 
     def get_track_resolution( self, dataset, start, end):
         return None
@@ -1258,26 +1243,6 @@ class Wiggle( Tabular, _RemoteCallMixin ):
             return False
         except:
             return False
-
-    def get_track_window(self, dataset, data, start, end):
-        """
-        Assumes we have a numpy file.
-        """
-        range = end - start
-        # Determine appropriate resolution to plot ~1000 points
-        resolution = ( 10 ** math.ceil( math.log10( range / 1000 ) ) )
-        # Restrict to valid range
-        resolution = min( resolution, 100000 )
-        resolution = max( resolution, 1 )
-        # Memory map the array (don't load all the data)
-        data = numpy.load( data )
-        # Grab just what we need
-        t_start = math.floor( start / resolution )
-        t_end = math.ceil( end / resolution )
-        x = numpy.arange( t_start, t_end ) * resolution
-        y = data[ t_start : t_end ]
-
-        return list(zip(x.tolist(), y.tolist()))
 
     def get_track_resolution( self, dataset, start, end):
         range = end - start

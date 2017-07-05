@@ -3,7 +3,13 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <title>${form.title}</title>
+  <title>
+    Galaxy
+    %if app.config.brand:
+    | ${app.config.brand}
+    %endif
+    ${form.title}
+  </title>
   <meta name="viewport" content="width=devicewidth; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;"/>
   <link rel="apple-touch-icon" href="${h.url_for('/static/iui/iui-logo-touch-icon.png')}" />
   <meta name="apple-touch-fullscreen" content="YES" />

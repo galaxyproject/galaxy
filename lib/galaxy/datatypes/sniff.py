@@ -3,8 +3,9 @@ File format detector
 """
 from __future__ import absolute_import
 
-import gzip
 import bz2
+import codecs
+import gzip
 import logging
 import os
 import re
@@ -13,13 +14,13 @@ import sys
 import tempfile
 import zipfile
 
-from encodings import search_function as encodings_search_function
 from six import text_type
 
 from galaxy import util
-from galaxy.util import multi_byte
+from galaxy.datatypes.binary import Binary
 from galaxy.util import (
     compression_utils,
+    multi_byte,
     unicodify
 )
 from galaxy.util.checkers import (
@@ -28,7 +29,6 @@ from galaxy.util.checkers import (
     is_bz2,
     is_gzip
 )
-from galaxy.datatypes.binary import Binary
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +48,9 @@ def stream_to_open_named_file( stream, fd, filename, source_encoding=None, sourc
     is_compressed = False
     is_binary = False
     is_multi_byte = False
-    if not target_encoding or not encodings_search_function( target_encoding ):
+    try:
+        codecs.lookup(target_encoding)
+    except:
         target_encoding = util.DEFAULT_ENCODING  # utf-8
     if not source_encoding:
         source_encoding = util.DEFAULT_ENCODING  # sys.getdefaultencoding() would mimic old behavior (defaults to ascii)
@@ -211,8 +213,7 @@ def get_headers( fname, sep, count=60, is_multi_byte=False, comment_designator=N
     [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
     """
     headers = []
-    in_file = compression_utils.get_fileobj(fname)
-    try:
+    with compression_utils.get_fileobj(fname) as in_file:
         idx = 0
         for line in in_file:
             line = line.rstrip('\n\r')
@@ -228,8 +229,6 @@ def get_headers( fname, sep, count=60, is_multi_byte=False, comment_designator=N
             idx += 1
             if idx == count:
                 break
-    finally:
-        in_file.close()
     return headers
 
 

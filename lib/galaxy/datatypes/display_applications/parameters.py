@@ -1,10 +1,12 @@
 # Contains parameters that are used in Display Applications
-import urllib
+import mimetypes
+
+from six.moves.urllib.parse import quote_plus
+
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
-import mimetypes
 
 DEFAULT_DATASET_NAME = 'dataset'
 
@@ -110,7 +112,7 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
             if target_ext and not converted_dataset:
                 if isinstance( data, DisplayDataValueWrapper ):
                     data = data.value
-                new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output=True, visible=False ).values()[0]
+                new_data = next(iter(data.datatype.convert_dataset( trans, data, target_ext, return_output=True, visible=False ).values()))
                 new_data.hid = data.hid
                 new_data.name = data.name
                 trans.sa_session.add( new_data )
@@ -193,8 +195,8 @@ class DisplayParameterValueWrapper( object ):
                                    action="display_application",
                                    dataset_id=self._dataset_hash,
                                    user_id=self._user_hash,
-                                   app_name=urllib.quote_plus( self.parameter.link.display_application.id ),
-                                   link_name=urllib.quote_plus( self.parameter.link.id ),
+                                   app_name=quote_plus( self.parameter.link.display_application.id ),
+                                   link_name=quote_plus( self.parameter.link.id ),
                                    app_action=self.action_name,
                                    action_param=self._url ) )
 

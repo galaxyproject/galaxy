@@ -7,7 +7,7 @@ define( [ 'utils/utils', 'mvc/grid/grid-view', 'mvc/history/history-model', 'mvc
             this.setElement( $( '<div/>' ) );
             this.model = new Backbone.Model();
             Utils.get({
-                url     : Galaxy.root + 'history/list',
+                url     : Galaxy.root + 'history/' + options.action_id,
                 success : function( response ) {
                     response[ 'dict_format' ] = true;
                     _.each( response[ 'operations' ], function( operation ) {

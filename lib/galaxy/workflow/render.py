@@ -96,8 +96,8 @@ class WorkflowCanvas( object ):
             else:
                 # Take any key / value pair available in out_conn_index_dict.
                 # A problem will result if the dictionary is empty.
-                if out_conn_index_dict.keys():
-                    key = out_conn_index_dict.keys()[0]
+                if out_conn_index_dict:
+                    key = next(iter(out_conn_index_dict.keys()))
                     out_conn_pos = self.out_pos[ out_pos_index ][ key ]
         adjusted = ( out_conn_pos[ 0 ] + self.widths[ output_dict[ 'id' ] ], out_conn_pos[ 1 ] )
         self.text.append( svgwrite.shapes.Circle(center=(out_conn_pos[ 0 ] + self.widths[ output_dict[ 'id' ] ] - MARGIN,
@@ -130,7 +130,7 @@ class WorkflowCanvas( object ):
                 fill = "#EBD9B2"
             width = self.widths[ step_dict[ 'id' ] ]
             self.add_boxes( step_dict, width, fill )
-            for conn, output_dict in step_dict[ 'input_connections' ].iteritems():
+            for conn, output_dict in step_dict[ 'input_connections' ].items():
                 self.add_connection( step_dict, conn, output_dict )
 
     def populate_data_for_step( self, step, module_name, module_data_inputs, module_data_outputs, tool_errors=None ):

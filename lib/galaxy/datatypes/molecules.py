@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
-
-from galaxy.datatypes import data
 import logging
-from galaxy.datatypes.sniff import get_headers
-from galaxy.datatypes.data import get_file_peek
-from galaxy.datatypes.tabular import Tabular
-from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.xml import GenericXml
-import subprocess
 import os
+import subprocess
 
+from galaxy.datatypes import (
+    data,
+    metadata
+)
+from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes import metadata
+from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.xml import GenericXml
 
 log = logging.getLogger(__name__)
 

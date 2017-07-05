@@ -23,7 +23,7 @@ bx-python
 MarkupSafe
 PyYAML
 SQLAlchemy
-mercurial
+mercurial!=4.1.1 #conda's mercurial 4.1.1. is broken
 pycrypto
 
 # Install python_lzo if you want to support indexed access to lzo-compressed

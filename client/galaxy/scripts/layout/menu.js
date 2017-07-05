@@ -221,28 +221,40 @@ var Collection = Backbone.Collection.extend({
         //
         // User tab.
         //
+        var userTab = {};
         if ( !Galaxy.user.id ){
-            var userTab = {
-                id              : 'user',
-                title           : _l('Login or Register'),
-                cls             : 'loggedout-only',
-                tooltip         : _l('Account registration or login'),
-                menu            : [{
-                    title           : _l('Login'),
-                    url             : 'user/login',
-                    target          : 'galaxy_main',
-                    noscratchbook   : true
-                }]
-            };
-            options.allow_user_creation && userTab.menu.push({
-                title           : _l('Register'),
-                url             : 'user/create',
-                target          : 'galaxy_main',
-                noscratchbook   : true
-            });
-            this.add( userTab );
+            if ( options.allow_user_creation ) {
+                userTab = {
+                    id              : 'user',
+                    title           : _l('Login or Register'),
+                    cls             : 'loggedout-only',
+                    tooltip         : _l('Account registration or login'),
+                    menu            : [{
+                            title           : _l('Login'),
+                            url             : 'user/login',
+                            target          : 'galaxy_main',
+                            noscratchbook   : true
+                        }, {
+                            title: _l('Register'),
+                            url: 'user/create',
+                            target: 'galaxy_main',
+                            noscratchbook: true
+                        }
+                    ]
+                };
+            } else {
+                userTab = {
+                    id: 'user',
+                    title: _l('Login'),
+                    cls: 'loggedout-only',
+                    tooltip: _l('Login'),
+                    url: 'user/login',
+                    target: 'galaxy_main',
+                    noscratchbook: true
+                };
+            }
         } else {
-            var userTab = {
+            userTab = {
                 id              : 'user',
                 title           : _l('User'),
                 cls             : 'loggedin-only',
@@ -290,8 +302,8 @@ var Collection = Backbone.Collection.extend({
                         target  : '_top'
                     }]
             };
-            this.add( userTab );
         }
+        this.add( userTab );
         var activeView = this.get( options.active_view );
         activeView && activeView.set( 'active', true );
         return new jQuery.Deferred().resolve().promise();

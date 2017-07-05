@@ -1216,7 +1216,7 @@ class JobWrapper( object, HasResourceParameters ):
             # need to update all associated output hdas, i.e. history was shared with job running
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
                 purged = dataset.dataset.purged
-                if not purged:
+                if not purged and dataset.dataset.external_filename is None:
                     trynum = 0
                     while trynum < self.app.config.retry_job_output_collection:
                         try:

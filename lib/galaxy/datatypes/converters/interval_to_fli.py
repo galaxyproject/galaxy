@@ -89,7 +89,7 @@ def main():
     out = open( out_fname, 'w' )
     max_len = 0
     entries = []
-    for name in sorted( name_loc_dict.iterkeys() ):
+    for name in sorted( name_loc_dict.keys() ):
         loc = name_loc_dict[ name ]
         entry = '%s\t%s\t%s' % ( name.lower(), name, '%s:%i-%i' % ( loc[ 'contig' ], loc[ 'start' ], loc[ 'end' ] ) )
         if len( entry ) > max_len:

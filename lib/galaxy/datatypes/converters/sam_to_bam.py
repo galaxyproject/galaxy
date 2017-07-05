@@ -5,12 +5,12 @@
 A wrapper script for converting SAM to BAM, with sorting.
 %prog input_filename.sam output_filename.bam
 """
-import os
-import sys
 import optparse
-import tempfile
-import subprocess
+import os
 import shutil
+import subprocess
+import sys
+import tempfile
 from distutils.version import LooseVersion
 
 CHUNK_SIZE = 2 ** 20  # 1mb
