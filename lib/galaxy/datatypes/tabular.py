@@ -1000,6 +1000,7 @@ class BaseCSV( TabularData ):
         dataset.metadata.column_names = header_row
         dataset.metadata.delimiter = self.dialect.delimiter
 
+
 @dataproviders.decorators.has_dataproviders
 class CSV( BaseCSV ):
     """
