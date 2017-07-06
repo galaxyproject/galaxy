@@ -410,7 +410,8 @@ var PhylovizLayoutBase =  Backbone.View.extend({
             .attr("data-original-title", function(){
                 var d = this.__data__,
                     annotation = d.annotation || "None" ;
-                return d ? (d.name ? d.name + "<br/>" : "") + "Dist: " + d.dist + " <br/>Annotation: " + annotation: "";
+                return d ? ( (d.name ? d.name + "<br/>" : "") + "Dist: " + d.dist + " <br/>Annotation1: " + annotation +
+                    ( d.bootstrap ? "<br/>Confidence level: " + ( 100 * d.bootstrap ) : "") ): "";
             })
             .tooltip({'placement':'top', 'trigger' : 'hover'});
 
