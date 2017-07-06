@@ -56,7 +56,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         current_user_roles = trans.get_current_user_roles()
 
-        tag_manager = tags.GalaxyTagManager(trans.app)
+        tag_manager = tags.GalaxyTagManager( trans.sa_session )
 
         # Build the full path for breadcrumb purposes.
         full_path = self._build_path( trans, library_dataset.folder )
