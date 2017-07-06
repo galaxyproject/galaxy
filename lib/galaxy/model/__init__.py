@@ -83,9 +83,12 @@ def set_datatypes_registry( d_registry ):
     _datatypes_registry = d_registry
 
 
-class HasTags:
+class HasTags( object ):
+    dict_collection_visible_keys = ( 'tags' )
+    dict_element_visible_keys = ( 'tags' )
+
     def to_dict(self, *args, **kwargs):
-        rval = dict()
+        rval = super( HasTags, self ).to_dict(*args, **kwargs)
         rval['tags'] = self.make_tag_string_list()
         return rval
 
@@ -1174,7 +1177,7 @@ def is_hda(d):
     return isinstance( d, HistoryDatasetAssociation )
 
 
-class History( object, HasTags, Dictifiable, UsesAnnotations, HasName ):
+class History( HasTags, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
@@ -3625,7 +3628,7 @@ class UCI( object ):
         self.user = None
 
 
-class StoredWorkflow( object, HasTags, Dictifiable ):
+class StoredWorkflow( HasTags, Dictifiable ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted' )
