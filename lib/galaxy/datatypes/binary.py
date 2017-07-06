@@ -487,10 +487,10 @@ class Bam( Binary, Sam ):
                     break
                 else:
                     bamline = alignment.tostring( bamfile )
-                    # Galaxy display each tag as separate column because 'tostring()' funcition put spaces in between each tag of tags column. 
-                    # Below code will remove spaces between each tag. 
+                    # Galaxy display each tag as separate column because 'tostring()' funcition put spaces in between each tag of tags column.
+                    # Below code will remove spaces between each tag.
                     bamline_modified = ('\t').join( bamline.split()[:11] + [ ('').join(bamline.split()[11:]) ] )
-                    ck_data = ck_data +"\n" + bamline_modified
+                    ck_data = ck_data + "\n" + bamline_modified
                 last_read = bamfile.tell()
         return dumps( { 'ck_data': util.unicodify( ck_data ),
                         'offset': last_read } )
