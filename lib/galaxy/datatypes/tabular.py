@@ -741,7 +741,7 @@ class VcfGz( BaseVcf, binary.Binary):
     extension = 'vcf.gz'
     compressed = True
 
-    MetadataElement( name="vcf_gz_index", desc="Vcf Index File", param=metadata.FileParameter, file_ext="tbi", readonly=True, no_value=None, visible=False, optional=True )
+    MetadataElement( name="tabix_index", desc="Vcf Index File", param=metadata.FileParameter, file_ext="tbi", readonly=True, no_value=None, visible=False, optional=True )
 
     def set_meta( self, dataset, **kwd ):
         super(BaseVcf, self).set_meta(dataset, **kwd)
@@ -749,7 +749,7 @@ class VcfGz( BaseVcf, binary.Binary):
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.bcf_index
         if not index_file:
-            index_file = dataset.metadata.spec['vcf_gz_index'].param.new_file( dataset=dataset )
+            index_file = dataset.metadata.spec['tabix_index'].param.new_file( dataset=dataset )
         # Create the bcf index
         # $ bcftools index
         # Usage: bcftools index <in.bcf>

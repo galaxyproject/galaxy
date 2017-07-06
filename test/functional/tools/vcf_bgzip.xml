@@ -1,0 +1,30 @@
+<tool id="vcf_bgzip_test" name="vcf_bgzip_test" version="0.1.0">
+    <requirements>
+        <requirement type="package" version="1.4">bcftools</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+      ln -s $input input.vcf.gz &&
+      tabix -p vcf input.vcf.gz &&
+      md5sum input.vcf.gz.tbi > input.vcf.gz.tbi.md5 &&
+      cp $input.metadata.vcf_gz_index input.vcf.gz.tbi &&
+      md5check -c vcf.gz.tbi.md5 &&
+      cp $input $output
+    ]]></command>
+    <inputs>
+        <param name="input" format="vcf_bgzip" type="data" label="Source file"/>
+    </inputs>
+    <outputs>
+        <data format="data" ftype="vcf_bgzip" name="output" />
+    </outputs>
+  <tests>
+    <test>
+      <param name="input" ftype="vcf_bgzip" value="test.vcf.gz"/>
+      <output name="output" file="test.vcf.gz"/>
+    </test>
+  </tests>
+    <help><![CDATA[
+        This is a help text
+    ]]></help>
+    <citations>
+    </citations>
+</tool>
