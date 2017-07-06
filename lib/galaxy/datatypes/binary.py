@@ -17,8 +17,8 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes.tabular import Sam
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
+from galaxy.datatypes.tabular import Sam
 from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
 from . import data, dataproviders
 

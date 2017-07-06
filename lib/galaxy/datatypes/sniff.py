@@ -16,8 +16,8 @@ import zipfile
 
 from six import text_type
 
-from galaxy import util
 from galaxy import datatypes
+from galaxy import util
 from galaxy.util import (
     compression_utils,
     multi_byte,
