@@ -468,31 +468,37 @@ class Bam( Binary, Sam ):
         file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
 
-    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
+    def get_chunk( self, trans, dataset, offset=0, ck_size=None ):
         index_file = dataset.metadata.bam_index
-        with pysam.AlignmentFile(dataset.file_name, "rb", index_filename=index_file.file_name) as bamfile:
-            ck_size = 1000  # 1000 lines
+        with pysam.AlignmentFile( dataset.file_name, "rb", index_filename=index_file.file_name ) as bamfile:
+            ck_size = 300  # 300 lines
             ck_data = ""
-            line_number = 0
+            last_read = 0
+            header_line_count = 0
             if offset == 0:
                 ck_data = bamfile.text
-            for line_number, alignment,  in enumerate(bamfile):
-                if line_number > offset and line_number <= (offset + ck_size):
-                    bamline = alignment.tostring(bamfile)
+                header_line_count = bamfile.text.count('\n')
+            else:
+                bamfile.seek( offset )
+            for line_number, alignment in enumerate( bamfile ) :
+                # return only Header lines if 'header_line_count' exceeds 'ck_size'
+                # FIXME: Can be problematic if bam has million lines of header
+                if ( line_number + header_line_count ) > ck_size:
+                    break
+                else:
+                    bamline = alignment.tostring( bamfile )
                     # Galaxy display each tag as separate column because 'tostring()' funcition put spaces in between each tag of tags column. 
                     # Below code will remove spaces between each tag. 
-                    bamline_modified = ('\t').join(bamline.split()[:11] + [('').join(bamline.split()[11:])])
+                    bamline_modified = ('\t').join( bamline.split()[:11] + [ ('').join(bamline.split()[11:]) ] )
                     ck_data = ck_data +"\n" + bamline_modified
-                elif line_number > (offset + ck_size):
-                    break
-        last_read = offset + ck_size
+                last_read = bamfile.tell()
         return dumps( { 'ck_data': util.unicodify( ck_data ),
                         'offset': last_read } )
 
     def display_data( self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         preview = util.string_as_bool( preview )
         if offset is not None:
-            return self.get_chunk(trans, dataset, offset, ck_size)
+            return self.get_chunk( trans, dataset, offset, ck_size )
         elif to_ext or not preview:
             return super( Bam, self ).display_data( trans, dataset, preview, filename, to_ext, **kwd )
         else:
@@ -509,7 +515,7 @@ class Bam( Binary, Sam ):
                 column_number = 1
             return trans.fill_template( "/dataset/tabular_chunked.mako",
                                         dataset=dataset,
-                                        chunk=self.get_chunk(trans, dataset, 0),
+                                        chunk=self.get_chunk( trans, dataset, 0 ),
                                         column_number=column_number,
                                         column_names=column_names,
                                         column_types=column_types )
