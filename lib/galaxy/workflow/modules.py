@@ -3,34 +3,44 @@ Modules used in building workflows
 """
 import logging
 from json import loads
-from xml.etree.ElementTree import Element
-from xml.etree.ElementTree import XML
+from xml.etree.ElementTree import (
+    Element,
+    XML
+)
 
-from galaxy import exceptions, model, web
-from galaxy.exceptions import ToolMissingException
+from galaxy import (
+    exceptions,
+    model,
+    web
+)
 from galaxy.dataset_collections import matching
+from galaxy.exceptions import ToolMissingException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
+from galaxy.tools import (
+    DefaultToolState,
+    ToolInputsNotReadyException
+)
 from galaxy.tools.execute import execute
-from galaxy.tools.parameters import check_param
-from galaxy.tools.parameters import params_to_incoming
-from galaxy.tools.parameters import visit_input_values
+from galaxy.tools.parameters import (
+    check_param,
+    params_to_incoming,
+    visit_input_values
+)
 from galaxy.tools.parameters.basic import (
-    parameter_types,
     BooleanToolParameter,
-    TextToolParameter,
-    SelectToolParameter,
     DataCollectionToolParameter,
     DataToolParameter,
+    parameter_types,
     RuntimeValue,
+    SelectToolParameter,
+    TextToolParameter,
     workflow_building_modes
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
-from galaxy.tools import DefaultToolState
-from galaxy.tools import ToolInputsNotReadyException
-from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
+from galaxy.util.odict import odict
 from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
@@ -346,7 +356,7 @@ class InputModule( WorkflowModule ):
         # Web controller may set copy_inputs_to_history, API controller always sets
         # inputs.
         if invocation.copy_inputs_to_history:
-            for input_dataset_hda in step_outputs.values():
+            for input_dataset_hda in list(step_outputs.values()):
                 content_type = input_dataset_hda.history_content_type
                 if content_type == "dataset":
                     new_hda = input_dataset_hda.copy( copy_children=True )
@@ -362,7 +372,7 @@ class InputModule( WorkflowModule ):
         # so do that now so dependent steps can be recalculated. In the future
         # everything should come in from the API and this can be eliminated.
         if not invocation.has_input_for_step( step.id ):
-            content = step_outputs.values()[ 0 ]
+            content = next(iter(step_outputs.values()))
             if content:
                 invocation.add_input( content, step.id )
         progress.set_outputs_for_input( step, step_outputs )
@@ -610,7 +620,7 @@ class ToolModule( WorkflowModule ):
         super( ToolModule, self ).save_to_step( step )
         step.tool_id = self.tool_id
         step.tool_version = self.get_version()
-        for k, v in self.post_job_actions.iteritems():
+        for k, v in self.post_job_actions.items():
             pja = self.__to_pja( k, v, step )
             self.trans.sa_session.add( pja )
 
@@ -666,7 +676,7 @@ class ToolModule( WorkflowModule ):
     def get_data_outputs( self ):
         data_outputs = []
         if self.tool:
-            for name, tool_output in self.tool.outputs.iteritems():
+            for name, tool_output in self.tool.outputs.items():
                 extra_kwds = {}
                 if tool_output.collection:
                     extra_kwds["collection"] = True
@@ -907,7 +917,7 @@ class ToolModule( WorkflowModule ):
         # job actions for this execution.
         flush_required = False
         effective_post_job_actions = step.post_job_actions[:]
-        for key, value in self.runtime_post_job_actions.iteritems():
+        for key, value in self.runtime_post_job_actions.items():
             effective_post_job_actions.append( self.__to_pja( key, value, None ) )
         for pja in effective_post_job_actions:
             if pja.action_type in ActionBox.immediate_actions:

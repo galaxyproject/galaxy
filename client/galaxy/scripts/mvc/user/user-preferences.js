@@ -65,6 +65,14 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         window.location.href = Galaxy.root + 'custom_builds';
                     }
                 },
+                'configure_menu': {
+                    title           : 'Configure workflow menu',
+                    description     : 'Configure your workflow items which appear in the Tool panel.',
+                    icon            : 'fa-cog',
+                    onclick         : function() {
+                        window.location.href = Galaxy.root + 'workflow/configure_menu';
+                    }
+                },
                 'logout': {
                     title           : 'Sign out',
                     description     : 'Click here to sign out of all sessions.',
@@ -119,6 +127,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 if( config.enable_openid && !config.use_remote_user ) {
                     self._addLink( 'openids' );
                 }
+                self._addLink( 'configure_menu' );
                 self._addLink( 'logout' );
                 self.$preferences.append( self._templateFooter( data ) );
                 self.$el.empty().append( self.$preferences );

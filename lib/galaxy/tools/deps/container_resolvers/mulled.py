@@ -31,11 +31,25 @@ log = logging.getLogger(__name__)
 
 CachedMulledImageSingleTarget = collections.namedtuple("CachedMulledImageSingleTarget", ["package_name", "version", "build", "image_identifier"])
 CachedV1MulledImageMultiTarget = collections.namedtuple("CachedV1MulledImageMultiTarget", ["hash", "build", "image_identifier"])
-CachedV2MulledImageMultiTarget = collections.namedtuple("CachedV2MulledImageMultiTarget", ["package_hash", "version_hash", "build", "image_identifier"])
+CachedV2MulledImageMultiTarget = collections.namedtuple("CachedV2MulledImageMultiTarget", ["image_name", "version_hash", "build", "image_identifier"])
 
 CachedMulledImageSingleTarget.multi_target = False
 CachedV1MulledImageMultiTarget.multi_target = "v1"
 CachedV2MulledImageMultiTarget.multi_target = "v2"
+
+
+@property
+def _package_hash(target):
+    # Make this work for Singularity file name or fully qualified Docker repository
+    # image names.
+    image_name = target.image_name
+    if "/" not in image_name:
+        return image_name
+    else:
+        return image_name.rsplit("/")[-1]
+
+
+CachedV2MulledImageMultiTarget.package_hash = _package_hash
 
 
 def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
@@ -47,7 +61,7 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
     def output_line_to_image(line):
         image_name, version = line.split(" ", 1)
         identifier = "%s:%s" % (image_name, version)
-        image = identifier_to_cached_target(identifier, hash_func)
+        image = identifier_to_cached_target(identifier, hash_func, namespace=namespace)
         return image
 
     # TODO: Sort on build ...
@@ -55,7 +69,7 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
     return [i for i in raw_images if i is not None]
 
 
-def identifier_to_cached_target(identifier, hash_func):
+def identifier_to_cached_target(identifier, hash_func, namespace=None):
     if ":" in identifier:
         image_name, version = identifier.rsplit(":", 1)
     else:
@@ -66,7 +80,10 @@ def identifier_to_cached_target(identifier, hash_func):
         version = None
 
     image = None
-    if image_name.startswith("mulled-v1-"):
+    prefix = ""
+    if namespace is not None:
+        prefix = "quay.io/%s/" % namespace
+    if image_name.startswith(prefix + "mulled-v1-"):
         if hash_func == "v2":
             return None
 
@@ -75,7 +92,7 @@ def identifier_to_cached_target(identifier, hash_func):
         if version and version.isdigit():
             build = version
         image = CachedV1MulledImageMultiTarget(hash, build, identifier)
-    elif image_name.startswith("mulled-v2-"):
+    elif image_name.startswith(prefix + "mulled-v2-"):
         if hash_func == "v1":
             return None
 
@@ -202,7 +219,7 @@ class CachedMulledDockerContainerResolver(ContainerResolver):
     resolver_type = "cached_mulled"
     container_type = "docker"
 
-    def __init__(self, app_info=None, namespace=None, hash_func="v2"):
+    def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2"):
         super(CachedMulledDockerContainerResolver, self).__init__(app_info)
         self.namespace = namespace
         self.hash_func = hash_func
@@ -293,7 +310,14 @@ class MulledDockerContainerResolver(ContainerResolver):
                 base_image_name = v2_image_name(targets)
                 tags = tags_if_available(base_image_name)
                 if tags:
-                    name = "%s:%s" % (base_image_name, tags[0])
+                    if ":" in base_image_name:
+                        # base_image_name of form <package_hash>:<version_hash>, expand tag
+                        # to include build number in tag.
+                        name = "%s:%s" % (base_image_name.split(":")[0], tags[0])
+                    else:
+                        # base_image_name of form <package_hash>, simply add build number
+                        # as tag to fully qualify image.
+                        name = "%s:%s" % (base_image_name, tags[0])
             elif self.hash_func == "v1":
                 base_image_name = v1_image_name(targets)
                 tags = tags_if_available(base_image_name)

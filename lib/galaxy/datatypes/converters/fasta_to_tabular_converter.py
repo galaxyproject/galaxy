@@ -10,9 +10,8 @@
 Input: fasta
 Output: tabular
 """
-
-import sys
 import os
+import sys
 
 seq_hash = {}
 

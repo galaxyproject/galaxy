@@ -11,6 +11,7 @@ import logging
 import numbers
 import operator
 import os
+import pwd
 import socket
 import time
 from datetime import datetime, timedelta
@@ -151,9 +152,9 @@ class User( object, Dictifiable ):
     histories, credentials, and roles.
     """
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
-    dict_collection_visible_keys = ( 'id', 'email', 'username' )
+    dict_collection_visible_keys = ( 'id', 'email', 'username', 'deleted', 'active', 'last_password_change' )
     # attributes that will be accessed and returned when calling to_dict( view='element' )
-    dict_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
+    dict_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change' )
 
     def __init__( self, email=None, password=None ):
         self.email = email
@@ -185,6 +186,27 @@ class User( object, Dictifiable ):
         Check if `cleartext` matches user password when hashed.
         """
         return galaxy.security.passwords.check_password( cleartext, self.password )
+
+    def system_user_pwent(self, real_system_username):
+        """
+        Gives the system user pwent entry based on e-mail or username depending
+        on the value in real_system_username
+        """
+        system_user_pwent = None
+        if real_system_username == 'user_email':
+            try:
+                system_user_pwent = pwd.getpwnam(self.email.split('@')[0])
+            except KeyError:
+                pass
+        elif real_system_username == 'username':
+            try:
+                system_user_pwent = pwd.getpwnam(self.username)
+            except KeyError:
+                pass
+        else:
+            log.warning("invalid configuration of real_system_username")
+            system_user_pwent = None
+        return system_user_pwent
 
     def all_roles( self ):
         """
@@ -1947,7 +1969,14 @@ class DatasetInstance( object ):
 
     @property
     def datatype( self ):
-        return _get_datatypes_registry().get_datatype_by_extension( self.extension )
+        extension = self.extension
+        if not extension or extension == 'auto' or extension == '_sniff_':
+            extension = 'data'
+        ret = _get_datatypes_registry().get_datatype_by_extension( extension )
+        if ret is None:
+            log.warning("Datatype class not found for extension '%s'" % extension)
+            return _get_datatypes_registry().get_datatype_by_extension( 'data' )
+        return ret
 
     def get_metadata( self ):
         # using weakref to store parent (to prevent circ ref),
@@ -2881,6 +2910,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
         self.user = user
 
     def to_history_dataset_association( self, target_history, parent_id=None, add_to_history=False ):
+        sa_session = object_session( self )
         hda = HistoryDatasetAssociation( name=self.name,
                                          info=self.info,
                                          blurb=self.blurb,
@@ -2894,8 +2924,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                          parent_id=parent_id,
                                          copied_from_library_dataset_dataset_association=self,
                                          history=target_history )
-        object_session( self ).add( hda )
-        object_session( self ).flush()
+        sa_session.add( hda )
+        sa_session.flush()
         hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
         if add_to_history and target_history:
             target_history.add_dataset( hda )
@@ -2903,10 +2933,11 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
             child.to_history_dataset_association( target_history=target_history, parent_id=hda.id, add_to_history=False )
         if not self.datatype.copy_safe_peek:
             hda.set_peek()  # in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        object_session( self ).flush()
+        sa_session.flush()
         return hda
 
     def copy( self, copy_children=False, parent_id=None, target_folder=None ):
+        sa_session = object_session( self )
         ldda = LibraryDatasetDatasetAssociation( name=self.name,
                                                  info=self.info,
                                                  blurb=self.blurb,
@@ -2920,8 +2951,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                                  parent_id=parent_id,
                                                  copied_from_library_dataset_dataset_association=self,
                                                  folder=target_folder )
-        object_session( self ).add( ldda )
-        object_session( self ).flush()
+        sa_session.add( ldda )
+        sa_session.flush()
         # Need to set after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
         if copy_children:
@@ -2930,7 +2961,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
-        object_session( self ).flush()
+        sa_session.flush()
         return ldda
 
     def clear_associated_files( self, metadata_safe=False, purge=False ):

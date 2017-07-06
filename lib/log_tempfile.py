@@ -1,9 +1,8 @@
 # override tempfile methods for debugging
-
+import logging
 import tempfile
 import traceback
 
-import logging
 log = logging.getLogger( __name__ )
 
 

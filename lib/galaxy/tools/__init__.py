@@ -414,9 +414,8 @@ class Tool( object, Dictifiable ):
         self.guid = guid
         self.old_id = None
         self.version = None
+        self._lineage = None
         self.dependencies = []
-        # Enable easy access to this tool's version lineage.
-        self.lineage_ids = []
         # populate toolshed repository info, if available
         self.populate_tool_shed_info()
         # add tool resource parameters
@@ -440,17 +439,17 @@ class Tool( object, Dictifiable ):
         return self.app.model.context
 
     @property
-    def tool_version( self ):
-        """Return a ToolVersion if one exists for our id"""
-        return self.app.tool_version_cache.tool_version_by_tool_id.get(self.id)
+    def lineage(self):
+        """Return ToolLineage for this tool."""
+        return self._lineage
 
     @property
     def tool_versions( self ):
         # If we have versions, return them.
-        tool_version = self.tool_version
-        if tool_version:
-            return tool_version.get_versions( self.app )
-        return []
+        if self.lineage:
+            return self.lineage.get_versions()
+        else:
+            return []
 
     @property
     def tool_shed_repository( self ):
@@ -1795,7 +1794,7 @@ class Tool( object, Dictifiable ):
         if job:
             try:
                 job_params = job.get_param_values( self.app, ignore_errors=True )
-                tool_warnings = self.check_and_update_param_values( job_params, request_context, update_values=False )
+                tool_warnings = self.check_and_update_param_values( job_params, request_context, update_values=True )
                 self._map_source_to_history( request_context, self.inputs, job_params )
                 tool_message = self._compare_tool_version( job )
                 params_to_incoming( kwd, self.inputs, job_params, self.app )
@@ -1832,11 +1831,7 @@ class Tool( object, Dictifiable ):
             tool_help = unicodify( tool_help, 'utf-8' )
 
         # create tool versions
-        tool_versions = []
-        tools = self.app.toolbox.get_loaded_tools_by_lineage( self.id )
-        for t in tools:
-            if t.version not in tool_versions:
-                tool_versions.append( t.version )
+        tool_versions = self.lineage.tool_versions if self.lineage else []  # lineage may be `None` if tool is not loaded into tool panel
 
         # update tool model
         tool_model.update({

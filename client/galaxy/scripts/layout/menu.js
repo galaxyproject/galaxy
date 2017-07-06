@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-define(['layout/generic-nav-view', 'mvc/webhooks', 'utils/localization'], function( GenericNav, Webhooks, _l ) {
+define(['layout/generic-nav-view', 'mvc/webhooks', 'utils/localization', 'utils/utils'], function( GenericNav, Webhooks, _l, Utils ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -59,10 +59,10 @@ var Collection = Backbone.Collection.extend({
                     url     : 'history/list_published'
                 },{
                     title   : _l('Workflows'),
-                    url     : 'workflow/list_published'
+                    url     : 'workflows/list_published'
                 },{
                     title   : _l('Visualizations'),
-                    url     : 'visualization/list_published'
+                    url     : 'visualizations/list_published'
                 },{
                     title   : _l('Pages'),
                     url     : 'pages/list_published'
@@ -137,6 +137,9 @@ var Collection = Backbone.Collection.extend({
                             else if( Galaxy.masthead ) {
                                 Galaxy.masthead.collection.add(obj);
                             }
+                            
+                            // Append masthead script and styles to Galaxy main
+                            Utils.appendScriptStyle( webhook );
                         }
                     });
                 });
@@ -218,28 +221,40 @@ var Collection = Backbone.Collection.extend({
         //
         // User tab.
         //
+        var userTab = {};
         if ( !Galaxy.user.id ){
-            var userTab = {
-                id              : 'user',
-                title           : _l('Login or Register'),
-                cls             : 'loggedout-only',
-                tooltip         : _l('Account registration or login'),
-                menu            : [{
-                    title           : _l('Login'),
-                    url             : 'user/login',
-                    target          : 'galaxy_main',
-                    noscratchbook   : true
-                }]
-            };
-            options.allow_user_creation && userTab.menu.push({
-                title           : _l('Register'),
-                url             : 'user/create',
-                target          : 'galaxy_main',
-                noscratchbook   : true
-            });
-            this.add( userTab );
+            if ( options.allow_user_creation ) {
+                userTab = {
+                    id              : 'user',
+                    title           : _l('Login or Register'),
+                    cls             : 'loggedout-only',
+                    tooltip         : _l('Account registration or login'),
+                    menu            : [{
+                            title           : _l('Login'),
+                            url             : 'user/login',
+                            target          : 'galaxy_main',
+                            noscratchbook   : true
+                        }, {
+                            title: _l('Register'),
+                            url: 'user/create',
+                            target: 'galaxy_main',
+                            noscratchbook: true
+                        }
+                    ]
+                };
+            } else {
+                userTab = {
+                    id: 'user',
+                    title: _l('Login'),
+                    cls: 'loggedout-only',
+                    tooltip: _l('Login'),
+                    url: 'user/login',
+                    target: 'galaxy_main',
+                    noscratchbook: true
+                };
+            }
         } else {
-            var userTab = {
+            userTab = {
                 id              : 'user',
                 title           : _l('User'),
                 cls             : 'loggedin-only',
@@ -275,8 +290,8 @@ var Collection = Backbone.Collection.extend({
                         divider : true
                     },{
                         title   : _l('Saved Histories'),
-                        url     : 'history/list',
-                        target  : 'galaxy_main'
+                        url     : 'histories/list',
+                        target  : '_top'
                     },{
                         title   : _l('Saved Datasets'),
                         url     : 'datasets/list',
@@ -287,8 +302,8 @@ var Collection = Backbone.Collection.extend({
                         target  : '_top'
                     }]
             };
-            this.add( userTab );
         }
+        this.add( userTab );
         var activeView = this.get( options.active_view );
         activeView && activeView.set( 'active', true );
         return new jQuery.Deferred().resolve().promise();

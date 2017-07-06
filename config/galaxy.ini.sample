@@ -1306,9 +1306,17 @@ use_interactive = True
 #
 # https://galaxyproject.org/admin/config/performance/cluster
 #
-#drmaa_external_runjob_script = scripts/drmaa_external_runner.py
-#drmaa_external_killjob_script = scripts/drmaa_external_killer.py
-#external_chown_script = scripts/external_chown_script.py
+#drmaa_external_runjob_script = sudo -E scripts/drmaa_external_runner.py --assign_all_groups
+#drmaa_external_killjob_script = sudo -E scripts/drmaa_external_killer.py
+#external_chown_script = sudo -E scripts/external_chown_script.py
+
+# For the job submission as the actual system user, Galaxy can extract 
+# the user name from the email address (actually the local-part before the @) 
+# or the username which are both stored in the Galaxy data base. 
+# The latter option is particularly useful for installations that get the 
+# authentication from LDAP.
+# Possible values are user_email (default) and username.  
+#real_system_username = user_email 
 
 # File to source to set up the environment when running jobs.  By default, the
 # environment in which the Galaxy server starts is used when running jobs

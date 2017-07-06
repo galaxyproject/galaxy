@@ -1,14 +1,15 @@
+import logging
 import uuid
 
-from galaxy import exceptions
-from galaxy import model
-
+from galaxy import (
+    exceptions,
+    model
+)
 from galaxy.managers import histories
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 
 INPUT_STEP_TYPES = [ 'data_input', 'data_collection_input', 'parameter_input' ]
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -147,8 +148,7 @@ def _flatten_step_params( param_dict, prefix="" ):
     # a complex value object versus something that maps to child parameters
     # better than the hack or searching for src and id here.
     new_params = {}
-    keys = param_dict.keys()[:]
-    for key in keys:
+    for key in list(param_dict.keys()):
         if prefix:
             effective_key = "%s|%s" % ( prefix, key )
         else:
@@ -244,7 +244,7 @@ def build_workflow_run_configs( trans, workflow, payload ):
 
         steps_by_id = workflow.steps_by_id
         # Set workflow inputs.
-        for key, input_dict in normalized_inputs.iteritems():
+        for key, input_dict in normalized_inputs.items():
             step = steps_by_id[key]
             if step.type == 'parameter_input':
                 continue
@@ -353,13 +353,13 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
             )
 
     replacement_dict = run_config.replacement_dict
-    for name, value in replacement_dict.iteritems():
+    for name, value in replacement_dict.items():
         add_parameter(
             name=name,
             value=value,
             type=param_types.REPLACEMENT_PARAMETERS,
         )
-    for step_id, content in run_config.inputs.iteritems():
+    for step_id, content in run_config.inputs.items():
         workflow_invocation.add_input( content, step_id )
 
     add_parameter( "copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS )

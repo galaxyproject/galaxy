@@ -74,6 +74,7 @@ class Data( object ):
     """
     edam_data = "data_0006"
     edam_format = "format_1915"
+    file_ext = 'data'
     # Data is not chunkable by default.
     CHUNKABLE = False
 
@@ -682,7 +683,7 @@ class Data( object ):
         Check if this datatype is of any of the target_datatypes or is
         a subtype thereof.
         """
-        datatype_classes = tuple( [ datatype if isclass( datatype ) else datatype.__class__ for datatype in target_datatypes ] )
+        datatype_classes = tuple( datatype if isclass( datatype ) else datatype.__class__ for datatype in target_datatypes )
         return isinstance( self, datatype_classes )
 
     def merge( split_files, output_file):
@@ -1053,8 +1054,7 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     count = 0
     file_type = None
     data_checked = False
-    temp = compression_utils.get_fileobj( file_name, "U" )
-    try:
+    with compression_utils.get_fileobj( file_name, "U" ) as temp:
         while count < LINE_COUNT:
             line = temp.readline( WIDTH )
             if line and not is_multi_byte and not data_checked:
@@ -1082,8 +1082,6 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
             if not skip_line:
                 lines.append( line )
                 count += 1
-    finally:
-        temp.close()
     if file_type == 'binary':
         text = "%s file" % file_type
     else:

@@ -20,7 +20,7 @@ def main():
     # Fill array from reader
     d = array_tree_dict_from_reader( reader, {}, block_size=BLOCK_SIZE )
 
-    for array_tree in d.itervalues():
+    for array_tree in d.values():
         array_tree.root.build_summary()
 
     FileArrayTreeDict.dict_to_file( d, open( out_fname, "w" ) )

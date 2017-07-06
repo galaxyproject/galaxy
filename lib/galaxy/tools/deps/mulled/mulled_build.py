@@ -393,7 +393,7 @@ def args_to_mull_targets_kwds(args):
         kwds["rebuild"] = args.rebuild
     if hasattr(args, "hash"):
         kwds["hash_func"] = args.hash
-    if hasattr(args, "singularity_image_dir"):
+    if hasattr(args, "singularity_image_dir") and args.singularity_image_dir:
         kwds["singularity_image_dir"] = args.singularity_image_dir
 
     kwds["involucro_context"] = context_from_args(args)

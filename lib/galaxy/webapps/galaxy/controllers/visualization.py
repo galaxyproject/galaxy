@@ -351,14 +351,10 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         return self._tracks_grid( trans, **kwargs )
 
     @web.expose
+    @web.json
     def list_published( self, trans, *args, **kwargs ):
-        kwargs[ 'embedded' ] = True
-        grid = self._published_list_grid( trans, **kwargs )
-        if 'async' in kwargs:
-            return grid
-
-        # Render grid wrapped in panels
-        return trans.fill_template( "visualization/list_published.mako", embedded_grid=grid )
+        kwargs[ 'dict_format' ] = True
+        return self._published_list_grid( trans, **kwargs )
 
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )

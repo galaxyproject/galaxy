@@ -1,6 +1,10 @@
-from galaxy.util import bunch
 from galaxy import exceptions
-from .structure import get_structure, leaf
+from galaxy.util import bunch
+
+from .structure import (
+    get_structure,
+    leaf
+)
 
 CANNOT_MATCH_ERROR_MESSAGE = "Cannot match collection types."
 
@@ -23,8 +27,8 @@ class CollectionsToMatch( object ):
     def has_collections( self ):
         return len( self.collections ) > 0
 
-    def iteritems( self ):
-        return self.collections.iteritems()
+    def items( self ):
+        return self.collections.items()
 
 
 class MatchingCollections( object ):
@@ -71,7 +75,7 @@ class MatchingCollections( object ):
             return None
 
         matching_collections = MatchingCollections()
-        for input_key, to_match in collections_to_match.iteritems():
+        for input_key, to_match in collections_to_match.items():
             hdca = to_match.hdca
             collection_type_description = collection_type_descriptions.for_collection_type( hdca.collection.collection_type )
             subcollection_type = to_match.subcollection_type

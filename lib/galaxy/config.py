@@ -351,6 +351,7 @@ class Configuration( object ):
         self.drmaa_external_runjob_script = kwargs.get('drmaa_external_runjob_script', None )
         self.drmaa_external_killjob_script = kwargs.get('drmaa_external_killjob_script', None)
         self.external_chown_script = kwargs.get('external_chown_script', None)
+        self.real_system_username = kwargs.get('real_system_username', 'user_email')
         self.environment_setup_file = kwargs.get( 'environment_setup_file', None )
         self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', 'False' ) )
         self.heartbeat_interval = int( kwargs.get( 'heartbeat_interval', 20 ) )
@@ -925,11 +926,9 @@ class ConfiguresGalaxyMixin:
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
         from galaxy.tools.deps import containers
-        from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
         import galaxy.tools.search
 
         self.citations_manager = CitationsManager( self )
-        self.tool_version_cache = ToolVersionCache(self)
 
         self._toolbox_lock = threading.RLock()
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
