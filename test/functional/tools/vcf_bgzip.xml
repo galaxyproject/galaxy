@@ -14,12 +14,12 @@
         <param name="input" format="vcf_bgzip" type="data" label="Source file"/>
     </inputs>
     <outputs>
-        <data format="data" ftype="vcf_bgzip" name="output" />
+        <data format="vcf_bgzip" name="output" />
     </outputs>
   <tests>
     <test>
-      <param name="input" ftype="vcf_bgzip" value="test.vcf.gz"/>
-      <output name="output" file="test.vcf.gz"/>
+      <param name="input" format="vcf_bgzip" value="test.vcf.gz"/>
+      <output name="output" value="test.vcf.gz"/>
     </test>
   </tests>
     <help><![CDATA[
