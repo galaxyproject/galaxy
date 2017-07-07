@@ -322,71 +322,64 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                 break;
         }
 
-        $.ajax(
-        {
-            url: item_info.list_ajax_url,
-            data: {},
-            error: function() { alert( "Failed to list "  + item_info.plural.toLowerCase() + " for selection"); },
-            success: function(table_html)
-            {
-                show_modal(
-                    "Insert Link to " + item_info.singular,
-                    table_html +
-                    "<div><input id='make-importable' type='checkbox' checked/>" +
-                    "Make the selected " + item_info.plural.toLowerCase() + " accessible so that they can viewed by everyone.</div>"
-                    ,
-                    {
-                        "Insert": function()
-                        {
-                            // Make selected items accessible (importable) ?
-                            var make_importable = false;
-                            if ( $('#make-importable:checked').val() !== null )
-                                make_importable = true;
+        require( [ 'mvc/grid/grid-view', 'mvc/ui/ui-options' ], function( GridView, Options ) {
+            var grid = new GridView( { url_base: item_info.list_ajax_url, dict_format: true, embedded: true } );
+            var $importable = $( '<input checked/>' ).attr( { 'type': 'checkbox' } );
+            Galaxy.modal.show({
+                title           : 'Insert Link to ' + item_info.singular,
+                body            : $( '<div/>' ).append( grid.$el )
+                                               .append( $( '<div/>' ).append( $importable )
+                                                                     .append( 'Make the selected ' + item_info.plural.toLowerCase() + ' accessible so that they can viewed by everyone.' ) ),
+                closing_events  : true,
+                buttons         : {
+                    'Insert': function() {
+                        /*/ Make selected items accessible (importable) ?
+                        var make_importable = false;
+                        if ( $('#make-importable:checked').val() !== null )
+                            make_importable = true;
 
-                            // Insert links to history for each checked item.
-                            var item_ids = new Array();
-                            $('input[name=id]:checked').each(function() {
-                                var item_id = $(this).val();
+                        // Insert links to history for each checked item.
+                        var item_ids = new Array();
+                        $('input[name=id]:checked').each(function() {
+                            var item_id = $(this).val();
 
-                                // Make item importable?
-                                if (make_importable)
-                                    make_item_importable(item_info.controller, item_id, item_info.singular);
+                            // Make item importable?
+                            if (make_importable)
+                                make_item_importable(item_info.controller, item_id, item_info.singular);
 
-                                // Insert link(s) to item(s). This is done by getting item info and then manipulating wym.
-                                url_template = get_name_and_link_url + item_id;
-                                ajax_url = url_template.replace( "ITEM_CONTROLLER", item_info.controller);
-                                $.getJSON( ajax_url, function( returned_item_info ) {
-                                    // Get link text.
-                                    wym._exec(WYMeditor.CREATE_LINK, sStamp);
-                                    var link_text = $("a[href=" + sStamp + "]", wym._doc.body).text();
+                            // Insert link(s) to item(s). This is done by getting item info and then manipulating wym.
+                            url_template = get_name_and_link_url + item_id;
+                            ajax_url = url_template.replace( "ITEM_CONTROLLER", item_info.controller);
+                            $.getJSON( ajax_url, function( returned_item_info ) {
+                                // Get link text.
+                                wym._exec(WYMeditor.CREATE_LINK, sStamp);
+                                var link_text = $("a[href=" + sStamp + "]", wym._doc.body).text();
 
-                                    // Insert link: need to do different actions depending on link text.
-                                    if (
-                                        link_text == "" // Firefox.
-                                        ||
-                                        link_text == sStamp // Safari
-                                        )
-                                    {
-                                        // User selected no text; create link from scratch and use default text.
-                                        wym.insert("<a href='" + returned_item_info.link + "'>" + item_info.singular + " '" + returned_item_info.name + "'</a>");
-                                    }
-                                    else
-                                    {
-                                        // Link created from selected text; add href and title.
-                                        $("a[href=" + sStamp + "]", wym._doc.body).attr(WYMeditor.HREF, returned_item_info.link).attr(WYMeditor.TITLE, item_info.singular + item_id);
-                                    }
-                                });
+                                // Insert link: need to do different actions depending on link text.
+                                if (
+                                    link_text == "" // Firefox.
+                                    ||
+                                    link_text == sStamp // Safari
+                                    )
+                                {
+                                    // User selected no text; create link from scratch and use default text.
+                                    wym.insert("<a href='" + returned_item_info.link + "'>" + item_info.singular + " '" + returned_item_info.name + "'</a>");
+                                }
+                                else
+                                {
+                                    // Link created from selected text; add href and title.
+                                    $("a[href=" + sStamp + "]", wym._doc.body).attr(WYMeditor.HREF, returned_item_info.link).attr(WYMeditor.TITLE, item_info.singular + item_id);
+                                }
                             });
+                        });*/
+                        Galaxy.modal.hide();
 
-                            hide_modal();
-                        },
-                        "Cancel": function()
-                        {
-                            hide_modal();
-                        }
+                    },
+                    'Close' : function() {
+                        Galaxy.modal.hide();
                     }
-                );
-            }
+                }
+            });
         });
     }
     // EMBED GALAXY OBJECT DIALOGS
