@@ -322,25 +322,24 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                 break;
         }
 
-        require( [ 'mvc/grid/grid-view', 'mvc/ui/ui-options' ], function( GridView, Options ) {
+        require( [ 'mvc/grid/grid-view' ], function( GridView ) {
             var grid = new GridView( { url_base: item_info.list_ajax_url, dict_format: true, embedded: true } );
-            var $importable = $( '<input checked/>' ).attr( { 'type': 'checkbox' } );
             Galaxy.modal.show({
                 title           : 'Insert Link to ' + item_info.singular,
                 body            : $( '<div/>' ).append( grid.$el )
-                                               .append( $( '<div/>' ).append( $importable )
+                                               .append( $( '<div/>' ).append( '<input id="make-importable" type="checkbox" checked/>' )
                                                                      .append( 'Make the selected ' + item_info.plural.toLowerCase() + ' accessible so that they can viewed by everyone.' ) ),
                 closing_events  : true,
                 buttons         : {
                     'Insert': function() {
-                        /*/ Make selected items accessible (importable) ?
+                        // Make selected items accessible (importable) ?
                         var make_importable = false;
-                        if ( $('#make-importable:checked').val() !== null )
+                        if ( $('#make-importable:checked').val() != null )
                             make_importable = true;
 
                         // Insert links to history for each checked item.
                         var item_ids = new Array();
-                        $('input[name=id]:checked').each(function() {
+                        grid.$('input[name=id]:checked').each(function() {
                             var item_id = $(this).val();
 
                             // Make item importable?
@@ -371,7 +370,7 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                                     $("a[href=" + sStamp + "]", wym._doc.body).attr(WYMeditor.HREF, returned_item_info.link).attr(WYMeditor.TITLE, item_info.singular + item_id);
                                 }
                             });
-                        });*/
+                        });
                         Galaxy.modal.hide();
 
                     },
@@ -405,67 +404,56 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                 break;
         }
 
-        $.ajax(
-        {
-            url: item_info.list_ajax_url,
-            data: {},
-            error: function() { alert( "Failed to list "  + item_info.plural.toLowerCase() + " for selection"); },
-            success: function(list_html)
-            {
-                // Can make histories, workflows importable; cannot make datasets importable.
-                if (dialogType == CONTROLS.DIALOG_EMBED_HISTORY || dialogType == CONTROLS.DIALOG_EMBED_WORKFLOW
-                    || dialogType == CONTROLS.DIALOG_EMBED_VISUALIZATION)
-                    list_html = list_html + "<div><input id='make-importable' type='checkbox' checked/>" +
-                                "Make the selected " + item_info.plural.toLowerCase() + " accessible so that they can viewed by everyone.</div>";
-                show_modal(
-                    "Embed " + item_info.plural,
-                    list_html,
-                    {
-                        "Embed": function()
-                        {
-                            // Make selected items accessible (importable) ?
-                            var make_importable = false;
-                            if ( $('#make-importable:checked').val() != null )
-                                make_importable = true;
+        require( [ 'mvc/grid/grid-view' ], function( GridView ) {
+            var grid = new GridView( { url_base: item_info.list_ajax_url, dict_format: true, embedded: true } );
+            Galaxy.modal.show({
+                title           : 'Insert Link to ' + item_info.singular,
+                body            : $( '<div/>' ).append( grid.$el )
+                                               .append( $( '<div/>' ).append( '<input id="make-importable" type="checkbox" checked/>' )
+                                                                     .append( 'Make the selected ' + item_info.plural.toLowerCase() + ' accessible so that they can viewed by everyone.' ) ),
+                closing_events  : true,
+                buttons         : {
+                    'Embed': function() {
+                        // Make selected items accessible (importable) ?
+                        var make_importable = false;
+                        if ( grid.$('#make-importable:checked').val() != null )
+                            make_importable = true;
 
-                            $('input[name=id]:checked').each(function() {
-                                // Get item ID and name.
-                                var item_id = $(this).val();
-                                // Use ':first' because there are many labels in table; the first one is the item name.
-                                var item_name = $("label[for='" + item_id + "']:first").text();
+                        grid.$('input[name=id]:checked').each(function() {
+                            // Get item ID and name.
+                            var item_id = $(this).val();
+                            // Use ':first' because there are many labels in table; the first one is the item name.
+                            var item_name = $("label[for='" + item_id + "']:first").text();
 
-                                if (make_importable)
-                                    make_item_importable(item_info.controller, item_id, item_info.singular);
+                            if (make_importable)
+                                make_item_importable(item_info.controller, item_id, item_info.singular);
 
-                                // Embedded item HTML; item class is embedded in div container classes; this is necessary because the editor strips
-                                // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form
-                                // item_class='History').
-                                var item_elt_id = item_info.iclass + "-"  + item_id;
-                                var item_embed_html = [
-                                    "<div id='", item_elt_id, "' class='embedded-item ",
-                                            item_info.singular.toLowerCase(), " placeholder'>",
-                                        "<p class='title'>",
-                                            "Embedded Galaxy ", item_info.singular, " '", item_name, "'",
-                                        "</p>",
-                                        "<p class='content'>",
-                                            "[Do not edit this block; Galaxy will fill it in with the annotated ",
-                                            item_info.singular.toLowerCase(), " when it is displayed.]",
-                                        "</p>",
-                                    "</div>" ].join( '' );
+                            // Embedded item HTML; item class is embedded in div container classes; this is necessary because the editor strips
+                            // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form
+                            // item_class='History').
+                            var item_elt_id = item_info.iclass + "-"  + item_id;
+                            var item_embed_html = [
+                                "<div id='", item_elt_id, "' class='embedded-item ",
+                                        item_info.singular.toLowerCase(), " placeholder'>",
+                                    "<p class='title'>",
+                                        "Embedded Galaxy ", item_info.singular, " '", item_name, "'",
+                                    "</p>",
+                                    "<p class='content'>",
+                                        "[Do not edit this block; Galaxy will fill it in with the annotated ",
+                                        item_info.singular.toLowerCase(), " when it is displayed.]",
+                                    "</p>",
+                                "</div>" ].join( '' );
 
-                                // Insert embedded item into document.
-                                wym.insert(item_embed_html);
-
-                            });
-                            hide_modal();
-                        },
-                        "Cancel": function()
-                        {
-                            hide_modal();
-                        }
+                            // Insert embedded item into document.
+                            wym.insert(item_embed_html);
+                        });
+                        Galaxy.modal.hide();
+                    },
+                    'Close' : function() {
+                        Galaxy.modal.hide();
                     }
-                );
-            }
+                }
+            });
         });
     }
 };
