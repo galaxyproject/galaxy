@@ -416,7 +416,7 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                     'Embed': function() {
                         // Make selected items accessible (importable) ?
                         var make_importable = false;
-                        if ( grid.$('#make-importable:checked').val() != null )
+                        if ( $('#make-importable:checked').val() != null )
                             make_importable = true;
 
                         grid.$('input[name=id]:checked').each(function() {
