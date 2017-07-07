@@ -237,13 +237,11 @@ class Bam( Binary ):
     MetadataElement( name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
     MetadataElement( name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
     MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
-    MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=False, no_value=0 )
-    MetadataElement( name="column_types", default=[], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
-    MetadataElement( name="column_names", default=[], desc="Column names", readonly=True, visible=False, optional=True, no_value=[] )
-
-    def __init__(self, **kwd):
-        super( Bam, self ).__init__( **kwd )
-        self.column_names = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT' ]
+    MetadataElement( name="columns", default=12, desc="Number of columns", readonly=True, visible=False, no_value=0 )
+    MetadataElement( name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", 
+                     param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
+    MetadataElement( name="column_names", default=[ 'QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT' ], desc="Column names", 
+                    readonly=True, visible=False, optional=True, no_value=[] )
 
     def _get_samtools_version( self ):
         version = '0.0.0'
@@ -432,8 +430,6 @@ class Bam( Binary ):
             dataset.metadata.read_groups = [ read_group['ID'] for read_group in dataset.metadata.bam_header.get( 'RG', [] ) if 'ID' in read_group ]
             dataset.metadata.sort_order = dataset.metadata.bam_header.get( 'HD', {} ).get( 'SO', None )
             dataset.metadata.bam_version = dataset.metadata.bam_header.get( 'HD', {} ).get( 'VN', None )
-            dataset.metadata.columns = 12
-            dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
         except:
             # Per Dan, don't log here because doing so will cause datasets that
             # fail metadata to end in the error state
@@ -488,6 +484,7 @@ class Bam( Binary ):
             for line_number, alignment in enumerate( bamfile ) :
                 # return only Header lines if 'header_line_count' exceeds 'ck_size'
                 # FIXME: Can be problematic if bam has million lines of header
+                last_read = bamfile.tell()
                 if ( line_number + header_line_count ) > ck_size:
                     break
                 else:
@@ -496,7 +493,6 @@ class Bam( Binary ):
                     # Below code will remove spaces between each tag.
                     bamline_modified = ('\t').join( bamline.split()[:11] + [ ('').join(bamline.split()[11:]) ] )
                     ck_data = ck_data + "\n" + bamline_modified
-                last_read = bamfile.tell()
         return dumps( { 'ck_data': util.unicodify( ck_data ),
                         'offset': last_read } )
 
@@ -507,11 +503,9 @@ class Bam( Binary ):
         elif to_ext or not preview:
             return super( Bam, self ).display_data( trans, dataset, preview, filename, to_ext, **kwd )
         else:
-            column_names = ''
-            if dataset.metadata.column_names:
-                column_names = dataset.metadata.column_names
-            elif hasattr(dataset.datatype, 'column_names'):
-                column_names = dataset.datatype.column_names
+            column_names = dataset.metadata.column_names
+            if not column_names:
+                column_names = []
             column_types = dataset.metadata.column_types
             if not column_types:
                 column_types = []
