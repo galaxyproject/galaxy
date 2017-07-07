@@ -18,7 +18,7 @@
     </outputs>
   <tests>
     <test>
-      <param name="input" format="vcf_bgzip" value="test.vcf.gz"/>
+      <param name="input" ftype="vcf_bgzip" value="test.vcf.gz"/>
       <output name="output" value="test.vcf.gz"/>
     </test>
   </tests>
