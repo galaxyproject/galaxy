@@ -472,7 +472,6 @@ class Bam( Binary ):
         with pysam.AlignmentFile( dataset.file_name, "rb", index_filename=index_file.file_name ) as bamfile:
             ck_size = 300  # 300 lines
             ck_data = ""
-            last_read = 0
             header_line_count = 0
             if offset == 0:
                 ck_data = bamfile.text
@@ -482,7 +481,7 @@ class Bam( Binary ):
             for line_number, alignment in enumerate( bamfile ) :
                 # return only Header lines if 'header_line_count' exceeds 'ck_size'
                 # FIXME: Can be problematic if bam has million lines of header
-                last_read = bamfile.tell()
+                offset = bamfile.tell()
                 if ( line_number + header_line_count ) > ck_size:
                     break
                 else:
@@ -490,9 +489,9 @@ class Bam( Binary ):
                     # Galaxy display each tag as separate column because 'tostring()' funcition put spaces in between each tag of tags column.
                     # Below code will remove spaces between each tag.
                     bamline_modified = ('\t').join( bamline.split()[:11] + [ ('').join(bamline.split()[11:]) ] )
-                    ck_data = ck_data + "\n" + bamline_modified
+                    ck_data = "%s\n%s" % ( ck_data, bamline_modified )
         return dumps( { 'ck_data': util.unicodify( ck_data ),
-                        'offset': last_read } )
+                        'offset': offset } )
 
     def display_data( self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         preview = util.string_as_bool( preview )
