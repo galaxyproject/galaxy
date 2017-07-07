@@ -158,64 +158,6 @@ var TracksterUI = Base.extend({
     },
 
     /**
-     * Use a popup to select a dataset of create bookmarks from
-     */
-    add_bookmarks: function() {
-        var self = this,
-            baseURL = this.baseURL;
-
-        // show modal while loading history
-        Galaxy.modal.show({title: "Select dataset for new bookmarks", body: "progress" });
-
-        $.ajax({
-            url: this.baseURL + "/visualization/list_histories",
-            data: { "f-dbkey": view.dbkey },
-            error: function() { alert( "Grid failed" ); },
-            success: function(table_html) {
-
-                // show modal to select bookmarks
-                Galaxy.modal.show(
-                {
-                    title   : "Select dataset for new bookmarks",
-                    body    : table_html,
-                    buttons :
-                    {
-                        "Cancel": function()
-                        {
-                            Galaxy.modal.hide();
-                        },
-
-                        "Insert": function()
-                        {
-                            // Just use the first selected
-                            $('input[name=id]:checked,input[name=ldda_ids]:checked').first().each(function()
-                            {
-                                var data, id = $(this).val();
-                                if ($(this).attr("name") === "id")
-                                    data = { hda_id: id };
-                                else
-                                    data = { ldda_id: id};
-
-                                $.ajax({
-                                    url: this.baseURL + "/visualization/bookmarks_from_dataset",
-                                    data: data,
-                                    dataType: "json"
-                                }).then( function(data) {
-                                    for( i = 0; i < data.data.length; i++ ) {
-                                        var row = data.data[i];
-                                        self.add_bookmark( row[0], row[1] );
-                                    }
-                                });
-                            });
-                            Galaxy.modal.hide();
-                        }
-                    }
-                });
-            }
-        });
-    },
-
-    /**
      * Add bookmark.
      */
     add_bookmark: function(position, annotation, editable) {
