@@ -246,7 +246,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
                 self.work_queue.put((self.finish_job, ajs))
 
-    def check_watched_item( self, ajs, new_watched ):
+    def check_watched_item( ajs, new_watched ):
         """
         look at a single watched job, determine its state, and deal with errors
         that could happen in this process. to be called from check_watched_items()
@@ -266,8 +266,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         galaxy_id_tag = ajs.job_wrapper.get_id_tag()
         state = None
         try:
-                assert external_job_id not in ( None, 'None' ), '(%s/%s) Invalid job id' % ( galaxy_id_tag, external_job_id )
-                state = self.ds.job_status( external_job_id )
+            assert external_job_id not in ( None, 'None' ), '(%s/%s) Invalid job id' % ( galaxy_id_tag, external_job_id )
+            state = self.ds.job_status( external_job_id )
             # Reset exception retries
             for retry_exception in RETRY_EXCEPTIONS_LOWER:
                 setattr( ajs, retry_exception + '_retries', 0)
@@ -315,7 +315,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             external_job_id = ajs.job_id
             galaxy_id_tag = ajs.job_wrapper.get_id_tag()
             old_state = ajs.old_state
-            state = self.check_watched_item( ajs, new_watched )
+            state = check_watched_item( ajs, new_watched )
             if state is None:
                 continue
             if state != old_state:
