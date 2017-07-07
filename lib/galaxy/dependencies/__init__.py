@@ -72,9 +72,11 @@ class ConditionalDependencies(object):
     def check_mysql_python(self):
         return self.config["database_connection"].startswith("mysql")
 
-    def check_drmaa(self):
+    def check_drmaa( self ):
+        # is it necessay to add the UnivaRunner here?
         return ("galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners or
-                "galaxy.jobs.runners.slurm:SlurmJobRunner" in self.job_runners)
+                "galaxy.jobs.runners.slurm:SlurmJobRunner" in self.job_runners or
+                "galaxy.jobs.runners.drmaauniva:DRMAAUnivaJobRunner" in self.job_runners)
 
     def check_pbs_python(self):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
