@@ -770,7 +770,7 @@ class VcfGz( BaseVcf, binary.Binary):
             # Remove temp file and symlink
             os.remove( stderr_name )
             os.remove( dataset_symlink )
-        dataset.metadata.bcf_index = index_file
+        dataset.metadata.tabix_index = index_file
 
 
 class Eland( Tabular ):
