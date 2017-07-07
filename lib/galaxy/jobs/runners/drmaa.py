@@ -68,6 +68,9 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                                 (exc.__class__.__name__, str(exc)))
         from pulsar.managers.util.drmaa import DrmaaSessionFactory
 
+        # make the drmaa library also available to subclasses
+        self.drmaa = drmaa
+
         # Subclasses may need access to state constants
         self.drmaa_job_states = drmaa.JobState
 
@@ -243,7 +246,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
                 self.work_queue.put( ( self.finish_job, ajs ) )
 
-    def check_watched_item( ajs, new_watched ):
+    def check_watched_item( self, ajs, new_watched ):
         """
         look at a single watched job, determine its state, and deal with errors
         that could happen in this process. to be called from check_watched_items()
@@ -312,7 +315,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             external_job_id = ajs.job_id
             galaxy_id_tag = ajs.job_wrapper.get_id_tag()
             old_state = ajs.old_state
-            state = check_watched_item( ajs, new_watched )
+            state = self.check_watched_item( ajs, new_watched )
             if state is None:
                 continue
             if state != old_state:
