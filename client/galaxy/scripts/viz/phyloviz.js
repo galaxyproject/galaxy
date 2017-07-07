@@ -516,7 +516,7 @@ var PhylovizLinearView =  PhylovizLayoutBase.extend({
         nodeUpdate.select("text")
             .style("fill-opacity", 1)
             .style("font-size", fontSize)
-            .text(function(d) { return ( d.bootstrap ? ( Math.round( 100 * d.bootstrap ) ) : d.name ) });
+            .text(function(d) { return ( ( d.name && d.name !== "" ) ? d.name : ( d.bootstrap ? Math.round( 100 * d.bootstrap ) : "" ) ) });
 
         // ------- D3 EXIT --------
         // Transition exiting nodes to the parent's new position.
