@@ -238,10 +238,8 @@ class Bam( Binary ):
     MetadataElement( name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
     MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
     MetadataElement( name="columns", default=12, desc="Number of columns", readonly=True, visible=False, no_value=0 )
-    MetadataElement( name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", 
-                     param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
-    MetadataElement( name="column_names", default=[ 'QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT' ], desc="Column names", 
-                    readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
+    MetadataElement( name="column_names", default=[ 'QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT' ], desc="Column names", readonly=True, visible=False, optional=True, no_value=[] )
 
     def _get_samtools_version( self ):
         version = '0.0.0'
