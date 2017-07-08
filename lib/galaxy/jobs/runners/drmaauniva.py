@@ -71,7 +71,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             if "deleted" in extinfo and extinfo[ "deleted" ]:
                 log.info( '(%s/%s) Job was cancelled (e.g. with qdel)', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                 ajs.fail_message = "This job failed because it was cancelled by an administrator."
-                drmaa_state = self.drmaa.JobState..FAILED
+                drmaa_state = self.drmaa.JobState.FAILED
             elif ("signal" in extinfo and extinfo["signal"] == "SIGKILL") and time_wasted > time_granted:
                 log.info( '({tag}/{jobid}) Job hit walltime'.format(tag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id) )
                 ajs.fail_message = "This job was terminated because it ran longer than the maximum allowed job run time."
@@ -87,10 +87,10 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             # TODO return True?
             return True  # job was not actually terminal
         else:
-            logging.error( "DRMAAUniva: job {job_id} determined unknown state {state}".format(job_id=ajs.job_id, state=state) )
+            logging.error( "DRMAAUniva: job {job_id} determined unknown state {state}".format(job_id = ajs.job_id, state = state) )
             drmaa_state = self.drmaa_job_states.FAILED
         # by default, finish the job with the state from drmaa
-        return super( DRMAAUnivaJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
+        return super( DRMAAUnivaJobRunner, self )._complete_terminal_job( ajs, drmaa_state = drmaa_state )
 
     def _drmaa_state_is_refined( self, statep, staten ):
         """
@@ -98,7 +98,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         """
         # definition of the severity of job states, the hex codes are
         # from the drmaa C library which seem to define a useful order
-        drmaa_job_state_order = {
+        drmaa_job_state_order={
             self.drmaa.JobState.UNDETERMINED: 0x00,
             self.drmaa.JobState.QUEUED_ACTIVE: 0x10,
             self.drmaa.JobState.SYSTEM_ON_HOLD: 0x11,
@@ -108,8 +108,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             self.drmaa.JobState.SYSTEM_SUSPENDED: 0x21,
             self.drmaa.JobState.USER_SUSPENDED: 0x22,
             self.drmaa.JobState.DONE: 0x30,
-            self.drmaa.JobState.FAILED: 0x40,
-        }
+            self.drmaa.JobState.FAILED: 0x40 }
         return drmaa_job_state_order[ staten ] > drmaa_job_state_order[ statep ]
 
     def _get_drmaa_state_qstat( self, job_id, extinfo=set()):
@@ -422,7 +421,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
     def _get_drmaa_state(self, job_id, ds, waitqacct, extinfo=dict()):
         """
         get the state using drmaa.job_info/qstat and drmaa.wait/qacct using the above functions
-        qacct/wait is only called if waitqacct is True        
+        qacct/wait is only called if waitqacct is True.
         the function returns the state (one of the drmaa states) and extended
         information in the extinfo dict
         """
@@ -469,7 +468,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         should be OK since galaxy does not evaluate them at all (it only
         checks for QUEUED_ACTIVE, RUNNING, DONE, and FAILED)
 
-        the drmaa states are:    
+        the drmaa states are:
         UNDETERMINED:       'process status cannot be determined',
         QUEUED_ACTIVE:      'job is queued and active',
         SYSTEM_ON_HOLD:     'job is queued and in system hold',
