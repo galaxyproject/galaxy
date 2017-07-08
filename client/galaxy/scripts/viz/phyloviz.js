@@ -410,7 +410,8 @@ var PhylovizLayoutBase =  Backbone.View.extend({
             .attr("data-original-title", function(){
                 var d = this.__data__,
                     annotation = d.annotation || "None" ;
-                return d ? (d.name ? d.name + "<br/>" : "") + "Dist: " + d.dist + " <br/>Annotation: " + annotation: "";
+                return d ? ( (d.name ? d.name + "<br/>" : "") + "Dist: " + d.dist + " <br/>Annotation1: " + annotation +
+                    ( d.bootstrap ? "<br/>Confidence level: " + ( Math.round( 100 * d.bootstrap ) ) : "") ): "";
             })
             .tooltip({'placement':'top', 'trigger' : 'hover'});
 
@@ -515,7 +516,7 @@ var PhylovizLinearView =  PhylovizLayoutBase.extend({
         nodeUpdate.select("text")
             .style("fill-opacity", 1)
             .style("font-size", fontSize)
-            .text(function(d) { return d.name; });
+            .text(function(d) { return ( ( d.name && d.name !== "" ) ? d.name : ( d.bootstrap ? Math.round( 100 * d.bootstrap ) : "" ) ) });
 
         // ------- D3 EXIT --------
         // Transition exiting nodes to the parent's new position.
