@@ -1,0 +1,2 @@
+define(["utils/utils"],function(){var a=Backbone.View.extend({initialize:function(a){this.setElement("<div/>"),this.render(a)},render:function(){}});return{View:a}});
+//# sourceMappingURL=../../../maps/mvc/dataset/dataset-edit-attributes.js.map

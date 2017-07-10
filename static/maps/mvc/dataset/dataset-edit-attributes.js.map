@@ -1,0 +1,1 @@
+{"version":3,"file":"dataset-edit-attributes.js","sources":["../../../src/mvc/dataset/dataset-edit-attributes.js"],"names":["define","View","Backbone","extend","initialize","dataset_id","this","setElement","render"],"mappings":"AACAA,QAAU,eAAiB,WAGvB,GAAIC,GAAOC,SAASD,KAAKE,QAErBC,WAAY,SAAUC,GAClBC,KAAKC,WAAY,UACjBD,KAAKE,OAAQH,IAGjBG,OAAQ,cAIZ,QACIP,KAAQA"}
