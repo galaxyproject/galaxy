@@ -1,6 +1,7 @@
 import logging
 import os
 import urllib
+import json
 
 from markupsafe import escape
 import paste.httpexceptions
@@ -251,6 +252,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         return data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
 
     @web.expose
+    @web.json
     def edit(self, trans, dataset_id=None, filename=None, hid=None, **kwd):
         """Allows user to modify parameters of an HDA."""
         message = None
@@ -281,14 +283,23 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
         else:
             trans.log_event( "dataset_id and hid are both None, cannot load a dataset to edit" )
-            return trans.show_error_message( "You must provide a history dataset id to edit" )
+            return {
+                status: 'error',
+                message: 'You must provide a history dataset id to edit'
+            }
         if data is None:
             trans.log_event( "Problem retrieving dataset (encoded: %s, decoded: %s) with history id %s." % ( str( dataset_id ), str( id ), str( hid ) ) )
-            return trans.show_error_message( "History dataset id is invalid" )
+            return {
+                status: 'error',
+                message: "History dataset id is invalid"
+            }
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
             trans.log_event( "User attempted to edit an HDA they do not own (encoded: %s, decoded: %s)" % ( dataset_id, id ) )
             # Do not reveal the dataset's existence
-            return trans.show_error_message( "History dataset id is invalid" )
+            return {
+                status: 'error',
+                message: "History dataset id is invalid"
+            }
         current_user_roles = trans.get_current_user_roles()
         if data.history.user and not data.dataset.has_manage_permissions_roles( trans ):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
@@ -299,7 +310,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             trans.app.security_agent.set_dataset_permission( data.dataset, permissions )
         if self._can_access_dataset( trans, data ):
             if data.state == trans.model.Dataset.states.UPLOAD:
-                return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to edit its metadata." )
+                return {
+                    status: 'error',
+                    message: "Please wait until this dataset finishes uploading before attempting to edit its metadata."
+                }
             params = util.Params( kwd, sanitize=False )
             if params.change:
                 # The user clicked the Save button on the 'Change data type' form
@@ -409,7 +423,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     refresh_frames = ['history']
             elif params.update_roles_button:
                 if not trans.user:
-                    return trans.show_error_message( "You must be logged in if you want to change permissions." )
+                    return {
+                        status: 'error',
+                        message: "You must be logged in if you want to change permissions."
+                    }
                 if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
                     access_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
                     manage_permissions_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action )
@@ -446,20 +463,48 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
             ldatatypes.sort()
             all_roles = trans.app.security_agent.get_legitimate_roles( trans, data.dataset, 'root' )
+
+            all_roles_collection = [ (r.name, r.id) for r in all_roles ]
+            current_roles_collection = [ (r.name, r.id) for r in current_user_roles ]
+            data_metadata = [ ( name, spec.visible, spec.desc ) for name, spec in data.metadata.spec.items() ]
+            converters = data.get_converter_types()
+            converters_collection = [ (item.key, item.value) for item in converters.items() ]
+            can_manage_dataset = trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset )
+            metadata_html = dict()
+            for name, spec in data.metadata.spec.items():
+                metadata_html[ name ] = data.metadata.get_html_by_name( name, trans=trans )
+            
+            if trans.user is not None:
+               user_available = True
+            else:
+               user_available = False
+
             if error:
                 status = 'error'
-            return trans.fill_template( "/dataset/edit_attributes.mako",
-                                        data=data,
-                                        data_annotation=self.get_item_annotation_str( trans.sa_session, trans.user, data ),
-                                        datatypes=ldatatypes,
-                                        current_user_roles=current_user_roles,
-                                        all_roles=all_roles,
-                                        message=message,
-                                        status=status,
-                                        dataset_id=dataset_id,
-                                        refresh_frames=refresh_frames )
+
+            return {
+                'display_name': data.get_display_name(),
+                'data_info': data.info,
+                'data_metadata': data_metadata,
+                'data.missing_meta': data.missing_meta(),
+                'data_annotation': self.get_item_annotation_str( trans.sa_session, trans.user, data ),
+                'datatypes': ldatatypes,
+                'allow_datatype_change': data.datatype.allow_datatype_change,
+                'current_user_roles': current_roles_collection,
+                'all_roles': all_roles_collection,
+                'message': message,
+                'status': status,
+                'dataset_id': dataset_id,
+                'refresh_frames': refresh_frames,
+                'user': user_available,
+                'can_manage_dataset': can_manage_dataset,
+                'converters_collection': converters_collection
+            }
         else:
-            return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( dataset_id ) )
+            return {
+                status: 'error',
+                message: "You do not have permission to edit this dataset's ( id: %s ) information." % str( dataset_id )
+            }
 
     @web.expose
     @web.json
