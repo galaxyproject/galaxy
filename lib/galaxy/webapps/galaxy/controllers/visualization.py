@@ -203,7 +203,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                                UsesAnnotations, UsesItemRatings ):
     _user_list_grid = VisualizationListGrid()
     _published_list_grid = VisualizationAllPublishedGrid()
-    _libraries_grid = LibrarySelectionGrid()
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
     _tracks_grid = TracksterSelectionGrid()
 
