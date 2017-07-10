@@ -474,7 +474,7 @@ class Bam( Binary ):
             ck_data = ""
             header_line_count = 0
             if offset == 0:
-                ck_data = bamfile.text
+                ck_data = bamfile.text.replace('\t',' ')
                 header_line_count = bamfile.text.count('\n')
             else:
                 bamfile.seek( offset )
@@ -486,9 +486,9 @@ class Bam( Binary ):
                     break
                 else:
                     bamline = alignment.tostring( bamfile )
-                    # Galaxy display each tag as separate column because 'tostring()' funcition put spaces in between each tag of tags column.
+                    # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
                     # Below code will remove spaces between each tag.
-                    bamline_modified = ('\t').join( bamline.split()[:11] + [ ('').join(bamline.split()[11:]) ] )
+                    bamline_modified = ('\t').join( bamline.split()[:11] + [ (' ').join(bamline.split()[11:]) ] )
                     ck_data = "%s\n%s" % ( ck_data, bamline_modified )
         return dumps( { 'ck_data': util.unicodify( ck_data ),
                         'offset': offset } )
