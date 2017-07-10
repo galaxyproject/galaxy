@@ -33,69 +33,6 @@ log = logging.getLogger( __name__ )
 # -- Grids --
 #
 
-class NameColumn( grids.TextColumn ):
-    def get_value( self, trans, grid, history ):
-        return escape(history.get_display_name())
-
-    def get_link( self, trans, grid, history ):
-        # Provide link to list all datasets in history that have a given dbkey.
-        # Right now, only dbkey needs to be passed through, but pass through
-        # all for now since it's cleaner.
-        d = dict( action=grid.datasets_action, show_item_checkboxes=True )
-        d[ grid.datasets_param ] = trans.security.encode_id( history.id )
-        for filter, value in grid.cur_filter_dict.iteritems():
-            d[ "f-" + filter ] = value
-        return d
-
-
-class DbKeyPlaceholderColumn( grids.GridColumn ):
-    """ Placeholder to keep track of dbkey. """
-    def filter( self, trans, user, query, dbkey ):
-        return query
-
-
-class HistorySelectionGrid( grids.Grid ):
-    """
-    Grid enables user to select a history, which is then used to display
-    datasets from the history.
-    """
-    title = "Add Track: Select History"
-    model_class = model.History
-    template = '/tracks/history_select_grid.mako'
-    default_sort_key = "-update_time"
-    datasets_action = 'list_history_datasets'
-    datasets_param = "f-history"
-    columns = [
-        NameColumn( "History Name", key="name", filterable="standard", target="inbound" ),
-        grids.GridColumn( "Last Updated", key="update_time", format=time_ago, visible=False ),
-        DbKeyPlaceholderColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
-    ]
-    num_rows_per_page = 10
-    use_async = True
-    use_paging = True
-
-    def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter_by( user=trans.user, purged=False, deleted=False, importing=False )
-
-
-class LibrarySelectionGrid( LibraryListGrid ):
-    """
-    Grid enables user to select a Library, which is then used to display
-    datasets from the history.
-    """
-    title = "Add Track: Select Library"
-    template = '/tracks/history_select_grid.mako'
-    model_class = model.Library
-    datasets_action = 'list_library_datasets'
-    datasets_param = "f-library"
-    columns = [
-        NameColumn( "Library Name", key="name", filterable="standard", target="inbound"  )
-    ]
-    num_rows_per_page = 10
-    use_async = True
-    use_paging = True
-
-
 class DbKeyColumn( grids.GridColumn ):
     """ Column for filtering by and displaying dataset dbkey. """
     def filter( self, trans, user, query, dbkey ):
@@ -105,13 +42,6 @@ class DbKeyColumn( grids.GridColumn ):
         dbkey = dbkey.replace("'", "\\'")
         return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
 
-        # Use this query when datasets with matching dbkey *or* no dbkey can be added to the visualization.
-        # return query.filter( or_( \
-        #                        or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ), \
-        #                        or_( "metadata like '%%\"dbkey\": [\"?\"]%%'", "metadata like '%%\"dbkey\": \"?\"%%'" ) \
-        #                        )
-        #                    )
-
 
 class HistoryColumn( grids.GridColumn ):
     """ Column for filtering by history id. """
@@ -120,10 +50,8 @@ class HistoryColumn( grids.GridColumn ):
 
 
 class HistoryDatasetsSelectionGrid( grids.Grid ):
-    # Grid definition.
     available_tracks = None
     title = "Add Datasets"
-    template = "tracks/history_datasets_select_grid.mako"
     model_class = model.HistoryDatasetAssociation
     default_filter = { "deleted": "False", "shared": "All" }
     default_sort_key = "-hid"
@@ -276,7 +204,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
     _user_list_grid = VisualizationListGrid()
     _published_list_grid = VisualizationAllPublishedGrid()
     _libraries_grid = LibrarySelectionGrid()
-    _histories_grid = HistorySelectionGrid()
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
     _tracks_grid = TracksterSelectionGrid()
 
@@ -317,27 +244,11 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
 
     @web.expose
     @web.json
-    @web.require_login( "see all available histories" )
-    def list_histories( self, trans, **kwargs ):
-        """List all histories that can be used for selecting datasets."""
-        kwargs[ 'dict_format' ] = True
-        return self._histories_grid( trans, **kwargs )
-
-    @web.expose
-    @web.json
-    @web.require_login( "see current history's datasets that can added to this visualization" )
-    def list_current_history_datasets( self, trans, **kwargs ):
-        """ List a history's datasets that can be added to a visualization. """
-        kwargs[ 'f-history' ] = trans.security.encode_id( trans.get_history().id )
-        kwargs[ 'show_item_checkboxes' ] = 'True'
-        kwargs[ 'dict_format' ] = True
-        return self.list_history_datasets( trans, **kwargs )
-
-    @web.expose
-    @web.json
     @web.require_login( "see a history's datasets that can added to this visualization" )
     def list_history_datasets( self, trans, **kwargs ):
         """List a history's datasets that can be added to a visualization."""
+        kwargs[ 'f-history' ] = kwargs.get( 'f-history', trans.security.encode_id( trans.get_history().id ) )
+        kwargs[ 'show_item_checkboxes' ] = 'True'
         kwargs[ 'dict_format' ] = True
         return self._history_datasets_grid( trans, **kwargs )
 

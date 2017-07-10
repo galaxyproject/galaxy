@@ -1,4 +1,4 @@
-define( ["libs/underscore", "mvc/dataset/data", "viz/trackster/util", "utils/config", "mvc/grid/grid-view"], function(_, data_mod, util_mod, config_mod, GridView) {
+define( ["libs/underscore", "mvc/dataset/data", "viz/trackster/util", "utils/config", "mvc/grid/grid-view", "mvc/ui/ui-tabs", "mvc/ui/ui-misc"], function(_, data_mod, util_mod, config_mod, GridView, Tabs, Ui) {
 
 /**
  * Mixin for returning custom JSON representation from toJSON. Class attribute to_json_keys defines a set of attributes
@@ -36,29 +36,77 @@ var CustomToJSON = {
  * definitions for selected datasets.
  */
 var select_datasets = function(dataset_url, add_track_async_url, filters, success_fn) {
-    window.console.log( dataset_url );
-    dataset_url = '/visualization/list_current_history_datasets';
-    var grid = new GridView( { url_base: dataset_url, url_data: filters, dict_format: true, embedded: true } );
+
+    // history dataset selection tab
+    var $history_grid = $( '<div/>' );
+    var history_grid = new GridView( {
+        url_base    : Galaxy.root + 'visualization/list_history_datasets',
+        url_data    : filters,
+        dict_format : true,
+        embedded    : true
+    });
+    $history_grid.empty().append( history_grid.$el );
+    var history_list = new Ui.Select.View({
+        onchange: function( history_id ) {
+            var history_grid = new GridView( {
+                url_base    : Galaxy.root + 'visualization/list_history_datasets?f-history=' + history_id,
+                url_data    : filters,
+                dict_format : true,
+                embedded    : true
+            });
+            $history_grid.empty().append( history_grid.$el );
+        }
+    });
+    $.ajax( {
+        url         : Galaxy.root + 'api/histories',
+        success     : function( response ) {
+            var options = [];
+            _.each( response, function( history ) {
+                options.push({ label: history.name, value: history.id });
+            });
+            history_list.update( options );
+        }
+    });
+
+    // history dataset selection tab
+    //var library_list = new Ui.Select( { });
+    var library_grid = new GridView( { url_base: Galaxy.root + 'visualization/list_libraries', url_data: filters, dict_format: true, embedded: true } );
+    var tabs = new Tabs.View();
+    tabs.add({  id      : 'histories',
+                title   : 'Histories',
+                icon    : 'fa fa-header',
+                $el     : $( '<div/>' ).append( $( '<h5/>' ).append( 'Selected history:' ) )
+                                       .append( history_list.$el )
+                                       .append( $( '<h5/>' ).append( 'Available datasets:' ) )
+                                       .append( $history_grid )
+    });
+    tabs.add({  id      : 'libraries',
+                title   : 'Libraries',
+                icon    : 'fa fa-database',
+                $el     : library_grid.$el
+    });
+
+    // modal
     Galaxy.modal.show({
         title   : "Select datasets for new tracks",
-        body    : grid.$el,
+        body    : tabs.$el,
         buttons : {
             "Cancel": function() {
                 Galaxy.modal.hide();
             },
             "Add": function() {
                 var requests = [];
-                grid.$('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
-                    var data = { data_type : 'track_config', hda_ldda : 'hda' },
-                        id = $(this).val();
-                        if ($(this).attr("name") !== "id") {
-                            data.hda_ldda = 'ldda';
-                        }
-                        requests[requests.length] = $.ajax({
-                           url: add_track_async_url + "/" + id,
-                            data: data,
-                            dataType: "json"
-                        });
+                tabs.$('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
+                    var data = { data_type : 'track_config', hda_ldda : 'hda' };
+                    var id = $(this).val();
+                    if ($(this).attr("name") !== "id") {
+                        data.hda_ldda = 'ldda';
+                    }
+                    requests[requests.length] = $.ajax({
+                        url      : add_track_async_url + "/" + id,
+                        data     : data,
+                        dataType : "json"
+                    });
                 });
                 // To preserve order, wait until there are definitions for all tracks and then add
                 // them sequentially.
@@ -66,10 +114,9 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
                     // jQuery always returns an Array for arguments, so need to look at first element
                     // to determine whether multiple requests were made and consequently how to
                     // map arguments to track definitions.
-                    var track_defs = (arguments[0] instanceof Array ?
+                    var track_defs = ( arguments[0] instanceof Array ?
                                        $.map(arguments, function(arg) { return arg[0]; }) :
-                                       [ arguments[0] ]
-                                       );
+                                       [ arguments[0] ] );
                     success_fn(track_defs);
                 });
                 Galaxy.modal.hide();
