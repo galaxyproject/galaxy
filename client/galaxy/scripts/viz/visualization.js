@@ -54,17 +54,40 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
         url         : Galaxy.root + 'api/histories',
         success     : function( response ) {
             var options = [];
-            _.each( response, function( history ) {
-                options.push({ label: history.name, value: history.id });
+            _.each( response, function( item ) {
+                options.push({ label: item.name, value: item.id });
             });
             history_list.update( options );
             history_list.trigger( 'change' );
         }
     });
 
-    // history dataset selection tab
-    //var library_list = new Ui.Select( { });
-    var library_grid = new GridView( { url_base: Galaxy.root + 'visualization/list_libraries', url_data: filters, dict_format: true, embedded: true } );
+    // library dataset selection tab
+    var library_grid = new GridView( {
+        url_base    : Galaxy.root + 'visualization/list_library_datasets',
+        url_data    : filters,
+        dict_format : true,
+        embedded    : true
+    });
+    var library_list = new Ui.Select.View({
+        onchange: function() {
+            library_grid.grid.add_filter( 'history', library_list.value()  );
+            library_grid.update_grid();
+        }
+    });
+    $.ajax( {
+        url         : Galaxy.root + 'api/libraries',
+        success     : function( response ) {
+            var options = [];
+            _.each( response, function( item ) {
+                options.push({ label: item.name, value: item.id });
+            });
+            library_list.update( options );
+            library_list.trigger( 'change' );
+        }
+    });
+
+    // build tabs
     var tabs = new Tabs.View();
     tabs.add({  id      : 'histories',
                 title   : 'Histories',
@@ -77,7 +100,10 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
     tabs.add({  id      : 'libraries',
                 title   : 'Libraries',
                 icon    : 'fa fa-database',
-                $el     : library_grid.$el
+                $el     : $( '<div/>' ).append( $( '<h5/>' ).append( 'Selected library:' ) )
+                                       .append( library_list.$el )
+                                       .append( $( '<h5/>' ).append( 'Available datasets:' ) )
+                                       .append( library_grid.$el )
     });
 
     // modal
