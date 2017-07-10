@@ -289,14 +289,15 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
     #
 
     @web.expose
+    @web.json
     @web.require_login( "see all available libraries" )
     def list_libraries( self, trans, **kwargs ):
         """List all libraries that can be used for selecting datasets."""
-
-        # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self._libraries_grid( trans, **kwargs )
 
     @web.expose
+    @web.json
     @web.require_login( "see a library's datasets that can added to this visualization" )
     def list_library_datasets( self, trans, **kwargs ):
         """List a library's datasets that can be added to a visualization."""
@@ -315,11 +316,11 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                                     status="done" )
 
     @web.expose
+    @web.json
     @web.require_login( "see all available histories" )
     def list_histories( self, trans, **kwargs ):
         """List all histories that can be used for selecting datasets."""
-
-        # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self._histories_grid( trans, **kwargs )
 
     @web.expose
@@ -333,22 +334,17 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         return self.list_history_datasets( trans, **kwargs )
 
     @web.expose
+    @web.json
     @web.require_login( "see a history's datasets that can added to this visualization" )
     def list_history_datasets( self, trans, **kwargs ):
         """List a history's datasets that can be added to a visualization."""
-
-        # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self._history_datasets_grid( trans, **kwargs )
 
     @web.expose
-    @web.require_login( "see all available datasets" )
-    def list_datasets( self, trans, **kwargs ):
-        """List all datasets that can be added as tracks"""
-        # Render the list view
-        return self._data_grid( trans, **kwargs )
-
-    @web.expose
+    @web.json
     def list_tracks( self, trans, **kwargs ):
+        kwargs[ 'dict_format' ] = True
         return self._tracks_grid( trans, **kwargs )
 
     @web.expose

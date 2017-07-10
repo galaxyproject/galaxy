@@ -36,6 +36,8 @@ var CustomToJSON = {
  * definitions for selected datasets.
  */
 var select_datasets = function(dataset_url, add_track_async_url, filters, success_fn) {
+    window.console.log( dataset_url );
+    dataset_url = '/visualization/list_current_history_datasets';
     var grid = new GridView( { url_base: dataset_url, url_data: filters, dict_format: true, embedded: true } );
     Galaxy.modal.show({
         title   : "Select datasets for new tracks",
