@@ -474,7 +474,7 @@ class Bam( Binary ):
             ck_data = ""
             header_line_count = 0
             if offset == 0:
-                ck_data = bamfile.text.replace('\t',' ')
+                ck_data = bamfile.text.replace('\t', ' ')
                 header_line_count = bamfile.text.count('\n')
             else:
                 bamfile.seek( offset )
