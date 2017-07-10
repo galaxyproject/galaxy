@@ -36,8 +36,7 @@ var CustomToJSON = {
  * definitions for selected datasets.
  */
 var select_datasets = function(dataset_url, add_track_async_url, filters, success_fn) {
-    var grid = new GridView( { url_base: dataset_url, url_data: filters, dict_format: true } );
-    window.console.log( dataset_url );
+    var grid = new GridView( { url_base: dataset_url, url_data: filters, dict_format: true, embedded: true } );
     Galaxy.modal.show({
         title   : "Select datasets for new tracks",
         body    : grid.$el,
@@ -46,14 +45,11 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
                 Galaxy.modal.hide();
             },
             "Add": function() {
-               var requests = [];
-                $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
-                    var data = {
-                            data_type: 'track_config',
-                           'hda_ldda': 'hda'
-                        },
+                var requests = [];
+                grid.$('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
+                    var data = { data_type : 'track_config', hda_ldda : 'hda' },
                         id = $(this).val();
-                       if ($(this).attr("name") !== "id") {
+                        if ($(this).attr("name") !== "id") {
                             data.hda_ldda = 'ldda';
                         }
                         requests[requests.length] = $.ajax({
