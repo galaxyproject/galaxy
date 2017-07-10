@@ -259,7 +259,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         status = 'done'
         refresh_frames = []
         error = False
-
         def __ok_to_edit_metadata( dataset_id ):
             # prevent modifying metadata when dataset is queued or running as input/output
             # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
@@ -474,7 +473,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             for name, spec in data.metadata.spec.items():
                 metadata_html[ name ] = data.metadata.get_html_by_name( name, trans=trans )
             
-            if trans.user is not None:
+            if trans.get_user() is not None:
                user_available = True
             else:
                user_available = False
@@ -486,7 +485,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 'display_name': data.get_display_name(),
                 'data_info': data.info,
                 'data_metadata': data_metadata,
-                'data.missing_meta': data.missing_meta(),
+                'data_missing_meta': data.missing_meta(),
                 'data_annotation': self.get_item_annotation_str( trans.sa_session, trans.user, data ),
                 'datatypes': ldatatypes,
                 'allow_datatype_change': data.datatype.allow_datatype_change,
@@ -498,7 +497,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 'refresh_frames': refresh_frames,
                 'user': user_available,
                 'can_manage_dataset': can_manage_dataset,
-                'converters_collection': converters_collection
+                'converters_collection': converters_collection,
+                'metadata_html': metadata_html
             }
         else:
             return {
