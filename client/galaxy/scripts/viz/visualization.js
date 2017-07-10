@@ -1,4 +1,4 @@
-define( ["libs/underscore", "mvc/dataset/data", "viz/trackster/util", "utils/config"], function(_, data_mod, util_mod, config_mod) {
+define( ["libs/underscore", "mvc/dataset/data", "viz/trackster/util", "utils/config", "mvc/grid/grid-view"], function(_, data_mod, util_mod, config_mod, GridView) {
 
 /**
  * Mixin for returning custom JSON representation from toJSON. Class attribute to_json_keys defines a set of attributes
@@ -36,53 +36,47 @@ var CustomToJSON = {
  * definitions for selected datasets.
  */
 var select_datasets = function(dataset_url, add_track_async_url, filters, success_fn) {
-    $.ajax({
-        url: dataset_url,
-        data: filters,
-        error: function() { alert( "Grid failed" ); },
-        success: function(table_html) {
-            Galaxy.modal.show({
-                title   : "Select datasets for new tracks",
-                body    : table_html,
-                buttons :
-                {
-                    "Cancel": function() {
-                        Galaxy.modal.hide();
-                    },
-                    "Add": function() {
-                       var requests = [];
-                        $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
-                            var data = {
-                                    data_type: 'track_config',
-                                   'hda_ldda': 'hda'
-                                },
-                                id = $(this).val();
-                               if ($(this).attr("name") !== "id") {
-                                    data.hda_ldda = 'ldda';
-                                }
-                                requests[requests.length] = $.ajax({
-                                   url: add_track_async_url + "/" + id,
-                                    data: data,
-                                    dataType: "json"
-                                });
+    var grid = new GridView( { url_base: dataset_url, url_data: filters, dict_format: true } );
+    window.console.log( dataset_url );
+    Galaxy.modal.show({
+        title   : "Select datasets for new tracks",
+        body    : grid.$el,
+        buttons : {
+            "Cancel": function() {
+                Galaxy.modal.hide();
+            },
+            "Add": function() {
+               var requests = [];
+                $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
+                    var data = {
+                            data_type: 'track_config',
+                           'hda_ldda': 'hda'
+                        },
+                        id = $(this).val();
+                       if ($(this).attr("name") !== "id") {
+                            data.hda_ldda = 'ldda';
+                        }
+                        requests[requests.length] = $.ajax({
+                           url: add_track_async_url + "/" + id,
+                            data: data,
+                            dataType: "json"
                         });
-                        // To preserve order, wait until there are definitions for all tracks and then add
-                        // them sequentially.
-                        $.when.apply($, requests).then(function() {
-                            // jQuery always returns an Array for arguments, so need to look at first element
-                            // to determine whether multiple requests were made and consequently how to
-                            // map arguments to track definitions.
-                            var track_defs = (arguments[0] instanceof Array ?
-                                               $.map(arguments, function(arg) { return arg[0]; }) :
-                                               [ arguments[0] ]
-                                               );
-                            success_fn(track_defs);
-                        });
-                        Galaxy.modal.hide();
-                    }
-               }
-            });
-        }
+                });
+                // To preserve order, wait until there are definitions for all tracks and then add
+                // them sequentially.
+                $.when.apply($, requests).then(function() {
+                    // jQuery always returns an Array for arguments, so need to look at first element
+                    // to determine whether multiple requests were made and consequently how to
+                    // map arguments to track definitions.
+                    var track_defs = (arguments[0] instanceof Array ?
+                                       $.map(arguments, function(arg) { return arg[0]; }) :
+                                       [ arguments[0] ]
+                                       );
+                    success_fn(track_defs);
+                });
+                Galaxy.modal.hide();
+            }
+       }
     });
 };
 

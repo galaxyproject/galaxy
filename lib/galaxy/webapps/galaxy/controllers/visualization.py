@@ -323,12 +323,13 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         return self._histories_grid( trans, **kwargs )
 
     @web.expose
+    @web.json
     @web.require_login( "see current history's datasets that can added to this visualization" )
     def list_current_history_datasets( self, trans, **kwargs ):
         """ List a history's datasets that can be added to a visualization. """
-
         kwargs[ 'f-history' ] = trans.security.encode_id( trans.get_history().id )
         kwargs[ 'show_item_checkboxes' ] = 'True'
+        kwargs[ 'dict_format' ] = True
         return self.list_history_datasets( trans, **kwargs )
 
     @web.expose
