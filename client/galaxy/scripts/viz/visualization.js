@@ -48,13 +48,9 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
     $history_grid.empty().append( history_grid.$el );
     var history_list = new Ui.Select.View({
         onchange: function( history_id ) {
-            var history_grid = new GridView( {
-                url_base    : Galaxy.root + 'visualization/list_history_datasets?f-history=' + history_id,
-                url_data    : filters,
-                dict_format : true,
-                embedded    : true
-            });
-            $history_grid.empty().append( history_grid.$el );
+            //history_grid.grid.set( 'url_base', Galaxy.root + 'visualization/list_history_datasets?f-history=' + history_id );
+            history_grid.grid.set( 'filter', { 'history' : history_id  } );
+            history_grid.update_grid();
         }
     });
     $.ajax( {
