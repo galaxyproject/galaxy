@@ -1,5 +1,5 @@
 // Additional dependencies: jQuery, underscore.
-define(['mvc/ui/ui-modal', 'mvc/ui/ui-frames', 'mvc/grid/grid-view', 'mvc/ui/icon-button'], function(Modal, Frames, GridView, mod_icon_btn) {
+define(['mvc/ui/ui-modal', 'mvc/ui/ui-frames', 'mvc/ui/icon-button'], function(Modal, Frames, mod_icon_btn) {
 
 /**
  * Dataset metedata.
@@ -336,7 +336,7 @@ var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
 
 });
 
-// button for trackster visualization
+/** Button for trackster visualization */
 var TabularButtonTracksterView = Backbone.View.extend({
 
     // gene region columns
@@ -391,11 +391,9 @@ var TabularButtonTracksterView = Backbone.View.extend({
         this.file_ext = model.get('file_ext');
 
         // check for bed-file format
-        if (this.file_ext == 'bed')
-        {
+        if (this.file_ext == 'bed') {
             // verify that metadata exists
-            if (metadata.get('chromCol') && metadata.get('startCol') && metadata.get('endCol'))
-            {
+            if (metadata.get('chromCol') && metadata.get('startCol') && metadata.get('endCol')) {
                 // read in columns
                 this.col.chrom   = metadata.get('chromCol') - 1;
                 this.col.start   = metadata.get('startCol') - 1;
@@ -407,8 +405,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
         }
 
         // check for vcf-file format
-        if (this.file_ext == 'vcf')
-        {
+        if (this.file_ext == 'vcf') {
             // search array
             function search (str, array) {
                 for (var j = 0; j < array.length; j++)
@@ -473,15 +470,16 @@ var TabularButtonTracksterView = Backbone.View.extend({
         this.hide();
     },
 
-    // backbone events
-    events:
-    {
+    /** Add event handlers */
+    events: {
         'mouseover tr'  : 'show',
         'mouseleave'    : 'hide'
     },
 
     // show button
     show: function (e) {
+        var self = this;
+
         // is numeric
         function is_numeric(n) {
             return !isNaN(parseFloat(n)) && isFinite(n);
@@ -518,7 +516,12 @@ var TabularButtonTracksterView = Backbone.View.extend({
             // update css
             $('#btn_viz').css({'position': 'fixed', 'top': top + 'px', 'left': left + 'px'});
             $('#btn_viz').off('click');
-            $('#btn_viz').click(this.create_trackster_action(this.url_viz, btn_viz_pars, this.genome_build));
+            $('#btn_viz').click( function() {
+                self.frame.add({
+                    title   : 'Trackster',
+                    url     : self.url_viz + '/trackster?' + $.param(btn_viz_pars)
+                });
+            });
 
             // show the button
             $('#btn_viz').show();
@@ -528,66 +531,9 @@ var TabularButtonTracksterView = Backbone.View.extend({
         }
     },
 
-    // hide button
+    /** hide button */
     hide: function () {
-        this.$el.find('#btn_viz').hide();
-    },
-
-    // create action
-    create_trackster_action : function (vis_url, dataset_params, dbkey) {
-        var self = this;
-        return function() {
-            var listTracksParams = {};
-            if (dbkey) {
-                listTracksParams[ 'f-dbkey' ] = dbkey;
-            }
-            self.modal.show({
-                title   : 'View Data in a New or Saved Visualization',
-                buttons :{
-                    'Cancel': function(){
-                        self.modal.hide();
-                    },
-                    'View in saved visualization': function(){
-                        var tracks_grid = new GridView( {
-                            url_base    : vis_url + '/list_tracks?' + $.param( listTracksParams ),
-                            dict_format : true,
-                            embedded    : true
-                        });
-
-                        // show modal with saved visualizations
-                        self.modal.show({
-                            title   : 'Add Data to Saved Visualization',
-                            body    : tracks_grid.$el,
-                            buttons : {
-                                'Cancel': function(){
-                                    self.modal.hide();
-                                },
-                                'Add to visualization': function(){
-                                    self.modal.hide();
-                                    self.modal.$el.find('input[name=id]:checked').each(function(){
-                                        dataset_params.id = $(this).val();
-                                        self.frame.add({
-                                            title    : 'Trackster',
-                                            type     : 'url',
-                                            content  : vis_url + '/trackster?' + $.param(dataset_params)
-                                        });
-                                    });
-                                }
-                            }
-                        });
-                    },
-                    'View in new visualization': function(){
-                        self.modal.hide();
-                        self.frame.add({
-                            title    : 'Trackster',
-                            type     : 'url',
-                            content  : vis_url + '/trackster?' + $.param(dataset_params)
-                        });
-                    }
-                }
-            });
-            return false;
-        };
+        this.$('#btn_viz').hide();
     }
 });
 
