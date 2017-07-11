@@ -102,16 +102,19 @@ class ASync( BaseUIController ):
                 GALAXY_TYPE = params.data_type
             elif params.galaxyFileFormat == 'wig':  # this is an undocumented legacy special case
                 GALAXY_TYPE = 'wig'
+            elif params.GALAXY_TYPE:
+                GALAXY_TYPE = params.GALAXY_TYPE
             else:
                 # Assume there is exactly one output
                 outputs_count = 0
                 for obj in tool.outputs.values():
                     try:
-                        GALAXY_TYPE = params.GALAXY_TYPE or obj.format
+                        GALAXY_TYPE = obj.format
                         outputs_count += 1
                         break
                     except:
                         # exclude outputs different from ToolOutput (e.g. collections) from the previous assumption
+                        # a collection object does not have the 'format' attribute, so it will throw an exception
                         continue
                 if outputs_count > 1:
                     raise Exception( "Error: the tool should have just one output" )
