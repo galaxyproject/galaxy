@@ -88,25 +88,20 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
 
     // modal
     Galaxy.modal.show({
-        title           : "Select datasets for new tracks",
+        title           : 'Select datasets for new tracks',
         body            : tabs.$el,
         closing_events  : true,
         buttons         : {
-            "Cancel": function() {
-                Galaxy.modal.hide();
-            },
-            "Add": function() {
+            'Add': function() {
                 var requests = [];
-                tabs.$('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
-                    var data = { data_type : 'track_config', hda_ldda : 'hda' };
-                    var id = $(this).val();
-                    if ($(this).attr("name") !== "id") {
-                        data.hda_ldda = 'ldda';
-                    }
+                tabs.$('input[name=id]:checked').each(function() {
                     requests[requests.length] = $.ajax({
-                        url      : add_track_async_url + "/" + id,
-                        data     : data,
-                        dataType : "json"
+                        url      : add_track_async_url + '/' + $(this).val(),
+                        dataType : 'json',
+                        data     : {
+                            data_type : 'track_config',
+                            hda_ldda  : tabs.current() == 'histories' ? 'hda' : 'ldda'
+                        }
                     });
                 });
                 // To preserve order, wait until there are definitions for all tracks and then add
@@ -120,6 +115,9 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
                                        [ arguments[0] ] );
                     success_fn(track_defs);
                 });
+                Galaxy.modal.hide();
+            },
+            'Cancel': function() {
                 Galaxy.modal.hide();
             }
        }
