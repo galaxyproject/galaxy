@@ -250,25 +250,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
 
     @web.expose
     @web.json
-    @web.require_login( "see a library's datasets that can added to this visualization" )
-    def list_library_datasets( self, trans, **kwargs ):
-        """List a library's datasets that can be added to a visualization."""
-
-        library = trans.sa_session.query( trans.app.model.Library ).get( self.decode_id( kwargs.get('f-library') ) )
-        return trans.fill_template( '/tracks/library_datasets_select_grid.mako',
-                                    cntrller="library",
-                                    use_panels=False,
-                                    library=library,
-                                    created_ldda_ids='',
-                                    hidden_folder_ids='',
-                                    show_deleted=False,
-                                    comptypes=[],
-                                    current_user_roles=trans.get_current_user_roles(),
-                                    message='',
-                                    status="done" )
-
-    @web.expose
-    @web.json
     @web.require_login( "see a history's datasets that can added to this visualization" )
     def list_history_datasets( self, trans, **kwargs ):
         """List a history's datasets that can be added to a visualization."""
