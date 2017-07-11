@@ -22,7 +22,6 @@ from galaxy.web import error
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import grids, time_ago
 
-from .library import LibraryListGrid
 import os
 import yaml
 
