@@ -76,7 +76,7 @@ class ASync( BaseUIController ):
                         TOOL_OUTPUT_TYPE = obj.format
                         params[tool.outputs.keys()[idx]] = data.id
                         break
-                    except:
+                    except Exception:
                         # exclude outputs different from ToolOutput (e.g. collections) from the previous assumption
                         continue
                 if TOOL_OUTPUT_TYPE is None:
@@ -112,7 +112,7 @@ class ASync( BaseUIController ):
                         GALAXY_TYPE = obj.format
                         outputs_count += 1
                         break
-                    except:
+                    except Exception:
                         # exclude outputs different from ToolOutput (e.g. collections) from the previous assumption
                         # a collection object does not have the 'format' attribute, so it will throw an exception
                         continue
