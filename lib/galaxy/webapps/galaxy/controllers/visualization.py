@@ -117,9 +117,7 @@ class LibraryDatasetsSelectionGrid( grids.Grid ):
 
 
 class TracksterSelectionGrid( grids.Grid ):
-    # Grid definition.
     title = "Insert into visualization"
-    template = "/tracks/add_to_viz.mako"
     model_class = model.Visualization
     default_sort_key = "-update_time"
     use_async = True

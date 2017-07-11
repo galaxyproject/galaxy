@@ -1,5 +1,5 @@
 // Additional dependencies: jQuery, underscore.
-define(['mvc/ui/ui-modal', 'mvc/ui/ui-frames', 'mvc/ui/icon-button'], function(Modal, Frames, mod_icon_btn) {
+define(['mvc/ui/ui-modal', 'mvc/ui/ui-frames', 'mvc/grid/grid-view', 'mvc/ui/icon-button'], function(Modal, Frames, GridView, mod_icon_btn) {
 
 /**
  * Dataset metedata.
@@ -535,81 +535,55 @@ var TabularButtonTracksterView = Backbone.View.extend({
 
     // create action
     create_trackster_action : function (vis_url, dataset_params, dbkey) {
-        // link this
         var self = this;
-
-        // create function
         return function() {
             var listTracksParams = {};
             if (dbkey) {
                 listTracksParams[ 'f-dbkey' ] = dbkey;
             }
-            $.ajax({
-                url: vis_url + '/list_tracks?' + $.param( listTracksParams ),
-                dataType: 'html',
-                error: function() {
-                    // show error message
-                    self.modal.show({
-                        title   : 'Something went wrong!',
-                        body    : 'Unfortunately we could not add this dataset to the track browser. Please try again or contact us.',
-                        buttons : {
-                            'Cancel': function(){
-                                self.modal.hide();
+            self.modal.show({
+                title   : 'View Data in a New or Saved Visualization',
+                buttons :{
+                    'Cancel': function(){
+                        self.modal.hide();
+                    },
+                    'View in saved visualization': function(){
+                        var tracks_grid = new GridView( {
+                            url_base    : vis_url + '/list_tracks?' + $.param( listTracksParams ),
+                            dict_format : true,
+                            embedded    : true
+                        });
+
+                        // show modal with saved visualizations
+                        self.modal.show({
+                            title   : 'Add Data to Saved Visualization',
+                            body    : tracks_grid.$el,
+                            buttons : {
+                                'Cancel': function(){
+                                    self.modal.hide();
+                                },
+                                'Add to visualization': function(){
+                                    self.modal.hide();
+                                    self.modal.$el.find('input[name=id]:checked').each(function(){
+                                        dataset_params.id = $(this).val();
+                                        self.frame.add({
+                                            title    : 'Trackster',
+                                            type     : 'url',
+                                            content  : vis_url + '/trackster?' + $.param(dataset_params)
+                                        });
+                                    });
+                                }
                             }
-                        }
-                    });
-                },
-                success: function(table_html) {
-                    self.modal.show({
-                        title   : 'View Data in a New or Saved Visualization',
-                        buttons :{
-                            'Cancel': function(){
-                                self.modal.hide();
-                            },
-                            'View in saved visualization': function(){
-                                // show modal with saved visualizations
-                                self.modal.show(
-                                {
-                                    title   : 'Add Data to Saved Visualization',
-                                    body    : table_html,
-                                    buttons : {
-                                        'Cancel': function(){
-                                            self.modal.hide();
-                                        },
-                                        'Add to visualization': function(){
-                                            // hide
-                                            self.modal.hide();
-
-                                            // search selected fields
-                                            self.modal.$el.find('input[name=id]:checked').each(function(){
-                                                // get visualization id
-                                                var vis_id = $(this).val();
-                                                dataset_params.id = vis_id;
-
-                                                // add widget
-                                                self.frame.add({
-                                                    title    : 'Trackster',
-                                                    type     : 'url',
-                                                    content  : vis_url + '/trackster?' + $.param(dataset_params)
-                                                });
-                                            });
-                                        }
-                                    }
-                                });
-                            },
-                            'View in new visualization': function(){
-                                // hide
-                                self.modal.hide();
-
-                                // add widget
-                                self.frame.add({
-                                    title    : 'Trackster',
-                                    type     : 'url',
-                                    content  : vis_url + '/trackster?' + $.param(dataset_params)
-                                });
-                            }
-                        }
-                    });
+                        });
+                    },
+                    'View in new visualization': function(){
+                        self.modal.hide();
+                        self.frame.add({
+                            title    : 'Trackster',
+                            type     : 'url',
+                            content  : vis_url + '/trackster?' + $.param(dataset_params)
+                        });
+                    }
                 }
             });
             return false;

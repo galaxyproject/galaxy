@@ -360,7 +360,6 @@ var TracksterView = Backbone.View.extend(
         // hide right panel
         force_right_panel("hide");
 
-
         // check if id is available
         if (galaxy_config.app.id){
             this.view_existing();
