@@ -92,6 +92,9 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
         body            : tabs.$el,
         closing_events  : true,
         buttons         : {
+            'Cancel': function() {
+                Galaxy.modal.hide();
+            },
             'Add': function() {
                 var requests = [];
                 tabs.$('input[name=id]:checked').each(function() {
@@ -115,9 +118,6 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
                                        [ arguments[0] ] );
                     success_fn(track_defs);
                 });
-                Galaxy.modal.hide();
-            },
-            'Cancel': function() {
                 Galaxy.modal.hide();
             }
        }
