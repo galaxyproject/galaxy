@@ -69,23 +69,6 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
         dict_format : true,
         embedded    : true
     });
-    var library_list = new Ui.Select.View({
-        onchange: function() {
-            library_grid.grid.add_filter( 'history', library_list.value()  );
-            library_grid.update_grid();
-        }
-    });
-    $.ajax( {
-        url         : Galaxy.root + 'api/libraries',
-        success     : function( response ) {
-            var options = [];
-            _.each( response, function( item ) {
-                options.push({ label: item.name, value: item.id });
-            });
-            library_list.update( options );
-            library_list.trigger( 'change' );
-        }
-    });
 
     // build tabs
     var tabs = new Tabs.View();
@@ -100,17 +83,15 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
     tabs.add({  id      : 'libraries',
                 title   : 'Libraries',
                 icon    : 'fa fa-database',
-                $el     : $( '<div/>' ).append( $( '<h5/>' ).append( 'Selected library:' ) )
-                                       .append( library_list.$el )
-                                       .append( $( '<h5/>' ).append( 'Available datasets:' ) )
-                                       .append( library_grid.$el )
+                $el     : $( '<div/>' ).append( library_grid.$el )
     });
 
     // modal
     Galaxy.modal.show({
-        title   : "Select datasets for new tracks",
-        body    : tabs.$el,
-        buttons : {
+        title           : "Select datasets for new tracks",
+        body            : tabs.$el,
+        closing_events  : true,
+        buttons         : {
             "Cancel": function() {
                 Galaxy.modal.hide();
             },

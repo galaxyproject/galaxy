@@ -88,6 +88,34 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
                     .filter( model.HistoryDatasetAssociation.visible == true() )
 
 
+class LibraryDatasetsSelectionGrid( grids.Grid ):
+    available_tracks = None
+    title = "Add Datasets"
+    model_class = model.LibraryDatasetDatasetAssociation
+    default_filter = { "deleted": "False" }
+    default_sort_key = "-id"
+    columns = [
+        grids.GridColumn( "Id", key="id" ),
+        grids.TextColumn( "Name", key="name", model_class=model.LibraryDatasetDatasetAssociation ),
+        grids.TextColumn( "Filetype", key="extension", model_class=model.LibraryDatasetDatasetAssociation ),
+    ]
+    columns.append(
+        grids.MulticolFilterColumn( "Search name and filetype", cols_to_filter=[ columns[1], columns[2] ],
+                                    key="free-text-search", visible=False, filterable="standard" )
+    )
+
+    def build_initial_query( self, trans, **kwargs ):
+        return trans.sa_session.query( self.model_class ).join( model.Dataset.table )
+
+    def apply_query_filter( self, trans, query, **kwargs ):
+        if self.available_tracks is None:
+            self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
+        return query.filter( model.LibraryDatasetDatasetAssociation.extension.in_(self.available_tracks) ) \
+                    .filter( model.Dataset.state == model.Dataset.states.OK ) \
+                    .filter( model.LibraryDatasetDatasetAssociation.deleted == false() ) \
+                    .filter( model.LibraryDatasetDatasetAssociation.visible == true() )
+
+
 class TracksterSelectionGrid( grids.Grid ):
     # Grid definition.
     title = "Insert into visualization"
@@ -204,6 +232,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
     _user_list_grid = VisualizationListGrid()
     _published_list_grid = VisualizationAllPublishedGrid()
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
+    _library_datasets_grid = LibraryDatasetsSelectionGrid()
     _tracks_grid = TracksterSelectionGrid()
 
     def __init__( self, app ):
@@ -250,6 +279,16 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         kwargs[ 'show_item_checkboxes' ] = 'True'
         kwargs[ 'dict_format' ] = True
         return self._history_datasets_grid( trans, **kwargs )
+
+    @web.expose
+    @web.json
+    @web.require_login( "see a history's datasets that can added to this visualization" )
+    def list_library_datasets( self, trans, **kwargs ):
+        """List a library's datasets that can be added to a visualization."""
+        kwargs[ 'f-library' ] = kwargs.get( 'f-library', 'c9a973ea7f36d114' )
+        kwargs[ 'show_item_checkboxes' ] = 'True'
+        kwargs[ 'dict_format' ] = True
+        return self._library_datasets_grid( trans, **kwargs )
 
     @web.expose
     @web.json
