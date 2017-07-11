@@ -21,21 +21,24 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
                    self.render_attribute_page( self, response );
                 },
                 error   : function( response ) {
-                    self.page.display( new Ui.Message( { 'message': 'Error occured', 'status': 'error', 'persistent': true, 'cls': 'errormessage' } ) );
+                    self.page.display( new Ui.Message( { 'message': 'Error occured', 'status': 'error',
+                        'persistent': true, 'cls': 'errormessage' } ) );
                 }
             });
         },
 
-        /** Render the attributes tab view */
+        /** Render all the tabs view */
         render_attribute_page: function( self, response ) {
             var $el_edit_attr = null;
             self.$el.empty().append( self._templateHeader() );
             $el_edit_attr = self.$el.find( '.edit-attr' );
             self.display_message( self, response, $el_edit_attr );
+
             // Create all tabs
             self.create_tabs( self, response, $el_edit_attr );
+
             // Register submit events
-            self.register_events( self, response.dataset_id, $el_edit_attr );
+            self.register_attr_events( self, response.dataset_id, $el_edit_attr );
         },
 
         /** Convert array to post object */
@@ -48,25 +51,34 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
         },
 
         /** Register submit button events */
-        register_events: function( self, dataset_id, $el_edit_attr ) {
+        register_attr_events: function( self, dataset_id, $el_edit_attr ) {
             var post_url = Galaxy.root + 'dataset/edit';
+
+            // Click event of Save attributes button
             $el_edit_attr.find( '.btn-submit-attributes' ).click( function( e ) {
                 e.preventDefault();
                 var dataset_name = $el_edit_attr.find( "input[name='name']" ).val();
- 
                 // Make dataset's name a mandatory field
                 if( dataset_name === "" || dataset_name === null || !dataset_name ) {
                     self.display_message( self, { 'message': 'Please give a name to the dataset', 'status': 'error' }, $el_edit_attr );
                     return;
                 }
-
                 var post_data = $el_edit_attr.find( "form[name='edit_attributes']" ).serializeArray();
                 self.call_ajax( self, post_url, self.convert_to_object( post_data ) );
             });
 
+            // Click event for Auto-detect button
             $el_edit_attr.find( '.btn-auto-detect' ).click( function( e ) {
                 e.preventDefault();
                 self.call_ajax( self, post_url, { 'dataset_id': dataset_id, 'detect': 'Auto-detect' } );
+            });
+
+            // Click event for Convert to new format button
+            $el_edit_attr.find( '.btn-convert-dataset' ).click( function( e ) {
+                e.preventDefault();
+                var post_data = $el_edit_attr.find( "form[name='convert_data']" ).serializeArray();
+                post_data.push( { 'name': 'convert_data', 'value': 'Convert' } );
+                self.call_ajax( self, post_url, self.convert_to_object( post_data ) );
             });
         },
 
@@ -78,6 +90,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
                 data: data,
                 success: function( response ) {
                     self.render_attribute_page( self, response );
+                },
+                error   : function( response ) {
+                    self.page.display( new Ui.Message( { 'message': 'Error occured', 'status': 'error',
+                        'persistent': true, 'cls': 'errormessage' } ) );
                 }
             });
         },
@@ -110,7 +126,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
                 id      : 'convert',
                 title   : 'Convert',
                 icon    : 'fa-gear',
-                tooltip : 'Convert to new format'
+                tooltip : 'Convert to new format',
+                $el     : $( self._convertTabTemplate( self, response ) )
             });
 
             self.tabs.add({
@@ -184,7 +201,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
                                           "</div>";
                 }
             });
-
             template = template + "<div class='form-row'>" +
                                       "<input class='btn-submit-attributes' type='submit' name='save' value='Save'/>" +
                                   "</div>";
@@ -200,13 +216,43 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
                                           "</div>" +
                                       "</div>" +
                                   "</form>";
-
             if( response.data_missing_meta ) {
                 template = template + "<div class='form-row'>" +
                                           "<div class='errormessagesmall'> Required metadata values are missing. Some of these values may not be editable by the user. Selecting 'Auto-detect' will attempt to fix these values. </div>" +
                                       "</div>";
             }
-            
+            template = template + "</div></div>";
+            return template;
+        },
+
+        /** Template for the Convert tab */
+        _convertTabTemplate: function( self, response ) {
+            var template = "<div class='toolFormTitle'>Convert to new format</div>" +
+                               "<div class='toolFormBody'>";
+            // If there is at least a data format converter
+            if( response.converters_collection.length > 0 ) {
+                template = template + "<form name='convert_data'>" +
+                                              "<div class='form-row'>" +
+                                                  "<label>Name:</label>" +
+                                                  "<input type='hidden' name='dataset_id' value='" + response.dataset_id + "'>" +
+                                                  "<div style='float: left; width: 250px; margin-right: 10px;'>";
+
+                template = template + "<select name='target_type'>";
+                // Build a select box using all the converter types
+                _.each( response.converters_collection, function( item ) {
+                    template = template + "<option value='" + item[ 0 ] + "'>" + item[ 1 ] + "</option>";
+                });
+                template = template + "</select></div>";
+                template = template + "<div class='toolParamHelp' style='clear: both;'>This will create a new dataset with the contents of this dataset converted to a new format.</div><div style='clear: both'></div></div>";
+
+                template = template + "<div class='form-row'>" +
+                                          "<input class='btn-convert-dataset' type='submit' name='convert_data' value='Convert'/>" +
+                                      "</div>" +
+                                      "</form>";
+                }
+                else {
+                    template = template + "<div>No conversions available</div>";
+                }
             template = template + "</div></div>";
             return template;
         }

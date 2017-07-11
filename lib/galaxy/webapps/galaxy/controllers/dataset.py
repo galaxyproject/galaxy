@@ -467,7 +467,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             current_roles_collection = [ (r.name, r.id) for r in current_user_roles ]
             data_metadata = [ ( name, spec.visible, spec.desc ) for name, spec in data.metadata.spec.items() ]
             converters = data.get_converter_types()
-            converters_collection = [ (item.key, item.value) for item in converters.items() ]
+            converters_collection = [ (key, value.name) for key, value in converters.items() ]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset )
             metadata_html = dict()
             for name, spec in data.metadata.spec.items():
