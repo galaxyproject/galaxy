@@ -470,8 +470,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             converters_collection = [ (key, value.name) for key, value in converters.items() ]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset )
             metadata_html = dict()
-            for name, spec in data.metadata.spec.items():
-                metadata_html[ name ] = data.metadata.get_html_by_name( name, trans=trans )
+            for item in data_metadata:
+                if item[ 1 ]:
+                    metadata_html[ item[ 0 ] ] = data.metadata.get_html_by_name( item[ 0 ], trans=trans )
             
             if trans.get_user() is not None:
                user_available = True

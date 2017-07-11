@@ -41,30 +41,46 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
             self.register_attr_events( self, response.dataset_id, $el_edit_attr );
         },
 
-        /** Convert array to post object */
-        convert_to_object: function( collection ) {
-            var post_object = {};
-            _.each( collection, function( item ) {
-                post_object[ item.name ] = item.value;
-            })
-            return post_object;
-        },
-
         /** Register submit button events */
         register_attr_events: function( self, dataset_id, $el_edit_attr ) {
             var post_url = Galaxy.root + 'dataset/edit';
-
             // Click event of Save attributes button
             $el_edit_attr.find( '.btn-submit-attributes' ).click( function( e ) {
-                e.preventDefault();
-                var dataset_name = $el_edit_attr.find( "input[name='name']" ).val();
-                // Make dataset's name a mandatory field
-                if( dataset_name === "" || dataset_name === null || !dataset_name ) {
-                    self.display_message( self, { 'message': 'Please give a name to the dataset', 'status': 'error' }, $el_edit_attr );
-                    return;
-                }
-                var post_data = $el_edit_attr.find( "form[name='edit_attributes']" ).serializeArray();
-                self.call_ajax( self, post_url, self.convert_to_object( post_data ) );
+                $el_edit_attr.find( '#formeditattr' ).submit( function( event ) {
+                    event.preventDefault();
+                    var fields = $( this ).serializeArray(),
+                        post_obj = {},
+                        repeated_fields = [];
+
+                    _.each( fields, function( field ) {
+                        if( !(field.name in post_obj) ) {
+                            post_obj[ field.name ] = field.value;
+                        }
+                        else {
+                            repeated_fields.push( field.name );
+                        }
+                    });
+
+                    // To handle the case of multiple values of the fields
+                    // having the same name
+                    _.each( repeated_fields, function( rep_field ) {
+                        var repeated_counter = 0;
+                        post_obj[ rep_field ] = [];
+                        _.each( fields, function( field ) {
+                            if( field.name === rep_field ) {
+                                post_obj[ rep_field ][ repeated_counter ] = field.value;
+                                repeated_counter = repeated_counter + 1;
+                            }
+                        });
+                    });
+
+                    // Make dataset's name a mandatory field
+                    if( post_obj.name === "" || post_obj.name === null || !post_obj.name ) {
+                        self.display_message( self, { 'message': 'Please give a name to the dataset', 'status': 'error' }, $el_edit_attr );
+                        return;
+                    }
+                    self.call_ajax( self, post_url, post_obj );
+                });
             });
 
             // Click event for Auto-detect button
@@ -76,9 +92,15 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
             // Click event for Convert to new format button
             $el_edit_attr.find( '.btn-convert-dataset' ).click( function( e ) {
                 e.preventDefault();
-                var post_data = $el_edit_attr.find( "form[name='convert_data']" ).serializeArray();
-                post_data.push( { 'name': 'convert_data', 'value': 'Convert' } );
-                self.call_ajax( self, post_url, self.convert_to_object( post_data ) );
+                var fields = $el_edit_attr.find( "#convertdata" ).serializeArray(),
+                    post_obj = {};
+                fields.push( { 'name': 'convert_data', 'value': 'Convert' } );
+                _.each( fields, function( field ) {
+                    if( !(field.name in post_obj) ) {
+                        post_obj[ field.name ] = field.value;
+                    }
+                });
+                self.call_ajax( self, post_url, post_obj );
             });
         },
 
@@ -101,6 +123,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
         /** Display actions messages */
         display_message: function( self, response, $el ) {
             $el_message = $el.find( '.response-message' );
+            // Remove all classes related to messages if present
             $el_message.removeClass( 'errormessage donemessage warningmessage' );
             if ( response.message && response.message !== null && response.message !== ""  ) {
                 $el_message.addClass( response.status + 'message' );
@@ -160,7 +183,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
         _attributesTabTemplate: function( self, response ) {
             var template = "<div class='toolFormTitle'>Edit Attributes</div>" +
                                "<div class='toolFormBody'>" + 
-                                   "<form name='edit_attributes'>" + 
+                                   "<form name='edit_attributes' id='formeditattr'>" + 
                                        "<div class='form-row'>" +
                                            "<label>Name:</label>" +
                                            "<div style='float: left; width: 250px; margin-right: 10px;'>" +
@@ -206,7 +229,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
                                   "</div>";
             template = template + "</form>";
 
-            // Auto-detect action
+            // Form for Auto-detect action
             template = template + "<form name='auto_detect'>" +
                                       "<div class='form-row'>" +
                                           "<div style='float: left; width: 250px; margin-right: 10px;'>" +
@@ -231,7 +254,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
                                "<div class='toolFormBody'>";
             // If there is at least a data format converter
             if( response.converters_collection.length > 0 ) {
-                template = template + "<form name='convert_data'>" +
+                template = template + "<form name='convert_data' id='convertdata'>" +
                                               "<div class='form-row'>" +
                                                   "<label>Name:</label>" +
                                                   "<input type='hidden' name='dataset_id' value='" + response.dataset_id + "'>" +
