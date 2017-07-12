@@ -1,8 +1,9 @@
 """The module describes the ``sentry`` error sink plugin."""
 import logging
 
-from ..sinks import ErrorSinkPlugin
 from galaxy.util import string_as_bool
+
+from ..sinks import ErrorSinkPlugin
 
 log = logging.getLogger( __name__ )
 

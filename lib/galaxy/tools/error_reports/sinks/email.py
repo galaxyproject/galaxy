@@ -3,9 +3,10 @@ from __future__ import absolute_import
 
 import logging
 
-from ..sinks import ErrorSinkPlugin
 from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util import string_as_bool
+
+from ..sinks import ErrorSinkPlugin
 
 log = logging.getLogger( __name__ )
 
