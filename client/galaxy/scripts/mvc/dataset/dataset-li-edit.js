@@ -155,7 +155,7 @@ var DatasetListItemEdit = _super.extend(
             return null
         }
         return faIconButton({
-            title: _('Tool Help'),
+            title: _l('Tool Help'),
             classes: 'icon-btn',
             href: '#',
             faIcon: 'fa-question',
