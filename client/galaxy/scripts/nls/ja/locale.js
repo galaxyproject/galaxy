@@ -1,7 +1,147 @@
 /** ja localization */
 define({
+// ----------------------------------------------------------------------------- masthead
+"Analyze Data":
+    "データ解析",
+"Workflow":
+    "ワークフロー",
+"Shared Data":
+    "共有データ",
+"Data Libraries":
+    "データライブラリ",
+"Histories":
+    "ヒストリー",
+"Workflows":
+    "ワークフロー",
+"Visualizations":
+    "可視化",
+"Pages":
+    "ページ",
+"Visualization":
+    "可視化",
+"New Track Browser":
+    "新しい Track Browser",
+"Saved Visualizations":
+    "保存された可視化",
+"Interactive Environments":
+    "インタラクティブ環境",
+"Admin":
+    "管理者",
+"Help":
+    "ヘルプ",
+"Support":
+    "サポート",
+"Search":
+    "検索",
+"Support":
+    "サポート",
+"Search":
+    "検索",
+"Mailing Lists":
+    "メーリングリスト",
+"Videos":
+    "動画",
+//"Wiki":
+//    "ドキュメント",
+"How to Cite Galaxy":
+    "Galaxy を引用する方法",
+"Interactive Tours":
+    "インタラクティブツアー",
+"User":
+    "ユーザー",
+"Login":
+    "ログイン",
+"Register":
+    "登録",
+"Login or Register":
+    "ログイン/登録",
+//"Logged in as":
+//    "",
+"Preferences":
+    "設定",
+"Custom Builds":
+    "カスタムビルド",
+"Logout":
+    "ログアウト",
+"Saved Histories":
+    "保存されたヒストリー",
+"Saved Datasets":
+    "保存されたデータセット",
+"Saved Pages":
+    "保存されたページ",
+//Tooltip
+"Account and saved data":
+        "アカウントと保存されたデータ",
+"Account registration or login":
+        "アカウントの登録またはログイン",
+"Support, contact, and community":
+        "サポート、コンタクト、コミュニティ",
+"Administer this Galaxy":
+        "この Galaxy の管理者",
+"Visualize datasets":
+        "データセットの可視化",
+"Access published resources":
+        "パブリッシュされたリソースへアクセス",
+"Chain tools into workflows":
+        "ツールとワークフローの連携",
+"Analysis home view":
+        "解析ホーム",
+
+
 
 // ---------------------------------------------------------------------------- histories
+"History Lists":
+    "ヒストリーリスト",
+// Saved histories is defined above.
+// "Saved Histories":
+//     false,
+"Histories Shared with Me":
+    "私と共有されているヒストリー",
+"Current History":
+    "現在のヒストリー",
+"Create New":
+    "新しく作成",
+"Copy History":
+    "ヒストリーをコピーする",
+"Share or Publish":
+    "共有またはパブリッシュ",
+"Show Structure":
+    "構造を見る",
+"Extract Workflow":
+    "ワークフローを抽出",
+// Delete is defined elsewhere, but is also in this menu.
+// "Delete":
+//     false,
+"Delete Permanently":
+    "永久に削除",
+"Dataset Actions":
+   "データセットの操作",
+"Copy Datasets":
+    "データセットをコピー",
+"Dataset Security":
+    "データセットのセキュリティ",
+"Resume Paused Jobs":
+    "一時停止したジョブの再開",
+"Collapse Expanded Datasets":
+    "展開されたデータセットを畳む",
+"Unhide Hidden Datasets":
+    "隠されたデータセットを表示する",
+"Delete Hidden Datasets":
+    "隠されたデータセットを削除する",
+"Purge Deleted Datasets":
+    "削除されたデータセットを永久に削除",
+"Downloads":
+    "ダウンロード",
+"Export Tool Citations":
+    "ツールの引用をエクスポート",
+"Export History to File":
+    "ヒストリーをファイルへエクスポート",
+"Other Actions":
+    "その他のアクション",
+"Import from File":
+    "ファイルからインポート",
+"Webhooks":
+    "Webhooks",
 // ---- history-model
 // ---- history-view
 "This history is empty" :
@@ -191,6 +331,12 @@ define({
     "永久にディスクから削除",
 "Unhide it" :
     "非表示解除する",
+"Saved Histories":
+    "保存されたヒストリ",
+"Import from File":
+    "ファイルからの読み込み",
+
+
 
 //"You may be able to" :
 //false,
