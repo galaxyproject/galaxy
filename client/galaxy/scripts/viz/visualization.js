@@ -75,7 +75,7 @@ var select_datasets = function(filters, success_fn) {
                 var requests = [];
                 tabs.$('input[name=id]:checked').each(function() {
                     requests[requests.length] = $.ajax({
-                        url      : add_track_async_url + '/' + $(this).val(),
+                        url      : Galaxy.root + 'api/datasets/' + $(this).val(),
                         dataType : 'json',
                         data     : {
                             data_type : 'track_config',
