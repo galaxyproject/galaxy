@@ -387,11 +387,11 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         # For signals not declared by POSIX, any other string may be returned.
         # check if job was aborted
 
-        # get the used time and memory (take care of using , as decimal separator)
-        extinfo["time_wasted"] = float(rv.resourceUsage['maxvmem'].replace(",", "."))
-        extinfo["memory_wasted"] = float(rv.resourceUsage['wallclock'].replace(",", "."))
+        # get the used time and memory
+        extinfo["time_wasted"] = float(rv.resourceUsage['wallclock'])
+        extinfo["memory_wasted"] = float(rv.resourceUsage['maxvmem'])
 
-        logging.debug("wait -> \texitStatus {0}\thasCoreDump {1}\thasExited {2}\thasSignal {3}\tjobId {4}\t\tterminatedSignal {5}\twasAborted {6}\t".format(rv.exitStatus, rv.hasCoreDump, rv.hasExited, rv.hasSignal, rv.jobId, rv.terminatedSignal, rv.wasAborted))
+        logging.debug("wait -> \texitStatus {0}\thasCoreDump {1}\thasExited {2}\thasSignal {3}\tjobId {4}\t\tterminatedSignal {5}\twasAborted {6}\tresourceUsage {7}".format(rv.exitStatus, rv.hasCoreDump, rv.hasExited, rv.hasSignal, rv.jobId, rv.terminatedSignal, rv.wasAborted, rv.resourceUsage))
         if rv.wasAborted:
             logging.error( "DRMAAUniva: job {job_id} was aborted according to wait()".format(job_id=job_id) )
             extinfo["deleted"] = True
@@ -586,7 +586,7 @@ def _parse_mem( mstring ):
 
 def _parse_time( tstring ):
     tme = None
-    m = re.search( "([0-9:]+)\s", tstring )
+    m = re.search( "([0-9:]+)", tstring )
     if m is not None:
         timespl = m.group(1).split(':')
         tme = int( timespl[-1] )  # sec
