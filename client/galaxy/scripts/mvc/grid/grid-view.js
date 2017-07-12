@@ -7,7 +7,7 @@ define([
     'utils/utils',
     'mvc/grid/grid-model',
     'mvc/grid/grid-template',
-    "mvc/ui/popup-menu"
+    'mvc/ui/popup-menu'
 ], function(Utils, GridModel, Templates, PopupMenu) {
 
 // grid view
@@ -17,8 +17,7 @@ return Backbone.View.extend({
     grid: null,
 
     // Initialize
-    initialize: function(grid_config)
-    {
+    initialize: function(grid_config) {
         this.dict_format = grid_config.dict_format;
         var self = this;
         window.add_tag_to_grid_filter = function( tag_name, tag_value ){
@@ -72,8 +71,7 @@ return Backbone.View.extend({
     },
 
     // Initialize
-    init_grid: function(grid_config)
-    {
+    init_grid: function(grid_config) {
         // link grid model
         this.grid = new GridModel(grid_config);
 
@@ -430,8 +428,7 @@ return Backbone.View.extend({
     },
 
     // confirmation/submission of operation request
-    submit_operation: function (operation_button, confirmation_text)
-    {
+    submit_operation: function (operation_button, confirmation_text) {
         // identify operation
         var operation_name = $(operation_button).val();
 

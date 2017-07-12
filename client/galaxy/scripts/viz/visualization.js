@@ -36,17 +36,20 @@ var CustomToJSON = {
  * definitions for selected datasets.
  */
 var select_datasets = function(dataset_url, add_track_async_url, filters, success_fn) {
-
     // history dataset selection tab
-    var history_grid = new GridView( {
+    var history_grid = new GridView({
         url_base    : Galaxy.root + 'visualization/list_history_datasets',
-        url_data    : filters,
         dict_format : true,
         embedded    : true
     });
     var history_list = new Ui.Select.View({
         onchange: function() {
-            history_grid.grid.add_filter( 'history', history_list.value()  );
+            history_grid.grid.add_filter( 'history', history_list.value() );
+            _.each( filters, function( value, key ) {
+                if ( key.substr( 0, 2 ) == 'f-' ) {
+                    history_grid.grid.add_filter( key.substr( 2 ), value );
+                }
+            });
             history_grid.update_grid();
         }
     });
@@ -74,7 +77,6 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
     var tabs = new Tabs.View();
     tabs.add({  id      : 'histories',
                 title   : 'Histories',
-                icon    : 'fa fa-header',
                 $el     : $( '<div/>' ).append( $( '<h5/>' ).append( 'Selected history:' ) )
                                        .append( history_list.$el )
                                        .append( $( '<h5/>' ).append( 'Available datasets:' ) )
@@ -82,7 +84,6 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
     });
     tabs.add({  id      : 'libraries',
                 title   : 'Libraries',
-                icon    : 'fa fa-database',
                 $el     : $( '<div/>' ).append( library_grid.$el )
     });
 
@@ -120,7 +121,7 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
                 });
                 Galaxy.modal.hide();
             }
-       }
+        }
     });
 };
 
