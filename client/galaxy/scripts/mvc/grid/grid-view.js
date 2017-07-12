@@ -39,6 +39,7 @@ return Backbone.View.extend({
                 Utils.get({
                     url: grid_config.url_base,
                     success: function( response ) {
+                        response.embedded = grid_config.embedded;
                         self.init_grid( response );
                     }
                 });
