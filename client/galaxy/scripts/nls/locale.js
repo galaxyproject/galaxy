@@ -340,6 +340,9 @@ false,
 "Edit dataset annotation" :
     false,
 
+"Tool Help" :
+    false,
+
 // ---------------------------------------------------------------------------- admin
 "Search Tool Shed":
     false,
@@ -380,6 +383,12 @@ false,
 "Local data":
     false,
 "Form Definitions":
+    false,
+
+// ---------------------------------------------------------------------------- Scratchbook
+"Enable/Disable Scratchbook":
+    false,
+"Show/Hide Scratchbook":
     false,
 
 // ---------------------------------------------------------------------------- misc. MVC
