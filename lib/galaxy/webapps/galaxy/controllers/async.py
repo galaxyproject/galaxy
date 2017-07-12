@@ -111,7 +111,6 @@ class ASync( BaseUIController ):
                     try:
                         GALAXY_TYPE = obj.format
                         outputs_count += 1
-                        break
                     except Exception:
                         # exclude outputs different from ToolOutput (e.g. collections) from the previous assumption
                         # a collection object does not have the 'format' attribute, so it will throw an exception
