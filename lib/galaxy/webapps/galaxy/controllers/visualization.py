@@ -59,7 +59,7 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
         grids.TextColumn( "Type", key="extension", model_class=model.HistoryDatasetAssociation ),
         grids.TextColumn( "history_id", key="history_id", model_class=model.HistoryDatasetAssociation, visible=False ),
         HistoryColumn( "History", key="history", visible=True ),
-        DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=True, sortable=False )
+        DbKeyColumn( "Build", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=True, sortable=False )
     ]
     columns.append(
         grids.MulticolFilterColumn( "Search name and filetype", cols_to_filter=[ columns[1], columns[2] ],
@@ -87,7 +87,7 @@ class LibraryDatasetsSelectionGrid( grids.Grid ):
     columns = [
         grids.GridColumn( "Id", key="id" ),
         grids.TextColumn( "Name", key="name", model_class=model.LibraryDatasetDatasetAssociation ),
-        grids.TextColumn( "Filetype", key="extension", model_class=model.LibraryDatasetDatasetAssociation ),
+        grids.TextColumn( "Type", key="extension", model_class=model.LibraryDatasetDatasetAssociation ),
     ]
     columns.append(
         grids.MulticolFilterColumn( "Search name and filetype", cols_to_filter=[ columns[1], columns[2] ],
@@ -115,7 +115,7 @@ class TracksterSelectionGrid( grids.Grid ):
     show_item_checkboxes = True
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Visualization, filterable="standard" ),
-        grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization ),
+        grids.TextColumn( "Build", key="dbkey", model_class=model.Visualization ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
 
@@ -156,7 +156,7 @@ class VisualizationListGrid( grids.Grid ):
     columns = [
         grids.TextColumn( "Title", key="title", attach_popup=True, link=get_url_args ),
         grids.TextColumn( "Type", method='get_display_name' ),
-        grids.TextColumn( "Dbkey", key="dbkey" ),
+        grids.TextColumn( "Build", key="dbkey" ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
