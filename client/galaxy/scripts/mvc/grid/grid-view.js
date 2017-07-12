@@ -467,26 +467,11 @@ return Backbone.View.extend({
     },
 
     check_all_items: function () {
-        var chk_all = document.getElementById('check_all'),
-            checks = document.getElementsByTagName('input'),
-            total = 0,
-            i;
-        if ( chk_all.checked === true ) {
-            for ( i=0; i < checks.length; i++ ) {
-                if ( checks[i].name.indexOf( 'id' ) !== -1) {
-                   checks[i].checked = true;
-                   total++;
-                }
-            }
-        }
-        else {
-            for ( i=0; i < checks.length; i++ ) {
-                if ( checks[i].name.indexOf( 'id' ) !== -1) {
-                   checks[i].checked = false;
-                }
-
-            }
-        }
+        var check = this.$('.grid-row-select-checkbox');
+        var state = this.$( '#check_all' ).prop( 'checked' );
+        _.each( check, function( c ) {
+            $( c ).prop( 'checked', state );
+        });
         this.init_grid_elements();
     },
 

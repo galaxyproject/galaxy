@@ -73,7 +73,8 @@ var select_datasets = function(filters, success_fn) {
             },
             'Add': function() {
                 var requests = [];
-                tabs.$('input[name=id]:checked').each(function() {
+                tabs.$('input.grid-row-select-checkbox[name=id]:checked').each(function() {
+                    window.console.log( $(this).val() );
                     requests[requests.length] = $.ajax({
                         url      : Galaxy.root + 'api/datasets/' + $(this).val(),
                         dataType : 'json',
