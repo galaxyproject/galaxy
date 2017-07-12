@@ -41,11 +41,12 @@ class SentryPlugin( ErrorSinkPlugin ):
             if 'message' in kwargs:
                 extra['message'] = kwargs['message']
 
-            self.app.sentry_client.capture(
+            response = self.app.sentry_client.capture(
                 'raven.events.Message',
                 message="Galaxy Job Error: %s  v.%s" % (job.tool_id, job.tool_version),
                 extra=extra,
             )
+            return ( 'Submitted bug report to Sentry. Your guru meditation number is %s' % response, 'done' )
 
 
 __all__ = ( 'SentryPlugin', )

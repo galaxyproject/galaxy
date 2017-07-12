@@ -65,3 +65,8 @@ Sentry
 This refactors the existing on-failure submit-to-sentry behaviour into a bug
 reporting plugin. Now, for example, you are able to disable the automatic
 submission to sentry and only run that whenever the user reports it.
+
+When ``verbose="true" user_submission="true"``, the plugin will inform the user
+that ``Submitted bug report to Sentry. Your guru meditation number is
+dc907d44ce294f78b267a56f68e5cd1a``, using the same phrasing that is common to
+users from Galaxy internal server errors.
