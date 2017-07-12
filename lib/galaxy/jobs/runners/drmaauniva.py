@@ -43,14 +43,14 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
     # restrict_job_name_length = 15
 
     def check_watched_item( self, ajs, new_watched ):
-        # get state with job_info/qstat 
+        # get state with job_info/qstat
         state = self._get_drmaa_state(ajs.job_id, self.ds, False)
         logging.debug("DRMAAUnivaRunner:check_watched_item ({jobid}) -> state {state}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state]))
         return state
 
     def _complete_terminal_job( self, ajs, drmaa_state, **kwargs ):
         extinfo = dict()
-        # get state with job_info/qstat + wait/qacct 
+        # get state with job_info/qstat + wait/qacct
         state = self._get_drmaa_state(ajs.job_id, self.ds, True, extinfo)
         logging.debug("DRMAAUnivaRunner:_complete_terminal_job ({jobid}) -> state {state} info {info}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state], info=extinfo))
 
@@ -87,10 +87,10 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             # TODO return True?
             return True  # job was not actually terminal
         else:
-            logging.error( "DRMAAUniva: job {job_id} determined unknown state {state}".format(job_id = ajs.job_id, state = state) )
+            logging.error( "DRMAAUniva: job {job_id} determined unknown state {state}".format(job_id=ajs.job_id, state=state) )
             drmaa_state = self.drmaa_job_states.FAILED
         # by default, finish the job with the state from drmaa
-        return super( DRMAAUnivaJobRunner, self )._complete_terminal_job( ajs, drmaa_state = drmaa_state )
+        return super( DRMAAUnivaJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
 
     def _drmaa_state_is_refined( self, statep, staten ):
         """
@@ -98,7 +98,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         """
         # definition of the severity of job states, the hex codes are
         # from the drmaa C library which seem to define a useful order
-        drmaa_job_state_order={
+        drmaa_job_state_order = {
             self.drmaa.JobState.UNDETERMINED: 0x00,
             self.drmaa.JobState.QUEUED_ACTIVE: 0x10,
             self.drmaa.JobState.SYSTEM_ON_HOLD: 0x11,
@@ -436,7 +436,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
             state = self._get_drmaa_state_qstat(job_id, extinfo)
         # if the job is finished (in whatever state) get (additional) infos
         # drmaa.wait or qacct
-        if waitqacct == True and state in [self.drmaa.JobState.UNDETERMINED, self.drmaa.JobState.DONE, self.drmaa.JobState.FAILED ]:
+        if waitqacct and state in [self.drmaa.JobState.UNDETERMINED, self.drmaa.JobState.DONE, self.drmaa.JobState.FAILED ]:
             try:
                 wstate = self._get_drmaa_state_wait(job_id, ds, extinfo)
             except DRMAAWaitUnusable:
@@ -583,6 +583,7 @@ def _parse_mem( mstring ):
             logging.error( "DRMAAUniva: unparsable memory spec {spec}".format(spec=mstring) )
     return mem
 
+
 def _parse_time( tstring ):
     tme = None
     m = re.search( "([0-9:]+)\s", tstring )
@@ -596,6 +597,7 @@ def _parse_time( tstring ):
         if len( timespl ) > 3:     # day
             tme += int( timespl[-4] ) * 86400
     return tme
+
 
 def _parse_native_specs( job_id, native_spec ):
     """
@@ -613,7 +615,6 @@ def _parse_native_specs( job_id, native_spec ):
         tme = _parse_time( m.group(1) )
         if tme is None:
             logging.error( "DRMAAUniva: job {job_id} has unparsable time native spec {spec}".format(job_id=job_id, spec=native_spec) )
-        
     # parse memory
     m = re.search( "mem=([0-9][KGM]?)", native_spec )
     if m is not None:
