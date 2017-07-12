@@ -204,8 +204,12 @@ class User( object, Dictifiable ):
             except KeyError:
                 pass
         else:
-            log.warning("invalid configuration of real_system_username")
-            system_user_pwent = None
+            try:
+                system_user_pwent = pwd.getpwnam(real_system_username)
+            except KeyError:
+                log.warning("invalid configuration of real_system_username")
+                system_user_pwent = None
+                pass
         return system_user_pwent
 
     def all_roles( self ):
