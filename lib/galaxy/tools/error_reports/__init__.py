@@ -4,7 +4,6 @@ import collections
 import logging
 import os
 
-from galaxy import util
 from galaxy.util import plugin_config
 
 log = logging.getLogger(__name__)
