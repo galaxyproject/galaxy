@@ -115,7 +115,7 @@ var TracksterUI = Base.extend({
         var self = this,
             menu = mod_icon_btn.create_icon_buttons_menu([
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() {
-                visualization.select_datasets(Galaxy.root + "visualization/list_current_history_datasets", Galaxy.root + "api/datasets", { 'f-dbkey': view.dbkey },
+                visualization.select_datasets({ 'dbkey': view.dbkey },
                 function(new_tracks) {
                     _.each(new_tracks, function(track) {
                         view.add_drawable( tracks.object_from_template(track, view, view) );

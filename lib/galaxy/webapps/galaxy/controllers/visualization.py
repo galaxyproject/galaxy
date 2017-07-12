@@ -31,49 +31,42 @@ log = logging.getLogger( __name__ )
 #
 # -- Grids --
 #
-
-class DbKeyColumn( grids.GridColumn ):
-    """ Column for filtering by and displaying dataset dbkey. """
-    def filter( self, trans, user, query, dbkey ):
-        """ Filter by dbkey. """
-        # Use raw SQL b/c metadata is a BLOB.
-        dbkey_user, dbkey = decode_dbkey( dbkey )
-        dbkey = dbkey.replace("'", "\\'")
-        return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
-
-
-class HistoryColumn( grids.GridColumn ):
-    """ Column for filtering by history id. """
-    def filter( self, trans, user, query, history_id ):
-        return query.filter( model.History.id == trans.security.decode_id(history_id) )
-
-
 class HistoryDatasetsSelectionGrid( grids.Grid ):
+
+    class DbKeyColumn( grids.GridColumn ):
+        def filter( self, trans, user, query, dbkey ):
+            """ Filter by dbkey through a raw SQL b/c metadata is a BLOB. """
+            dbkey_user, dbkey = decode_dbkey( dbkey )
+            dbkey = dbkey.replace("'", "\\'")
+            return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
+
+
+    class HistoryColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, hda):
+            return escape(hda.history.name)
+
+        def sort( self, trans, query, ascending, column_name=None ):
+            """Sort query using this column."""
+            return grids.GridColumn.sort( self, trans, query, ascending, column_name="history_id" )
+
+
     available_tracks = None
     title = "Add Datasets"
     model_class = model.HistoryDatasetAssociation
     default_filter = { "deleted": "False", "shared": "All" }
     default_sort_key = "-hid"
-    use_async = True
-    use_paging = False
     columns = [
         grids.GridColumn( "Id", key="hid" ),
         grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation ),
-        grids.TextColumn( "Filetype", key="extension", model_class=model.HistoryDatasetAssociation ),
-        HistoryColumn( "History", key="history", visible=False ),
+        grids.TextColumn( "Type", key="extension", model_class=model.HistoryDatasetAssociation ),
+        grids.TextColumn( "history_id", key="history_id", model_class=model.HistoryDatasetAssociation, visible=False ),
+        HistoryColumn( "History", key="history", visible=True ),
         DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=True, sortable=False )
     ]
     columns.append(
         grids.MulticolFilterColumn( "Search name and filetype", cols_to_filter=[ columns[1], columns[2] ],
                                     key="free-text-search", visible=False, filterable="standard" )
     )
-
-    def get_current_item( self, trans, **kwargs ):
-        """
-        Current item for grid is the history being queried. This is a bit
-        of hack since current_item typically means the current item in the grid.
-        """
-        return trans.sa_session.query( model.History ).get( trans.security.decode_id( kwargs[ 'f-history' ] ) )
 
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).join( model.History.table ).join( model.Dataset.table )
@@ -253,7 +246,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
     @web.require_login( "see a history's datasets that can added to this visualization" )
     def list_history_datasets( self, trans, **kwargs ):
         """List a history's datasets that can be added to a visualization."""
-        kwargs[ 'f-history' ] = kwargs.get( 'f-history', trans.security.encode_id( trans.get_history().id ) )
         kwargs[ 'show_item_checkboxes' ] = 'True'
         kwargs[ 'dict_format' ] = True
         return self._history_datasets_grid( trans, **kwargs )

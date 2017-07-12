@@ -35,40 +35,18 @@ var CustomToJSON = {
  * track definitions are obtained from the server and the success_fn is called with the list of
  * definitions for selected datasets.
  */
-var select_datasets = function(dataset_url, add_track_async_url, filters, success_fn) {
+var select_datasets = function(filters, success_fn) {
     // history dataset selection tab
     var history_grid = new GridView({
         url_base    : Galaxy.root + 'visualization/list_history_datasets',
+        filters     : filters,
         dict_format : true,
         embedded    : true
-    });
-    var history_list = new Ui.Select.View({
-        onchange: function() {
-            history_grid.grid.add_filter( 'history', history_list.value() );
-            _.each( filters, function( value, key ) {
-                if ( key.substr( 0, 2 ) == 'f-' ) {
-                    history_grid.grid.add_filter( key.substr( 2 ), value );
-                }
-            });
-            history_grid.update_grid();
-        }
-    });
-    $.ajax( {
-        url         : Galaxy.root + 'api/histories',
-        success     : function( response ) {
-            var options = [];
-            _.each( response, function( item ) {
-                options.push({ label: item.name, value: item.id });
-            });
-            history_list.update( options );
-            history_list.trigger( 'change' );
-        }
     });
 
     // library dataset selection tab
     var library_grid = new GridView( {
         url_base    : Galaxy.root + 'visualization/list_library_datasets',
-        url_data    : filters,
         dict_format : true,
         embedded    : true
     });
@@ -77,10 +55,7 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
     var tabs = new Tabs.View();
     tabs.add({  id      : 'histories',
                 title   : 'Histories',
-                $el     : $( '<div/>' ).append( $( '<h5/>' ).append( 'Selected history:' ) )
-                                       .append( history_list.$el )
-                                       .append( $( '<h5/>' ).append( 'Available datasets:' ) )
-                                       .append( history_grid.$el )
+                $el     : $( '<div/>' ).append( history_grid.$el )
     });
     tabs.add({  id      : 'libraries',
                 title   : 'Libraries',

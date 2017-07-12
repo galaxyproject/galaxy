@@ -107,7 +107,6 @@ return Backbone.Model.extend({
         _.each(_.pairs(self.attributes.filters), function(k) {
             url_data['f-' + k[0]] = k[1];
         });
-
         return url_data;
     },
     

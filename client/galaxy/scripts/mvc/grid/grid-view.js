@@ -35,10 +35,15 @@ return Backbone.View.extend({
         if ( this.dict_format ) {
             this.setElement('<div/>');
             if ( grid_config.url_base && !grid_config.items ) {
-                Utils.get({
-                    url: grid_config.url_base,
-                    success: function( response ) {
+                var url_data = {};
+                _.each(grid_config.filters, function(v, k) {
+                    url_data['f-' + k] = v;
+                });
+                $.ajax({
+                    url     : grid_config.url_base + '?' + $.param( url_data ),
+                    success : function( response ) {
                         response.embedded = grid_config.embedded;
+                        response.filters  = grid_config.filters;
                         self.init_grid( response );
                     }
                 });
