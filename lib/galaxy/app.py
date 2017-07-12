@@ -27,6 +27,7 @@ from galaxy.tools.cache import (
     ToolShedRepositoryCache
 )
 from galaxy.jobs import metrics as job_metrics
+from galaxy.tools.error_reports import ErrorReports
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
 from galaxy.queue_worker import GalaxyQueueWorker
@@ -101,6 +102,9 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.
         self.job_metrics = job_metrics.JobMetrics( self.config.job_metrics_config_file, app=self )
+
+        # Initialize error report sinks.
+        self.error_reports = ErrorReports( self.config.error_report_file, app=self )
 
         # Initialize the job management configuration
         self.job_config = jobs.JobConfiguration(self)

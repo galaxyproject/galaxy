@@ -165,12 +165,12 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         biostar_report = 'biostar' in str( kwd.get( 'submit_error_report') ).lower()
         if biostar_report:
             return trans.response.send_redirect( url_for( controller='biostar', action='biostar_tool_bug_report', hda=id, email=email, message=message ) )
-        try:
-            error_reporter = EmailErrorReporter( id, trans.app )
-            error_reporter.send_report( user=trans.user, email=email, message=message )
-            return trans.show_ok_message( "Your error report has been sent" )
-        except Exception as e:
-            return trans.show_error_message( "An error occurred sending the report by email: %s" % str( e ) )
+
+        dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( self.decode_id( id ) )
+        job = self._get_job_for_dataset( trans, id )
+        tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+        messages = trans.app.error_reports.default_error_sink.submit_report(dataset, job, tool, user_submission=True, email=email, message=message)
+        return trans.show_messages(messages)
 
     @web.expose
     def default(self, trans, dataset_id=None, **kwd):

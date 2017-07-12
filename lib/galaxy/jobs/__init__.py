@@ -1028,7 +1028,7 @@ class JobWrapper( object, HasResourceParameters ):
                 # the partial files to the object store regardless of whether job.state == DELETED
                 self.__update_output(job, dataset, clean_only=True)
 
-        self._report_error_to_sentry()
+        self._report_error()
         # Perform email action even on failure.
         for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
             ActionBox.execute(self.app, self.sa_session, pja, job)
@@ -1437,7 +1437,7 @@ class JobWrapper( object, HasResourceParameters ):
         self.sa_session.flush()
         log.debug( 'job %d ended (finish() executed in %s)' % (self.job_id, finish_timer) )
         if job.state == job.states.ERROR:
-            self._report_error_to_sentry()
+            self._report_error()
         cleanup_job = self.cleanup_job
         delete_files = cleanup_job == 'always' or ( job.state == job.states.OK and cleanup_job == 'onsuccess' )
         self.cleanup( delete_files=delete_files )
@@ -1809,27 +1809,11 @@ class JobWrapper( object, HasResourceParameters ):
             return self.tool.requires_setting_metadata
         return False
 
-    def _report_error_to_sentry( self ):
+    def _report_error( self ):
         job = self.get_job()
         tool = self.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
-        if self.app.sentry_client and job.state == job.states.ERROR:
-            self.app.sentry_client.capture(
-                'raven.events.Message',
-                message="Galaxy Job Error: %s  v.%s" % (job.tool_id, job.tool_version),
-                extra={
-                    'info' : job.info,
-                    'id' : job.id,
-                    'command_line' : job.command_line,
-                    'stderr' : job.stderr,
-                    'traceback': job.traceback,
-                    'exit_code': job.exit_code,
-                    'stdout': job.stdout,
-                    'handler': job.handler,
-                    'user': self.user,
-                    'tool_version': job.tool_version,
-                    'tool_xml': tool.config_file if tool else None
-                }
-            )
+        for dataset in job.output_datasets:
+            self.app.error_reports.default_error_sink.submit_report(dataset, job, tool, user_submission=False)
 
 
 class TaskWrapper(JobWrapper):
