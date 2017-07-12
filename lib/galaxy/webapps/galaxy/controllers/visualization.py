@@ -263,7 +263,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
     @web.require_login( "see a history's datasets that can added to this visualization" )
     def list_library_datasets( self, trans, **kwargs ):
         """List a library's datasets that can be added to a visualization."""
-        kwargs[ 'f-library' ] = kwargs.get( 'f-library', 'c9a973ea7f36d114' )
         kwargs[ 'show_item_checkboxes' ] = 'True'
         kwargs[ 'dict_format' ] = True
         return self._library_datasets_grid( trans, **kwargs )
