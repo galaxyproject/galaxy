@@ -348,7 +348,61 @@ define({
 //"Edit dataset annotation" :
 //false,
 
-
+// ---------------------------------------------------------------------------- admin
+"Search Tool Shed":
+    "Tool Shed で探す",
+"Search Tool Shed (Beta)":
+    "Tool Shed (Beta) で探す",
+"Monitor installing repositories":
+    "インストールレポジトリのモニタ",
+"Manage installed tools":
+    "インストールしたツールの管理",
+"Reset metadata":
+    "メタデータのリセット",
+"Download local tool":
+    "ローカルツールのダウンロード",
+"Tool lineage":
+    "ツール系統",
+"Reload a tool's configuration":
+    "ツールのコンフィグのリロード",
+"Review tool migration stages":
+    "ツール移行ステージのレビュー",
+"View Tool Error Logs":
+    "ツールのエラーログ",
+"Manage Display Whitelist":
+    "表示ホワイトリストの管理",
+"Manage Tool Dependencies":
+    "ツール依存関係の管理",
+"Users":
+    "ユーザー",
+"Groups":
+    "グループ",
+"API keys":
+    "API キー",
+"Impersonate a user":
+    "ユーザー偽装",
+"Data":
+    "データ",
+"Quotas":
+    "クォータ",
+"Roles":
+    "ロール",
+"Local data":
+    "ローカルデータ",
+"Form definitions":
+    "フォーム定義",
+"Administration":
+    "管理",
+"Server":
+    "サーバー",
+"Tools and Tool Shed":
+    "ツールと Tool Shed",
+"User Management":
+    "ユーザ管理",
+"Data":
+    "データ",
+"Form Definitions":
+    "フォーム定義",
 // ---------------------------------------------------------------------------- misc. MVC
 //"Tags" :
 //false,
