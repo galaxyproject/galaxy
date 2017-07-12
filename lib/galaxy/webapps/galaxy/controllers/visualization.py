@@ -120,10 +120,12 @@ class TracksterSelectionGrid( grids.Grid ):
     ]
 
     def build_initial_query( self, trans, **kwargs ):
-        return trans.sa_session.query( self.model_class ).filter( self.model_class.deleted == false() )
+        return trans.sa_session.query( self.model_class )
 
     def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter( self.model_class.user_id == trans.user.id )
+        return query.filter( self.model_class.user_id == trans.user.id ) \
+                    .filter( self.model_class.deleted == false() ) \
+                    .filter( self.model_class.type == "trackster" )
 
 
 class VisualizationListGrid( grids.Grid ):
