@@ -40,7 +40,6 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
             dbkey = dbkey.replace("'", "\\'")
             return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
 
-
     class HistoryColumn( grids.GridColumn ):
         def get_value( self, trans, grid, hda):
             return escape(hda.history.name)
@@ -48,7 +47,6 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
         def sort( self, trans, query, ascending, column_name=None ):
             """Sort query using this column."""
             return grids.GridColumn.sort( self, trans, query, ascending, column_name="history_id" )
-
 
     available_tracks = None
     title = "Add Datasets"
