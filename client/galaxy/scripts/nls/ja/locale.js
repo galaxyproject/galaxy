@@ -171,10 +171,10 @@ define({
     "各項目を",
 
 // ---- history-view-edit
-//"Edit history tags" :
-//false,
-//"Edit history Annotation" :
-//false,
+"Edit history tags" :
+    "ヒストリーのタグを編集",
+"Edit history annotation" :
+    "ヒストリーのアノテーションを編集",
 "Click to rename history" :
     "ヒストリーの名前を変更するにはクリック",
 // multi operations
