@@ -7,7 +7,7 @@ Uses code from: <https://github.com/unipept/unipept-visualizations>
 Relies on d3_hierarchy Json subclass being added to config/datatypes_conf.xml.sample for the Json output
 (<https://github.com/galaxyproject/galaxy/pull/3580>)
 
-Authors: <a href="http://github.com/caleb-easterly"> Caleb Easterly</h>, <a href="github.com/jj-umn"> James Johnson </a>
+Authors: <a href="http://github.com/caleb-easterly"> Caleb Easterly</h>, <a href="http://github.com/jj-umn"> James Johnson </a>
 
 Support provided by the GalaxyP community:
 
