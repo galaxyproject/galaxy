@@ -102,7 +102,7 @@ var Collection = Backbone.Collection.extend({
                     target  : '_frame'
                 },{
                     title   : _l('Saved Visualizations'),
-                    url     : 'visualization/list',
+                    url     : 'visualizations/list',
                     target  : '_frame'
                 },{
                     title   : _l('Interactive Environments'),

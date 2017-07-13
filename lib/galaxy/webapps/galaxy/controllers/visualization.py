@@ -178,7 +178,7 @@ class VisualizationListGrid( grids.Grid ):
         grids.GridOperation( "Open in Circster", allow_multiple=False, condition=( lambda item: item.type == 'trackster' ), url_args=dict( action='circster' ) ),
         grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit'), target="inbound" ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted )),
-        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), url_args=dict( action='sharing' ) ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), confirm="Are you sure you want to delete this visualization?" ),
     ]
 
@@ -219,7 +219,7 @@ class VisualizationAllPublishedGrid( grids.Grid ):
 
 class VisualizationController( BaseUIController, SharableMixin, UsesVisualizationMixin,
                                UsesAnnotations, UsesItemRatings ):
-    _user_list_grid = VisualizationListGrid()
+    _visualization_list_grid = VisualizationListGrid()
     _published_list_grid = VisualizationAllPublishedGrid()
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
     _library_datasets_grid = LibraryDatasetsSelectionGrid()
@@ -272,6 +272,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         return self._published_list_grid( trans, **kwargs )
 
     @web.expose
+    @web.json
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def list( self, trans, *args, **kwargs ):
 
@@ -284,11 +285,14 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                 item = session.query( model.Visualization ).get( self.decode_id( id ) )
                 if operation == "delete":
                     item.deleted = True
-                if operation == "share or publish":
-                    return self.sharing( trans, **kwargs )
                 if operation == "copy":
                     self.copy( trans, **kwargs )
             session.flush()
+
+        # Build grid
+        kwargs[ 'embedded' ] = True
+        kwargs[ 'dict_format' ] = True
+        grid = self._visualization_list_grid( trans, *args, **kwargs )
 
         # Build list of visualizations shared with user.
         shared_by_others = trans.sa_session \
@@ -299,9 +303,12 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             .order_by( desc( model.Visualization.update_time ) ) \
             .all()
 
-        kwargs[ 'embedded' ] = True
-        grid = self._user_list_grid( trans, *args, **kwargs )
-        return trans.fill_template( "visualization/list.mako", embedded_grid=grid, shared_by_others=shared_by_others )
+        # Add sharing details to grid dictionary
+        grid[ 'shared_by_others' ] = [ {
+            'username' : v.visualization.user.username,
+            'slug'     : v.visualization.slug,
+            'title'    : v.visualization.title } for v in shared_by_others ]
+        return grid
 
     #
     # -- Functions for operating on visualizations. --
@@ -433,7 +440,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
 
         session.flush()
 
-        return trans.fill_template( "/sharing_base.mako", item=visualization, use_panels=True )
+        return trans.fill_template( "/sharing_base.mako", item=visualization, controller_list='visualizations', use_panels=True )
 
     @web.expose
     @web.require_login( "share Galaxy visualizations" )
