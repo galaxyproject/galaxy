@@ -1465,7 +1465,7 @@ class JobWrapper( object, HasResourceParameters ):
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             dataset_assoc.dataset.dataset.set_total_size( user=job.user, pluggedMedia=dataset.pluggedMedia )
-            collected_bytes += dataset_assoc.dataset.dataset.get_total_size( job.user, dataset.pluggedMedia )
+            collected_bytes += dataset_assoc.dataset.dataset.get_total_size( user=job.user, pluggedMedia=dataset.pluggedMedia )
 
         if job.user:
             job.user.adjust_total_disk_usage(collected_bytes)

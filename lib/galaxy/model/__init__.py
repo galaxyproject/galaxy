@@ -1977,7 +1977,6 @@ class DatasetInstance( object ):
 
     def get_size( self, user, nice_size=False ):
         """Returns the size of the data on disk"""
-        print ('2. ' * 80)
         if nice_size:
             return galaxy.util.nice_size( self.dataset.get_size( user ) )
         return self.dataset.get_size( user )

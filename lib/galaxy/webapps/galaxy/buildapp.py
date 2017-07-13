@@ -99,6 +99,7 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_route( '/u/{username}/w/{slug}', controller='workflow', action='display_by_username_and_slug' )
     webapp.add_route( '/u/{username}/w/{slug}/{format}', controller='workflow', action='display_by_username_and_slug' )
     webapp.add_route( '/u/{username}/v/{slug}', controller='visualization', action='display_by_username_and_slug' )
+    webapp.add_route( '/search', controller='search', action='index' )
 
     # TODO: Refactor above routes into external method to allow testing in
     # isolation as well.

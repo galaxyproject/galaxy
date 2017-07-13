@@ -1635,9 +1635,9 @@ simple_mapping( model.HistoryDatasetAssociation,
                         model.HistoryDatasetCollectionAssociation.table.c.id ) ),
         uselist=False,
         backref="hidden_dataset_instances"),
-    _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata),
+    _metadata=deferred( model.HistoryDatasetAssociation.table.c._metadata ),
     pluggedMedia=relation( model.PluggedMedia,
-                           primaryjoin=(model.HistoryDatasetAssociation.table.c.plugged_media_id == model.PluggedMedia.table.c.id ))
+                           primaryjoin=( model.HistoryDatasetAssociation.table.c.plugged_media_id == model.PluggedMedia.table.c.id ) )
 )
 
 simple_mapping( model.Dataset,
