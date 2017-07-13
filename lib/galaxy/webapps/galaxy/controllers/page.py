@@ -325,8 +325,19 @@ class PageController( BaseUIController, SharableMixin,
         # Build grid dictionary.
         kwargs[ 'dict_format' ] = True
         grid = self._page_list( trans, *args, **kwargs )
+        grid[ 'shared_by_others' ] = self._get_shared( trans )
+        return grid
 
-        # Build list of pages shared with user.
+    @web.expose
+    @web.json
+    def list_published( self, trans, *args, **kwargs ):
+        kwargs[ 'dict_format' ] = True
+        grid = self._all_published_list( trans, *args, **kwargs )
+        grid[ 'shared_by_others' ] = self._get_shared( trans )
+        return grid
+
+    def _get_shared( self, trans ):
+        """Identify shared pages"""
         shared_by_others = trans.sa_session \
             .query( model.PageUserShareAssociation ) \
             .filter_by( user=trans.get_user() ) \
@@ -334,19 +345,9 @@ class PageController( BaseUIController, SharableMixin,
             .filter( model.Page.deleted == false() ) \
             .order_by( desc( model.Page.update_time ) ) \
             .all()
-
-        # Render grid wrapped in panels
-        grid[ 'shared_by_others' ] = [ {
-            'username' : p.page.user.username,
-            'slug'     : p.page.slug,
-            'title'    : p.page.title } for p in shared_by_others ]
-        return grid
-
-    @web.expose
-    @web.json
-    def list_published( self, trans, *args, **kwargs ):
-        kwargs[ 'dict_format' ] = True
-        return self._all_published_list( trans, *args, **kwargs )
+        return [ {  'username' : p.page.user.username,
+                    'slug'     : p.page.slug,
+                    'title'    : p.page.title } for p in shared_by_others ]
 
     @web.expose
     @web.require_login( "create pages" )

@@ -269,7 +269,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
     @web.json
     def list_published( self, trans, *args, **kwargs ):
         kwargs[ 'dict_format' ] = True
-        return self._published_list_grid( trans, **kwargs )
+        grid = self._published_list_grid( trans, **kwargs )
+        grid[ 'shared_by_others' ] = self._get_shared( trans )
+        return grid
 
     @web.expose
     @web.json
@@ -293,8 +295,11 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         kwargs[ 'embedded' ] = True
         kwargs[ 'dict_format' ] = True
         grid = self._visualization_list_grid( trans, *args, **kwargs )
+        grid[ 'shared_by_others' ] = self._get_shared( trans )
+        return grid
 
-        # Build list of visualizations shared with user.
+    def _get_shared( self, trans ):
+        """Identify shared visualizations"""
         shared_by_others = trans.sa_session \
             .query( model.VisualizationUserShareAssociation ) \
             .filter_by( user=trans.get_user() ) \
@@ -302,13 +307,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             .filter( model.Visualization.deleted == false() ) \
             .order_by( desc( model.Visualization.update_time ) ) \
             .all()
-
-        # Add sharing details to grid dictionary
-        grid[ 'shared_by_others' ] = [ {
-            'username' : v.visualization.user.username,
-            'slug'     : v.visualization.slug,
-            'title'    : v.visualization.title } for v in shared_by_others ]
-        return grid
+        return [ {  'username' : v.visualization.user.username,
+                    'slug'     : v.visualization.slug,
+                    'title'    : v.visualization.title } for v in shared_by_others ]
 
     #
     # -- Functions for operating on visualizations. --
