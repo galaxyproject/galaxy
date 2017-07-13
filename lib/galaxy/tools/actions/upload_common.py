@@ -407,9 +407,10 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
                     pluggedMedia = pM
                     break
                 # TEMP BLOCK --- END
-
-                trans.app.object_store.create( dataset.dataset, trans.user, pluggedMedia )
+                trans.app.object_store.create( dataset.dataset, user=trans.user, pluggedMedia=pluggedMedia )
             except ObjectInvalid:
+                # FIXME: the followisng error message is misleading; this exception is
+                # raised not necessarily only for a full objectstore.
                 raise Exception('Unable to create output dataset: object store is full')
             object_store_id = dataset.dataset.object_store_id
             trans.sa_session.add( dataset )

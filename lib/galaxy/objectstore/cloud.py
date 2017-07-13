@@ -107,13 +107,6 @@ class CloudObjectStore(ObjectStore):
 
     def _parse_config_xml(self, config_xml):
         try:
-            a_xml = config_xml.findall('auth')[0]
-            # self.access_key = a_xml.get('access_key')
-            # self.secret_key = a_xml.get('secret_key')
-            b_xml = config_xml.findall('bucket')[0]
-            # self.bucket_name = b_xml.get('name')
-            self.use_rr = string_as_bool(b_xml.get('use_reduced_redundancy', "False"))
-            self.max_chunk_size = int(b_xml.get('max_chunk_size', 250))
             cn_xml = config_xml.findall('connection')
             if not cn_xml:
                 cn_xml = {}
@@ -122,7 +115,6 @@ class CloudObjectStore(ObjectStore):
             self.host = cn_xml.get('host', None)
             self.port = int(cn_xml.get('port', 6000))
             self.multipart = string_as_bool(cn_xml.get('multipart', 'True'))
-            self.is_secure = string_as_bool(cn_xml.get('is_secure', 'True'))
             self.conn_path = cn_xml.get('conn_path', '/')
             c_xml = config_xml.findall('cache')[0]
             self.cache_size = float(c_xml.get('size', -1))
@@ -240,7 +232,7 @@ class CloudObjectStore(ObjectStore):
                 umask_fix_perms(path, self.config.umask, 0o666, self.config.gid)
 
     def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None,
-                        obj_dir=False):
+                        obj_dir=False, **kwargs):
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
@@ -504,8 +496,6 @@ class CloudObjectStore(ObjectStore):
             return False
 
     def create(self, obj, user, pluggedMedia, **kwargs):
-        # for line in traceback.format_stack():
-        #     print(line.strip())
         # TODO: An anonymous user call should not even reach here; it should be blocked
         # at upload_common level based on the selected objectstore type. i.e., it should
         # be blocked if objectstore type is set to "cloud".
@@ -612,15 +602,10 @@ class CloudObjectStore(ObjectStore):
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
-        print ('- '* 80)
-        print '--------------- Fixme !'
-        for line in traceback.format_stack():
-            print(line.strip())
-        print ('- '*80)
-        raise
+        # TEMP BLOCK --- START
         user = None
         pluggedMedia = None
-
+        # TEMP BLOCK --- END
         rel_path = self._construct_path(obj, **kwargs)
         # Check cache first and get file if not there
         if not self._in_cache(rel_path):

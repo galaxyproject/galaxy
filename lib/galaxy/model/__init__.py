@@ -1749,7 +1749,7 @@ class Dataset( StorableObject ):
                 # not even this is great!
                 # e.g., Can a dataset have multiple filenames?
             #return filename
-            return self.object_store.get_filename(self, user, pluggedMedia )
+            return self.object_store.get_filename(self, user=user, pluggedMedia=pluggedMedia )
         else:
             filename = self.external_filename
         # Make filename absolute
@@ -1790,7 +1790,7 @@ class Dataset( StorableObject ):
             except OSError:
                 return 0
         else:
-            return self.object_store.size( self, user, pluggedMedia )
+            return self.object_store.size( self, user=user, pluggedMedia=pluggedMedia )
 
     def get_size( self, user, pluggedMedia, nice_size=False ):
         """Returns the size of the data on disk"""
@@ -1801,35 +1801,35 @@ class Dataset( StorableObject ):
                 return self.file_size
         else:
             if nice_size:
-                return galaxy.util.nice_size( self._calculate_size( user, pluggedMedia ) )
+                return galaxy.util.nice_size( self._calculate_size( user=user, pluggedMedia=pluggedMedia ) )
             else:
-                return self._calculate_size( user, pluggedMedia )
+                return self._calculate_size( user=user, pluggedMedia=pluggedMedia )
 
     def set_size( self, user, pluggedMedia ):
         """Sets the size of the data on disk"""
         if not self.file_size:
-            self.file_size = self._calculate_size( user, pluggedMedia )
+            self.file_size = self._calculate_size( user=user, pluggedMedia=pluggedMedia )
 
     def get_total_size( self, user, pluggedMedia ):
         if self.total_size is not None:
             return self.total_size
         # for backwards compatibility, set if unset
-        self.set_total_size( user, pluggedMedia )
+        self.set_total_size( user=user, pluggedMedia=pluggedMedia )
         db_session = object_session( self )
         db_session.flush()
         return self.total_size
 
     def set_total_size( self, user, pluggedMedia ):
         if self.file_size is None:
-            self.set_size( user, pluggedMedia )
+            self.set_size( user=user, pluggedMedia=pluggedMedia )
         self.total_size = self.file_size or 0
-        if self.object_store.exists(self, user, pluggedMedia, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
+        if self.object_store.exists(self, user=user, pluggedMedia=pluggedMedia, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
             for root, dirs, files in os.walk( self.extra_files_path ):
                 self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files if os.path.exists( os.path.join( root, file ) ) ] )
 
     def has_data( self, user, pluggedMedia ):
         """Detects whether there is any data"""
-        return self.get_size( user, pluggedMedia ) > 0
+        return self.get_size( user=user, pluggedMedia=pluggedMedia ) > 0
 
     def mark_deleted( self, include_children=True ):
         self.deleted = True
@@ -1838,7 +1838,7 @@ class Dataset( StorableObject ):
         if not self.has_data( user, pluggedMedia ):
             return False
         try:
-            return is_multi_byte( codecs.open( self.get_file_name( user, pluggedMedia ), 'r', 'utf-8' ).read( 100 ) )
+            return is_multi_byte( codecs.open( self.get_file_name( user=user, pluggedMedia=pluggedMedia ), 'r', 'utf-8' ).read( 100 ) )
         except UnicodeDecodeError:
             return False
     # FIXME: sqlalchemy will replace this
@@ -1846,7 +1846,7 @@ class Dataset( StorableObject ):
     # TODO: is this function ever called ? I don't see the call.
     def _delete( self, user, pluggedMedia ):
         """Remove the file that corresponds to this data"""
-        self.object_store.delete( self, user, pluggedMedia )
+        self.object_store.delete( self, user=user, pluggedMedia=pluggedMedia )
 
     @property
     def user_can_purge( self ):
@@ -1857,9 +1857,9 @@ class Dataset( StorableObject ):
     def full_delete( self, user, pluggedMedia ):
         """Remove the file and extra files, marks deleted and purged"""
         # os.unlink( self.file_name )
-        self.object_store.delete( self, user, pluggedMedia )
-        if self.object_store.exists( self, user, pluggedMedia, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True ):
-            self.object_store.delete( self, user, pluggedMedia, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True )
+        self.object_store.delete( self, user=user, pluggedMedia=pluggedMedia )
+        if self.object_store.exists( self, user=user, pluggedMedia=pluggedMedia, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True ):
+            self.object_store.delete( self, user=user, pluggedMedia=pluggedMedia, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True )
         # if os.path.exists( self.extra_files_path ):
         #     shutil.rmtree( self.extra_files_path )
         # TODO: purge metadata files

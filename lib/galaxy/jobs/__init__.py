@@ -980,9 +980,9 @@ class JobWrapper( object, HasResourceParameters ):
             # TEMP BLOCK --- END
 
             self.app.object_store.create(
-                job, job.user, pluggedMedia, base_dir='job_work', dir_only=True, obj_dir=True)
+                job, user=job.user, pluggedMedia=pluggedMedia, base_dir='job_work', dir_only=True, obj_dir=True)
             self.working_directory = self.app.object_store.get_filename(
-                job, job.user, pluggedMedia, base_dir='job_work', dir_only=True, obj_dir=True)
+                job, user=job.user, pluggedMedia=pluggedMedia, base_dir='job_work', dir_only=True, obj_dir=True)
             # TODO: the call should be like the following.
             # job, job.user, base_dir='job_work', dir_only=True, obj_dir=True )
 
@@ -1078,13 +1078,13 @@ class JobWrapper( object, HasResourceParameters ):
                 dataset.blurb = 'tool error'
                 dataset.info = message
                 dataset.set_size()
-                dataset.dataset.set_total_size( job.user, dataset.pluggedMedia )
+                dataset.dataset.set_total_size( user=job.user, pluggedMedia=dataset.pluggedMedia )
                 dataset.mark_unhidden()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file( dataset.dataset, job.user, dataset.pluggedMedia, create=True )
+                    self.app.object_store.update_from_file( dataset.dataset, user=job.user, pluggedMedia=dataset.pluggedMedia, create=True )
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause( dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state." )
@@ -1318,7 +1318,7 @@ class JobWrapper( object, HasResourceParameters ):
                     dataset.dataset.uuid = context['uuid']
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file(dataset.dataset, job.user, dataset.pluggedMedia, create=True)
+                    self.app.object_store.update_from_file(dataset.dataset, user=job.user, pluggedMedia=dataset.pluggedMedia, create=True)
                 self._collect_extra_files(dataset.dataset, self.working_directory)
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
@@ -1372,7 +1372,7 @@ class JobWrapper( object, HasResourceParameters ):
                         else:
                             dataset.set_peek( line_count=context['line_count'] )
                     except:
-                        if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte( job.user, dataset.pluggedMedia ) ) or self.tool.is_multi_byte:
+                        if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte( user=job.user, pluggedMedia=dataset.pluggedMedia ) ) or self.tool.is_multi_byte:
                             dataset.set_peek( is_multi_byte=True )
                         else:
                             dataset.set_peek()
@@ -1467,7 +1467,7 @@ class JobWrapper( object, HasResourceParameters ):
         collected_bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
-            dataset_assoc.dataset.dataset.set_total_size( job.user, dataset.pluggedMedia )
+            dataset_assoc.dataset.dataset.set_total_size( user=job.user, pluggedMedia=dataset.pluggedMedia )
             collected_bytes += dataset_assoc.dataset.dataset.get_total_size( job.user, dataset.pluggedMedia )
 
         if job.user:
@@ -1516,14 +1516,14 @@ class JobWrapper( object, HasResourceParameters ):
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.app, self.job_id ).cleanup_after_job()
             if delete_files:
+                job = self.get_job()
                 # TEMP BLOCK --- START
-                print '\n\n--------------------- MAKE SURE TO REPLACE ME !!!\n\n'
                 pluggedMedia = None
-                for pM in self.get_job().user.pluggedMedia:
+                for pM in job.user.pluggedMedia:
                     pluggedMedia = pM
                     break
                 # TEMP BLOCK --- END
-                self.app.object_store.delete(self.get_job(), user=self.user, pluggedMedia=pluggedMedia,
+                self.app.object_store.delete(job, user=job.user, pluggedMedia=pluggedMedia,
                                              base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
