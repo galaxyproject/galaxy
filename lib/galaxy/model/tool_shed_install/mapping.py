@@ -1,11 +1,27 @@
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    TEXT
+)
+from sqlalchemy.orm import (
+    mapper,
+    relation
+)
+
 from galaxy.model import tool_shed_install as install_model
-from sqlalchemy import MetaData
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table, TEXT
-from sqlalchemy.orm import relation, mapper
-from galaxy.model.custom_types import JSONType, TrimmedString
-from galaxy.model.orm.now import now
 from galaxy.model.base import ModelMapping
+from galaxy.model.custom_types import (
+    JSONType,
+    TrimmedString
+)
 from galaxy.model.orm.engine_factory import build_engine
+from galaxy.model.orm.now import now
 
 metadata = MetaData()
 

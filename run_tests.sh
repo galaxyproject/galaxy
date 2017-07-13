@@ -8,13 +8,11 @@ rm -f run_functional_tests.log
 
 show_help() {
 cat <<EOF
-'${0##*/} (test_path)'              for testing all the tools in functional directory
 '${0##*/} -id bbb'                  for testing one tool with id 'bbb' ('bbb' is the tool id)
 '${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
 '${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
-'${0##*/} -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file (experimental)
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
@@ -25,14 +23,49 @@ cat <<EOF
 '${0##*/} -qunit testname'          for running single JavaScript test with given name
 '${0##*/} -selenium'                for running all selenium web tests (in test/selenium_tests)
 '${0##*/} -selenium (test_path)'    for running specified selenium web tests (use nosetest path)
-'${0##*/} -casperjs (py_test_path)' for running casperjs JavaScript tests using a Python wrapper for consistency. py_test_path in casperjs_runner.py e.g. 'Test_04_HDAs' or 'Test_04_HDAs.test_00_HDA_states'.
+
+This wrapper script largely serves as a point documentation and convenience -
+most tests shipped with Galaxy can be run with nosetests or qunit directly.
+
+The main test types are as follows:
+
+- API: These tests are located in test/api and test various aspects of the Galaxy
+   API and test general backend aspects of Galaxy using the API.
+- Integration: These tests are located in test/integration and test special
+   configurations of Galaxy. All API tests assume a particular Galaxy configuration
+   defined by test/base/driver_util.py and integration tests can be used to
+   launch and test Galaxy in other configurations.
+- Framework: These tests are all Galaxy tool tests and can be found in
+   test/functional/tools. These are for the most part meant to test and
+   demonstrate features of the tool evaluation environment and of Galaxy tool XML
+   files.
+- Unit: These are Python unit tests either defined as doctests or inside of
+   test/unit. These should generally not require a Galaxy instance and should
+   quickly test just a component or a few components of Galaxy's backend code.
+- QUnit: These are JavaScript unit tests defined in test/qunit.
+- Selenium: These are full stack tests meant to test the Galaxy UI with real
+   browsers and are located in test/selenium_tests.
+- ToolShed: These are web tests that use the older Python web testing
+   framework twill to test ToolShed related functionality. These are
+   located in test/shed_functional.
 
 Nose tests will allow specific tests to be selected per the documentation at
 https://nose.readthedocs.org/en/latest/usage.html#selecting-tests.  These are
 indicated with the optional parameter (test_path).  A few examples are:
 
-Run all TestUserInfo functional tests:
-    ./run_tests.sh test/functional/test_user_info.py:TestUserInfo
+Run all API tests:
+    ./run_tests.sh -api
+
+The same test as above can be run using nosetests directly as follows:
+    nosetests test/api
+
+However when using nosetests directly output options defined in this
+file aren't respected and a new Galaxy instance will be created for each
+TestCase class (this scripts optimizes it so all tests can share a Galaxy
+instance).
+
+Run a full class of API tests:
+    ./run_tests.sh -api test/api/test_tools.py:ToolsTestCase
 
 Run a specific API test:
     ./run_tests.sh -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
@@ -78,6 +111,20 @@ if GALAXY_TEST_SELENIUM_REMOTE is set, Galaxy will set this to be the IP
 address Docker exposes localhost on to its child containers. This trick
 doesn't work on Mac OS X and so GALAXY_TEST_HOST will need to be crafted
 carefully ahead of time.
+
+For Selenium test cases a stack trace is usually insufficient to diagnose
+problems. For this reason, GALAXY_TEST_ERRORS_DIRECTORY is populated with
+a new directory of information for each failing test case. This information
+includes a screenshot, a stack trace, and the DOM of the currently rendered
+Galaxy instance. The new directories are created with names that include
+information about the failed test method name and the timestamp. By default,
+GALAXY_TEST_ERRORS_DIRECTORY will be set to database/errors.
+
+The Selenium tests seem to be subject to transient failures at a higher
+rate than the rest of the tests in Galaxy. Though this is unfortunate,
+they have more moving pieces so this is perhaps not surprising. One can
+set the GALAXY_TEST_SELENIUM_RETRIES to a number greater than 0 to
+automatically retry every failed test case the specified number of times.
 
 External Tests:
 
@@ -141,10 +188,6 @@ GALAXY_CONFIG_MASTER_KEY        Master or admin API key to use as part of
                                 testing with GALAXY_TEST_EXTERNAL.
 GALAXY_TEST_USER_API_KEY        User API key to use as part of testing with
                                 GALAXY_TEST_EXTERNAL.
-GALAXY_TEST_HISTORY_ID          Point casperjs tests at specific external
-                                history for testing.
-GALAXY_TEST_WORKFLOW_FILE       Point casperjs tests at specific workflow
-                                file for testing.
 GALAXY_TEST_VERBOSE_ERRORS      Enable more verbose errors during API tests.
 GALAXY_TEST_UPLOAD_ASYNC        Upload tool test inputs asynchronously (may
                                 overwhelm sqlite database).
@@ -206,16 +249,21 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-ensure_grunt() {
+ensure_grunt_for_qunit() {
     if ! exists "grunt";
     then
-        echo "Grunt not on path, cannot run these tests."
-        exit 1
+        PATH="$PATH:./test/qunit/node_modules/grunt/bin"
+        export PATH
+        if ! exists "grunt";
+        then
+            echo "Grunt not on path, cannot run these tests."
+            exit 1
+        fi
     fi
 }
 
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.3'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:17.05.0'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -247,13 +295,15 @@ then
        DOCKER_RUN_EXTRA_ARGS="-v ${tmp}:/tmp ${DOCKER_RUN_EXTRA_ARGS}"
        shift
     fi
+    MY_UID=$(id -u)
+    DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} ${DOCKER_RUN_EXTRA_ARGS}"
     echo "Launching docker container for testing..."
-    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
+    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
 fi
 
 # If in Jenkins environment, create xunit-${BUILD_NUMBER}.xml by default.
-if [ -z "$BUILD_NUMBER" ];
+if [ -n "$BUILD_NUMBER" ];
 then
     xunit_report_file="xunit-${BUILD_NUMBER}.xml"
 fi
@@ -345,16 +395,6 @@ do
       --external_user_key)
           GALAXY_TEST_USER_API_KEY=$2
           shift 2
-          ;;
-      -w|-workflow|--workflow)
-          if [ $# -gt 1 ]; then
-              workflow_file=$2
-              workflow_test=1
-              shift 2
-          else
-              echo "--workflow requires an argument" 1>&2
-              exit 1
-          fi
           ;;
       -f|-framework|--framework)
           report_file="run_framework_tests.html"
@@ -547,9 +587,6 @@ elif [ -n "$selenium_test" ] ; then
 elif [ -n "$data_managers_test" ] ; then
     [ -n "$test_id" ] && class=":TestForDataManagerTool_$test_id" || class=""
     extra_args="functional.test_data_managers$class -data_managers"
-elif [ -n "$workflow_test" ]; then
-    GALAXY_TEST_WORKFLOW_FILE="$workflow_file"
-    extra_args="functional.workflow:WorkflowTestCase"
 elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
@@ -598,7 +635,7 @@ if [ "$driver" = "python" ]; then
     echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
     exit ${exit_status}
 else
-    ensure_grunt
+    ensure_grunt_for_qunit
     if [ -n "$watch" ]; then
         grunt_task="watch"
     else

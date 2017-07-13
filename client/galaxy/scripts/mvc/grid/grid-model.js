@@ -107,13 +107,12 @@ return Backbone.Model.extend({
         _.each(_.pairs(self.attributes.filters), function(k) {
             url_data['f-' + k[0]] = k[1];
         });
-
         return url_data;
     },
     
     // Return URL for obtaining a new grid
     get_url: function (args) {
-        return this.get('url_base') + "?" + $.param(this.get_url_data()) + '&' + $.param(args);
+        return this.get('url_base') + '?' + $.param(this.get_url_data()) + '&' + $.param(args);
     }
     
 });

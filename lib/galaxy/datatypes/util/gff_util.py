@@ -3,8 +3,10 @@ Provides utilities for working with GFF files.
 """
 import copy
 
-from bx.intervals.io import GenomicInterval, MissingFieldError, NiceReaderWrapper, ParseError, GenomicIntervalReader
-from bx.tabular.io import Header, Comment
+from bx.intervals.io import GenomicInterval, GenomicIntervalReader, MissingFieldError, NiceReaderWrapper, ParseError
+from bx.tabular.io import Comment, Header
+
+from six import Iterator
 
 from galaxy.util.odict import odict
 
@@ -117,7 +119,7 @@ class GFFIntervalToBEDReaderWrapper( NiceReaderWrapper ):
         return interval
 
 
-class GFFReaderWrapper( NiceReaderWrapper ):
+class GFFReaderWrapper( Iterator, NiceReaderWrapper ):  # Iterator can be removed after bx-python library is ported to Python3
     """
     Reader wrapper for GFF files.
 
@@ -149,15 +151,14 @@ class GFFReaderWrapper( NiceReaderWrapper ):
                                 self.default_strand, fix_strand=self.fix_strand )
         return interval
 
-    # For Python3 this needs to be changed to __next__() after bx-python library is ported too
-    def next( self ):
+    def __next__( self ):
         """ Returns next GFFFeature. """
 
         #
         # Helper function.
         #
 
-        def handle_parse_error( parse_error ):
+        def handle_parse_error( e ):
             """ Actions to take when ParseError found. """
             if self.outstream:
                 if self.print_delegate and hasattr(self.print_delegate, "__call__"):
@@ -347,6 +348,29 @@ def parse_gff_attributes( attr_str ):
     return attributes
 
 
+def parse_gff3_attributes( attr_str ):
+    """
+    Parses a GFF3 attribute string and returns a dictionary of name-value
+    pairs. The general format for a GFF3 attributes string is
+
+        name1=value1;name2=value2
+    """
+    attributes_list = attr_str.split(";")
+    attributes = {}
+    for tag_value_pair in attributes_list:
+        pair = tag_value_pair.strip().split("=")
+        if len(pair) == 1:
+            raise Exception("Attribute '%s' does not contain a '='" % tag_value_pair)
+        if pair == '':
+            continue
+        tag = pair[0].strip()
+        if tag == '':
+            raise Exception("Empty tag in attribute '%s'" % tag_value_pair)
+        value = pair[1].strip()
+        attributes[tag] = value
+    return attributes
+
+
 def gff_attributes_to_str( attrs, gff_format ):
     """
     Convert GFF attributes to string. Supported formats are GFF3, GTF.
@@ -411,19 +435,16 @@ def read_unordered_gtf( iterator, strict=False ):
     chroms_features = {}
     for count, intervals in enumerate( feature_intervals.values() ):
         # Sort intervals by start position.
-        intervals.sort( lambda a, b: cmp( a.start, b.start ) )
+        intervals.sort(key=lambda _: _.start)
         feature = GFFFeature( None, intervals=intervals )
         if feature.chrom not in chroms_features:
             chroms_features[ feature.chrom ] = []
         chroms_features[ feature.chrom ].append( feature )
 
     # Sort features by chrom, start position.
-    chroms_features_sorted = []
-    for chrom_features in chroms_features.values():
-        chroms_features_sorted.append( chrom_features )
-    chroms_features_sorted.sort( lambda a, b: cmp( a[0].chrom, b[0].chrom ) )
+    chroms_features_sorted = sorted(chroms_features.values(), key=lambda _: _[0].chrom)
     for features in chroms_features_sorted:
-        features.sort( lambda a, b: cmp( a.start, b.start ) )
+        features.sort(key=lambda _: _.start)
 
     # Yield comments first, then features.
     # FIXME: comments can appear anywhere in file, not just the beginning.

@@ -199,6 +199,16 @@ for name, a_type in attribute_types.items():
         stop_err("Problem with attribute type [%s]" % a_type)
     attribute_types[ name ] = eval( a_type )
 
+# Possible (eg workflows) that user's filter contains standard
+# GFF attributes which are not present in the actual file -
+# and thus not in the metadata passed in by Galaxy.
+# To avoid a nasty error here, add the official terms from
+# the GFF3 specification (if not already defined).
+# (These all start with a capital letter, which is important):
+for name in ["ID", "Name", "Alias", "Parent", "Target", "Gap", "Derives_from",
+             "Note", "Dbxref", "Ontology_term", "Is_circular"]:
+    attribute_types[ name ] = str
+
 # Unescape if input has been escaped
 mapped_str = {
     '__lt__': '<',
@@ -254,10 +264,7 @@ for i, line in enumerate( open( in_fname ) ):
     total_lines += 1
     line = line.rstrip( '\\r\\n' )
     if not line or line.startswith( '#' ):
-        skipped_lines += 1
-        if not invalid_line:
-            first_invalid_line = i + 1
-            invalid_line = line
+        # Ignore blank lines or comments
         continue
     try:
         # Place attribute values into variables with attribute
@@ -265,14 +272,16 @@ for i, line in enumerate( open( in_fname ) ):
         elems = line.split( '\t' )
         attribute_values = {}
         for name_value_pair in elems[8].split(";"):
-            pair = name_value_pair.strip().split(" ")
-            if pair == '':
+            # Split on first equals (GFF3) or space (legacy)
+            name_value_pair = name_value_pair.strip()
+            i = name_value_pair.replace(" ", "=").find("=")
+            if i == -1:
                 continue
-            name = pair[0].strip()
+            name = name_value_pair[:i].strip()
             if name == '':
                 continue
             # Need to strip double quote from value and typecast.
-            attribute_values[name] = pair[1].strip(" \\"")
+            attribute_values[name] = name_value_pair[i+1:].strip(" \\"")
         %s
         if %s:
             lines_kept += 1

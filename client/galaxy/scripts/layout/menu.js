@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-define(['layout/generic-nav-view', 'mvc/webhooks'], function( GenericNav, Webhooks ) {
+define(['layout/generic-nav-view', 'mvc/webhooks', 'utils/localization', 'utils/utils'], function( GenericNav, Webhooks, _l, Utils ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -8,6 +8,7 @@ var Collection = Backbone.Collection.extend({
         }
     }),
     fetch: function( options ){
+        var self = this;
         options = options || {};
         this.reset();
 
@@ -22,9 +23,9 @@ var Collection = Backbone.Collection.extend({
         //
         this.add({
             id              : 'analysis',
-            title           : 'Analyze Data',
+            title           : _l('Analyze Data'),
             url             : '',
-            tooltip         : 'Analysis home view'
+            tooltip         : _l('Analysis home view')
         });
 
         //
@@ -32,10 +33,14 @@ var Collection = Backbone.Collection.extend({
         //
         this.add({
             id              : 'workflow',
-            title           : 'Workflow',
+            title           : _l('Workflow'),
+            tooltip         : _l('Chain tools into workflows'),
+            disabled        : !Galaxy.user.id,
             url             : 'workflow',
-            tooltip         : 'Chain tools into workflows',
-            disabled        : !Galaxy.user.id
+            target          : 'galaxy_main',
+            onclick         : function() {
+                                  window.location = Galaxy.root + 'workflow';
+                            }
         });
 
         //
@@ -43,24 +48,24 @@ var Collection = Backbone.Collection.extend({
         //
         this.add({
             id              : 'shared',
-            title           : 'Shared Data',
+            title           : _l('Shared Data'),
             url             : 'library/index',
-            tooltip         : 'Access published resources',
+            tooltip         : _l('Access published resources'),
             menu            : [{
-                    title   : 'Data Libraries',
+                    title   : _l('Data Libraries'),
                     url     : 'library/list'
                 },{
-                    title   : 'Histories',
-                    url     : 'history/list_published'
+                    title   : _l('Histories'),
+                    url     : 'histories/list_published'
                 },{
-                    title   : 'Workflows',
-                    url     : 'workflow/list_published'
+                    title   : _l('Workflows'),
+                    url     : 'workflows/list_published'
                 },{
-                    title   : 'Visualizations',
-                    url     : 'visualization/list_published'
+                    title   : _l('Visualizations'),
+                    url     : 'visualizations/list_published'
                 },{
-                    title   : 'Pages',
-                    url     : 'page/list_published'
+                    title   : _l('Pages'),
+                    url     : 'pages/list_published'
             }]
         });
 
@@ -87,20 +92,20 @@ var Collection = Backbone.Collection.extend({
         //
         this.add({
             id              : 'visualization',
-            title           : 'Visualization',
+            title           : _l('Visualization'),
             url             : 'visualization/list',
-            tooltip         : 'Visualize datasets',
+            tooltip         : _l('Visualize datasets'),
             disabled        : !Galaxy.user.id,
             menu            : [{
-                    title   : 'New Track Browser',
+                    title   : _l('New Track Browser'),
                     url     : 'visualization/trackster',
                     target  : '_frame'
                 },{
-                    title   : 'Saved Visualizations',
+                    title   : _l('Saved Visualizations'),
                     url     : 'visualization/list',
                     target  : '_frame'
                 },{
-                    title   : 'Interactive Environments',
+                    title   : _l('Interactive Environments'),
                     url     : 'visualization/gie_list',
                     target  : 'galaxy_main'
                 }
@@ -117,13 +122,24 @@ var Collection = Backbone.Collection.extend({
                     $.each(webhooks.models, function(index, model) {
                         var webhook = model.toJSON();
                         if (webhook.activate) {
-                            Galaxy.page.masthead.collection.add({
+                            var obj = {
                                 id      : webhook.name,
                                 icon    : webhook.config.icon,
                                 url     : webhook.config.url,
                                 tooltip : webhook.config.tooltip,
                                 onclick : webhook.config.function && new Function(webhook.config.function),
-                            });
+                            };
+
+                            // Galaxy.page is undefined for data libraries, workflows pages
+                            if( Galaxy.page ) {
+                                Galaxy.page.masthead.collection.add(obj);
+                            }
+                            else if( Galaxy.masthead ) {
+                                Galaxy.masthead.collection.add(obj);
+                            }
+                            
+                            // Append masthead script and styles to Galaxy main
+                            Utils.appendScriptStyle( webhook );
                         }
                     });
                 });
@@ -135,9 +151,9 @@ var Collection = Backbone.Collection.extend({
         //
         Galaxy.user.get( 'is_admin' ) && this.add({
             id              : 'admin',
-            title           : 'Admin',
+            title           : _l('Admin'),
             url             : 'admin',
-            tooltip         : 'Administer this Galaxy',
+            tooltip         : _l('Administer this Galaxy'),
             cls             : 'admin-only'
         });
 
@@ -146,34 +162,34 @@ var Collection = Backbone.Collection.extend({
         //
         var helpTab = {
             id              : 'help',
-            title           : 'Help',
-            tooltip         : 'Support, contact, and community',
+            title           : _l('Help'),
+            tooltip         : _l('Support, contact, and community'),
             menu            : [{
-                    title   : 'Support',
+                    title   : _l('Support'),
                     url     : options.support_url,
                     target  : '_blank'
                 },{
-                    title   : 'Search',
+                    title   : _l('Search'),
                     url     : options.search_url,
                     target  : '_blank'
                 },{
-                    title   : 'Mailing Lists',
+                    title   : _l('Mailing Lists'),
                     url     : options.mailing_lists,
                     target  : '_blank'
                 },{
-                    title   : 'Videos',
+                    title   : _l('Videos'),
                     url     : options.screencasts_url,
                     target  : '_blank'
                 },{
-                    title   : 'Wiki',
+                    title   : _l('Wiki'),
                     url     : options.wiki_url,
                     target  : '_blank'
                 },{
-                    title   : 'How to Cite Galaxy',
+                    title   : _l('How to Cite Galaxy'),
                     url     : options.citation_url,
                     target  : '_blank'
                 },{
-                    title   : 'Interactive Tours',
+                    title   : _l('Interactive Tours'),
                     url     : 'tours',
                     onclick : function(){
                         if (Galaxy.router){
@@ -186,17 +202,17 @@ var Collection = Backbone.Collection.extend({
             }]
         };
         options.terms_url && helpTab.menu.push({
-            title   : 'Terms and Conditions',
+            title   : _l('Terms and Conditions'),
             url     : options.terms_url,
             target  : '_blank'
         });
         options.biostar_url && helpTab.menu.unshift({
-            title   : 'Ask a question',
+            title   : _l('Ask a question'),
             url     : 'biostar/biostar_question_redirect',
             target  : '_blank'
         });
         options.biostar_url && helpTab.menu.unshift({
-            title   : 'Galaxy Biostar',
+            title   : _l('Galaxy Biostar'),
             url     : options.biostar_url_redirect,
             target  : '_blank'
         });
@@ -205,66 +221,89 @@ var Collection = Backbone.Collection.extend({
         //
         // User tab.
         //
+        var userTab = {};
         if ( !Galaxy.user.id ){
-            var userTab = {
-                id              : 'user',
-                title           : 'User',
-                cls             : 'loggedout-only',
-                tooltip         : 'Account registration or login',
-                menu            : [{
-                    title           : 'Login',
-                    url             : 'user/login',
-                    target          : 'galaxy_main',
-                    noscratchbook   : true
-                }]
-            };
-            options.allow_user_creation && userTab.menu.push({
-                title           : 'Register',
-                url             : 'user/create',
-                target          : 'galaxy_main',
-                noscratchbook   : true
-            });
-            this.add( userTab );
+            if ( options.allow_user_creation ) {
+                userTab = {
+                    id              : 'user',
+                    title           : _l('Login or Register'),
+                    cls             : 'loggedout-only',
+                    tooltip         : _l('Account registration or login'),
+                    menu            : [{
+                            title           : _l('Login'),
+                            url             : 'user/login',
+                            target          : 'galaxy_main',
+                            noscratchbook   : true
+                        }, {
+                            title: _l('Register'),
+                            url: 'user/create',
+                            target: 'galaxy_main',
+                            noscratchbook: true
+                        }
+                    ]
+                };
+            } else {
+                userTab = {
+                    id: 'user',
+                    title: _l('Login'),
+                    cls: 'loggedout-only',
+                    tooltip: _l('Login'),
+                    url: 'user/login',
+                    target: 'galaxy_main',
+                    noscratchbook: true
+                };
+            }
         } else {
-            var userTab = {
+            userTab = {
                 id              : 'user',
-                title           : 'User',
+                title           : _l('User'),
                 cls             : 'loggedin-only',
-                tooltip         : 'Account and saved data',
+                tooltip         : _l('Account and saved data'),
                 menu            : [{
-                        title   : 'Logged in as ' + Galaxy.user.get( 'email' )
+                        title   : _l('Logged in as') + ' ' + Galaxy.user.get( 'email' )
                     },{
-                        title   : 'Preferences',
-                        url     : 'users',
+                        title   : _l('Preferences'),
+                        url     : 'user',
                         target  : 'galaxy_main',
                         onclick : function() {
-                            window.location = Galaxy.root + 'users';
+                            if ( Galaxy.router ) {
+                                Galaxy.router.push( 'user' );
+                            } else {
+                                window.location = Galaxy.root + 'user';
+                            }
                         }
                     },{
-                        title   : 'Custom Builds',
-                        url     : 'user/dbkeys',
-                        target  : 'galaxy_main'
+                        title   : _l('Custom Builds'),
+                        url     : 'custom_builds',
+                        target  : 'galaxy_main',
+                        onclick : function() {
+                            if ( Galaxy.router ) {
+                                Galaxy.router.push( 'custom_builds' );
+                            } else {
+                                window.location = Galaxy.root + 'custom_builds';
+                            }
+                        }
                     },{
-                        title   : 'Logout',
+                        title   : _l('Logout'),
                         url     : 'user/logout',
                         target  : '_top',
                         divider : true
                     },{
-                        title   : 'Saved Histories',
-                        url     : 'history/list',
-                        target  : 'galaxy_main'
+                        title   : _l('Saved Histories'),
+                        url     : 'histories/list',
+                        target  : '_top'
                     },{
-                        title   : 'Saved Datasets',
-                        url     : 'dataset/list',
-                        target  : 'galaxy_main'
+                        title   : _l('Saved Datasets'),
+                        url     : 'datasets/list',
+                        target  : '_top'
                     },{
-                        title   : 'Saved Pages',
-                        url     : 'page/list',
+                        title   : _l('Saved Pages'),
+                        url     : 'pages/list',
                         target  : '_top'
                     }]
             };
-            this.add( userTab );
         }
+        this.add( userTab );
         var activeView = this.get( options.active_view );
         activeView && activeView.set( 'active', true );
         return new jQuery.Deferred().resolve().promise();
@@ -296,7 +335,7 @@ var Tab = Backbone.View.extend({
         this.$note.html( this.model.get( 'note' ) || '' )
                   .removeClass().addClass( 'dropdown-note' )
                   .addClass( this.model.get( 'note_cls' ) )
-                  .css( { 'display' : this.model.get( 'show_note' ) && 'block' || 'none' } )
+                  .css( { 'display' : this.model.get( 'show_note' ) && 'block' || 'none' } );
         this.$toggle.html( this.model.get( 'title' ) || '' )
                     .removeClass().addClass( 'dropdown-toggle' )
                     .addClass( this.model.get( 'cls' ) )
@@ -375,7 +414,7 @@ var Tab = Backbone.View.extend({
             }
         } else {
             function buildLink( label, url ) {
-                return $( '<div/>' ).append( $( '<a/>' ).attr( 'href', Galaxy.root + url ).html( label ) ).html()
+                return $( '<div/>' ).append( $( '<a/>' ).attr( 'href', Galaxy.root + url ).html( label ) ).html();
             }
             this.$toggle.popover && this.$toggle.popover( 'destroy' );
             this.$toggle.popover({

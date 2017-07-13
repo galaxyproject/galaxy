@@ -11,6 +11,7 @@ from galaxy.util import bunch
 # there are advantages to testing the documentation/examples.
 SIMPLE_JOB_CONF = os.path.join( os.path.dirname( __file__ ), "..", "..", "..", "config", "job_conf.xml.sample_basic" )
 ADVANCED_JOB_CONF = os.path.join( os.path.dirname( __file__ ), "..", "..", "..", "config", "job_conf.xml.sample_advanced" )
+CONDITIONAL_RUNNER_JOB_CONF = os.path.join( os.path.dirname( __file__ ), "conditional_runners_job_conf.xml" )
 
 
 class JobConfXmlParserTestCase( unittest.TestCase ):
@@ -22,6 +23,7 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
             use_tasked_jobs=False,
             job_resource_params_file="/tmp/fake_absent_path",
             config_dict={},
+            default_job_resubmission_condition="",
         )
         self.__write_config_from( SIMPLE_JOB_CONF )
         self.app = bunch.Bunch( config=self.config, job_metrics=MockJobMetrics() )
@@ -135,6 +137,30 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
         self.__with_advanced_config()
         for name in ["foo_small", "foo_medium", "foo_large", "foo_longrunning"]:
             assert self.job_config.destinations[ name ]
+
+    def test_conditional_runners( self ):
+        self.__write_config_from( CONDITIONAL_RUNNER_JOB_CONF )
+        runner_ids = [ r[ "id" ] for r in self.job_config.runner_plugins ]
+        assert "local2" in runner_ids
+        assert "local3" not in runner_ids
+
+        assert "local2_dest" in self.job_config.destinations
+        assert "local3_dest" not in self.job_config.destinations
+
+    def test_conditional_runners_from_environ( self ):
+        self.__write_config_from( CONDITIONAL_RUNNER_JOB_CONF )
+        os.environ["LOCAL2_ENABLED"] = "False"
+        os.environ["LOCAL3_ENABLED"] = "True"
+        try:
+            runner_ids = [ r[ "id" ] for r in self.job_config.runner_plugins ]
+            assert "local2" not in runner_ids
+            assert "local3" in runner_ids
+
+            assert "local2_dest" not in self.job_config.destinations
+            assert "local3_dest" in self.job_config.destinations
+        finally:
+            del os.environ["LOCAL2_ENABLED"]
+            del os.environ["LOCAL3_ENABLED"]
 
     # TODO: Add job metrics parsing test.
 

@@ -5,16 +5,18 @@ from abc import (
     abstractproperty,
 )
 
+import six
+
 from galaxy.util.dictifiable import Dictifiable
 
 
+@six.python_2_unicode_compatible
+@six.add_metaclass(ABCMeta)
 class ContainerResolver(Dictifiable, object):
     """Description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
     dict_collection_visible_keys = ['resolver_type']
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, app_info=None, **kwds):
         """Default initializer for ``ContainerResolver`` subclasses."""
@@ -48,3 +50,6 @@ class ContainerResolver(Dictifiable, object):
     def _container_type_enabled(self, container_description, enabled_container_types):
         """Return a boolean indicating if the specified container type is enabled."""
         return container_description.type in enabled_container_types
+
+    def __str__(self):
+        return "%s[]" % self.__class__.__name__

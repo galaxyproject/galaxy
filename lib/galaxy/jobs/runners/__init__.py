@@ -247,7 +247,7 @@ class BaseJobRunner( object ):
                         output_pairs.append( ( source_file, destination ) )
                     else:
                         # Security violation.
-                        log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
+                        log.exception( "from_work_dir specified a location not in the working directory: %s, %s", source_file, job_wrapper.working_directory )
         return output_pairs
 
     def _walk_dataset_outputs( self, job ):
@@ -314,6 +314,7 @@ class BaseJobRunner( object ):
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=command_line,
             shell=job_wrapper.shell,
+            preserve_python_environment=job_wrapper.tool.requires_galaxy_python_environment,
         )
         # Additional logging to enable if debugging from_work_dir handling, metadata
         # commands, etc... (or just peak in the job script.)
@@ -344,7 +345,7 @@ class BaseJobRunner( object ):
 
         tool = job_wrapper.tool
         from galaxy.tools.deps import containers
-        tool_info = containers.ToolInfo(tool.containers, tool.requirements)
+        tool_info = containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment)
         job_info = containers.JobInfo(
             compute_working_directory,
             compute_tool_directory,
@@ -403,6 +404,8 @@ class JobState( object ):
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
 
+        self.cleanup_file_attributes = [ 'job_file', 'output_file', 'error_file', 'exit_code_file' ]
+
     def set_defaults( self, files_dir ):
         if self.job_wrapper is not None:
             id_tag = self.job_wrapper.get_id_tag()
@@ -416,7 +419,7 @@ class JobState( object ):
                 job_name += '_%s' % self.job_wrapper.tool.old_id
             if self.job_wrapper.user:
                 job_name += '_%s' % self.job_wrapper.user
-            self.job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
+            self.job_name = ''.join( map( lambda x: x if x in ( string.ascii_letters + string.digits + '_' ) else '_', job_name ) )
 
     @staticmethod
     def default_job_file( files_dir, id_tag ):
@@ -425,6 +428,19 @@ class JobState( object ):
     @staticmethod
     def default_exit_code_file( files_dir, id_tag ):
         return os.path.join( files_dir, 'galaxy_%s.ec' % id_tag )
+
+    def cleanup( self ):
+        for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:
+            try:
+                os.unlink( file )
+            except Exception as e:
+                # TODO: Move this prefix stuff to a method so we don't have dispatch on attributes we may or may
+                # not have.
+                if not hasattr( self, "job_id" ):
+                    prefix = "(%s)" % self.job_wrapper.get_id_tag()
+                else:
+                    prefix = "(%s/%s)" % ( self.job_wrapper.get_id_tag(), self.job_id )
+                log.debug( "%s Unable to cleanup %s: %s" % (prefix, file, str( e ) ) )
 
 
 class AsynchronousJobState( JobState ):
@@ -452,8 +468,6 @@ class AsynchronousJobState( JobState ):
 
         self.set_defaults( files_dir )
 
-        self.cleanup_file_attributes = [ 'job_file', 'output_file', 'error_file', 'exit_code_file' ]
-
     @property
     def running( self ):
         return self._running
@@ -480,13 +494,6 @@ class AsynchronousJobState( JobState ):
             self.stop_job = True
             return True
         return False
-
-    def cleanup( self ):
-        for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:
-            try:
-                os.unlink( file )
-            except Exception as e:
-                log.debug( "(%s/%s) Unable to cleanup %s: %s" % ( self.job_wrapper.get_id_tag(), self.job_id, file, str( e ) ) )
 
     def register_cleanup_file_attribute( self, attribute ):
         if attribute not in self.cleanup_file_attributes:

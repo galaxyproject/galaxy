@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Convert from VCF file to interval index file.
 """
@@ -7,9 +6,8 @@ from __future__ import division
 
 import optparse
 
-from bx.interval_index_file import Indexes
-
 import galaxy_utils.sequence.vcf
+from bx.interval_index_file import Indexes
 
 
 def main():

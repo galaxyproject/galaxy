@@ -1,15 +1,17 @@
 """
 Graph content classes.
 """
+import logging
 
-import data
-import tabular
-import xml
-
-import dataproviders
 from galaxy.util import simplegraph
 
-import logging
+from . import (
+    data,
+    dataproviders,
+    tabular,
+    xml
+)
+
 log = logging.getLogger( __name__ )
 
 

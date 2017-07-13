@@ -885,7 +885,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                             ( str( repository.name ), str( repository.user.username ) ) )
                         successful_count += 1
                 except:
-                    log.exception( "Error attempting to reset metadata on repository %s" % str( repository.name ) )
+                    log.exception( "Error attempting to reset metadata on repository %s", str( repository.name ) )
                     unsuccessful_count += 1
             message = "Successfully reset metadata on %d %s.  " % \
                 ( successful_count, inflector.cond_plural( successful_count, "repository" ) )

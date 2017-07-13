@@ -2,11 +2,12 @@
 Mothur Metagenomics Datatypes
 """
 import logging
-import sys
 import re
-from galaxy.datatypes.sniff import get_headers
-from galaxy.datatypes.metadata import MetadataElement
+import sys
+
 from galaxy.datatypes.data import Text
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.tabular import Tabular
 
 log = logging.getLogger(__name__)
@@ -270,7 +271,8 @@ class AlignCheck(Tabular):
         dataset.metadata.column_names = self.column_names
         dataset.metadata.column_types = self.column_types
         dataset.metadata.comment_lines = self.comment_lines
-        dataset.metadata.data_lines -= self.comment_lines
+        if isinstance(dataset.metadata.data_lines, int):
+            dataset.metadata.data_lines -= self.comment_lines
 
 
 class AlignReport(Tabular):
@@ -735,7 +737,8 @@ class CountTable(Tabular):
             dataset.metadata.groups = colnames[2:]
 
         dataset.metadata.comment_lines = 1
-        dataset.metadata.data_lines -= 1
+        if isinstance(dataset.metadata.data_lines, int):
+            dataset.metadata.data_lines -= 1
 
 
 class RefTaxonomy(Tabular):

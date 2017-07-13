@@ -3,10 +3,13 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">
-    #if $fasta_target_type.fasta_type == "multiple" #maf_to_fasta_multiple_sets.py $input1 $out_file1 $fasta_target_type.species $fasta_target_type.complete_blocks
-    #else                                           #maf_to_fasta_concat.py $fasta_target_type.species $input1 $out_file1
-    #end if#
+  <command>
+python
+#if $fasta_target_type.fasta_type == "multiple"
+    '$__tool_directory__/maf_to_fasta_multiple_sets.py' '$input1' '$out_file1' $fasta_target_type.species $fasta_target_type.complete_blocks
+#else
+    '$__tool_directory__/maf_to_fasta_concat.py' $fasta_target_type.species '$input1' '$out_file1'
+#end if
   </command>
   <inputs>
     <param format="maf" name="input1" type="data" label="MAF file to convert"/>
@@ -54,7 +57,6 @@
     </test>
   </tests>
   <help>
-
 **Types of MAF to FASTA conversion**
 
  * **Multiple Blocks** converts a single MAF block to a single FASTA block. For example, if you have 6 MAF blocks, they will be converted to 6 FASTA blocks.
@@ -75,7 +77,6 @@ The interface for this tool contains two pages (steps):
 
    *  **Choose species** - the tool reads the alignment provided during Step 1 and generates a list of species contained within that alignment. Using checkboxes you can specify taxa to be included in the output (all species are selected by default).
    *  **Choose to include/exclude blocks with missing species** - if an alignment block does not contain any one of the species you selected within **Choose species** menu and this option is set to **exclude blocks with missing species**, then such a block **will not** be included in the output (see **Example 2** below).  For example, if you want to extract human, mouse, and rat from a series of alignments and one of the blocks does not contain mouse sequence, then this block will not be converted to FASTA and will not be returned.
-
 
 -----
 
@@ -190,8 +191,6 @@ will be converted to (**note** that the second MAF block, which does not have mm
 
    - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line;
    - An "e" line containing information about the size of the gap between the alignments that span the current block.
-
-@HELP_CITATIONS@
     </help>
     <expand macro="citations" />
 </tool>

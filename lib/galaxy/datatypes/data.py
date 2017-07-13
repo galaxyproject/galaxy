@@ -5,6 +5,7 @@ import logging
 import mimetypes
 import os
 import shutil
+import string
 import tempfile
 import zipfile
 from cgi import escape
@@ -15,6 +16,7 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
+from galaxy.util import compression_utils
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import inflector
 from galaxy.util import unicodify
@@ -36,6 +38,9 @@ log = logging.getLogger(__name__)
 # Valid first column and strand column values vor bed, other formats
 col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
 valid_strand = ['+', '-', '.']
+
+DOWNLOAD_FILENAME_PATTERN_DATASET = "Galaxy${hid}-[${name}].${ext}"
+DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}__${element_identifier}].${ext}"
 
 
 class DataMeta( abc.ABCMeta ):
@@ -69,6 +74,7 @@ class Data( object ):
     """
     edam_data = "data_0006"
     edam_format = "format_1915"
+    file_ext = 'data'
     # Data is not chunkable by default.
     CHUNKABLE = False
 
@@ -128,7 +134,7 @@ class Data( object ):
         try:
             return open(dataset.file_name, 'rb').read(-1)
         except OSError:
-            log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__, dataset.file_name))
+            log.exception('%s reading a file that does not exist %s', self.__class__.__name__, dataset.file_name)
             return ''
 
     def dataset_content_needs_grooming( self, file_name ):
@@ -228,7 +234,7 @@ class Data( object ):
             archive.add(data_filename, archname)
         except IOError:
             error = True
-            log.exception("Unable to add composite parent %s to temporary library download archive" % data_filename)
+            log.exception("Unable to add composite parent %s to temporary library download archive", data_filename)
             msg = "Unable to create archive for download, please report this error"
             messagetype = "error"
         return error, msg, messagetype
@@ -264,7 +270,6 @@ class Data( object ):
             if not error:
                 ext = data.extension
                 path = data.file_name
-                fname = os.path.split(path)[-1]
                 efp = data.extra_files_path
                 # Add any central file to the archive,
 
@@ -275,17 +280,14 @@ class Data( object ):
                 error, msg = self._archive_main_file(archive, display_name, path)[:2]
                 if not error:
                     # Add any child files to the archive,
-                    for root, dirs, files in os.walk(efp):
-                        for fname in files:
-                            fpath = os.path.join(root, fname)
-                            rpath = os.path.relpath(fpath, efp)
-                            try:
-                                archive.add( fpath, rpath )
-                            except IOError:
-                                error = True
-                                log.exception( "Unable to add %s to temporary library download archive" % rpath)
-                                msg = "Unable to create archive for download, please report this error"
-                                continue
+                    for fpath, rpath in self.__archive_extra_files_path(extra_files_path=efp):
+                        try:
+                            archive.add(fpath, rpath)
+                        except IOError:
+                            error = True
+                            log.exception("Unable to add %s to temporary library download archive", rpath)
+                            msg = "Unable to create archive for download, please report this error"
+                            continue
                 if not error:
                     if params.do_action == 'zip':
                         archive.close()
@@ -305,12 +307,44 @@ class Data( object ):
                         return archive.stream
         return trans.show_error_message( msg )
 
-    def _serve_raw(self, trans, dataset, to_ext):
+    def __archive_extra_files_path(self, extra_files_path):
+        """Yield filepaths and relative filepaths for files in extra_files_path"""
+        for root, dirs, files in os.walk(extra_files_path):
+            for fname in files:
+                fpath = os.path.join(root, fname)
+                rpath = os.path.relpath(fpath, extra_files_path)
+                yield fpath, rpath
+
+    def _serve_raw(self, trans, dataset, to_ext, **kwd):
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
-        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
+        filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
         return open( dataset.file_name )
+
+    def to_archive(self, trans, dataset, name=""):
+        """
+        Collect archive paths and file handles that need to be exported when archiving `dataset`.
+
+        :param dataset: HistoryDatasetAssociation
+        :param name: archive name, in collection context corresponds to collection name(s) and element_identifier,
+                     joined by '/', e.g 'fastq_collection/sample1/forward'
+        """
+        composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
+        composite_extensions.append('html')  # for archiving composite datatypes
+        rel_paths = []
+        file_paths = []
+        if dataset.extension in composite_extensions:
+            main_file = "%s.%s" % (name, 'html')
+            rel_paths.append(main_file)
+            file_paths.append(dataset.file_name)
+            for fpath, rpath in self.__archive_extra_files_path(dataset.extra_files_path):
+                rel_paths.append(os.path.join(name, rpath))
+                file_paths.append(fpath)
+        else:
+            rel_paths.append("%s.%s" % (name or dataset.file_name, dataset.extension))
+            file_paths.append(dataset.file_name)
+        return zip(file_paths, rel_paths)
 
     def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
         """ Old display method, for transition - though still used by API and
@@ -334,7 +368,28 @@ class Data( object ):
             file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists( file_path ):
                 if os.path.isdir( file_path ):
-                    return trans.show_error_message( "Directory listing is not allowed." )  # TODO: Reconsider allowing listing of directories?
+                    tmp_fh = tempfile.NamedTemporaryFile(delete=False)
+                    tmp_file_name = tmp_fh.name
+                    dir_items = sorted(os.listdir(file_path))
+                    base_path, item_name = os.path.split(file_path)
+                    tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (item_name, len(dir_items)))
+                    tmp_fh.write('<body><p/><table cellpadding="2">\n')
+                    for index, fname in enumerate(dir_items):
+                        if index % 2 == 0:
+                            bgcolor = '#D8D8D8'
+                        else:
+                            bgcolor = '#FFFFFF'
+                        # Can't have an href link here because there is no route
+                        # defined for files contained within multiple subdirectory
+                        # levels of the primary dataset.  Something like this is
+                        # close, but not quite correct:
+                        # href = url_for(controller='dataset', action='display',
+                        # dataset_id=trans.security.encode_id(data.dataset.id),
+                        # preview=preview, filename=fname, to_ext=to_ext)
+                        tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, fname))
+                    tmp_fh.write('</table></body></html>\n')
+                    tmp_fh.close()
+                    return open(tmp_file_name)
                 mime = mimetypes.guess_type( file_path )[0]
                 if not mime:
                     try:
@@ -354,11 +409,9 @@ class Data( object ):
                 return self._archive_composite_dataset( trans, data, **kwd )
             else:
                 trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
-                if not to_ext:
-                    to_ext = data.extension
-                fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in data.name)[0:150]
+                filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
                 trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, to_ext)
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
                 return open( data.file_name )
         if not os.path.exists( data.file_name ):
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
@@ -383,6 +436,31 @@ class Data( object ):
             return trans.stream_template_mako( "/dataset/large_file.mako",
                                                truncated_data=open( data.file_name ).read(max_peek_size),
                                                data=data)
+
+    def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
+        def escape(raw_identifier):
+            return ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in raw_identifier)[0:150]
+
+        if not to_ext:
+            to_ext = dataset.extension
+
+        template_values = {
+            "name": escape(dataset.name),
+            "ext": to_ext,
+            "hid": dataset.hid,
+        }
+
+        filename_pattern = DOWNLOAD_FILENAME_PATTERN_DATASET
+
+        if hdca is not None:
+            # Use collection context to build up filename.
+            template_values["element_identifier"] = element_identifier
+            template_values["hdca_name"] = escape(hdca.name)
+            template_values["hdca_hid"] = hdca.hid
+
+            filename_pattern = DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT
+
+        return string.Template(filename_pattern).substitute(**template_values)
 
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""
@@ -438,7 +516,7 @@ class Data( object ):
         try:
             del self.supported_display_apps[app_id]
         except:
-            log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.' % ( type, self.__class__.__name__ ) )
+            log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.', type, self.__class__.__name__ )
 
     def clear_display_apps( self ):
         self.supported_display_apps = {}
@@ -476,7 +554,7 @@ class Data( object ):
             if type in self.get_display_types():
                 return getattr(self, self.supported_display_apps[type]['file_function'])(dataset, **kwd)
         except:
-            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible' % (self.supported_display_apps[type]['file_function'], self.__class__.__name__, type) )
+            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible', self.supported_display_apps[type]['file_function'], self.__class__.__name__, type )
         return "This display type (%s) is not implemented for this datatype (%s)." % ( type, dataset.ext)
 
     def get_display_links( self, dataset, type, app, base_url, target_frame='_blank', **kwd ):
@@ -490,8 +568,8 @@ class Data( object ):
             if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr( self, self.supported_display_apps[type]['links_function'] )( dataset, type, app, base_url, **kwd )
         except:
-            log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible'
-                           % ( self.supported_display_apps[type]['links_function'], self.__class__.__name__, type ) )
+            log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible',
+                           self.supported_display_apps[type]['links_function'], self.__class__.__name__, type )
         return target_frame, []
 
     def get_converter_types(self, original_dataset, datatypes_registry):
@@ -502,7 +580,7 @@ class Data( object ):
         """Returns ( target_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions( dataset, accepted_formats, **kwd )
 
-    def convert_dataset(self, trans, original_dataset, target_type, return_output=False, visible=True, deps=None, target_context=None):
+    def convert_dataset(self, trans, original_dataset, target_type, return_output=False, visible=True, deps=None, target_context=None, history=None):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
         converter = trans.app.datatypes_registry.get_converter_by_target_type( original_dataset.ext, target_type )
 
@@ -525,7 +603,7 @@ class Data( object ):
         params[input_name] = original_dataset
 
         # Run converter, job is dispatched through Queue
-        converted_dataset = converter.execute( trans, incoming=params, set_output_hid=visible )[1]
+        converted_dataset = converter.execute( trans, incoming=params, set_output_hid=visible, history=history )[1]
         if len(params) > 0:
             trans.log_event( "Converter params: %s" % (str(params)), tool_id=converter.id )
         if not visible:
@@ -593,8 +671,8 @@ class Data( object ):
             files[ substitute_composite_key( key, value ) ] = value
         return files
 
-    def generate_auto_primary_file( self, dataset=None ):
-        raise Exception( "generate_auto_primary_file is not implemented for this datatype." )
+    def generate_primary_file( self, dataset=None ):
+        raise Exception( "generate_primary_file is not implemented for this datatype." )
 
     @property
     def has_resolution(self):
@@ -605,7 +683,7 @@ class Data( object ):
         Check if this datatype is of any of the target_datatypes or is
         a subtype thereof.
         """
-        datatype_classes = tuple( [ datatype if isclass( datatype ) else datatype.__class__ for datatype in target_datatypes ] )
+        datatype_classes = tuple( datatype if isclass( datatype ) else datatype.__class__ for datatype in target_datatypes )
         return isinstance( self, datatype_classes )
 
     def merge( split_files, output_file):
@@ -976,39 +1054,35 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     count = 0
     file_type = None
     data_checked = False
-    temp = open( file_name, "U" )
-    while count < LINE_COUNT:
-        line = temp.readline( WIDTH )
-        if line and not is_multi_byte and not data_checked:
-            # See if we have a compressed or binary file
-            if line[0:2] == util.gzip_magic:
-                file_type = 'gzipped'
-            else:
+    with compression_utils.get_fileobj( file_name, "U" ) as temp:
+        while count < LINE_COUNT:
+            line = temp.readline( WIDTH )
+            if line and not is_multi_byte and not data_checked:
+                # See if we have a compressed or binary file
                 for char in line:
                     if ord( char ) > 128:
                         file_type = 'binary'
                         break
-            data_checked = True
-            if file_type in [ 'gzipped', 'binary' ]:
-                break
-        if not line_wrap:
-            if line.endswith('\n'):
-                line = line[:-1]
-            else:
-                while True:
-                    i = temp.read(1)
-                    if not i or i == '\n':
-                        break
-        skip_line = False
-        for skipchar in skipchars:
-            if line.startswith( skipchar ):
-                skip_line = True
-                break
-        if not skip_line:
-            lines.append( line )
-            count += 1
-    temp.close()
-    if file_type in [ 'gzipped', 'binary' ]:
+                data_checked = True
+                if file_type == 'binary':
+                    break
+            if not line_wrap:
+                if line.endswith('\n'):
+                    line = line[:-1]
+                else:
+                    while True:
+                        i = temp.read(1)
+                        if not i or i == '\n':
+                            break
+            skip_line = False
+            for skipchar in skipchars:
+                if line.startswith( skipchar ):
+                    skip_line = True
+                    break
+            if not skip_line:
+                lines.append( line )
+                count += 1
+    if file_type == 'binary':
         text = "%s file" % file_type
     else:
         try:

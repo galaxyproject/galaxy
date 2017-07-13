@@ -3,9 +3,9 @@
 from __future__ import print_function
 
 import os
+import subprocess
 import sys
 import tempfile
-import subprocess
 import time
 
 prog = "pbed_ldreduced_converter.py"

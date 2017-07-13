@@ -5,10 +5,14 @@ and configuration settings.
 
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api as expose_api_anonymous
 from galaxy.web import require_admin
 from galaxy.web.base.controller import BaseAPIController
-from galaxy.managers import configuration
+from galaxy.managers import configuration, users
 from galaxy.queue_worker import send_control_task
+
+import json
+import os
 
 import logging
 log = logging.getLogger( __name__ )
@@ -20,6 +24,19 @@ class ConfigurationController( BaseAPIController ):
         super( ConfigurationController, self ).__init__( app )
         self.config_serializer = configuration.ConfigSerializer( app )
         self.admin_config_serializer = configuration.AdminConfigSerializer( app )
+        self.user_manager = users.UserManager( app )
+
+    @expose_api_anonymous
+    def whoami( self, trans, **kwd ):
+        """
+        GET /api/whoami
+        Return information about the current authenticated user.
+
+        :returns: dictionary with user information
+        :rtype:   dict
+        """
+        current_user = self.user_manager.current_user( trans )
+        return current_user.to_dict()
 
     @expose_api_anonymous_and_sessionless
     def index( self, trans, **kwd ):
@@ -42,7 +59,14 @@ class ConfigurationController( BaseAPIController ):
         :rtype:     dict
         :returns:   dictionary with major version keyed on 'version_major'
         """
-        return {"version_major": self.app.config.version_major }
+        extra = {}
+        try:
+            version_file = os.environ.get("GALAXY_VERSION_JSON_FILE", self.app.container_finder.app_info.galaxy_root_dir + "/version.json")
+            with open(version_file, "r") as f:
+                extra = json.load(f)
+        except Exception:
+            pass
+        return {"version_major": self.app.config.version_major, "extra": extra}
 
     def get_config_dict( self, trans, return_admin=False, view=None, keys=None, default_view='all' ):
         """
@@ -85,7 +109,7 @@ class ConfigurationController( BaseAPIController ):
 
     @expose_api
     @require_admin
-    def reload_toolbox(self, trans):
+    def reload_toolbox(self, trans, **kwds):
         """
         PUT /api/configuration/toolbox
         Reload the Galaxy toolbox (but not individual tools).

@@ -145,6 +145,17 @@ class WorkflowInvoker( object ):
 
     def invoke( self ):
         workflow_invocation = self.workflow_invocation
+        maximum_duration = getattr( self.trans.app.config, "maximum_workflow_invocation_duration", -1 )
+        if maximum_duration > 0 and workflow_invocation.seconds_since_created > maximum_duration:
+            log.debug("Workflow invocation [%s] exceeded maximum number of seconds allowed for scheduling [%s], failing." % (workflow_invocation.id, maximum_duration))
+            workflow_invocation.state = model.WorkflowInvocation.states.FAILED
+            # All jobs ran successfully, so we can save now
+            self.trans.sa_session.add( workflow_invocation )
+
+            # Not flushing in here, because web controller may create multiple
+            # invocations.
+            return self.progress.outputs
+
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
         for step in remaining_steps:
@@ -165,9 +176,9 @@ class WorkflowInvoker( object ):
                     # https://github.com/galaxyproject/galaxy/issues/2259
                     if job:
                         workflow_invocation_step.job_id = job.id
-            except modules.DelayedWorkflowEvaluation:
+            except modules.DelayedWorkflowEvaluation as de:
                 step_delayed = delayed_steps = True
-                self.progress.mark_step_outputs_delayed( step )
+                self.progress.mark_step_outputs_delayed( step, why=de.why )
             except Exception:
                 log.exception(
                     "Failed to schedule %s, problem occurred on %s.",
@@ -176,8 +187,8 @@ class WorkflowInvoker( object ):
                 )
                 raise
 
-            step_verb = "invoked" if not step_delayed else "delayed"
-            log.debug("Workflow step %s of invocation %s %s %s" % (step.id, workflow_invocation.id, step_verb, step_timer))
+            if not step_delayed:
+                log.debug("Workflow step %s of invocation %s invoked %s" % (step.id, workflow_invocation.id, step_timer))
 
         if delayed_steps:
             state = model.WorkflowInvocation.states.READY
@@ -207,14 +218,16 @@ class WorkflowInvoker( object ):
 
         # No steps created yet - have to delay evaluation.
         if not step_invocations:
-            raise modules.DelayedWorkflowEvaluation()
+            delayed_why = "depends on step [%s] but that step has not been invoked yet" % output_id
+            raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
         for step_invocation in step_invocations:
             job = step_invocation.job
             if job:
                 # At least one job in incomplete.
                 if not job.finished:
-                    raise modules.DelayedWorkflowEvaluation()
+                    delayed_why = "depends on step [%s] but one or more jobs created from that step have not finished yet" % output_id
+                    raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
                 if job.state != job.states.OK:
                     raise modules.CancelWorkflowEvaluation()
@@ -255,7 +268,7 @@ class WorkflowProgress( object ):
                     message = template % (self.workflow_invocation.id, step_id, list(step_states.keys()))
                     raise Exception(message)
                 runtime_state = step_states[ step_id ].value
-                step.state = step.module.recover_runtime_state( runtime_state )
+                step.state = step.module.decode_runtime_state( runtime_state )
 
             invocation_steps = step_invocations_by_id.get( step_id, None )
             if invocation_steps:
@@ -292,7 +305,8 @@ class WorkflowProgress( object ):
             raise Exception(message)
         step_outputs = self.outputs[ output_step_id ]
         if step_outputs is STEP_OUTPUT_DELAYED:
-            raise modules.DelayedWorkflowEvaluation()
+            delayed_why = "dependent step [%s] delayed, so this step must be delayed" % output_step_id
+            raise modules.DelayedWorkflowEvaluation(why=delayed_why)
         output_name = connection.output_name
         try:
             replacement = step_outputs[ output_name ]
@@ -313,7 +327,8 @@ class WorkflowProgress( object ):
                     # TODO: consider distinguish between cancelled and failed?
                     raise modules.CancelWorkflowEvaluation()
 
-                raise modules.DelayedWorkflowEvaluation()
+                delayed_why = "dependent collection [%s] not yet populated with datasets" % replacement.id
+                raise modules.DelayedWorkflowEvaluation(why=delayed_why)
         return replacement
 
     def get_replacement_workflow_output( self, workflow_output ):
@@ -338,7 +353,10 @@ class WorkflowProgress( object ):
     def set_step_outputs(self, step, outputs):
         self.outputs[ step.id ] = outputs
 
-    def mark_step_outputs_delayed(self, step):
+    def mark_step_outputs_delayed(self, step, why=None):
+        if why:
+            message = "Marking step %s outputs of invocation %s delayed (%s)" % (step.id, self.workflow_invocation.id, why)
+            log.debug(message)
         self.outputs[ step.id ] = STEP_OUTPUT_DELAYED
 
     def _subworkflow_invocation(self, step):
@@ -395,8 +413,8 @@ class WorkflowProgress( object ):
     def _recover_mapping( self, step, step_invocations ):
         try:
             step.module.recover_mapping( step, step_invocations, self )
-        except modules.DelayedWorkflowEvaluation:
-            self.mark_step_outputs_delayed( step )
+        except modules.DelayedWorkflowEvaluation as de:
+            self.mark_step_outputs_delayed( step, de.why )
 
 
 __all__ = ( 'invoke', 'WorkflowRunConfig' )

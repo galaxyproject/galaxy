@@ -12,7 +12,7 @@ try:
 except:
     Client = None
 
-from galaxy.util.postfork import register_postfork_function
+from galaxy.web.stack import register_postfork_function
 
 
 RAVEN_IMPORT_MESSAGE = ('The Python raven package is required to use this '

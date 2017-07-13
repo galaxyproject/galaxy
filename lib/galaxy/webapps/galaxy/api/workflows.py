@@ -18,6 +18,7 @@ from galaxy.managers import (
     workflows
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.tools.parameters import populate_state
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import (
@@ -42,17 +43,78 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         self.workflow_manager = workflows.WorkflowsManager( app )
         self.workflow_contents_manager = workflows.WorkflowContentsManager( app )
 
+    def __get_full_shed_url( self, url ):
+        for name, shed_url in self.app.tool_shed_registry.tool_sheds.items():
+            if url in shed_url:
+                return shed_url
+        return None
+
     @expose_api
     def index(self, trans, **kwd):
         """
         GET /api/workflows
+        """
+        return self.get_workflows_list( trans, False, kwd )
 
+    @expose_api
+    def get_workflow_menu( self, trans, **kwd ):
+        """
+        Get workflows present in the tools panel
+        GET /api/workflows/menu
+        """
+        user = trans.get_user()
+        ids_in_menu = [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ]
+        return {
+            'ids_in_menu': ids_in_menu,
+            'workflows': self.get_workflows_list( trans, True, kwd )
+        }
+
+    @expose_api
+    def set_workflow_menu( self, trans, **kwd ):
+        """
+        Save workflow menu to be shown in the tool panel
+        PUT /api/workflows/menu
+        """
+        payload = kwd.get( 'payload' )
+        user = trans.get_user()
+        workflow_ids = payload.get( 'workflow_ids' )
+        if workflow_ids is None:
+            workflow_ids = []
+        elif type( workflow_ids ) != list:
+            workflow_ids = [ workflow_ids ]
+        sess = trans.sa_session
+        # This explicit remove seems like a hack, need to figure out
+        # how to make the association do it automatically.
+        for m in user.stored_workflow_menu_entries:
+            sess.delete( m )
+        user.stored_workflow_menu_entries = []
+        q = sess.query( model.StoredWorkflow )
+        # To ensure id list is unique
+        seen_workflow_ids = set()
+        for id in workflow_ids:
+            if id in seen_workflow_ids:
+                continue
+            else:
+                seen_workflow_ids.add( id )
+            m = model.StoredWorkflowMenuEntry()
+            m.stored_workflow = q.get( id )
+            user.stored_workflow_menu_entries.append( m )
+        sess.flush()
+        message = "Menu updated."
+        trans.set_message( message )
+        return { 'message': message, 'status': 'done' }
+
+    def get_workflows_list( self, trans, for_menu, kwd ):
+        """
         Displays a collection of workflows.
 
         :param  show_published:      if True, show also published workflows
         :type   show_published:      boolean
+        :param  missing_tools:       if True, include a list of missing tools per workflow
+        :type   missing_tools:       boolean
         """
         show_published = util.string_as_bool( kwd.get( 'show_published', 'False' ) )
+        missing_tools = util.string_as_bool( kwd.get( 'missing_tools', 'False' ) )
         rval = []
         filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
         if show_published:
@@ -60,20 +122,59 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
                 filter1, trans.app.model.StoredWorkflow.table.c.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.table.c.update_time ) ).all():
-            item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-            encoded_id = trans.security.encode_id(wf.id)
-            item['url'] = url_for('workflow', id=encoded_id)
+            if for_menu:
+                item = wf.to_dict()
+            else:
+                item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+                encoded_id = trans.security.encode_id(wf.id)
+                item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
+            item['number_of_steps'] = len( wf.latest_workflow.steps )
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
                 trans.app.model.StoredWorkflow.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
-            item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-            encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
-            item['url'] = url_for( 'workflow', id=encoded_id )
+            if for_menu:
+                item = wf_sa.stored_workflow.to_dict()
+            else:
+                item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+                encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
+                item['url'] = url_for( 'workflow', id=encoded_id )
+                item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
+            item['number_of_steps'] = len( wf_sa.stored_workflow.latest_workflow.steps )
             rval.append(item)
+        if missing_tools:
+            workflows_missing_tools = []
+            workflows = []
+            workflows_by_toolshed = dict()
+            for key, value in enumerate(rval):
+                tool_ids = []
+                workflow_details = self.workflow_contents_manager.workflow_to_dict( trans, self.__get_stored_workflow( trans, value[ 'id' ] ), style='instance' )
+                if 'steps' in workflow_details:
+                    for step in workflow_details[ 'steps' ]:
+                        tool_id = workflow_details[ 'steps' ][ step ][ 'tool_id' ]
+                        if tool_id not in tool_ids and self.app.toolbox.is_missing_shed_tool( tool_id ):
+                            tool_ids.append( tool_id )
+                if len( tool_ids ) > 0:
+                    value[ 'missing_tools' ] = tool_ids
+                    workflows_missing_tools.append( value )
+            for workflow in workflows_missing_tools:
+                for tool_id in workflow[ 'missing_tools' ]:
+                    toolshed, _, owner, name, tool, version = tool_id.split( '/' )
+                    shed_url = self.__get_full_shed_url( toolshed )
+                    repo_identifier = '/'.join( [ toolshed, owner, name ] )
+                    if repo_identifier not in workflows_by_toolshed:
+                        workflows_by_toolshed[ repo_identifier ] = dict( shed=shed_url.rstrip('/'), repository=name, owner=owner, tools=[ tool_id ], workflows=[ workflow[ 'name' ] ] )
+                    else:
+                        if tool_id not in workflows_by_toolshed[ repo_identifier ][ 'tools' ]:
+                            workflows_by_toolshed[ repo_identifier ][ 'tools' ].append( tool_id )
+                        if workflow[ 'name' ] not in workflows_by_toolshed[ repo_identifier ][ 'workflows' ]:
+                            workflows_by_toolshed[ repo_identifier ][ 'workflows' ].append( workflow[ 'name' ] )
+            for repo_tag in workflows_by_toolshed:
+                workflows.append( workflows_by_toolshed[ repo_tag ] )
+            return workflows
         return rval
 
     @expose_api
@@ -341,11 +442,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     if (trans.security.decode_id(id) in entries):
                         trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
 
-            workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
-                trans,
-                stored_workflow,
-                payload['workflow'],
-            )
+            try:
+                workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
+                    trans,
+                    stored_workflow,
+                    payload[ 'workflow' ],
+                )
+            except workflows.MissingToolsException:
+                raise exceptions.MessageException( "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed." )
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
             raise exceptions.RequestParameterInvalidException( message )
@@ -355,35 +459,22 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def build_module( self, trans, payload={} ):
         """
         POST /api/workflows/build_module
-        Builds module details including a tool model for the workflow editor.
+        Builds module models for the workflow editor.
         """
-        tool_id = payload.get( 'tool_id' )
-        tool_version = payload.get( 'tool_version' )
-        tool_inputs = payload.get( 'inputs', {} )
-        annotation = payload.get( 'annotation', tool_inputs.get( 'annotation', '' ) )
-
-        # load tool
-        tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
-
-        # initialize module
-        module = module_factory.from_dict( trans, {
-            'type'          : 'tool',
-            'tool_id'       : tool.id,
-            'tool_state'    : None
-        } )
-
-        # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json( trans, tool_inputs, workflow_building_mode=True )
-        module.update_state( tool_model[ 'state_inputs' ] )
+        inputs = payload.get( 'inputs', {} )
+        module = module_factory.from_dict( trans, payload )
+        module_state = {}
+        populate_state( trans, module.get_inputs(), inputs, module_state, check=False )
+        module.recover_state( module_state )
         return {
-            'tool_model'        : tool_model,
+            'label'             : inputs.get( '__label', '' ),
+            'annotation'        : inputs.get( '__annotation', '' ),
+            'name'              : module.get_name(),
             'tool_state'        : module.get_state(),
             'data_inputs'       : module.get_data_inputs(),
             'data_outputs'      : module.get_data_outputs(),
-            'tool_errors'       : module.get_errors(),
-            'form_html'         : module.get_config_form(),
-            'annotation'        : annotation,
-            'post_job_actions'  : module.get_post_job_actions(tool_inputs)
+            'config_form'       : module.get_config_form(),
+            'post_job_actions'  : module.get_post_job_actions( inputs )
         }
 
     #
@@ -402,6 +493,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         publish = util.string_as_bool( payload.get( "publish", False ) )
         # If 'publish' set, default to importable.
         importable = util.string_as_bool( payload.get( "importable", publish ) )
+        # Galaxy will try to upgrade tool versions that don't match exactly during import,
+        # this prevents that.
+        exact_tools = util.string_as_bool( payload.get( "exact_tools", False ) )
 
         if publish and not importable:
             raise exceptions.RequestParameterInvalidException( "Published workflow must be importable." )
@@ -409,6 +503,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         from_dict_kwds = dict(
             source="API",
             publish=publish,
+            exact_tools=exact_tools,
         )
         workflow, missing_tool_tups = self._workflow_from_dict( trans, data, **from_dict_kwds )
 

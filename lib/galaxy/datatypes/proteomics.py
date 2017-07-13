@@ -61,12 +61,12 @@ class PepXmlReport(Tabular):
     file_ext = "pepxml.tsv"
 
     def __init__(self, **kwd):
-        Tabular.__init__(self, **kwd)
+        super(PepXmlReport, self).__init__(**kwd)
         self.column_names = ['Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan', 'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probabaility']
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
-        return Tabular.make_html_table(self, dataset, column_names=self.column_names)
+        return self.make_html_table(dataset, column_names=self.column_names)
 
 
 class ProtXmlReport(Tabular):
@@ -76,7 +76,7 @@ class ProtXmlReport(Tabular):
     comment_lines = 1
 
     def __init__(self, **kwd):
-        Tabular.__init__(self, **kwd)
+        super(ProtXmlReport, self).__init__(**kwd)
         self.column_names = [
             "Entry Number", "Group Probability",
             "Protein", "Protein Link", "Protein Probability",
@@ -91,7 +91,7 @@ class ProtXmlReport(Tabular):
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
-        return Tabular.make_html_table(self, dataset, column_names=self.column_names)
+        return self.make_html_table(dataset, column_names=self.column_names)
 
 
 class ProteomicsXml(GenericXml):
@@ -150,6 +150,14 @@ class MzXML(ProteomicsXml):
     file_ext = "mzxml"
     blurb = "mzXML Mass Spectrometry data"
     root = "mzXML"
+
+
+class MzData(ProteomicsXml):
+    """mzData data"""
+    edam_format = "format_3245"
+    file_ext = "mzdata"
+    blurb = "mzData Mass Spectrometry data"
+    root = "mzData"
 
 
 class MzIdentML(ProteomicsXml):

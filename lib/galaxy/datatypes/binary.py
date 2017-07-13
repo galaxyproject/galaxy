@@ -453,6 +453,15 @@ class Bam( Binary ):
         except:
             return "Binary bam alignments file (%s)" % ( nice_size( dataset.get_size() ) )
 
+    def to_archive(self, trans, dataset, name=""):
+        rel_paths = []
+        file_paths = []
+        rel_paths.append("%s.%s" % (name or dataset.file_name, dataset.extension))
+        file_paths.append(dataset.file_name)
+        rel_paths.append("%s.%s.bai" % (name or dataset.file_name, dataset.extension))
+        file_paths.append(dataset.metadata.bam_index.file_name)
+        return zip(file_paths, rel_paths)
+
     # ------------- Dataproviders
     # pipe through samtools view
     # ALSO: (as Sam)
@@ -1148,7 +1157,7 @@ Binary.register_sniffable_binary_format('sra', 'sra', Sra)
 
 class RData( Binary ):
     """Generic R Data file datatype implementation"""
-    file_ext = 'RData'
+    file_ext = 'rdata'
 
     def sniff( self, filename ):
         rdata_header = b'RDX2\nX\n'
@@ -1436,3 +1445,36 @@ class NetCDF( Binary ):
 
 
 Binary.register_sniffable_binary_format("netcdf", "netcdf", NetCDF)
+
+
+class DMND( Binary ):
+    """
+    Class describing an DMND file
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'diamond_db.dmnd' )
+    >>> DMND().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'interval.interval' )
+    >>> DMND().sniff( fname )
+    False
+    """
+    file_ext = "dmnd"
+    edam_format = ""
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+        self._magic = binascii.unhexlify("6d18ee15a4f84a02")
+
+    def sniff( self, filename ):
+        # The first 8 bytes of any dmnd file are 0x24af8a415ee186d
+
+        try:
+            header = open( filename, 'rb' ).read(8)
+            if header == self._magic:
+                return True
+            return False
+        except:
+            return False
+
+
+Binary.register_sniffable_binary_format("dmnd", "dmnd", DMND)

@@ -46,20 +46,26 @@ var DatasetListItemView = _super.extend(
 
         // re-rendering on any model changes
         return self.listenTo( self.model, {
-            'change': function( model, options ){
+            'change': function( model ){
                 // if the model moved into the ready state and is expanded without details, fetch those details now
-                if( self.model.changedAttributes().state
-                &&  self.model.inReadyState()
-                &&  self.expanded
-                && !self.model.hasDetails() ){
+                if( self.model.changedAttributes().state &&
+                    self.model.inReadyState() &&
+                    self.expanded &&
+                    !self.model.hasDetails() ){
                     // normally, will render automatically (due to fetch -> change),
                     // but! setting_metadata sometimes doesn't cause any other changes besides state
                     // so, not rendering causes it to seem frozen in setting_metadata state
                     self.model.fetch({ silent : true })
                         .done( function(){ self.render(); });
-
                 } else {
-                    self.render();
+                    if( _.has( model.changed, 'tags' ) && _.keys( model.changed ).length === 1 ){
+                        // If only the tags have changed, rerender specifically
+                        // the titlebar region.  Otherwise default to the full
+                        // render.
+                        self.$( '.nametags' ).html( self._renderNametags() );
+                    } else {
+                        self.render();
+                    }
                 }
             }
         });
@@ -120,9 +126,9 @@ var DatasetListItemView = _super.extend(
     _renderDisplayButton : function(){
         // don't show display if not viewable or not accessible
         var state = this.model.get( 'state' );
-        if( ( state === STATES.NOT_VIEWABLE )
-        ||  ( state === STATES.DISCARDED )
-        ||  ( !this.model.get( 'accessible' ) ) ){
+        if( ( state === STATES.NOT_VIEWABLE ) ||
+            ( state === STATES.DISCARDED ) ||
+            ( !this.model.get( 'accessible' ) ) ){
             return null;
         }
 
@@ -297,6 +303,16 @@ var DatasetListItemView = _super.extend(
                 '</ul>',
             '</div>'
         ].join( '\n' ));
+    },
+
+    _renderNametags : function(){
+        var tpl =  _.template([
+            '<% _.each(_.sortBy(_.uniq(tags), function(x) { return x }), function(tag){ %>',
+                '<% if (tag.indexOf("name:") == 0){ %>',
+                    '<span class="label label-info"><%- tag.slice(5) %></span>',
+                '<% } %>',
+            '<% }); %>'].join(''));
+        return tpl({tags: this.model.get('tags')});
     },
 
     // ......................................................................... misc

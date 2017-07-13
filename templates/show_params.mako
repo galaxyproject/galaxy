@@ -109,7 +109,7 @@
                 %>
                 <tr>
                     ${inputs_recursive_indent( text=label, depth=depth )}
-                    <td>${input.value_to_display_text( param_values[input.name], trans.app ) | h}</td>
+                    <td>${input.value_to_display_text( param_values[input.name] ) | h}</td>
                     <td>${ upgrade_messages.get( input.name, '' ) | h }</td>
                 </tr>
             %endif
@@ -188,7 +188,9 @@
         <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
         %endif
         %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-            <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
+            %if not hda.purged:
+                <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
+            %endif
         %endif
     </tbody>
 </table>
@@ -230,17 +232,18 @@
 
 
 
-%if job and job.command_line and trans.user_is_admin():
+%if job and job.command_line and (trans.user_is_admin() or trans.app.config.expose_dataset_path):
 <h3>Command Line</h3>
 <pre class="code">
 ${ job.command_line | h }</pre>
 %endif
 
-%if job and trans.user_is_admin():
+%if job and (trans.user_is_admin() or trans.app.config.expose_potentially_sensitive_job_metrics):
 <h3>Job Metrics</h3>
 <% job_metrics = trans.app.job_metrics %>
 <% plugins = set([metric.plugin for metric in job.metrics]) %>
     %for plugin in sorted(plugins):
+    %if trans.user_is_admin() or plugin != 'env':
     <h4>${ plugin | h }</h4>
     <table class="tabletip info_data_table">
         <tbody>
@@ -254,6 +257,7 @@ ${ job.command_line | h }</pre>
             %endfor
         </tbody>
     </table>
+    %endif
     %endfor
 %endif
 

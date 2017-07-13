@@ -130,6 +130,10 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
         DatasetCollectionElementMixin.defaults
     ),
 
+    _downloadQueryParameters : function() {
+        return '?to_ext=' + this.get( 'file_ext' ) + '&hdca_id=' + this.get( 'parent_hdca_id' ) + '&element_identifier=' + this.get( 'element_identifier' );
+    },
+
     // because all objects have constructors (as this hashmap would even if this next line wasn't present)
     //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
     //  - re-apply manually for now
@@ -210,6 +214,10 @@ var DatasetCollection = Backbone.Model
         //TODO: same patterns as DatasetCollectionElement _createObjectModel - refactor to BASE_MVC.hasSubModel?
         var elements = this.get( 'elements' ) || [];
         this.unset( 'elements', { silent: true });
+        var self = this;
+        _.each(elements, function(element, index) {
+            _.extend(element, {"parent_hdca_id": self.get("id")});
+        });
         this.elements = new this.collectionClass( elements );
         //this.debug( 'collectionClass:', this.collectionClass + '', this.elements );
         return this.elements;
@@ -277,7 +285,7 @@ var DatasetCollection = Backbone.Model
     // ........................................................................ searchable
     /** searchable attributes for collections */
     searchAttributes : [
-        'name'
+        'name', 'tags'
     ],
 
     // ........................................................................ misc

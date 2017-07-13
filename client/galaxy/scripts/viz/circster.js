@@ -1084,7 +1084,7 @@ var Circster = Backbone.View.extend(
         {
             icon_class: 'plus-button', title: 'Add tracks', on_click: function()
             {
-                visualization.select_datasets(Galaxy.root + "visualization/list_current_history_datasets", Galaxy.root + "api/datasets", vis.get('dbkey'), function(tracks)
+                visualization.select_datasets({'dbkey': vis.get('dbkey')}, function(tracks)
                 {
                     vis.add_tracks(tracks);
                 });

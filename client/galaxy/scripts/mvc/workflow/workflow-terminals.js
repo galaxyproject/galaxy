@@ -428,9 +428,11 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
             if( ! canMatch ) {
                 for( var collectionTypeIndex in collectionTypes ) {
                     var collectionType = collectionTypes[collectionTypeIndex];
-                    var effectiveMapOver = otherCollectionType.effectiveMapOver( collectionType );
-                    if( effectiveMapOver != NULL_COLLECTION_TYPE_DESCRIPTION ) {
-                        return effectiveMapOver;
+                    if( otherCollectionType.canMapOver( collectionType ) ) {
+                        var effectiveMapOver = otherCollectionType.effectiveMapOver( collectionType );
+                        if( effectiveMapOver != NULL_COLLECTION_TYPE_DESCRIPTION ) {
+                            return effectiveMapOver;
+                        }
                     }
                 }
             }

@@ -5,15 +5,17 @@ Unpack a tar or tar.gz archive into a directory.
 usage: %prog archive_source dest_dir
     --[url|file] source type, either a URL or a file.
 """
+from __future__ import print_function
 
+import math
+import optparse
 import os
 import sys
-import optparse
 import tarfile
 import tempfile
-import urllib2
-import math
 from base64 import b64decode
+
+from six.moves.urllib.request import urlopen
 
 # Set max size of archive/file that will be handled to be 100 GB. This is
 # arbitrary and should be adjusted as needed.
@@ -25,7 +27,7 @@ def url_to_file( url, dest_file ):
     Transfer a file from a remote URL to a temporary file.
     """
     try:
-        url_reader = urllib2.urlopen( url )
+        url_reader = urlopen( url )
         CHUNK = 10 * 1024  # 10k
         total = 0
         fp = open( dest_file, 'wb')
@@ -40,7 +42,7 @@ def url_to_file( url, dest_file ):
         fp.close()
         return dest_file
     except Exception as e:
-        print "Exception getting file from URL: %s" % e, sys.stderr
+        print("Exception getting file from URL: %s" % e, file=sys.stderr)
         return None
 
 
@@ -99,4 +101,4 @@ if __name__ == "__main__":
     try:
         main(options, args)
     except Exception as e:
-        print "Error unpacking tar/gz archive: %s" % e, sys.stderr
+        print("Error unpacking tar/gz archive: %s" % e, file=sys.stderr)

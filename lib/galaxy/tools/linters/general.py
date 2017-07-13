@@ -10,6 +10,11 @@ VALID_NAME_MSG = "Tool defines a name [%s]."
 ERROR_ID_MSG = "Tool does not define an id attribute."
 VALID_ID_MSG = "Tool defines an id [%s]."
 
+PROFILE_PATTERN = re.compile(r"^[1,2]\d\.[0,1]\d$")
+PROFILE_INFO_DEFAULT_MSG = "Tool targets 16.01 Galaxy profile."
+PROFILE_INFO_SPECIFIED_MSG = "Tool specifies profile version [%s]."
+PROFILE_INVALID_MSG = "Tool specifies an invalid profile version [%s]."
+
 lint_tool_types = ["*"]
 
 
@@ -32,6 +37,15 @@ def lint_general(tool_source, lint_ctx):
         lint_ctx.error(ERROR_ID_MSG)
     else:
         lint_ctx.valid(VALID_ID_MSG % tool_id)
+
+    profile = tool_source.parse_profile()
+    profile_valid = PROFILE_PATTERN.match(profile) is not None
+    if not profile_valid:
+        lint_ctx.warn(PROFILE_INVALID_MSG)
+    elif profile == "16.01":
+        lint_ctx.valid(PROFILE_INFO_DEFAULT_MSG)
+    else:
+        lint_ctx.valid(PROFILE_INFO_SPECIFIED_MSG % profile)
 
     if re.search(r"\s", tool_id):
         lint_ctx.warn("Tool id contains a space - this is discouraged.")

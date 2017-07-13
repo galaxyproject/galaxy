@@ -1,7 +1,10 @@
-from .framework import SeleniumTestCase
-from .framework import selenium_test
+from .framework import (
+    SeleniumTestCase,
+    selenium_test,
+    UsesHistoryItemAssertions,
+)
 
-from .test_history_dataset_state import UsesHistoryItemAssertions
+from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
 
 
 class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
@@ -10,46 +13,41 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_run_tool_verify_contents_by_peek(self):
         self._run_environment_test_tool()
 
-        self.wait_for_history()
-        hda_id = self.latest_history_item()["id"]
-        self.click_hda_title(hda_id, wait=True)
-        hda_body_selector = self.hda_body_selector(hda_id)
-        self.wait_for_selector_visible(hda_body_selector)
-        self.assert_peek_includes(hda_body_selector, "42")
+        self.history_panel_wait_for_hid_ok(1)
+        self.history_panel_click_item_title(hid=1)
+        self.assert_item_peek_includes(1, "42")
 
     @selenium_test
     def test_run_tool_verify_dataset_details(self):
         self._run_environment_test_tool()
-        self.wait_for_history()
-
-        hda_id = self.latest_history_item()["id"]
-        self._check_dataset_details_for_inttest_value(hda_id)
+        self.history_panel_wait_for_hid_ok(1)
+        self._check_dataset_details_for_inttest_value(1)
 
     @selenium_test
     def test_verify_dataset_details_tables(self):
         self._run_environment_test_tool()
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(1)
 
         hda = self.latest_history_item()
-        hda_id = hda["id"]
-        self._check_dataset_details_for_inttest_value(hda_id)
+        self._check_dataset_details_for_inttest_value(1)
 
-        dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
-        number_found = name_found = format_found = False
-        for key, value in dataset_details_key_value_pairs:
-            if "Number:" in key.text:
-                assert str(hda["hid"]) in value.text
-                number_found = True
-            if "Name:" in key.text:
-                assert hda["name"] in value.text
-                name_found = True
-            if "Format:" in key.text:
-                assert hda["extension"] in value.text
-                format_found = True
+        with self.main_panel():
+            dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
+            number_found = name_found = format_found = False
+            for key, value in dataset_details_key_value_pairs:
+                if "Number:" in key.text:
+                    assert str(hda["hid"]) in value.text
+                    number_found = True
+                if "Name:" in key.text:
+                    assert hda["name"] in value.text
+                    name_found = True
+                if "Format:" in key.text:
+                    assert hda["extension"] in value.text
+                    format_found = True
 
-        assert number_found
-        assert name_found
-        assert format_found
+            assert number_found
+            assert name_found
+            assert format_found
 
     def _table_to_key_value_elements(self, table_selector):
         tool_parameters_table = self.wait_for_selector_visible(table_selector)
@@ -67,22 +65,23 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_rerun(self):
         self._run_environment_test_tool()
-        self.wait_for_history()
-        hda_id = self.latest_history_item()["id"]
-        self.hda_click_primary_action_button(hda_id, "rerun")
+        self.history_panel_wait_for_hid_ok(1)
+        self.hda_click_primary_action_button(1, "rerun")
 
-        inttest_div_element = self.tool_parameter_div("inttest")
-        inttest_input_element = inttest_div_element.find_element_by_css_selector("input")
-        recorded_val = inttest_input_element.get_attribute("value")
-        # Assert form re-rendered with correct value in textbox.
-        assert recorded_val == "42", recorded_val
+        def check_recorded_val():
+            inttest_div_element = self.tool_parameter_div("inttest")
+            inttest_input_element = inttest_div_element.find_element_by_css_selector("input")
+            recorded_val = inttest_input_element.get_attribute("value")
+            # Assert form re-rendered with correct value in textbox.
+            assert recorded_val == "42", recorded_val
+
+        # These form entries seem to be replaced/updated occasionally
+        # causing stale elements.
+        retry_call_during_transitions(check_recorded_val)
         self.tool_execute()
 
-        self.wait_for_history()
-        new_hda_id = self.latest_history_item()["id"]
-
-        assert new_hda_id != hda_id  # We do indeed have a new dataset for the re-run
-        self._check_dataset_details_for_inttest_value(new_hda_id)
+        self.history_panel_wait_for_hid_ok(2)
+        self._check_dataset_details_for_inttest_value(2)
 
     @selenium_test
     def test_run_data(self):
@@ -90,20 +89,21 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         test_path_decoy = self.get_filename("1.txt")
         self.perform_upload(test_path)
         self.perform_upload(test_path_decoy)
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(1)
+        self.history_panel_wait_for_hid_ok(2)
 
         self.home()
         self.tool_open("head")
         self.tool_set_value("input", "1.fasta", expected_type="data")
         self.tool_execute()
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(3)
 
         latest_hda = self.latest_history_item()
         assert latest_hda["hid"] == 3
         assert latest_hda["name"] == "Select first on data 1"
 
-    def _check_dataset_details_for_inttest_value(self, hda_id, expected_value="42"):
-        self.hda_click_primary_action_button(hda_id, "info")
+    def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
+        self.hda_click_primary_action_button(hid, "info")
 
         with self.main_panel():
             self.wait_for_selector_visible("table#dataset-details")

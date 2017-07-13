@@ -174,7 +174,7 @@ class InstallToolDependencyManager( object ):
                 attr_tup = ( name, version, type )
                 try:
                     index = attr_tups_of_dependencies_for_install.index( attr_tup )
-                except Exception as e:
+                except ValueError:
                     index = None
                 if index is not None:
                     tool_dependency = tool_dependencies[ index ]
@@ -609,7 +609,7 @@ class InstallRepositoryManager( object ):
                                                                           display_path=display_path )
             if converter_path:
                 # Load proprietary datatype converters
-                self.app.datatypes_registry.load_datatype_converters( self.app.toolbox, installed_repository_dict=repository_dict )
+                self.app.datatypes_registry.load_datatype_converters( self.app.toolbox, installed_repository_dict=repository_dict, use_cached=True)
             if display_path:
                 # Load proprietary datatype display applications
                 self.app.datatypes_registry.load_display_applications( self.app, installed_repository_dict=repository_dict )
@@ -905,15 +905,12 @@ class InstallRepositoryManager( object ):
             if 'tools' in metadata and install_resolver_dependencies:
                 self.update_tool_shed_repository_status( tool_shed_repository,
                                                          self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
-                requirements = suc.get_unique_requirements_from_repository(tool_shed_repository)
-                [self._view.install_dependency(id=None, **req) for req in requirements]
+                new_tools = [self.app.toolbox._tools_by_id.get(tool_d['guid'], None) for tool_d in metadata['tools']]
+                new_requirements = set([tool.requirements.packages for tool in new_tools if tool])
+                [self._view.install_dependencies(r) for r in new_requirements]
                 if self.app.config.use_cached_dependency_manager:
-                    cached_requirements = []
-                    for tool_d in metadata['tools']:
-                        tool = self.app.toolbox._tools_by_id.get(tool_d['guid'], None)
-                        if tool and tool.requirements not in cached_requirements:
-                            cached_requirements.append(tool.requirements)
-                            tool.build_dependency_cache()
+                    [self.app.toolbox.dependency_manager.build_cache(r) for r in new_requirements]
+
             if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
                 # Install tool dependencies.

@@ -35,6 +35,7 @@
   <tool file="detect_errors_aggressive.xml" />
   <tool file="md5sum.xml" />
   <tool file="checksum.xml" />
+  <tool file="is_valid_xml.xml" />
   <!--
   TODO: Figure out why this transiently fails on Jenkins.
   <tool file="maxseconds.xml" />
@@ -47,11 +48,13 @@
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
+  <tool file="output_format_deprecated_when.xml" />
   <tool file="output_format_collection.xml" />
   <tool file="output_filter.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
+  <tool file="create_2.xml" />
   <tool file="create_10.xml" />
   <tool file="disambiguate_repeats.xml" />
   <tool file="min_repeat.xml" />
@@ -62,6 +65,7 @@
   <tool file="multi_data_repeat.xml" />
   <tool file="multi_data_optional.xml" />
   <tool file="paths_as_file.xml" />
+  <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="special_params.xml" />
@@ -72,8 +76,12 @@
   <tool file="validation_repeat.xml" />
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
+  <tool file="implicit_conversion.xml" />
+  <tool file="explicit_conversion.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
+  <tool file="identifier_multiple_in_conditional.xml" />
+  <tool file="identifier_multiple_in_repeat.xml" />
   <tool file="identifier_collection.xml" />
   <tool file="tool_directory.xml" />
   <tool file="output_action_change_format.xml" />
@@ -92,11 +100,14 @@
   <tool file="collection_creates_dynamic_nested.xml" />
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="collection_type_source.xml" />
+  <tool file="collection_creates_list_fail.xml" />
+  <tool file="collection_creates_dynamic_nested_fail.xml" />
   <tool file="cheetah_casting.xml" />
 
   <tool file="cheetah_problem_unbound_var.xml" />
   <tool file="cheetah_problem_unbound_var_input.xml" />
   <tool file="cheetah_problem_syntax_error.xml" />
+  <tool file="python_environment_problem.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
@@ -113,6 +124,7 @@
   <tool file="for_workflows/cat_interleave.xml" />
   <tool file="for_workflows/pileup.xml" />
   <tool file="for_workflows/mapper.xml" />
+  <tool file="for_workflows/mapper2.xml" />
   <tool file="for_workflows/split.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
 
@@ -120,7 +132,12 @@
     <tool file="for_tours/filtering.xml" />
   </section>
 
+  <!-- Tools for dependency and container testing. -->
+  <tool file="legacy_r.xml" />
   <tool file="mulled_example_multi_1.xml" />
+  <tool file="mulled_example_multi_versionless.xml" />
+  <tool file="mulled_example_multi_incomplete.xml" />
+  <tool file="mulled_example_conflict.xml" />
 
   <tool file="simple_constructs.yml" />
 
@@ -132,5 +149,7 @@
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
   <tool file="${model_tools_path}/merge_collection.xml" />
+  <tool file="${model_tools_path}/relabel_from_file.xml" />
+  <tool file="${model_tools_path}/filter_from_file.xml" />
 
 </toolbox>

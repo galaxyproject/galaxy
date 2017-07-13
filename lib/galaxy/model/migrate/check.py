@@ -1,13 +1,15 @@
-import sys
-import os.path
 import logging
+import os.path
+import sys
 
 from migrate.versioning import repository, schema
 
-from sqlalchemy import create_engine
-from sqlalchemy import MetaData
+from sqlalchemy import (
+    create_engine,
+    MetaData,
+    Table
+)
 from sqlalchemy.exc import NoSuchTableError
-from sqlalchemy import Table
 
 log = logging.getLogger( __name__ )
 

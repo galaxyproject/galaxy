@@ -39,6 +39,7 @@ DEFAULT_WEB_HOST = "localhost"
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 TOOL_SHED_TEST_DATA = os.path.join(GALAXY_TEST_DIRECTORY, "shed_functional", "test_data")
+TEST_WEBHOOKS_DIR = os.path.join(galaxy_root, "test", "functional", "webhooks")
 FRAMEWORK_TOOLS_DIR = os.path.join(GALAXY_TEST_DIRECTORY, "functional", "tools")
 FRAMEWORK_UPLOAD_TOOL_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "upload_tool_conf.xml")
 FRAMEWORK_SAMPLE_TOOLS_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "samples_tool_conf.xml")
@@ -172,9 +173,11 @@ def setup_galaxy_config(
         api_allow_run_as='test@bx.psu.edu',
         auto_configure_logging=logging_config_file is None,
         check_migrate_tools=False,
+        conda_auto_init=False,
         cleanup_job='onsuccess',
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
+        expose_dataset_path=True,
         file_path=file_path,
         galaxy_data_manager_data_path=galaxy_data_manager_data_path,
         id_secret='changethisinproductiontoo',
@@ -184,6 +187,7 @@ def setup_galaxy_config(
         library_import_dir=library_import_dir,
         log_destination="stdout",
         new_file_path=new_file_path,
+        override_tempdir=False,
         master_api_key=master_api_key,
         running_functional_tests=True,
         shed_tool_data_table_config=shed_tool_data_table_config,
@@ -197,6 +201,7 @@ def setup_galaxy_config(
         use_tasked_jobs=True,
         use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
+        webhooks_dir=TEST_WEBHOOKS_DIR,
     )
     config.update(database_conf(tmpdir))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
@@ -266,7 +271,12 @@ def copy_database_template( source, db_path ):
         shutil.copy(source, db_path)
         assert os.path.exists(db_path)
     elif source.lower().startswith(("http://", "https://", "ftp://")):
-        download_to_file(source, db_path)
+        try:
+            download_to_file(source, db_path)
+        except Exception as e:
+            # We log the exception but don't fail startup, since we can
+            # do all migration steps instead of downloading a template.
+            log.exception(e)
     else:
         raise Exception( "Failed to copy database template from source %s" % source )
 
