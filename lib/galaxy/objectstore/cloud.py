@@ -25,18 +25,14 @@ from .s3_multipart_upload import multipart_upload
 from ..objectstore import convert_bytes, ObjectStore
 from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
 
-import traceback
-
 # TODO: Cloudbridge is not exposing exceptions; however, it is planned in the next release milestone.
-# TODO: Till then we're using temporarily using S3ResponseError, which will be replaced by CloudBridge
-# TODO: error responses, once ready.
+# Till then we're using temporarily using S3ResponseError, which will be replaced by CloudBridge
+# error responses, once ready.
 try:
     # Imports are done this way to allow objectstore code to be used outside of Galaxy.
     import boto
 
     from boto.exception import S3ResponseError
-    # from boto.s3.key import Key
-    # from boto.s3.connection import S3Connection
 except ImportError:
     boto = None
 
@@ -45,10 +41,6 @@ NO_BOTO_ERROR_MESSAGE = ("S3/Swift object store configured, but no boto dependen
 
 log = logging.getLogger( __name__ )
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
-
-
-# TODO: Since functions of this class need online resource, and check for their availability,
-# TODO: then Internet connection should be checked, and info the user of the absence of the connection.
 
 
 class CloudObjectStore(ObjectStore):

@@ -1716,15 +1716,6 @@ class Dataset( StorableObject ):
         else:
             self.uuid = UUID(str(uuid))
 
-    def _get_user(self):
-        users = []
-        db_session = object_session(self)
-        for hda in db_session.query(HistoryDatasetAssociation).filter_by(dataset_id=self.id):
-            for history in db_session.query(History).filter_by(id=hda.history_id):
-                if history.user_id:
-                    users.extend(db_session.query(User).filter_by(id=history.user_id))
-        return users
-
     def in_ready_state( self ):
         return self.state in self.ready_states
 
@@ -1982,12 +1973,10 @@ class DatasetInstance( object ):
         return self.dataset.get_size( user )
 
     def set_size( self, user ):
-        print ('3. ' * 80)
         """Returns the size of the data on disk"""
         return self.dataset.set_size( user )
 
     def get_total_size( self, user ):
-        print ('4. ' * 80)
         return self.dataset.get_total_size( user )
 
     def set_total_size( self ):
@@ -1995,7 +1984,6 @@ class DatasetInstance( object ):
 
     def has_data( self, user ):
         """Detects whether there is any data"""
-        print ('5. ' * 80)
         return self.dataset.has_data( user )
 
     def get_raw_data( self ):
