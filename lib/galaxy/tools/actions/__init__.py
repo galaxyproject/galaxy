@@ -295,7 +295,6 @@ class DefaultToolAction( object ):
                     inp_dataset_collections,
                     input_ext
                 )
-
                 data = app.model.HistoryDatasetAssociation( pluggedMedia=inp_data['input'].pluggedMedia, extension=ext, create_dataset=True, flush=False )
                 if hidden is None:
                     hidden = output.hidden

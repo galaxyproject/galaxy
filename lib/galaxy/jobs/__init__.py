@@ -978,13 +978,10 @@ class JobWrapper( object, HasResourceParameters ):
                 pluggedMedia = pM
                 break
             # TEMP BLOCK --- END
-
             self.app.object_store.create(
                 job, user=job.user, pluggedMedia=pluggedMedia, base_dir='job_work', dir_only=True, obj_dir=True)
             self.working_directory = self.app.object_store.get_filename(
                 job, user=job.user, pluggedMedia=pluggedMedia, base_dir='job_work', dir_only=True, obj_dir=True)
-            # TODO: the call should be like the following.
-            # job, job.user, base_dir='job_work', dir_only=True, obj_dir=True )
 
             # The tool execution is given a working directory beneath the
             # "job" working directory.
@@ -1288,7 +1285,7 @@ class JobWrapper( object, HasResourceParameters ):
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
             # lets not allow this to occur
             # need to update all associated output hdas, i.e. history was shared with job running
-            #TODO: the following object called dataset, should be named hda indeed.
+            #TODO: the following object called `dataset`, should be renamed to `hda`.
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
                 trynum = 0
                 while trynum < self.app.config.retry_job_output_collection:

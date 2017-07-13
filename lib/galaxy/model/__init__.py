@@ -41,8 +41,6 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
 
-import traceback
-
 log = logging.getLogger( __name__ )
 
 _datatypes_registry = None
@@ -1731,24 +1729,9 @@ class Dataset( StorableObject ):
         return self.state in self.ready_states
 
     def get_file_name( self, user=None, pluggedMedia=None ):
-        # print '\n\n%%%%%%%%%%%%%%%%% THIS SHOULD NOT BE CALLED --- Get'
-        # print '___________________________________________________'
-        # for line in traceback.format_stack():
-        #     print(line.strip())
-        # print '___________________________________________________\n\n'
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
             assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
-            # users = self._get_user()
-            # if len(users) == 0:
-            #    print ';-('
-                # now what?! no user, then the dataset is not persisted anywhere!
-                # but the dataset exist that's why we have this call?!
-            # else:
-            #    filename = self.object_store.get_filename(self, users[0])
-                # not even this is great!
-                # e.g., Can a dataset have multiple filenames?
-            #return filename
             return self.object_store.get_filename(self, user=user, pluggedMedia=pluggedMedia )
         else:
             filename = self.external_filename
@@ -1756,11 +1739,6 @@ class Dataset( StorableObject ):
         return os.path.abspath( filename )
 
     def set_file_name( self, filename ):
-        # print '\n\n%%%%%%%%%%%%%%%%% THIS SHOULD NOT BE CALLED --- Set\n\n'
-        # print '____________________________________________________'
-        # for line in traceback.format_stack():
-        #     print(line.strip())
-        # print '____________________________________________________\n\n'
         if not filename:
             self.external_filename = None
         else:
@@ -1949,11 +1927,6 @@ class DatasetInstance( object ):
     state = property( get_dataset_state, set_dataset_state )
 
     def get_file_name( self, user=None ):
-        print ('1.'* 80)
-        print  '------------ Fixme !'
-        for line in traceback.format_stack():
-            print(line.strip())
-        print ('- '*80)
         return self.dataset.get_file_name( user )
 
     def set_file_name(self, filename):
