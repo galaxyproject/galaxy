@@ -1,3 +1,0 @@
-[submodule "config/plugins/unipept"]
-	path = config/plugins/unipept
-	url = https://github.com/caleb-easterly/galaxy-plugin-unipept-visualization.git
