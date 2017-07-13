@@ -54,7 +54,7 @@
           if (error) return console.warn(error);
 
           $("#treemap").treemap(data, {
-            width: 800,
+            width: 798,
             height: 780,
             getTooltip: function(d) {
               let numberFormat = d3.format(",d");

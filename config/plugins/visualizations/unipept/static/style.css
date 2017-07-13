@@ -23,14 +23,14 @@ body {
   border-top: 0;
   display: block;
   padding: 0;
-  margin:0;
+  margin: 0 auto;
 }
 
 /*modifies wrapper associated with each viz type*/
 .content-container .wrapper {
   margin: 0;
   padding: 0;
-  border: none;
+  border: 0;
 }
 
 /*modifies header with buttons and helper text*/
