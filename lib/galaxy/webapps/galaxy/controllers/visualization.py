@@ -571,7 +571,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                 visualization_slug_err = rval[ 'slug_err' ]
             else:
                 # Successfully created viz.
-                return trans.response.send_redirect( web.url_for(controller='visualization', action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='visualizations', action='list' ) )
 
         viz_type_options = [ ( t, t ) for t in self.viz_types ]
         return trans.show_form(
@@ -632,7 +632,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                     self.add_item_annotation( trans.sa_session, trans.get_user(), visualization, visualization_annotation )
                 session.flush()
                 # Redirect to visualization list.
-                return trans.response.send_redirect( web.url_for(controller='visualization', action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='visualizations', action='list' ) )
         else:
             visualization_title = visualization.title
             # Create slug if it's not already set.
