@@ -23,8 +23,8 @@ except ImportError:
 
 def map_wrap(f):
     @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        return f(*args, **kwargs)
+    def wrapper(args):
+        return f(*args)
     return wrapper
 
 
