@@ -967,7 +967,7 @@ class WorkflowModuleFactory(object):
         Return module initialized from the data in dictionary `d`.
         """
         type = d['type']
-        assert type in self.module_types
+        assert type in self.module_types, "Unexpected workflow step type [%s] not found in [%s]"% (type, self.module_types.keys())
         return self.module_types[type].from_dict(trans, d, **kwargs)
 
     def from_workflow_step(self, trans, step):
