@@ -188,6 +188,8 @@ class DatasetCollectionManager( object ):
         assert source == "hdca"  # for now
         source_hdca = self.__get_history_collection_instance( trans, encoded_source_id )
         new_hdca = source_hdca.copy()
+        tags_str = self.tag_manager.get_tags_str(source_hdca.tags)
+        self.tag_manager.apply_item_tags(trans.get_user(), new_hdca, tags_str)
         parent.add_dataset_collection( new_hdca )
         trans.sa_session.add( new_hdca )
         trans.sa_session.flush()
