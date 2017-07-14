@@ -88,13 +88,13 @@ class CloudObjectStore(ObjectStore):
         #            value := Connection
         #          }
 
-    def _configure_connection(self, user, pluggedMedia):
-        provider = self._convert_pluggedMedia_type_to_provider( pluggedMedia.type )
+    def _configure_connection(self, user, plugged_media):
+        provider = self._convert_plugged_media_type_to_provider( plugged_media.type )
         if user.id not in self.connections:
             self.connections[user.id] = {}
         if provider not in self.connections[user.id]:
             log.debug( "Configuring a connection to '%s' for the user with ID: '%s'", provider, user.id )
-            credentials = { 'aws_access_key': pluggedMedia.access_key, 'aws_secret_key': pluggedMedia.secret_key }
+            credentials = { 'aws_access_key': plugged_media.access_key, 'aws_secret_key': plugged_media.secret_key }
             self.connections[user.id][provider] = CloudProviderFactory().create_provider( provider, credentials )
 
     def _parse_config_xml(self, config_xml):
@@ -196,11 +196,11 @@ class CloudObjectStore(ObjectStore):
                 log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
                 return
 
-    def _get_bucket(self, user, pluggedMedia):
+    def _get_bucket(self, user, plugged_media):
         try:
-            bucket_name = pluggedMedia.path
-            provider = self._convert_pluggedMedia_type_to_provider( pluggedMedia.type )
-            self._configure_connection(user, pluggedMedia)
+            bucket_name = plugged_media.path
+            provider = self._convert_plugged_media_type_to_provider( plugged_media.type )
+            self._configure_connection(user, plugged_media)
             bucket = self.connections[user.id][provider].object_store.get(bucket_name)
             if bucket is None:
                 log.debug("Bucket not found, creating '%s' bucket with handle '%s'", provider, bucket_name)
@@ -276,9 +276,9 @@ class CloudObjectStore(ObjectStore):
             log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1
 
-    def _key_exists( self, rel_path, user, pluggedMedia ):
+    def _key_exists( self, rel_path, user, plugged_media ):
         try:
-            bucket = self._get_bucket(user, pluggedMedia)
+            bucket = self._get_bucket(user, plugged_media)
             # A hackish way of testing if the rel_path is a folder vs a file
             is_dir = rel_path[-1] == '/'
             if is_dir:
@@ -290,7 +290,7 @@ class CloudObjectStore(ObjectStore):
             else:
                 return bucket.exists(rel_path)
         except S3ResponseError:
-            log.exception("Trouble checking existence of '%s' key '%s'", pluggedMedia.type, rel_path)
+            log.exception("Trouble checking existence of '%s' key '%s'", plugged_media.type, rel_path)
             return False
 
         # TODO: I don't know why the following condition should `raise` an exception.
@@ -328,23 +328,23 @@ class CloudObjectStore(ObjectStore):
         # else:
         #     return False
 
-    def _pull_into_cache(self, rel_path, user, pluggedMedia):
+    def _pull_into_cache(self, rel_path, user, plugged_media):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
         if not os.path.exists( self._get_cache_path( rel_path_dir ) ):
             os.makedirs( self._get_cache_path( rel_path_dir ) )
         # Now pull in the file
-        file_ok = self._download( rel_path, user, pluggedMedia )
+        file_ok = self._download( rel_path, user, plugged_media )
         self._fix_permissions( self._get_cache_path(rel_path_dir ) )
         return file_ok
 
     def _transfer_cb(self, complete, total):
         self.transfer_progress += 10
 
-    def _download( self, rel_path, user, pluggedMedia ):
+    def _download( self, rel_path, user, plugged_media ):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-            bucket = self._get_bucket(user, pluggedMedia)
+            bucket = self._get_bucket(user, plugged_media)
             key = bucket.get(rel_path)
 
             # Test if cache is large enough to hold the new file
@@ -426,16 +426,16 @@ class CloudObjectStore(ObjectStore):
             log.exception("Trouble pushing S3 key '%s' from file '%s'", rel_path, source_file)
         return False
 
-    def _convert_pluggedMedia_type_to_provider( self, type ):
+    def _convert_plugged_media_type_to_provider( self, type ):
         if type == "AWS-S3":
             return ProviderList.AWS
         elif type == "OpenStack-Swift":
             return ProviderList.OPENSTACK
         else:
-            # Since pluggedMedia.type is set by Galaxy, without letting user/admin setting it manually,
+            # Since plugged_media.type is set by Galaxy, without letting user/admin setting it manually,
             # then this case is expected to met. If it is, then there should be an error setting
-            # PluggedMedia.type.
-            log.exception("Invalid PluggedMedia type (%s) -- unable to continue" % type)
+            # plugged_media.type.
+            log.exception("Invalid plugged_media type (%s) -- unable to continue" % type)
             raise
 
     def file_ready(self, obj, **kwargs):
@@ -452,17 +452,17 @@ class CloudObjectStore(ObjectStore):
                       os.path.getsize(self._get_cache_path(rel_path)), self._get_size_in_s3(rel_path))
         return False
 
-    def exists(self, obj, user, pluggedMedia, **kwargs):
+    def exists(self, obj, user, plugged_media, **kwargs):
         in_cache = False
-        self._configure_connection(user, pluggedMedia)
-        bucket = self._get_bucket(user, pluggedMedia)
+        self._configure_connection(user, plugged_media)
+        bucket = self._get_bucket(user, plugged_media)
         rel_path = self._construct_path(obj, **kwargs)
 
         # Check cache
         if self._in_cache(rel_path):
             in_cache = True
         # Check S3
-        in_cloud = self._key_exists( rel_path, user, pluggedMedia )
+        in_cloud = self._key_exists( rel_path, user, plugged_media )
         # log.debug("~~~~~~ File '%s' exists in cache: %s; in s3: %s" % (rel_path, in_cache, in_s3))
         # dir_only does not get synced so shortcut the decision
         dir_only = kwargs.get('dir_only', False)
@@ -487,7 +487,7 @@ class CloudObjectStore(ObjectStore):
         else:
             return False
 
-    def create(self, obj, user, pluggedMedia, **kwargs):
+    def create(self, obj, user, plugged_media, **kwargs):
         # TODO: An anonymous user call should not even reach here; it should be blocked
         # at upload_common level based on the selected objectstore type. i.e., it should
         # be blocked if objectstore type is set to "cloud".
@@ -495,9 +495,9 @@ class CloudObjectStore(ObjectStore):
             log.warning("Can not upload data to a cloud storage for an anonymous user.")
             return
 
-        self._configure_connection(user, pluggedMedia)
+        self._configure_connection(user, plugged_media)
 
-        if not self.exists(obj, user, pluggedMedia, **kwargs):
+        if not self.exists(obj, user, plugged_media, **kwargs):
             # Pull out locally used fields
             extra_dir = kwargs.get('extra_dir', None)
             extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
@@ -528,7 +528,7 @@ class CloudObjectStore(ObjectStore):
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
-                bucket = self._get_bucket(user, pluggedMedia)
+                bucket = self._get_bucket(user, plugged_media)
                 self._push_to_os(bucket, rel_path, from_string='')
 
     def empty(self, obj, **kwargs):
@@ -538,19 +538,19 @@ class CloudObjectStore(ObjectStore):
             raise ObjectNotFound('objectstore.empty, object does not exist: %s, kwargs: %s'
                                  % (str(obj), str(kwargs)))
 
-    def size(self, obj, user, pluggedMedia, **kwargs):
+    def size(self, obj, user, plugged_media, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):
             try:
                 return os.path.getsize(self._get_cache_path(rel_path))
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s", rel_path, ex)
-        elif self.exists(obj, user, pluggedMedia, **kwargs):
+        elif self.exists(obj, user, plugged_media, **kwargs):
             return self._get_size_in_s3(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
 
-    def delete(self, obj, user, pluggedMedia, entire_dir=False, **kwargs):
+    def delete(self, obj, user, plugged_media, entire_dir=False, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         extra_dir = kwargs.get('extra_dir', None)
         base_dir = kwargs.get('base_dir', None)
@@ -562,8 +562,8 @@ class CloudObjectStore(ObjectStore):
                 shutil.rmtree( os.path.abspath( rel_path ) )
                 return True
 
-            self._configure_connection( user, pluggedMedia )
-            bucket = self._get_bucket( user, pluggedMedia )
+            self._configure_connection( user, plugged_media )
+            bucket = self._get_bucket( user, plugged_media )
 
             # For the case of extra_files, because we don't have a reference to
             # individual files/keys we need to remove the entire directory structure
@@ -581,8 +581,8 @@ class CloudObjectStore(ObjectStore):
                 # Delete from cache first, if its cached.
                 if os.path.isfile( self._get_cache_path( rel_path ) ):
                     os.unlink( self._get_cache_path( rel_path ) )
-                # Delete from pluggedMedia as well
-                if self._key_exists( rel_path, user, pluggedMedia ):
+                # Delete from plugged_media as well
+                if self._key_exists( rel_path, user, plugged_media ):
                     key = bucket.get( rel_path )
                     log.debug( "Deleting key %s", key.name )
                     key.delete()
@@ -590,18 +590,18 @@ class CloudObjectStore(ObjectStore):
         except S3ResponseError:
             log.exception( "Could not delete key '%s' from S3", rel_path )
         except OSError:
-            log.exception( '%s delete error', self.get_filename( obj, user, pluggedMedia, **kwargs ) )
+            log.exception( '%s delete error', self.get_filename( obj, user, plugged_media, **kwargs ) )
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
         # TEMP BLOCK --- START
         user = None
-        pluggedMedia = None
+        plugged_media = None
         # TEMP BLOCK --- END
         rel_path = self._construct_path(obj, **kwargs)
         # Check cache first and get file if not there
         if not self._in_cache(rel_path):
-            self._pull_into_cache(rel_path, user, pluggedMedia)
+            self._pull_into_cache(rel_path, user, plugged_media)
         # Read the file content from cache
         data_file = open(self._get_cache_path(rel_path), 'r')
         data_file.seek(start)
@@ -609,7 +609,7 @@ class CloudObjectStore(ObjectStore):
         data_file.close()
         return content
 
-    def get_filename(self, obj, user, pluggedMedia, **kwargs):
+    def get_filename(self, obj, user, plugged_media, **kwargs):
         base_dir = kwargs.get('base_dir', None)
         dir_only = kwargs.get('dir_only', False)
         obj_dir = kwargs.get('obj_dir', False)
@@ -632,11 +632,11 @@ class CloudObjectStore(ObjectStore):
         if self._in_cache(rel_path):
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
-        elif self.exists(obj, user, pluggedMedia, **kwargs):
+        elif self.exists(obj, user, plugged_media, **kwargs):
             if dir_only:  # Directories do not get pulled into cache
                 return cache_path
             else:
-                if self._pull_into_cache(rel_path, user, pluggedMedia):
+                if self._pull_into_cache(rel_path, user, plugged_media):
                     return cache_path
         # For the case of retrieving a directory only, return the expected path
         # even if it does not exist.
@@ -646,10 +646,10 @@ class CloudObjectStore(ObjectStore):
                              % (str(obj), str(kwargs)))
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
-    def update_from_file(self, obj, user, pluggedMedia, file_name=None, create=False, **kwargs):
+    def update_from_file(self, obj, user, plugged_media, file_name=None, create=False, **kwargs):
         if create:
-            self.create(obj, user, pluggedMedia, **kwargs)
-        if self.exists(obj, user, pluggedMedia, **kwargs):
+            self.create(obj, user, plugged_media, **kwargs)
+        if self.exists(obj, user, plugged_media, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             # Chose whether to use the dataset file itself or an alternate file
             if file_name:
@@ -666,17 +666,17 @@ class CloudObjectStore(ObjectStore):
             else:
                 source_file = self._get_cache_path(rel_path)
             # Update the file on S3
-            bucket = self._get_bucket( user, pluggedMedia )
+            bucket = self._get_bucket( user, plugged_media )
             self._push_to_os(bucket, rel_path, source_file)
         else:
             raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s'
                                  % (str(obj), str(kwargs)))
 
-    def get_object_url(self, obj, user, pluggedMedia, **kwargs):
-        if self.exists(obj, user, pluggedMedia, **kwargs):
+    def get_object_url(self, obj, user, plugged_media, **kwargs):
+        if self.exists(obj, user, plugged_media, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
-                bucket = self._get_bucket(user, pluggedMedia)
+                bucket = self._get_bucket(user, plugged_media)
                 key = bucket.get(rel_path)
                 return key.generate_url(expires_in=86400)  # 24hrs
             except S3ResponseError:

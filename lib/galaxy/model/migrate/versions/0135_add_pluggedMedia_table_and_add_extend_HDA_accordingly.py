@@ -12,7 +12,7 @@ metadata = MetaData()
 
 # Table to add
 
-PluggedMediaTable = Table( "pluggedMedia", metadata,
+PluggedMediaTable = Table( "plugged_media", metadata,
                           Column( "id", Integer, primary_key=True ),
                           Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
                           Column( "type", TEXT, default="local" ),
@@ -20,7 +20,7 @@ PluggedMediaTable = Table( "pluggedMedia", metadata,
                           Column("secret_key", TEXT ),
                           Column("access_key", TEXT ) )
 
-plugged_media_id_col = Column( "plugged_media_id", Integer, ForeignKey( "pluggedMedia.id" ) )
+plugged_media_id_col = Column( "plugged_media_id", Integer, ForeignKey( "plugged_media.id" ) )
 dataset_path_to_media_col = Column( "dataset_path_on_media", TEXT )
 
 
@@ -33,7 +33,7 @@ def upgrade(migrate_engine):
     try:
         PluggedMediaTable.create()
     except Exception as e:
-        log.debug( "Creating PluggedMedia table failed: %s" % str( e ) )
+        log.debug( "Creating plugged_media table failed: %s" % str( e ) )
 
     # Extend HDA table
     hda_table = Table("history_dataset_association", metadata, autoload=True)
@@ -55,11 +55,11 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Drop pluggedMedia table
+    # Drop plugged_media table
     try:
         PluggedMediaTable.drop()
     except Exception as e:
-        log.debug( "Dropping pluggedMediaTable table failed: %s" % str( e ) )
+        log.debug( "Dropping plugged_media table failed: %s" % str( e ) )
 
     # Drop the HDA table's extended 'plugged media' and 'dataset path' columns.
     hda_table = Table("history_dataset_association", metadata, autoload=True)

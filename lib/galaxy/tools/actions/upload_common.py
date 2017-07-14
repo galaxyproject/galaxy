@@ -125,9 +125,9 @@ def __new_history_upload( trans, uploaded_dataset, history=None, state=None ):
     if not history:
         history = trans.history
     # TEMP BLOCK --- START
-    pluggedMedia = None
-    for pM in trans.user.pluggedMedia:
-        pluggedMedia = pM
+        plugged_media = None
+    for pM in trans.user.plugged_media:
+        plugged_media = pM
         break
     # TEMP BLOCK --- END
     hda = trans.app.model.HistoryDatasetAssociation( name=uploaded_dataset.name,
@@ -136,7 +136,7 @@ def __new_history_upload( trans, uploaded_dataset, history=None, state=None ):
                                                      history=history,
                                                      create_dataset=True,
                                                      sa_session=trans.sa_session,
-                                                     pluggedMedia=pluggedMedia )
+                                                     plugged_media=plugged_media )
     if state:
         hda.state = state
     else:
@@ -402,12 +402,12 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
             dataset.dataset.object_store_id = object_store_id
             try:
                 # TEMP BLOCK --- START
-                pluggedMedia = None
-                for pM in trans.user.pluggedMedia:
-                    pluggedMedia = pM
+                plugged_media = None
+                for pM in trans.user.plugged_media:
+                    plugged_media = pM
                     break
                 # TEMP BLOCK --- END
-                trans.app.object_store.create( dataset.dataset, user=trans.user, pluggedMedia=pluggedMedia )
+                trans.app.object_store.create( dataset.dataset, user=trans.user, plugged_media=plugged_media )
             except ObjectInvalid:
                 # FIXME: the followisng error message is misleading; this exception can be raised for different
                 # reasons, not only a full objectstore.

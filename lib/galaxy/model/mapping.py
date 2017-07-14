@@ -63,7 +63,7 @@ model.User.table = Table(
     Column( "activation_token", TrimmedString( 64 ), nullable=True, index=True ) )
 
 model.PluggedMedia.table = Table(
-    "pluggedMedia", metadata,
+    "plugged_media", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "type", TEXT, nullable=False ),
@@ -155,7 +155,7 @@ model.HistoryDatasetAssociation.table = Table(
     Column( "purged", Boolean, index=True, default=False ),
     Column( "hidden_beneath_collection_instance_id",
             ForeignKey( "history_dataset_collection_association.id" ), nullable=True ),
-    Column( "plugged_media_id", Integer, ForeignKey( "pluggedMedia.id" ) ),
+    Column( "plugged_media_id", Integer, ForeignKey( "plugged_media.id" ) ),
     Column( "dataset_path_on_media", TEXT ) )
 
 model.Dataset.table = Table(
@@ -1636,7 +1636,7 @@ simple_mapping( model.HistoryDatasetAssociation,
         uselist=False,
         backref="hidden_dataset_instances"),
     _metadata=deferred( model.HistoryDatasetAssociation.table.c._metadata ),
-    pluggedMedia=relation( model.PluggedMedia,
+    plugged_media=relation( model.PluggedMedia,
                            primaryjoin=( model.HistoryDatasetAssociation.table.c.plugged_media_id == model.PluggedMedia.table.c.id ) )
 )
 
@@ -1778,7 +1778,7 @@ mapper( model.User, model.User.table, properties=dict(
     api_keys=relation( model.APIKeys,
         backref="user",
         order_by=desc( model.APIKeys.table.c.create_time ) ),
-    pluggedMedia=relation( model.PluggedMedia )
+    plugged_media=relation( model.PluggedMedia )
 ) )
 
 mapper( model.PluggedMedia, model.PluggedMedia.table, properties=dict(
