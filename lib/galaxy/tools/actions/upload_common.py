@@ -125,7 +125,7 @@ def __new_history_upload( trans, uploaded_dataset, history=None, state=None ):
     if not history:
         history = trans.history
     # TEMP BLOCK --- START
-        plugged_media = None
+    plugged_media = None
     for pM in trans.user.plugged_media:
         plugged_media = pM
         break
