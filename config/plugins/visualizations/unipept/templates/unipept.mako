@@ -19,7 +19,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
 
     <!-- Visualizations -->
-    ${h.javascript_link( app_root + 'unipept-visualizations.min.js' )}
+    ${h.javascript_link( app_root + 'unipept-visualizations.es5.js' )}
 
     <!-- Stylesheet -->
     ${h.stylesheet_link( app_root + 'style.css' )}
