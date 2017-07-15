@@ -13,6 +13,7 @@ from .interactor import GalaxyInteractorApi as BaseInteractor
 from .twilltestcase import FunctionalTestCase
 
 TEST_USER = "user@bx.psu.edu"
+ADMIN_TEST_USER = "test@bx.psu.edu"
 DEFAULT_OTHER_USER = "otheruser@bx.psu.edu"  # A second user for API testing.
 
 
@@ -107,7 +108,9 @@ class ApiTestInteractor( BaseInteractor ):
     """
 
     def __init__( self, test_case ):
-        super( ApiTestInteractor, self ).__init__( test_case, test_user=TEST_USER )
+        admin = getattr( test_case, "require_admin_user", False )
+        test_user = TEST_USER if not admin else ADMIN_TEST_USER
+        super( ApiTestInteractor, self ).__init__( test_case, test_user=test_user )
 
     # This variant the lower level get and post methods are meant to be used
     # directly to test API - instead of relying on higher-level constructs for
