@@ -812,6 +812,9 @@ class ToolModule(WorkflowModule):
             # TODO: Move next step into copy()
             execution_state.inputs = make_dict_copy(execution_state.inputs)
 
+            expected_replacement_keys = set(step.input_connections_by_name.keys())
+            found_replacement_keys = set([])
+
             # Connect up
             def callback(input, prefixed_name, **kwargs):
                 replacement = NO_REPLACEMENT
@@ -829,6 +832,10 @@ class ToolModule(WorkflowModule):
                         replacement = progress.replacement_for_tool_input(step, input, prefixed_name)
                 else:
                     replacement = progress.replacement_for_tool_input(step, input, prefixed_name)
+
+                if replacement is not NO_REPLACEMENT:
+                    found_replacement_keys.add(prefixed_name)
+
                 return replacement
 
             try:
@@ -838,6 +845,11 @@ class ToolModule(WorkflowModule):
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
                 message = message_template % (tool.name, k.message)
                 raise exceptions.MessageException(message)
+
+            unmatched_input_connections = expected_replacement_keys - found_replacement_keys
+            if unmatched_input_connections:
+                log.warn("Failed to use input connections for inputs [%s]" % unmatched_input_connections)
+
             param_combinations.append(execution_state.inputs)
 
         try:
