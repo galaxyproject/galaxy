@@ -1,5 +1,5 @@
 
-define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, Tabs, Ui ) {
+define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view' ], function( Utils, Tabs, Ui, Form ) {
 
     /** Dataset edit attributes view */
     var View = Backbone.View.extend({
@@ -79,39 +79,27 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
                         self.display_message( self, { 'message': 'Please give a name to the dataset', 'status': 'error' }, $el_edit_attr );
                         return;
                     }
-                    self.call_ajax( self, post_url, post_obj );
+                    self.call_ajax( self, post_obj );
                 });
             });
 
             // Click event for Auto-detect button
             $el_edit_attr.find( '.btn-auto-detect' ).click( function( e ) {
                 e.preventDefault();
-                self.call_ajax( self, post_url, { 'dataset_id': dataset_id, 'detect': 'Auto-detect' } );
-            });
-
-            // Click event for Convert to new format button
-            $el_edit_attr.find( '.btn-convert-dataset' ).click( function( e ) {
-                e.preventDefault();
-                var fields = $el_edit_attr.find( "#convertdata" ).serializeArray(),
-                    post_obj = {};
-                fields.push( { 'name': 'convert_data', 'value': 'Convert' } );
-                _.each( fields, function( field ) {
-                    if( !(field.name in post_obj) ) {
-                        post_obj[ field.name ] = field.value;
-                    }
-                });
-                self.call_ajax( self, post_url, post_obj );
+                self.call_ajax( self, { 'dataset_id': dataset_id, 'detect': 'Auto-detect' } );
             });
         },
 
         /** Perform AJAX post call */
-        call_ajax: function( self, url, data ) {
+        call_ajax: function( self, data, tab_name ) {
+            var post_url = Galaxy.root + 'dataset/edit';
             $.ajax({
                 type: "POST",
-                url: url,
+                url: post_url,
                 data: data,
                 success: function( response ) {
                     self.render_attribute_page( self, response );
+                    self.tabs.showTab( tab_name );
                 },
                 error   : function( response ) {
                     self.page.display( new Ui.Message( { 'message': 'Error occured', 'status': 'error',
@@ -150,14 +138,15 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
                 title   : 'Convert',
                 icon    : 'fa-gear',
                 tooltip : 'Convert to new format',
-                $el     : $( self._convertTabTemplate( self, response ) )
+                $el     :  self._getConvertFormTemplate( self, response )
             });
 
             self.tabs.add({
                 id      : 'datatype',
                 title   : 'Datatypes',
                 icon    : 'fa-database',
-                tooltip : 'Change data type'
+                tooltip : 'Change data type',
+                $el     : self._getChangeDataTypeFormTemplate( self, response )
             });
 
             self.tabs.add({
@@ -177,6 +166,57 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
                        '<div class="response-message"></div>' +
                        '<h3>Edit Dataset Attributes and Permissions</h3>' +
                    '</div>';
+        },
+
+        /** Convert tab template */
+        _getConvertFormTemplate: function( self, response ) {
+            var form = new Form({
+                title  : 'Convert to new format',
+                inputs : response.convert_inputs,
+                    operations: {
+                        'submit': new Ui.ButtonIcon({
+                            tooltip  : 'Convert the datatype to a new format',
+                            title    : 'Convert',
+                            onclick  : function() { self._submitConvert( self, form, response ) }
+                        })
+                    }
+                });
+             return form.$el;
+        },
+
+       /** Change datatype template */
+        _getChangeDataTypeFormTemplate: function( self, response ) {
+            var form = new Form({
+                title  : 'Change data type',
+                inputs : response.convert_datatype_inputs,
+                    operations: {
+                        'submit': new Ui.ButtonIcon({
+                            tooltip  : 'Convert the datatype to a new type',
+                            title    : 'Save',
+                            onclick  : function() { self._submitChangeDatatype( self, form, response ) }
+                        })
+                    }
+                });
+             return form.$el;
+
+        },
+
+        /** Convert format */
+        _submitConvert: function( self, form, response ) {
+            var form_data = form.data.create();
+            if ( form_data.target_type !== null && form_data.target_type ) {
+                form_data.dataset_id = response.dataset_id;
+                form_data.convert_data = 'Convert';
+                self.call_ajax( self, form_data, 'convert' );
+            }
+        },
+
+        /** Change datatype */
+        _submitChangeDatatype: function( self, form, response ) {
+            var form_data = form.data.create();
+            form_data.dataset_id = response.dataset_id;
+            form_data.change = 'Save';
+            self.call_ajax( self, form_data, 'datatype' );
         },
 
         /** Template for Attributes tab */
@@ -244,38 +284,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc' ], function( Utils, 
                                           "<div class='errormessagesmall'> Required metadata values are missing. Some of these values may not be editable by the user. Selecting 'Auto-detect' will attempt to fix these values. </div>" +
                                       "</div>";
             }
-            template = template + "</div></div>";
-            return template;
-        },
-
-        /** Template for the Convert tab */
-        _convertTabTemplate: function( self, response ) {
-            var template = "<div class='toolFormTitle'>Convert to new format</div>" +
-                               "<div class='toolFormBody'>";
-            // If there is at least a data format converter
-            if( response.converters_collection.length > 0 ) {
-                template = template + "<form name='convert_data' id='convertdata'>" +
-                                              "<div class='form-row'>" +
-                                                  "<label>Name:</label>" +
-                                                  "<input type='hidden' name='dataset_id' value='" + response.dataset_id + "'>" +
-                                                  "<div style='float: left; width: 250px; margin-right: 10px;'>";
-
-                template = template + "<select name='target_type'>";
-                // Build a select box using all the converter types
-                _.each( response.converters_collection, function( item ) {
-                    template = template + "<option value='" + item[ 0 ] + "'>" + item[ 1 ] + "</option>";
-                });
-                template = template + "</select></div>";
-                template = template + "<div class='toolParamHelp' style='clear: both;'>This will create a new dataset with the contents of this dataset converted to a new format.</div><div style='clear: both'></div></div>";
-
-                template = template + "<div class='form-row'>" +
-                                          "<input class='btn-convert-dataset' type='submit' name='convert_data' value='Convert'/>" +
-                                      "</div>" +
-                                      "</form>";
-                }
-                else {
-                    template = template + "<div>No conversions available</div>";
-                }
             template = template + "</div></div>";
             return template;
         }

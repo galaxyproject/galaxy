@@ -459,7 +459,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     data.metadata.dbkey = data.dbkey
             # let's not overwrite the imported datatypes module with the variable datatypes?
             # the built-in 'id' is overwritten in lots of places as well
-            ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
+            ldatatypes = [ (dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
             ldatatypes.sort()
             all_roles = trans.app.security_agent.get_legitimate_roles( trans, data.dataset, 'root' )
 
@@ -482,14 +482,31 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             if error:
                 status = 'error'
 
+            convert_inputs = list()
+            convert_datatype_inputs = list()
+            convert_inputs.append({
+                'type': 'select',
+                'name': 'target_type',
+                'label': 'Name:',
+                'help': 'This will create a new dataset with the contents of this dataset converted to a new format.',
+                'options': [( convert_name, convert_id ) for convert_id, convert_name in converters_collection]
+            })
+
+            convert_datatype_inputs.append({
+                'type': 'select',
+                'name': 'datatype',
+                'label': 'New Type:',
+                'help': 'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',
+                'options': [ ( ext_name, ext_id ) for ext_id, ext_name in ldatatypes ],
+                'value': [ ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext ]
+            })
+
             return {
                 'display_name': data.get_display_name(),
                 'data_info': data.info,
                 'data_metadata': data_metadata,
                 'data_missing_meta': data.missing_meta(),
                 'data_annotation': self.get_item_annotation_str( trans.sa_session, trans.user, data ),
-                'datatypes': ldatatypes,
-                'allow_datatype_change': data.datatype.allow_datatype_change,
                 'current_user_roles': current_roles_collection,
                 'all_roles': all_roles_collection,
                 'message': message,
@@ -498,8 +515,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 'refresh_frames': refresh_frames,
                 'user': user_available,
                 'can_manage_dataset': can_manage_dataset,
-                'converters_collection': converters_collection,
-                'metadata_html': metadata_html
+                'metadata_html': metadata_html,
+                'convert_inputs': convert_inputs,
+                'convert_datatype_inputs': convert_datatype_inputs
             }
         else:
             return {
