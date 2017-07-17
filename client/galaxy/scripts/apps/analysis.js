@@ -206,7 +206,7 @@ window.app = function app( options, bootstrapped ){
         /** load the center panel with a tool form described by the given params obj */
         _loadToolForm : function( params ){
             //TODO: load tool form code async
-            params.id = unescape( params.tool_id );
+            params.id = decodeURIComponent( params.tool_id );
             this.page.display( new ToolForm.View( params ) );
         },
 
