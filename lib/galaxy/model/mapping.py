@@ -47,7 +47,7 @@ metadata = MetaData()
 
 model.User.table = Table(
     "galaxy_user", metadata,
-    Column( "id", Integer, primary_key=True ),
+    Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "email", TrimmedString( 255 ), index=True, nullable=False ),
@@ -73,19 +73,19 @@ model.PluggedMedia.table = Table(
 
 model.UserAddress.table = Table(
     "user_address", metadata,
-    Column( "id", Integer, primary_key=True ),
+    Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "desc", TrimmedString( 255 ) ),
-    Column( "name", TrimmedString( 255 ), nullable=False ),
+    Column( "desc", TrimmedString( 255 )),
+    Column( "name", TrimmedString( 255 ), nullable=False),
     Column( "institution", TrimmedString( 255 )),
-    Column( "address", TrimmedString( 255 ), nullable=False ),
-    Column( "city", TrimmedString( 255 ), nullable=False ),
-    Column( "state", TrimmedString( 255 ), nullable=False ),
-    Column( "postal_code", TrimmedString( 255 ), nullable=False ),
-    Column( "country", TrimmedString( 255 ), nullable=False ),
-    Column( "phone", TrimmedString( 255 ) ),
+    Column( "address", TrimmedString( 255 ), nullable=False),
+    Column( "city", TrimmedString( 255 ), nullable=False),
+    Column( "state", TrimmedString( 255 ), nullable=False),
+    Column( "postal_code", TrimmedString( 255 ), nullable=False),
+    Column( "country", TrimmedString( 255 ), nullable=False),
+    Column( "phone", TrimmedString( 255 )),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
@@ -107,7 +107,7 @@ model.PasswordResetToken.table = Table(
 
 model.History.table = Table(
     "history", metadata,
-    Column( "id", Integer, primary_key=True ),
+    Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
