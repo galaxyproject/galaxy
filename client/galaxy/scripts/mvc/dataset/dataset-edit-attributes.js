@@ -43,7 +43,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
 
         /** Register submit button events */
         register_attr_events: function( self, dataset_id, $el_edit_attr ) {
-            var post_url = Galaxy.root + 'dataset/edit';
             // Click event of Save attributes button
             $el_edit_attr.find( '.btn-submit-attributes' ).click( function( e ) {
                 $el_edit_attr.find( '#formeditattr' ).submit( function( event ) {
@@ -99,7 +98,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 data: data,
                 success: function( response ) {
                     self.render_attribute_page( self, response );
-                    self.tabs.showTab( tab_name );
                 },
                 error   : function( response ) {
                     self.page.display( new Ui.Message( { 'message': 'Error occured', 'status': 'error',
@@ -130,7 +128,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 title   : 'Attributes',
                 icon    : 'fa fa-bars',
                 tooltip : 'Edit dataset attributes',
-                $el     : $( self._attributesTabTemplate( self, response ) )
+                $el     : $( self._getAttributesFormTemplate( self, response ) )
             });
 
             self.tabs.add({
@@ -151,9 +149,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
 
             self.tabs.add({
                 id      : 'permissions',
-                title   : 'View Permissions',
+                title   : 'Permissions',
                 icon    : 'fa-user',
-                tooltip : 'View permissions'
+                tooltip : 'Permissions',
+                $el     : self._getPermissionsFormTemplate( self, response )
             });
 
             $el_edit_attr.append( self.tabs.$el );
@@ -198,7 +197,32 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     }
                 });
              return form.$el;
+        },
 
+        /** Permissions template */
+        _getPermissionsFormTemplate: function( self, response ) {
+            var template = "";
+            if( response.can_manage_dataset ) {
+                var form = new Form({
+                    title  : 'Manage dataset permissions on ' + response.display_name,
+                    inputs : response.permission_inputs,
+                    operations: {
+                        'submit': new Ui.ButtonIcon({
+                            tooltip  : 'Save permissions',
+                            title    : 'Save',
+                            onclick  : function() { self._submitPermissions( self, form, response ) }
+                        })
+                    }
+                });
+                return form.$el;
+            }
+            else {
+                var form = new Form({
+                    title  : 'View Permissions',
+                    inputs : response.permission_inputs
+                });
+                return form.$el;
+            }
         },
 
         /** Convert format */
@@ -207,7 +231,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             if ( form_data.target_type !== null && form_data.target_type ) {
                 form_data.dataset_id = response.dataset_id;
                 form_data.convert_data = 'Convert';
-                self.call_ajax( self, form_data, 'convert' );
+                self.call_ajax( self, form_data );
             }
         },
 
@@ -216,11 +240,21 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var form_data = form.data.create();
             form_data.dataset_id = response.dataset_id;
             form_data.change = 'Save';
-            self.call_ajax( self, form_data, 'datatype' );
+            self.call_ajax( self, form_data );
+        },
+
+        /** Save permissions */
+        _submitPermissions: function( self, form, response ) {
+            var permissions_data = form.data.create(),
+                post_data = {};
+            post_data.permissions = JSON.stringify(permissions_data);
+            post_data.update_roles_button = "Save";
+            post_data.dataset_id = response.dataset_id;
+            self.call_ajax( self, post_data );
         },
 
         /** Template for Attributes tab */
-        _attributesTabTemplate: function( self, response ) {
+        _getAttributesFormTemplate: function( self, response ) {
             var template = "<div class='toolFormTitle'>Edit Attributes</div>" +
                                "<div class='toolFormBody'>" + 
                                    "<form name='edit_attributes' id='formeditattr'>" + 

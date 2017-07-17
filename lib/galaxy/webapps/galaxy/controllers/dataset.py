@@ -427,23 +427,19 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                         message: "You must be logged in if you want to change permissions."
                     }
                 if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
-                    access_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
-                    manage_permissions_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action )
-                    # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
-                    # need to ensure that they did not associate roles that would cause accessibility problems.
-                    permissions, in_roles, error, message = \
-                        trans.app.security_agent.derive_roles_from_access( trans, data.dataset.id, 'root', **kwd )
+                    permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+                    payload_permissions = json.loads( params.permissions )
+                    permissions = {}
+                    for name, action in permitted_actions:
+                        action_id = trans.app.security_agent.get_action( action.action ).action
+                        permissions[ action_id ] = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in ( payload_permissions[ name ] or [] ) ]
+                    error = trans.app.security_agent.user_set_default_permissions( trans.user, permissions )
                     if error:
-                        # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-                        permissions[ access_action ] = data.dataset.get_access_roles( trans )
                         status = 'error'
+                        message = error
                     else:
-                        error = trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
-                        if error:
-                            message += error
-                            status = 'error'
-                        else:
-                            message = 'Your changes completed successfully.'
+                        message = 'Your changes completed successfully.'
+                        status = 'done'
                     trans.sa_session.refresh( data.dataset )
                 else:
                     message = "You are not authorized to change this dataset's permissions"
@@ -463,11 +459,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             ldatatypes.sort()
             all_roles = trans.app.security_agent.get_legitimate_roles( trans, data.dataset, 'root' )
 
-            all_roles_collection = [ (r.name, r.id) for r in all_roles ]
-            current_roles_collection = [ (r.name, r.id) for r in current_user_roles ]
             data_metadata = [ ( name, spec.visible, spec.desc ) for name, spec in data.metadata.spec.items() ]
-            converters = data.get_converter_types()
-            converters_collection = [ (key, value.name) for key, value in converters.items() ]
+            converters_collection = [ (key, value.name) for key, value in data.get_converter_types().items() ]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset )
             metadata_html = dict()
             for item in data_metadata:
@@ -484,6 +477,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
 
             convert_inputs = list()
             convert_datatype_inputs = list()
+            permission_inputs = list()
             convert_inputs.append({
                 'type': 'select',
                 'name': 'target_type',
@@ -501,23 +495,68 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 'value': [ ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext ]
             })
 
+            if can_manage_dataset:
+                user = trans.user
+                permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+                for index, action in permitted_actions:
+                    permission_inputs.append({
+                        'type': 'select',
+                        'multiple': True,
+                        'optional': True,
+                        'name': index,
+                        'label': action.action,
+                        'help': action.description,
+                        'options': [(r.name, r.id) for r in all_roles],
+                        'value': [a.role.id for a in user.default_permissions if a.action == action.action]
+                    })
+            elif trans.user:
+                if data.dataset.actions:
+                    for action, roles in trans.app.security_agent.get_permissions( data.dataset ).items():
+                        if roles:
+                            role_inputs = list()
+                            for role in roles:
+                                role_inputs.append({
+                                    'name': role.name + action.action,
+                                    'type': 'text',
+                                    'label': action.description,
+                                    'value': role.name,
+                                    'readonly': True
+                                })
+                            view_permissions = { 'name': action.action, 'label': action.action, 'type': 'section', 'inputs': role_inputs }
+                            permission_inputs.append(view_permissions)
+                else:          
+                  permission_inputs.append({
+                      'name': 'access_public',
+                      'type': 'text',
+                      'label': 'Public access',
+                      'value': 'This dataset is accessible by everyone (it is public)',
+                      'readonly': True
+                  })
+            else:
+                permission_inputs.append({
+                    'name': 'no_access',
+                    'type': 'text',
+                    'label': 'No access',
+                    'value': 'Permissions not available (not logged in)',
+                    'readonly': True
+                })
+
             return {
                 'display_name': data.get_display_name(),
                 'data_info': data.info,
                 'data_metadata': data_metadata,
                 'data_missing_meta': data.missing_meta(),
                 'data_annotation': self.get_item_annotation_str( trans.sa_session, trans.user, data ),
-                'current_user_roles': current_roles_collection,
-                'all_roles': all_roles_collection,
                 'message': message,
                 'status': status,
                 'dataset_id': dataset_id,
                 'refresh_frames': refresh_frames,
                 'user': user_available,
-                'can_manage_dataset': can_manage_dataset,
                 'metadata_html': metadata_html,
+                'can_manage_dataset': can_manage_dataset,
                 'convert_inputs': convert_inputs,
-                'convert_datatype_inputs': convert_datatype_inputs
+                'convert_datatype_inputs': convert_datatype_inputs,
+                'permission_inputs': permission_inputs
             }
         else:
             return {
