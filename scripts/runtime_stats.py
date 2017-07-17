@@ -22,7 +22,7 @@ Examples
 
 # Stats for all runs of the Bowtie 2 tool installed from the Tool Shed but we
 # don't feel like figuring out or typing the long ID (matches any tool with
-# '/tophat2/' in its full ID):
+# '/bowtie2/' in its full ID):
 % ./runtime_stats.py -c galaxy.ini --like 'bowtie2'
 
 # Stats for all runs of Tophat 2 that took longer than 2 minutes but less than
