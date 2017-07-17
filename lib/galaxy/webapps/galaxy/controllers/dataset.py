@@ -471,7 +471,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             for item in data_metadata:
                 if item[ 1 ]:
                     metadata_html[ item[ 0 ] ] = data.metadata.get_html_by_name( item[ 0 ], trans=trans )
-            
+
             if trans.get_user() is not None:
                user_available = True
             else:
@@ -480,9 +480,47 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             if error:
                 status = 'error'
 
+            edit_attributes_inputs = list()
             convert_inputs = list()
             convert_datatype_inputs = list()
             permission_inputs = list()
+
+            edit_attributes_inputs.append({
+                'name' : 'name',
+                'type' : 'text',
+                'label': 'Name:',
+                'value': data.get_display_name(),
+                'size' : '40'
+            })
+
+            edit_attributes_inputs.append({
+                'name' : 'info',
+                'type' : 'text',
+                'label': 'Info:',
+                'value': data.info,
+                'size' : '40'
+            })
+
+            edit_attributes_inputs.append({
+                'name' : 'annotation',
+                'type' : 'text',
+                'label': 'Annotation',
+                'value': self.get_item_annotation_str( trans.sa_session, trans.user, data ),
+                'size' : '40',
+                'help' : 'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'
+            })
+
+            if data.missing_meta():
+                edit_attributes_inputs.append({
+                    'name' : 'errormsg',
+                    'type' : 'text',
+                    'label': 'Error Message',
+                    'value': 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.',
+                    'class'  : 'errormessagesmall',
+                    'readonly' : True,
+                    'size' : '40'
+                })
+
             convert_inputs.append({
                 'type': 'select',
                 'name': 'target_type',
@@ -552,17 +590,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 })
 
             return {
-                'display_name': data.get_display_name(),
-                'data_info': data.info,
-                'data_metadata': data_metadata,
-                'data_missing_meta': data.missing_meta(),
-                'data_annotation': self.get_item_annotation_str( trans.sa_session, trans.user, data ),
                 'message': message,
                 'status': status,
                 'dataset_id': dataset_id,
-                'user': user_available,
-                'metadata_html': metadata_html,
                 'can_manage_dataset': can_manage_dataset,
+                'edit_attributes_inputs': edit_attributes_inputs,
                 'convert_inputs': convert_inputs,
                 'convert_datatype_inputs': convert_datatype_inputs,
                 'permission_inputs': permission_inputs

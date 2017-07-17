@@ -33,60 +33,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             self.$el.empty().append( self._templateHeader() );
             $el_edit_attr = self.$el.find( '.edit-attr' );
             self.display_message( self, response, $el_edit_attr );
-
             // Create all tabs
             self.create_tabs( self, response, $el_edit_attr );
-
-            // Register submit events
-            self.register_attr_events( self, response.dataset_id, $el_edit_attr );
-        },
-
-        /** Register submit button events */
-        register_attr_events: function( self, dataset_id, $el_edit_attr ) {
-            // Click event of Save attributes button
-            $el_edit_attr.find( '.btn-submit-attributes' ).click( function( e ) {
-                $el_edit_attr.find( '#formeditattr' ).submit( function( event ) {
-                    event.preventDefault();
-                    var fields = $( this ).serializeArray(),
-                        post_obj = {},
-                        repeated_fields = [];
-
-                    _.each( fields, function( field ) {
-                        if( !(field.name in post_obj) ) {
-                            post_obj[ field.name ] = field.value;
-                        }
-                        else {
-                            repeated_fields.push( field.name );
-                        }
-                    });
-
-                    // To handle the case of multiple values of the fields
-                    // having the same name
-                    _.each( repeated_fields, function( rep_field ) {
-                        var repeated_counter = 0;
-                        post_obj[ rep_field ] = [];
-                        _.each( fields, function( field ) {
-                            if( field.name === rep_field ) {
-                                post_obj[ rep_field ][ repeated_counter ] = field.value;
-                                repeated_counter = repeated_counter + 1;
-                            }
-                        });
-                    });
-
-                    // Make dataset's name a mandatory field
-                    if( post_obj.name === "" || post_obj.name === null || !post_obj.name ) {
-                        self.display_message( self, { 'message': 'Please give a name to the dataset', 'status': 'error' }, $el_edit_attr );
-                        return;
-                    }
-                    self.call_ajax( self, post_obj );
-                });
-            });
-
-            // Click event for Auto-detect button
-            $el_edit_attr.find( '.btn-auto-detect' ).click( function( e ) {
-                e.preventDefault();
-                self.call_ajax( self, { 'dataset_id': dataset_id, 'detect': 'Auto-detect' } );
-            });
         },
 
         /** Perform AJAX post call */
@@ -128,7 +76,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 title   : 'Attributes',
                 icon    : 'fa fa-bars',
                 tooltip : 'Edit dataset attributes',
-                $el     : $( self._getAttributesFormTemplate( self, response ) )
+                $el     : self._getAttributesFormTemplate( self, response )
             });
 
             self.tabs.add({
@@ -154,7 +102,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 tooltip : 'Permissions',
                 $el     : self._getPermissionsFormTemplate( self, response )
             });
-
             $el_edit_attr.append( self.tabs.$el );
             self.tabs.showTab( 'attributes' );
         },
@@ -167,36 +114,61 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                    '</div>';
         },
 
+        /** Attributes tab template */
+        _getAttributesFormTemplate: function( self, response ) {
+            var form = new Form({
+                title  : 'Edit Attributes',
+                inputs : response.edit_attributes_inputs,
+                operations: {
+                    'submit_editattr' : new Ui.ButtonIcon({
+                        tooltip       : 'Save attributes of the dataset',
+                        icon          : 'fa-floppy-o ',
+                        title         : 'Save Attributes',
+                        onclick       : function() { self._submit( self, form, response, "edit_attributes" ) }
+                    }),
+                    'submit_autocorrect' : new Ui.ButtonIcon({
+                        tooltip          : 'Auto-correct',
+                        icon             : 'fa-undo ',
+                        title            : 'Auto-correct',
+                        onclick          : function() { self._submit( self, form, response, "auto-correct" ) }
+                    })
+                }
+            });
+            return form.$el;
+        },
+
         /** Convert tab template */
         _getConvertFormTemplate: function( self, response ) {
             var form = new Form({
                 title  : 'Convert to new format',
                 inputs : response.convert_inputs,
-                    operations: {
-                        'submit': new Ui.ButtonIcon({
-                            tooltip  : 'Convert the datatype to a new format',
-                            title    : 'Convert',
-                            onclick  : function() { self._submitConvert( self, form, response ) }
-                        })
-                    }
-                });
-             return form.$el;
+                operations: {
+                        'submit' : new Ui.ButtonIcon({
+                        tooltip  : 'Convert the datatype to a new format',
+                        title    : 'Convert Datatype',
+                        icon     : 'fa-exchange ',
+                        onclick  : function() { self._submit( self, form, response, "convert" ) }
+                    })
+                }
+            });
+            return form.$el;
         },
 
-       /** Change datatype template */
+        /** Change datatype template */
         _getChangeDataTypeFormTemplate: function( self, response ) {
             var form = new Form({
                 title  : 'Change data type',
                 inputs : response.convert_datatype_inputs,
-                    operations: {
-                        'submit': new Ui.ButtonIcon({
-                            tooltip  : 'Convert the datatype to a new type',
-                            title    : 'Save',
-                            onclick  : function() { self._submitChangeDatatype( self, form, response ) }
-                        })
-                    }
-                });
-             return form.$el;
+                operations: {
+                        'submit' : new Ui.ButtonIcon({
+                        tooltip  : 'Change the datatype to a new type',
+                        title    : 'Change Datatype',
+                        icon     : 'fa-exchange ',
+                        onclick  : function() { self._submit( self, form, response, "change" ) }
+                    })
+                }
+            });
+            return form.$el;
         },
 
         /** Permissions template */
@@ -208,9 +180,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     inputs : response.permission_inputs,
                     operations: {
                         'submit': new Ui.ButtonIcon({
-                            tooltip  : 'Save permissions',
-                            title    : 'Save',
-                            onclick  : function() { self._submitPermissions( self, form, response ) }
+                            tooltip  : 'Save Permissions',
+                            title    : 'Save Permissions',
+                            icon     : 'fa-floppy-o ',
+                            onclick  : function() { self._submit( self, form, response, "permissions" ) }
                         })
                     }
                 });
@@ -225,101 +198,39 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             }
         },
 
-        /** Convert format */
-        _submitConvert: function( self, form, response ) {
-            var form_data = form.data.create();
-            if ( form_data.target_type !== null && form_data.target_type ) {
-                form_data.dataset_id = response.dataset_id;
-                form_data.convert_data = 'Convert';
-                self.call_ajax( self, form_data );
-            }
-        },
-
-        /** Change datatype */
-        _submitChangeDatatype: function( self, form, response ) {
+        /** Submit action */
+        _submit: function( self, form, response, type ) {
             var form_data = form.data.create();
             form_data.dataset_id = response.dataset_id;
-            form_data.change = 'Save';
+            switch( type ) {
+                case "edit_attributes":
+                    form_data.save = 'Save';
+                    break;
+
+                case "auto-correct":
+                    form_data.detect = 'Auto-detect';
+                    break;
+          
+                case "convert":
+                    if ( form_data.target_type !== null && form_data.target_type ) {
+                        form_data.dataset_id = response.dataset_id;
+                        form_data.convert_data = 'Convert';
+                    }
+                    break;
+
+                case "change":
+                    form_data.change = 'Save';
+                    break;
+
+                case "permissions":
+                    var post_data = {};
+                    post_data.permissions = JSON.stringify( form_data );
+                    post_data.update_roles_button = "Save";
+                    post_data.dataset_id = response.dataset_id;
+                    form_data = post_data;
+                    break; 
+            }
             self.call_ajax( self, form_data );
-        },
-
-        /** Save permissions */
-        _submitPermissions: function( self, form, response ) {
-            var permissions_data = form.data.create(),
-                post_data = {};
-            post_data.permissions = JSON.stringify(permissions_data);
-            post_data.update_roles_button = "Save";
-            post_data.dataset_id = response.dataset_id;
-            self.call_ajax( self, post_data );
-        },
-
-        /** Template for Attributes tab */
-        _getAttributesFormTemplate: function( self, response ) {
-            var template = "<div class='toolFormTitle'>Edit Attributes</div>" +
-                               "<div class='toolFormBody'>" + 
-                                   "<form name='edit_attributes' id='formeditattr'>" + 
-                                       "<div class='form-row'>" +
-                                           "<label>Name:</label>" +
-                                           "<div style='float: left; width: 250px; margin-right: 10px;'>" +
-                                               "<input type='text' name='name' value=" + response.display_name + " size='40'/>" +
-                                               "<input type='hidden' name='dataset_id' value='" + response.dataset_id + "'>" +
-                                               "<input type='hidden' name='save' value='Save'>" +
-                                           "</div>" +
-                                           "<div style='clear: both'></div>" +
-                                       "</div>" +
-                                       "<div class='form-row'>" +
-                                           "<label>Info:</label>" +
-                                           "<div style='float: left; width: 250px; margin-right: 10px;'>" +
-                                               "<textarea name='info' cols='40' rows='2'>" + response.data_info + "</textarea>" +
-                                           "</div>" +
-                                           "<div style='clear: both'></div>" +
-                                       "</div>";
-            if( user ) {
-                template = template + "<div class='form-row'>" +
-                                           "<label>Annotation / Notes:</label>" +
-                                           "<div style='float: left; width: 250px; margin-right: 10px;'>" +
-                                               "<textarea name='annotation' cols='40' rows='2'>" +
-                                                   ( response.data_annotation === null ? "" : response.data_annotation ) +
-                                               "</textarea>" +
-                                           "</div>" +
-                                           "<div style='clear: both'></div>" +
-                                           "<div class='toolParamHelp'>Add an annotation or notes to a dataset; annotations are available when a history is viewed.</div>" +
-                                       "</div>";
-            }
-
-            _.each( response.data_metadata, function( item ) {
-                if( item[ 1 ] ) {
-                    template = template + "<div class='form-row'>" +
-                                              "<label>" + item[ 2 ] + "</label>" +
-                                              "<div style='float: left; width: 250px; margin-right: 10px;'>" +
-                                                  response.metadata_html[ item[ 0 ] ] +
-                                              "</div>" +
-                                              "<div style='clear: both'></div>" +
-                                          "</div>";
-                }
-            });
-            template = template + "<div class='form-row'>" +
-                                      "<input class='btn-submit-attributes' type='submit' name='save' value='Save'/>" +
-                                  "</div>";
-            template = template + "</form>";
-
-            // Form for Auto-detect action
-            template = template + "<form name='auto_detect'>" +
-                                      "<div class='form-row'>" +
-                                          "<div style='float: left; width: 250px; margin-right: 10px;'>" +
-                                              "<input class='btn-auto-detect' type='submit' name='detect' value='Auto-detect' />" +
-                                          "</div>" +
-                                          "<div class='toolParamHelp' style='clear: both;'>This will inspect the dataset and attempt to correct the above column values if they are not accurate." +
-                                          "</div>" +
-                                      "</div>" +
-                                  "</form>";
-            if( response.data_missing_meta ) {
-                template = template + "<div class='form-row'>" +
-                                          "<div class='errormessagesmall'> Required metadata values are missing. Some of these values may not be editable by the user. Selecting 'Auto-detect' will attempt to fix these values. </div>" +
-                                      "</div>";
-            }
-            template = template + "</div></div>";
-            return template;
         }
     });
 
