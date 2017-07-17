@@ -42,7 +42,7 @@ class ToolDataPathFiles(object):
     def update_files(self):
         try:
             content = os.walk(self.tool_data_path)
-            self._tool_data_path_files = set(os.path.join(dirpath, fn) for dirpath, _, fn_list in content for fn in fn_list if fn and fn.endswith('.loc') or fn.endswith('.loc.sample'))
+            self._tool_data_path_files = set(filter(os.path.exists, [os.path.join(dirpath, fn) for dirpath, _, fn_list in content for fn in fn_list if fn and fn.endswith('.loc') or fn.endswith('.loc.sample')]))
             self.update_time = time.time()
         except Exception:
             log.exception()
