@@ -84,6 +84,26 @@ def set_datatypes_registry( d_registry ):
     _datatypes_registry = d_registry
 
 
+class HasTags( object ):
+    dict_collection_visible_keys = ( 'tags' )
+    dict_element_visible_keys = ( 'tags' )
+
+    def to_dict(self, *args, **kwargs):
+        rval = super( HasTags, self ).to_dict(*args, **kwargs)
+        rval['tags'] = self.make_tag_string_list()
+        return rval
+
+    def make_tag_string_list(self):
+        # add tags string list
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        return tags_str_list
+
+
 class HasName:
 
     def get_display_name( self ):
@@ -204,8 +224,12 @@ class User( object, Dictifiable ):
             except KeyError:
                 pass
         else:
-            log.warning("invalid configuration of real_system_username")
-            system_user_pwent = None
+            try:
+                system_user_pwent = pwd.getpwnam(real_system_username)
+            except KeyError:
+                log.warning("invalid configuration of real_system_username")
+                system_user_pwent = None
+                pass
         return system_user_pwent
 
     def all_roles( self ):
@@ -1179,7 +1203,7 @@ def is_hda(d):
     return isinstance( d, HistoryDatasetAssociation )
 
 
-class History( object, Dictifiable, UsesAnnotations, HasName ):
+class History( HasTags, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
@@ -1363,15 +1387,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
 
         # Get basic value.
         rval = super( History, self ).to_dict( view=view, value_mapper=value_mapper )
-
-        # Add tags.
-        tags_str_list = []
-        for tag in self.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            tags_str_list.append( tag_str )
-        rval[ 'tags' ] = tags_str_list
 
         if view == 'element':
             rval[ 'size' ] = int( self.disk_size )
@@ -2349,7 +2364,8 @@ class DatasetInstance( object ):
         return msg
 
 
-class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, HasName ):
+class HistoryDatasetAssociation( DatasetInstance, HasTags, Dictifiable, UsesAnnotations,
+                                 HasName ):
     """
     Resource class that creates a relation between a dataset and a user history.
     """
@@ -2523,6 +2539,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
         # other model classes.
+        original_rval = super( HistoryDatasetAssociation, self ).to_dict(view=view)
         hda = self
         rval = dict( id=hda.id,
                      hda_ldda='hda',
@@ -2545,14 +2562,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      misc_info=hda.info.strip() if isinstance( hda.info, string_types ) else hda.info,
                      misc_blurb=hda.blurb )
 
-        # add tags string list
-        tags_str_list = []
-        for tag in self.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            tags_str_list.append( tag_str )
-        rval[ 'tags' ] = tags_str_list
+        rval.update(original_rval)
 
         if hda.copied_from_library_dataset_dataset_association is not None:
             rval['copied_from_ldda_id'] = hda.copied_from_library_dataset_dataset_association.id
@@ -3342,7 +3352,10 @@ class DatasetCollectionInstance( object, HasName ):
         return changed
 
 
-class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnotations, Dictifiable ):
+class HistoryDatasetCollectionAssociation( DatasetCollectionInstance,
+                                           HasTags,
+                                           Dictifiable,
+                                           UsesAnnotations ):
     """ Associates a DatasetCollection with a History. """
     editable_keys = ( 'name', 'deleted', 'visible' )
 
@@ -3398,6 +3411,7 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
             return rval if multiple else rval[ 0 ]
 
     def to_dict( self, view='collection' ):
+        original_dict_value = super(HistoryDatasetCollectionAssociation, self).to_dict( view=view )
         dict_value = dict(
             hid=self.hid,
             history_id=self.history.id,
@@ -3406,6 +3420,9 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
             deleted=self.deleted,
             **self._base_to_dict(view=view)
         )
+
+        dict_value.update(original_dict_value)
+
         return dict_value
 
     def add_implicit_input_collection( self, name, history_dataset_collection ):
@@ -3442,7 +3459,7 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
         return hdca
 
 
-class LibraryDatasetCollectionAssociation( DatasetCollectionInstance, Dictifiable ):
+class LibraryDatasetCollectionAssociation( DatasetCollectionInstance ):
     """ Associates a DatasetCollection with a library folder. """
     editable_keys = ( 'name', 'deleted' )
 
@@ -3639,7 +3656,7 @@ class UCI( object ):
         self.user = None
 
 
-class StoredWorkflow( object, Dictifiable):
+class StoredWorkflow( HasTags, Dictifiable ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted' )
@@ -3661,13 +3678,6 @@ class StoredWorkflow( object, Dictifiable):
 
     def to_dict( self, view='collection', value_mapper=None ):
         rval = super( StoredWorkflow, self ).to_dict( view=view, value_mapper=value_mapper )
-        tags_str_list = []
-        for tag in self.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            tags_str_list.append( tag_str )
-        rval['tags'] = tags_str_list
         rval['latest_workflow_uuid'] = ( lambda uuid: str( uuid ) if self.latest_workflow.uuid else None )( self.latest_workflow.uuid )
         return rval
 

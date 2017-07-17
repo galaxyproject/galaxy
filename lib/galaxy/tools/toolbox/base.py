@@ -289,13 +289,14 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 inserted = True
             if not inserted:
                 # Check the tool's installed versions.
-                versions = tool.lineage.get_versions()
-                for tool_lineage_version in versions:
-                    lineage_id = tool_lineage_version.id
-                    index = self._integrated_tool_panel.index_of_tool_id(lineage_id)
-                    if index:
-                        panel_dict.insert_tool(index, tool)
-                        inserted = True
+                if tool.lineage is not None:
+                    versions = tool.lineage.get_versions()
+                    for tool_lineage_version in versions:
+                        lineage_id = tool_lineage_version.id
+                        index = self._integrated_tool_panel.index_of_tool_id(lineage_id)
+                        if index:
+                            panel_dict.insert_tool(index, tool)
+                            inserted = True
                 if not inserted:
                     if (
                         tool.guid is None or
@@ -946,13 +947,14 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         if tool_lineage is None:
             assert tool is not None
             tool_lineage = tool.lineage
-        lineage_tool_versions = reversed(tool_lineage.get_versions())
-        for lineage_tool_version in lineage_tool_versions:
-            lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
-            if lineage_tool:
-                lineage_id = lineage_tool.id
-                if panel_dict.has_tool_with_id( lineage_id ):
-                    return panel_dict.get_tool_with_id( lineage_id )
+        if tool_lineage is not None:
+            lineage_tool_versions = reversed(tool_lineage.get_versions())
+            for lineage_tool_version in lineage_tool_versions:
+                lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
+                if lineage_tool:
+                    lineage_id = lineage_tool.id
+                    if panel_dict.has_tool_with_id( lineage_id ):
+                        return panel_dict.get_tool_with_id( lineage_id )
         return None
 
     def _newer_tool( self, tool1, tool2 ):

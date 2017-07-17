@@ -909,7 +909,7 @@ var TracksterView = Backbone.View.extend({
         // Introduction div shown when there are no tracks.
         this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container);
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
-            visualization.select_datasets(Galaxy.root + "visualization/list_current_history_datasets", Galaxy.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
+            visualization.select_datasets({ 'dbkey': view.dbkey }, function(tracks) {
                 _.each(tracks, function(track) {
                     view.add_drawable( object_from_template(track, view, view) );
                 });
