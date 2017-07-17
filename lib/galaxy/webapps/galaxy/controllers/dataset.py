@@ -429,17 +429,22 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
                     permitted_actions = trans.app.model.Dataset.permitted_actions.items()
                     payload_permissions = json.loads( params.permissions )
-                    permissions = {}
-                    for name, action in permitted_actions:
-                        action_id = trans.app.security_agent.get_action( action.action ).action
-                        permissions[ action_id ] = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in ( payload_permissions[ name ] or [] ) ]
-                    error = trans.app.security_agent.user_set_default_permissions( trans.user, permissions )
+                    # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
+                    # need to ensure that they did not associate roles that would cause accessibility problems.
+                    permissions, in_roles, error, message = \
+                        trans.app.security_agent.derive_roles_from_access( trans, data.dataset.id, 'root', **payload_permissions )
                     if error:
+                        # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
+                        access_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
+                        permissions[ access_action ] = data.dataset.get_access_roles( trans )
                         status = 'error'
-                        message = error
                     else:
-                        message = 'Your changes completed successfully.'
-                        status = 'done'
+                        error = trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
+                        if error:
+                            message += error
+                            status = 'error'
+                        else:
+                            message = 'Your changes completed successfully.'
                     trans.sa_session.refresh( data.dataset )
                 else:
                     message = "You are not authorized to change this dataset's permissions"
@@ -498,6 +503,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             if can_manage_dataset:
                 user = trans.user
                 permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+                saved_role_ids = {}
+                for action, roles in trans.app.security_agent.get_permissions( data.dataset ).items():
+                    for role in roles:
+                        saved_role_ids[ action.action ] = role.id
+
                 for index, action in permitted_actions:
                     permission_inputs.append({
                         'type': 'select',
@@ -507,7 +517,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                         'label': action.action,
                         'help': action.description,
                         'options': [(r.name, r.id) for r in all_roles],
-                        'value': [a.role.id for a in user.default_permissions if a.action == action.action]
+                        'value': saved_role_ids[ action.action ] if action.action in saved_role_ids else []
                     })
             elif trans.user:
                 if data.dataset.actions:
@@ -550,7 +560,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 'message': message,
                 'status': status,
                 'dataset_id': dataset_id,
-                'refresh_frames': refresh_frames,
                 'user': user_available,
                 'metadata_html': metadata_html,
                 'can_manage_dataset': can_manage_dataset,
