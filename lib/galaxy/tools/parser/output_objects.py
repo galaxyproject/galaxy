@@ -118,11 +118,7 @@ class ToolOutputCollection( ToolOutputBase ):
         if len( self.outputs ) > 1:
             output_parts = [ToolOutputCollectionPart(self, k, v) for k, v in self.outputs.items()]
         else:
-            # either must have specified structured_like or something worse
-            if self.structure.structured_like:
-                collection_prototype = inputs[ self.structure.structured_like ].collection
-            else:
-                collection_prototype = type_registry.prototype( self.structure.collection_type )
+            collection_prototype = self.structure.collection_prototype( inputs, type_registry )
 
             def prototype_dataset_element_to_output( element, parent_ids=[] ):
                 name = element.element_identifier
@@ -193,6 +189,14 @@ class ToolOutputCollectionStructure( object ):
         if dataset_collector_descriptions and structured_like:
             raise ValueError( "Cannot specify dynamic structure (discovered_datasets) and structured_like attribute." )
         self.dynamic = dataset_collector_descriptions is not None
+
+    def collection_prototype( self, inputs, type_registry ):
+        # either must have specified structured_like or something worse
+        if self.structured_like:
+            collection_prototype = inputs[ self.structured_like ].collection
+        else:
+            collection_prototype = type_registry.prototype( self.collection_type )
+        return collection_prototype
 
 
 class ToolOutputCollectionPart( object ):
