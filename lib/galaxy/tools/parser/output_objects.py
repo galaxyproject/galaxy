@@ -178,9 +178,9 @@ class ToolOutputCollectionStructure( object ):
     def __init__(
         self,
         collection_type,
-        collection_type_source,
-        structured_like,
-        dataset_collector_descriptions,
+        collection_type_source=None,
+        structured_like=None,
+        dataset_collector_descriptions=None,
     ):
         self.collection_type = collection_type
         self.collection_type_source = collection_type_source
