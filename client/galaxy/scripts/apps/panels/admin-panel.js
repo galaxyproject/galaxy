@@ -75,7 +75,8 @@ var AdminPanel = Backbone.View.extend({
             title : 'User Management',
             items : [ {
                 title   : 'Users',
-                url     : 'admin/users'
+                url     : 'admin/users',
+                target  : 'top'
             },{
                 title   : 'Groups',
                 url     : 'admin/groups'
@@ -142,7 +143,7 @@ var AdminPanel = Backbone.View.extend({
                     $entries.append( $( '<div/>' ).addClass( 'ui-side-section-body-title' )
                                                   .append( $( '<a/>' ).attr({
                                                                 href    : self.root + item.url,
-                                                                target  : 'galaxy_main' }).text( _l( item.title ) ) ) );
+                                                                target  : item.target || 'galaxy_main' }).text( _l( item.title ) ) ) );
                 }
             });
             self.$el.append( $section );
