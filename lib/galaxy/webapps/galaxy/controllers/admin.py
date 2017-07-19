@@ -523,9 +523,7 @@ class AdminGalaxy( controller.JSAppLauncher, Admin, AdminActions, UsesQuotaMixin
     def users_list( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
-            if operation == "roles":
-                return self.user( trans, **kwd )
-            elif operation == "delete":
+            if operation == "delete":
                 return self.mark_user_deleted( trans, **kwd )
             elif operation == "undelete":
                 return self.undelete_user( trans, **kwd )
