@@ -115,7 +115,7 @@ class UserListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Create new user", dict( controller='admin', action='users', operation='create', webapp="galaxy" ) )
+        grids.GridAction( "Create new user", url_args=dict( webapp="galaxy", action="create_new_user" ) )
     ]
     operations = [
         grids.GridOperation( "Manage Roles and Groups",
@@ -526,16 +526,12 @@ class AdminGalaxy( controller.JSAppLauncher, Admin, AdminActions, UsesQuotaMixin
             operation = kwd['operation'].lower()
             if operation == "roles":
                 return self.user( trans, **kwd )
-            elif operation == "reset password":
-                return self.reset_user_password( trans, **kwd )
             elif operation == "delete":
                 return self.mark_user_deleted( trans, **kwd )
             elif operation == "undelete":
                 return self.undelete_user( trans, **kwd )
             elif operation == "purge":
                 return self.purge_user( trans, **kwd )
-            elif operation == "create":
-                return self.create_new_user( trans, **kwd )
             elif operation == "information":
                 user_id = kwd.get( 'id', None )
                 if not user_id:
@@ -543,8 +539,6 @@ class AdminGalaxy( controller.JSAppLauncher, Admin, AdminActions, UsesQuotaMixin
                     kwd[ 'status' ] = 'error'
                 else:
                     return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
-            elif operation == "manage roles and groups":
-                return self.manage_roles_and_groups_for_user( trans, **kwd )
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append( self.delete_operation )
