@@ -10,7 +10,7 @@ var jQuery = require( 'jquery' ),
     CustomBuilds = require( 'mvc/user/user-custom-builds' ),
     Tours = require( 'mvc/tours' ),
     GridView = require( 'mvc/grid/grid-view' ),
-    PageList = require( 'mvc/page/page-list' ),
+    GridShared = require( 'mvc/grid/grid-shared' ),
     Workflows = require( 'mvc/workflow/workflow' ),
     HistoryList = require( 'mvc/history/history-list' ),
     WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' ),
@@ -88,7 +88,7 @@ window.app = function app( options, bootstrapped ){
             '(/)workflow(/)' : 'show_workflows',
             '(/)workflow/run(/)' : 'show_run',
             '(/)pages(/)(:action_id)' : 'show_pages',
-            '(/)visualizations/list_published(/)' : 'show_visualizations',
+            '(/)visualizations/(:action_id)' : 'show_visualizations',
             '(/)workflows/list_published(/)' : 'show_workflows_published',
             '(/)histories(/)(:action_id)' : 'show_histories',
             '(/)datasets(/)list(/)' : 'show_datasets',
@@ -128,8 +128,8 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
         },
 
-        show_visualizations : function() {
-            this.page.display( new GridView( { url_base: Galaxy.root + 'visualization/list_published', dict_format: true } ) );
+        show_visualizations : function( action_id ) {
+            this.page.display( new GridShared.View( { action_id: action_id, plural: 'Visualizations', item: 'visualization' } ) );
         },
 
         show_workflows_published : function() {
@@ -145,11 +145,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_pages : function( action_id ) {
-            if ( action_id == 'list' ) {
-                this.page.display( new PageList.View() );
-            } else {
-                this.page.display( new GridView( { url_base: Galaxy.root + 'page/list_published', dict_format: true } ) );
-            }
+            this.page.display( new GridShared.View( { action_id: action_id, plural: 'Pages', item: 'page' } ) );
         },
 
         show_workflows : function(){

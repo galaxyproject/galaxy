@@ -110,6 +110,7 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/workflow' )
     webapp.add_client_route( '/workflows/list_published' )
     webapp.add_client_route( '/visualizations/list_published' )
+    webapp.add_client_route( '/visualizations/list' )
     webapp.add_client_route( '/pages/list' )
     webapp.add_client_route( '/pages/list_published' )
     webapp.add_client_route( '/histories/list' )
