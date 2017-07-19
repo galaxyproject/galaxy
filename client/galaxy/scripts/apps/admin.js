@@ -3,6 +3,7 @@ var jQuery = require( 'jquery' ),
     GalaxyApp = require( 'galaxy' ).GalaxyApp,
     QUERY_STRING = require( 'utils/query-string-parsing' ),
     AdminPanel = require( './panels/admin-panel' ),
+    GridView = require( 'mvc/grid/grid-view' ),
     Ui = require( 'mvc/ui/ui-misc' ),
     Page = require( 'layout/page' );
 
@@ -54,6 +55,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_user: function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'dataset/list', dict_format: true } ) );
         }
     });
 
