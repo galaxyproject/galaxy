@@ -33,11 +33,5 @@ window.app = function app( options, bootstrapped ){
             Left    : AdminPanel,
             Router  : AdminRouter
         } ) );
-
-        // start the router - which will call any of the routes above
-        Backbone.history.start({
-            root        : Galaxy.root,
-            pushState   : true,
-        });
     });
 };

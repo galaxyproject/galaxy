@@ -47,6 +47,12 @@ define( [ 'layout/masthead', 'layout/panel', 'mvc/ui/ui-modal' ], function( Mast
                 }
             });
             this.render();
+
+            // start the router
+            Backbone.history.start({
+                root        : Galaxy.root,
+                pushState   : true,
+            });
         },
 
         render : function() {
