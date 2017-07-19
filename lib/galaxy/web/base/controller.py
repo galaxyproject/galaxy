@@ -245,6 +245,16 @@ class JSAppLauncher( BaseUIController ):
         self.config_serializer = configuration.ConfigSerializer( app )
         self.admin_config_serializer = configuration.AdminConfigSerializer( app )
 
+    @web.expose
+    def client( self, trans, **kwd ):
+        """
+        Endpoint for clientside routes.  Currently a passthrough to index
+        (minus kwargs) though we can differentiate it more in the future.
+        Should not be used with url_for -- see
+        (https://github.com/galaxyproject/galaxy/issues/1878) for why.
+        """
+        return self.index(trans)
+
     def _get_js_options( self, trans, root=None ):
         """
         Return a dictionary of session/site configuration/options to jsonify
