@@ -900,8 +900,46 @@ class Admin( object ):
                                                    status='done' ) )
 
     @web.expose
+    @web.json
     @web.require_admin
-    def users( self, trans, **kwd ):
+    def users_list( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "roles":
+                return self.user( trans, **kwd )
+            elif operation == "reset password":
+                return self.reset_user_password( trans, **kwd )
+            elif operation == "delete":
+                return self.mark_user_deleted( trans, **kwd )
+            elif operation == "undelete":
+                return self.undelete_user( trans, **kwd )
+            elif operation == "purge":
+                return self.purge_user( trans, **kwd )
+            elif operation == "create":
+                return self.create_new_user( trans, **kwd )
+            elif operation == "information":
+                user_id = kwd.get( 'id', None )
+                if not user_id:
+                    kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received" % str( user_id ) )
+                    kwd[ 'status' ] = 'error'
+                else:
+                    return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
+            elif operation == "manage roles and groups":
+                return self.manage_roles_and_groups_for_user( trans, **kwd )
+        if trans.app.config.allow_user_deletion:
+            if self.delete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.delete_operation )
+            if self.undelete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.undelete_operation )
+            if self.purge_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.purge_operation )
+        # Render the list view
+        kwd[ 'dict_format' ] = True
+        return self.user_list_grid( trans, **kwd )
+
+    @web.expose
+    @web.require_admin
+    def users1( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "roles":

@@ -103,7 +103,7 @@ def paste_app_factory( global_conf, **kwargs ):
     # The following routes don't bootstrap any information, simply provide the
     # base analysis interface at which point the application takes over.
 
-    webapp.add_client_route( '/admin/user', 'admin' )
+    webapp.add_client_route( '/admin/users', 'admin' )
     webapp.add_client_route( '/tours' )
     webapp.add_client_route( '/tours/{tour_id}' )
     webapp.add_client_route( '/user' )
