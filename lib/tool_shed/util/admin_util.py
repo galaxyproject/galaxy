@@ -12,6 +12,7 @@ from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
 from tool_shed.util.web_util import escape
 
+
 log = logging.getLogger( __name__ )
 
 
