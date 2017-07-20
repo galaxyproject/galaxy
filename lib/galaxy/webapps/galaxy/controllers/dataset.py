@@ -15,6 +15,7 @@ from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import inflector, smart_str
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web import form_builder
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago, to_unicode
 from galaxy.tools.errors import EmailErrorReporter
@@ -505,24 +506,24 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             for item in data_metadata:
                 if item[ 1 ]:
                     attributes = data.metadata.get_metadata_parameter( item[ 0 ], trans=trans )
-                    for attr in attributes:
-                        if attr[ 'type' ] == 'select':
-                            edit_attributes_inputs.append({
-                                'type': 'select',
-                                'multiple': attr[ 'multiple' ],
-                                'optional': attr[ 'optional' ],
-                                'name': item[ 0 ],
-                                'label': item[ 2 ],
-                                'options': [ (select_name, select_id) for (select_id, select_name) in attr[ 'values' ] ],
-                                'value': [ attr[ 'value' ] ]
-                            })
-                        elif attr[ 'type' ] == 'text':
-                            edit_attributes_inputs.append({
-                                'type': 'text',
-                                'name': item[ 0 ],
-                                'label': item[ 2 ],
-                                'value': attr[ 'value' ]
-                            })
+                    if type( attributes ) is form_builder.SelectField:
+                        edit_attributes_inputs.append({
+                            'type': 'select',
+                            'multiple': attributes.multiple,
+                            'optional': attributes.optional,
+                            'name': item[ 0 ],
+                            'label': item[ 2 ],
+                            'options': attributes.options,
+                            'value': [ attributes.value ]
+                        })
+                    elif type( attributes ) is form_builder.TextField:
+                        edit_attributes_inputs.append({
+                            'type': 'text',
+                            'name': item[ 0 ],
+                            'label': item[ 2 ],
+                            'value': attributes.value
+                        })
+
             if data.missing_meta():
                 edit_attributes_inputs.append({
                     'name' : 'errormsg',

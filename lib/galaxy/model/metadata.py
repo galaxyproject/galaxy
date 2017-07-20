@@ -137,8 +137,9 @@ class MetadataCollection( object ):
 
     def get_metadata_parameter( self, name, **kwd ):
         if name in self.spec:
-            attr = self.spec[name].param.get_attributes( name, getattr( self, name ), context=self, **kwd )
-            return attr
+            html_field = self.spec[name].param.get_html_field( getattr( self, name ), self, None, **kwd )
+            html_field.value = getattr( self, name )
+            return html_field
 
     def make_dict_copy( self, to_copy ):
         """Makes a deep copy of input iterable to_copy according to self.spec"""
@@ -252,18 +253,6 @@ class MetadataParameter( object ):
             return checkbox.get_html() + self.get_html_field( value=value, context=context, other_values=other_values, **kwd ).get_html()
         else:
             return self.get_html_field( value=value, context=context, other_values=other_values, **kwd ).get_html()
-
-    def get_attributes( self, name, value, context=None, **kwd ):
-        if self.spec.get("readonly"):
-            return value
-        fields = list()
-        # Textbox field
-        text_dict = dict()
-        text_dict[ 'name' ] = name
-        text_dict[ 'type' ] = 'text'
-        text_dict[ 'value' ] = value
-        fields.append( text_dict )
-        return fields
 
     def to_string( self, value ):
         return str( value )
@@ -455,19 +444,6 @@ class DBKeyParameter( SelectParameter ):
         except KeyError:
             pass
         return super(DBKeyParameter, self).get_html( value, context, other_values, values, **kwd)
-
-    def get_attributes( self, name, value, context=None, **kwd ):
-        fields = list()
-        # Select field
-        select_dict = dict()
-        select_dict[ 'name' ] = name
-        select_dict[ 'values' ] = kwd['trans'].app.genome_builds.get_genome_build_names( kwd['trans'] )
-        select_dict[ 'value' ] = value
-        select_dict[ 'type' ] = 'select'
-        select_dict[ 'multiple' ] = self.spec.get( "multiple" )
-        select_dict[ 'optional' ] = self.spec.get( "optional" )
-        fields.append( select_dict )
-        return fields
 
 
 class RangeParameter( SelectParameter ):
