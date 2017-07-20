@@ -562,6 +562,38 @@ class AdminGalaxy( controller.JSAppLauncher, Admin, AdminActions, UsesQuotaMixin
 
     @web.expose
     @web.require_admin
+    def tool_versions( self, trans, **kwd ):
+        if 'message' not in kwd or not kwd[ 'message' ]:
+            kwd[ 'message' ] = 'Tool ids for tools that are currently loaded into the tool panel are highlighted in green (click to display).'
+        return self.tool_version_list_grid( trans, **kwd )
+
+    @web.expose
+    @web.require_admin
+    def roles( self, trans, **kwargs ):
+        if 'operation' in kwargs:
+            operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
+            if operation == "roles":
+                return self.role( trans, **kwargs )
+            if operation == "create":
+                return self.create_role( trans, **kwargs )
+            if operation == "delete":
+                return self.mark_role_deleted( trans, **kwargs )
+            if operation == "undelete":
+                return self.undelete_role( trans, **kwargs )
+            if operation == "purge":
+                return self.purge_role( trans, **kwargs )
+            if operation == "manage users and groups":
+                return self.manage_users_and_groups_for_role( trans, **kwargs )
+            if operation == "manage role associations":
+                # This is currently used only in the Tool Shed.
+                return self.manage_role_associations( trans, **kwargs )
+            if operation == "rename":
+                return self.rename_role( trans, **kwargs )
+        # Render the list view
+        return self.role_list_grid( trans, **kwargs )
+
+    @web.expose
+    @web.require_admin
     def quotas( self, trans, **kwargs ):
         if 'operation' in kwargs:
             operation = kwargs.pop('operation').lower()

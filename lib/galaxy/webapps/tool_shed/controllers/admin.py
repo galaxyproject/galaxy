@@ -83,6 +83,31 @@ class AdminController( BaseUIController, Admin ):
 
     @web.expose
     @web.require_admin
+    def roles( self, trans, **kwargs ):
+        if 'operation' in kwargs:
+            operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
+            if operation == "roles":
+                return self.role( trans, **kwargs )
+            if operation == "create":
+                return self.create_role( trans, **kwargs )
+            if operation == "delete":
+                return self.mark_role_deleted( trans, **kwargs )
+            if operation == "undelete":
+                return self.undelete_role( trans, **kwargs )
+            if operation == "purge":
+                return self.purge_role( trans, **kwargs )
+            if operation == "manage users and groups":
+                return self.manage_users_and_groups_for_role( trans, **kwargs )
+            if operation == "manage role associations":
+                # This is currently used only in the Tool Shed.
+                return self.manage_role_associations( trans, **kwargs )
+            if operation == "rename":
+                return self.rename_role( trans, **kwargs )
+        # Render the list view
+        return self.role_list_grid( trans, **kwargs )
+
+    @web.expose
+    @web.require_admin
     def browse_repositories( self, trans, **kwd ):
         # We add parameters to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
