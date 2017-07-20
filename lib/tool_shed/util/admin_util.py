@@ -968,14 +968,6 @@ def get_user( trans, user_id ):
     return user
 
 
-def get_user_by_username( trans, username ):
-    """Get a user from the database by username"""
-    # TODO: Add exception handling here.
-    return trans.sa_session.query( trans.model.User ) \
-                           .filter( trans.model.User.table.c.username == username ) \
-                           .one()
-
-
 def get_role( trans, id ):
     """Get a Role from the database by id."""
     # Load user from database
@@ -994,11 +986,3 @@ def get_group( trans, id ):
     if not group:
         return trans.show_error_message( "Group not found for id (%s)" % str( id ) )
     return group
-
-
-def get_quota( trans, id ):
-    """Get a Quota from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id( id )
-    quota = trans.sa_session.query( trans.model.Quota ).get( id )
-    return quota

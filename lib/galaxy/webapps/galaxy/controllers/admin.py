@@ -2045,14 +2045,6 @@ def get_user( trans, user_id ):
     return user
 
 
-def get_user_by_username( trans, username ):
-    """Get a user from the database by username"""
-    # TODO: Add exception handling here.
-    return trans.sa_session.query( trans.model.User ) \
-                           .filter( trans.model.User.table.c.username == username ) \
-                           .one()
-
-
 def get_role( trans, id ):
     """Get a Role from the database by id."""
     # Load user from database
