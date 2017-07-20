@@ -704,6 +704,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         def quick_load( tool_file, async=True ):
             try:
                 tool = self.load_tool( tool_file )
+                tool._lineage = self._lineage_map.register( tool )
                 self.__add_tool( tool, load_panel_dict, elems )
                 # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
                 key = 'tool_%s' % str( tool.id )
