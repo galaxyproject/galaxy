@@ -2,6 +2,11 @@
 """Script for uploading Galaxy statistics to the Galactic radio telescope.
 
 See doc/source/admin/grt.rst for more detailed usage information.
+
+TODO:
+    - toolbox
+    - job runners
+    - check if GIEs are enabled
 """
 from __future__ import print_function
 
@@ -13,6 +18,9 @@ import argparse
 import sqlalchemy as sa
 import yaml
 import re
+import logging
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(name="grt")
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
@@ -25,15 +33,60 @@ sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
 
 
-def _init(config):
-    if config.startswith('/'):
-        config = os.path.abspath(config)
-    else:
-        config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, config))
+def resolve_location(config):
+    """
+    resolve_location takes in a dict with autodetect (bool) and hardcoded
+    latitude and longitude values (floats). The function calls a number of
+    external websites in order to resolve the host's IP address, and their
+    geographic location.
+    """
+    if config['autodetect']:
+        # Get public IP
+        log.info("Locating server")
+        try:
+            ip_address = urllib2.urlopen('https://icanhazip.com').read()
+        except (urllib2.HTTPError, urllib2.URLError) as err:
+            log.error("Could not contact IP detection service. %s", err)
+            return None
 
-    properties = load_app_properties(ini_file=config)
+        geolocation_api = 'http://ip-api.com/json/{0}'.format(ip_address)
+
+        try:
+            response = urllib2.urlopen(geolocation_api).read()
+        except (urllib2.HTTPError, urllib2.URLError) as err:
+            log.error("Could not contact location detection service. %s", err)
+            return None
+
+        # Construct or get the Location
+        json_geoloc = json.loads(response)
+        log.info("Server Located (%s, %s)", json_geoloc['lat'], json_geoloc['lon'])
+        return {
+            'lat': json_geoloc['lat'],
+            'lon': json_geoloc['lon'],
+        }
+    else:
+        if str(config['latitude']) == '0.0' and str(config['longitude']) == '0.0':
+            return None
+        else:
+            return {
+                'lat': config['latitude'],
+                'lon': config['longitude'],
+            }
+
+
+def _init(config_path):
+    if config_path.startswith('/'):
+        config_path = os.path.abspath(config_path)
+    else:
+        config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, config_path))
+
+    properties = load_app_properties(ini_file=config_path)
     config = galaxy.config.Configuration(**properties)
     object_store = build_object_store_from_config(config)
+
+    if config.database_connection is False:
+        log.error("Database connection not configured in %s. You will need to uncomment the database URL. Additionally you are using the default sqlite database, but GRT is most appropriate for production Galaxies.", config_path)
+        exit(1)
 
     return (
         mapping.init(
@@ -43,7 +96,8 @@ def _init(config):
             object_store=object_store
         ),
         object_store,
-        config.database_connection.split(':')[0]
+        config.database_connection.split(':')[0],
+        config.version_major
     )
 
 
@@ -89,7 +143,7 @@ def _sanitize_value(unsanitized_value):
     elif type(unsanitized_value) is list:
         sanitized_value = _sanitize_list(unsanitized_value)
     else:
-        if fp_regex.match(str(unsanitized_value)):
+        if fp_regex.match(unicode(unsanitized_value)):
             sanitized_value = None
         else:
             sanitized_value = unsanitized_value
@@ -100,15 +154,15 @@ def _sanitize_value(unsanitized_value):
 def main(argv):
     """Entry point for GRT statistics collection."""
     parser = argparse.ArgumentParser()
-    parser.add_argument('instance_id', help='Galactic Radio Telescope Instance ID')
-    parser.add_argument('api_key', help='Galactic Radio Telescope API Key')
+    parser.add_argument('--instance_id', help='Galactic Radio Telescope Instance ID')
+    parser.add_argument('--api_key', help='Galactic Radio Telescope API Key')
 
     parser.add_argument('-c', '--config', dest='config', help='Path to GRT config file (scripts/grt.ini)', default=default_config)
     parser.add_argument('--dry-run', dest='dryrun', help='Dry run (show data to be sent, but do not send)', action='store_true', default=False)
     parser.add_argument('--grt-url', dest='grt_url', help='GRT Server (You can run your own!)')
     args = parser.parse_args(argv[1:])
 
-    print('Loading GRT ini...')
+    log.info('Loading GRT ini...')
     try:
         with open(args.config) as f:
             config_dict = yaml.load(f)
@@ -121,23 +175,25 @@ def main(argv):
         config_dict['last_job_id_sent'] = 0
 
     if args.instance_id:
-        config_dict['instance_id'] = args.instance_id
+        config_dict['grt_server']['instance_id'] = args.instance_id
     if args.api_key:
-        config_dict['api_key'] = args.api_key
+        config_dict['grt_server']['api_key'] = args.api_key
     if args.grt_url:
-        config_dict['grt_url'] = args.grt_url
+        config_dict['grt_server']['grt_url'] = args.grt_url
 
-    print('Loading Galaxy...')
-    model, object_store, engine = _init(config_dict['galaxy_config'])
+    if config_dict['grt_server']['instance_id'] == '':
+        print("No Instance ID was provdied. One is required and may be obtained at https://telescope.galaxyproject.org")
+        exit(1)
+
+    if config_dict['grt_server']['api_key'] == '':
+        print("No API Key was provdied. One is required and may be obtained at https://telescope.galaxyproject.org")
+        exit(1)
+
+    log.info('Loading Galaxy...')
+    model, object_store, engine, gx_version = _init(config_dict['galaxy_config'])
     sa_session = model.context.current
 
     # Fetch jobs COMPLETED with status OK that have not yet been sent.
-    jobs = sa_session.query(model.Job)\
-        .filter(sa.and_(
-            model.Job.table.c.state == "ok",
-            model.Job.table.c.id > config_dict['last_job_id_sent']
-        ))\
-        .all()
 
     # Set up our arrays
     active_users = []
@@ -151,10 +207,19 @@ def main(argv):
         }
 
     # For every job
-    for job in jobs:
+    job_count = 0
+    last_job_id = None
+    for job in sa_session.query(model.Job)\
+            .filter(sa.and_(
+                model.Job.table.c.state == "ok",
+                model.Job.table.c.id > config_dict['last_job_id_sent']
+            ))\
+            .all():
         if job.tool_id in config_dict['tool_blacklist']:
             continue
 
+        job_count += 1
+        last_job_id = job.id
         # Append an active user, we'll reduce at the end
         active_users.append(job.user_id)
 
@@ -186,18 +251,25 @@ def main(argv):
         }
         grt_jobs_data.append(job_data)
 
-    if len(jobs) > 0:
-        config_dict['last_job_id_sent'] = jobs[-1].id
+    if job_count > 0:
+        config_dict['last_job_id_sent'] = last_job_id
 
     grt_report_data = {
         'meta': {
             'version': 1,
-            'instance_uuid': config_dict['instance_id'],
-            'instance_api_key': config_dict['api_key'],
+            'galaxy_version': gx_version,
+            'uuid': config_dict['grt_server']['instance_id'],
+            'api_key': config_dict['grt_server']['api_key'],
+            'name': config_dict['instance']['name'],
+            'description': config_dict['instance']['description'],
+            'tags': config_dict['instance']['tags'],
+            'location': resolve_location(config_dict['location']),
+            'latest_job': config_dict.get('last_job_id_sent', 0),
             # We do not record ANYTHING about your users other than count.
             'active_users': len(set(active_users)),
             'total_users': sa_session.query(model.User).count(),
-            'recent_jobs': len(jobs),
+            'recent_jobs': job_count,
+            'url': config_dict['instance']['url'],
         },
         'tools': [
             {
@@ -211,16 +283,17 @@ def main(argv):
 
     if args.dryrun:
         print(json.dumps(grt_report_data, indent=2))
-    else:
-        try:
-            urllib2.urlopen(config_dict['grt_url'], data=json.dumps(grt_report_data))
-        except urllib2.HTTPError as htpe:
-            print(htpe.read())
-            exit(1)
+        exit(0)
 
-        # Update grt.ini with last id of job (prevent duplicates from being sent)
-        with open(args.config, 'w') as f:
-            yaml.dump(config_dict, f, default_flow_style=False)
+    try:
+        urllib2.urlopen(config_dict['grt_server']['grt_url'], data=json.dumps(grt_report_data))
+    except urllib2.HTTPError as htpe:
+        print(htpe.read())
+        exit(1)
+
+    # Update grt.ini with last id of job (prevent duplicates from being sent)
+    with open(args.config, 'w') as f:
+        yaml.dump(config_dict, f, default_flow_style=False)
 
 
 if __name__ == '__main__':
