@@ -10,13 +10,12 @@ from galaxy import web, util
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError
 from galaxy.web.base.controller import BaseAPIController, UsesQuotaMixin, url_for
-from galaxy.web.base.controllers.admin import Admin
 from galaxy.web.params import QuotaParamParser
 
 log = logging.getLogger( __name__ )
 
 
-class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin, QuotaParamParser ):
+class QuotaAPIController( BaseAPIController, AdminActions, UsesQuotaMixin, QuotaParamParser ):
     @web.expose_api
     @web.require_admin
     def index( self, trans, deleted='False', **kwd ):
@@ -145,3 +144,11 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
             return self._undelete_quota( quota )
         except ActionInputError as e:
             raise HTTPBadRequest( detail=str( e ) )
+
+
+def get_quota( trans, id ):
+    """Get a Quota from the database by id."""
+    # Load user from database
+    id = trans.security.decode_id( id )
+    quota = trans.sa_session.query( trans.model.Quota ).get( id )
+    return quota
