@@ -10,7 +10,6 @@ import galaxy.queue_worker
 from galaxy import util, web
 from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
-from tool_shed.util import repository_util
 from tool_shed.util.web_util import escape
 
 log = logging.getLogger( __name__ )
@@ -42,18 +41,9 @@ class Admin( object ):
     def center( self, trans, **kwd ):
         message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
-        if trans.webapp.name == 'galaxy':
-            is_repo_installed = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None
-            installing_repository_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
-            return trans.fill_template( '/webapps/galaxy/admin/center.mako',
-                                        is_repo_installed=is_repo_installed,
-                                        installing_repository_ids=installing_repository_ids,
-                                        message=message,
-                                        status=status )
-        else:
-            return trans.fill_template( '/webapps/tool_shed/admin/center.mako',
-                                        message=message,
-                                        status=status )
+        return trans.fill_template( '/webapps/tool_shed/admin/center.mako',
+                                    message=message,
+                                    status=status )
 
     @web.expose
     @web.require_admin
