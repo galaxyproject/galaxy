@@ -8,7 +8,6 @@ from sqlalchemy.sql import expression
 from sqlalchemy import and_, false, func, or_
 
 import galaxy.queue_worker
-import galaxy.util
 from galaxy import util
 from galaxy.util import inflector
 from galaxy import model
@@ -734,7 +733,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         if listify:
             quota = []
             messages = []
-            for id in galaxy.util.listify( params.id ):
+            for id in util.listify( params.id ):
                 try:
                     quota.append( self.get_quota( trans, id ) )
                 except MessageException as e:
@@ -792,7 +791,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     def check_for_tool_dependencies( self, trans, migration_stage ):
         # Get the 000x_tools.xml file associated with migration_stage.
         tools_xml_file_path = os.path.abspath( os.path.join( trans.app.config.root, 'scripts', 'migrate_tools', '%04d_tools.xml' % migration_stage ) )
-        tree = galaxy.util.parse_xml( tools_xml_file_path )
+        tree = util.parse_xml( tools_xml_file_path )
         root = tree.getroot()
         tool_shed = root.get( 'name' )
         shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed )
@@ -821,8 +820,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.expose
     @web.require_admin
     def review_tool_migration_stages( self, trans, **kwd ):
-        message = escape( galaxy.util.restore_text( kwd.get( 'message', '' ) ) )
-        status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
+        status = util.restore_text( kwd.get( 'status', 'done' ) )
         migration_stages_dict = odict()
         migration_modules = []
         migration_scripts_dir = os.path.abspath( os.path.join( trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions' ) )
@@ -858,15 +857,15 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.expose
     @web.require_admin
     def view_datatypes_registry( self, trans, **kwd ):
-        message = escape( galaxy.util.restore_text( kwd.get( 'message', '' ) ) )
-        status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
+        status = util.restore_text( kwd.get( 'status', 'done' ) )
         return trans.fill_template( 'admin/view_datatypes_registry.mako', message=message, status=status )
 
     @web.expose
     @web.require_admin
     def view_tool_data_tables( self, trans, **kwd ):
-        message = escape( galaxy.util.restore_text( kwd.get( 'message', '' ) ) )
-        status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
+        status = util.restore_text( kwd.get( 'status', 'done' ) )
         return trans.fill_template( 'admin/view_data_tables_registry.mako', message=message, status=status )
 
     @web.expose
