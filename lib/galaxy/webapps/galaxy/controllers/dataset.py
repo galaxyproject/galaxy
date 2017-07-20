@@ -340,16 +340,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     for name, spec in data.datatype.metadata_spec.items():
                         if spec.get("readonly"):
                             continue
-                        optional = params.get("is_" + name, None)
                         other = params.get("or_" + name, None)
-                        if optional and optional == '__NOTHING__':
-                            # optional element... == '__NOTHING__' actually means it is NOT checked (and therefore omitted)
-                            setattr(data.metadata, name, None)
+                        if other:
+                            setattr( data.metadata, name, other )
                         else:
-                            if other:
-                                setattr( data.metadata, name, other )
-                            else:
-                                setattr( data.metadata, name, spec.unwrap( params.get(name, None) ) )
+                            setattr( data.metadata, name, spec.unwrap( params.get(name, None) ) )
                     data.datatype.after_setting_metadata( data )
                     # Sanitize annotation before adding it.
                     if params.annotation:
@@ -409,8 +404,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     for name, spec in data.metadata.spec.items():
                         # We need to be careful about the attributes we are resetting
                         if name not in [ 'name', 'info', 'dbkey', 'base_name' ]:
-                            if spec.get( 'default' ):
-                                setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
+                            if spec.visible:
+                                if spec.get( 'default' ):
+                                    setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
                     message = 'Attributes have been queued to be updated'
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={ 'input1': data } )
                     trans.sa_session.flush()
@@ -467,10 +463,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             data_metadata = [ ( name, spec.visible, spec.desc ) for name, spec in data.metadata.spec.items() ]
             converters_collection = [ (key, value.name) for key, value in data.get_converter_types().items() ]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset )
-            metadata_html = dict()
-            for item in data_metadata:
-                if item[ 1 ]:
-                    metadata_html[ item[ 0 ] ] = data.metadata.get_html_by_name( item[ 0 ], trans=trans )
 
             if trans.get_user() is not None:
                user_available = True
@@ -510,6 +502,27 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 'help' : 'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'
             })
 
+            for item in data_metadata:
+                if item[ 1 ]:
+                    attributes = data.metadata.get_metadata_parameter( item[ 0 ], trans=trans )
+                    for attr in attributes:
+                        if attr[ 'type' ] == 'select':
+                            edit_attributes_inputs.append({
+                                'type': 'select',
+                                'multiple': attr[ 'multiple' ],
+                                'optional': attr[ 'optional' ],
+                                'name': item[ 0 ],
+                                'label': item[ 2 ],
+                                'options': [ (select_name, select_id) for (select_id, select_name) in attr[ 'values' ] ],
+                                'value': [ attr[ 'value' ] ]
+                            })
+                        elif attr[ 'type' ] == 'text':
+                            edit_attributes_inputs.append({
+                                'type': 'text',
+                                'name': item[ 0 ],
+                                'label': item[ 2 ],
+                                'value': attr[ 'value' ]
+                            })
             if data.missing_meta():
                 edit_attributes_inputs.append({
                     'name' : 'errormsg',

@@ -127,10 +127,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                         onclick       : function() { self._submit( self, form, response, "edit_attributes" ) }
                     }),
                     'submit_autocorrect' : new Ui.ButtonIcon({
-                        tooltip          : 'Auto-correct',
+                        tooltip          : 'Auto-detect',
                         icon             : 'fa-undo ',
-                        title            : 'Auto-correct',
-                        onclick          : function() { self._submit( self, form, response, "auto-correct" ) }
+                        title            : 'Auto-detect',
+                        onclick          : function() { self._submit( self, form, response, "auto-detect" ) }
                     })
                 }
             });
@@ -207,7 +207,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     form_data.save = 'Save';
                     break;
 
-                case "auto-correct":
+                case "auto-detect":
                     form_data.detect = 'Auto-detect';
                     break;
           
