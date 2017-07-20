@@ -390,7 +390,7 @@ var TracksterView = Backbone.View.extend( {
             ),
             buttons : {
                 "Cancel": function() {
-                    window.location = Galaxy.root + "visualization/list";
+                    window.location = Galaxy.root + "visualizations/list";
                 },
                 "View in saved visualization": function() {
                     self.view_in_saved( dataset_params );
@@ -414,7 +414,7 @@ var TracksterView = Backbone.View.extend( {
             body    : tracks_grid.$el,
             buttons : {
                 "Cancel": function() {
-                    window.location = Galaxy.root + "visualization/list";
+                    window.location = Galaxy.root + "visualizations/list";
                 },
                 "Add to visualization": function() {
                     $(parent.document).find('input[name=id]:checked').each(function() {
@@ -459,7 +459,7 @@ var TracksterView = Backbone.View.extend( {
                     title   : "New Visualization",
                     body    : self.template_view_new(response),
                     buttons : {
-                        "Cancel": function() { window.location = Galaxy.root + "visualization/list"; },
+                        "Cancel": function() { window.location = Galaxy.root + "visualizations/list"; },
                         "Create": function() { self.create_browser($("#new-title").val(), $("#new-dbkey").val()); Galaxy.modal.hide(); }
                     }
                 });

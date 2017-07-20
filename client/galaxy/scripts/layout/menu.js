@@ -93,7 +93,7 @@ var Collection = Backbone.Collection.extend({
         this.add({
             id              : 'visualization',
             title           : _l('Visualization'),
-            url             : 'visualization/list',
+            url             : 'visualizations/list',
             tooltip         : _l('Visualize datasets'),
             disabled        : !Galaxy.user.id,
             menu            : [{
@@ -102,7 +102,7 @@ var Collection = Backbone.Collection.extend({
                     target  : '_frame'
                 },{
                     title   : _l('Saved Visualizations'),
-                    url     : 'visualization/list',
+                    url     : 'visualizations/list',
                     target  : '_frame'
                 },{
                     title   : _l('Interactive Environments'),
