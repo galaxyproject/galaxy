@@ -518,6 +518,19 @@ class AdminGalaxy( controller.JSAppLauncher, Admin, AdminActions, UsesQuotaMixin
         return self.template( trans, 'admin', settings=settings, message=message, status=status )
 
     @web.expose
+    @web.require_admin
+    def center( self, trans, **kwd ):
+        message = escape( kwd.get( 'message', ''  ) )
+        status = kwd.get( 'status', 'done' )
+        is_repo_installed = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None
+        installing_repository_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
+        return trans.fill_template( '/webapps/galaxy/admin/center.mako',
+                                    is_repo_installed=is_repo_installed,
+                                    installing_repository_ids=installing_repository_ids,
+                                    message=message,
+                                    status=status )
+
+    @web.expose
     @web.json
     @web.require_admin
     def users_list( self, trans, **kwd ):

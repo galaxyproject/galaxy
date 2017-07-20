@@ -29,6 +29,24 @@ class AdminController( BaseUIController, Admin ):
 
     @web.expose
     @web.require_admin
+    def index( self, trans, **kwd ):
+        message = escape( kwd.get( 'message', ''  ) )
+        status = kwd.get( 'status', 'done' )
+        return trans.fill_template( '/webapps/tool_shed/admin/index.mako',
+                                    message=message,
+                                    status=status )
+
+    @web.expose
+    @web.require_admin
+    def center( self, trans, **kwd ):
+        message = escape( kwd.get( 'message', ''  ) )
+        status = kwd.get( 'status', 'done' )
+        return trans.fill_template( '/webapps/tool_shed/admin/center.mako',
+                                        message=message,
+                                        status=status )
+
+    @web.expose
+    @web.require_admin
     def browse_repositories( self, trans, **kwd ):
         # We add parameters to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
