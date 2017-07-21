@@ -10,6 +10,7 @@ import gzip
 import json
 import os
 import sqlalchemy as sa
+import subprocess
 import sys
 import time
 import yaml
@@ -227,6 +228,10 @@ def main(argv):
             handle.write('\t'.join(job))
             handle.write('\n')
     _times.append(('job_finish', time.time() - _start_time))
+    sha = subprocess.check_output(['sha256sum', REPORT_BASE + '.tsv.gz'])
+    _times.append(('hash_finish', time.time() - _start_time))
+    # Strip out to space
+    sha = sha[0:sha.index(' ')]
 
     # Now serialize the individual report data.
     with open(REPORT_BASE + '.json', 'w') as handle:
@@ -234,6 +239,7 @@ def main(argv):
             "version": 1,
             "galaxy_version": gxconfig.version_major,
             "generated": REPORT_IDENTIFIER,
+            "report_hash": "sha256:" + sha,
             "metrics": {
                 "_times": _times,
             },
@@ -245,7 +251,7 @@ def main(argv):
                 "ok": len(grt_jobs_data),
             },
             "tools": [
-                (tool.name, tool.version, tool.tool_shed, tool.repository_id, tool.repository_name)
+                (tool.id, tool.name, tool.version, tool.tool_shed, tool.repository_id, tool.repository_name)
                 for tool_id, tool in app.toolbox._tools_by_id.items()
             ]
         }, handle)
