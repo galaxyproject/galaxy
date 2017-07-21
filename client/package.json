@@ -28,5 +28,15 @@
     "i18n-webpack-plugin": "^0.2.7",
     "webpack": "^1.10.1",
     "webpack-dev-server": "^1.7.0"
+  },
+  "scripts": {
+    "grunt": "grunt",
+    "all": "grunt",
+    "style": "grunt style",
+    "scripts": "grunt uglify",
+    "webpack": "grunt webpack",
+    "webpack-dev": "grunt webpack-dev",
+    "webpack-watch": "grunt webpack-watch",
+    "watch": "grunt watch"
   }
 }
