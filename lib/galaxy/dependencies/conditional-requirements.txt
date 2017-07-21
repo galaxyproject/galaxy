@@ -13,6 +13,7 @@ graphitesend
 azure-storage==0.32.0
 # PyRods not in PyPI
 python-ldap==2.4.27
+cloudbridge==0.3.1
 
 # Synnefo / Pithos+ object store client
 kamaki
