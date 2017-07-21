@@ -1,8 +1,8 @@
 galaxy_config: config/galaxy.ini
 
 grt:
-    #instance_id: blah
-    #api_key: blah
+    instance_id: blah
+    api_key: blah
     url: https://radio-telescope.galaxyproject.org/api/v1/upload
     metadata:
         url: https://example.com/galaxy/

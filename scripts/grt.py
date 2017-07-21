@@ -136,6 +136,7 @@ def main(argv):
         with open(args.config) as handle:
             config = yaml.load(handle)
     except Exception:
+        logging.info('Using default GRT Configuration')
         with open(sample_config) as handle:
             config = yaml.load(handle)
 
