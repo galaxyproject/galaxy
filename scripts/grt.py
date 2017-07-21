@@ -20,6 +20,7 @@ from collections import defaultdict
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 from galaxy.util.properties import load_app_properties
+import galaxy
 import galaxy.config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.model import mapping
@@ -38,11 +39,11 @@ def dumper(obj):
 
 def _init(config):
     if config.startswith('/'):
-        config = os.path.abspath(config)
+        config_file = os.path.abspath(config)
     else:
-        config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, config))
+        config_file = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, config))
 
-    properties = load_app_properties(ini_file=config)
+    properties = load_app_properties(ini_file=config_file)
     config = galaxy.config.Configuration(**properties)
     object_store = build_object_store_from_config(config)
     if not config.database_connection:
@@ -57,7 +58,8 @@ def _init(config):
         ),
         object_store,
         config.database_connection.split(':')[0],
-        config
+        config,
+        galaxy.app.UniverseApplication(global_conf={'__file__': config_file, 'here': os.getcwd()}),
     )
 
 
@@ -157,7 +159,8 @@ def main(argv):
         last_job_sent = -1
 
     logging.info('Loading Galaxy...')
-    model, object_store, engine, gxconfig = _init(config['galaxy_config'])
+    model, object_store, engine, gxconfig, app = _init(config['galaxy_config'])
+
     sa_session = model.context.current
     _times.append(('gx_conf_loaded', time.time() - _start_time))
 
@@ -242,6 +245,8 @@ def main(argv):
                 "ok": len(grt_jobs_data),
             },
             "tools": [
+                (tool.name, tool.version, tool.tool_shed, tool.repository_id, tool.repository_name)
+                for tool_id, tool in app.toolbox._tools_by_id.items()
             ]
         }, handle)
 
