@@ -131,6 +131,8 @@ def main(argv):
     args = parser.parse_args()
     logging.basicConfig(level=getattr(logging, args.loglevel.upper()))
 
+    _times = []
+    _start_time = time.time()
     logging.info('Loading GRT ini...')
     try:
         with open(args.config) as handle:
@@ -139,6 +141,7 @@ def main(argv):
         logging.info('Using default GRT Configuration')
         with open(sample_config) as handle:
             config = yaml.load(handle)
+    _times.append(('conf_loaded', time.time() - _start_time))
 
     REPORT_DIR = args.report_directory
     CHECK_POINT_FILE = os.path.join(REPORT_DIR, '.checkpoint')
@@ -156,6 +159,7 @@ def main(argv):
     logging.info('Loading Galaxy...')
     model, object_store, engine, gxconfig = _init(config['galaxy_config'])
     sa_session = model.context.current
+    _times.append(('gx_conf_loaded', time.time() - _start_time))
 
     # Fetch jobs COMPLETED with status OK that have not yet been sent.
 
@@ -171,6 +175,7 @@ def main(argv):
                 model.Job.table.c.state == "ok",
                 model.Job.table.c.id > last_job_sent
             ))\
+            .order_by(model.Job.table.c.id.asc())\
             .all():
         if job.tool_id in config['blacklist'].get('tools', []):
             continue
@@ -194,10 +199,11 @@ def main(argv):
             json.dumps(san.sanitize_data(job.tool_id, params))
         )
         grt_jobs_data.append(job_data)
+    _times.append(('jobs_parsed', time.time() - _start_time))
 
     # Remember the last job sent.
-    if len(jobs) > 0:
-        last_job_sent = jobs[-1].id
+    if len(grt_jobs_data) > 0:
+        last_job_sent = job.id
     else:
         logging.info("No new jobs to report")
 
@@ -212,6 +218,13 @@ def main(argv):
     with open(METADATA_FILE, 'w') as handle:
         json.dump(config['grt']['metadata'], handle, indent=2)
 
+    _times.append(('job_meta', time.time() - _start_time))
+    with gzip.open(REPORT_BASE + '.tsv.gz', 'w') as handle:
+        for job in grt_jobs_data:
+            handle.write('\t'.join(job))
+            handle.write('\n')
+    _times.append(('job_finish', time.time() - _start_time))
+
     # Now serialize the individual report data.
     with open(REPORT_BASE + '.json', 'w') as handle:
         json.dump({
@@ -219,22 +232,18 @@ def main(argv):
             "galaxy_version": gxconfig.version_major,
             "generated": REPORT_IDENTIFIER,
             "metrics": {
+                "_times": _times,
             },
             "users": {
                 "active": len(set(active_users)),
                 "total": sa_session.query(model.User).count(),
             },
             "jobs": {
-                "ok": len(jobs),
+                "ok": len(grt_jobs_data),
             },
             "tools": [
             ]
         }, handle)
-
-    with gzip.open(REPORT_BASE + '.tsv.gz', 'w') as handle:
-        for job in grt_jobs_data:
-            handle.write('\t'.join(job))
-            handle.write('\n')
 
     # update our checkpoint
     with open(CHECK_POINT_FILE, 'w') as handle:
