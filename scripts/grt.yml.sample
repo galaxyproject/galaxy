@@ -1,7 +1,31 @@
 galaxy_config: config/galaxy.ini
-#instance_id: blah
-#api_key: blah
-grt_url: https://radio-telescope.galaxyproject.org/api/v1/upload
-tool_blacklist:
-  - __SET_METADATA__
-  - upload1
+
+grt:
+    #instance_id: blah
+    #api_key: blah
+    url: https://radio-telescope.galaxyproject.org/api/v1/upload
+    metadata:
+        url: https://example.com/galaxy/
+        title: NLP Galaxy
+        description: |
+            This is our Galaxy instance!
+        publicly_visible: True
+        public: False
+        # Optional Location
+        latitude: 0.00
+        longitude: 0.00
+        # Owners (these are the usernames of users registered with the GRT system.)
+        owners:
+            - jane.doe
+
+
+blacklist:
+    # Blacklist the entire tool from appearing
+    tools:
+        - __SET_METADATA__
+        - upload1
+    tool_params:
+        __any__:
+            - chromInfo
+        edu.tamu.cpt.admin.metadataFetch:
+            - dbkey
