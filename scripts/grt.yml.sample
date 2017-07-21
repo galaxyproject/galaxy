@@ -1,20 +1,27 @@
+# Location of your galaxy config file. The radio telescope will need to
+# partially initialize a copy of galaxy.
 galaxy_config: config/galaxy.ini
 
 grt:
-    instance_id: blah
-    api_key: blah
-    url: https://radio-telescope.galaxyproject.org/api/v1/upload
+    # Go to https://telescope.galaxyproject.org to obtain an Instance ID and API key
+    instance_id: None
+    api_key: None
+    # Galaxy Project offers a public galactic-radio-telescope instance, however
+    # you are free to run your own if you need. We would love it if you were
+    # willing and able to contribute your data publicly.
+    url: https://telescope.galaxyproject.org/
+    # Some metadata about your galaxy instance
     metadata:
         url: https://example.com/galaxy/
         title: NLP Galaxy
         description: |
             This is our Galaxy instance!
-        publicly_visible: True
+        # Is the instance open to the public?
         public: False
         # Optional Location
         latitude: 0.00
         longitude: 0.00
-        # Owners (these are the usernames of users registered with the GRT system.)
+        # Owners (these are the usernames of users registered with the galactic-radio-telescope system.)
         owners:
             - jane.doe
 
@@ -24,8 +31,21 @@ blacklist:
     tools:
         - __SET_METADATA__
         - upload1
+    # Or you can blacklist individual parameters from being submitted, e.g. if
+    # you have API keys as a tool parameter.
     tool_params:
+        # If you wish to remove a specific parameter from *all* tools, you can
+        # do this by setting the name under `__all__`
         __any__:
             - chromInfo
+        # Or to blacklist under a specific tool, just specify the ID
         edu.tamu.cpt.admin.metadataFetch:
             - dbkey
+            # If you need to specify a parameter multiple levels deep, you can
+            # do that as well. Currently we only support blacklisting via the
+            # full path, rather than just a path component. So everything under
+            # `path.to.parameter` will be blacklisted.
+            - path.to.parameter
+            # However you could not do "parameter" and have everything under
+            # `path.to.parameter` be removed.
+            # Repeats are rendered as an *, e.g.: repeat_name.*.values
