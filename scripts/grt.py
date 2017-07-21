@@ -157,12 +157,6 @@ def main(argv):
     sa_session = model.context.current
 
     # Fetch jobs COMPLETED with status OK that have not yet been sent.
-    jobs = sa_session.query(model.Job)\
-        .filter(sa.and_(
-            model.Job.table.c.state == "ok",
-            model.Job.table.c.id > last_job_sent
-        ))\
-        .all()
 
     # Set up our arrays
     active_users = defaultdict(int)
@@ -171,7 +165,12 @@ def main(argv):
     san = Sanitization(config['blacklist'])
 
     # For every job
-    for job in jobs:
+    for job in sa_session.query(model.Job)\
+            .filter(sa.and_(
+                model.Job.table.c.state == "ok",
+                model.Job.table.c.id > last_job_sent
+            ))\
+            .all():
         if job.tool_id in config['blacklist'].get('tools', []):
             continue
 
@@ -216,6 +215,7 @@ def main(argv):
     with open(REPORT_BASE + '.json', 'w') as handle:
         json.dump({
             "version": 1,
+            "galaxy_version": gxconfig.version_major,
             "generated": REPORT_IDENTIFIER,
             "metrics": {
             },
