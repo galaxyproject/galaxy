@@ -260,6 +260,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         status = 'done'
         refresh_frames = []
         error = False
+
         def __ok_to_edit_metadata( dataset_id ):
             # prevent modifying metadata when dataset is queued or running as input/output
             # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
@@ -455,19 +456,15 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             ldatatypes = [ (dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
             ldatatypes.sort()
             all_roles = trans.app.security_agent.get_legitimate_roles( trans, data.dataset, 'root' )
-
             data_metadata = [ ( name, spec ) for name, spec in data.metadata.spec.items() ]
             converters_collection = [ (key, value.name) for key, value in data.get_converter_types().items() ]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset )
-
             if trans.get_user() is not None:
-               user_available = True
+                user_available = True
             else:
-               user_available = False
-
+                user_available = False
             if error:
                 status = 'error'
-
             edit_attributes_inputs = list()
             convert_inputs = list()
             convert_datatype_inputs = list()
@@ -519,7 +516,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                             'value': attributes.value,
                             'readonly': spec.get( 'readonly' )
                         })
-                        
 
             if data.missing_meta():
                 edit_attributes_inputs.append({
@@ -587,14 +583,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                                 })
                             view_permissions = { 'name': action.action, 'label': action.action, 'type': 'section', 'inputs': role_inputs }
                             permission_inputs.append(view_permissions)
-                else:          
-                  permission_inputs.append({
-                      'name': 'access_public',
-                      'type': 'text',
-                      'label': 'Public access',
-                      'value': 'This dataset is accessible by everyone (it is public)',
-                      'readonly': True
-                  })
+                else:
+                    permission_inputs.append({
+                        'name': 'access_public',
+                        'type': 'text',
+                        'label': 'Public access',
+                        'value': 'This dataset is accessible by everyone (it is public)',
+                        'readonly': True
+                    })
             else:
                 permission_inputs.append({
                     'name': 'no_access',
