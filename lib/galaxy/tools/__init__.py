@@ -191,6 +191,24 @@ class ToolNotFoundException( Exception ):
     pass
 
 
+def create_tool_from_source( app, tool_source, config_file=None, **kwds ):
+    # Allow specifying a different tool subclass to instantiate
+    tool_module = tool_source.parse_tool_module()
+    if tool_module is not None:
+        module, cls = tool_module
+        mod = __import__( module, globals(), locals(), [cls] )
+        ToolClass = getattr( mod, cls )
+    elif tool_source.parse_tool_type():
+        tool_type = tool_source.parse_tool_type()
+        ToolClass = tool_types.get( tool_type )
+    else:
+        # Normal tool
+        root = getattr( tool_source, 'root', None )
+        ToolClass = Tool
+    tool = ToolClass( config_file, tool_source, app, **kwds )
+    return tool
+
+
 class ToolBox( BaseGalaxyToolBox ):
     """ A derivative of AbstractToolBox with knowledge about Tool internals -
     how to construct them, action types, dependency management, etc....
@@ -241,22 +259,8 @@ class ToolBox( BaseGalaxyToolBox ):
             raise e
         return self._create_tool_from_source( tool_source, config_file=config_file, **kwds )
 
-    def _create_tool_from_source( self, tool_source, config_file=None, **kwds ):
-        # Allow specifying a different tool subclass to instantiate
-        tool_module = tool_source.parse_tool_module()
-        if tool_module is not None:
-            module, cls = tool_module
-            mod = __import__( module, globals(), locals(), [cls] )
-            ToolClass = getattr( mod, cls )
-        elif tool_source.parse_tool_type():
-            tool_type = tool_source.parse_tool_type()
-            ToolClass = tool_types.get( tool_type )
-        else:
-            # Normal tool
-            root = getattr( tool_source, 'root', None )
-            ToolClass = Tool
-        tool = ToolClass( config_file, tool_source, self.app, **kwds )
-        return tool
+    def _create_tool_from_source( self, tool_source, **kwds ):
+        return create_tool_from_source( self.app, tool_source, **kwds)
 
     def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
         """
