@@ -341,11 +341,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     for name, spec in data.datatype.metadata_spec.items():
                         if spec.get("readonly"):
                             continue
-                        other = params.get("or_" + name, None)
-                        if other:
-                            setattr( data.metadata, name, other )
-                        else:
-                            setattr( data.metadata, name, spec.unwrap( params.get(name, None) ) )
+                        setattr( data.metadata, name, spec.unwrap( params.get(name, None) ) )
                     data.datatype.after_setting_metadata( data )
                     # Sanitize annotation before adding it.
                     if params.annotation:
@@ -405,9 +401,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     for name, spec in data.metadata.spec.items():
                         # We need to be careful about the attributes we are resetting
                         if name not in [ 'name', 'info', 'dbkey', 'base_name' ]:
-                            if spec.visible:
-                                if spec.get( 'default' ):
-                                    setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
+                            if spec.get( 'default' ):
+                                setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
                     message = 'Attributes have been queued to be updated'
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={ 'input1': data } )
                     trans.sa_session.flush()
@@ -461,7 +456,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             ldatatypes.sort()
             all_roles = trans.app.security_agent.get_legitimate_roles( trans, data.dataset, 'root' )
 
-            data_metadata = [ ( name, spec.visible, spec.desc ) for name, spec in data.metadata.spec.items() ]
+            data_metadata = [ ( name, spec ) for name, spec in data.metadata.spec.items() ]
             converters_collection = [ (key, value.name) for key, value in data.get_converter_types().items() ]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset )
 
@@ -503,26 +498,28 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 'help' : 'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'
             })
 
-            for item in data_metadata:
-                if item[ 1 ]:
-                    attributes = data.metadata.get_metadata_parameter( item[ 0 ], trans=trans )
+            for name, spec in data_metadata:
+                if spec.visible:
+                    attributes = data.metadata.get_metadata_parameter( name, trans=trans )
                     if type( attributes ) is form_builder.SelectField:
                         edit_attributes_inputs.append({
                             'type': 'select',
                             'multiple': attributes.multiple,
                             'optional': attributes.optional,
-                            'name': item[ 0 ],
-                            'label': item[ 2 ],
+                            'name': name,
+                            'label': spec.desc,
                             'options': attributes.options,
-                            'value': [ attributes.value ]
+                            'value': attributes.value if attributes.multiple else [ attributes.value ]
                         })
                     elif type( attributes ) is form_builder.TextField:
                         edit_attributes_inputs.append({
                             'type': 'text',
-                            'name': item[ 0 ],
-                            'label': item[ 2 ],
-                            'value': attributes.value
+                            'name': name,
+                            'label': spec.desc,
+                            'value': attributes.value,
+                            'readonly': spec.get( 'readonly' )
                         })
+                        
 
             if data.missing_meta():
                 edit_attributes_inputs.append({
@@ -604,6 +601,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 })
 
             return {
+                'display_name': data.get_display_name(),
                 'message': message,
                 'status': status,
                 'dataset_id': dataset_id,

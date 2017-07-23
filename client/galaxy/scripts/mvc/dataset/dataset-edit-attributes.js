@@ -21,8 +21,9 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                    self.render_attribute_page( self, response );
                 },
                 error   : function( response ) {
-                    self.page.display( new Ui.Message( { 'message': 'Error occured', 'status': 'error',
-                        'persistent': true, 'cls': 'errormessage' } ) );
+                    var error_response = { 'status': 'error',
+                        'message': 'Error occured while loading the dataset.' };
+                    self.display_message( self, error_response, self.$el.find( '.edit-attr' ) );
                 }
             });
         },
@@ -41,15 +42,17 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         call_ajax: function( self, data, tab_name ) {
             var post_url = Galaxy.root + 'dataset/edit';
             $.ajax({
-                type: "POST",
+                type: "PUT",
                 url: post_url,
                 data: data,
                 success: function( response ) {
                     self.render_attribute_page( self, response );
+                    self.reload_history();
                 },
                 error   : function( response ) {
-                    self.page.display( new Ui.Message( { 'message': 'Error occured', 'status': 'error',
-                        'persistent': true, 'cls': 'errormessage' } ) );
+                    var error_response = { 'status': 'error',
+                        'message': 'Error occured while saving. Please fill all the required fields and try again.' };
+                    self.display_message( self, error_response, self.$el.find( '.edit-attr' ) );
                 }
             });
         },
@@ -127,7 +130,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                         onclick       : function() { self._submit( self, form, response, "edit_attributes" ) }
                     }),
                     'submit_autocorrect' : new Ui.ButtonIcon({
-                        tooltip          : 'Auto-detect',
+                        tooltip          : 'This will inspect the dataset and attempt to correct the above column values if they are not accurate.',
                         icon             : 'fa-undo ',
                         title            : 'Auto-detect',
                         onclick          : function() { self._submit( self, form, response, "auto-detect" ) }
@@ -231,6 +234,13 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     break; 
             }
             self.call_ajax( self, form_data );
+        },
+
+        /** Reload Galaxy's history after updating dataset's attributes */
+        reload_history: function() {
+            if ( window.Galaxy ) {
+                window.Galaxy.currHistoryPanel.loadCurrentHistory();
+            }
         }
     });
 
