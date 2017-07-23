@@ -258,7 +258,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         """Allows user to modify parameters of an HDA."""
         message = None
         status = 'done'
-        refresh_frames = []
         error = False
 
         def __ok_to_edit_metadata( dataset_id ):
@@ -328,7 +327,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                         trans.sa_session.flush()
                         trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={ 'input1': data }, overwrite=False )  # overwrite is False as per existing behavior
                         message = "Changed the type of dataset '%s' to %s" % ( to_unicode( data.name ), params.datatype )
-                        refresh_frames = ['history']
                 else:
                     message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( data.extension, params.datatype )
                     error = True
@@ -386,12 +384,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                         data._state = None
                     trans.sa_session.flush()
                     message = "Attributes updated%s" % message
-                    refresh_frames = ['history']
                 else:
                     trans.sa_session.flush()
                     message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
                     status = "warning"
-                    refresh_frames = ['history']
             elif params.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
                 # prevent modifying metadata when dataset is queued or running as input/output
@@ -407,12 +403,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     message = 'Attributes have been queued to be updated'
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={ 'input1': data } )
                     trans.sa_session.flush()
-                    refresh_frames = ['history']
             elif params.convert_data:
                 target_type = kwd.get("target_type", None)
                 if target_type:
                     message = data.datatype.convert_dataset(trans, data, target_type)
-                    refresh_frames = ['history']
             elif params.update_roles_button:
                 if not trans.user:
                     return {
@@ -459,10 +453,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             data_metadata = [ ( name, spec ) for name, spec in data.metadata.spec.items() ]
             converters_collection = [ (key, value.name) for key, value in data.get_converter_types().items() ]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset )
-            if trans.get_user() is not None:
-                user_available = True
-            else:
-                user_available = False
             if error:
                 status = 'error'
             edit_attributes_inputs = list()
@@ -546,7 +536,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             })
 
             if can_manage_dataset:
-                user = trans.user
                 permitted_actions = trans.app.model.Dataset.permitted_actions.items()
                 saved_role_ids = {}
                 for action, roles in trans.app.security_agent.get_permissions( data.dataset ).items():
