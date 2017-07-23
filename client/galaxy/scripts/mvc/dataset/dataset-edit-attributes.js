@@ -113,24 +113,24 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         _templateHeader: function() {
             return '<div class="page-container edit-attr">' +
                        '<div class="response-message"></div>' +
-                       '<h3>Edit Dataset Attributes and Permissions</h3>' +
+                       '<h3>Edit Dataset Attributes</h3>' +
                    '</div>';
         },
 
         /** Attributes tab template */
         _getAttributesFormTemplate: function( self, response ) {
             var form = new Form({
-                title  : 'Edit Attributes',
+                title  : 'Edit attributes',
                 inputs : response.edit_attributes_inputs,
                 operations: {
                     'submit_editattr' : new Ui.ButtonIcon({
                         tooltip       : 'Save attributes of the dataset',
                         icon          : 'fa-floppy-o ',
-                        title         : 'Save Attributes',
+                        title         : 'Save attributes',
                         onclick       : function() { self._submit( self, form, response, "edit_attributes" ) }
                     }),
                     'submit_autocorrect' : new Ui.ButtonIcon({
-                        tooltip          : 'This will inspect the dataset and attempt to correct the above column values if they are not accurate.',
+                        tooltip          : 'This will inspect the dataset and attempt to correct the values of fields if they are not accurate.',
                         icon             : 'fa-undo ',
                         title            : 'Auto-detect',
                         onclick          : function() { self._submit( self, form, response, "auto-detect" ) }
@@ -148,7 +148,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 operations: {
                         'submit' : new Ui.ButtonIcon({
                         tooltip  : 'Convert the datatype to a new format',
-                        title    : 'Convert Datatype',
+                        title    : 'Convert datatype',
                         icon     : 'fa-exchange ',
                         onclick  : function() { self._submit( self, form, response, "convert" ) }
                     })
@@ -160,12 +160,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         /** Change datatype template */
         _getChangeDataTypeFormTemplate: function( self, response ) {
             var form = new Form({
-                title  : 'Change data type',
+                title  : 'Change datatype',
                 inputs : response.convert_datatype_inputs,
                 operations: {
                         'submit' : new Ui.ButtonIcon({
                         tooltip  : 'Change the datatype to a new type',
-                        title    : 'Change Datatype',
+                        title    : 'Change datatype',
                         icon     : 'fa-exchange ',
                         onclick  : function() { self._submit( self, form, response, "change" ) }
                     })
@@ -183,8 +183,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     inputs : response.permission_inputs,
                     operations: {
                         'submit': new Ui.ButtonIcon({
-                            tooltip  : 'Save Permissions',
-                            title    : 'Save Permissions',
+                            tooltip  : 'Save permissions',
+                            title    : 'Save permissions',
                             icon     : 'fa-floppy-o ',
                             onclick  : function() { self._submit( self, form, response, "permissions" ) }
                         })
@@ -194,7 +194,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
             }
             else {
                 var form = new Form({
-                    title  : 'View Permissions',
+                    title  : 'View permissions',
                     inputs : response.permission_inputs
                 });
                 return form.$el;

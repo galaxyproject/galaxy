@@ -558,13 +558,17 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                         saved_role_ids[ action.action ] = role.id
 
                 for index, action in permitted_actions:
+                    if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
+                        help_text = action.description + '<br/>NOTE: Users must have every role associated with this dataset in order to access it.'
+                    else:
+                        help_text = action.description
                     permission_inputs.append({
                         'type': 'select',
                         'multiple': True,
                         'optional': True,
                         'name': index,
                         'label': action.action,
-                        'help': action.description,
+                        'help': help_text,
                         'options': [(r.name, r.id) for r in all_roles],
                         'value': saved_role_ids[ action.action ] if action.action in saved_role_ids else []
                     })
