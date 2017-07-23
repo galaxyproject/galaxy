@@ -11,9 +11,12 @@ from galaxy import (
     quota
 )
 from galaxy.datatypes import registry
+from galaxy.jobs import NoopQueue
 from galaxy.managers import tags
 from galaxy.model import mapping
+from galaxy.tools.deps.containers import NullContainerFinder
 from galaxy.util.bunch import Bunch
+from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web import security
 
 
@@ -63,11 +66,29 @@ class MockApp( object ):
         self.tag_handler = tags.GalaxyTagManager( self.model.context )
         self.quota_agent = quota.QuotaAgent( self.model )
         self.init_datatypes()
+        self.job_config = Bunch(
+            dynamic_params=None,
+        )
+        self.tool_data_tables = {}
+        self.dataset_collections_service = None
+        self.container_finder = NullContainerFinder()
+        self._toolbox_lock = MockLock()
+        self.genome_builds = GenomeBuilds( self )
+        self.job_queue = NoopQueue()
 
     def init_datatypes( self ):
         datatypes_registry = registry.Registry()
         datatypes_registry.load_datatypes()
         model.set_datatypes_registry( datatypes_registry )
+        self.datatypes_registry = datatypes_registry
+
+
+class MockLock( object ):
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        pass
 
 
 class MockAppConfig( Bunch ):
@@ -92,6 +113,10 @@ class MockAppConfig( Bunch ):
         self.enable_old_display_applications = True
 
         self.umask = 0o77
+
+        # Follow two required by GenomeBuilds
+        self.len_file_path = os.path.join( 'tool-data', 'shared', 'ucsc', 'chrom' )
+        self.builds_file_path = os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' )
 
         # set by MockDir
         self.root = root

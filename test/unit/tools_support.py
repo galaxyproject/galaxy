@@ -20,6 +20,8 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.security import SecurityHelper
 
+from unittest_utils import galaxy_mock
+
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
 galaxy.model.set_datatypes_registry(datatypes_registry)
@@ -29,7 +31,11 @@ class UsesApp( object ):
 
     def setup_app( self, mock_model=True ):
         self.test_directory = tempfile.mkdtemp()
-        self.app = MockApp( self.test_directory, mock_model=mock_model )
+        if not mock_model:
+            self.app = galaxy_mock.MockApp( )
+        else:
+            # DEPRECATED.
+            self.app = MockApp( self.test_directory, mock_model=True )
 
     def tear_down_app( self ):
         shutil.rmtree( self.test_directory )
