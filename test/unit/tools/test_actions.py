@@ -61,7 +61,7 @@ def test_on_text_for_names():
 class DefaultToolActionTestCase( unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools ):
 
     def setUp( self ):
-        self.setup_app( mock_model=False )
+        self.setup_app( )
         history = model.History()
         self.history = history
         self.trans = MockTrans(

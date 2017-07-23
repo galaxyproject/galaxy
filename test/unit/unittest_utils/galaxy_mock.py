@@ -82,6 +82,11 @@ class MockApp( object ):
         model.set_datatypes_registry( datatypes_registry )
         self.datatypes_registry = datatypes_registry
 
+    def wait_for_toolbox_reload(self, toolbox):
+        # TODO: If the tpm test case passes, does the operation really
+        # need to wait.
+        return True
+
 
 class MockLock( object ):
     def __enter__(self):
@@ -95,11 +100,13 @@ class MockAppConfig( Bunch ):
 
     def __init__( self, root=None, **kwargs ):
         Bunch.__init__( self, **kwargs )
+        root = root or '/tmp'
         self.security = security.SecurityHelper( id_secret='bler' )
         self.use_remote_user = kwargs.get( 'use_remote_user', False )
         self.file_path = '/tmp'
         self.jobs_directory = '/tmp'
         self.new_file_path = '/tmp'
+        self.tool_data_path = '/tmp'
 
         self.object_store_config_file = ''
         self.object_store = 'disk'
@@ -117,6 +124,9 @@ class MockAppConfig( Bunch ):
         # Follow two required by GenomeBuilds
         self.len_file_path = os.path.join( 'tool-data', 'shared', 'ucsc', 'chrom' )
         self.builds_file_path = os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' )
+
+        self.migrated_tools_config = "/tmp/migrated_tools_conf.xml"
+        self.preserve_python_environment = "always"
 
         # set by MockDir
         self.root = root

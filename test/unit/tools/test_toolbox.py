@@ -56,7 +56,7 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
 
     def setUp( self ):
         self.reindexed = False
-        self.setup_app( mock_model=False )
+        self.setup_app( )
         install_model = mapping.init( "sqlite:///:memory:", create_tables=True )
         self.app.tool_cache = ToolCache()
         self.app.install_model = install_model
