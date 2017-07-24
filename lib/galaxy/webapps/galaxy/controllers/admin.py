@@ -130,7 +130,7 @@ class UserListGrid( grids.Grid ):
                              url_args=dict( webapp="galaxy", action="manage_roles_and_groups_for_user" ) ),
         grids.GridOperation( "Reset Password",
                              condition=( lambda item: not item.deleted ),
-                             allow_multiple=False,
+                             allow_multiple=True,
                              url_args=dict( webapp="galaxy", action="reset_user_password" ) ),
         grids.GridOperation( "Recalculate Disk Usage",
                              condition=( lambda item: not item.deleted ),
