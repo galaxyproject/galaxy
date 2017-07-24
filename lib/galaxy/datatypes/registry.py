@@ -493,11 +493,11 @@ class Registry( object ):
         return mimetype
 
     def get_datatype_by_extension( self, ext ):
-        """Returns a datatype based on an extension"""
+        """Returns a datatype object based on an extension"""
         try:
             builder = self.datatypes_by_extension[ ext ]
         except KeyError:
-            builder = data.Text()
+            builder = None
         return builder
 
     def change_datatype( self, data, ext ):
@@ -813,7 +813,10 @@ class Registry( object ):
     def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe=True ):
         """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
-            if self.get_datatype_by_extension( convert_ext ).matches_any( accepted_formats ):
+            convert_ext_datatype = self.get_datatype_by_extension( convert_ext )
+            if convert_ext_datatype is None:
+                self.log.warning("Datatype class not found for extension '%s', which is used as target for conversion from datatype '%s'" % (convert_ext, dataset.ext))
+            elif convert_ext_datatype.matches_any( accepted_formats ):
                 converted_dataset = dataset.get_converted_files_by_type( convert_ext )
                 if converted_dataset:
                     ret_data = converted_dataset

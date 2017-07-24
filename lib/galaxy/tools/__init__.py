@@ -148,6 +148,12 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "tabular_to_dbnsfp",
     # Tools improperly migrated using Galaxy (from shed other)
     "column_join",
+    "gd_coverage_distributions",  # Genome Diversity tools from miller-lab
+    "gd_dpmix",
+    "gd_pca",
+    "gd_phylogenetic_tree",
+    "gd_population_structure",
+    "gd_prepare_population_structure",
 ]
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.

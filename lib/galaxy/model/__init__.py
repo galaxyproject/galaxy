@@ -1947,7 +1947,14 @@ class DatasetInstance( object ):
 
     @property
     def datatype( self ):
-        return _get_datatypes_registry().get_datatype_by_extension( self.extension )
+        extension = self.extension
+        if not extension or extension == 'auto' or extension == '_sniff_':
+            extension = 'data'
+        ret = _get_datatypes_registry().get_datatype_by_extension( extension )
+        if ret is None:
+            log.warning("Datatype class not found for extension '%s'" % extension)
+            return _get_datatypes_registry().get_datatype_by_extension( 'data' )
+        return ret
 
     def get_metadata( self ):
         # using weakref to store parent (to prevent circ ref),
