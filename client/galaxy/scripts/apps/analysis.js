@@ -177,7 +177,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_dataset_edit_attributes : function() {
-            this.page.display( new DatasetEditAttributes.View( Utils.getQueryString( 'dataset_id' ) ) );
+            this.page.display( new DatasetEditAttributes.View() );
         },
 
         /**  */

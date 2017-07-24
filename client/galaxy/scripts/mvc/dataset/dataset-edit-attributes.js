@@ -1,41 +1,57 @@
 
 define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view' ], function( Utils, Tabs, Ui, Form ) {
 
+    // Model for the view
+    var Model = Backbone.Model.extend({
+        initialize: function( options ) {
+            options = options || {};
+            options.dataset_id = options.dataset_id;
+        }
+    });
+
     /** Dataset edit attributes view */
     var View = Backbone.View.extend({
-
-        initialize: function( dataset_id ) {
+        initialize: function() {
             this.setElement( '<div/>' );
-            this.render( dataset_id );
+            this.model = new Model( { 'dataset_id': Galaxy.params.dataset_id } );
+            this.render();
         },
 
         // Fetch data for the selected dataset and 
         // build tabs for editing its attributes
-        render: function( dataset_id ) {
+        render: function() {
             var url = Galaxy.root + 'dataset/edit',
                 self = this;
             Utils.get({
                 url     : url,
-                data    : { 'dataset_id' : dataset_id },
+                data    : { 'dataset_id' : self.model.get( 'dataset_id' ) },
                 success : function( response ) {
                    self.render_attribute_page( self, response );
                 },
                 error   : function( response ) {
-                    var error_response = { 'status': 'error',
-                        'message': 'Error occured while loading the dataset.' };
-                    self.display_message( self, error_response, self.$el.find( '.edit-attr' ) );
+                    var error_response = {
+                        'status': 'error',
+                        'message': 'Error occured while loading the dataset.',
+                        'persistent': true,
+                        'cls': 'errormessage'
+                    };
+                    self.display_message( self, error_response, self.$el.find( '.response-message' ) );
                 }
             });
         },
 
         /** Render all the tabs view */
         render_attribute_page: function( self, response ) {
-            var $el_edit_attr = null;
+            var message = {
+                'message'     : response.message,
+                'status'      : response.status,
+                'persistent'  : true,
+                'cls'         : response.status + 'message'
+            };
             self.$el.empty().append( self._templateHeader() );
-            $el_edit_attr = self.$el.find( '.edit-attr' );
-            self.display_message( self, response, $el_edit_attr );
+            self.display_message( self, message, self.$el.find( '.response-message' ) );
             // Create all tabs
-            self.create_tabs( self, response, $el_edit_attr );
+            self.create_tabs( self, response, self.$el.find( '.edit-attr' ) );
         },
 
         /** Perform AJAX post call */
@@ -50,25 +66,20 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     self.reload_history();
                 },
                 error   : function( response ) {
-                    var error_response = { 'status': 'error',
-                        'message': 'Error occured while saving. Please fill all the required fields and try again.' };
-                    self.display_message( self, error_response, self.$el.find( '.edit-attr' ) );
+                    var error_response = {
+                        'status': 'error',
+                        'message': 'Error occured while saving. Please fill all the required fields and try again.',
+                        'persistent': true,
+                        'cls': 'errormessage'
+                    };
+                    self.display_message( self, error_response, self.$el.find( '.response-message' ) );
                 }
             });
         },
 
         /** Display actions messages */
         display_message: function( self, response, $el ) {
-            $el_message = $el.find( '.response-message' );
-            // Remove all classes related to messages if present
-            $el_message.removeClass( 'errormessage donemessage warningmessage' );
-            if ( response.message && response.message !== null && response.message !== ""  ) {
-                $el_message.addClass( response.status + 'message' );
-                $el_message.html( '<p>' + _.escape( response.message ) + '</p>' );
-            }
-            else {
-                $el_message.html("");
-            }
+            $el.empty().html( new Ui.Message( response ).$el );
         },
 
         /** Create tabs for different attributes of dataset*/
@@ -124,7 +135,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 inputs : response.edit_attributes_inputs,
                 operations: {
                     'submit_editattr' : new Ui.ButtonIcon({
-                        tooltip       : 'Save attributes of the dataset',
+                        tooltip       : 'Save attributes of the dataset.',
                         icon          : 'fa-floppy-o ',
                         title         : 'Save attributes',
                         onclick       : function() { self._submit( self, form, response, "edit_attributes" ) }
@@ -147,7 +158,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 inputs : response.convert_inputs,
                 operations: {
                         'submit' : new Ui.ButtonIcon({
-                        tooltip  : 'Convert the datatype to a new format',
+                        tooltip  : 'Convert the datatype to a new format.',
                         title    : 'Convert datatype',
                         icon     : 'fa-exchange ',
                         onclick  : function() { self._submit( self, form, response, "convert" ) }
@@ -164,7 +175,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 inputs : response.convert_datatype_inputs,
                 operations: {
                         'submit' : new Ui.ButtonIcon({
-                        tooltip  : 'Change the datatype to a new type',
+                        tooltip  : 'Change the datatype to a new type.',
                         title    : 'Change datatype',
                         icon     : 'fa-exchange ',
                         onclick  : function() { self._submit( self, form, response, "change" ) }
@@ -183,7 +194,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     inputs : response.permission_inputs,
                     operations: {
                         'submit': new Ui.ButtonIcon({
-                            tooltip  : 'Save permissions',
+                            tooltip  : 'Save permissions.',
                             title    : 'Save permissions',
                             icon     : 'fa-floppy-o ',
                             onclick  : function() { self._submit( self, form, response, "permissions" ) }

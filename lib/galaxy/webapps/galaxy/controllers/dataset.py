@@ -285,20 +285,20 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             trans.log_event( "dataset_id and hid are both None, cannot load a dataset to edit" )
             return {
                 status: 'error',
-                message: 'You must provide a history dataset id to edit'
+                message: 'You must provide a history dataset id to edit.'
             }
         if data is None:
             trans.log_event( "Problem retrieving dataset (encoded: %s, decoded: %s) with history id %s." % ( str( dataset_id ), str( id ), str( hid ) ) )
             return {
                 status: 'error',
-                message: "History dataset id is invalid"
+                message: "History dataset id is invalid."
             }
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
-            trans.log_event( "User attempted to edit an HDA they do not own (encoded: %s, decoded: %s)" % ( dataset_id, id ) )
+            trans.log_event( "User attempted to edit an HDA they do not own (encoded: %s, decoded: %s)." % ( dataset_id, id ) )
             # Do not reveal the dataset's existence
             return {
                 status: 'error',
-                message: "History dataset id is invalid"
+                message: "History dataset id is invalid."
             }
         current_user_roles = trans.get_current_user_roles()
         if data.history.user and not data.dataset.has_manage_permissions_roles( trans ):
@@ -326,7 +326,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                         trans.app.datatypes_registry.change_datatype( data, params.datatype )
                         trans.sa_session.flush()
                         trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={ 'input1': data }, overwrite=False )  # overwrite is False as per existing behavior
-                        message = "Changed the type of dataset '%s' to %s" % ( to_unicode( data.name ), params.datatype )
+                        message = "Changed the type of dataset %s to %s." % ( to_unicode( data.name ), params.datatype )
                 else:
                     message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( data.extension, params.datatype )
                     error = True
@@ -383,7 +383,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
                         data._state = None
                     trans.sa_session.flush()
-                    message = "Attributes updated%s" % message
+                    if message:
+                        message = "Attributes updated. %s" % message
+                    else:
+                        message = "Attributes updated."
                 else:
                     trans.sa_session.flush()
                     message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
@@ -400,7 +403,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                         if name not in [ 'name', 'info', 'dbkey', 'base_name' ]:
                             if spec.get( 'default' ):
                                 setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-                    message = 'Attributes have been queued to be updated'
+                    message = 'Attributes have been queued to be updated.'
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={ 'input1': data } )
                     trans.sa_session.flush()
             elif params.convert_data:
@@ -434,7 +437,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                             message = 'Your changes completed successfully.'
                     trans.sa_session.refresh( data.dataset )
                 else:
-                    message = "You are not authorized to change this dataset's permissions"
+                    message = "You are not authorized to change this dataset's permissions."
                     error = True
             else:
                 if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
@@ -464,16 +467,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 'name' : 'name',
                 'type' : 'text',
                 'label': 'Name:',
-                'value': data.get_display_name(),
-                'size' : '40'
+                'value': data.get_display_name()
             })
 
             edit_attributes_inputs.append({
                 'name' : 'info',
                 'type' : 'text',
                 'label': 'Info:',
-                'value': data.info,
-                'size' : '40'
+                'value': data.info
             })
 
             edit_attributes_inputs.append({
@@ -481,7 +482,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 'type' : 'text',
                 'label': 'Annotation',
                 'value': self.get_item_annotation_str( trans.sa_session, trans.user, data ),
-                'size' : '40',
                 'help' : 'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'
             })
 
@@ -514,8 +514,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     'label': 'Error Message',
                     'value': 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.',
                     'class'  : 'errormessagesmall',
-                    'readonly' : True,
-                    'size' : '40'
+                    'readonly' : True
                 })
 
             convert_inputs.append({
@@ -577,7 +576,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                         'name': 'access_public',
                         'type': 'text',
                         'label': 'Public access',
-                        'value': 'This dataset is accessible by everyone (it is public)',
+                        'value': 'This dataset is accessible by everyone (it is public).',
                         'readonly': True
                     })
             else:
@@ -585,7 +584,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     'name': 'no_access',
                     'type': 'text',
                     'label': 'No access',
-                    'value': 'Permissions not available (not logged in)',
+                    'value': 'Permissions not available (not logged in).',
                     'readonly': True
                 })
 
