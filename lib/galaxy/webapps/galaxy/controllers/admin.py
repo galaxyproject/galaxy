@@ -541,6 +541,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.require_admin
     def users_list( self, trans, **kwd ):
         if 'operation' in kwd:
+            id = kwd.get( 'id', None )
+            if not id:
+                kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received." % str( id ) )
+                kwd[ 'status' ] = 'error'
+            ids = util.listify( id )
             operation = kwd['operation'].lower()
             if operation == "delete":
                 return self.mark_user_deleted( trans, **kwd )
@@ -549,19 +554,14 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             elif operation == "purge":
                 return self.purge_user( trans, **kwd )
             elif operation == "information":
-                user_id = kwd.get( 'id', None )
-                if not user_id:
-                    kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received" % str( user_id ) )
-                    kwd[ 'status' ] = 'error'
-                else:
-                    return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
-        if trans.app.config.allow_user_deletion:
-            if self.delete_operation not in self.user_list_grid.operations:
-                self.user_list_grid.operations.append( self.delete_operation )
-            if self.undelete_operation not in self.user_list_grid.operations:
-                self.user_list_grid.operations.append( self.undelete_operation )
-            if self.purge_operation not in self.user_list_grid.operations:
-                self.user_list_grid.operations.append( self.purge_operation )
+                return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
+        #if trans.app.config.allow_user_deletion:
+        if self.delete_operation not in self.user_list_grid.operations:
+            self.user_list_grid.operations.append( self.delete_operation )
+        if self.undelete_operation not in self.user_list_grid.operations:
+            self.user_list_grid.operations.append( self.undelete_operation )
+        if self.purge_operation not in self.user_list_grid.operations:
+            self.user_list_grid.operations.append( self.purge_operation )
         # Render the list view
         kwd[ 'dict_format' ] = True
         return self.user_list_grid( trans, **kwd )
@@ -1774,7 +1774,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose
     @web.require_admin
-    def purge_user( self, trans, **kwd ):
+    def purge_user( self, trans, ids, **kwd ):
         # This method should only be called for a User that has previously been deleted.
         # We keep the User in the database ( marked as purged ), and stuff associated
         # with the user's private role in case we want the ability to unpurge the user
@@ -1787,24 +1787,12 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
         # - UserAddress where user_id == User.id
         # Purging Histories and Datasets must be handled via the cleanup_datasets.py script
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No user ids received for purging"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        ids = util.listify( id )
         message = "Purged %d users: " % len( ids )
+        return { 'message' : 'User \'\' has not been deleted, so it cannot be purged.', 'status' : 'danger' }
         for user_id in ids:
             user = get_user( trans, user_id )
             if not user.deleted:
-                # We should never reach here, but just in case there is a bug somewhere...
-                message = "User '%s' has not been deleted, so it cannot be purged." % user.email
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='users',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
+                return { 'message' : 'User \'%s\' has not been deleted, so it cannot be purged.' % user.email, 'status' : 'danger' }
             private_role = trans.app.security_agent.get_private_user_role( user )
             # Delete History
             for h in user.active_histories:
