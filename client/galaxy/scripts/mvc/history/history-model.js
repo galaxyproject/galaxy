@@ -187,6 +187,7 @@ var History = Backbone.Model
                     serverResponseDatetime = new Date( xhr.getResponseHeader( 'Date' ) );
                 } catch( err ){}
                 self.lastUpdateTime = serverResponseDatetime || new Date();
+                self.lastUpdateTime.setSeconds(self.lastUpdateTime.getSeconds() - 10);
                 self.checkForUpdates( options );
             });
     },
