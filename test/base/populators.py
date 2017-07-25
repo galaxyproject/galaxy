@@ -282,6 +282,8 @@ class BaseDatasetPopulator(object):
         # the last dataset in the history will be fetched.
         if "dataset_id" in kwds:
             history_content_id = kwds["dataset_id"]
+        elif "content_id" in kwds:
+            history_content_id = kwds["content_id"]
         elif "dataset" in kwds:
             history_content_id = kwds["dataset"]["id"]
         else:

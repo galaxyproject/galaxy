@@ -803,8 +803,9 @@ class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
-        if self.workflow_invocation_step:
-            self.workflow_invocation_step.update()
+        workflow_invocation_step_assoc = self.workflow_invocation_step_assoc
+        if workflow_invocation_step_assoc:
+            workflow_invocation_step_assoc.workflow_invocation_step.update()
 
     def get_destination_configuration(self, config, key, default=None):
         """ Get a destination parameter that can be defaulted back
@@ -4036,17 +4037,16 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
         step_invocations = {}
         for invocation_step in self.steps:
             step_id = invocation_step.workflow_step_id
-            if step_id not in step_invocations:
-                step_invocations[step_id] = []
-            step_invocations[step_id].append(invocation_step)
+            assert step_id not in step_invocations
+            step_invocations[step_id] = invocation_step
         return step_invocations
 
-    def step_invocations_for_step_id(self, step_id):
-        step_invocations = []
+    def step_invocation_for_step_id(self, step_id):
+        target_invocation_step = None
         for invocation_step in self.steps:
             if step_id == invocation_step.workflow_step_id:
-                step_invocations.append(invocation_step)
-        return step_invocations
+                target_invocation_step = invocation_step
+        return target_invocation_step
 
     @staticmethod
     def poll_active_workflow_ids(
@@ -4072,6 +4072,24 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
         # is relatively intutitive.
         return [wid for wid in query.all()]
 
+    def add_output(self, workflow_output, step, output_object):
+        if output_object.history_content_type == "dataset":
+            output_assoc = WorkflowInvocationOutputDatasetAssociation()
+            output_assoc.workflow_invocation = self
+            output_assoc.workflow_output = workflow_output
+            output_assoc.workflow_step = step
+            output_assoc.dataset = output_object
+            self.output_datasets.append(output_assoc)
+        elif output_object.history_content_type == "dataset_collection":
+            output_assoc = WorkflowInvocationOutputDatasetCollectionAssociation()
+            output_assoc.workflow_invocation = self
+            output_assoc.workflow_output = workflow_output
+            output_assoc.workflow_step = step
+            output_assoc.dataset_collection = output_object
+            self.output_dataset_collections.append(output_assoc)
+        else:
+            raise Exception("Uknown output type encountered")
+
     def to_dict(self, view='collection', value_mapper=None, step_details=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
         if view == 'element':
@@ -4087,17 +4105,43 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
             inputs = {}
             for step in self.steps:
                 if step.workflow_step.type == 'tool':
-                    for step_input in step.workflow_step.input_connections:
-                        output_step_type = step_input.output_step.type
-                        if output_step_type in ['data_input', 'data_collection_input']:
-                            src = "hda" if output_step_type == 'data_input' else 'hdca'
-                            for job_input in step.job.input_datasets:
-                                if job_input.name == step_input.input_name:
-                                    inputs[str(step_input.output_step.order_index)] = {
-                                        "id": job_input.dataset_id, "src": src,
-                                        "uuid" : str(job_input.dataset.dataset.uuid) if job_input.dataset.dataset.uuid is not None else None
-                                    }
+                    for step_job_assoc in step.jobs:
+                        for step_input in step.workflow_step.input_connections:
+                            output_step_type = step_input.output_step.type
+                            if output_step_type in ['data_input', 'data_collection_input']:
+                                src = "hda" if output_step_type == 'data_input' else 'hdca'
+                                for job_input in step_job_assoc.job.input_datasets:
+                                    if job_input.name == step_input.input_name:
+                                        inputs[str(step_input.output_step.order_index)] = {
+                                            "id": job_input.dataset_id, "src": src,
+                                            "uuid" : str(job_input.dataset.dataset.uuid) if job_input.dataset.dataset.uuid is not None else None
+                                        }
             rval['inputs'] = inputs
+
+            outputs = {}
+            for output_assoc in self.output_datasets:
+                label = output_assoc.workflow_output.label
+                if not label:
+                    continue
+
+                outputs[label] = {
+                    'src': 'hda',
+                    'id': output_assoc.dataset_id,
+                }
+
+            output_collections = {}
+            for output_assoc in self.output_dataset_collections:
+                label = output_assoc.workflow_output.label
+                if not label:
+                    continue
+
+                output_collections[label] = {
+                    'src': 'hdca',
+                    'id': output_assoc.dataset_collection_id,
+                }
+
+            rval['outputs'] = outputs
+            rval['output_collections'] = output_collections
         return rval
 
     def update(self):
@@ -4137,34 +4181,68 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(object, Dictifiable):
 
 
 class WorkflowInvocationStep(object, Dictifiable):
-    dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'action']
-    dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'action']
+    dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'state', 'action']
+    dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'state', 'action']
+    states = Bunch(
+        NEW='new',  # Brand new workflow invocation step
+        READY='ready',  # Workflow invocation step ready for another iteration of scheduling.
+        SCHEDULED='scheduled',  # Workflow invocation step has been scheduled.
+        # CANCELLED='cancelled',  TODO: implement and expose
+        # FAILED='failed',  TODO: implement and expose
+    )
 
     def update(self):
         self.workflow_invocation.update()
+
+    def add_output(self, output_name, output_object):
+        if output_object.history_content_type == "dataset":
+            output_assoc = WorkflowInvocationStepOutputDatasetAssociation()
+            output_assoc.workflow_invocation_step = self
+            output_assoc.dataset = output_object
+            output_assoc.output_name = output_name
+            self.output_datasets.append(output_assoc)
+        elif output_object.history_content_type == "dataset_collection":
+            output_assoc = WorkflowInvocationStepOutputDatasetCollectionAssociation()
+            output_assoc.workflow_invocation_step = self
+            output_assoc.dataset_collection = output_object
+            output_assoc.output_name = output_name
+            self.output_dataset_collections.append(output_assoc)
+        else:
+            raise Exception("Uknown output type encountered")
 
     def to_dict(self, view='collection', value_mapper=None):
         rval = super(WorkflowInvocationStep, self).to_dict(view=view, value_mapper=value_mapper)
         rval['order_index'] = self.workflow_step.order_index
         rval['workflow_step_label'] = self.workflow_step.label
         rval['workflow_step_uuid'] = str(self.workflow_step.uuid)
-        rval['state'] = self.job.state if self.job is not None else None
-        if self.job is not None and view == 'element':
-            output_dict = {}
-            for i in self.job.output_datasets:
-                if i.dataset is not None:
-                    output_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "hda",
-                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
-                    }
-            for i in self.job.output_library_datasets:
-                if i.dataset is not None:
-                    output_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "ldda",
-                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
-                    }
-            rval['outputs'] = output_dict
+        # Following no longer makes sense...
+        # rval['state'] = self.job.state if self.job is not None else None
+        if view == 'element':
+            outputs = {}
+            for output_assoc in self.output_datasets:
+                name = output_assoc.output_name
+                outputs[name] = {
+                    'src': 'hda',
+                    'id': output_assoc.dataset.id,
+                    'uuid': str(output_assoc.dataset.dataset.uuid) if output_assoc.dataset.dataset.uuid is not None else None
+                }
+
+            output_collections = {}
+            for output_assoc in self.output_dataset_collections:
+                name = output_assoc.output_name
+                output_collections[name] = {
+                    'src': 'hdca',
+                    'id': output_assoc.dataset_collection.id,
+                }
+
+            rval['outputs'] = outputs
+            rval['output_collections'] = output_collections
         return rval
+
+
+class WorkflowInvocationStepJobAssociation(object, Dictifiable):
+    dict_collection_visible_keys = ('id', 'job_id', 'workflow_invocation_step_id')
+    dict_element_visible_keys = ('id', 'job_id', 'workflow_invocation_step_id')
 
 
 class WorkflowRequest(object, Dictifiable):
@@ -4219,6 +4297,26 @@ class WorkflowRequestInputStepParmeter(object, Dictifiable):
     """ Workflow step parameter inputs.
     """
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value']
+
+
+class WorkflowInvocationOutputDatasetAssociation(object, Dictifiable):
+    """Represents links to output datasets for the workflow."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
+
+
+class WorkflowInvocationOutputDatasetCollectionAssociation(object, Dictifiable):
+    """Represents links to output dataset collections for the workflow."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
+
+
+class WorkflowInvocationStepOutputDatasetAssociation(object, Dictifiable):
+    """Represents links to output datasets for the workflow."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_step_id', 'dataset_id', 'output_name']
+
+
+class WorkflowInvocationStepOutputDatasetCollectionAssociation(object, Dictifiable):
+    """Represents links to output dataset collections for the workflow."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_step_id', 'dataset_collection_id', 'output_name']
 
 
 class MetadataFile(StorableObject):
