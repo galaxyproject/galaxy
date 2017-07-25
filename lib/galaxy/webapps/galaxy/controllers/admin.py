@@ -540,29 +540,32 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.json
     @web.require_admin
     def users_list( self, trans, **kwd ):
+        message = None
+        status  = None
         if 'operation' in kwd:
             id = kwd.get( 'id', None )
             if not id:
-                kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received." % str( id ) )
-                kwd[ 'status' ] = 'error'
+                message, status = ( 'Invalid user id (%s) received.' % str( id ), 'error' )
             ids = util.listify( id )
             operation = kwd['operation'].lower()
-            if operation == "delete":
-                return self.mark_user_deleted( trans, **kwd )
-            elif operation == "undelete":
-                return self.undelete_user( trans, **kwd )
-            elif operation == "purge":
-                return self.purge_user( trans, **kwd )
-            elif operation == "information":
-                return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
-        #if trans.app.config.allow_user_deletion:
-        if self.delete_operation not in self.user_list_grid.operations:
-            self.user_list_grid.operations.append( self.delete_operation )
-        if self.undelete_operation not in self.user_list_grid.operations:
-            self.user_list_grid.operations.append( self.undelete_operation )
-        if self.purge_operation not in self.user_list_grid.operations:
-            self.user_list_grid.operations.append( self.purge_operation )
+            if operation == 'delete':
+                message, status = self.mark_user_deleted( trans, ids )
+            elif operation == 'undelete':
+                message, status = self.undelete_user( trans, ids )
+            elif operation == 'purge':
+                message, status = self.purge_user( trans, ids )
+            #elif operation == "information":
+            #    return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
+        if trans.app.config.allow_user_deletion:
+            if self.delete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.delete_operation )
+            if self.undelete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.undelete_operation )
+            if self.purge_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.purge_operation )
         # Render the list view
+        kwd[ 'message' ] = util.sanitize_text( message )
+        kwd[ 'status' ] = status
         kwd[ 'dict_format' ] = True
         return self.user_list_grid( trans, **kwd )
 
@@ -1719,62 +1722,37 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose
     @web.require_admin
-    def mark_user_deleted( self, trans, **kwd ):
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No user ids received for deleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
-        message = "Deleted %d users: " % len( ids )
+    def mark_user_deleted( self, trans, ids ):
+        message = 'Deleted %d users: ' % len( ids )
         for user_id in ids:
             user = get_user( trans, user_id )
             user.deleted = True
             trans.sa_session.add( user )
             trans.sa_session.flush()
-            message += " %s " % user.email
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='users',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+            message += ' %s ' % user.email
+        return ( message, 'done' )
 
     @web.expose
     @web.require_admin
-    def undelete_user( self, trans, **kwd ):
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No user ids received for undeleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
+    def undelete_user( self, trans, ids ):
         count = 0
         undeleted_users = ""
         for user_id in ids:
             user = get_user( trans, user_id )
             if not user.deleted:
-                message = "User '%s' has not been deleted, so it cannot be undeleted." % user.email
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='users',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
+                message = 'User \'%s\' has not been deleted, so it cannot be undeleted.' % user.email
+                return ( message, 'error' )
             user.deleted = False
             trans.sa_session.add( user )
             trans.sa_session.flush()
             count += 1
-            undeleted_users += " %s" % user.email
-        message = "Undeleted %d users: %s" % ( count, undeleted_users )
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='users',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+            undeleted_users += ' %s' % user.email
+        message = 'Undeleted %d users: %s' % ( count, undeleted_users )
+        return ( message, 'done' )
 
     @web.expose
     @web.require_admin
-    def purge_user( self, trans, ids, **kwd ):
+    def purge_user( self, trans, ids ):
         # This method should only be called for a User that has previously been deleted.
         # We keep the User in the database ( marked as purged ), and stuff associated
         # with the user's private role in case we want the ability to unpurge the user
@@ -1787,12 +1765,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
         # - UserAddress where user_id == User.id
         # Purging Histories and Datasets must be handled via the cleanup_datasets.py script
-        message = "Purged %d users: " % len( ids )
-        return { 'message' : 'User \'\' has not been deleted, so it cannot be purged.', 'status' : 'danger' }
+        message = 'Purged %d users: ' % len( ids )
         for user_id in ids:
             user = get_user( trans, user_id )
             if not user.deleted:
-                return { 'message' : 'User \'%s\' has not been deleted, so it cannot be purged.' % user.email, 'status' : 'danger' }
+                return ( 'User \'%s\' has not been deleted, so it cannot be purged.' % user.email, 'error' )
             private_role = trans.app.security_agent.get_private_user_role( user )
             # Delete History
             for h in user.active_histories:
@@ -1822,11 +1799,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             user.purged = True
             trans.sa_session.add( user )
             trans.sa_session.flush()
-            message += "%s " % user.email
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='users',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+            message += '%s ' % user.email
+        return ( message, 'done' )
 
     @web.expose
     @web.require_admin
