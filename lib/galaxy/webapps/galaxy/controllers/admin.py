@@ -525,24 +525,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         return self.template( trans, 'admin', settings=settings, message=message, status=status )
 
     @web.expose
-    @web.require_admin
-    def center( self, trans, **kwd ):
-        message = escape( kwd.get( 'message', ''  ) )
-        status = kwd.get( 'status', 'done' )
-        is_repo_installed = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None
-        installing_repository_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
-        return trans.fill_template( '/webapps/galaxy/admin/center.mako',
-                                    is_repo_installed=is_repo_installed,
-                                    installing_repository_ids=installing_repository_ids,
-                                    message=message,
-                                    status=status )
-
-    @web.expose
     @web.json
     @web.require_admin
     def users_list( self, trans, **kwd ):
-        message = None
-        status  = None
+        message = kwd.get( 'message' )
+        status  = kwd.get( 'status' )
         if 'operation' in kwd:
             id = kwd.get( 'id', None )
             if not id:
@@ -1677,44 +1664,45 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
         user_id = kwd.get( 'id', None )
-        if not user_id:
-            message = "No users received for resetting passwords."
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=message,
-                                                       status='error' ) )
-        user_ids = util.listify( user_id )
-        if 'reset_user_password_button' in kwd:
-            message = ''
-            status = ''
-            for user_id in user_ids:
-                user = get_user( trans, user_id )
-                password = kwd.get( 'password', None )
-                confirm = kwd.get( 'confirm', None )
-                if len( password ) < 6:
-                    message = "Use a password of at least 6 characters."
-                    status = 'error'
-                    break
-                elif password != confirm:
-                    message = "Passwords do not match."
-                    status = 'error'
-                    break
-                else:
-                    user.set_password_cleartext( password )
-                    trans.sa_session.add( user )
-                    trans.sa_session.flush()
-            if not message and not status:
-                message = "Passwords reset for %d %s." % ( len( user_ids ), inflector.cond_plural( len( user_ids ), 'user' ) )
-                status = 'done'
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=util.sanitize_text( message ),
-                                                       status=status ) )
-        users = [ get_user( trans, user_id ) for user_id in user_ids ]
-        if len( user_ids ) > 1:
-            user_id = ','.join( user_ids )
+        message = None
+        status = None
+        users = []
+        if user_id:
+            user_ids = util.listify( user_id )
+            if 'reset_user_password_button' in kwd:
+                message = ''
+                status = ''
+                for user_id in user_ids:
+                    user = get_user( trans, user_id )
+                    password = kwd.get( 'password', None )
+                    confirm = kwd.get( 'confirm', None )
+                    if len( password ) < 6:
+                        message = "Use a password of at least 6 characters."
+                        status = 'error'
+                        break
+                    elif password != confirm:
+                        message = "Passwords do not match."
+                        status = 'error'
+                        break
+                    else:
+                        user.set_password_cleartext( password )
+                        trans.sa_session.add( user )
+                        trans.sa_session.flush()
+                if not message and not status:
+                    trans.response.send_redirect( web.url_for( controller='admin',
+                                                               action='users',
+                                                               message=util.sanitize_text( message ),
+                                                               status=status ) )
+            users = [ get_user( trans, user_id ) for user_id in user_ids ]
+            if len( user_ids ) > 1:
+                user_id = ','.join( user_ids )
+        else:
+            message = 'No users received for resetting passwords.'
+            status = 'error'
         return trans.fill_template( '/admin/user/reset_password.mako',
                                     id=user_id,
+                                    message=util.sanitize_text( message ),
+                                    status=status,
                                     users=users,
                                     password='',
                                     confirm='' )
