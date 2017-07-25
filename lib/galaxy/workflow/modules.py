@@ -21,7 +21,7 @@ from galaxy.tools import (
     DefaultToolState,
     ToolInputsNotReadyException
 )
-from galaxy.tools.execute import execute
+from galaxy.tools.execute import execute, PartialJobExecution
 from galaxy.tools.parameters import (
     check_param,
     params_to_incoming,
@@ -214,10 +214,14 @@ class WorkflowModule(object):
         state.decode(runtime_state, Bunch(inputs=self.get_runtime_inputs()), self.trans.app)
         return state
 
-    def execute(self, trans, progress, invocation, step):
-        """ Execute the given workflow step in the given workflow invocation.
+    def execute(self, trans, progress, invocation_step):
+        """ Execute the given workflow invocation step.
+
         Use the supplied workflow progress object to track outputs, find
-        inputs, etc...
+        inputs, etc....
+
+        Return jobs created and a boolean indicating if there are additional
+        jobs to create on subsequent workflow scheduling tests.
         """
         raise TypeError("Abstract method")
 
@@ -230,11 +234,19 @@ class WorkflowModule(object):
         """
         raise exceptions.RequestParameterInvalidException("Attempting to perform invocation step action on module that does not support actions.")
 
-    def recover_mapping(self, step, step_invocations, progress):
+    def recover_mapping(self, invocation_step, progress):
         """ Re-populate progress object with information about connections
-        from previously executed steps recorded via step_invocations.
+        from previously executed steps recorded via invocation_steps.
         """
-        raise TypeError("Abstract method")
+        outputs = {}
+
+        for output_dataset_assoc in invocation_step.output_datasets:
+            outputs[output_dataset_assoc.output_name] = output_dataset_assoc.dataset
+
+        for output_dataset_collection_assoc in invocation_step.output_dataset_collections:
+            outputs[output_dataset_collection_assoc.output_name] = output_dataset_collection_assoc.dataset_collection
+
+        progress.set_step_outputs(invocation_step, outputs, already_persisted=True)
 
 
 class SubWorkflowModule(WorkflowModule):
@@ -320,11 +332,12 @@ class SubWorkflowModule(WorkflowModule):
     def get_content_id(self):
         return self.trans.security.encode_id(self.subworkflow.id)
 
-    def execute(self, trans, progress, invocation, step):
+    def execute(self, trans, progress, invocation_step):
         """ Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
         inputs, etc...
         """
+        step = invocation_step.workflow_step
         subworkflow_invoker = progress.subworkflow_invoker(trans, step)
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
@@ -334,7 +347,7 @@ class SubWorkflowModule(WorkflowModule):
             workflow_output_label = workflow_output.label or "%s:%s" % (step.order_index, workflow_output.output_name)
             replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
             outputs[workflow_output_label] = replacement
-        progress.set_step_outputs(step, outputs)
+        progress.set_step_outputs(invocation_step, outputs)
         return None
 
     def get_runtime_state(self):
@@ -353,8 +366,10 @@ class InputModule(WorkflowModule):
     def get_data_inputs(self):
         return []
 
-    def execute(self, trans, progress, invocation, step):
-        job, step_outputs = None, dict(output=step.state.inputs['input'])
+    def execute(self, trans, progress, invocation_step):
+        invocation = invocation_step.workflow_invocation
+        step = invocation_step.workflow_step
+        step_outputs = dict(output=step.state.inputs['input'])
 
         # Web controller may set copy_inputs_to_history, API controller always sets
         # inputs.
@@ -378,11 +393,10 @@ class InputModule(WorkflowModule):
             content = next(iter(step_outputs.values()))
             if content:
                 invocation.add_input(content, step.id)
-        progress.set_outputs_for_input(step, step_outputs)
-        return job
+        progress.set_outputs_for_input(invocation_step, step_outputs)
 
-    def recover_mapping(self, step, step_invocations, progress):
-        progress.set_outputs_for_input(step)
+    def recover_mapping(self, invocation_step, progress):
+        progress.set_outputs_for_input(invocation_step)
 
 
 class InputDataModule(InputModule):
@@ -489,10 +503,10 @@ class InputParameterModule(WorkflowModule):
     def get_data_inputs(self):
         return []
 
-    def execute(self, trans, progress, invocation, step):
-        job, step_outputs = None, dict(output=step.state.inputs['input'])
-        progress.set_outputs_for_input(step, step_outputs)
-        return job
+    def execute(self, trans, progress, invocation_step):
+        step = invocation_step.workflow_step
+        step_outputs = dict(output=step.state.inputs['input'])
+        progress.set_outputs_for_input(invocation_step, step_outputs)
 
 
 class PauseModule(WorkflowModule):
@@ -520,18 +534,18 @@ class PauseModule(WorkflowModule):
         state.inputs = dict()
         return state
 
-    def execute(self, trans, progress, invocation, step):
+    def execute(self, trans, progress, invocation_step):
+        step = invocation_step.workflow_step
         progress.mark_step_outputs_delayed(step, why="executing pause step")
-        return None
 
-    def recover_mapping(self, step, step_invocations, progress):
-        if step_invocations:
-            step_invocation = step_invocations[0]
-            action = step_invocation.action
+    def recover_mapping(self, invocation_step, progress):
+        if invocation_step:
+            step = invocation_step.workflow_step
+            action = invocation_step.action
             if action:
                 connection = step.input_connections_by_name["input"][0]
                 replacement = progress.replacement_for_connection(connection)
-                progress.set_step_outputs(step, {'output': replacement})
+                progress.set_step_outputs(invocation_step, {'output': replacement})
                 return
             elif action is False:
                 raise CancelWorkflowEvaluation()
@@ -790,7 +804,9 @@ class ToolModule(WorkflowModule):
         else:
             raise ToolMissingException("Tool %s missing. Cannot recover runtime state." % self.tool_id)
 
-    def execute(self, trans, progress, invocation, step):
+    def execute(self, trans, progress, invocation_step):
+        invocation = invocation_step.workflow_invocation
+        step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version)
         tool_state = step.state
         # Not strictly needed - but keep Tool state clean by stripping runtime
@@ -855,6 +871,9 @@ class ToolModule(WorkflowModule):
 
             param_combinations.append(execution_state.inputs)
 
+        # Will be set if only a subset of required jobs have been scheduled and the
+        # workflow should be delayed.
+        partial_jobs = None
         try:
             execution_tracker = execute(
                 trans=self.trans,
@@ -862,50 +881,49 @@ class ToolModule(WorkflowModule):
                 param_combinations=param_combinations,
                 history=invocation.history,
                 collection_info=collection_info,
-                workflow_invocation_uuid=invocation.uuid.hex
+                workflow_invocation_uuid=invocation.uuid.hex,
+                invocation_step=invocation_step,
             )
+        except PartialJobExecution as p:
+            partial_jobs = p.jobs
         except ToolInputsNotReadyException:
             delayed_why = "tool [%s] inputs are not ready, this special tool requires inputs to be ready" % tool.id
             raise DelayedWorkflowEvaluation(why=delayed_why)
 
-        if collection_info:
-            step_outputs = dict(execution_tracker.implicit_collections)
+        if partial_jobs is None:
+            if collection_info:
+                step_outputs = dict(execution_tracker.implicit_collections)
+            else:
+                step_outputs = dict(execution_tracker.output_datasets)
+                step_outputs.update(execution_tracker.output_collections)
+            progress.set_step_outputs(invocation_step, step_outputs)
+            jobs = execution_tracker.successful_jobs
         else:
-            step_outputs = dict(execution_tracker.output_datasets)
-            step_outputs.update(execution_tracker.output_collections)
-        progress.set_step_outputs(step, step_outputs)
-        jobs = execution_tracker.successful_jobs
+            jobs = partial_jobs
+
         for job in jobs:
             self._handle_post_job_actions(step, job, invocation.replacement_dict)
+
         if execution_tracker.execution_errors:
             failed_count = len(execution_tracker.execution_errors)
             success_count = len(execution_tracker.successful_jobs)
             all_count = failed_count + success_count
             message = "Failed to create %d out of %s job(s) for workflow step." % (failed_count, all_count)
             raise Exception(message)
-        return jobs
 
-    def recover_mapping(self, step, step_invocations, progress):
-        # Grab a job representing this invocation - for normal workflows
-        # there will be just one job but if this step was mapped over there
-        # may be many.
-        job_0 = step_invocations[0].job
+        complete = partial_jobs is None
+        return jobs, complete
 
+    def recover_mapping(self, invocation_step, progress):
         outputs = {}
-        for job_output in job_0.output_datasets:
-            replacement_name = job_output.name
-            replacement_value = job_output.dataset
-            # If was a mapping step, grab the output mapped collection for
-            # replacement instead.
-            if replacement_value.hidden_beneath_collection_instance:
-                replacement_value = replacement_value.hidden_beneath_collection_instance
-            outputs[replacement_name] = replacement_value
-        for job_output_collection in job_0.output_dataset_collection_instances:
-            replacement_name = job_output_collection.name
-            replacement_value = job_output_collection.dataset_collection_instance
-            outputs[replacement_name] = replacement_value
 
-        progress.set_step_outputs(step, outputs)
+        for output_dataset_assoc in invocation_step.output_datasets:
+            outputs[output_dataset_assoc.output_name] = output_dataset_assoc.dataset
+
+        for output_dataset_collection_assoc in invocation_step.output_dataset_collections:
+            outputs[output_dataset_collection_assoc.output_name] = output_dataset_collection_assoc.dataset_collection
+
+        progress.set_step_outputs(invocation_step, outputs)
 
     def _find_collections_to_match(self, tool, progress, step):
         collections_to_match = matching.CollectionsToMatch()
