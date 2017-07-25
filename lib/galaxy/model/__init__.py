@@ -4095,6 +4095,24 @@ class WorkflowInvocation(object, Dictifiable):
         # is relatively intutitive.
         return [wid for wid in query.all()]
 
+    def add_output(self, workflow_output, step, output_object):
+        if output_object.history_content_type == "dataset":
+            output_assoc = WorkflowInvocationOutputDatasetAssociation()
+            output_assoc.workflow_invocation = self
+            output_assoc.workflow_output = workflow_output
+            output_assoc.workflow_step = step
+            output_assoc.dataset = output_object
+            self.output_datasets.append(output_assoc)
+        elif output_object.history_content_type == "dataset_collection":
+            output_assoc = WorkflowInvocationOutputDatasetCollectionAssociation()
+            output_assoc.workflow_invocation = self
+            output_assoc.workflow_output = workflow_output
+            output_assoc.workflow_step = step
+            output_assoc.dataset_collection = output_object
+            self.output_dataset_collections.append(output_assoc)
+        else:
+            raise Exception("Uknown output type encountered")
+
     def to_dict(self, view='collection', value_mapper=None, step_details=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
         if view == 'element':
@@ -4121,6 +4139,31 @@ class WorkflowInvocation(object, Dictifiable):
                                         "uuid" : str(job_input.dataset.dataset.uuid) if job_input.dataset.dataset.uuid is not None else None
                                     }
             rval['inputs'] = inputs
+
+            outputs = {}
+            for output_assoc in self.output_datasets:
+                label = output_assoc.workflow_output.label
+                if not label:
+                    continue
+
+                outputs[label] = {
+                    'src': 'hda',
+                    'id': output_assoc.dataset_id,
+                }
+
+            output_collections = {}
+            for output_assoc in self.output_dataset_collections:
+                label = output_assoc.workflow_output.label
+                if not label:
+                    continue
+
+                output_collections[label] = {
+                    'src': 'hdca',
+                    'id': output_assoc.dataset_collection_id,
+                }
+
+            rval['outputs'] = outputs
+            rval['output_collections'] = output_collections
         return rval
 
     def update(self):
@@ -4247,6 +4290,16 @@ class WorkflowRequestInputStepParmeter(object, Dictifiable):
     """ Workflow step parameter inputs.
     """
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value']
+
+
+class WorkflowInvocationOutputDatasetAssociation(object, Dictifiable):
+    """Represents links to output datasets for the workflow."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
+
+
+class WorkflowInvocationOutputDatasetCollectionAssociation(object, Dictifiable):
+    """Represents links to output dataset collections for the workflow."""
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
 
 
 class MetadataFile(StorableObject):
