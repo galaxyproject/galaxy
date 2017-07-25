@@ -157,7 +157,7 @@ class ShellJobRunner( AsynchronousJobRunner ):
                     if state != old_state:
                         ajs.job_wrapper.change_state( state )
             else:
-                if state != old_state:
+                if state != old_state and not state == model.Job.states.OK:
                     log.debug("(%s/%s) state change: from %s to %s" % ( id_tag, external_job_id, old_state, state ) )
                     ajs.job_wrapper.change_state( state )
                 if state == model.Job.states.RUNNING and not ajs.running:
@@ -165,6 +165,7 @@ class ShellJobRunner( AsynchronousJobRunner ):
                     ajs.job_wrapper.change_state( model.Job.states.RUNNING )
             ajs.old_state = state
             if state == model.Job.states.OK:
+                log.debug('(%s/%s) job execution finished, running job wrapper finish method' % (id_tag, external_job_id))
                 self.work_queue.put( ( self.finish_job, ajs ) )
             else:
                 new_watched.append( ajs )
