@@ -96,7 +96,7 @@ class UserListGrid( grids.Grid ):
         EmailColumn( "Email",
                      key="email",
                      model_class=model.User,
-                     link=( lambda item: dict( operation="information", id=item.id, webapp="galaxy" ) ),
+                     link=( lambda item: dict( controller="user", action="information", id=item.id, webapp="galaxy" ) ),
                      attach_popup=True,
                      filterable="advanced",
                      target="top" ),
@@ -554,8 +554,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 message, status = self.undelete_user( trans, ids )
             elif operation == 'purge':
                 message, status = self.purge_user( trans, ids )
-            #elif operation == "information":
-            #    return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append( self.delete_operation )
@@ -563,9 +561,9 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 self.user_list_grid.operations.append( self.undelete_operation )
             if self.purge_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append( self.purge_operation )
-        # Render the list view
-        kwd[ 'message' ] = util.sanitize_text( message )
-        kwd[ 'status' ] = status
+        if message and status:
+            kwd[ 'message' ] = util.sanitize_text( message )
+            kwd[ 'status' ] = status
         kwd[ 'dict_format' ] = True
         return self.user_list_grid( trans, **kwd )
 
