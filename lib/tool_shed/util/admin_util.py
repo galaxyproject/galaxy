@@ -35,6 +35,8 @@ class Admin( object ):
         message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
         return trans.fill_template( '/webapps/tool_shed/admin/center.mako',
+                                    message=message,
+                                    status=status )
 
     @web.expose
     @web.require_admin

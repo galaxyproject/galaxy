@@ -1664,8 +1664,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
         user_id = kwd.get( 'id', None )
-        message = None
-        status = None
+        message = ''
+        status = ''
         users = []
         if user_id:
             user_ids = util.listify( user_id )
