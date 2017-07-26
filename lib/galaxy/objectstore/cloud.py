@@ -267,7 +267,7 @@ class Cloud( ObjectStore ):
                 else:
                     exists = False
             else:
-                exists = self.bucket.exists(rel_path)
+                exists = True if self.bucket.get(rel_path) is not None else False
         except S3ResponseError:
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False
@@ -354,7 +354,7 @@ class Cloud( ObjectStore ):
         try:
             source_file = source_file if source_file else self._get_cache_path(rel_path)
             if os.path.exists(source_file):
-                if os.path.getsize(source_file) == 0 and self.bucket.exists(rel_path):
+                if os.path.getsize(source_file) == 0 and (self.bucket.get(rel_path) is not None):
                     log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file,
                               rel_path)
                     return True
