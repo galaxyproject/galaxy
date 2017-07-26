@@ -352,22 +352,27 @@ class GalaxyInteractorApi( object ):
             print("*TEST FRAMEWORK FAILED TO FETCH HISTORY DETAILS*")
 
         for history_content in history_contents:
-            if history_content[ 'history_content_type'] != 'dataset':
-                continue
 
             dataset = history_content
-            if dataset[ 'state' ] != 'error':
+            if dataset.get( 'state', 'ok' ) != 'error':
                 continue
 
             print(ERROR_MESSAGE_DATASET_SEP)
             dataset_id = dataset.get( 'id', None )
             print("| %d - %s (HID - NAME) " % ( int( dataset['hid'] ), dataset['name'] ))
+            if history_content[ 'history_content_type'] == 'dataset_collection':
+                history_contents_json = self._get( "histories/%s/contents/dataset_collections/%s" % (history_id, history_content["id"] ) ).json()
+                print("| Dataset Collection: %s" % history_contents_json)
+                continue
+
             try:
                 dataset_info = self._dataset_info( history_id, dataset_id )
                 print("| Dataset Blurb:")
                 print(self.format_for_error( dataset_info.get( "misc_blurb", "" ), "Dataset blurb was empty." ))
                 print("| Dataset Info:")
                 print(self.format_for_error( dataset_info.get( "misc_info", "" ), "Dataset info is empty." ))
+                print("| Peek:")
+                print(self.format_for_error( dataset_info.get( "peek", ""), "Peek unavilable."))
             except Exception:
                 print("| *TEST FRAMEWORK ERROR FETCHING DATASET DETAILS*")
             try:
