@@ -9,7 +9,6 @@ from sqlalchemy import and_, false, func, or_
 
 import galaxy.queue_worker
 from galaxy import util
-from galaxy.util import inflector
 from galaxy import model
 from galaxy import web
 from galaxy.actions.admin import AdminActions
