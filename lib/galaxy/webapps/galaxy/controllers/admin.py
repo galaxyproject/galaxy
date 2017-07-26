@@ -135,8 +135,7 @@ class UserListGrid( grids.Grid ):
                              target="top" ),
         grids.GridOperation( "Recalculate Disk Usage",
                              condition=( lambda item: not item.deleted ),
-                             allow_multiple=False,
-                             url_args=dict( webapp="galaxy", action="recalculate_user_disk_usage" ) )
+                             allow_multiple=False )
     ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
@@ -542,6 +541,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 message, status = self.undelete_user( trans, ids )
             elif operation == 'purge':
                 message, status = self.purge_user( trans, ids )
+            elif operation == 'recalculate disk usage':
+                message, status = self.recalculate_user_disk_usage( trans, id )
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append( self.delete_operation )
@@ -952,25 +953,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         if not reloaded:
             return trans.show_warn_message( 'You need to request at least one display application to reload.' )
         return trans.show_ok_message( 'Reloaded %i requested display applications ("%s").' % ( len( reloaded ), '", "'.join( reloaded ) ) )
-
-    @web.expose
-    @web.require_admin
-    def recalculate_user_disk_usage( self, trans, **kwd ):
-        user_id = kwd.get( 'id', None )
-        user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
-        if not user:
-            return trans.show_error_message( "User not found for id (%s)" % sanitize_text( str( user_id ) ) )
-        current = user.get_disk_usage()
-        user.calculate_and_set_disk_usage()
-        new = user.get_disk_usage()
-        if new in ( current, None ):
-            message = 'Usage is unchanged at %s.' % nice_size( current )
-        else:
-            message = 'Usage has changed by %s to %s.' % ( nice_size( new - current ), nice_size( new )  )
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='users',
-                                                          message=sanitize_text( message ),
-                                                          status='info' ) )
 
     @web.expose
     @web.require_admin
@@ -1787,6 +1769,21 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             trans.sa_session.add( user )
             trans.sa_session.flush()
             message += '%s ' % user.email
+        return ( message, 'done' )
+
+    @web.expose
+    @web.require_admin
+    def recalculate_user_disk_usage( self, trans, user_id ):
+        user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
+        if not user:
+            return ( 'User not found for id (%s)' % sanitize_text( str( user_id ) ), 'error' )
+        current = user.get_disk_usage()
+        user.calculate_and_set_disk_usage()
+        new = user.get_disk_usage()
+        if new in ( current, None ):
+            message = 'Usage is unchanged at %s.' % nice_size( current )
+        else:
+            message = 'Usage has changed by %s to %s.' % ( nice_size( new - current ), nice_size( new )  )
         return ( message, 'done' )
 
     @web.expose
