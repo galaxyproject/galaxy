@@ -456,15 +456,18 @@ return Backbone.View.extend({
         });
 
         // execute operation
-        this.execute({
-            operation: operation_name,
-            id: item_ids,
-            href: operation.href,
-            target: operation.target,
-            confirmation_text: confirmation_text
-        });
-
-        // return
+        var options = {
+            operation           : operation_name,
+            id                  : item_ids,
+            confirmation_text   : confirmation_text
+        };
+        if ( operation.target == 'top' ) {
+            options = _.extend( options, {
+                href   : operation.href,
+                target : operation.target
+            });
+        }
+        this.execute( options );
         return true;
     },
 
