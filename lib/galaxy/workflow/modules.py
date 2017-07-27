@@ -284,7 +284,7 @@ class SubWorkflowModule( WorkflowModule ):
                 name = step.label
                 if not name:
                     step_module = module_factory.from_workflow_step( self.trans, step )
-                    name = step_module.get_name()
+                    name = "%s:%s" % (step.order_index, step_module.get_name())
                 step_type = step.type
                 assert step_type in step_to_input_type
                 input = dict(
