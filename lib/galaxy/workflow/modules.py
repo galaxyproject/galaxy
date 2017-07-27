@@ -302,6 +302,9 @@ class SubWorkflowModule( WorkflowModule ):
         outputs = []
         if hasattr( self.subworkflow, 'workflow_outputs' ):
             for workflow_output in self.subworkflow.workflow_outputs:
+                if workflow_output.workflow_step.type in {'data_input', 'data_collection_input'}:
+                    # It is just confusing to display the input data as output data in subworkflows
+                    continue
                 output_step = workflow_output.workflow_step
                 label = workflow_output.label
                 if label is None:
@@ -328,7 +331,7 @@ class SubWorkflowModule( WorkflowModule ):
         subworkflow_progress = subworkflow_invoker.progress
         outputs = {}
         for workflow_output in subworkflow.workflow_outputs:
-            workflow_output_label = workflow_output.label
+            workflow_output_label = workflow_output.label or "%s:%s" % (step.order_index, workflow_output.output_name)
             replacement = subworkflow_progress.get_replacement_workflow_output( workflow_output )
             outputs[ workflow_output_label ] = replacement
         progress.set_step_outputs( step, outputs )
