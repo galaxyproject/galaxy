@@ -11,10 +11,6 @@ import threading
 from Queue import Queue, Empty
 
 from sqlalchemy.sql.expression import and_, or_, select, func, true, null
-try:
-    import uwsgi
-except ImportError:
-    uwsgi = None
 
 from galaxy import model
 from galaxy.util.sleeper import Sleeper
@@ -81,9 +77,6 @@ class JobHandlerQueue(object):
         self.running = True
         self.monitor_thread = threading.Thread(name="JobHandlerQueue.monitor_thread", target=self.__monitor)
         self.monitor_thread.setDaemon(True)
-        if uwsgi:
-            self.mule_thread = threading.Thread( name="JobHandlerQueue.mule_thread", target=self.__mule )
-            self.mule_thread.setDaemon( True )
 
     def start(self):
         """
@@ -93,8 +86,7 @@ class JobHandlerQueue(object):
         self.__check_jobs_at_startup()
         # Start the queue
         self.monitor_thread.start()
-        if uwsgi:
-            self.mule_thread.start()
+        self.app.application_stack.initialize_handler(self.app)
         log.info("job handler queue started")
 
     def job_wrapper(self, job, use_persisted_destination=False):
@@ -180,19 +172,6 @@ class JobHandlerQueue(object):
             log.debug('(%s) Recovered destination id (%s) does not exist in job config (but this may be normal in the case of a dynamically generated destination)', job.id, job.destination_id)
         job_wrapper.job_runner_mapper.cached_job_destination = job_destination
         return job_wrapper
-
-    def __mule( self ):
-        while self.running:
-            try:
-                msg = uwsgi.mule_get_msg()
-                job_dict = json.loads(msg)
-                job = self.sa_session.query( model.Job ).get( job_dict['job_id'] )
-                job.handler = self.app.config.server_name
-                self.sa_session.add( job )
-                self.sa_session.flush()
-            except:
-                log.exception( "Exception in mule message handling" )
-            time.sleep( 1 )
 
     def __monitor(self):
         """
@@ -653,6 +632,21 @@ class JobHandlerQueue(object):
                             return JOB_WAIT
         return JOB_READY
 
+    def __handle_setup_msg(self, job_dict):
+        job = self.sa_session.query(model.Job).get(job_dict['job_id'])
+        job.handler = self.app.config.server_name
+        self.sa_session.add(job)
+        self.sa_session.flush()
+
+    def handle_msg(self, msg):
+        try:
+            job_dict = json.loads(msg)
+            assert 'msg_type' in job_dict, "Missing required 'msg_type' message parameter"
+            getattr(self, '__handle_%s_msg' % job_dict['msg_type'])(job_dict)
+        except:
+            log.exception( "Exception in mule message handling" )
+        time.sleep( 1 )
+
     def put(self, job_id, tool_id):
         """Add a job to the queue (by job identifier)"""
         if not self.track_jobs_in_database:
@@ -667,6 +661,7 @@ class JobHandlerQueue(object):
         else:
             log.info("sending stop signal to worker thread")
             self.running = False
+            self.app.application_stack.terminate_handler()
             if not self.app.config.track_jobs_in_database:
                 self.queue.put(self.STOP_SIGNAL)
             self.sleeper.wake()

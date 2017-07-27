@@ -23,10 +23,6 @@ from sqlalchemy import (and_, func, join, not_, or_, select, true, type_coerce,
                         types)
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import aliased, joinedload, object_session
-try:
-    import uwsgi
-except ImportError:
-    uwsgi = None
 
 import galaxy.model.metadata
 import galaxy.model.orm.now
@@ -654,10 +650,7 @@ class Job(object, JobLike, Dictifiable):
         self.imported = imported
 
     def set_handler(self, handler):
-        if uwsgi and handler is None:
-            uwsgi.mule_msg(json.dumps({'job_id': self.id, 'state': Job.states.NEW}))
-        else:
-            self.handler = handler
+        self.handler = handler
 
     def set_params(self, params):
         self.params = params

@@ -8,10 +8,7 @@ import logging
 import os
 import random
 
-try:
-    import uwsgi
-except ImportError:
-    uwsgi = None
+from galaxy.web.stack import process_is_handler
 
 
 log = logging.getLogger(__name__)
@@ -106,8 +103,10 @@ class ConfiguresHandlers:
 
         :return: bool
         """
-        if uwsgi and self.app.config.server_name.startswith('mule'):
-            return True
+        stack_handler = process_is_handler(self.app)
+        if stack_handler is not None:
+            # Handlers started as uWSGI mules do not require configuration in the job conf
+            return stack_handler
         for collection in self.handlers.values():
             if server_name in collection:
                 return True

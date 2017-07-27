@@ -20,10 +20,6 @@ from datetime import timedelta
 
 from six import string_types
 from six.moves import configparser
-try:
-    import uwsgi
-except:
-    uwsgi = None
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
@@ -503,17 +499,14 @@ class Configuration(object):
         if self.heartbeat_log is None:
             self.heartbeat_log = 'heartbeat_{server_name}.log'
         # Determine which 'server:' this is
-        if uwsgi and uwsgi.mule_id() > 0:
-            self.server_name = 'mule%d' % uwsgi.mule_id()
-        else:
-            self.server_name = 'main'
-            for arg in sys.argv:
-                # Crummy, but PasteScript does not give you a way to determine this
-                if arg.lower().startswith('--server-name='):
-                    self.server_name = arg.split('=', 1)[-1]
-            # Allow explicit override of server name in confg params
-            if "server_name" in kwargs:
-                self.server_name = kwargs.get("server_name")
+        self.server_name = 'main'
+        for arg in sys.argv:
+            # Crummy, but PasteScript does not give you a way to determine this
+            if arg.lower().startswith('--server-name='):
+                self.server_name = arg.split('=', 1)[-1]
+        # Allow explicit override of server name in confg params
+        if "server_name" in kwargs:
+            self.server_name = kwargs.get("server_name")
         # Store all configured server names
         self.server_names = []
         for section in global_conf_parser.sections():
