@@ -283,10 +283,10 @@ def wrap_in_middleware( app, global_conf, application_stack, **local_conf ):
                 log.warning(str(exc))
                 import galaxy.web.framework.middleware.error
                 app = wrap_if_allowed( app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,) )
-    elif debug and not interactive:
-        # Not in interactive debug mode, just use the regular error middleware
-        import galaxy.web.framework.middleware.error
-        app = wrap_if_allowed( app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,) )
+        else:
+            # Not in interactive debug mode, just use the regular error middleware
+            import galaxy.web.framework.middleware.error
+            app = wrap_if_allowed( app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,) )
     return app
 
 
