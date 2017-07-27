@@ -22,7 +22,7 @@ define({
 "New Track Browser":
     "Nouveau Navigateur de Tracks/Pistes",
 "Saved Visualizations":
-    "Visualisations sauvegardés",
+    "Visualisations sauvegardées",
 "Interactive Environments":
     "Environnements interactifs",
 "Admin":
@@ -81,7 +81,7 @@ define({
 "Chain tools into workflows": 
  	"Relier outils dans un workflow",
 "Analysis home view": 
- 	"Accueil analyse de donnée",
+ 	"Accueil analyse de données",
 // ---------------------------------------------------------------------------- histories
 // ---- history/options-menu
 "History Lists":
@@ -142,7 +142,7 @@ define({
 "This history is empty" :
     "Cet historique est vide",
 "No matching datasets found" :
-    "Aucunes données correspondantes n'a été trouvées",
+    "Aucunes données correspondantes n'ont été trouvées",
 "An error occurred while getting updates from the server" :
     "Une erreur s'est produite lors de la réception des données depuis le serveur",
 "Please contact a Galaxy administrator if the problem persists" :
@@ -270,7 +270,7 @@ define({
     "Ce traitement est en pause. Utilisez le \"Relancer les traitements en pause\" dans le menu d'historique pour le relancer",
 // state: error
 "An error occurred with this dataset" :
-    "Un erreur est survenue avec ce jeu de données",
+    "Une erreur est survenue avec ce jeu de données",
 // state: empty
 "No data" :
     "Aucune donnée",
