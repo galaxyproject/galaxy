@@ -43,12 +43,35 @@ define( [ 'utils/utils' ], function( Utils ) {
                     _.each( workflows, function( wf ) {
                         self.confirm_delete( self, wf );
                     });
+                    self.register_show_tool_menu( self );
                     // Register search workflow event
                     self.search_workflow( self, self.$el.find( '.search-wf' ), self.$el.find( '.workflow-search tr' ), min_query_length );
                 }
                 else {
                     $el_workflow.append( self._templateNoWorkflow() );
                 }
+            });
+        },
+
+        // Save the workflow as an item in Tool panel
+        register_show_tool_menu: function( self ) {
+            var $el_checkboxes = self.$el.find( '.show-in-tool-panel' );
+            $el_checkboxes.on( 'click', function( e ) {
+                var ids = [];
+                for( var item = 0; item < $el_checkboxes.length; item++ ) {
+                    var checkbox = $el_checkboxes[ item ];
+                    if( checkbox.checked ) {
+                        ids.push( checkbox.value );
+                    }
+                }
+                $.ajax({
+                    type: 'PUT',
+                    url: Galaxy.root + 'api/workflows/menu/',
+                    data: JSON.stringify( { 'workflow_ids': ids } ),
+                    contentType : 'application/json'
+                }).done( function( response ) {
+                    window.location = Galaxy.root + 'workflow';
+                });
             });
         },
 
@@ -128,8 +151,11 @@ define( [ 'utils/utils' ], function( Utils ) {
                         '<th>Owner</th>' +
                         '<th># of Steps</th>' +
                         '<th>Published</th>' +
+                        '<th>Show in Tools panel</th>' +
                     '</tr></thead>';
             _.each( workflows, function( wf ) {
+                var checkbox_html = wf.show_in_tool_panel ? '<input type="checkbox" class="show-in-tool-panel" value="'+ wf.wf_id +'" checked="'+ wf.show_in_tool_panel +'">' : '<input type="checkbox" class="show-in-tool-panel" value="'+ wf.wf_id +'"';
+                
                 trHtml = trHtml + '<tr>' +
                              '<td>' +
                                  '<div class="dropdown">' +
@@ -142,6 +168,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                               '<td>' + ( wf.owner === Galaxy.user.attributes.username ? "You" : wf.owner ) +'</td>' +
                               '<td>' + wf.number_of_steps + '</td>' +
                               '<td>' + ( wf.published ? "Yes" : "No" ) + '</td>' +
+                              '<td>'+ checkbox_html +'</td>' +
                          '</tr>';
             });
             return tableHtml + '<tbody class="workflow-search">' + trHtml + '</tbody></table>';

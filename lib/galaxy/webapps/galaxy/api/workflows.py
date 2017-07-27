@@ -117,6 +117,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         missing_tools = util.string_as_bool( kwd.get( 'missing_tools', 'False' ) )
         rval = []
         filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
+        user = trans.get_user()
         if show_published:
             filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == true() ) )
         for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
@@ -130,6 +131,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
             item['number_of_steps'] = len( wf.latest_workflow.steps )
+            item['wf_id'] = wf.id
+            item['show_in_tool_panel'] = False
+            for x in user.stored_workflow_menu_entries:
+                if x.stored_workflow_id == wf.id:
+                    item['show_in_tool_panel'] = True
+                    break
+ 
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
@@ -144,6 +152,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
             item['number_of_steps'] = len( wf_sa.stored_workflow.latest_workflow.steps )
+            item['wf_id'] = wf_sa.id
+            item['show_in_tool_panel'] = False
+            for x in user.stored_workflow_menu_entries:
+                if x.stored_workflow_id == wf_sa.id:
+                    item['show_in_tool_panel'] = True
+                    break
             rval.append(item)
         if missing_tools:
             workflows_missing_tools = []
