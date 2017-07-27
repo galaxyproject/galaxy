@@ -307,7 +307,7 @@ class SubWorkflowModule( WorkflowModule ):
                     continue
                 output_step = workflow_output.workflow_step
                 label = workflow_output.label
-                if label is None:
+                if not label:
                     label = "%s:%s" % (output_step.order_index, workflow_output.output_name)
                 output = dict(
                     name=label,
