@@ -397,7 +397,7 @@ class InputDataModule( InputModule ):
         if connections:
             for oc in connections:
                 for ic in oc.input_step.module.get_data_inputs():
-                    if 'extensions' in ic and ic[ 'name' ] == oc.input_name:
+                    if 'extensions' in ic and ic[ 'extensions' ] != 'input' and ic[ 'name' ] == oc.input_name:
                         filter_set += ic[ 'extensions' ]
         if not filter_set:
             filter_set = [ 'data' ]
