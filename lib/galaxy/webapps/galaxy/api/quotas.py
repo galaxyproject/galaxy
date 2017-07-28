@@ -144,11 +144,3 @@ class QuotaAPIController( BaseAPIController, AdminActions, UsesQuotaMixin, Quota
             return self._undelete_quota( quota )
         except ActionInputError as e:
             raise HTTPBadRequest( detail=str( e ) )
-
-
-def get_quota( trans, id ):
-    """Get a Quota from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id( id )
-    quota = trans.sa_session.query( trans.model.Quota ).get( id )
-    return quota
