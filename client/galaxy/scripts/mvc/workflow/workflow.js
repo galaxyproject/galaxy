@@ -58,12 +58,14 @@ define( [ 'utils/utils' ], function( Utils ) {
             var $el_checkboxes = self.$el.find( '.show-in-tool-panel' );
             $el_checkboxes.on( 'click', function( e ) {
                 var ids = [];
+                // Look for all the checked checkboxes
                 for( var item = 0; item < $el_checkboxes.length; item++ ) {
                     var checkbox = $el_checkboxes[ item ];
                     if( checkbox.checked ) {
                         ids.push( checkbox.value );
                     }
                 }
+                // Save all the checked workflows
                 $.ajax({
                     type: 'PUT',
                     url: Galaxy.root + 'api/workflows/menu/',
@@ -155,7 +157,6 @@ define( [ 'utils/utils' ], function( Utils ) {
                     '</tr></thead>';
             _.each( workflows, function( wf ) {
                 var checkbox_html = wf.show_in_tool_panel ? '<input type="checkbox" class="show-in-tool-panel" value="'+ wf.wf_id +'" checked="'+ wf.show_in_tool_panel +'">' : '<input type="checkbox" class="show-in-tool-panel" value="'+ wf.wf_id +'"';
-                
                 trHtml = trHtml + '<tr>' +
                              '<td>' +
                                  '<div class="dropdown">' +
