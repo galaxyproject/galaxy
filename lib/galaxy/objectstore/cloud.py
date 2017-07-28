@@ -25,10 +25,6 @@ from ..objectstore import convert_bytes, ObjectStore
 from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
 
 try:
-    # Imports are done this way to allow objectstore code to be used outside of Galaxy.
-    import boto
-
-    from boto.exception import S3ResponseError
     from boto.s3.key import Key
     from boto.s3.connection import S3Connection
 except ImportError:
