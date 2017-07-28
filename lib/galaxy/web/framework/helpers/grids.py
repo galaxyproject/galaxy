@@ -377,7 +377,7 @@ class Grid( object ):
                 'target'                : operation.target,
                 'label'                 : operation.label,
                 'confirm'               : operation.confirm,
-                'href'                  : url( **operation.url_args ) if isinstance( operation.url_args,  dict ) else None,
+                'href'                  : url( **operation.url_args ) if isinstance( operation.url_args, dict ) else None,
                 'global_operation'      : False
             })
             if operation.allow_multiple:
