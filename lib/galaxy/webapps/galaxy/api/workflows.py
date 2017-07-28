@@ -54,7 +54,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows
         """
-        return self.get_workflows_list( trans, False, kwd )
+        return self.get_workflows_list( trans, kwd )
 
     @expose_api
     def get_workflow_menu( self, trans, **kwd ):
@@ -66,7 +66,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         ids_in_menu = [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ]
         return {
             'ids_in_menu': ids_in_menu,
-            'workflows': self.get_workflows_list( trans, True, kwd )
+            'workflows': self.get_workflows_list( trans, kwd )
         }
 
     @expose_api
@@ -104,7 +104,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         trans.set_message( message )
         return { 'message': message, 'status': 'done' }
 
-    def get_workflows_list( self, trans, for_menu, kwd ):
+    def get_workflows_list( self, trans, kwd ):
         """
         Displays a collection of workflows.
 
@@ -123,37 +123,31 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
                 filter1, trans.app.model.StoredWorkflow.table.c.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.table.c.update_time ) ).all():
-            if for_menu:
-                item = wf.to_dict()
-            else:
-                item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-                encoded_id = trans.security.encode_id(wf.id)
-                item['url'] = url_for('workflow', id=encoded_id)
+
+            item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+            encoded_id = trans.security.encode_id(wf.id)
+            item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
             item['number_of_steps'] = len( wf.latest_workflow.steps )
-            item['wf_id'] = wf.id
             item['show_in_tool_panel'] = False
+            item['wf_id'] = wf.id
             for x in user.stored_workflow_menu_entries:
                 if x.stored_workflow_id == wf.id:
                     item['show_in_tool_panel'] = True
                     break
- 
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
                 trans.app.model.StoredWorkflow.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
-            if for_menu:
-                item = wf_sa.stored_workflow.to_dict()
-            else:
-                item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-                encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
-                item['url'] = url_for( 'workflow', id=encoded_id )
-                item['slug'] = wf_sa.stored_workflow.slug
+            item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+            encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
+            item['url'] = url_for( 'workflow', id=encoded_id )
+            item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
             item['number_of_steps'] = len( wf_sa.stored_workflow.latest_workflow.steps )
-            item['wf_id'] = wf_sa.id
             item['show_in_tool_panel'] = False
+            item['wf_id'] = wf_sa.id
             for x in user.stored_workflow_menu_entries:
                 if x.stored_workflow_id == wf_sa.id:
                     item['show_in_tool_panel'] = True
