@@ -983,6 +983,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         return self.tool_version_list_grid( trans, **kwd )
 
     @web.expose
+    @web.json
     @web.require_admin
     def roles( self, trans, **kwargs ):
         if 'operation' in kwargs:
@@ -1004,7 +1005,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 return self.manage_role_associations( trans, **kwargs )
             if operation == "rename":
                 return self.rename_role( trans, **kwargs )
-        # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self.role_list_grid( trans, **kwargs )
 
     @web.expose
