@@ -985,7 +985,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.expose
     @web.json
     @web.require_admin
-    def roles( self, trans, **kwargs ):
+    def roles_list( self, trans, **kwargs ):
         if 'operation' in kwargs:
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == "roles":

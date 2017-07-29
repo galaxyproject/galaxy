@@ -15,7 +15,8 @@ window.app = function app( options, bootstrapped ){
     /** Routes */
     var AdminRouter = Router.extend({
         routes: {
-            '(/)admin(/)users' : 'show_users'
+            '(/)admin(/)users' : 'show_users',
+            '(/)admin(/)roles' : 'show_roles'
         },
 
         authenticate: function( args, name ) {
@@ -24,6 +25,10 @@ window.app = function app( options, bootstrapped ){
 
         show_users: function() {
             this.page.display( new GridView( { url_base: Galaxy.root + 'admin/users_list', dict_format: true } ) );
+        },
+
+        show_roles: function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'admin/roles_list', dict_format: true } ) );
         }
     });
 
