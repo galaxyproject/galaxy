@@ -39,6 +39,7 @@ class CliInterface(object):
 
         self.cli_shells = {}
         self.cli_job_interfaces = {}
+        self.active_cli_shells = {}
 
         module_prefix = self.__module__
         __load('%s.shell' % module_prefix, self.cli_shells)
@@ -55,8 +56,9 @@ class CliInterface(object):
 
     def get_shell_plugin(self, shell_params):
         shell_plugin = shell_params.get('plugin', DEFAULT_SHELL_PLUGIN)
-        shell = self.cli_shells[shell_plugin](**shell_params)
-        return shell
+        if shell_plugin not in self.active_cli_shells:
+            self.active_cli_shells[shell_plugin] = self.cli_shells[shell_plugin](**shell_params)
+        return self.active_cli_shells[shell_plugin]
 
     def get_job_interface(self, job_params):
         job_plugin = job_params.get('plugin', None)
