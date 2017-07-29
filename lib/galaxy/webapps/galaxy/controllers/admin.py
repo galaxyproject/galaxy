@@ -187,7 +187,6 @@ class RoleListGrid( grids.Grid ):
     # Grid definition
     title = "Roles"
     model_class = model.Role
-    template = '/admin/dataset_security/role/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
