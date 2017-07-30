@@ -1,19 +1,17 @@
 /** Workflow view */
-define( [ 'utils/utils' ], function( Utils ) {
+define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
 
     /** Build messages after user action */
-    function build_messages( self ) {
-        var $el_message = self.$el.find( '.response-message' ),
-            status = Utils.getQueryString( 'status' ),
-            message = Utils.getQueryString( 'message' );
-
-        if( message && message !== null && message !== "" ) {
-            $el_message.addClass( status + 'message' );
-            $el_message.html( '<p>' + _.escape( message ) + '</p>' );
-        }
-        else {
-            $el_message.html("");
-        }
+    function build_messages() {
+        var $el_message = this.$( '.response-message' ),
+            response = {};
+        response = {
+            'status': Utils.getQueryString( 'status' ),
+            'message': _.escape( Utils.getQueryString( 'message' ) ),
+            'persistent': true,
+            'cls': Utils.getQueryString( 'status' ) + 'message'
+        };
+        $el_message.empty().html( new Ui.Message( response ).$el );
     }
  
     /** View of the main workflow list page */
@@ -32,8 +30,8 @@ define( [ 'utils/utils' ], function( Utils ) {
                 // Add workflow header
                 self.$el.empty().append( self._templateHeader() );
                 // Add user actions message if any
-                build_messages( self );
-                $el_workflow = self.$el.find( '.user-workflows' );
+                build_messages();
+                $el_workflow = self.$( '.user-workflows' );
                 // Add the actions buttons
                 $el_workflow.append( self._templateActionButtons() );
                 if( workflows.length > 0) {
@@ -41,11 +39,11 @@ define( [ 'utils/utils' ], function( Utils ) {
                     self.adjust_actiondropdown( $el_workflow );
                     // Register delete and run workflow events
                     _.each( workflows, function( wf ) {
-                        self.confirm_delete( self, wf );
+                        self.confirm_delete( wf );
                     });
-                    self.register_show_tool_menu( self );
+                    self.register_show_tool_menu();
                     // Register search workflow event
-                    self.search_workflow( self, self.$el.find( '.search-wf' ), self.$el.find( '.workflow-search tr' ), min_query_length );
+                    self.search_workflow( self.$( '.search-wf' ), self.$( '.workflow-search tr' ), min_query_length );
                 }
                 else {
                     $el_workflow.append( self._templateNoWorkflow() );
@@ -54,8 +52,8 @@ define( [ 'utils/utils' ], function( Utils ) {
         },
 
         // Save the workflow as an item in Tool panel
-        register_show_tool_menu: function( self ) {
-            var $el_checkboxes = self.$el.find( '.show-in-tool-panel' );
+        register_show_tool_menu: function() {
+            var $el_checkboxes = this.$( '.show-in-tool-panel' );
             $el_checkboxes.on( 'click', function( e ) {
                 var ids = [];
                 // Look for all the checked checkboxes
@@ -78,9 +76,9 @@ define( [ 'utils/utils' ], function( Utils ) {
         },
 
         /** Add confirm box before removing/unsharing workflow */
-        confirm_delete: function( self, workflow ) {
-            var $el_wf_link = self.$el.find( '.link-confirm-' + workflow.id ),
-                $el_shared_wf_link = self.$el.find( '.link-confirm-shared-' + workflow.id );
+        confirm_delete: function( workflow ) {
+            var $el_wf_link = this.$( '.link-confirm-' + workflow.id ),
+                $el_shared_wf_link = this.$( '.link-confirm-shared-' + workflow.id );
             $el_wf_link.click( function() {
                 return confirm( "Are you sure you want to delete workflow '" + workflow.name + "'?" );
             });
@@ -90,7 +88,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         },
 
         /** Implement client side workflow search/filtering */
-        search_workflow: function( self, $el_searchinput, $el_tabletr, min_querylen ) {
+        search_workflow: function( $el_searchinput, $el_tabletr, min_querylen ) {
             $el_searchinput.on( 'keyup', function () {
                 var query = $( this ).val();
                 // Filter when query is at least 3 characters
@@ -156,7 +154,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                         '<th>Show in Tools panel</th>' +
                     '</tr></thead>';
             _.each( workflows, function( wf ) {
-                var checkbox_html = wf.show_in_tool_panel ? '<input type="checkbox" class="show-in-tool-panel" value="'+ wf.wf_id +'" checked="'+ wf.show_in_tool_panel +'">' : '<input type="checkbox" class="show-in-tool-panel" value="'+ wf.wf_id +'"';
+                var checkbox_html = '<input type="checkbox" class="show-in-tool-panel" '+ ( wf.show_in_tool_panel ? 'checked="' + wf.show_in_tool_panel + '"' : "" ) +' value="' + wf.wf_id + '">';
                 trHtml = trHtml + '<tr>' +
                              '<td>' +
                                  '<div class="dropdown">' +
@@ -220,12 +218,12 @@ define( [ 'utils/utils' ], function( Utils ) {
         render: function() {
             var self = this;
             $.getJSON( Galaxy.root + 'workflow/upload_import_workflow', function( options ) {
-                self.$el.empty().append( self._mainTemplate( self, options ) );
+                self.$el.empty().append( self._mainTemplate( options ) );
             });
         },
 
         /** Template for the import workflow page */
-        _mainTemplate: function( self, options ) {
+        _mainTemplate: function( options ) {
             return "<div class='toolForm'>" +
                        "<div class='toolFormTitle'>Import Galaxy workflow</div>" +
                         "<div class='toolFormBody'>" +
