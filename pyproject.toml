@@ -87,6 +87,7 @@ Whoosh = "*"
 zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
+cwltest = "2.2.20210901154959"
 fluent-logger = "*"
 httpx = "*"
 gunicorn = "*"

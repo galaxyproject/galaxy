@@ -59,6 +59,7 @@ from typing import (
     Tuple,
 )
 
+import cwltest
 import requests
 import yaml
 from bioblend.galaxy import GalaxyClient
@@ -71,6 +72,7 @@ from pkg_resources import resource_string
 from requests.models import Response
 
 from galaxy.tool_util.client.staging import InteractorStaging
+from galaxy.tool_util.cwl.util import guess_artifact_type
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util.verify.wait import (
     timeout_type,
@@ -79,11 +81,14 @@ from galaxy.tool_util.verify.wait import (
 )
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
+    galaxy_root_path,
     unicodify,
 )
 from . import api_asserts
 from .api import ApiTestInteractor
 
+
+CWL_TOOL_DIRECTORY = os.path.join(galaxy_root_path, "test", "functional", "tools", "cwl_tools")
 
 # Simple workflow that takes an input and call cat wrapper on it.
 workflow_str = unicodify(resource_string(__name__, "data/test_workflow_1.ga"))
@@ -219,6 +224,212 @@ def _raise_skip_if(check, *args):
     if check:
         from nose.plugins.skip import SkipTest
         raise SkipTest(*args)
+
+
+def load_conformance_tests(directory, path="conformance_tests.yaml"):
+    conformance_tests_path = os.path.join(directory, path)
+    with open(conformance_tests_path) as f:
+        conformance_tests = yaml.safe_load(f)
+
+    expanded_conformance_tests = []
+    for conformance_test in conformance_tests:
+        if "$import" in conformance_test:
+            import_path = conformance_test["$import"]
+            expanded_conformance_tests.extend(load_conformance_tests(directory, import_path))
+        else:
+            subdirectory = os.path.dirname(path)
+            if subdirectory:
+                conformance_test["relative_path"] = os.path.join(directory, subdirectory)
+            expanded_conformance_tests.append(conformance_test)
+    return expanded_conformance_tests
+
+
+class CwlRun:
+
+    def __init__(self, dataset_populator, history_id):
+        self.dataset_populator = dataset_populator
+        self.history_id = history_id
+
+
+class CwlToolRun(CwlRun):
+
+    def __init__(self, dataset_populator, history_id, run_response):
+        super().__init__(dataset_populator, history_id)
+        self.run_response = run_response
+
+    @property
+    def job_id(self):
+        return self.run_response["jobs"][0]["id"]
+
+    def wait(self):
+        final_state = self.dataset_populator.wait_for_job(self.job_id)
+        assert final_state == "ok"
+
+
+class CwlWorkflowRun(CwlRun):
+
+    def __init__(self, dataset_populator, workflow_populator, history_id, workflow_id, invocation_id):
+        super().__init__(dataset_populator, history_id)
+        self.workflow_populator = workflow_populator
+        self.workflow_id = workflow_id
+        self.invocation_id = invocation_id
+
+    def wait(self):
+        self.workflow_populator.wait_for_invocation_and_jobs(
+            self.history_id, self.workflow_id, self.invocation_id
+        )
+
+
+class CwlPopulator:
+
+    def __init__(self, dataset_populator, workflow_populator):
+        self.dataset_populator = dataset_populator
+        self.workflow_populator = workflow_populator
+
+    def get_conformance_test(self, version, doc):
+        conformance_tests = load_conformance_tests(os.path.join(CWL_TOOL_DIRECTORY, str(version)))
+        for test in conformance_tests:
+            if test.get("doc") == doc:
+                return test
+        raise Exception(f"doc [{doc}] not found")
+
+    def _run_cwl_tool_job(
+        self,
+        tool_id: str,
+        job: dict,
+        history_id: str,
+        assert_ok: bool = True,
+    ):
+        galaxy_tool_id: Optional[str] = tool_id
+        tool_uuid = None
+
+        if os.path.exists(tool_id):
+            raw_tool_id = os.path.basename(tool_id)
+            index = self.dataset_populator._get("tools", data=dict(in_panel=False))
+            tools = index.json()
+            # In panels by default, so flatten out sections...
+            tool_ids = [itemgetter("id")(_) for _ in tools]
+            if raw_tool_id in tool_ids:
+                galaxy_tool_id = raw_tool_id
+            else:
+                dynamic_tool = self.dataset_populator.create_tool_from_path(tool_id)
+                galaxy_tool_id = None
+                tool_uuid = dynamic_tool["uuid"]
+
+        run_response = self.dataset_populator.run_tool(galaxy_tool_id, job, history_id, assert_ok=assert_ok, tool_uuid=tool_uuid)
+        run_object = CwlToolRun(self.dataset_populator, history_id, run_response)
+        if assert_ok:
+            try:
+                final_state = self.dataset_populator.wait_for_job(run_object.job_id)
+                assert final_state == "ok"
+            except Exception:
+                self.dataset_populator._summarize_history(history_id)
+                raise
+
+        return run_object
+
+    def _run_cwl_workflow_job(
+        self,
+        workflow_path: str,
+        job: dict,
+        history_id: str,
+        assert_ok: bool = True,
+    ):
+        object_id = None
+        if "#" in workflow_path:
+            workflow_path, object_id = workflow_path.split("#", 1)
+        workflow_id = self.workflow_populator.import_workflow_from_path(workflow_path, object_id)
+
+        request = {
+            # TODO: rework tool state corrections so more of these are valid in Galaxy
+            # workflows as well, and then make it the default. Or decide they are safe.
+            "allow_tool_state_corrections": True,
+        }
+        invocation_id = self.workflow_populator.invoke_workflow(workflow_id, history_id=history_id, inputs=job, request=request, inputs_by="name")
+        return CwlWorkflowRun(self.dataset_populator, self.workflow_populator, history_id, workflow_id, invocation_id)
+
+    def run_cwl_job(
+        self,
+        artifact_path: str,
+        job_path: Optional[str] = None,
+        job: Optional[Dict] = None,
+        test_data_directory: Optional[str] = None,
+        history_id: Optional[str] = None,
+        assert_ok=True,
+    ):
+        if history_id is None:
+            history_id = self.dataset_populator.new_history()
+        if not os.path.isabs(artifact_path):
+            artifact_path = os.path.join(CWL_TOOL_DIRECTORY, artifact_path)
+        tool_or_workflow = guess_artifact_type(artifact_path)
+        if job_path and not os.path.isabs(job_path):
+            job_path = os.path.join(CWL_TOOL_DIRECTORY, job_path)
+        if test_data_directory is None and job_path is not None:
+            test_data_directory = os.path.dirname(job_path)
+        if job_path is not None:
+            assert job is None
+            with open(job_path) as f:
+                if job_path.endswith(".yml") or job_path.endswith(".yaml"):
+                    job = yaml.safe_load(f)
+                else:
+                    job = json.load(f)
+        elif job is None:
+            job = {}
+        _, datasets_uploaded = stage_inputs(
+            self.dataset_populator.galaxy_interactor,
+            history_id,
+            job,
+            use_fetch_api=False,
+            tool_or_workflow=tool_or_workflow,
+            job_dir=test_data_directory,
+        )
+        if datasets_uploaded:
+            self.dataset_populator.wait_for_history(history_id=history_id, assert_ok=True)
+        if tool_or_workflow == "tool":
+            run_object = self._run_cwl_tool_job(
+                artifact_path,
+                job,
+                history_id,
+                assert_ok=assert_ok,
+            )
+        else:
+            run_object = self._run_cwl_workflow_job(
+                artifact_path,
+                job,
+                history_id,
+                assert_ok=assert_ok,
+            )
+        run_object.wait()
+        return run_object
+
+    def run_conformance_test(self, version, doc):
+        test = self.get_conformance_test(version, doc)
+        directory = os.path.join(CWL_TOOL_DIRECTORY, version)
+        artifact = os.path.join(directory, test["tool"])
+        job_path = test.get("job")
+        if job_path is not None:
+            job_path = os.path.join(directory, job_path)
+        should_fail = test.get("should_fail", False)
+        try:
+            run = self.run_cwl_job(artifact, job_path=job_path)
+        except Exception:
+            # Should fail so this is good!
+            if should_fail:
+                return True
+            raise
+
+        if should_fail:
+            self.dataset_populator._summarize_history(run.history_id)
+            raise Exception("Expected run to fail but it didn't.")
+
+        expected_outputs = test["output"]
+        try:
+            for key, value in expected_outputs.items():
+                actual_output = run.get_output_as_object(key)
+                cwltest.compare(value, actual_output)
+        except Exception:
+            self.dataset_populator._summarize_history(run.history_id)
+            raise
 
 
 class BasePopulator(metaclass=ABCMeta):
