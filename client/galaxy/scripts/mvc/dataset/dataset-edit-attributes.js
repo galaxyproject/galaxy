@@ -1,19 +1,11 @@
 
 define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view' ], function( Utils, Tabs, Ui, Form ) {
 
-    // Model for the view
-    var Model = Backbone.Model.extend({
-        initialize: function( options ) {
-            options = options || {};
-            options.dataset_id = options.dataset_id;
-        }
-    });
-
     /** Dataset edit attributes view */
     var View = Backbone.View.extend({
         initialize: function() {
             this.setElement( '<div/>' );
-            this.model = new Model( { 'dataset_id': Galaxy.params.dataset_id } );
+            this.model = new Backbone.Model( { 'dataset_id': Galaxy.params.dataset_id } );
             this.render();
         },
 
@@ -35,7 +27,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                         'persistent': true,
                         'cls': 'errormessage'
                     };
-                    self.display_message( self, error_response, self.$el.find( '.response-message' ) );
+                    self.display_message( error_response, self.$( '.response-message' ) );
                 }
             });
         },
@@ -49,9 +41,9 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 'cls'         : response.status + 'message'
             };
             self.$el.empty().append( self._templateHeader() );
-            self.display_message( self, message, self.$el.find( '.response-message' ) );
+            self.display_message( message, self.$( '.response-message' ) );
             // Create all tabs
-            self.create_tabs( self, response, self.$el.find( '.edit-attr' ) );
+            self.create_tabs( response, self.$( '.edit-attr' ) );
         },
 
         /** Perform AJAX post call */
@@ -72,25 +64,26 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                         'persistent': true,
                         'cls': 'errormessage'
                     };
-                    self.display_message( self, error_response, self.$el.find( '.response-message' ) );
+                    self.display_message( error_response, self.$( '.response-message' ) );
                 }
             });
         },
 
         /** Display actions messages */
-        display_message: function( self, response, $el ) {
+        display_message: function( response, $el ) {
             $el.empty().html( new Ui.Message( response ).$el );
         },
 
         /** Create tabs for different attributes of dataset*/
-        create_tabs: function( self, response, $el_edit_attr ) {
+        create_tabs: function( response, $el_edit_attr ) {
+            var self = this;
             self.tabs = new Tabs.View();
             self.tabs.add({
                 id      : 'attributes',
                 title   : 'Attributes',
                 icon    : 'fa fa-bars',
                 tooltip : 'Edit dataset attributes',
-                $el     : self._getAttributesFormTemplate( self, response )
+                $el     : self._getAttributesFormTemplate( response )
             });
 
             self.tabs.add({
@@ -98,7 +91,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 title   : 'Convert',
                 icon    : 'fa-gear',
                 tooltip : 'Convert to new format',
-                $el     :  self._getConvertFormTemplate( self, response )
+                $el     :  self._getConvertFormTemplate( response )
             });
 
             self.tabs.add({
@@ -106,7 +99,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 title   : 'Datatypes',
                 icon    : 'fa-database',
                 tooltip : 'Change data type',
-                $el     : self._getChangeDataTypeFormTemplate( self, response )
+                $el     : self._getChangeDataTypeFormTemplate( response )
             });
 
             self.tabs.add({
@@ -114,7 +107,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 title   : 'Permissions',
                 icon    : 'fa-user',
                 tooltip : 'Permissions',
-                $el     : self._getPermissionsFormTemplate( self, response )
+                $el     : self._getPermissionsFormTemplate( response )
             });
             $el_edit_attr.append( self.tabs.$el );
             self.tabs.showTab( 'attributes' );
@@ -129,7 +122,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         },
 
         /** Attributes tab template */
-        _getAttributesFormTemplate: function( self, response ) {
+        _getAttributesFormTemplate: function( response ) {
+            var self = this;
             var form = new Form({
                 title  : 'Edit attributes',
                 inputs : response.edit_attributes_inputs,
@@ -152,7 +146,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         },
 
         /** Convert tab template */
-        _getConvertFormTemplate: function( self, response ) {
+        _getConvertFormTemplate: function( response ) {
+            var self = this;
             var form = new Form({
                 title  : 'Convert to new format',
                 inputs : response.convert_inputs,
@@ -169,7 +164,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         },
 
         /** Change datatype template */
-        _getChangeDataTypeFormTemplate: function( self, response ) {
+        _getChangeDataTypeFormTemplate: function( response ) {
+            var self = this;
             var form = new Form({
                 title  : 'Change datatype',
                 inputs : response.convert_datatype_inputs,
@@ -186,8 +182,9 @@ define( [ 'utils/utils', 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/form/form-view
         },
 
         /** Permissions template */
-        _getPermissionsFormTemplate: function( self, response ) {
-            var template = "";
+        _getPermissionsFormTemplate: function( response ) {
+            var template = "",
+                self = this;
             if( response.can_manage_dataset ) {
                 var form = new Form({
                     title  : 'Manage dataset permissions on ' + response.display_name,
