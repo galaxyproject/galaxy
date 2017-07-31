@@ -82,7 +82,8 @@ var AdminPanel = Backbone.View.extend({
                 url     : 'admin/groups'
             },{
                 title   : 'Roles',
-                url     : 'admin/roles'
+                url     : 'admin/roles',
+                target  : 'top'
             },{
                 title   : 'API keys',
                 url     : 'userskeys/all_users'

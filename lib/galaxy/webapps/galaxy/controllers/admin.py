@@ -191,10 +191,11 @@ class RoleListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Manage users and groups", id=item.id, webapp="galaxy" ) ),
+                    link=( lambda item: dict( action="manage_users_and_groups_for_role", id=item.id, webapp="galaxy" ) ),
                     model_class=model.Role,
                     attach_popup=True,
-                    filterable="advanced" ),
+                    filterable="advanced",
+                    target="top" ),
         DescriptionColumn( "Description",
                            key='description',
                            model_class=model.Role,
@@ -217,7 +218,7 @@ class RoleListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Add new role", dict( controller='admin', action='roles', operation='create' ) )
+        grids.GridAction( "Add new role", url_args=dict( webapp="galaxy", action="create_role" ) )
     ]
     operations = [ grids.GridOperation( "Edit",
                                         condition=( lambda item: not item.deleted ),
@@ -225,16 +226,13 @@ class RoleListGrid( grids.Grid ):
                                         url_args=dict( webapp="galaxy", action="rename_role" ) ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="mark_role_deleted" ) ),
+                                        allow_multiple=True ),
                    grids.GridOperation( "Undelete",
                                         condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="undelete_role" ) ),
+                                        allow_multiple=True ),
                    grids.GridOperation( "Purge",
                                         condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="purge_role" ) ) ]
+                                        allow_multiple=True ) ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -525,8 +523,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.json
     @web.require_admin
     def users_list( self, trans, **kwd ):
-        message = kwd.get( 'message' )
-        status = kwd.get( 'status' )
+        message = kwd.get( 'message', '' )
+        status = kwd.get( 'status', '' )
         if 'operation' in kwd:
             id = kwd.get( 'id', None )
             if not id:
@@ -986,26 +984,30 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.json
     @web.require_admin
     def roles_list( self, trans, **kwargs ):
+        message = kwargs.get( 'message', '' )
+        status = kwargs.get( 'status', '' )
         if 'operation' in kwargs:
+            id = kwargs.get( 'id', None )
+            if not id:
+                message, status = ( 'Invalid role id (%s) received.' % str( id ), 'error' )
+            ids = util.listify( id )
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
-            if operation == "roles":
-                return self.role( trans, **kwargs )
-            if operation == "create":
-                return self.create_role( trans, **kwargs )
-            if operation == "delete":
-                return self.mark_role_deleted( trans, **kwargs )
-            if operation == "undelete":
-                return self.undelete_role( trans, **kwargs )
-            if operation == "purge":
-                return self.purge_role( trans, **kwargs )
-            if operation == "manage users and groups":
-                return self.manage_users_and_groups_for_role( trans, **kwargs )
-            if operation == "manage role associations":
+            #if operation == "roles":
+            #    return self.role( trans, **kwargs )
+            if operation == 'delete':
+                message, status = self.mark_role_deleted( trans, ids )
+            if operation == 'undelete':
+                message, status = self.undelete_role( trans, ids )
+            if operation == 'purge':
+                message, status = self.purge_role( trans, ids )
+            #if operation == "manage role associations":
                 # This is currently used only in the Tool Shed.
-                return self.manage_role_associations( trans, **kwargs )
-            if operation == "rename":
-                return self.rename_role( trans, **kwargs )
+            #    return self.manage_role_associations( trans, **kwargs )
+            #if operation == "rename":
+            #    return self.rename_role( trans, **kwargs )
         kwargs[ 'dict_format' ] = True
+        kwargs[ 'message' ] = util.sanitize_text( message )
+        kwargs[ 'status' ] = status
         return self.role_list_grid( trans, **kwargs )
 
     @web.expose
@@ -1223,62 +1225,35 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose
     @web.require_admin
-    def mark_role_deleted( self, trans, **kwd ):
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No role ids received for deleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='roles',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
-        message = "Deleted %d roles: " % len( ids )
+    def mark_role_deleted( self, trans, ids ):
+        message = 'Deleted %d roles: ' % len( ids )
         for role_id in ids:
             role = get_role( trans, role_id )
             role.deleted = True
             trans.sa_session.add( role )
             trans.sa_session.flush()
-            message += " %s " % role.name
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='roles',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+            message += ' %s ' % role.name
+        return ( message, 'done' )
 
     @web.expose
     @web.require_admin
-    def undelete_role( self, trans, **kwd ):
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No role ids received for undeleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='roles',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
+    def undelete_role( self, trans, ids ):
         count = 0
         undeleted_roles = ""
         for role_id in ids:
             role = get_role( trans, role_id )
             if not role.deleted:
-                message = "Role '%s' has not been deleted, so it cannot be undeleted." % role.name
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='roles',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
+                return ( "Role '%s' has not been deleted, so it cannot be undeleted." % role.name, "error" )
             role.deleted = False
             trans.sa_session.add( role )
             trans.sa_session.flush()
             count += 1
             undeleted_roles += " %s" % role.name
-        message = "Undeleted %d roles: %s" % ( count, undeleted_roles )
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='roles',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+        return ( "Undeleted %d roles: %s" % ( count, undeleted_roles ), "done" )
 
     @web.expose
     @web.require_admin
-    def purge_role( self, trans, **kwd ):
+    def purge_role( self, trans, ids ):
         # This method should only be called for a Role that has previously been deleted.
         # Purging a deleted Role deletes all of the following from the database:
         # - UserRoleAssociations where role_id == Role.id
@@ -1286,23 +1261,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         # - DefaultHistoryPermissions where role_id == Role.id
         # - GroupRoleAssociations where role_id == Role.id
         # - DatasetPermissionss where role_id == Role.id
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No role ids received for purging"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='roles',
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        ids = util.listify( id )
         message = "Purged %d roles: " % len( ids )
         for role_id in ids:
             role = get_role( trans, role_id )
             if not role.deleted:
-                message = "Role '%s' has not been deleted, so it cannot be purged." % role.name
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='roles',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
+                return ( "Role '%s' has not been deleted, so it cannot be purged." % role.name, "error" )
             # Delete UserRoleAssociations
             for ura in role.users:
                 user = trans.sa_session.query( trans.app.model.User ).get( ura.user_id )
@@ -1324,10 +1287,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 trans.sa_session.delete( dp )
             trans.sa_session.flush()
             message += " %s " % role.name
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='roles',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+        return ( message, "done" )
 
     @web.expose
     @web.require_admin
