@@ -40,31 +40,6 @@ def inherit(context):
     </select>
 </%def>
 
-<script type="text/javascript">
-$().ready(function() {  
-    $('#roles_add_button').click(function() {
-        return !$('#out_roles option:selected').remove().appendTo('#in_roles');
-    });
-    $('#roles_remove_button').click(function() {
-        return !$('#in_roles option:selected').remove().appendTo('#out_roles');
-    });
-    $('#groups_add_button').click(function() {
-        return !$('#out_groups option:selected').remove().appendTo('#in_groups');
-    });
-    $('#groups_remove_button').click(function() {
-        return !$('#in_groups option:selected').remove().appendTo('#out_groups');
-    });
-    $('form#associate_user_role_group').submit(function() {
-        $('#in_roles option').each(function(i) {
-            $(this).attr("selected", "selected");
-        });
-        $('#in_groups option').each(function(i) {
-            $(this).attr("selected", "selected");
-        });
-    });
-});
-</script>
-
 %if message:
     ${render_msg( message, status )}
 %endif
@@ -104,4 +79,28 @@ $().ready(function() {
             </form>
         </div>
     </div>
+    <script type="text/javascript">
+    $().ready(function() {
+        $('#roles_add_button').click(function() {
+            return !$('#out_roles option:selected').remove().appendTo('#in_roles');
+        });
+        $('#roles_remove_button').click(function() {
+            return !$('#in_roles option:selected').remove().appendTo('#out_roles');
+        });
+        $('#groups_add_button').click(function() {
+            return !$('#out_groups option:selected').remove().appendTo('#in_groups');
+        });
+        $('#groups_remove_button').click(function() {
+            return !$('#in_groups option:selected').remove().appendTo('#out_groups');
+        });
+        $('form#associate_user_role_group').submit(function() {
+            $('#in_roles option').each(function(i) {
+                $(this).attr("selected", "selected");
+            });
+            $('#in_groups option').each(function(i) {
+                $(this).attr("selected", "selected");
+            });
+        });
+    });
+    </script>
 </%def>
