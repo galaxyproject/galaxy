@@ -143,7 +143,7 @@ def determine_file_type(input_url, output_filename, metadata, json_params):
 
     # Still no type? Attempt to use filename extension to determine a type
     if not file_type and '.' in metadata.name:
-        file_ext = file_format.rsplit('.', 1)[-1]
+        file_ext = metadata.name.rsplit('.', 1)[-1]
         file_type = get_galaxy_ext_from_genomespace_format(file_ext)
 
     # Nothing works, use default
