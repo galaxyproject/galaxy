@@ -53,7 +53,7 @@ if [ $INITIALIZE_TOOL_DEPENDENCIES -eq 1 ]; then
 fi
 
 if [ -n "$GALAXY_UWSGI" ]; then
-    uwsgi $(python ./scripts/get_uwsgi_args.py get_uwsgi_args)
+    uwsgi $(python ./scripts/get_uwsgi_args.py)
 elif [ -n "$GALAXY_RUN_ALL" ]; then
     servers=$(sed -n 's/^\[server:\(.*\)\]/\1/  p' "$GALAXY_CONFIG_FILE" | xargs echo)
     if [ -z "$stop_daemon_arg_set" -a -z "$daemon_or_restart_arg_set" ]; then

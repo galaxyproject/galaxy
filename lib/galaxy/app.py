@@ -210,6 +210,8 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
 
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
+        # When running the application without a web stack, this signals the application loop to break and call the shutdown method
+        self.exit = False
         log.info("Galaxy app startup finished %s" % self.startup_timer)
 
     def shutdown(self):
@@ -231,6 +233,7 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
                 os.unlink(self.datatypes_registry.integrated_datatypes_configs)
         except:
             pass
+        self.exit = True
 
     def configure_fluent_log(self):
         if self.config.fluent_log:

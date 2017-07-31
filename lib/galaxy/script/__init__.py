@@ -9,13 +9,15 @@ from galaxy.util.properties import find_config_file, load_app_properties
 DESCRIPTION = None
 ACTIONS = None
 ARGUMENTS = None
+DEFAULT_ACTION = None
 
 
-def main_factory(description=None, actions=None, arguments=None):
-    global DESCRIPTION, ACTIONS, ARGUMENTS
+def main_factory(description=None, actions=None, arguments=None, default_action=None):
+    global DESCRIPTION, ACTIONS, ARGUMENTS, DEFAULT_ACTION
     DESCRIPTION = description
     ACTIONS = actions or {}
     ARGUMENTS = arguments or []
+    DEFAULT_ACTION = default_action
     return main
 
 
@@ -40,6 +42,8 @@ def _arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument('action', metavar='ACTION', type=str,
                         choices=ACTIONS.keys(),
+                        default=DEFAULT_ACTION,
+                        nargs='?' if DEFAULT_ACTION is not None else None,
                         help='action to perform')
     parser.add_argument("-c", "--config-file",
                         default=os.environ.get('GALAXY_CONFIG_FILE', None))

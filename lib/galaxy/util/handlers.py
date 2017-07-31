@@ -8,7 +8,7 @@ import logging
 import os
 import random
 
-from galaxy.web.stack import process_is_handler
+from galaxy.web.stack import process_in_pool
 
 
 log = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ class ConfiguresHandlers:
 
         :return: bool
         """
-        stack_handler = process_is_handler(self.app)
+        stack_handler = process_in_pool(self.app.config.job_handler_pool_name)
         if stack_handler is not None:
             # Handlers started as uWSGI mules do not require configuration in the job conf
             return stack_handler

@@ -504,10 +504,11 @@ class Configuration(object):
             # Crummy, but PasteScript does not give you a way to determine this
             if arg.lower().startswith('--server-name='):
                 self.server_name = arg.split('=', 1)[-1]
-        # Allow explicit override of server name in confg params
+        # Allow explicit override of server name in config params
         if "server_name" in kwargs:
             self.server_name = kwargs.get("server_name")
-        # Store all configured server names
+        # Store all configured server names for the message queue routing
+        # TODO: uWSGI mules
         self.server_names = []
         for section in global_conf_parser.sections():
             if section.startswith('server:'):
@@ -540,6 +541,7 @@ class Configuration(object):
         self.job_handlers = [x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',')]
         self.default_job_handlers = [x.strip() for x in kwargs.get('default_job_handlers', ','.join(self.job_handlers)).split(',')]
         self.job_handler_count = int( kwargs.get( 'job_handler_count', 1 ) )
+        self.job_handler_pool_name = kwargs.get('job_handler_pool_name', 'job-handlers').strip()
         # Store per-tool runner configs
         self.tool_handlers = self.__read_tool_job_config(global_conf_parser, 'galaxy:tool_handlers', 'name')
         self.tool_runners = self.__read_tool_job_config(global_conf_parser, 'galaxy:tool_runners', 'url')
