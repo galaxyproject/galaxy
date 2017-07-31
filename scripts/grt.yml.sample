@@ -24,6 +24,10 @@ grt:
         # Owners (these are the usernames of users registered with the galactic-radio-telescope system.)
         owners:
             - jane.doe
+        # Are you willing to share your toolbox? I.e. what tools are installed.
+        # If your instance is public, this can help us direct users to your
+        # instance.
+        share_toolbox: False
 
 
 blacklist:
