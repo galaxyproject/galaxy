@@ -19,7 +19,7 @@ abstract class NestedObjectStore
 
 ObjectStore <|-- DiskObjectStore
 ObjectStore <|-- NestedObjectStore
-ObjectStore <|-- S3ObjectStore
+ObjectStore <|-- CloudObjectStore
 DiskObjectStore <|-- IRODSObjectStore
 NestedObjectStore <|-- DistributedObjectStore
 NestedObjectStore <|-- HierarchicalObjectStore

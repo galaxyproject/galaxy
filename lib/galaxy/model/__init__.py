@@ -389,6 +389,15 @@ class User( object, Dictifiable ):
         return Template( in_string ).safe_substitute( environment )
 
 
+class PluggedMedia( object ):
+    def __init__( self, user_id, type, access_key, secret_key, path=None ):
+        self.user_id = user_id
+        self.type = type
+        self.path = path
+        self.access_key = access_key
+        self.secret_key = secret_key
+
+
 class PasswordResetToken( object ):
     def __init__( self, user, token=None):
         if token:
@@ -1773,12 +1782,11 @@ class Dataset( StorableObject ):
     def in_ready_state( self ):
         return self.state in self.ready_states
 
-    def get_file_name( self ):
+    def get_file_name( self, user=None, plugged_media=None ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
             assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
-            filename = self.object_store.get_filename( self )
-            return filename
+            return self.object_store.get_filename(self, user=user, plugged_media=plugged_media )
         else:
             filename = self.external_filename
         # Make filename absolute
@@ -1807,16 +1815,16 @@ class Dataset( StorableObject ):
             self.external_extra_files_path = extra_files_path
     extra_files_path = property( get_extra_files_path, set_extra_files_path)
 
-    def _calculate_size( self ):
+    def _calculate_size( self, user, plugged_media ):
         if self.external_filename:
             try:
                 return os.path.getsize(self.external_filename)
             except OSError:
                 return 0
         else:
-            return self.object_store.size(self)
+            return self.object_store.size( self, user=user, plugged_media=plugged_media )
 
-    def get_size( self, nice_size=False ):
+    def get_size( self, user, plugged_media, nice_size=False ):
         """Returns the size of the data on disk"""
         if self.file_size:
             if nice_size:
@@ -1825,51 +1833,52 @@ class Dataset( StorableObject ):
                 return self.file_size
         else:
             if nice_size:
-                return galaxy.util.nice_size( self._calculate_size() )
+                return galaxy.util.nice_size( self._calculate_size( user=user, plugged_media=plugged_media ) )
             else:
-                return self._calculate_size()
+                return self._calculate_size( user=user, plugged_media=plugged_media )
 
-    def set_size( self ):
-        """Returns the size of the data on disk"""
+    def set_size( self, user, plugged_media ):
+        """Sets the size of the data on disk"""
         if not self.file_size:
-            self.file_size = self._calculate_size()
+            self.file_size = self._calculate_size( user=user, plugged_media=plugged_media )
 
-    def get_total_size( self ):
+    def get_total_size( self, user, plugged_media ):
         if self.total_size is not None:
             return self.total_size
         # for backwards compatibility, set if unset
-        self.set_total_size()
+        self.set_total_size( user=user, plugged_media=plugged_media )
         db_session = object_session( self )
         db_session.flush()
         return self.total_size
 
-    def set_total_size( self ):
+    def set_total_size( self, user, plugged_media ):
         if self.file_size is None:
-            self.set_size()
+            self.set_size( user=user, plugged_media=plugged_media )
         self.total_size = self.file_size or 0
-        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
+        if self.object_store.exists(self, user=user, plugged_media=plugged_media, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
             for root, dirs, files in os.walk( self.extra_files_path ):
                 self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files if os.path.exists( os.path.join( root, file ) ) ] )
 
-    def has_data( self ):
+    def has_data( self, user, plugged_media ):
         """Detects whether there is any data"""
-        return self.get_size() > 0
+        return self.get_size( user=user, plugged_media=plugged_media ) > 0
 
     def mark_deleted( self, include_children=True ):
         self.deleted = True
 
-    def is_multi_byte( self ):
-        if not self.has_data():
+    def is_multi_byte( self, user, plugged_media ):
+        if not self.has_data( user, plugged_media ):
             return False
         try:
-            return is_multi_byte( codecs.open( self.file_name, 'r', 'utf-8' ).read( 100 ) )
+            return is_multi_byte( codecs.open( self.get_file_name( user=user, plugged_media=plugged_media ), 'r', 'utf-8' ).read( 100 ) )
         except UnicodeDecodeError:
             return False
     # FIXME: sqlalchemy will replace this
 
-    def _delete(self):
+    # TODO: is this function ever called ? I don't see the call.
+    def _delete( self, user, plugged_media ):
         """Remove the file that corresponds to this data"""
-        self.object_store.delete(self)
+        self.object_store.delete( self, user=user, plugged_media=plugged_media )
 
     @property
     def user_can_purge( self ):
@@ -1877,12 +1886,12 @@ class Dataset( StorableObject ):
             and not bool( self.library_associations ) \
             and len( self.history_associations ) == len( self.purged_history_associations )
 
-    def full_delete( self ):
+    def full_delete( self, user, plugged_media ):
         """Remove the file and extra files, marks deleted and purged"""
         # os.unlink( self.file_name )
-        self.object_store.delete(self)
-        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
-            self.object_store.delete(self, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
+        self.object_store.delete( self, user=user, plugged_media=plugged_media )
+        if self.object_store.exists( self, user=user, plugged_media=plugged_media, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True ):
+            self.object_store.delete( self, user=user, plugged_media=plugged_media, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True )
         # if os.path.exists( self.extra_files_path ):
         #     shutil.rmtree( self.extra_files_path )
         # TODO: purge metadata files
@@ -1971,8 +1980,8 @@ class DatasetInstance( object ):
             object_session( self ).flush()  # flush here, because hda.flush() won't flush the Dataset object
     state = property( get_dataset_state, set_dataset_state )
 
-    def get_file_name( self ):
-        return self.dataset.get_file_name()
+    def get_file_name( self, user=None ):
+        return self.dataset.get_file_name( user )
 
     def set_file_name(self, filename):
         return self.dataset.set_file_name( filename )
@@ -2027,25 +2036,25 @@ class DatasetInstance( object ):
         self.clear_associated_files()
         _get_datatypes_registry().change_datatype( self, new_ext )
 
-    def get_size( self, nice_size=False ):
+    def get_size( self, user, nice_size=False ):
         """Returns the size of the data on disk"""
         if nice_size:
-            return galaxy.util.nice_size( self.dataset.get_size() )
-        return self.dataset.get_size()
+            return galaxy.util.nice_size( self.dataset.get_size( user ) )
+        return self.dataset.get_size( user )
 
-    def set_size( self ):
+    def set_size( self, user ):
         """Returns the size of the data on disk"""
-        return self.dataset.set_size()
+        return self.dataset.set_size( user )
 
-    def get_total_size( self ):
-        return self.dataset.get_total_size()
+    def get_total_size( self, user ):
+        return self.dataset.get_total_size( user )
 
     def set_total_size( self ):
         return self.dataset.set_total_size()
 
-    def has_data( self ):
+    def has_data( self, user ):
         """Detects whether there is any data"""
-        return self.dataset.has_data()
+        return self.dataset.has_data( user )
 
     def get_raw_data( self ):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
@@ -2371,6 +2380,7 @@ class HistoryDatasetAssociation( DatasetInstance, HasTags, Dictifiable, UsesAnno
     """
 
     def __init__( self,
+                  plugged_media,
                   hid=None,
                   history=None,
                   copied_from_history_dataset_association=None,
@@ -2388,6 +2398,7 @@ class HistoryDatasetAssociation( DatasetInstance, HasTags, Dictifiable, UsesAnno
         self.history = history
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
+        self.plugged_media = plugged_media
 
     def copy( self, copy_children=False, parent_id=None ):
         """
@@ -2612,6 +2623,30 @@ class HistoryDatasetAssociation( DatasetInstance, HasTags, Dictifiable, UsesAnno
             new_tag_assoc = source_tag_assoc.copy()
             new_tag_assoc.user = target_user
             self.tags.append( new_tag_assoc )
+
+    def get_file_name( self ):
+        return self.dataset.get_file_name( self.history.user, self.plugged_media )
+
+    def get_size( self, nice_size=False ):
+        """Returns the size of the data on disk"""
+        if nice_size:
+            return galaxy.util.nice_size( self.dataset.get_size( self.history.user, self.plugged_media ) )
+        return self.dataset.get_size( self.history.user, self.plugged_media )
+
+    def set_size( self ):
+        """Returns the size of the data on disk"""
+        return self.dataset.set_size( self.history.user, self.plugged_media )
+
+    def get_total_size( self ):
+        return self.dataset.get_total_size( self.history.user, self.plugged_media )
+
+    def has_data( self ):
+        """Detects whether there is any data"""
+        return self.dataset.has_data( self.history.user, self.plugged_media )
+
+    def set_file_name(self, filename):
+        return self.dataset.set_file_name( filename )
+    file_name = property(get_file_name, set_file_name)
 
 
 class HistoryDatasetAssociationDisplayAtAuthorization( object ):

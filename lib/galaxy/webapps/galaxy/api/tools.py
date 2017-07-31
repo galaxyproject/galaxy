@@ -359,7 +359,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         outputs = rval[ 'outputs' ]
         # TODO:?? poss. only return ids?
         for output_name, output in output_datasets:
-            output_dict = output.to_dict()
+            output_dict = output.to_dict( trans.user )
             # add the output name back into the output data structure
             # so it's possible to figure out which newly created elements
             # correspond with which tool file outputs

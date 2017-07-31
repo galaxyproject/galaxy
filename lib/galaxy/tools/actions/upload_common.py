@@ -124,12 +124,19 @@ def cleanup_unused_precreated_datasets( precreated_datasets ):
 def __new_history_upload( trans, uploaded_dataset, history=None, state=None ):
     if not history:
         history = trans.history
+    # TEMP BLOCK --- START
+    plugged_media = None
+    for pM in trans.user.plugged_media:
+        plugged_media = pM
+        break
+    # TEMP BLOCK --- END
     hda = trans.app.model.HistoryDatasetAssociation( name=uploaded_dataset.name,
                                                      extension=uploaded_dataset.file_type,
                                                      dbkey=uploaded_dataset.dbkey,
                                                      history=history,
                                                      create_dataset=True,
-                                                     sa_session=trans.sa_session )
+                                                     sa_session=trans.sa_session,
+                                                     plugged_media=plugged_media )
     if state:
         hda.state = state
     else:
@@ -394,8 +401,16 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
         if not dataset.dataset.external_filename:
             dataset.dataset.object_store_id = object_store_id
             try:
-                trans.app.object_store.create( dataset.dataset )
+                # TEMP BLOCK --- START
+                plugged_media = None
+                for pM in trans.user.plugged_media:
+                    plugged_media = pM
+                    break
+                # TEMP BLOCK --- END
+                trans.app.object_store.create( dataset.dataset, user=trans.user, plugged_media=plugged_media )
             except ObjectInvalid:
+                # FIXME: the followisng error message is misleading; this exception can be raised for different
+                # reasons, not only a full objectstore.
                 raise Exception('Unable to create output dataset: object store is full')
             object_store_id = dataset.dataset.object_store_id
             trans.sa_session.add( dataset )
