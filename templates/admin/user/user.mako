@@ -41,7 +41,7 @@ def inherit(context):
 </%def>
 
 <%def name="body()">
-    <div style="margin: 10px;">
+    <div style="margin: 10px; height: 100%; overflow: auto;">
         %if message:
             ${render_msg( message, status )}
         %endif
