@@ -992,19 +992,12 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 message, status = ( 'Invalid role id (%s) received.' % str( id ), 'error' )
             ids = util.listify( id )
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
-            #if operation == "roles":
-            #    return self.role( trans, **kwargs )
             if operation == 'delete':
                 message, status = self.mark_role_deleted( trans, ids )
-            if operation == 'undelete':
+            elif operation == 'undelete':
                 message, status = self.undelete_role( trans, ids )
-            if operation == 'purge':
+            elif operation == 'purge':
                 message, status = self.purge_role( trans, ids )
-            #if operation == "manage role associations":
-                # This is currently used only in the Tool Shed.
-            #    return self.manage_role_associations( trans, **kwargs )
-            #if operation == "rename":
-            #    return self.rename_role( trans, **kwargs )
         kwargs[ 'dict_format' ] = True
         kwargs[ 'message' ] = util.sanitize_text( message )
         kwargs[ 'status' ] = status
