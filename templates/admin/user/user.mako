@@ -40,43 +40,44 @@ def inherit(context):
     </select>
 </%def>
 
-%if message:
-    ${render_msg( message, status )}
-%endif
-
 <%def name="body()">
-    <div class="toolForm" style="margin: 10px;">
-        <div class="toolFormTitle">User '${user.email|h}'</div>
-        <div class="toolFormBody">
-            <form name="associate_user_role_group" id="associate_user_role_group" action="${h.url_for(controller='admin', action='manage_roles_and_groups_for_user', id=trans.security.encode_id( user.id ) )}" method="post" >
-                <div class="form-row">
-                    <div style="float: left; margin-right: 10px;">
-                        <label>Roles associated with '${user.email|h}'</label>
-                        ${render_select( "in_roles", in_roles )}<br/>
-                        <input type="submit" id="roles_remove_button" value=">>"/>
+    <div style="margin: 10px;">
+        %if message:
+            ${render_msg( message, status )}
+        %endif
+        <div class="toolForm">
+            <div class="toolFormTitle">User '${user.email|h}'</div>
+            <div class="toolFormBody">
+                <form name="associate_user_role_group" id="associate_user_role_group" action="${h.url_for(controller='admin', action='manage_roles_and_groups_for_user', id=trans.security.encode_id( user.id ) )}" method="post" >
+                    <div class="form-row">
+                        <div style="float: left; margin-right: 10px;">
+                            <label>Roles associated with '${user.email|h}'</label>
+                            ${render_select( "in_roles", in_roles )}<br/>
+                            <input type="submit" id="roles_remove_button" value=">>"/>
+                        </div>
+                        <div>
+                            <label>Roles not associated with '${user.email|h}'</label>
+                            ${render_select( "out_roles", out_roles )}<br/>
+                            <input type="submit" id="roles_add_button" value="<<"/>
+                        </div>
                     </div>
-                    <div>
-                        <label>Roles not associated with '${user.email|h}'</label>
-                        ${render_select( "out_roles", out_roles )}<br/>
-                        <input type="submit" id="roles_add_button" value="<<"/>
+                    <div class="form-row">
+                        <div style="float: left; margin-right: 10px;">
+                            <label>Groups associated with '${user.email|h}'</label>
+                            ${render_select( "in_groups", in_groups )}<br/>
+                            <input type="submit" id="groups_remove_button" value=">>"/>
+                        </div>
+                        <div>
+                            <label>Groups not associated with '${user.email|h}'</label>
+                            ${render_select( "out_groups", out_groups )}<br/>
+                            <input type="submit" id="groups_add_button" value="<<"/>
+                        </div>
                     </div>
-                </div>
-                <div class="form-row">
-                    <div style="float: left; margin-right: 10px;">
-                        <label>Groups associated with '${user.email|h}'</label>
-                        ${render_select( "in_groups", in_groups )}<br/>
-                        <input type="submit" id="groups_remove_button" value=">>"/>
+                    <div class="form-row">
+                        <input type="submit" name="user_roles_groups_edit_button" value="Save"/>
                     </div>
-                    <div>
-                        <label>Groups not associated with '${user.email|h}'</label>
-                        ${render_select( "out_groups", out_groups )}<br/>
-                        <input type="submit" id="groups_add_button" value="<<"/>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <input type="submit" name="user_roles_groups_edit_button" value="Save"/>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
     <script type="text/javascript">
