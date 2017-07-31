@@ -1,17 +1,12 @@
 import logging
-import os
-from datetime import datetime, timedelta
-import six
-from string import punctuation as PUNCTUATION
 
-from sqlalchemy import and_, false, func, or_
+from sqlalchemy import false, func
 
-import galaxy.queue_worker
 from galaxy import util, web
 from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
-from tool_shed.util import repository_util
 from tool_shed.util.web_util import escape
+
 
 log = logging.getLogger( __name__ )
 
@@ -21,9 +16,6 @@ class Admin( object ):
     user_list_grid = None
     role_list_grid = None
     group_list_grid = None
-    quota_list_grid = None
-    repository_list_grid = None
-    tool_version_list_grid = None
     delete_operation = None
     undelete_operation = None
     purge_operation = None
@@ -42,67 +34,9 @@ class Admin( object ):
     def center( self, trans, **kwd ):
         message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
-        if trans.webapp.name == 'galaxy':
-            is_repo_installed = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None
-            installing_repository_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
-            return trans.fill_template( '/webapps/galaxy/admin/center.mako',
-                                        is_repo_installed=is_repo_installed,
-                                        installing_repository_ids=installing_repository_ids,
-                                        message=message,
-                                        status=status )
-        else:
-            return trans.fill_template( '/webapps/tool_shed/admin/center.mako',
-                                        message=message,
-                                        status=status )
-
-    @web.expose
-    @web.require_admin
-    def package_tool( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        toolbox = self.app.toolbox
-        tool_id = None
-        if params.get( 'package_tool_button', False ):
-            tool_id = params.get('tool_id', None)
-            try:
-                tool_tarball = trans.app.toolbox.package_tool( trans, tool_id )
-                trans.response.set_content_type( 'application/x-gzip' )
-                download_file = open( tool_tarball )
-                os.unlink( tool_tarball )
-                tarball_path, filename = os.path.split( tool_tarball )
-                trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( tool_id )
-                return download_file
-            except Exception:
-                return trans.fill_template( '/admin/package_tool.mako',
-                                            tool_id=tool_id,
-                                            toolbox=toolbox,
-                                            message=message,
-                                            status='error' )
-
-    @web.expose
-    @web.require_admin
-    def reload_tool( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        toolbox = self.app.toolbox
-        tool_id = None
-        if params.get( 'reload_tool_button', False ):
-            tool_id = kwd.get( 'tool_id', None )
-            galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id} )
-            message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
-        return trans.fill_template( '/admin/reload_tool.mako',
-                                    tool_id=tool_id,
-                                    toolbox=toolbox,
+        return trans.fill_template( '/webapps/tool_shed/admin/center.mako',
                                     message=message,
                                     status=status )
-
-    @web.expose
-    @web.require_admin
-    def tool_versions( self, trans, **kwd ):
-        if 'message' not in kwd or not kwd[ 'message' ]:
-            kwd[ 'message' ] = 'Tool ids for tools that are currently loaded into the tool panel are highlighted in green (click to display).'
-        return self.tool_version_list_grid( trans, **kwd )
 
     @web.expose
     @web.require_admin
@@ -1017,154 +951,6 @@ class Admin( object ):
                                     message=message,
                                     status=status )
 
-    @web.expose
-    @web.require_admin
-    def jobs( self, trans, stop=[], stop_msg=None, cutoff=180, job_lock=None, ajl_submit=None, **kwd ):
-        deleted = []
-        msg = None
-        status = None
-        job_ids = util.listify( stop )
-        if job_ids and stop_msg in [ None, '' ]:
-            msg = 'Please enter an error message to display to the user describing why the job was terminated'
-            status = 'error'
-        elif job_ids:
-            if stop_msg[-1] not in PUNCTUATION:
-                stop_msg += '.'
-            for job_id in job_ids:
-                error_msg = "This job was stopped by an administrator: %s  <a href='%s' target='_blank'>Contact support</a> for additional help." \
-                    % ( stop_msg, self.app.config.get("support_url", "https://galaxyproject.org/support/" ) )
-                if trans.app.config.track_jobs_in_database:
-                    job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
-                    job.stderr = error_msg
-                    job.set_state( trans.app.model.Job.states.DELETED_NEW )
-                    trans.sa_session.add( job )
-                else:
-                    trans.app.job_manager.job_stop_queue.put( job_id, error_msg=error_msg )
-                deleted.append( str( job_id ) )
-        if deleted:
-            msg = 'Queued job'
-            if len( deleted ) > 1:
-                msg += 's'
-            msg += ' for deletion: '
-            msg += ', '.join( deleted )
-            status = 'done'
-            trans.sa_session.flush()
-        if ajl_submit:
-            if job_lock == 'on':
-                galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock',
-                                                      kwargs={'job_lock': True } )
-                job_lock = True
-            else:
-                galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock',
-                                                      kwargs={'job_lock': False } )
-                job_lock = False
-        else:
-            job_lock = trans.app.job_manager.job_lock
-        cutoff_time = datetime.utcnow() - timedelta( seconds=int( cutoff ) )
-        jobs = trans.sa_session.query( trans.app.model.Job ) \
-                               .filter( and_( trans.app.model.Job.table.c.update_time < cutoff_time,
-                                              or_( trans.app.model.Job.state == trans.app.model.Job.states.NEW,
-                                                   trans.app.model.Job.state == trans.app.model.Job.states.QUEUED,
-                                                   trans.app.model.Job.state == trans.app.model.Job.states.RUNNING,
-                                                   trans.app.model.Job.state == trans.app.model.Job.states.UPLOAD ) ) ) \
-                               .order_by( trans.app.model.Job.table.c.update_time.desc() ).all()
-        recent_jobs = trans.sa_session.query( trans.app.model.Job ) \
-            .filter( and_( trans.app.model.Job.table.c.update_time > cutoff_time,
-                           or_( trans.app.model.Job.state == trans.app.model.Job.states.ERROR,
-                                trans.app.model.Job.state == trans.app.model.Job.states.OK) ) ) \
-            .order_by( trans.app.model.Job.table.c.update_time.desc() ).all()
-        last_updated = {}
-        for job in jobs:
-            delta = datetime.utcnow() - job.update_time
-            if delta.days > 0:
-                last_updated[job.id] = '%s hours' % ( delta.days * 24 + int( delta.seconds / 60 / 60 ) )
-            elif delta > timedelta( minutes=59 ):
-                last_updated[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
-            else:
-                last_updated[job.id] = '%s minutes' % int( delta.seconds / 60 )
-        finished = {}
-        for job in recent_jobs:
-            delta = datetime.utcnow() - job.update_time
-            if delta.days > 0:
-                finished[job.id] = '%s hours' % ( delta.days * 24 + int( delta.seconds / 60 / 60 ) )
-            elif delta > timedelta( minutes=59 ):
-                finished[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
-            else:
-                finished[job.id] = '%s minutes' % int( delta.seconds / 60 )
-        return trans.fill_template( '/admin/jobs.mako',
-                                    jobs=jobs,
-                                    recent_jobs=recent_jobs,
-                                    last_updated=last_updated,
-                                    finished=finished,
-                                    cutoff=cutoff,
-                                    msg=msg,
-                                    status=status,
-                                    job_lock=job_lock)
-
-    @web.expose
-    @web.require_admin
-    def job_info( self, trans, jobid=None ):
-        job = None
-        if jobid is not None:
-            job = trans.sa_session.query( trans.app.model.Job ).get(jobid)
-        return trans.fill_template( '/webapps/reports/job_info.mako',
-                                    job=job,
-                                    message="<a href='jobs'>Back</a>" )
-
-    @web.expose
-    @web.require_admin
-    def manage_tool_dependencies( self,
-                                  trans,
-                                  install_dependencies=False,
-                                  uninstall_dependencies=False,
-                                  remove_unused_dependencies=False,
-                                  selected_tool_ids=None,
-                                  selected_environments_to_uninstall=None,
-                                  viewkey='View tool-centric dependencies'):
-        if not selected_tool_ids:
-            selected_tool_ids = []
-        if not selected_environments_to_uninstall:
-            selected_environments_to_uninstall = []
-        tools_by_id = trans.app.toolbox.tools_by_id
-        view = six.next(six.itervalues(trans.app.toolbox.tools_by_id))._view
-        if selected_tool_ids:
-            # install the dependencies for the tools in the selected_tool_ids list
-            if not isinstance(selected_tool_ids, list):
-                selected_tool_ids = [selected_tool_ids]
-            requirements = set([tools_by_id[tid].tool_requirements for tid in selected_tool_ids])
-            if install_dependencies:
-                [view.install_dependencies(r) for r in requirements]
-            elif uninstall_dependencies:
-                [view.uninstall_dependencies(index=None, requirements=r) for r in requirements]
-        if selected_environments_to_uninstall and remove_unused_dependencies:
-            if not isinstance(selected_environments_to_uninstall, list):
-                selected_environments_to_uninstall = [selected_environments_to_uninstall]
-            view.remove_unused_dependency_paths(selected_environments_to_uninstall)
-        return trans.fill_template( '/webapps/galaxy/admin/manage_dependencies.mako',
-                                    tools=tools_by_id,
-                                    requirements_status=view.toolbox_requirements_status,
-                                    tool_ids_by_requirements=view.tool_ids_by_requirements,
-                                    unused_environments=view.unused_dependency_paths,
-                                    viewkey=viewkey )
-
-    @web.expose
-    @web.require_admin
-    def sanitize_whitelist( self, trans, submit_whitelist=False, tools_to_whitelist=[]):
-        if submit_whitelist:
-            # write the configured sanitize_whitelist_file with new whitelist
-            # and update in-memory list.
-            with open(trans.app.config.sanitize_whitelist_file, 'wt') as f:
-                if isinstance(tools_to_whitelist, six.string_types):
-                    tools_to_whitelist = [tools_to_whitelist]
-                new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
-                f.write("\n".join(new_whitelist))
-            trans.app.config.sanitize_whitelist = new_whitelist
-            galaxy.queue_worker.send_control_task(trans.app, 'reload_sanitize_whitelist', noop_self=True)
-            # dispatch a message to reload list for other processes
-        return trans.fill_template( '/webapps/galaxy/admin/sanitize_whitelist.mako',
-                                    sanitize_all=trans.app.config.sanitize_all_html,
-                                    tools=trans.app.toolbox.tools_by_id )
-
 
 # ---- Utility methods -------------------------------------------------------
 
@@ -1175,14 +961,6 @@ def get_user( trans, user_id ):
     if not user:
         return trans.show_error_message( "User not found for id (%s)" % str( user_id ) )
     return user
-
-
-def get_user_by_username( trans, username ):
-    """Get a user from the database by username"""
-    # TODO: Add exception handling here.
-    return trans.sa_session.query( trans.model.User ) \
-                           .filter( trans.model.User.table.c.username == username ) \
-                           .one()
 
 
 def get_role( trans, id ):
@@ -1203,11 +981,3 @@ def get_group( trans, id ):
     if not group:
         return trans.show_error_message( "Group not found for id (%s)" % str( id ) )
     return group
-
-
-def get_quota( trans, id ):
-    """Get a Quota from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id( id )
-    quota = trans.sa_session.query( trans.model.Quota ).get( id )
-    return quota
