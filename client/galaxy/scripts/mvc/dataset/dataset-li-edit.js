@@ -60,7 +60,7 @@ var DatasetListItemEdit = _super.extend(
             deleted = this.model.get( 'deleted' ),
             editBtnData = {
                 title       : _l( 'Edit attributes' ),
-                href        : Galaxy.root + 'datasets/edit?dataset_id=' + this.model.attributes.dataset_id,
+                href        : Galaxy.root + 'datasets/edit?dataset_id=' + this.model.attributes.id,
                 faIcon      : 'fa-pencil',
                 classes     : 'edit-btn'
             };
