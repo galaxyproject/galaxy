@@ -285,7 +285,7 @@ var Collection = Backbone.Collection.extend({
                         }
                     },{
                         title   : _l('Logout'),
-                        url     : 'user/logout',
+                        url     : 'user/logout?session_csrf_token=' + Galaxy.session_csrf_token,
                         target  : '_top',
                         divider : true
                     },{
