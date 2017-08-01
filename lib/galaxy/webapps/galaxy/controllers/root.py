@@ -41,7 +41,6 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
         user_requests = bool( trans.user and ( trans.user.requests or app.security_agent.get_accessible_request_types( trans, trans.user ) ) )
         config = {
             'active_view'                   : 'analysis',
-            'params'                        : dict( trans.request.params ),
             'enable_cloud_launch'           : app.config.get_bool( 'enable_cloud_launch', False ),
             # TODO: next two should be redundant - why can't we build one from the other?
             'toolbox'                       : app.toolbox.to_dict( trans, in_panel=False ),

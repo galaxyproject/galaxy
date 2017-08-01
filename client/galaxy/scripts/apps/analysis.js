@@ -33,7 +33,6 @@ var jQuery = require( 'jquery' ),
 window.app = function app( options, bootstrapped ){
     window.Galaxy = new GalaxyApp( options, bootstrapped );
     Galaxy.debug( 'analysis app' );
-    Galaxy.params = Galaxy.config.params;
 
     var routingMessage = Backbone.View.extend({
         initialize: function(options) {

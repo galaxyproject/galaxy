@@ -10,7 +10,6 @@ var jQuery = require( 'jquery' ),
 window.app = function app( options, bootstrapped ){
     window.Galaxy = new GalaxyApp( options, bootstrapped );
     Galaxy.debug( 'admin app' );
-    Galaxy.params = Galaxy.config.params;
 
     /** Routes */
     var AdminRouter = Router.extend({
@@ -23,7 +22,8 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_users: function() {
-            this.page.display( new GridView( { url_base: Galaxy.root + 'admin/users_list', dict_format: true } ) );
+            window.console.log( $.param( Galaxy.params ) );
+            this.page.display( new GridView( { url_base: Galaxy.root + 'admin/users_list?' + $.param( Galaxy.params ), dict_format: true } ) );
         }
     });
 
