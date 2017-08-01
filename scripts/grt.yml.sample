@@ -13,7 +13,7 @@ grt:
     # Are you willing to share your toolbox? I.e. what tools are installed.
     # If your instance is public, this can help us direct users to your
     # instance.
-    share_toolbox: False
+    share_toolbox: True
 
 
 blacklist:

@@ -52,7 +52,7 @@ def _init(config, need_app=False):
         logging.warning("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.ini")
 
     if need_app:
-        app = galaxy.app.UniverseApplication(global_conf={'__file__': config_file, 'here': os.getcwd()}),
+        app = galaxy.app.UniverseApplication(global_conf={'__file__': config_file, 'here': os.getcwd()})
     else:
         app = None
 
@@ -207,6 +207,8 @@ def main(argv):
 
     annotate('galaxy_init', 'Loading Galaxy...')
     model, object_store, engine, gxconfig, app = _init(config['galaxy_config'], need_app=config['grt']['share_toolbox'])
+    # Galaxy overrides our logging level.
+    logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
     sa_session = model.context.current
     annotate('galaxy_end')
 
