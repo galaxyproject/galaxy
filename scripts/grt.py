@@ -7,6 +7,7 @@ from __future__ import print_function
 
 import argparse
 import gzip
+import tarfile
 import json
 import os
 import sqlalchemy as sa
@@ -170,13 +171,19 @@ def main(argv):
                         default=default_config)
     parser.add_argument("-l", "--loglevel", choices=['debug', 'info', 'warning', 'error', 'critical'],
                         help="Set the logging level", default='warning')
+    # parser.add_argument("-m", "--max-batch", type=int, min=1, help="The maximum number of records to be exported in a single invocation of GRT.")
 
     args = parser.parse_args()
     logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
 
     _times = []
     _start_time = time.time()
-    logging.info('Loading GRT ini...')
+    def annotate(label, human_label=None):
+        if human_label:
+            logging.info(human_label)
+        _times.append((label, time.time() - _start_time))
+
+    annotate('init_start', 'Loading GRT ini...')
     try:
         with open(args.config) as handle:
             config = yaml.load(handle)
@@ -184,7 +191,7 @@ def main(argv):
         logging.info('Using default GRT Configuration')
         with open(sample_config) as handle:
             config = yaml.load(handle)
-    _times.append(('conf_loaded', time.time() - _start_time))
+    annotate('init_end')
 
     REPORT_DIR = args.report_directory
     CHECK_POINT_FILE = os.path.join(REPORT_DIR, '.checkpoint')
@@ -197,12 +204,10 @@ def main(argv):
     else:
         last_job_sent = -1
 
-    logging.info('Loading Galaxy...')
+    annotate('galaxy_init', 'Loading Galaxy...')
     model, object_store, engine, gxconfig, app = _init(config['galaxy_config'], need_app=config['grt']['share_toolbox'])
-
     sa_session = model.context.current
-    logging.info('Configuration Loaded')
-    _times.append(('gx_conf_loaded', time.time() - _start_time))
+    annotate('galaxy_end')
 
     # Fetch jobs COMPLETED with status OK that have not yet been sent.
 
@@ -210,64 +215,91 @@ def main(argv):
     active_users = defaultdict(int)
     grt_jobs_data = []
 
-    logging.info('Building Sanitizer')
-    _times.append(('san_init', time.time() - _start_time))
+    annotate('san_init', 'Building Sanitizer')
     san = Sanitization(config['blacklist'], model, sa_session)
-    _times.append(('san_fin', time.time() - _start_time))
+    annotate('san_end')
 
-    logging.info('Loading Jobs')
-    _times.append(('job_init', time.time() - _start_time))
+    if not os.path.exists(REPORT_DIR):
+        os.makedirs(REPORT_DIR)
 
-    # Batch the database queries to improve the performance.
-    # Get the maximum value.
-    max_job_id = sa_session.query(model.Job.id) \
-        .filter(model.Job.id > last_job_sent) \
+
+    # Pick an end point so our queries can return uniform data.
+    annotate('endpoint_start', 'Identifying a safe endpoint for SQL queries')
+    end_job_id = sa_session.query(model.Job.id) \
         .order_by(model.Job.id.desc()) \
         .first()[0]
+    annotate('endpoint_end')
 
-    for selection_start in range(last_job_sent, max_job_id + 1, 1000):
-        logging.info("Processing %s - %s", selection_start, selection_start + 1000)
-        _processing_times = []
-        # For every job
-        for job in sa_session.query(model.Job)\
-                .filter(sa.and_(
-                    model.Job.table.c.state == "ok",
-                    model.Job.table.c.id > selection_start,
-                    model.Job.table.c.id < selection_start + 1000
-                ))\
-                .order_by(model.Job.table.c.id.asc())\
-                .all():
-            if job.id % 100 == 0:
-                logging.info(str(job.id))
+    annotate('export_jobs_start', 'Exporting Jobs')
+    handle_job = open(REPORT_BASE + '.jobs.tsv', 'w')
+    for job in sa_session.query(model.Job.id, model.Job.tool_id, model.Job.state) \
+            .filter(model.Job.id > last_job_sent) \
+            .filter(model.Job.id <= end_job_id) \
+            .all():
 
-            _job_start_time = time.time()
-            if job.tool_id in config['blacklist'].get('tools', []):
-                continue
+        handle_job.write(str(job[0]))
+        handle_job.write('\t')
+        handle_job.write(job[1])
+        handle_job.write('\n')
+    handle_job.close()
+    annotate('export_jobs_end')
 
-            # If the user has run a job, they're active.
-            active_users[job.user_id] += 1
 
-            metrics = kw_metrics(job)
+    annotate('export_metric_num_start', 'Exporting Metrics (Numeric)')
+    handle_metric_num = open(REPORT_BASE + '.metric_num.tsv', 'w')
+    for metric in sa_session.query(model.JobMetricNumeric.job_id, model.JobMetricNumeric.plugin, model.JobMetricNumeric.metric_name, model.JobMetricNumeric.metric_value) \
+            .filter(model.JobMetricNumeric.job_id > last_job_sent) \
+            .filter(model.JobMetricNumeric.job_id <= end_job_id) \
+            .all():
 
-            params = job.raw_param_dict()
-            for key in params:
-                params[key] = json.loads(params[key])
+        handle_metric_num.write(str(metric[0]))
+        handle_metric_num.write('\t')
+        handle_metric_num.write(metric[1])
+        handle_metric_num.write('\t')
+        handle_metric_num.write(metric[2])
+        handle_metric_num.write('\t')
+        handle_metric_num.write(str(metric[3]))
+        handle_metric_num.write('\n')
+    handle_metric_num.close()
+    annotate('export_metric_num_end')
 
-            logging.debug("Sanitizing %s %s" % (job.tool_id, str(params)))
-            job_data = (
-                str(job.id),
-                job.tool_id,
-                job.tool_version,
-                job.update_time.strftime('%s'),
-                json.dumps(metrics, default=dumper),
-                json.dumps(san.sanitize_data(job.tool_id, params))
-            )
-            grt_jobs_data.append(job_data)
-            _processing_times.append(time.time() - _job_start_time)
-        logging.info('Min %s', min(_processing_times))
-        logging.info('Max %s', max(_processing_times))
-        logging.info('Avg %s', sum(t / len(_processing_times) for t in _processing_times))
-    _times.append(('job_fin', time.time() - _start_time))
+
+    annotate('export_metric_txt_start', 'Exporting Metrics (Text)')
+    handle_metric_txt = open(REPORT_BASE + '.metric_txt.tsv', 'w')
+    for metric in sa_session.query(model.JobMetricText.job_id, model.JobMetricText.plugin, model.JobMetricText.metric_name, model.JobMetricText.metric_value) \
+            .filter(model.JobMetricText.job_id > last_job_sent) \
+            .filter(model.JobMetricText.job_id <= end_job_id) \
+            .all():
+
+        handle_metric_txt.write(str(metric[0]))
+        handle_metric_txt.write('\t')
+        handle_metric_txt.write(metric[1])
+        handle_metric_txt.write('\t')
+        handle_metric_txt.write(metric[2])
+        handle_metric_txt.write('\t')
+        handle_metric_txt.write(metric[3])
+        handle_metric_txt.write('\n')
+    handle_metric_txt.close()
+    annotate('export_metric_txt_end')
+
+
+    # job, metric_text, metric_num, params
+
+    annotate('export_params_start', 'Export Job Parameters')
+    handle_params = open(REPORT_BASE + '.params.tsv', 'w')
+    for param in sa_session.query(model.JobParameter.job_id, model.JobParameter.name, model.JobParameter.value) \
+            .filter(model.JobParameter.job_id > last_job_sent) \
+            .filter(model.JobParameter.job_id <= end_job_id) \
+            .all():
+
+        handle_params.write(str(param[0]))
+        handle_params.write('\t')
+        handle_params.write(param[1])
+        handle_params.write('\t')
+        handle_params.write(param[2])
+        handle_params.write('\n')
+    handle_params.close()
+    annotate('export_params_end')
 
     # Remember the last job sent.
     if len(grt_jobs_data) > 0:
@@ -276,15 +308,13 @@ def main(argv):
         logging.info("No new jobs to report")
 
     # Now on to outputs.
-    if not os.path.exists(REPORT_DIR):
-        os.makedirs(REPORT_DIR)
 
-    with gzip.open(REPORT_BASE + '.tsv.gz', 'w') as handle:
-        for job in grt_jobs_data:
-            handle.write('\t'.join(job))
-            handle.write('\n')
+    with tarfile.open(REPORT_BASE + '.tar.gz', 'w:gz') as handle:
+        for name in ('jobs', 'metric_num', 'metric_txt', 'params'):
+            handle.add(REPORT_BASE + '.' + name + '.tsv')
+
     _times.append(('job_finish', time.time() - _start_time))
-    sha = subprocess.check_output(['sha256sum', REPORT_BASE + '.tsv.gz'])
+    sha = subprocess.check_output(['sha256sum', REPORT_BASE + '.tar.gz'])
     _times.append(('hash_finish', time.time() - _start_time))
     # Strip out to space
     sha = sha[0:sha.index(' ')]
