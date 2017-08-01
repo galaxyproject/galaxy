@@ -27,7 +27,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_roles: function() {
-            this.page.display( new GridView( { url_base: Galaxy.root + 'admin/roles_list', dict_format: true } ) );
+            this.page.display( new GridView( { url_base: Galaxy.root + 'admin/roles_list', url_data: Galaxy.params, dict_format: true } ) );
         }
     });
 
