@@ -151,10 +151,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
                         '<th>Owner</th>' +
                         '<th># of Steps</th>' +
                         '<th>Published</th>' +
-                        '<th>Show in Tools panel</th>' +
+                        '<th>Show in tools panel</th>' +
                     '</tr></thead>';
             _.each( workflows, function( wf ) {
-                var checkbox_html = '<input type="checkbox" class="show-in-tool-panel" '+ ( wf.show_in_tool_panel ? 'checked="' + wf.show_in_tool_panel + '"' : "" ) +' value="' + wf.wf_id + '">';
+                var checkbox_html = '<input type="checkbox" class="show-in-tool-panel" '+ ( wf.show_in_tool_panel ? 'checked="' + wf.show_in_tool_panel + '"' : "" ) +' value="' + wf.id + '">';
                 trHtml = trHtml + '<tr>' +
                              '<td>' +
                                  '<div class="dropdown">' +
