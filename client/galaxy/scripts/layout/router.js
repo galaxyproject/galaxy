@@ -19,6 +19,7 @@ var Router = Backbone.Router.extend({
             url += url.indexOf( '?' ) == -1 ? '?' : '&';
             url += $.param( data , true );
         }
+        Galaxy.params = {};
         this.navigate( url, { 'trigger': true } );
     },
 

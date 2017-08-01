@@ -135,6 +135,12 @@ class MetadataCollection( object ):
                 return self.spec[name].no_value
             return rval
 
+    def get_metadata_parameter( self, name, **kwd ):
+        if name in self.spec:
+            html_field = self.spec[name].param.get_html_field( getattr( self, name ), self, None, **kwd )
+            html_field.value = getattr( self, name )
+            return html_field
+
     def make_dict_copy( self, to_copy ):
         """Makes a deep copy of input iterable to_copy according to self.spec"""
         rval = {}

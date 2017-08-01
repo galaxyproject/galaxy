@@ -35,7 +35,7 @@ return Backbone.View.extend({
         if ( this.dict_format ) {
             this.setElement('<div/>');
             if ( grid_config.url_base && !grid_config.items ) {
-                var url_data = {};
+                var url_data = grid_config.url_data || {};
                 _.each(grid_config.filters, function(v, k) {
                     url_data['f-' + k] = v;
                 });

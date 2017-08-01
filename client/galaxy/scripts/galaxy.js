@@ -46,8 +46,10 @@ GalaxyApp.prototype._init = function __init( options, bootstrapped ){
     }
 
     self._processOptions( options );
-    // special case for root
+
+    // add root and url parameters
     self.root = options.root || '/';
+    self.params = options.params || {};
 
     self._initConfig( options.config || {} );
     self._patchGalaxy( window.Galaxy );

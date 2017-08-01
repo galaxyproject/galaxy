@@ -76,7 +76,7 @@ var AdminPanel = Backbone.View.extend({
             items : [ {
                 title   : 'Users',
                 url     : 'admin/users',
-                target  : 'top'
+                target  : '__use_router__'
             },{
                 title   : 'Groups',
                 url     : 'admin/groups'
@@ -141,10 +141,13 @@ var AdminPanel = Backbone.View.extend({
             var $entries = $section.find( '.ui-side-section-body' );
             _.each( category.get( 'items' ), function( item ) {
                 if ( item.enabled === undefined || item.enabled ) {
-                    $entries.append( $( '<div/>' ).addClass( 'ui-side-section-body-title' )
-                                                  .append( $( '<a/>' ).attr({
-                                                                href    : self.root + item.url,
-                                                                target  : item.target || 'galaxy_main' }).text( _l( item.title ) ) ) );
+                    var $link = $( '<a/>' ).attr( { href : self.root + item.url } ).text( _l( item.title ) );
+                    if ( item.target == '__use_router__' ) {
+                        $link.on( 'click', function( e ) { e.preventDefault(); self.page.router.push( item.url ); } );
+                    } else {
+                        $link.attr( 'target', 'galaxy_main' );
+                    }
+                    $entries.append( $( '<div/>' ).addClass( 'ui-side-section-body-title' ).append( $link ) );
                 }
             });
             self.$el.append( $section );

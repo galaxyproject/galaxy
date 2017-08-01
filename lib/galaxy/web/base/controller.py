@@ -266,7 +266,8 @@ class JSAppLauncher( BaseUIController ):
         js_options = {
             'root'      : root,
             'user'      : self.user_serializer.serialize( trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans ),
-            'config'    : self._get_site_configuration( trans )
+            'config'    : self._get_site_configuration( trans ),
+            'params'    : dict( trans.request.params )
         }
         return js_options
 
