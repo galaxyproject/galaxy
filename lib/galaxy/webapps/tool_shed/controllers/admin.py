@@ -6,7 +6,7 @@ from galaxy import web
 from tool_shed.util.web_util import escape
 
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.base.controllers.admin import Admin
+from tool_shed.util.admin_util import Admin
 
 import tool_shed.grids.admin_grids as admin_grids
 from tool_shed.metadata import repository_metadata_manager
