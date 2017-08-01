@@ -60,12 +60,10 @@ var DatasetListItemEdit = _super.extend(
             deleted = this.model.get( 'deleted' ),
             editBtnData = {
                 title       : _l( 'Edit attributes' ),
-                href        : this.model.urls.edit,
-                target      : this.linkTarget,
+                href        : Galaxy.root + 'datasets/edit?dataset_id=' + this.model.attributes.id,
                 faIcon      : 'fa-pencil',
                 classes     : 'edit-btn'
             };
-
         // disable if purged or deleted and explain why in the tooltip
         if( deleted || purged ){
             editBtnData.disabled = true;
