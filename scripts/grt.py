@@ -31,14 +31,6 @@ sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
 
 
-def dumper(obj):
-    try:
-        return obj.toJSON()
-    except AttributeError:
-        if obj.__class__.__name__ == 'Decimal':
-            return str(obj)
-
-
 def _init(config, need_app=False):
     if config.startswith('/'):
         config_file = os.path.abspath(config)
