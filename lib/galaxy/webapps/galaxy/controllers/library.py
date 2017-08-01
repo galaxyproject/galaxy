@@ -87,7 +87,7 @@ class Library( BaseUIController ):
         }
         return trans.fill_template( 'galaxy.panels.mako',
                                     config={
-                                        'title': 'Galaxy Data Libraries',
+                                        'title': 'Data Libraries',
                                         'app': app } )
 
     @web.expose

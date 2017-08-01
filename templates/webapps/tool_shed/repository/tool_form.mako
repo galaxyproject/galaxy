@@ -11,7 +11,13 @@
 
 <html>
     <head>
-        <title>Galaxy tool preview</title>
+        <title>
+            Galaxy
+            %if app.config.brand:
+            | ${app.config.brand}
+            %endif
+            | Tool Preview
+        </title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         ${h.css( "base" )}
     </head>

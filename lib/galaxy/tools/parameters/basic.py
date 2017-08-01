@@ -51,6 +51,10 @@ def contains_workflow_parameter( value, search=False ):
     return False
 
 
+def is_runtime_value( value ):
+    return isinstance( value, RuntimeValue ) or ( isinstance( value, dict ) and value.get( '__class__' ) == 'RuntimeValue' )
+
+
 def parse_dynamic_options( param, input_source ):
     options_elem = input_source.parse_dynamic_options_elem()
     if options_elem is not None:
@@ -71,7 +75,7 @@ class ToolParameter( object, Dictifiable ):
         self.tool = tool
         self.refresh_on_change_values = []
         self.argument = input_source.get( "argument" )
-        self.name = ToolParameter.parse_name( input_source )
+        self.name = self.__class__.parse_name( input_source )
         self.type = input_source.get( "type" )
         self.hidden = input_source.get( "hidden", False )
         self.refresh_on_change = input_source.get_bool( "refresh_on_change", False )
@@ -133,16 +137,13 @@ class ToolParameter( object, Dictifiable ):
         return value
 
     def value_to_basic( self, value, app, use_security=False ):
-        if isinstance( value, RuntimeValue ):
+        if is_runtime_value( value ):
             return { '__class__': 'RuntimeValue' }
-        elif isinstance( value, dict ):
-            if value.get( '__class__' ) == 'RuntimeValue':
-                return value
         return self.to_json( value, app, use_security )
 
     def value_from_basic( self, value, app, ignore_errors=False ):
         # Handle Runtime and Unvalidated values
-        if isinstance( value, dict ) and value.get( '__class__' ) == 'RuntimeValue':
+        if is_runtime_value( value ):
             return RuntimeValue()
         elif isinstance( value, dict ) and value.get( '__class__' ) == 'UnvalidatedValue':
             return value[ 'value' ]
@@ -155,22 +156,27 @@ class ToolParameter( object, Dictifiable ):
         else:
             return self.to_python( value, app )
 
-    def value_to_display_text( self, value, app=None ):
+    def value_to_display_text( self, value ):
+        if is_runtime_value( value ):
+            return "Not available."
+        return self.to_text( value )
+
+    def to_text( self, value ):
         """
         Convert a value to a text representation suitable for displaying to
         the user
         >>> p = ToolParameter( None, XML( '<param name="_name" />' ) )
-        >>> print p.value_to_display_text( None )
+        >>> print p.to_text( None )
         Not available.
-        >>> print p.value_to_display_text( '' )
+        >>> print p.to_text( '' )
         Empty.
-        >>> print p.value_to_display_text( 'text' )
+        >>> print p.to_text( 'text' )
         text
-        >>> print p.value_to_display_text( True )
+        >>> print p.to_text( True )
         True
-        >>> print p.value_to_display_text( False )
+        >>> print p.to_text( False )
         False
-        >>> print p.value_to_display_text( 0 )
+        >>> print p.to_text( 0 )
         0
         """
         if value is not None:
@@ -221,8 +227,8 @@ class ToolParameter( object, Dictifiable ):
         else:
             return parameter_types[ param_type ]( tool, param )
 
-    @classmethod
-    def parse_name( cls, input_source ):
+    @staticmethod
+    def parse_name( input_source ):
         name = input_source.get( 'name' )
         if name is None:
             argument = input_source.get( 'argument' )
@@ -806,7 +812,7 @@ class SelectToolParameter( ToolParameter ):
         legal_values = self.get_legal_values( trans, other_values )
         workflow_building_mode = trans.workflow_building_mode
         for context_value in other_values.values():
-            if isinstance( context_value, RuntimeValue ):
+            if is_runtime_value( context_value ):
                 workflow_building_mode = True
                 break
         if len( list( legal_values ) ) == 0 and workflow_building_mode:
@@ -886,7 +892,7 @@ class SelectToolParameter( ToolParameter ):
             value = value[ 0 ]
         return value
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         if not isinstance( value, list ):
             value = [ value ]
         # FIXME: Currently only translating values back to labels if they
@@ -1351,7 +1357,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             initial_values = None
         return initial_values
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         def get_option_display( value, options ):
             for option in options:
                 if value == option['value']:
@@ -1422,12 +1428,16 @@ class BaseDataToolParameter( ToolParameter ):
     def _parse_formats( self, trans, tool, input_source ):
         datatypes_registry = self._datatypes_registery( trans, tool )
 
-        # Build tuple of classes for supported data formats
-        formats = []
+        # Build list of classes for supported data formats
         self.extensions = input_source.get( 'format', 'data' ).split( "," )
         normalized_extensions = [extension.strip().lower() for extension in self.extensions]
+        formats = []
         for extension in normalized_extensions:
-            formats.append( datatypes_registry.get_datatype_by_extension( extension ) )
+            datatype = datatypes_registry.get_datatype_by_extension(extension)
+            if datatype is not None:
+                formats.append(datatype)
+            else:
+                log.warning("Datatype class not found for extension '%s', which is used in the 'format' attribute of parameter '%s'" % (extension, self.name))
         self.formats = formats
 
     def _parse_options( self, input_source ):
@@ -1560,10 +1570,12 @@ class DataToolParameter( BaseDataToolParameter ):
         self._parse_options( input_source )
         # Load conversions required for the dataset input
         self.conversions = []
-        for name, conv_extensions in input_source.parse_conversion_tuples():
-            assert None not in [ name, conv_extensions ], 'A name (%s) and type (%s) are required for explicit conversion' % ( name, conv_extensions )
-            conv_types = [ tool.app.datatypes_registry.get_datatype_by_extension( conv_extensions.lower() ) ]
-            self.conversions.append( ( name, conv_extensions, conv_types ) )
+        for name, conv_extension in input_source.parse_conversion_tuples():
+            assert None not in [ name, conv_extension ], 'A name (%s) and type (%s) are required for explicit conversion' % ( name, conv_extension )
+            conv_type = tool.app.datatypes_registry.get_datatype_by_extension( conv_extension.lower() )
+            if conv_type is None:
+                raise ValueError("Datatype class not found for extension '%s', which is used as 'type' attribute in conversion of data parameter '%s'" % (conv_type, self.name))
+            self.conversions.append( ( name, conv_extension, [conv_type] ) )
 
     def match_collections( self, history, dataset_matcher, reduction=True ):
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
@@ -1651,7 +1663,7 @@ class DataToolParameter( BaseDataToolParameter ):
             return "None"
         return value.file_name
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         if value and not isinstance( value, list ):
             value = [ value ]
         if value:
@@ -1890,7 +1902,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             # TODO: Handle error states, implement error states ...
         return rval
 
-    def value_to_display_text( self, value, app ):
+    def to_text( self, value ):
         try:
             if isinstance( value, galaxy.model.HistoryDatasetCollectionAssociation ):
                 display_text = "%s: %s" % ( value.hid, value.name )

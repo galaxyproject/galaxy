@@ -79,7 +79,7 @@ class NavigatesGalaxy(HasDriver):
             self.switch_to_main_panel()
             yield
         finally:
-            self.driver.switch_to.default_content
+            self.driver.switch_to.default_content()
 
     def api_get(self, endpoint, data={}, raw=False):
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
@@ -148,7 +148,14 @@ class NavigatesGalaxy(HasDriver):
         contents = self.api_get("histories/%s/contents" % current_history_id)
         history_item = [d for d in contents if d["hid"] == hid][0]
         history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
-        self.wait_for_selector_visible(history_item_selector)
+        try:
+            self.wait_for_selector_visible(history_item_selector)
+        except self.TimeoutException as e:
+            dataset_elements = self.driver.find_elements_by_css_selector("#current-history-panel .list-items div")
+            div_ids = [d.get_attribute('id') for d in dataset_elements]
+            template = "Failed waiting on history item %d to become visible, visible datasets include [%s]."
+            message = template % (hid, ",".join(div_ids))
+            raise self.prepend_timeout_message(e, message)
         return history_item_selector
 
     def history_panel_wait_for_hid_hidden(self, hid, timeout=60):
@@ -367,8 +374,13 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def upload_build(self):
-        start_button = self.wait_for_selector_clickable("div#collection button#btn-build")
-        start_button.click()
+        build_button = self.wait_for_selector_clickable("div#collection button#btn-build")
+        # TODO: Eliminate the need for this hack. This hack is in here because the test
+        # occasionally fails at the next step because the UI has not transitioned to the
+        # new content. I assume that means this click is sent before the callback is
+        # registered.
+        time.sleep(.5)
+        build_button.click()
 
     def upload_queue_local_file(self, test_path, tab_id="regular"):
         local_upload_button = self.wait_for_selector_clickable("div#%s button#btn-local" % tab_id)
@@ -382,17 +394,16 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_workflow()
 
     def workflow_index_table_elements(self):
-        self.wait_for_selector_visible(".manage-table tbody")
-        table_elements = self.driver.find_elements_by_css_selector(".manage-table tbody > tr")
-        # drop header
-        return table_elements[1:]
+        self.wait_for_selector_visible("tbody.workflow-search")
+        table_elements = self.driver.find_elements_by_css_selector("tbody.workflow-search > tr")
+        return table_elements
 
     def workflow_index_click_option(self, option_title, workflow_index=0):
         table_elements = self.workflow_index_table_elements()
         workflow_row = table_elements[workflow_index]
         workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
         workflow_button.click()
-        menu_element = self.wait_for_selector_visible(".popmenu-wrapper .dropdown-menu")
+        menu_element = self.wait_for_selector_visible("ul.action-dpd")
         menu_options = menu_element.find_elements_by_css_selector("li a")
         found_option = False
         for menu_option in menu_options:
@@ -438,7 +449,8 @@ class NavigatesGalaxy(HasDriver):
         self.click_xpath(self.navigation_data["selectors"]["masthead"]["workflow"])
 
     def click_button_new_workflow(self):
-        self.click_selector(self.navigation_data["selectors"]["workflows"]["new_button"])
+        element = self.wait_for_selector_clickable(self.navigation_data["selectors"]["workflows"]["new_button"])
+        element.click()
 
     def wait_for_sizzle_selector_clickable(self, selector):
         element = self._wait_on(
@@ -654,10 +666,13 @@ class NavigatesGalaxy(HasDriver):
         return self._assert_message("warning", contains=contains)
 
     def _assert_message(self, type, contains=None):
-        element = self.wait_for_selector(self.test_data["selectors"]["messages"][type])
+        element = self.wait_for_selector_visible(self.test_data["selectors"]["messages"][type])
         assert element, "No error message found, one expected."
         if contains is not None:
-            assert contains in element.text
+            text = element.text
+            if contains not in text:
+                message = "Text [%s] expected inside of [%s] but not found." % (contains, text)
+                raise AssertionError(message)
 
     def assert_no_error_message(self):
         self.assert_selector_absent(self.test_data["selectors"]["messages"]["error"])

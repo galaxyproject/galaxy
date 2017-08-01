@@ -15,9 +15,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             $( 'body' ).append( this.$el );
             this._configure();
             this.render();
-            this._refresh();
-            this.$el.on( 'click', function() { self._refresh() } );
-            this.$steps.scroll( function() { self._refresh() } );
             $( window ).resize( function() { self._refresh() } );
         },
 
@@ -25,7 +22,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _refresh: function( step_index ) {
             var margin = _.reduce( this.$el.children(), function( memo, child ) {
                 return memo + $( child ).outerHeight();
-            }, 0 ) - this.$steps.height() + 25;
+            }, 0 ) - this.$steps.height() + 90;
             this.$steps.css( 'height', $( window ).height() - margin );
         },
 
@@ -151,15 +148,16 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 if ( step.step_type == 'tool' ) {
                     var data_resolved = true;
                     FormData.visitInputs( step.inputs, function ( input, name, context ) {
+                        var is_runtime_value = input.value && input.value.__class__ == 'RuntimeValue';
                         var is_data_input = ([ 'data', 'data_collection' ]).indexOf( input.type ) != -1;
                         var data_ref = context[ input.data_ref ];
                         input.step_linked && !self._isDataStep( input.step_linked ) && ( data_resolved = false );
                         input.options && ( ( input.options.length == 0 && !data_resolved ) || input.wp_linked ) && ( input.is_workflow = true );
                         data_ref && ( input.is_workflow = ( data_ref.step_linked && !self._isDataStep( data_ref.step_linked ) ) || input.wp_linked );
                         ( is_data_input || ( input.value && input.value.__class__ == 'RuntimeValue' && !input.step_linked ) ) && ( step.collapsed = false );
-                        input.value && input.value.__class__ == 'RuntimeValue' && ( input.value = null );
+                        is_runtime_value && ( input.value = input.default_value );
                         input.flavor = 'workflow';
-                        if ( !is_data_input && input.type !== 'hidden' && !input.wp_linked ) {
+                        if ( !is_runtime_value && !is_data_input && input.type !== 'hidden' && !input.wp_linked ) {
                             if ( input.optional || ( !Utils.isEmpty( input.value ) && input.value !== '' ) ) {
                                 input.collapsible_value = input.value;
                                 input.collapsible_preview = true;
@@ -313,6 +311,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 }
                 self.forms[ step.index ] = form;
                 self._append( self.$steps, form.$el );
+                self._refresh();
                 step.needs_refresh && self._refreshStep( step );
                 form.portlet[ !self.show_progress ? 'enable' : 'disable' ]();
                 self.show_progress && self.execute_btn.model.set( { wait        : true,
@@ -351,7 +350,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                     var wp_field = self.wp_form.field_list[ self.wp_form.data.match( match[ 1 ] ) ];
                                     var wp_value = wp_field && wp_field.value();
                                     if ( wp_value ) {
-                                        new_value = new_value.replace( new RegExp( '\\' + match[ 0 ], 'g' ), wp_value );
+                                        new_value = new_value.split( match[ 0 ] ).join( wp_value );
                                     }
                                 }
                             }
@@ -456,7 +455,9 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         if ($.isArray( response ) && response.length > 0) {
                             self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
                             var WebhookApp = new Webhooks.WebhookView({
-                                urlRoot: Galaxy.root + 'api/webhooks/workflow'
+                                urlRoot: Galaxy.root + 'api/webhooks/workflow',
+                                toolId: job_def.tool_id,
+                                toolVersion: job_def.tool_version,
                             });
                         }
 

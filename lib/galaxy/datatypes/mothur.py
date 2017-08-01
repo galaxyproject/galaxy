@@ -2,11 +2,12 @@
 Mothur Metagenomics Datatypes
 """
 import logging
-import sys
 import re
-from galaxy.datatypes.sniff import get_headers
-from galaxy.datatypes.metadata import MetadataElement
+import sys
+
 from galaxy.datatypes.data import Text
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.tabular import Tabular
 
 log = logging.getLogger(__name__)

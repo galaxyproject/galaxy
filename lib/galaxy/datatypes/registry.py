@@ -3,27 +3,30 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 """
 from __future__ import absolute_import
 
-import os
 import imp
 import logging
+import os
 import tempfile
+from collections import OrderedDict as odict
+from xml.etree.ElementTree import Element
 
 import yaml
 
 import galaxy.util
 
-from . import data
-from . import tabular
-from . import interval
-from . import images
-from . import sequence
-from . import qualityscore
-from . import xml
-from . import coverage
-from . import tracks
-from . import binary
-from . import text
-from galaxy.util.odict import odict
+from . import (
+    binary,
+    coverage,
+    data,
+    images,
+    interval,
+    qualityscore,
+    sequence,
+    tabular,
+    text,
+    tracks,
+    xml
+)
 from .display_applications.application import DisplayApplication
 
 
@@ -98,14 +101,17 @@ class Registry( object ):
             #           proprietary_path="[cloned repository path]"
             #           type="galaxy.datatypes.blast:BlastXml" />
             handling_proprietary_datatypes = False
-            # Parse datatypes_conf.xml
-            tree = galaxy.util.parse_xml( config )
-            root = tree.getroot()
-            # Load datatypes and converters from config
-            if deactivate:
-                self.log.debug( 'Deactivating datatypes from %s' % config )
+            if not isinstance(config, Element):
+                # Parse datatypes_conf.xml
+                tree = galaxy.util.parse_xml( config )
+                root = tree.getroot()
+                # Load datatypes and converters from config
+                if deactivate:
+                    self.log.debug('Deactivating datatypes from %s' % config)
+                else:
+                    self.log.debug('Loading datatypes from %s' % config)
             else:
-                self.log.debug( 'Loading datatypes from %s' % config )
+                root = config
             registration = root.find( 'registration' )
             # Set default paths defined in local datatypes_conf.xml.
             if not self.converters_path:
@@ -187,7 +193,7 @@ class Registry( object ):
                                 datatype_module = fields[ 0 ]
                                 datatype_class_name = fields[ 1 ]
                             except Exception as e:
-                                self.log.exception( 'Error parsing datatype definition for dtype %s: %s' % ( str( dtype ), str( e ) ) )
+                                self.log.exception( 'Error parsing datatype definition for dtype %s', str( dtype ) )
                                 ok = False
                             if ok:
                                 datatype_class = None
@@ -217,13 +223,13 @@ class Registry( object ):
                                         datatype_class = getattr( module, datatype_class_name )
                                         self.log.debug( 'Retrieved datatype module %s:%s from the datatype registry.' % ( str( datatype_module ), datatype_class_name ) )
                                     except Exception as e:
-                                        self.log.exception( 'Error importing datatype module %s: %s' % ( str( datatype_module ), str( e ) ) )
+                                        self.log.exception( 'Error importing datatype module %s', str( datatype_module ) )
                                         ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[ type_extension ].__class__
                             except Exception as e:
-                                self.log.exception( 'Error determining datatype_class for type_extension %s: %s' % ( str( type_extension ), str( e ) ) )
+                                self.log.exception( 'Error determining datatype_class for type_extension %s', str( type_extension ) )
                                 ok = False
                         if ok:
                             if not deactivate:
@@ -301,15 +307,11 @@ class Registry( object ):
             self.upload_file_formats.sort()
             # Load build sites
             self._load_build_sites( root )
-            # Persist the xml form of the registry into a temporary file so that it can be loaded from the command line by tools and
-            # set_metadata processing.
-            self.to_xml_file()
         self.set_default_values()
 
         def append_to_sniff_order():
             # Just in case any supported data types are not included in the config's sniff_order section.
-            for ext in self.datatypes_by_extension:
-                datatype = self.datatypes_by_extension[ ext ]
+            for ext, datatype in self.datatypes_by_extension.items():
                 included = False
                 for atype in self.sniff_order:
                     if isinstance( atype, datatype.__class__ ):
@@ -324,7 +326,7 @@ class Registry( object ):
         def load_build_site( build_site_config ):
             # Take in either an XML element or simple dictionary from YAML and add build site for this.
             if not (build_site_config.get( 'type' ) and build_site_config.get( 'file' )):
-                self.log.exception( "Site is missing required 'type' and 'file' attributes: %s" )
+                self.log.exception( "Site is missing required 'type' and 'file' attributes" )
                 return
 
             site_type = build_site_config.get( 'type' )
@@ -397,7 +399,7 @@ class Registry( object ):
                         datatype_class_name = fields[ 1 ]
                         module = None
                     except Exception as e:
-                        self.log.exception( 'Error determining datatype class or module for dtype %s: %s' % ( str( dtype ), str( e ) ) )
+                        self.log.exception( 'Error determining datatype class or module for dtype %s', str( dtype ) )
                         ok = False
                     if ok:
                         if handling_proprietary_datatypes:
@@ -413,13 +415,13 @@ class Registry( object ):
                                 for comp in datatype_module.split( '.' )[ 1: ]:
                                     module = getattr( module, comp )
                             except Exception as e:
-                                self.log.exception( "Error importing datatype class for '%s': %s" % ( str( dtype ), str( e ) ) )
+                                self.log.exception( "Error importing datatype class for '%s'", str( dtype ) )
                                 ok = False
                         if ok:
                             try:
                                 aclass = getattr( module, datatype_class_name )()
                             except Exception as e:
-                                self.log.exception( 'Error calling method %s from class %s: %s', str( datatype_class_name ), str( module ), str( e ) )
+                                self.log.exception( 'Error calling method %s from class %s', str( datatype_class_name ), str( module ) )
                                 ok = False
                             if ok:
                                 if deactivate:
@@ -493,11 +495,11 @@ class Registry( object ):
         return mimetype
 
     def get_datatype_by_extension( self, ext ):
-        """Returns a datatype based on an extension"""
+        """Returns a datatype object based on an extension"""
         try:
             builder = self.datatypes_by_extension[ ext ]
         except KeyError:
-            builder = data.Text()
+            builder = None
         return builder
 
     def change_datatype( self, data, ext ):
@@ -559,12 +561,13 @@ class Registry( object ):
                     if source_datatype not in self.datatype_converters:
                         self.datatype_converters[ source_datatype ] = odict()
                     self.datatype_converters[ source_datatype ][ target_datatype ] = converter
-                    self.log.debug( "Loaded converter: %s", converter.id )
-            except Exception as e:
+                    if not hasattr(toolbox.app, 'tool_cache') or converter.id in toolbox.app.tool_cache._new_tool_ids:
+                        self.log.debug( "Loaded converter: %s", converter.id )
+            except Exception:
                 if deactivate:
-                    self.log.exception( "Error deactivating converter from (%s): %s" % ( converter_path, str( e ) ) )
+                    self.log.exception( "Error deactivating converter from (%s)" % converter_path )
                 else:
-                    self.log.exception( "Error loading converter (%s): %s" % ( converter_path, str( e ) ) )
+                    self.log.exception( "Error loading converter (%s)" % converter_path )
 
     def load_display_applications( self, app, installed_repository_dict=None, deactivate=False ):
         """
@@ -628,13 +631,13 @@ class Registry( object ):
                             if inherit and ( self.datatypes_by_extension[ extension ], display_app ) not in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.append( ( self.datatypes_by_extension[ extension ], display_app ) )
                             self.log.debug( "Loaded display application '%s' for datatype '%s', inherit=%s." % ( display_app.id, extension, inherit ) )
-                except Exception as e:
+                except Exception:
                     if deactivate:
-                        self.log.exception( "Error deactivating display application (%s): %s" % ( config_path, str( e ) ) )
+                        self.log.exception( "Error deactivating display application (%s)" % config_path )
                     else:
-                        self.log.exception( "Error loading display application (%s): %s" % ( config_path, str( e ) ) )
+                        self.log.exception( "Error loading display application (%s)" % config_path )
         # Handle display_application subclass inheritance.
-        for extension, d_type1 in self.datatypes_by_extension.iteritems():
+        for extension, d_type1 in self.datatypes_by_extension.items():
             for d_type2, display_app in self.inherit_display_application_by_class:
                 current_app = d_type1.get_display_application( display_app.id, None )
                 if current_app is None and isinstance( d_type1, type( d_type2 ) ):
@@ -666,6 +669,7 @@ class Registry( object ):
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
+        self.to_xml_file()
         set_meta_tool = toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug( "Loaded external metadata tool: %s", self.set_external_metadata_tool.id )
@@ -772,6 +776,7 @@ class Registry( object ):
                 qualityscore.QualityScoreSOLiD(),
                 qualityscore.QualityScore454(),
                 sequence.Fasta(),
+                sequence.FastqSanger(),
                 sequence.Fastq(),
                 interval.Wiggle(),
                 text.Html(),
@@ -792,10 +797,10 @@ class Registry( object ):
         """Returns available converters by source type"""
         converters = odict()
         source_datatype = type( self.get_datatype_by_extension( ext ) )
-        for ext2, dict in self.datatype_converters.items():
+        for ext2, converters_dict in self.datatype_converters.items():
             converter_datatype = type( self.get_datatype_by_extension( ext2 ) )
             if issubclass( source_datatype, converter_datatype ):
-                converters.update( dict )
+                converters.update( converters_dict )
         # Ensure ext-level converters are present
         if ext in self.datatype_converters.keys():
             converters.update( self.datatype_converters[ ext ] )
@@ -811,7 +816,10 @@ class Registry( object ):
     def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe=True ):
         """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
-            if self.get_datatype_by_extension( convert_ext ).matches_any( accepted_formats ):
+            convert_ext_datatype = self.get_datatype_by_extension( convert_ext )
+            if convert_ext_datatype is None:
+                self.log.warning("Datatype class not found for extension '%s', which is used as target for conversion from datatype '%s'" % (convert_ext, dataset.ext))
+            elif convert_ext_datatype.matches_any( accepted_formats ):
                 converted_dataset = dataset.get_converted_files_by_type( convert_ext )
                 if converted_dataset:
                     ret_data = converted_dataset
@@ -823,14 +831,14 @@ class Registry( object ):
         return ( None, None )
 
     def get_composite_extensions( self ):
-        return [ ext for ( ext, d_type ) in self.datatypes_by_extension.iteritems() if d_type.composite_type is not None ]
+        return [ ext for ( ext, d_type ) in self.datatypes_by_extension.items() if d_type.composite_type is not None ]
 
     def get_upload_metadata_params( self, context, group, tool ):
         """Returns dict of case value:inputs for metadata conditional for upload tool"""
         rval = {}
-        for ext, d_type in self.datatypes_by_extension.iteritems():
+        for ext, d_type in self.datatypes_by_extension.items():
             inputs = []
-            for meta_name, meta_spec in d_type.metadata_spec.iteritems():
+            for meta_name, meta_spec in d_type.metadata_spec.items():
                 if meta_spec.set_in_upload:
                     help_txt = meta_spec.desc
                     if not help_txt or help_txt == meta_name:
@@ -859,7 +867,6 @@ class Registry( object ):
     def integrated_datatypes_configs( self ):
         if self.xml_filename and os.path.isfile( self.xml_filename ):
             return self.xml_filename
-        self.to_xml_file()
         return self.xml_filename
 
     def to_xml_file( self ):

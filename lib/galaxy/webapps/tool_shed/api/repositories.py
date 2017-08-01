@@ -382,6 +382,9 @@ class RepositoriesController( BaseAPIController ):
         :param name:     (optional)the repository name.
         :type  name:     str
 
+        :param tool_ids:  (optional) a tool GUID to find the repository for
+        :param tool_ids:  str
+
         :returns dict:   object containing list of results
 
         Examples:
@@ -407,6 +410,47 @@ class RepositoriesController( BaseAPIController ):
             else:
                 response = json.dumps( search_results )
             return response
+        tool_ids = kwd.get( 'tool_ids', None )
+        if tool_ids is not None:
+            tool_ids = util.listify( tool_ids )
+            repository_found = []
+            all_metadata = dict()
+            for tool_id in tool_ids:
+                # A valid GUID looks like toolshed.g2.bx.psu.edu/repos/bgruening/deeptools/deeptools_computeMatrix/1.1.0
+                shed, _, owner, name, tool, version = tool_id.split( '/' )
+                clause_list = [ and_( self.app.model.Repository.table.c.deprecated == false(),
+                                      self.app.model.Repository.table.c.deleted == false(),
+                                      self.app.model.Repository.table.c.name == name,
+                                      self.app.model.User.table.c.username == owner,
+                                      self.app.model.Repository.table.c.user_id == self.app.model.User.table.c.id ) ]
+                repository = trans.sa_session.query( self.app.model.Repository ).filter( *clause_list ).first()
+                for changeset, changehash in repository.installable_revisions( self.app ):
+                    metadata = metadata_util.get_current_repository_metadata_for_changeset_revision( self.app, repository, changehash )
+                    tools = metadata.metadata[ 'tools' ]
+                    for tool in tools:
+                        if tool[ 'guid' ] in tool_ids:
+                            repository_found.append( '%d:%s' % ( int( changeset ), changehash ) )
+                    metadata = metadata_util.get_current_repository_metadata_for_changeset_revision( self.app, repository, changehash )
+                    if metadata is None:
+                        continue
+                    metadata_dict = metadata.to_dict( value_mapper={ 'id': self.app.security.encode_id, 'repository_id': self.app.security.encode_id } )
+                    metadata_dict[ 'repository' ] = repository.to_dict( value_mapper={ 'id': self.app.security.encode_id } )
+                    if metadata.has_repository_dependencies:
+                        metadata_dict[ 'repository_dependencies' ] = metadata_util.get_all_dependencies( self.app, metadata, processed_dependency_links=[] )
+                    else:
+                        metadata_dict[ 'repository_dependencies' ] = []
+                    if metadata.includes_tool_dependencies:
+                        metadata_dict[ 'tool_dependencies' ] = repository.get_tool_dependencies( self.app, changehash )
+                    else:
+                        metadata_dict[ 'tool_dependencies' ] = {}
+                    if metadata.includes_tools:
+                        metadata_dict[ 'tools' ] = metadata.metadata[ 'tools' ]
+                    all_metadata[ '%s:%s' % ( int( changeset ), changehash ) ] = metadata_dict
+            if repository_found is not None:
+                all_metadata[ 'current_changeset' ] = repository_found[ 0 ]
+                # all_metadata[ 'found_changesets' ] = repository_found
+                return json.dumps( all_metadata )
+            return '{}'
 
         clause_list = [ and_( self.app.model.Repository.table.c.deprecated == false(),
                               self.app.model.Repository.table.c.deleted == deleted ) ]
@@ -1088,11 +1132,9 @@ class RepositoriesController( BaseAPIController ):
             os.remove( uploaded_file_name )
         if not ok:
             return {
-                "err_msg": message,
-                "content_alert": content_alert_str
+                "err_msg": message
             }
         else:
             return {
-                "message": message,
-                "content_alert": content_alert_str
+                "message": message
             }

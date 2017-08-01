@@ -44,7 +44,7 @@ def upgrade(migrate_engine):
         try:
             i.create()
         except Exception:
-            log.exception("Adding index '%s' failed." % ix_name)
+            log.exception("Adding index '%s' failed.", ix_name)
 
 
 def downgrade(migrate_engine):

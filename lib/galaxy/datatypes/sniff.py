@@ -3,8 +3,9 @@ File format detector
 """
 from __future__ import absolute_import
 
-import gzip
 import bz2
+import codecs
+import gzip
 import logging
 import os
 import re
@@ -13,13 +14,13 @@ import sys
 import tempfile
 import zipfile
 
-from encodings import search_function as encodings_search_function
 from six import text_type
 
 from galaxy import util
-from galaxy.util import multi_byte
+from galaxy.datatypes.binary import Binary
 from galaxy.util import (
     compression_utils,
+    multi_byte,
     unicodify
 )
 from galaxy.util.checkers import (
@@ -28,7 +29,6 @@ from galaxy.util.checkers import (
     is_bz2,
     is_gzip
 )
-from galaxy.datatypes.binary import Binary
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +48,9 @@ def stream_to_open_named_file( stream, fd, filename, source_encoding=None, sourc
     is_compressed = False
     is_binary = False
     is_multi_byte = False
-    if not target_encoding or not encodings_search_function( target_encoding ):
+    try:
+        codecs.lookup(target_encoding)
+    except:
         target_encoding = util.DEFAULT_ENCODING  # utf-8
     if not source_encoding:
         source_encoding = util.DEFAULT_ENCODING  # sys.getdefaultencoding() would mimic old behavior (defaults to ascii)
@@ -198,28 +200,35 @@ def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+", tmp_dir=None, 
         return ( i + 1, temp_name )
 
 
-def get_headers( fname, sep, count=60, is_multi_byte=False ):
+def get_headers( fname, sep, count=60, is_multi_byte=False, comment_designator=None ):
     """
-    Returns a list with the first 'count' lines split by 'sep'
+    Returns a list with the first 'count' lines split by 'sep', ignoring lines
+    starting with 'comment_designator'
 
     >>> fname = get_test_fname('complete.bed')
     >>> get_headers(fname,'\\t')
     [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
+    >>> fname = get_test_fname('test.gff')
+    >>> get_headers(fname, '\\t', count=5, comment_designator='#')
+    [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
     """
     headers = []
-    in_file = compression_utils.get_fileobj(fname)
-    try:
-        for idx, line in enumerate(in_file):
+    with compression_utils.get_fileobj(fname) as in_file:
+        idx = 0
+        for line in in_file:
             line = line.rstrip('\n\r')
             if is_multi_byte:
                 # TODO: fix this - sep is never found in line
                 line = unicodify( line, 'utf-8' )
                 sep = sep.encode( 'utf-8' )
+                if comment_designator is not None and comment_designator != '':
+                    comment_designator = comment_designator.encode( 'utf-8' )
+            if comment_designator is not None and comment_designator != '' and line.startswith( comment_designator ):
+                continue
             headers.append( line.split(sep) )
+            idx += 1
             if idx == count:
                 break
-    finally:
-        in_file.close()
     return headers
 
 

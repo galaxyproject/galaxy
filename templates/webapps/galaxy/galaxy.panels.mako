@@ -159,9 +159,13 @@
         <meta http-equiv="x-ua-compatible" content="ie=edge,chrome=1">
 
         <title>
-        %if self.galaxy_config['title']:
-            ${self.galaxy_config['title']}
-        %endif
+            Galaxy
+            %if app.config.brand:
+            | ${app.config.brand}
+            %endif
+            %if self.galaxy_config['title']:
+            | ${self.galaxy_config['title']}
+            %endif
         </title>
 
         ${self.stylesheets()}

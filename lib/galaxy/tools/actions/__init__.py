@@ -214,7 +214,7 @@ class DefaultToolAction( object ):
         # format.
         input_ext = 'data' if tool.profile < 16.04 else "input"
         input_dbkey = incoming.get( "dbkey", "?" )
-        preserved_tags = []
+        preserved_tags = {}
         for name, data in reversed(inp_data.items()):
             if not data:
                 data = NoneDataset( datatypes_registry=app.datatypes_registry )
@@ -235,8 +235,8 @@ class DefaultToolAction( object ):
             if identifier is not None:
                 incoming[ "%s|__identifier__" % name ] = identifier
 
-            for tag in data.tags:
-                preserved_tags.append(tag)
+            for tag in [t for t in data.tags if t.user_tname == 'name']:
+                preserved_tags[tag.value] = tag
 
         # Collect chromInfo dataset and add as parameters to incoming
         ( chrom_info, db_dataset ) = app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len' )
@@ -306,8 +306,7 @@ class DefaultToolAction( object ):
                     data.visible = False
                 trans.sa_session.add( data )
                 trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions, new=True )
-
-            for tag in preserved_tags:
+            for _, tag in preserved_tags.items():
                 data.tags.append(tag.copy())
 
             # Must flush before setting object store id currently.
@@ -405,6 +404,7 @@ class DefaultToolAction( object ):
                     output_collections.create_collection(
                         output=output,
                         name=name,
+                        tags=preserved_tags,
                         **element_kwds
                     )
                 else:
@@ -678,7 +678,7 @@ class OutputCollections(object):
         self.out_collections = {}
         self.out_collection_instances = {}
 
-    def create_collection(self, output, name, **element_kwds):
+    def create_collection(self, output, name, tags=None, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = output.structure.collection_type
@@ -729,6 +729,7 @@ class OutputCollections(object):
                 name=hdca_name,
                 collection_type=collection_type,
                 trusted_identifiers=True,
+                tags=tags,
                 **element_kwds
             )
             # name here is name of the output element - not name

@@ -1,10 +1,10 @@
 """
 Determine what optional dependencies are needed.
 """
-import pkg_resources
-
 from os.path import dirname, join
 from xml.etree import ElementTree
+
+import pkg_resources
 
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -91,6 +91,9 @@ class ConditionalDependencies( object ):
     def check_statsd( self ):
         return self.config.get("statsd_host", None) is not None
 
+    def check_graphite( self ):
+        return self.config.get("graphite_host", None) is not None
+
     def check_weberror( self ):
         return ( asbool( self.config["debug"] ) and
                  asbool( self.config["use_interactive"] ) )
@@ -105,6 +108,9 @@ class ConditionalDependencies( object ):
 
     def check_azure_storage( self ):
         return 'azure_blob' in self.object_stores
+
+    def check_kamaki(self):
+        return 'pithos' in self.object_stores
 
 
 def optional( config_file ):

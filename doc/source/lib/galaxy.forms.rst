@@ -1,5 +1,5 @@
-galaxy.forms package
-====================
+galaxy\.forms package
+=====================
 
 .. automodule:: galaxy.forms
     :members:
@@ -9,8 +9,8 @@ galaxy.forms package
 Submodules
 ----------
 
-galaxy.forms.forms module
--------------------------
+galaxy\.forms\.forms module
+---------------------------
 
 .. automodule:: galaxy.forms.forms
     :members:

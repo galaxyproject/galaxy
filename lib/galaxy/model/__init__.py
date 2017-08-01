@@ -11,6 +11,7 @@ import logging
 import numbers
 import operator
 import os
+import pwd
 import socket
 import time
 from datetime import datetime, timedelta
@@ -83,6 +84,26 @@ def set_datatypes_registry( d_registry ):
     _datatypes_registry = d_registry
 
 
+class HasTags( object ):
+    dict_collection_visible_keys = ( 'tags' )
+    dict_element_visible_keys = ( 'tags' )
+
+    def to_dict(self, *args, **kwargs):
+        rval = super( HasTags, self ).to_dict(*args, **kwargs)
+        rval['tags'] = self.make_tag_string_list()
+        return rval
+
+    def make_tag_string_list(self):
+        # add tags string list
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        return tags_str_list
+
+
 class HasName:
 
     def get_display_name( self ):
@@ -151,9 +172,9 @@ class User( object, Dictifiable ):
     histories, credentials, and roles.
     """
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
-    dict_collection_visible_keys = ( 'id', 'email', 'username' )
+    dict_collection_visible_keys = ( 'id', 'email', 'username', 'deleted', 'active', 'last_password_change' )
     # attributes that will be accessed and returned when calling to_dict( view='element' )
-    dict_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
+    dict_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change' )
 
     def __init__( self, email=None, password=None ):
         self.email = email
@@ -185,6 +206,31 @@ class User( object, Dictifiable ):
         Check if `cleartext` matches user password when hashed.
         """
         return galaxy.security.passwords.check_password( cleartext, self.password )
+
+    def system_user_pwent(self, real_system_username):
+        """
+        Gives the system user pwent entry based on e-mail or username depending
+        on the value in real_system_username
+        """
+        system_user_pwent = None
+        if real_system_username == 'user_email':
+            try:
+                system_user_pwent = pwd.getpwnam(self.email.split('@')[0])
+            except KeyError:
+                pass
+        elif real_system_username == 'username':
+            try:
+                system_user_pwent = pwd.getpwnam(self.username)
+            except KeyError:
+                pass
+        else:
+            try:
+                system_user_pwent = pwd.getpwnam(real_system_username)
+            except KeyError:
+                log.warning("invalid configuration of real_system_username")
+                system_user_pwent = None
+                pass
+        return system_user_pwent
 
     def all_roles( self ):
         """
@@ -1157,7 +1203,7 @@ def is_hda(d):
     return isinstance( d, HistoryDatasetAssociation )
 
 
-class History( object, Dictifiable, UsesAnnotations, HasName ):
+class History( HasTags, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
@@ -1341,15 +1387,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
 
         # Get basic value.
         rval = super( History, self ).to_dict( view=view, value_mapper=value_mapper )
-
-        # Add tags.
-        tags_str_list = []
-        for tag in self.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            tags_str_list.append( tag_str )
-        rval[ 'tags' ] = tags_str_list
 
         if view == 'element':
             rval[ 'size' ] = int( self.disk_size )
@@ -1947,7 +1984,14 @@ class DatasetInstance( object ):
 
     @property
     def datatype( self ):
-        return _get_datatypes_registry().get_datatype_by_extension( self.extension )
+        extension = self.extension
+        if not extension or extension == 'auto' or extension == '_sniff_':
+            extension = 'data'
+        ret = _get_datatypes_registry().get_datatype_by_extension( extension )
+        if ret is None:
+            log.warning("Datatype class not found for extension '%s'" % extension)
+            return _get_datatypes_registry().get_datatype_by_extension( 'data' )
+        return ret
 
     def get_metadata( self ):
         # using weakref to store parent (to prevent circ ref),
@@ -2320,7 +2364,8 @@ class DatasetInstance( object ):
         return msg
 
 
-class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, HasName ):
+class HistoryDatasetAssociation( DatasetInstance, HasTags, Dictifiable, UsesAnnotations,
+                                 HasName ):
     """
     Resource class that creates a relation between a dataset and a user history.
     """
@@ -2494,6 +2539,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
         # other model classes.
+        original_rval = super( HistoryDatasetAssociation, self ).to_dict(view=view)
         hda = self
         rval = dict( id=hda.id,
                      hda_ldda='hda',
@@ -2516,14 +2562,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      misc_info=hda.info.strip() if isinstance( hda.info, string_types ) else hda.info,
                      misc_blurb=hda.blurb )
 
-        # add tags string list
-        tags_str_list = []
-        for tag in self.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            tags_str_list.append( tag_str )
-        rval[ 'tags' ] = tags_str_list
+        rval.update(original_rval)
 
         if hda.copied_from_library_dataset_dataset_association is not None:
             rval['copied_from_ldda_id'] = hda.copied_from_library_dataset_dataset_association.id
@@ -2881,6 +2920,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
         self.user = user
 
     def to_history_dataset_association( self, target_history, parent_id=None, add_to_history=False ):
+        sa_session = object_session( self )
         hda = HistoryDatasetAssociation( name=self.name,
                                          info=self.info,
                                          blurb=self.blurb,
@@ -2894,8 +2934,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                          parent_id=parent_id,
                                          copied_from_library_dataset_dataset_association=self,
                                          history=target_history )
-        object_session( self ).add( hda )
-        object_session( self ).flush()
+        sa_session.add( hda )
+        sa_session.flush()
         hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
         if add_to_history and target_history:
             target_history.add_dataset( hda )
@@ -2903,10 +2943,11 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
             child.to_history_dataset_association( target_history=target_history, parent_id=hda.id, add_to_history=False )
         if not self.datatype.copy_safe_peek:
             hda.set_peek()  # in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        object_session( self ).flush()
+        sa_session.flush()
         return hda
 
     def copy( self, copy_children=False, parent_id=None, target_folder=None ):
+        sa_session = object_session( self )
         ldda = LibraryDatasetDatasetAssociation( name=self.name,
                                                  info=self.info,
                                                  blurb=self.blurb,
@@ -2920,8 +2961,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                                  parent_id=parent_id,
                                                  copied_from_library_dataset_dataset_association=self,
                                                  folder=target_folder )
-        object_session( self ).add( ldda )
-        object_session( self ).flush()
+        sa_session.add( ldda )
+        sa_session.flush()
         # Need to set after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
         if copy_children:
@@ -2930,7 +2971,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
-        object_session( self ).flush()
+        sa_session.flush()
         return ldda
 
     def clear_associated_files( self, metadata_safe=False, purge=False ):
@@ -3311,7 +3352,10 @@ class DatasetCollectionInstance( object, HasName ):
         return changed
 
 
-class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnotations, Dictifiable ):
+class HistoryDatasetCollectionAssociation( DatasetCollectionInstance,
+                                           HasTags,
+                                           Dictifiable,
+                                           UsesAnnotations ):
     """ Associates a DatasetCollection with a History. """
     editable_keys = ( 'name', 'deleted', 'visible' )
 
@@ -3367,6 +3411,7 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
             return rval if multiple else rval[ 0 ]
 
     def to_dict( self, view='collection' ):
+        original_dict_value = super(HistoryDatasetCollectionAssociation, self).to_dict( view=view )
         dict_value = dict(
             hid=self.hid,
             history_id=self.history.id,
@@ -3375,6 +3420,9 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
             deleted=self.deleted,
             **self._base_to_dict(view=view)
         )
+
+        dict_value.update(original_dict_value)
+
         return dict_value
 
     def add_implicit_input_collection( self, name, history_dataset_collection ):
@@ -3411,7 +3459,7 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
         return hdca
 
 
-class LibraryDatasetCollectionAssociation( DatasetCollectionInstance, Dictifiable ):
+class LibraryDatasetCollectionAssociation( DatasetCollectionInstance ):
     """ Associates a DatasetCollection with a library folder. """
     editable_keys = ( 'name', 'deleted' )
 
@@ -3512,6 +3560,14 @@ class DatasetCollectionElement( object, Dictifiable ):
         else:
             return element_object
 
+    @property
+    def dataset_instances( self ):
+        element_object = self.element_object
+        if isinstance( element_object, DatasetCollection ):
+            return element_object.dataset_instances
+        else:
+            return [element_object]
+
     def copy_to_collection( self, collection, destination=None, element_destination=None ):
         element_object = self.element_object
         if element_destination:
@@ -3600,7 +3656,7 @@ class UCI( object ):
         self.user = None
 
 
-class StoredWorkflow( object, Dictifiable):
+class StoredWorkflow( HasTags, Dictifiable ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted' )
@@ -3622,13 +3678,6 @@ class StoredWorkflow( object, Dictifiable):
 
     def to_dict( self, view='collection', value_mapper=None ):
         rval = super( StoredWorkflow, self ).to_dict( view=view, value_mapper=value_mapper )
-        tags_str_list = []
-        for tag in self.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            tags_str_list.append( tag_str )
-        rval['tags'] = tags_str_list
         rval['latest_workflow_uuid'] = ( lambda uuid: str( uuid ) if self.latest_workflow.uuid else None )( self.latest_workflow.uuid )
         return rval
 

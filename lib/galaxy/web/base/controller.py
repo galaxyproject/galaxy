@@ -164,7 +164,7 @@ class BaseUIController( BaseController ):
         except exceptions.MessageException:
             raise       # handled in the caller
         except:
-            log.exception( "Exception in get_object check for %s %s:" % ( class_name, str( id ) ) )
+            log.exception( "Exception in get_object check for %s %s:", class_name, str( id ) )
             raise Exception( 'Server error retrieving %s id ( %s ).' % ( class_name, str( id ) ) )
 
 
@@ -180,7 +180,7 @@ class BaseAPIController( BaseController ):
         except exceptions.MessageException as e:
             raise HTTPBadRequest( detail=e.err_msg )
         except Exception as e:
-            log.exception( "Exception in get_object check for %s %s." % ( class_name, str( id ) ) )
+            log.exception( "Exception in get_object check for %s %s.", class_name, str( id ) )
             raise HTTPInternalServerError( comment=str( e ) )
 
     def validate_in_users_and_groups( self, trans, payload ):
@@ -292,7 +292,7 @@ class JSAppLauncher( BaseUIController ):
             self.JS_APP_MAKO_FILEPATH,
             js_app_name=app_name,
             js_app_entry_fn=( entry_fn or self.DEFAULT_ENTRY_FN ),
-            options=( options or self._get_js_options( trans ) ),
+            options=options,
             bootstrapped=( bootstrapped_data or {} ),
             masthead=masthead
         )
@@ -2165,7 +2165,7 @@ class UsesTagsMixin( SharableItemSecurityMixin ):
 
     def set_tags_from_list( self, trans, item, new_tags_list, user=None ):
         # Method deprecated - try to use TagsHandler instead.
-        tags_manager = tags.GalaxyTagManager( trans.app )
+        tags_manager = tags.GalaxyTagManager( trans.app.model.context )
         return tags_manager.set_tags_from_list( user, item, new_tags_list )
 
     def get_user_tags_used( self, trans, user=None ):

@@ -6,7 +6,7 @@ import logging
 import socket
 from datetime import datetime, timedelta
 
-from sqlalchemy import and_, false, or_, not_
+from sqlalchemy import and_, false, not_, or_
 from sqlalchemy.orm import eagerload_all
 
 from galaxy.util import listify
@@ -1008,7 +1008,7 @@ class GalaxyRBACAgent( RBACAgent ):
         # Add the new permissions on library_item
         for item_class, permission_class in self.library_item_assocs:
             if isinstance( library_item, item_class ):
-                for action, roles in permissions.items():
+                for action, roles in list(permissions.items()):
                     if isinstance( action, Action ):
                         action = action.action
                     for role_assoc in [ permission_class( action, library_item, role ) for role in roles ]:

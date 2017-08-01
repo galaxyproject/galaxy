@@ -4,10 +4,11 @@ jQuery.ajaxSettings.traditional = true;
 
 // dependencies
 define([
+    'utils/utils',
     'mvc/grid/grid-model',
     'mvc/grid/grid-template',
-    "mvc/ui/popup-menu"
-], function(GridModel, Templates, PopupMenu) {
+    'mvc/ui/popup-menu'
+], function(Utils, GridModel, Templates, PopupMenu) {
 
 // grid view
 return Backbone.View.extend({
@@ -16,10 +17,43 @@ return Backbone.View.extend({
     grid: null,
 
     // Initialize
-    initialize: function(grid_config)
-    {
+    initialize: function(grid_config) {
+        this.dict_format = grid_config.dict_format;
+        var self = this;
+        window.add_tag_to_grid_filter = function( tag_name, tag_value ){
+            // Put tag name and value together.
+            var tag = tag_name + ( tag_value !== undefined && tag_value !== "" ? ":" + tag_value : "" );
+            var advanced_search = $( '#advanced-search').is(":visible" );
+            if( !advanced_search ){
+                $('#standard-search').slideToggle('fast');
+                $('#advanced-search').slideToggle('fast');
+            }
+            self.add_filter_condition( "tags", tag );
+        };
+
         // set element
-        this.setElement('#grid-container');
+        if ( this.dict_format ) {
+            this.setElement('<div/>');
+            if ( grid_config.url_base && !grid_config.items ) {
+                var url_data = {};
+                _.each(grid_config.filters, function(v, k) {
+                    url_data['f-' + k] = v;
+                });
+                $.ajax({
+                    url     : grid_config.url_base + '?' + $.param( url_data ),
+                    success : function( response ) {
+                        response.embedded = grid_config.embedded;
+                        response.filters  = grid_config.filters;
+                        self.init_grid( response );
+                    }
+                });
+            } else {
+                this.init_grid(grid_config);
+            }
+        } else {
+            this.setElement('#grid-container');
+            this.init_grid(grid_config);
+        }
 
         // fix padding
         if (grid_config.use_panels) {
@@ -28,9 +62,6 @@ return Backbone.View.extend({
                 overflow    : 'auto'
             });
         }
-
-        // initialize controls
-        this.init_grid(grid_config);
     },
 
     // refresh frames
@@ -45,8 +76,7 @@ return Backbone.View.extend({
     },
 
     // Initialize
-    init_grid: function(grid_config)
-    {
+    init_grid: function(grid_config) {
         // link grid model
         this.grid = new GridModel(grid_config);
 
@@ -226,53 +256,36 @@ return Backbone.View.extend({
             return;
         }
 
-        //
         // add operation popup menus
-        //
-        for (var i in options.items)
-        {
-            // get items
-            var item = options.items[i];
+        _.each( options.items, function( item, index ) {
+            var button = self.$( '#grid-' + index + '-popup' ).off();
+            var popup = new PopupMenu( button );
+            _.each( options[ 'operations' ], function( operation ) {
+                self._add_operation( popup, operation, item );
+            });
+        });
+    },
 
-            // get identifiers
-            var button = this.$el.find('#grid-' + i + '-popup');
-            button.off();
-            var popup = new PopupMenu(button);
-
-            // load details
-            for (var j in options['operations'])
-            {
-                // get operation details
-                var operation = options['operations'][j];
-                var operation_id = operation['label'];
-                var operation_settings = item['operation_config'][operation_id];
-                var encode_id = item['encode_id'];
-
-                // check
-                if (operation_settings['allowed'] && operation['allow_popup'])
-                {
-                    // popup configuration
-                    var popupConfig =
-                    {
-                        html : operation['label'],
-                        href : operation_settings['url_args'],
-                        target : operation_settings['target'],
-                        confirmation_text : operation['confirm']
-                    };
-
-                    // add popup function
-                    popupConfig.func = function(e)
-                    {
-                        e.preventDefault();
-                        var label = $(e.target).html();
-                        var options = this.findItemByHtml(label);
-                        self.execute(options);
-                    };
-
-                    // add item
-                    popup.addItem(popupConfig);
+    /** Add an operation to the items menu */
+    _add_operation: function( popup, operation, item ) {
+        var self = this;
+        var settings = item.operation_config[ operation.label ];
+        if ( settings.allowed && operation.allow_popup ) {
+            popup.addItem({
+                html                : operation.label,
+                href                : settings.url_args,
+                target              : settings.target,
+                confirmation_text   : operation.confirm,
+                func                : function( e ) {
+                    e.preventDefault();
+                    var label = $( e.target ).html();
+                    if ( operation.onclick ) {
+                        operation.onclick( item.encode_id );
+                    } else {
+                        self.execute( this.findItemByHtml( label ) );
+                    }
                 }
-            }
+            });
         }
     },
 
@@ -420,8 +433,7 @@ return Backbone.View.extend({
     },
 
     // confirmation/submission of operation request
-    submit_operation: function (operation_button, confirmation_text)
-    {
+    submit_operation: function (operation_button, confirmation_text) {
         // identify operation
         var operation_name = $(operation_button).val();
 
@@ -455,26 +467,11 @@ return Backbone.View.extend({
     },
 
     check_all_items: function () {
-        var chk_all = document.getElementById('check_all'),
-            checks = document.getElementsByTagName('input'),
-            total = 0,
-            i;
-        if ( chk_all.checked === true ) {
-            for ( i=0; i < checks.length; i++ ) {
-                if ( checks[i].name.indexOf( 'id' ) !== -1) {
-                   checks[i].checked = true;
-                   total++;
-                }
-            }
-        }
-        else {
-            for ( i=0; i < checks.length; i++ ) {
-                if ( checks[i].name.indexOf( 'id' ) !== -1) {
-                   checks[i].checked = false;
-                }
-
-            }
-        }
+        var check = this.$('.grid-row-select-checkbox');
+        var state = this.$( '#check_all' ).prop( 'checked' );
+        _.each( check, function( c ) {
+            $( c ).prop( 'checked', state );
+        });
         this.init_grid_elements();
     },
 
@@ -545,7 +542,7 @@ return Backbone.View.extend({
             });
 
             // Do operation. If operation cannot be performed asynchronously, redirect to location.
-            if (this.grid.can_async_op(operation)) {
+            if (this.grid.can_async_op(operation) || this.dict_format) {
                 this.update_grid();
             } else {
                 this.go_to(target, href);
@@ -562,7 +559,7 @@ return Backbone.View.extend({
         }
 
         // refresh grid
-        if (this.grid.get('async')) {
+        if (this.grid.get('async') || this.dict_format) {
             this.update_grid();
         } else {
             this.go_to(target, href);
@@ -630,7 +627,7 @@ return Backbone.View.extend({
                 var insert = self.grid.get('insert');
 
                 // request new configuration
-                var json = $.parseJSON(response_text);
+                var json = self.dict_format ? response_text : $.parseJSON(response_text);
 
                 // update
                 json.embedded = embedded;

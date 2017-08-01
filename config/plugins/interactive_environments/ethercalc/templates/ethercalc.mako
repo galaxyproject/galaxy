@@ -31,7 +31,9 @@ requirejs(['interactive_environments', 'plugin/ethercalc'], function(){
 });
 
 requirejs(['interactive_environments', 'plugin/ethercalc'], function(){
-    load_notebook(url);
+    load_when_ready(ie_readiness_url, function(){
+        load_notebook(url);
+    });
 });
 </script>
 <div id="main" width="100%" height="100%">

@@ -112,7 +112,7 @@ def __add_column(column, table_name, metadata, **kwds):
         table = Table( table_name, metadata, autoload=True )
         column.create( table, **kwds )
     except Exception:
-        log.exception("Adding column %s column failed." % column)
+        log.exception("Adding column %s column failed.", column)
 
 
 def __drop_column( column_name, table_name, metadata ):
@@ -120,18 +120,18 @@ def __drop_column( column_name, table_name, metadata ):
         table = Table( table_name, metadata, autoload=True )
         getattr( table.c, column_name ).drop()
     except Exception:
-        log.exception("Dropping column %s failed." % column_name)
+        log.exception("Dropping column %s failed.", column_name)
 
 
 def __create(table):
     try:
         table.create()
     except Exception:
-        log.exception("Creating %s table failed." % table.name)
+        log.exception("Creating %s table failed.", table.name)
 
 
 def __drop(table):
     try:
         table.drop()
     except Exception:
-        log.exception("Dropping %s table failed." % table.name)
+        log.exception("Dropping %s table failed.", table.name)

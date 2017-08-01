@@ -1,7 +1,7 @@
 import logging
 import threading
 
-from xml.etree import ElementTree as XmlET
+from xml.etree import cElementTree as XmlET
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
@@ -27,6 +27,7 @@ class ToolPanelManager( object ):
             # We may have an empty elem_list in case a data manager is being installed.
             # In that case we don't want to wait for a toolbox reload that will never happen.
             return
+        old_toolbox = self.app.toolbox
         shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         config_elems = []
@@ -39,9 +40,8 @@ class ToolPanelManager( object ):
             for elem_entry in elem_list:
                 config_elems.append( elem_entry )
             # Persist the altered shed_tool_config file.
-            toolbox = self.app.toolbox
             self.config_elems_to_xml_file( config_elems, shed_tool_conf, tool_path )
-            self.app.wait_for_toolbox_reload(toolbox)
+            self.app.wait_for_toolbox_reload(old_toolbox)
 
     def add_to_tool_panel( self, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, owner,
                            shed_tool_conf, tool_panel_dict, new_install=True, tool_panel_section_mapping={} ):
@@ -89,8 +89,8 @@ class ToolPanelManager( object ):
                 fh.write( xml_util.xml_to_string( elem, use_indent=True ) )
             fh.write( '</toolbox>\n' )
             fh.close()
-        except Exception as e:
-            log.exception( "Exception in ToolPanelManager.config_elems_to_xml_file: %s" % str( e ) )
+        except Exception:
+            log.exception( "Exception in ToolPanelManager.config_elems_to_xml_file" )
         finally:
             lock.release()
 
@@ -439,7 +439,8 @@ class ToolPanelManager( object ):
             toolbox.remove_tool_by_id( guid_to_remove, remove_from_panel=False )
         shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         # Always remove from the shed_tool_conf file on disk. Used to test for uninstall, not sure there is a legitimate use for this?!
-        self.remove_from_shed_tool_config( shed_tool_conf_dict, guids_to_remove )
+        if uninstall:
+            self.remove_from_shed_tool_config( shed_tool_conf_dict, guids_to_remove )
 
     def update_tool_panel_dict( self, tool_panel_dict, tool_panel_section_mapping, repository_tools_tups ):
         for tool_guid in tool_panel_dict:

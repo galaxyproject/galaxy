@@ -1,10 +1,10 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<%def name="title()">Galaxy Administration</%def>
+<%def name="title()">Administration</%def>
 
 <h2>Administration</h2>
-Please visit <a href="https://wiki.galaxyproject.org/Admin" target="_blank">the Galaxy administration hub</a> to learn how to keep your Galaxy in best shape.
+Please visit <a href="https://galaxyproject.org/admin" target="_blank">the Galaxy administration hub</a> to learn how to keep your Galaxy in best shape.
 %if message:
     ${render_msg( message, status )}
 %else:
@@ -28,7 +28,7 @@ Please visit <a href="https://wiki.galaxyproject.org/Admin" target="_blank">the 
             <ul>
             %if trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds:
                 <li>
-                    <strong>Search Tool Shed</strong> - Search and install new tools and other Galaxy utilities from the Tool Shed. See <a href="https://wiki.galaxyproject.org/Admin/Tools/AddToolFromToolShedTutorial" target="_blank">the tutorial</a>.
+                    <strong>Search Tool Shed</strong> - Search and install new tools and other Galaxy utilities from the Tool Shed. See <a href="https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial" target="_blank">the tutorial</a>.
                 </li>
             %endif
             %if tool_shed_repository_ids:
@@ -84,14 +84,14 @@ Please visit <a href="https://wiki.galaxyproject.org/Admin" target="_blank">the 
             <ul>
             %if trans.app.config.enable_quotas:
                 <li>
-                    <strong>Quotas</strong> - Manage user space quotas. See <a href="https://wiki.galaxyproject.org/Admin/DiskQuotas" target="_blank">wiki</a> for details.
+                    <strong>Quotas</strong> - Manage user space quotas. See <a href="https://galaxyproject.org/admin/disk-quotas" target="_blank">wiki</a> for details.
                 </li>
             %endif
                 <li>
-                    <strong>Data libraries</strong> - Data libraries enable authorized Galaxy users to share datasets with other groups or users. Only administrators can create data libraries. See <a href="https://wiki.galaxyproject.org/DataLibraries" target="_blank">wiki</a> for details and <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">this page</a> for security description.
+                    <strong>Data libraries</strong> - Data libraries enable authorized Galaxy users to share datasets with other groups or users. Only administrators can create data libraries. See <a href="https://galaxyproject.org/data-libraries" target="_blank">wiki</a> for details.
                 </li>
                 <li>
-                    <strong>Local data</strong> - Manage the reference (and other) data that is stored within Tool Data Tables. See <a href="https://wiki.galaxyproject.org/Admin/Tools/DataManagers" target="_blank">wiki</a> for details.
+                    <strong>Local data</strong> - Manage the reference (and other) data that is stored within Tool Data Tables. See <a href="https://galaxyproject.org/admin/tools/data-managers" target="_blank">wiki</a> for details.
                 </li>
             </ul>
         <h4>Form definitions</h4>
@@ -104,7 +104,7 @@ Please visit <a href="https://wiki.galaxyproject.org/Admin" target="_blank">the 
         <h4>Sample tracking</h4>
             <ul>
                 <li>
-                    Please see the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySampleTracking" target="_blank">sample tracking tutorial</a>.
+                    Please see the <a href="https://galaxyproject.org/archive/library-sample-tracking" target="_blank">sample tracking tutorial</a>.
                 </li>
             </ul>
 %endif

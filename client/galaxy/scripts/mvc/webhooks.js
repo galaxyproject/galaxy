@@ -18,6 +18,11 @@ define([], function() {
 
         initialize: function(options) {
             var me = this;
+            var toolId = options.toolId || '';
+            var toolVersion = options.toolVersion || '';
+
+            this.$el.attr('tool_id', toolId);
+            this.$el.attr('tool_version', toolVersion);
 
             this.model = new WebhookModel();
             this.model.urlRoot = options.urlRoot;
@@ -34,7 +39,7 @@ define([], function() {
             this.$el.html('<div id="' + webhook.name + '"></div>');
             if (webhook.styles) $('<style/>', {type: 'text/css'}).text(webhook.styles).appendTo('head');
             if (webhook.script) $('<script/>', {type: 'text/javascript'}).text(webhook.script).appendTo('head');
-            
+
             return this;
         }
     });
@@ -44,7 +49,7 @@ define([], function() {
 
         webhooks.url = Galaxy.root + options.url;
         webhooks.fetch({
-            async: (typeof options.async != 'undefined') ? options.async : true,
+            async: options.async ? options.async : true,
             success: options.callback
         });
     };

@@ -22,16 +22,16 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 });
             }
             // destroy dom elements
-            this.$el.on( 'remove', function() { self.remove() } );
+            this.$el.on( 'remove', function() { self._destroy() } );
         },
 
         /** Wait for deferred build processes before removal */
-        remove: function() {
+        _destroy: function() {
             var self = this;
-            this.$el.hide();
+            this.$el.off().hide();
             this.deferred.execute( function() {
                 FormBase.prototype.remove.call( self );
-                Galaxy.emit.debug( 'tool-form-base::remove()', 'Destroy view.' );
+                Galaxy.emit.debug( 'tool-form-base::_destroy()', 'Destroy view.' );
             });
         },
 
@@ -66,15 +66,23 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             // build request url
             var build_url = '';
             var build_data = {};
-            if ( options.job_id ) {
-                build_url = Galaxy.root + 'api/jobs/' + options.job_id + '/build_for_rerun';
+            var job_id = '';
+            // When re-running a job the job_id is found in the new_options object.
+            // When re-running a job and requesting a new tool_version,
+            // the job_id is in the options object.
+            if ( new_options.job_id ) {
+                job_id = new_options.job_id;
+            } else if (options.job_id) {
+                job_id = options.job_id;
+            }
+            if ( job_id ) {
+                build_url = Galaxy.root + 'api/jobs/' + job_id + '/build_for_rerun';
             } else {
                 build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
-                if ( Galaxy.params && Galaxy.params.tool_id == options.id ) {
-                    build_data = $.extend( {}, Galaxy.params );
-                    options.version && ( build_data[ 'tool_version' ] = options.version );
-                }
+                build_data = $.extend( {}, Galaxy.params );
+                build_data[ 'tool_id' ] && ( delete build_data[ 'tool_id' ] );
             }
+            options.version && ( build_data[ 'tool_version' ] = options.version );
 
             // get initial model
             Utils.get({
@@ -243,6 +251,22 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 });
             }
 
+            // add tool menu webhooks
+            $.getJSON('/api/webhooks/tool-menu/all', function(webhooks) {
+                _.each(webhooks, function(webhook) {
+                    if (webhook.activate && webhook.config.function) {
+                        menu_button.addMenu({
+                            icon    : webhook.config.icon,
+                            title   : webhook.config.title,
+                            onclick : function() {
+                                var func = new Function('options', webhook.config.function);
+                                func(options);
+                            }
+                        });
+                    }
+                });
+            });
+
             return {
                 menu        : menu_button,
                 versions    : versions_button
@@ -279,7 +303,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 _.each( options.requirements, function( req, i ) {
                     requirements_message += req.name + ( req.version ? ' (Version ' + req.version + ')' : '' ) + ( i < nreq - 2 ? ', ' : ( i == nreq - 2 ? ' and ' : '' ) );
                 });
-                var requirements_link = $( '<a/>' ).attr( 'target', '_blank' ).attr( 'href', 'https://wiki.galaxyproject.org/Tools/Requirements' ).text( 'here' );
+                var requirements_link = $( '<a/>' ).attr( 'target', '_blank' ).attr( 'href', 'https://galaxyproject.org/tools/requirements/' ).text( 'here' );
                 return $( '<span/>' ).append( requirements_message + '. Click ' ).append( requirements_link ).append( ' for more information.' );
             }
             return 'No requirements found.';

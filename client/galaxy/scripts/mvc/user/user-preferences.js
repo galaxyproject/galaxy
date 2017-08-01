@@ -57,6 +57,22 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         window.location.href = Galaxy.root + 'user/openid_manage?cntrller=user&use_panels=True';
                     }
                 },
+                'custom_builds': {
+                    title           : 'Manage custom builds',
+                    description     : 'Add or remove custom builds using history datasets.',
+                    icon            : 'fa-cubes',
+                    onclick         : function() {
+                        window.location.href = Galaxy.root + 'custom_builds';
+                    }
+                },
+                'configure_menu': {
+                    title           : 'Configure workflow menu',
+                    description     : 'Configure your workflow items which appear in the Tool panel.',
+                    icon            : 'fa-cog',
+                    onclick         : function() {
+                        window.location.href = Galaxy.root + 'workflow/configure_menu';
+                    }
+                },
                 'logout': {
                     title           : 'Sign out',
                     description     : 'Click here to sign out of all sessions.',
@@ -102,6 +118,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 if( config.enable_communication_server ) {
                     self._addLink( 'communication' );
                 }
+                self._addLink( 'custom_builds' );
                 self._addLink( 'permissions' );
                 self._addLink( 'api_key' );
                 if( config.has_user_tool_filters ) {
@@ -110,6 +127,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 if( config.enable_openid && !config.use_remote_user ) {
                     self._addLink( 'openids' );
                 }
+                self._addLink( 'configure_menu' );
                 self._addLink( 'logout' );
                 self.$preferences.append( self._templateFooter( data ) );
                 self.$el.empty().append( self.$preferences );
@@ -144,7 +162,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             return  '<p class="ui-panel-footer">' +
                         'You are using <strong>' + options.nice_total_disk_usage + '</strong> of disk space in this Galaxy instance. ' +
                         ( Galaxy.config.enable_quotas ? 'Your disk quota is: <strong>' + options.quota + '</strong>. ' : '' ) +
-                        'Is your usage more than expected? See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.' +
+                        'Is your usage more than expected? See the <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank">documentation</a> for tips on how to find all of the data in your account.' +
                     '</p>';
         }
     });
@@ -197,14 +215,11 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 type        : 'PUT',
                 contentType : 'application/json'
             }).done( function( response ) {
-                var updated_values = false;
                 form.data.matchModel( response, function ( input, input_id ) {
                     form.field_list[ input_id ].value( input.value );
-                    updated_values = true;
                 });
                 form.message.update( { message: response.message, status: 'success' } );
             }).fail( function( response ) {
-                window.console.log( response );
                 form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
             });
         }

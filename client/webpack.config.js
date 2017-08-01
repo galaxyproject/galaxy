@@ -21,6 +21,7 @@ var webpack = require( 'webpack' ),
         'libs/bootstrap',
         'libs/bootstrap-tour',
         'libs/jquery.complexify',
+        'libs/jquery/jquery.autocomplete',
         // mvc
         'libs/underscore',
         'libs/backbone',
@@ -38,6 +39,7 @@ module.exports = {
         libs    : commonLibs,
         login   : './galaxy/scripts/apps/login.js',
         analysis: './galaxy/scripts/apps/analysis.js',
+        admin   : './galaxy/scripts/apps/admin.js',
     },
     output  : {
         path        : path.join(__dirname, '../', 'static/scripts/bundled'),

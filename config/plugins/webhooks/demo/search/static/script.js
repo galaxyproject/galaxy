@@ -22,6 +22,7 @@ $(document).ready(function() {
             var self = this,
                 filter_classes = {},
                 $el_search_text = $( '.txtbx-search-data' );
+
             filter_classes = {
                 'all': '.all-filter',
                 'tools': '.tool-filter',
@@ -30,39 +31,39 @@ $(document).ready(function() {
                 'workflow': '.workflow-filter',
                 'removeditems': '.removeditems-filter'
             };
-            // Register event for invoking overlay
-            this.parentElement.on( 'keydown', function( e ) {
-                self.invokeOverlay( e, self );
+
+            // Open search overlay on click of magnifier icon in the masthead
+            self.parentElement.find( 'ul#searchover a' ).on( 'click', function( e ) {
+                e.preventDefault();
+                e.stopPropagation();
+                if ( $( '.search-screen-overlay' ).is( ':visible' ) ){
+                    self.removeOverlay();
+                } else{
+                    self.clearSearchResults();
+                    self.showOverlay();
+                    self.showSearchResult();
+                    // Default selected filter
+                    self.setActiveFilter( '.all-filter' );
+                    self.showDefaultLinks();
+                }
             });
 
-            // Register events for search textbox
+            // Remove the overlay on escape button click
+            self.parentElement.on( 'keydown', function( e ) {
+                // Check for escape button - "27"
+                if ( e.which === 27 || e.keyCode === 27 ) {
+                    self.removeOverlay();
+                }
+            });
+
+            // Register event for search textbox
             $el_search_text.on( 'keyup', function( e ) {
                 self.triggerEvents( e, self );
             });
 
-            // Register events for fliter clicks
+            // Register event for fliter clicks
             for( var item in filter_classes ) {
                 self.clickEvents( filter_classes[ item ], item, self );
-            }
-        },
-
-        /** Invoke the search overlay */
-        invokeOverlay: function( e, self ) {
-            var class_allfilter = '.all-filter';
-            if( e ) {
-                e.stopPropagation();
-                // Click of ctrl + alt + q shows search overlay
-                if ( ( e.which === 81 || e.keyCode === 81 ) && e.ctrlKey && e.altKey ) {
-                        self.clearSearchResults();
-                        self.showOverlay();
-                        self.showSearchResult();
-                        self.setActiveFilter( class_allfilter );
-                        self.showDefaultLinks();
-                }
-                // Remove the overlay and hides the search screen on clicking escape key
-                else if ( e.which === 27 || e.keyCode === 27 ) {
-                    self.removeOverlay();
-                }
             }
         },
 
@@ -255,7 +256,7 @@ $(document).ready(function() {
         showOverlay: function() {
             var $el_search_textbox = $( '.txtbx-search-data' );
             $( '.search-screen-overlay' ).show();
-        $( '.search-screen' ).show();
+            $( '.search-screen' ).show();
             $el_search_textbox.val( "" );
             $el_search_textbox.focus();
 

@@ -3,7 +3,9 @@ API operations on a history.
 
 .. seealso:: :class:`galaxy.model.History`
 """
+import glob
 import logging
+import os
 
 from sqlalchemy import (
     false,
@@ -12,6 +14,7 @@ from sqlalchemy import (
 
 from galaxy import (
     exceptions,
+    model,
     util
 )
 from galaxy.managers import (
@@ -492,3 +495,24 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             raise exceptions.MessageException( "Export not available or not yet ready." )
 
         return self.serve_ready_history_export( trans, jeha )
+
+    @expose_api
+    def get_custom_builds_metadata(self, trans, id, payload={}, **kwd):
+        """
+        GET /api/histories/{id}/custom_builds_metadata
+        Returns meta data for custom builds.
+
+        :param id: the encoded history id
+        :type  id: str
+        """
+        history = self.history_manager.get_accessible( self.decode_id( id ), trans.user, current_history=trans.history )
+        installed_builds = []
+        for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
+            installed_builds.append( os.path.basename(build).split(".len")[0] )
+        fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+            .filter_by( history=history, extension="fasta", deleted=False ) \
+            .order_by( model.HistoryDatasetAssociation.hid.desc() )
+        return {
+            'installed_builds'  : [ { 'label' : ins, 'value' : ins } for ins in installed_builds ],
+            'fasta_hdas'        : [ { 'label' : '%s: %s' % ( hda.hid, hda.name ), 'value' : trans.security.encode_id( hda.id ) } for hda in fasta_hdas ],
+        }

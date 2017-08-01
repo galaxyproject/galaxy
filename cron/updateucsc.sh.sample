@@ -1,15 +1,15 @@
-#!/bin/sh 
+#!/bin/sh
 #
 # Script to update UCSC shared data tables.  The idea is to update, but if
 # the update fails, not replace current data/tables with error
 # messages.
 
-## Uncomment and edit this line to refer to galaxy's path:
-#GALAXY=/galaxy/path
+## Change the Galaxy path on the next line if needed:
+GALAXY=$(dirname "$0")/..
 PYTHONPATH=${GALAXY}/lib
 export PYTHONPATH
 
-# setup directories
+# Setup directories
 echo "Creating required directories."
 DIRS="
 ${GALAXY}/tool-data/shared/ucsc/new
@@ -17,9 +17,9 @@ ${GALAXY}/tool-data/shared/ucsc/chrom
 ${GALAXY}/tool-data/shared/ucsc/chrom/new
 "
 for dir in $DIRS; do
-    if [ ! -d $dir ]; then
+    if [ ! -d "$dir" ]; then
         echo "Creating $dir"
-        mkdir $dir
+        mkdir "$dir"
     else
         echo "$dir already exists, continuing."
     fi
@@ -30,13 +30,13 @@ echo "Updating UCSC shared data tables."
 
 # Try to build "builds.txt"
 echo "Updating builds.txt"
-python ${GALAXY}/cron/parse_builds.py > ${GALAXY}/tool-data/shared/ucsc/new/builds.txt
+python "${GALAXY}/cron/parse_builds.py" > "${GALAXY}/tool-data/shared/ucsc/new/builds.txt"
 if [ $? -eq 0 ]
 then
-    diff ${GALAXY}/tool-data/shared/ucsc/new/builds.txt ${GALAXY}/tool-data/shared/ucsc/builds.txt > /dev/null 2>&1
+    diff "${GALAXY}/tool-data/shared/ucsc/new/builds.txt" "${GALAXY}/tool-data/shared/ucsc/builds.txt" > /dev/null 2>&1
     if [ $? -ne 0 ]
     then
-        cp -f ${GALAXY}/tool-data/shared/ucsc/new/builds.txt ${GALAXY}/tool-data/shared/ucsc/builds.txt
+        cp -f "${GALAXY}/tool-data/shared/ucsc/new/builds.txt" "${GALAXY}/tool-data/shared/ucsc/builds.txt"
     fi
 else
     echo "Failed to update builds.txt" >&2
@@ -44,13 +44,13 @@ fi
 
 # Try to build ucsc_build_sites.txt
 echo "Updating ucsc_build_sites.txt"
-python ${GALAXY}/cron/parse_builds_3_sites.py > ${GALAXY}/tool-data/shared/ucsc/new/ucsc_build_sites.txt
+python "${GALAXY}/cron/parse_builds_3_sites.py" > "${GALAXY}/tool-data/shared/ucsc/new/ucsc_build_sites.txt"
 if [ $? -eq 0 ]
 then
-    diff ${GALAXY}/tool-data/shared/ucsc/new/ucsc_build_sites.txt ${GALAXY}/tool-data/shared/ucsc/ucsc_build_sites.txt > /dev/null 2>&1
+    diff "${GALAXY}/tool-data/shared/ucsc/new/ucsc_build_sites.txt" "${GALAXY}/tool-data/shared/ucsc/ucsc_build_sites.txt" > /dev/null 2>&1
     if [ $? -ne 0 ]
     then
-        cp -f ${GALAXY}/tool-data/shared/ucsc/new/ucsc_build_sites.txt ${GALAXY}/tool-data/shared/ucsc/ucsc_build_sites.txt
+        cp -f "${GALAXY}/tool-data/shared/ucsc/new/ucsc_build_sites.txt" "${GALAXY}/tool-data/shared/ucsc/ucsc_build_sites.txt"
     fi
 else
     echo "Failed to update builds.txt" >&2
@@ -58,30 +58,30 @@ fi
 
 # Try to build chromInfo tables
 echo "Building chromInfo tables."
-python ${GALAXY}/cron/build_chrom_db.py ${GALAXY}/tool-data/shared/ucsc/chrom/new/ ${GALAXY}/tool-data/shared/ucsc/builds.txt
+python "${GALAXY}/cron/build_chrom_db.py" "${GALAXY}/tool-data/shared/ucsc/chrom/new/" "${GALAXY}/tool-data/shared/ucsc/builds.txt"
 if [ $? -eq 0 ]
 then
     for src in ${GALAXY}/tool-data/shared/ucsc/chrom/new/*.len
     do
-        dst=${GALAXY}/tool-data/shared/ucsc/chrom/`basename $src`
-        diff $src $dst > /dev/null 2>&1
+        dst=${GALAXY}/tool-data/shared/ucsc/chrom/$(basename "$src")
+        diff "$src" "$dst" > /dev/null 2>&1
         if [ $? -ne 0 ]
         then
-            echo "cp -f $src $dst"
-            cp -f $src $dst
+            echo "cp -f \"$src\" \"$dst\""
+            cp -f "$src" "$dst"
         fi
     done
 else
     echo "Failed to update chromInfo tables." >&2
 fi
 
-rm -rf ${GALAXY}/tool-data/shared/ucsc/new
-rm -rf ${GALAXY}/tool-data/shared/ucsc/chrom/new
+rm -rf "${GALAXY}/tool-data/shared/ucsc/new"
+rm -rf "${GALAXY}/tool-data/shared/ucsc/chrom/new"
 echo "Update complete."
 
-#Perform Manual Additions here
+# Perform Manual Additions here
 echo "Adding Manual Builds."
-python ${GALAXY}/cron/add_manual_builds.py ${GALAXY}/tool-data/shared/ucsc/manual_builds.txt ${GALAXY}/tool-data/shared/ucsc/builds.txt ${GALAXY}/tool-data/shared/ucsc/chrom/
+python "${GALAXY}/cron/add_manual_builds.py" "${GALAXY}/tool-data/shared/ucsc/manual_builds.txt" "${GALAXY}/tool-data/shared/ucsc/builds.txt" "${GALAXY}/tool-data/shared/ucsc/chrom/"
 if [ $? -eq 0 ]
 then
     echo "Manual addition was successful."

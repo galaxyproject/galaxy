@@ -4,6 +4,7 @@ Class encapsulating the management of repositories installed into Galaxy from th
 import copy
 import logging
 import os
+import shutil
 
 from sqlalchemy import and_, false, true
 
@@ -78,11 +79,11 @@ class InstalledRepositoryManager( object ):
 
     def activate_repository( self, repository ):
         """Activate an installed tool shed repository that has been marked as deactivated."""
-        repository_clone_url = common_util.generate_clone_url_for_installed_repository( self.app, repository )
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( self.app, repository )
         repository.deleted = False
         repository.status = self.install_model.ToolShedRepository.installation_status.INSTALLED
         if repository.includes_tools_for_display_in_tool_panel:
+            repository_clone_url = common_util.generate_clone_url_for_installed_repository( self.app, repository )
             tpm = tool_panel_manager.ToolPanelManager( self.app )
             irmm = InstalledRepositoryMetadataManager( app=self.app,
                                                        tpm=tpm,
@@ -111,8 +112,8 @@ class InstalledRepositoryManager( object ):
                                            data_manager_relative_install_dir,
                                            repository,
                                            repository_tools_tups )
-        self.install_model.context.add( repository )
-        self.install_model.context.flush()
+        self.install_model.context.current.add( repository )
+        self.install_model.context.current.flush()
         if repository.includes_datatypes:
             if tool_path:
                 repository_install_dir = os.path.abspath( os.path.join( tool_path, relative_install_dir ) )
@@ -748,6 +749,75 @@ class InstalledRepositoryManager( object ):
                 cdl.load_installed_datatype_converters( installed_repository_dict, deactivate=deactivate )
             if installed_repository_dict[ 'display_path' ]:
                 cdl.load_installed_display_applications( installed_repository_dict, deactivate=deactivate )
+
+    def uninstall_repository(self, repository, remove_from_disk=True):
+        errors = ''
+        shed_tool_conf, tool_path, relative_install_dir = \
+            suc.get_tool_panel_config_tool_path_install_dir( app=self.app, repository=repository )
+        if relative_install_dir:
+            if tool_path:
+                relative_install_dir = os.path.join( tool_path, relative_install_dir )
+            repository_install_dir = os.path.abspath( relative_install_dir )
+        else:
+            repository_install_dir = None
+        if repository.includes_tools_for_display_in_tool_panel:
+            # Handle tool panel alterations.
+            tpm = tool_panel_manager.ToolPanelManager(app=self.app)
+            tpm.remove_repository_contents(repository,
+                                           shed_tool_conf,
+                                           uninstall=remove_from_disk)
+        if repository.includes_data_managers:
+            dmh = data_manager.DataManagerHandler(app=self.app)
+            dmh.remove_from_data_manager(repository)
+        if repository.includes_datatypes:
+            # Deactivate proprietary datatypes.
+            cdl = custom_datatype_manager.CustomDatatypeLoader(app=self.app)
+            installed_repository_dict = cdl.load_installed_datatypes( repository,
+                                                                      repository_install_dir,
+                                                                      deactivate=True )
+            if installed_repository_dict:
+                converter_path = installed_repository_dict.get( 'converter_path' )
+                if converter_path is not None:
+                    cdl.load_installed_datatype_converters( installed_repository_dict, deactivate=True )
+                display_path = installed_repository_dict.get( 'display_path' )
+                if display_path is not None:
+                    cdl.load_installed_display_applications( installed_repository_dict, deactivate=True )
+        if remove_from_disk:
+            try:
+                # Remove the repository from disk.
+                shutil.rmtree( repository_install_dir )
+                log.debug( "Removed repository installation directory: %s" % str( repository_install_dir ) )
+                removed = True
+            except Exception as e:
+                log.debug( "Error removing repository installation directory %s: %s" % ( str( repository_install_dir ), str( e ) ) )
+                if isinstance( e, OSError ) and not os.path.exists( repository_install_dir ):
+                    removed = True
+                    log.debug( "Repository directory does not exist on disk, marking as uninstalled." )
+                else:
+                    removed = False
+            if removed:
+                repository.uninstalled = True
+                # Remove all installed tool dependencies and tool dependencies stuck in the INSTALLING state, but don't touch any
+                # repository dependencies.
+                tool_dependencies_to_uninstall = repository.tool_dependencies_installed_or_in_error
+                tool_dependencies_to_uninstall.extend( repository.tool_dependencies_being_installed )
+                for tool_dependency in tool_dependencies_to_uninstall:
+                    uninstalled, error_message = tool_dependency_util.remove_tool_dependency( self.app, tool_dependency )
+                    if error_message:
+                        errors = '%s  %s' % ( errors, error_message )
+        repository.deleted = True
+        if remove_from_disk:
+            repository.status = self.app.install_model.ToolShedRepository.installation_status.UNINSTALLED
+            repository.error_message = None
+            if self.app.config.manage_dependency_relationships:
+                # Remove the uninstalled repository and any tool dependencies from the in-memory dictionaries in the
+                # installed_repository_manager.
+                self.handle_repository_uninstall( repository )
+        else:
+            repository.status = self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED
+        self.app.install_model.context.current.add( repository )
+        self.app.install_model.context.current.flush()
+        return errors
 
     def purge_repository( self, repository ):
         """Purge a repository with status New (a white ghost) from the database."""

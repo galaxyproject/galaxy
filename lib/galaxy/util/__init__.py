@@ -215,7 +215,7 @@ def parse_xml( fname ):
     except ParseError:
         log.exception("Error parsing file %s", fname)
         raise
-    ElementInclude.include( root )
+    ElementInclude.include(root)
     return tree
 
 
@@ -899,7 +899,7 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
         if not isinstance(value, text_type):
             value = text_type(value, encoding, error)
     except Exception:
-        log.exception("value %s could not be coerced to unicode" % value)
+        log.exception("value %s could not be coerced to unicode", value)
         return default
     return value
 
@@ -1139,7 +1139,7 @@ def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
     try:
         st = os.stat( path )
     except OSError as e:
-        log.exception( 'Unable to set permissions or group on %s' % path )
+        log.exception( 'Unable to set permissions or group on %s', path )
         return
     # fix modes
     if stat.S_IMODE( st.st_mode ) != perms:
@@ -1524,8 +1524,11 @@ class ExecutionTimer(object):
         self.begin = time.time()
 
     def __str__(self):
-        elapsed = (time.time() - self.begin) * 1000.0
-        return "(%0.3f ms)" % elapsed
+        return "(%0.3f ms)" % (self.elapsed * 1000)
+
+    @property
+    def elapsed(self):
+        return (time.time() - self.begin)
 
 
 if __name__ == '__main__':

@@ -174,7 +174,7 @@ class InstallToolDependencyManager( object ):
                 attr_tup = ( name, version, type )
                 try:
                     index = attr_tups_of_dependencies_for_install.index( attr_tup )
-                except Exception as e:
+                except ValueError:
                     index = None
                 if index is not None:
                     tool_dependency = tool_dependencies[ index ]
@@ -609,7 +609,7 @@ class InstallRepositoryManager( object ):
                                                                           display_path=display_path )
             if converter_path:
                 # Load proprietary datatype converters
-                self.app.datatypes_registry.load_datatype_converters( self.app.toolbox, installed_repository_dict=repository_dict )
+                self.app.datatypes_registry.load_datatype_converters( self.app.toolbox, installed_repository_dict=repository_dict, use_cached=True)
             if display_path:
                 # Load proprietary datatype display applications
                 self.app.datatypes_registry.load_display_applications( self.app, installed_repository_dict=repository_dict )

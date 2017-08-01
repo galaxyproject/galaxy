@@ -192,7 +192,7 @@ Fixes
 
 .. _IGV: https://www.broadinstitute.org/igv/
 .. _External Display Application: https://wiki.galaxyproject.org/Admin/Tools/External%20Display%20Applications%20Tutorial
-.. _Interactive Environments: https://wiki.galaxyproject.org/Admin/IEs
+.. _Interactive Environments: https://galaxyproject.org/Admin/IEs
 .. _TravisCI: https://travis-ci.org/
 .. _Tox: https://testrun.org/tox/latest/
 .. _Source Maps: https://developer.chrome.com/devtools/docs/javascript-debugging#source-maps

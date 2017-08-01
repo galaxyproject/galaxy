@@ -388,4 +388,5 @@ def set_tool_dependency_attributes( app, tool_dependency, status, error_message=
     tool_dependency.status = status
     sa_session.add( tool_dependency )
     sa_session.flush()
+    app.tool_shed_repository_cache.rebuild()
     return tool_dependency

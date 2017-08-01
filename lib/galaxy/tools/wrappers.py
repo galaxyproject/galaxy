@@ -1,9 +1,9 @@
 import logging
 import os
-import pipes
 import tempfile
 
 from six import string_types
+from six.moves import shlex_quote
 
 from galaxy import exceptions
 from galaxy.util import odict
@@ -39,9 +39,9 @@ class ToolParameterValueWrapper( object ):
         Returns a string containing the value that would be displayed to the user in the tool interface.
         When quote is True (default), the string is escaped for e.g. command-line usage.
         """
-        rval = self.input.value_to_display_text( self.value, self.input.tool.app ) or ''
+        rval = self.input.value_to_display_text( self.value ) or ''
         if quote:
-            return pipes.quote( rval ) or "''"  # pipes.quote in Python < 2.7 returns an empty string instead of the expected quoted empty string
+            return shlex_quote( rval )
         return rval
 
 
@@ -140,10 +140,10 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
                 values = map( self._path_rewriter, values )
             return self._input.separator.join( values )
 
-    def __init__( self, input, value, app, other_values={}, path_rewriter=None ):
+    def __init__( self, input, value, other_values={}, path_rewriter=None ):
         self.input = input
         self.value = value
-        self.input.value_label = input.value_to_display_text( value, app )
+        self.input.value_label = input.value_to_display_text( value )
         self._other_values = other_values
         self._path_rewriter = path_rewriter or DEFAULT_PATH_REWRITER
         self.fields = self.SelectToolParameterFieldWrapper( input, value, other_values, self._path_rewriter )
@@ -246,7 +246,13 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         return False
 
     def is_of_type( self, *exts ):
-        datatypes = [ self.datatypes_registry.get_datatype_by_extension( e ) for e in exts ]
+        datatypes = []
+        for e in exts:
+            datatype = self.datatypes_registry.get_datatype_by_extension(e)
+            if datatype is not None:
+                datatypes.append(datatype)
+            else:
+                log.warning("Datatype class not found for extension '%s', which is used as parameter of 'is_of_type()' method" % (e))
         return self.dataset.datatype.matches_any( datatypes )
 
     def __str__( self ):

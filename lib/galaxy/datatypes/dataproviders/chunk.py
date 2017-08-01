@@ -4,16 +4,18 @@ Chunk (N number of bytes at M offset to a source's beginning) provider.
 Primarily for file sources but usable by any iterator that has both
 seek and read( N ).
 """
-import os
 import base64
-import base
-import exceptions
-
 import logging
+import os
+
+from . import (
+    base,
+    exceptions
+)
+
 log = logging.getLogger( __name__ )
 
 
-# -----------------------------------------------------------------------------
 class ChunkDataProvider( base.DataProvider ):
     """
     Data provider that yields chunks of data from its file.

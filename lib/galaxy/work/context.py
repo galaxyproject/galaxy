@@ -1,7 +1,7 @@
 from galaxy.managers.context import (
     ProvidesAppContext,
-    ProvidesUserContext,
-    ProvidesHistoryContext
+    ProvidesHistoryContext,
+    ProvidesUserContext
 )
 
 

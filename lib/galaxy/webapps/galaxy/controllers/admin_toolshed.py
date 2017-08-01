@@ -1,20 +1,19 @@
 import json
 import logging
 import os
-import shutil
 
+from admin import AdminGalaxy
 from six import string_types
 from sqlalchemy import or_
 
 import tool_shed.repository_types.util as rt_util
-from admin import AdminGalaxy
 from galaxy import util, web
 from galaxy.tools.deps import views
 from galaxy.web.form_builder import CheckboxField
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.galaxy_install import install_manager
-from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.grids import admin_toolshed_grids
+from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
@@ -195,10 +194,13 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def browse_toolsheds( self, trans, **kwd ):
-        message = escape( kwd.get( 'message', '' ) )
-        return trans.fill_template( '/admin/tool_shed_repository/browse_toolsheds.mako',
-                                    message=message,
-                                    status='error' )
+        app = {
+            'jscript': "admin.toolshed"
+        }
+        return trans.fill_template( 'galaxy.panels.mako',
+                                    config={
+                                        'title': 'Galaxy Tool Sheds',
+                                        'app': app } )
 
     @web.expose
     @web.require_admin
@@ -246,84 +248,17 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_repositories = repository_util.get_installed_tool_shed_repository( trans.app, kwd[ 'id' ] )
         if not isinstance( tool_shed_repositories, list ):
             tool_shed_repositories = [tool_shed_repositories]
+        irm = InstalledRepositoryManager(app=trans.app)
         for tool_shed_repository in tool_shed_repositories:
-            shed_tool_conf, tool_path, relative_install_dir = \
-                suc.get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
-            if relative_install_dir:
-                if tool_path:
-                    relative_install_dir = os.path.join( tool_path, relative_install_dir )
-                repository_install_dir = os.path.abspath( relative_install_dir )
-            else:
-                repository_install_dir = None
-            errors = ''
             if kwd.get( 'deactivate_or_uninstall_repository_button', False ):
-                if tool_shed_repository.includes_tools_for_display_in_tool_panel:
-                    # Handle tool panel alterations.
-                    tpm = tool_panel_manager.ToolPanelManager( trans.app )
-                    tpm.remove_repository_contents( tool_shed_repository,
-                                                    shed_tool_conf,
-                                                    uninstall=remove_from_disk_checked )
-                if tool_shed_repository.includes_data_managers:
-                    dmh = data_manager.DataManagerHandler( trans.app )
-                    dmh.remove_from_data_manager( tool_shed_repository )
-                if tool_shed_repository.includes_datatypes:
-                    # Deactivate proprietary datatypes.
-                    cdl = custom_datatype_manager.CustomDatatypeLoader( trans.app )
-                    installed_repository_dict = cdl.load_installed_datatypes( tool_shed_repository,
-                                                                              repository_install_dir,
-                                                                              deactivate=True )
-                    if installed_repository_dict:
-                        converter_path = installed_repository_dict.get( 'converter_path' )
-                        if converter_path is not None:
-                            cdl.load_installed_datatype_converters( installed_repository_dict, deactivate=True )
-                        display_path = installed_repository_dict.get( 'display_path' )
-                        if display_path is not None:
-                            cdl.load_installed_display_applications( installed_repository_dict, deactivate=True )
+                errors = irm.uninstall_repository(repository=tool_shed_repository, remove_from_disk=remove_from_disk_checked)
+                action = 'uninstalled' if remove_from_disk_checked else 'deactivated'
+                status = max( status, statuses.index( 'done' ) )
+                message += 'The repository named <b>%s</b> has been %s.  ' % (escape( tool_shed_repository.name ), action)
                 if remove_from_disk_checked:
-                    try:
-                        # Remove the repository from disk.
-                        shutil.rmtree( repository_install_dir )
-                        log.debug( "Removed repository installation directory: %s" % str( repository_install_dir ) )
-                        removed = True
-                    except Exception as e:
-                        log.debug( "Error removing repository installation directory %s: %s" % ( str( repository_install_dir ), str( e ) ) )
-                        if isinstance( e, OSError ) and not os.path.exists( repository_install_dir ):
-                            removed = True
-                            log.debug( "Repository directory does not exist on disk, marking as uninstalled." )
-                        else:
-                            removed = False
-                    if removed:
-                        tool_shed_repository.uninstalled = True
-                        # Remove all installed tool dependencies and tool dependencies stuck in the INSTALLING state, but don't touch any
-                        # repository dependencies.
-                        tool_dependencies_to_uninstall = tool_shed_repository.tool_dependencies_installed_or_in_error
-                        tool_dependencies_to_uninstall.extend( tool_shed_repository.tool_dependencies_being_installed )
-                        for tool_dependency in tool_dependencies_to_uninstall:
-                            uninstalled, error_message = tool_dependency_util.remove_tool_dependency( trans.app, tool_dependency )
-                            if error_message:
-                                errors = '%s  %s' % ( errors, error_message )
-                tool_shed_repository.deleted = True
-                if remove_from_disk_checked:
-                    tool_shed_repository.status = trans.install_model.ToolShedRepository.installation_status.UNINSTALLED
-                    tool_shed_repository.error_message = None
-                    if trans.app.config.manage_dependency_relationships:
-                        # Remove the uninstalled repository and any tool dependencies from the in-memory dictionaries in the
-                        # installed_repository_manager.
-                        trans.app.installed_repository_manager.handle_repository_uninstall( tool_shed_repository )
-                else:
-                    tool_shed_repository.status = trans.install_model.ToolShedRepository.installation_status.DEACTIVATED
-                trans.install_model.context.add( tool_shed_repository )
-                trans.install_model.context.flush()
-                if remove_from_disk_checked:
-                    message += 'The repository named <b>%s</b> has been uninstalled.  ' % escape( tool_shed_repository.name )
                     if errors:
                         message += 'Attempting to uninstall tool dependencies resulted in errors: %s' % errors
                         status = max( status, statuses.index( 'error' ) )
-                    else:
-                        status = max( status, statuses.index( 'done' ) )
-                else:
-                    message = 'The repository named <b>%s</b> has been deactivated.  ' % escape( tool_shed_repository.name )
-                    status = max( status, statuses.index( 'done' ) )
         status = statuses[ status ]
         if kwd.get( 'deactivate_or_uninstall_repository_button', False ):
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -961,7 +896,7 @@ class AdminToolshed( AdminGalaxy ):
             message += 'attribute value which is a directory relative to the Galaxy installation directory in order '
             message += 'to automatically install tools from a Galaxy Tool Shed (e.g., the file name <b>shed_tool_conf.xml</b> '
             message += 'whose <b>&lt;toolbox&gt;</b> tag is <b>&lt;toolbox tool_path="../shed_tools"&gt;</b>).<p/>See the '
-            message += '<a href="https://wiki.galaxyproject.org/InstallingRepositoriesToGalaxy" target="_blank">Installation '
+            message += '<a href="https://galaxyproject.org/installing-repositories-to-galaxy/" target="_blank">Installation '
             message += 'of Galaxy Tool Shed repository tools into a local Galaxy instance</a> section of the Galaxy Tool '
             message += 'Shed wiki for all of the details.'
             return trans.show_error_message( message )
@@ -2056,11 +1991,13 @@ class AdminToolshed( AdminGalaxy ):
                     tool_config = tool_metadata[ 'tool_config' ]
                     if shed_config_dict and shed_config_dict.get( 'tool_path' ):
                         tool_config = os.path.join( shed_config_dict.get( 'tool_path' ), tool_config )
-                    tool = trans.app.toolbox.load_tool( os.path.abspath( tool_config ), guid=tool_metadata[ 'guid' ] )
+                    tool = trans.app.toolbox.get_tool(tool_id=tool_metadata[ 'guid' ], exact=True)
+                    if not tool:
+                        tool = trans.app.toolbox.load_tool( os.path.abspath( tool_config ), guid=tool_metadata[ 'guid' ] )
+                        if tool:
+                            tool._lineage = trans.app.toolbox._lineage_map.register( tool )
                     if tool:
-                        tvm = tool_version_manager.ToolVersionManager( trans.app )
-                        tool_version = tvm.get_tool_version( str( tool.id ) )
-                        tool_lineage = tool_version.get_version_ids( trans.app, reverse=True )
+                        tool_lineage = tool.lineage.get_version_ids(reverse=True)
                     break
         return trans.fill_template( "/admin/tool_shed_repository/view_tool_metadata.mako",
                                     repository=repository,
