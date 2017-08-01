@@ -1194,7 +1194,10 @@ class GalaxyRBACAgent( RBACAgent ):
         private_role_found = False
         error = False
         for k, v in get_permitted_actions( filter='DATASET' ).items():
-            in_roles = [ self.sa_session.query( self.model.Role ).get( x ) for x in listify( kwd.get( k + '_in', [] ) ) ]
+            # Change for removing the prefix '_in' from the roles select box
+            in_roles = [ self.sa_session.query( self.model.Role ).get( x ) for x in listify( kwd[ k ] ) ]
+            if not in_roles:
+                in_roles = [ self.sa_session.query( self.model.Role ).get( x ) for x in listify( kwd.get( k + '_in', [] ) ) ]
             if v == self.permitted_actions.DATASET_ACCESS and in_roles:
                 if library:
                     item = self.sa_session.query( self.model.Library ).get( item_id )
