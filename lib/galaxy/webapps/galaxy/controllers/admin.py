@@ -1638,6 +1638,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                         trans.sa_session.add( user )
                         trans.sa_session.flush()
                 if not message and not status:
+                    message = "Passwords reset for %d %s." % ( len( user_ids ), util.inflector.cond_plural( len( user_ids ), 'user' ) )
+                    status = "done"
                     trans.response.send_redirect( web.url_for( controller='admin',
                                                                action='users',
                                                                message=util.sanitize_text( message ),

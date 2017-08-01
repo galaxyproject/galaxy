@@ -22,8 +22,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_users: function() {
-            window.console.log( $.param( Galaxy.params ) );
-            this.page.display( new GridView( { url_base: Galaxy.root + 'admin/users_list?' + $.param( Galaxy.params ), dict_format: true } ) );
+            this.page.display( new GridView( { url_base: Galaxy.root + 'admin/users_list', url_data: Galaxy.params, dict_format: true } ) );
         }
     });
 
