@@ -11,7 +11,7 @@ import sys
 import time
 import yaml
 import logging
-import urllib2
+import requests
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
@@ -38,17 +38,32 @@ def main(argv):
             config = yaml.load(handle)
 
     REPORT_DIR = args.report_directory
-    CHECK_POINT_FILE = os.path.join(REPORT_DIR, '.checkpoint')
-    ARCHIVE_DIR = os.path.join(REPORT_DIR, 'archives')
-    METADATA_FILE = os.path.join(REPORT_DIR, 'meta.json')
-    REPORT_BASE = os.path.join(ARCHIVE_DIR, REPORT_IDENTIFIER)
-
     GRT_URL = config['grt']['url']
     GRT_INSTANCE_ID = config['grt']['instance_id']
     GRT_API_KEY = config['grt']['api_key']
-    # Contact the server and check auth details.
 
-    # TODO: server interaction.
+    # Contact the server and check auth details.
+    headers = {
+        'AUTHORIZATION': GRT_INSTANCE_ID + ':' + GRT_API_KEY
+    }
+    r = requests.post(GRT_URL + 'api/whoami', headers=headers)
+    data = r.json()
+    # we get back some information about which reports had previously been uploaded.
+    remote_reports = data['uploaded_reports']
+    # so now we can know which to send.
+    local_reports = [x.strip('.json') for x in os.listdir(REPORT_DIR) if x.endswith('.json')]
+    for report_id in local_reports:
+        if not report_id in remote_reports:
+            print("Uploading %s" % report_id)
+            files = {
+                'meta': open(os.path.join(sys.argv[1], report_id + '.json'), 'rb'),
+                'data': open(os.path.join(sys.argv[1], report_id + '.tsv.gz'), 'rb')
+            }
+            data = {
+                'identifier': report_id
+            }
+            r = requests.post(GRT_URL + 'api/v2/upload', files=files, headers=headers, data=data)
+            print(r.json())
 
 
 if __name__ == '__main__':
