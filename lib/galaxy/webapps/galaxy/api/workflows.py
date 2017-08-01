@@ -57,6 +57,19 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.get_workflows_list( trans, kwd )
 
     @expose_api
+    def get_workflow_menu( self, trans, **kwd ):
+        """
+        Get workflows present in the tools panel
+        GET /api/workflows/menu
+        """
+        user = trans.get_user()
+        ids_in_menu = [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ]
+        return {
+            'ids_in_menu': ids_in_menu,
+            'workflows': self.get_workflows_list( trans, kwd )
+        }
+
+    @expose_api
     def set_workflow_menu( self, trans, **kwd ):
         """
         Save workflow menu to be shown in the tool panel
@@ -69,6 +82,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             workflow_ids = []
         elif type( workflow_ids ) != list:
             workflow_ids = [ workflow_ids ]
+        workflow_ids_decoded = []
+        # Decode the encoded workflow ids
+        for ids in workflow_ids:
+            workflow_ids_decoded.append( trans.security.decode_id( ids ) )
         sess = trans.sa_session
         # This explicit remove seems like a hack, need to figure out
         # how to make the association do it automatically.
@@ -78,19 +95,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         q = sess.query( model.StoredWorkflow )
         # To ensure id list is unique
         seen_workflow_ids = set()
-        for wf_id in workflow_ids:
-            for item in q:
-                # Encode the original id and compare it against the encoded ids
-                # coming from the UI to save for workflow menu in tools
-                if wf_id == trans.security.encode_id( item.id ):
-                    if item.id in seen_workflow_ids:
-                        continue
-                    else:
-                        seen_workflow_ids.add( item.id )
-                    m = model.StoredWorkflowMenuEntry()
-                    m.stored_workflow = q.get( item.id )
-                    user.stored_workflow_menu_entries.append( m )
-                    break
+        for wf_id in workflow_ids_decoded:
+            if wf_id in seen_workflow_ids:
+                continue
+            else:
+                seen_workflow_ids.add( wf_id )
+            m = model.StoredWorkflowMenuEntry()
+            m.stored_workflow = q.get( wf_id )
+            user.stored_workflow_menu_entries.append( m )
         sess.flush()
         message = "Menu updated."
         trans.set_message( message )
