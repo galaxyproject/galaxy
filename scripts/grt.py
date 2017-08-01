@@ -198,6 +198,7 @@ def main(argv):
     CHECK_POINT_FILE = os.path.join(REPORT_DIR, '.checkpoint')
     REPORT_IDENTIFIER = str(time.time())
     REPORT_BASE = os.path.join(REPORT_DIR, REPORT_IDENTIFIER)
+    SANITIZATION_ENABLED = config['sanitization']['enabled']
 
     if os.path.exists(CHECK_POINT_FILE):
         with open(CHECK_POINT_FILE, 'r') as handle:
@@ -219,7 +220,7 @@ def main(argv):
     job_state_data = defaultdict(int)
 
     annotate('san_init', 'Building Sanitizer')
-    san = Sanitization(config['blacklist'], model, sa_session)
+    san = Sanitization(config['sanitization'], model, sa_session)
     annotate('san_end')
 
     if not os.path.exists(REPORT_DIR):
@@ -313,8 +314,11 @@ def main(argv):
                 .filter(model.JobParameter.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all():
 
-            unsanitized = {param[1]: json.loads(param[2])}
-            sanitized = san.sanitize_data(job_tool_map[param[0]], unsanitized)
+            if SANITIZATION_ENABLED:
+                unsanitized = {param[1]: json.loads(param[2])}
+                sanitized = san.sanitize_data(job_tool_map[param[0]], unsanitized)
+            else:
+                sanitized = param[2]
 
             handle_params.write(str(param[0]))
             handle_params.write('\t')
