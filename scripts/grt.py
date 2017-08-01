@@ -189,7 +189,6 @@ def main(argv):
     REPORT_DIR = args.report_directory
     CHECK_POINT_FILE = os.path.join(REPORT_DIR, '.checkpoint')
     ARCHIVE_DIR = os.path.join(REPORT_DIR, 'archives')
-    METADATA_FILE = os.path.join(REPORT_DIR, 'meta.json')
     REPORT_IDENTIFIER = str(time.time())
     REPORT_BASE = os.path.join(ARCHIVE_DIR, REPORT_IDENTIFIER)
 
@@ -200,7 +199,7 @@ def main(argv):
         last_job_sent = -1
 
     logging.info('Loading Galaxy...')
-    model, object_store, engine, gxconfig, app = _init(config['galaxy_config'], need_app=config['grt']['metadata']['share_toolbox'])
+    model, object_store, engine, gxconfig, app = _init(config['galaxy_config'], need_app=config['grt']['share_toolbox'])
 
     sa_session = model.context.current
     logging.info('Configuration Loaded')
@@ -285,11 +284,6 @@ def main(argv):
     if os.path.exists(REPORT_DIR) and not os.path.exists(ARCHIVE_DIR):
         os.makedirs(ARCHIVE_DIR)
 
-    _times.append(('job_meta_start', time.time() - _start_time))
-    with open(METADATA_FILE, 'w') as handle:
-        json.dump(config['grt']['metadata'], handle, indent=2)
-    _times.append(('job_meta_end', time.time() - _start_time))
-
     with gzip.open(REPORT_BASE + '.tsv.gz', 'w') as handle:
         for job in grt_jobs_data:
             handle.write('\t'.join(job))
@@ -302,7 +296,7 @@ def main(argv):
 
     # Now serialize the individual report data.
     with open(REPORT_BASE + '.json', 'w') as handle:
-        if config['grt']['metadata']['share_toolbox']:
+        if config['grt']['share_toolbox']:
             toolbox = [
                 (tool.id, tool.name, tool.version, tool.tool_shed, tool.repository_id, tool.repository_name)
                 for tool_id, tool in app.toolbox._tools_by_id.items()

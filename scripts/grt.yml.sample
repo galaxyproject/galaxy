@@ -4,30 +4,16 @@ galaxy_config: config/galaxy.ini
 
 grt:
     # Go to https://telescope.galaxyproject.org to obtain an Instance ID and API key
-    instance_id: None
-    api_key: None
+    instance_id: 5f126e1d-d216-493e-a67a-3d6f20a0f1ac
+    api_key: 9e43e2b9-b54a-418c-9712-36e79f4d9183
     # Galaxy Project offers a public galactic-radio-telescope instance, however
     # you are free to run your own if you need. We would love it if you were
     # willing and able to contribute your data publicly.
-    url: https://telescope.galaxyproject.org/
-    # Some metadata about your galaxy instance
-    metadata:
-        url: https://example.com/galaxy/
-        title: NLP Galaxy
-        description: |
-            This is our Galaxy instance!
-        # Is the instance open to the public?
-        public: False
-        # Optional Location
-        latitude: 0.00
-        longitude: 0.00
-        # Owners (these are the usernames of users registered with the galactic-radio-telescope system.)
-        owners:
-            - jane.doe
-        # Are you willing to share your toolbox? I.e. what tools are installed.
-        # If your instance is public, this can help us direct users to your
-        # instance.
-        share_toolbox: False
+    url: http://localhost:8080
+    # Are you willing to share your toolbox? I.e. what tools are installed.
+    # If your instance is public, this can help us direct users to your
+    # instance.
+    share_toolbox: False
 
 
 blacklist:

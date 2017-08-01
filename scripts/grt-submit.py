@@ -5,13 +5,13 @@ See doc/source/admin/grt.rst for more detailed usage information.
 """
 from __future__ import print_function
 
+import argparse
 import os
 import sys
-import json
-import urllib2
-import argparse
+import time
 import yaml
-import re
+import logging
+import urllib2
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
@@ -37,9 +37,16 @@ def main(argv):
         with open(sample_config) as handle:
             config = yaml.load(handle)
 
+    REPORT_DIR = args.report_directory
+    CHECK_POINT_FILE = os.path.join(REPORT_DIR, '.checkpoint')
+    ARCHIVE_DIR = os.path.join(REPORT_DIR, 'archives')
+    METADATA_FILE = os.path.join(REPORT_DIR, 'meta.json')
+    REPORT_BASE = os.path.join(ARCHIVE_DIR, REPORT_IDENTIFIER)
+
     GRT_URL = config['grt']['url']
     GRT_INSTANCE_ID = config['grt']['instance_id']
     GRT_API_KEY = config['grt']['api_key']
+    # Contact the server and check auth details.
 
     # TODO: server interaction.
 
