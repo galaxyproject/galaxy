@@ -188,9 +188,8 @@ def main(argv):
 
     REPORT_DIR = args.report_directory
     CHECK_POINT_FILE = os.path.join(REPORT_DIR, '.checkpoint')
-    ARCHIVE_DIR = os.path.join(REPORT_DIR, 'archives')
     REPORT_IDENTIFIER = str(time.time())
-    REPORT_BASE = os.path.join(ARCHIVE_DIR, REPORT_IDENTIFIER)
+    REPORT_BASE = os.path.join(REPORT_DIR, REPORT_IDENTIFIER)
 
     if os.path.exists(CHECK_POINT_FILE):
         with open(CHECK_POINT_FILE, 'r') as handle:
@@ -279,10 +278,6 @@ def main(argv):
     # Now on to outputs.
     if not os.path.exists(REPORT_DIR):
         os.makedirs(REPORT_DIR)
-        os.makedirs(ARCHIVE_DIR)
-
-    if os.path.exists(REPORT_DIR) and not os.path.exists(ARCHIVE_DIR):
-        os.makedirs(ARCHIVE_DIR)
 
     with gzip.open(REPORT_BASE + '.tsv.gz', 'w') as handle:
         for job in grt_jobs_data:
