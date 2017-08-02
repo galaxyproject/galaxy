@@ -351,11 +351,11 @@ class Cloud( ObjectStore ):
                 log.debug("Pushing cache file '%s' of size %s bytes to key '%s'", source_file,
                             os.path.getsize(source_file), rel_path)
                 self.transfer_progress = 0  # Reset transfer progress counter
-                if not self.bucket.get(rel_path):
+                if self.bucket.get(rel_path):
+                    self.bucket.get(rel_path).upload(source_file)
+                else:
                     created_obj = self.bucket.create_object(rel_path)
                     created_obj.upload(source_file)
-                else:
-                    self.bucket.get(rel_path).upload(source_file)
                 end_time = datetime.now()
                 log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
                             source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
@@ -438,12 +438,6 @@ class Cloud( ObjectStore ):
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir)
 
-            # Although not really necessary to create S3 folders (because S3 has
-            # flat namespace), do so for consistency with the regular file system
-            # S3 folders are marked by having trailing '/' so add it now
-            # s3_dir = '%s/' % rel_path
-            # self._push_to_os(s3_dir, from_string='')
-            # If instructed, create the dataset in cache & in S3
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
