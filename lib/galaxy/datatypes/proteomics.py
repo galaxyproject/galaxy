@@ -432,6 +432,7 @@ class ImzML(Binary):
         Class for imzML files.
         http://www.imzml.org
     """
+    edam_format = "format_3682"
     file_ext = 'imzml'
     allow_datatype_change = False
     composite_type = 'auto_primary_file'
