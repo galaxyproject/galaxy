@@ -347,28 +347,18 @@ class Cloud( ObjectStore ):
                     log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file,
                               rel_path)
                     return True
-                # FIXME: don't need to differenciate between uploading from a string or file,
-                # because CloudBridge handles this internally.
-                if from_string:
-                    if not self.bucket.get(rel_path):
-                        created_obj = self.bucket.create_object(rel_path)
-                        created_obj.upload(source_file)
-                    else:
-                        self.bucket.get(rel_path).upload(source_file)
-                    log.debug("Pushed data from string '%s' to key '%s'", from_string, rel_path)
+                start_time = datetime.now()
+                log.debug("Pushing cache file '%s' of size %s bytes to key '%s'", source_file,
+                            os.path.getsize(source_file), rel_path)
+                self.transfer_progress = 0  # Reset transfer progress counter
+                if not self.bucket.get(rel_path):
+                    created_obj = self.bucket.create_object(rel_path)
+                    created_obj.upload(source_file)
                 else:
-                    start_time = datetime.now()
-                    log.debug("Pushing cache file '%s' of size %s bytes to key '%s'", source_file,
-                              os.path.getsize(source_file), rel_path)
-                    self.transfer_progress = 0  # Reset transfer progress counter
-                    if not self.bucket.get(rel_path):
-                        created_obj = self.bucket.create_object(rel_path)
-                        created_obj.upload(source_file)
-                    else:
-                        self.bucket.get(rel_path).upload(source_file)
-                    end_time = datetime.now()
-                    log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
-                              source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
+                    self.bucket.get(rel_path).upload(source_file)
+                end_time = datetime.now()
+                log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
+                            source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
                 return True
             else:
                 log.error("Tried updating key '%s' from source file '%s', but source file does not exist.",
