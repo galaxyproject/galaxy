@@ -24,7 +24,9 @@ from galaxy.util.sleeper import Sleeper
 from ..objectstore import convert_bytes, ObjectStore
 from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
 
+# boto is only used to handle exceptions; it will be removed once CloudBridge wraps and throws proper exceptions.
 try:
+    # Imports are done this way to allow objectstore code to be used outside of Galaxy.
     from boto.s3.key import Key
     from boto.s3.connection import S3Connection
 except ImportError:
@@ -79,7 +81,6 @@ class Cloud( ObjectStore ):
             self.secret_key = a_xml.get('secret_key')
             b_xml = config_xml.findall('bucket')[0]
             self.bucket = b_xml.get('name')
-            self.use_rr = string_as_bool(b_xml.get('use_reduced_redundancy', "False"))
             self.max_chunk_size = int(b_xml.get('max_chunk_size', 250))
             cn_xml = config_xml.findall('connection')
             if not cn_xml:
