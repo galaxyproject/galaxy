@@ -119,9 +119,6 @@ paste.app_factory = galaxy.webapps.tool_shed.buildapp:app_factory
 # Check for WSGI compliance.
 #use_lint = False
 
-# Intercept print statements and show them on the returned page.
-#use_printdebug = True
-
 # NEVER enable this on a public site (even test or QA)
 #use_interactive = true
 
