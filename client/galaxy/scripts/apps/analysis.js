@@ -13,7 +13,6 @@ var jQuery = require( 'jquery' ),
     GridShared = require( 'mvc/grid/grid-shared' ),
     Workflows = require( 'mvc/workflow/workflow' ),
     HistoryList = require( 'mvc/history/history-list' ),
-    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' ),
     ToolFormComposite = require( 'mvc/tool/tool-form-composite' ),
     Utils = require( 'utils/utils' ),
     Ui = require( 'mvc/ui/ui-misc' ),
@@ -60,7 +59,6 @@ window.app = function app( options, bootstrapped ){
             '(/)workflows/list_published(/)' : 'show_workflows_published',
             '(/)histories(/)(:action_id)' : 'show_histories',
             '(/)datasets(/)list(/)' : 'show_datasets',
-            '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)workflow/import_workflow' : 'show_import_workflow',
             '(/)custom_builds' : 'show_custom_builds',
             '(/)datasets/edit': 'show_dataset_edit_attributes'
@@ -69,8 +67,7 @@ window.app = function app( options, bootstrapped ){
         require_login: [
             'show_user',
             'show_user_form',
-            'show_workflows',
-            'show_configure_menu'
+            'show_workflows'
         ],
 
         authenticate: function( args, name ) {
@@ -123,10 +120,6 @@ window.app = function app( options, bootstrapped ){
 
         show_import_workflow : function() {
             this.page.display( new Workflows.ImportWorkflowView() );
-        },
-
-        show_configure_menu : function(){
-            this.page.display( new WorkflowsConfigureMenu.View() );
         },
 
         show_custom_builds : function() {
