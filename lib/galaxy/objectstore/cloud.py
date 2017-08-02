@@ -24,14 +24,6 @@ from galaxy.util.sleeper import Sleeper
 from ..objectstore import convert_bytes, ObjectStore
 from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
 
-# boto is only used to handle exceptions; it will be removed once CloudBridge wraps and throws proper exceptions.
-try:
-    # Imports are done this way to allow objectstore code to be used outside of Galaxy.
-    from boto.s3.key import Key
-    from boto.s3.connection import S3Connection
-except ImportError:
-    boto = None
-
 NO_BOTO_ERROR_MESSAGE = ("Cloud object store is configured, but no boto dependency available."
                          "Please install and properly configure boto or modify object store configuration.")
 
@@ -182,12 +174,12 @@ class Cloud( ObjectStore ):
                     bucket = self.conn.object_store.create(bucket_name)
                 log.debug("Using cloud object store with bucket '%s'", bucket.name)
                 return bucket
-            except S3ResponseError:
+            except Exception:
                 log.exception("Could not get bucket '%s', attempt %s/5", bucket_name, i + 1)
                 time.sleep(2)
         # All the attempts have been exhausted and connection was not established,
         # raise error
-        raise S3ResponseError
+        raise Exception
 
     def _fix_permissions(self, rel_path):
         """ Set permissions on rel_path"""
@@ -248,7 +240,7 @@ class Cloud( ObjectStore ):
             obj = self.bucket.get(rel_path)
             if obj:
                 return obj.size
-        except S3ResponseError:
+        except Exception:
             log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1
 
@@ -265,7 +257,7 @@ class Cloud( ObjectStore ):
                     exists = False
             else:
                 exists = True if self.bucket.get(rel_path) is not None else False
-        except S3ResponseError:
+        except Exception:
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False
         if rel_path[0] == '/':
@@ -336,7 +328,7 @@ class Cloud( ObjectStore ):
                 with open(self._get_cache_path(rel_path), "w+") as downloaded_file_handle:
                     key.save_content(downloaded_file_handle)
                 return True
-        except S3ResponseError:
+        except Exception:
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.bucket.name)
         return False
 
@@ -381,7 +373,7 @@ class Cloud( ObjectStore ):
             else:
                 log.error("Tried updating key '%s' from source file '%s', but source file does not exist.",
                           rel_path, source_file)
-        except S3ResponseError:
+        except Exception:
             log.exception("Trouble pushing S3 key '%s' from file '%s'", rel_path, source_file)
         return False
 
@@ -518,7 +510,7 @@ class Cloud( ObjectStore ):
                     log.debug("Deleting key %s", key.name)
                     key.delete()
                     return True
-        except S3ResponseError:
+        except Exception:
             log.exception("Could not delete key '%s' from cloud", rel_path)
         except OSError:
             log.exception('%s delete error', self.get_filename(obj, **kwargs))
@@ -604,7 +596,7 @@ class Cloud( ObjectStore ):
             try:
                 key = self.bucket.get(rel_path)
                 return key.generate_url(expires_in=86400)  # 24hrs
-            except S3ResponseError:
+            except Exception:
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
         return None
 
