@@ -92,9 +92,19 @@ class Sanitization:
                 return True
         return False
 
-    def sanitize_data(self, tool_id, data):
+    def sanitize_data(self, tool_id, key, value):
+        # If the tool is blacklisted, skip it.
+        if tool_id in self.sanitization_config['tools']:
+            return 'null'
+
+        # If it isn't in tool_params, return quickly without parsing.
+        if tool_id not in self.sanitization_config['tool_params']:
+            return value
+
+        # Slow path.
+        unsanitized = {key: json.loads(value)}
         self.tool_id = tool_id
-        return self._sanitize_value(data)
+        return json.dumps(self._sanitize_value(unsanitized))
 
     def _file_dict(self, data):
         key = '{src}-{id}'.format(**data)
@@ -190,7 +200,6 @@ def main(argv):
     CHECK_POINT_FILE = os.path.join(REPORT_DIR, '.checkpoint')
     REPORT_IDENTIFIER = str(time.time())
     REPORT_BASE = os.path.join(REPORT_DIR, REPORT_IDENTIFIER)
-    SANITIZATION_ENABLED = config['sanitization']['enabled']
 
     if os.path.exists(CHECK_POINT_FILE):
         with open(CHECK_POINT_FILE, 'r') as handle:
@@ -238,21 +247,26 @@ def main(argv):
     handle_job = open(REPORT_BASE + '.jobs.tsv', 'w')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
-        for job in sa_session.query(model.Job.id, model.Job.tool_id, model.Job.state, model.Job.user_id) \
+        for job in sa_session.query(model.Job.id, model.Job.user_id, model.Job.tool_id, model.Job.tool_version, model.Job.state, model.Job.create_time) \
                 .filter(model.Job.id > offset_start) \
                 .filter(model.Job.id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all():
 
-            handle_job.write(str(job[0]))
+            # TODO: blacklisted
+            handle_job.write(str(job[0])) # id
             handle_job.write('\t')
-            handle_job.write(job[1])
+            handle_job.write(job[2]) # tool_id
             handle_job.write('\t')
-            handle_job.write(job[2])
+            handle_job.write(job[3]) # tool_version
+            handle_job.write('\t')
+            handle_job.write(job[4]) # state
+            handle_job.write('\t')
+            handle_job.write(job[5]) # create_time
             handle_job.write('\n')
             # meta counts
-            job_state_data[job[2]] += 1
-            active_users[job[3]] += 1
-            job_tool_map[job[0]] = job[1]
+            job_state_data[job[4]] += 1
+            active_users[job[1]] += 1
+            job_tool_map[job[0]] = job[2]
 
     handle_job.close()
     annotate('export_jobs_end')
@@ -306,11 +320,7 @@ def main(argv):
                 .filter(model.JobParameter.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all():
 
-            if SANITIZATION_ENABLED:
-                unsanitized = {param[1]: json.loads(param[2])}
-                sanitized = san.sanitize_data(job_tool_map[param[0]], unsanitized)
-            else:
-                sanitized = param[2]
+            sanitized = san.sanitize_data(job_tool_map[param[0]], param[i], param[2])
 
             handle_params.write(str(param[0]))
             handle_params.write('\t')

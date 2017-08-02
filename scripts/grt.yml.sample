@@ -17,11 +17,6 @@ grt:
 
 
 sanitization:
-    # This defaults to disabled as it has a serious performance impact and may
-    # not be necessary for your instance. Without sanitization we see
-    # performance on the order of 4k parameters parsed per second. With
-    # sanitizatoin on, it averages to 100 parameters per second.
-    enabled: False
     # Blacklist the entire tool from appearing
     tools:
         - __SET_METADATA__
@@ -29,12 +24,8 @@ sanitization:
     # Or you can blacklist individual parameters from being submitted, e.g. if
     # you have API keys as a tool parameter.
     tool_params:
-        # If you wish to remove a specific parameter from *all* tools, you can
-        # do this by setting the name under `__all__`
-        __any__:
-            - chromInfo
         # Or to blacklist under a specific tool, just specify the ID
-        edu.tamu.cpt.admin.metadataFetch:
+        some_tool_id:
             - dbkey
             # If you need to specify a parameter multiple levels deep, you can
             # do that as well. Currently we only support blacklisting via the
