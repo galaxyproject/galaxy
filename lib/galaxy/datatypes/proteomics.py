@@ -445,7 +445,7 @@ class ImzML(Binary):
             'imzml',
             description='The imzML metadata component.',
             is_binary=False)
-            
+
         """The mass spectral data"""
         self.add_composite_file(
             'ibd',
