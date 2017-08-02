@@ -3693,6 +3693,12 @@ The valid values for format can be found in
         <xs:documentation xml:lang="en">This sets the data type of the output file to be the same format as that of a tool input dataset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="default_identifier_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Sets the source of element identifier to the specified input.
+This only applies to collections that are mapped over a non-collection input and that have equivalent structures.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="metadata_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This copies the metadata information
