@@ -44,6 +44,13 @@ class TagManager( object ):
             new_tags_set.update( self.get_tags_str( item.tags ).split( ',' ) )
         return self.set_tags_from_list( user, item, new_tags_set )
 
+    def remove_tags_from_list( self, user, item, tag_to_remove_list ):
+        tag_to_remove_set = set( tag_to_remove_list )
+        tags_set = set(self.get_tags_str( item.tags ).split( ',' ))
+        if item.tags:
+            tags_set -= tag_to_remove_set
+        return self.set_tags_from_list( user, item, tags_set )
+
     def set_tags_from_list( self, user, item, new_tags_list ):
         # precondition: item is already security checked against user
         # precondition: incoming tags is a list of sanitized/formatted strings

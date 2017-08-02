@@ -326,6 +326,8 @@ class DeleteIntermediatesAction(DefaultJobAction):
 class TagDatasetAction(DefaultJobAction):
     name = "TagDatasetAction"
     verbose_name = "Add tag to dataset"
+    action = "Add"
+    direction = "to"
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
@@ -334,16 +336,33 @@ class TagDatasetAction(DefaultJobAction):
             if tags:
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
-                        app.tag_handler.add_tags_from_list( job.user, dataset_assoc.dataset, tags)
+                        cls._execute( app, job.user, dataset_assoc.dataset, tags)
             sa_session.flush()
+
+    @classmethod
+    def _execute(cls, app, user, dataset, tags):
+        app.tag_handler.add_tags_from_list(user, dataset, tags)
 
     @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments and pja.action_arguments.get('tags', ''):
-            return "Add tag(s) '%s' to '%s'." % (escape(pja.action_arguments['tags']),
+            return "%s tag(s) '%s' %s '%s'." % ( cls.action,
+                                                 escape(pja.action_arguments['tags']),
+                                                 cls.direction,
                                                  escape(pja.output_name))
         else:
-            return "Tag addition action used without a tag specified.  No tag will be added."
+            return "%s Tag action used without a tag specified.  No tag will be added." % cls.action
+
+
+class RemoveTagDatasetAction(TagDatasetAction):
+    name = "RemoveTagDatasetAction"
+    verbose_name = "Remove tag from dataset"
+    action = "Remove"
+    direction = "from"
+
+    @classmethod
+    def _execute(cls, app, user, dataset, tags):
+        app.tag_handler.remove_tags_from_list(user, dataset, tags)
 
 
 class ActionBox(object):
@@ -355,12 +374,14 @@ class ActionBox(object):
                 "EmailAction": EmailAction,
                 "DeleteIntermediatesAction": DeleteIntermediatesAction,
                 "TagDatasetAction": TagDatasetAction,
+                "RemoveTagDatasetAction": RemoveTagDatasetAction,
                 }
     public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction',
                       'ColumnSetAction', 'EmailAction',
-                      'DeleteIntermediatesAction', 'TagDatasetAction']
+                      'DeleteIntermediatesAction', 'TagDatasetAction',
+                      'RemoveTagDatasetAction']
     immediate_actions = ['ChangeDatatypeAction', 'RenameDatasetAction',
-                         'TagDatasetAction']
+                         'TagDatasetAction', 'RemoveTagDatasetAction']
 
     @classmethod
     def get_short_str(cls, action):
