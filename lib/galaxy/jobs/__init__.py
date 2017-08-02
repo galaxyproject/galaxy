@@ -19,10 +19,6 @@ from tempfile import NamedTemporaryFile
 from xml.etree import ElementTree
 
 import six
-try:
-    import uwsgi
-except ImportError:
-    uwsgi = None
 
 import galaxy
 from galaxy import model, util
@@ -174,9 +170,9 @@ class JobConfiguration(object, ConfiguresHandlers):
         """This is a stop-gap solution until the job conf loading is rewritten
         for YAML job conf support.
         """
-        if not uwsgi:
+        if self.app.application_stack.handle_jobs:
             self.handlers[self.app.config.server_name] = (self.app.config.server_name,)
-            self.default_handler_id = self.app.config.server_name,
+            self.default_handler_id = self.app.config.server_name
 
     def __parse_job_conf_xml(self, tree):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).

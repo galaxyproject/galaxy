@@ -3,7 +3,6 @@ Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
 
 import datetime
-import json
 import os
 import time
 import logging
@@ -16,6 +15,7 @@ from galaxy import model
 from galaxy.util.sleeper import Sleeper
 from galaxy.jobs import JobWrapper, TaskWrapper, JobDestination
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.web.stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
 
@@ -86,7 +86,8 @@ class JobHandlerQueue(object):
         self.__check_jobs_at_startup()
         # Start the queue
         self.monitor_thread.start()
-        self.app.application_stack.initialize_msg_handler(self.app, self.handle_msg)
+        # The stack code is initialized in the application
+        self.app.application_stack.register_message_handler(self.handle_msg, name=JobHandlerMessage.target)
         log.info("job handler queue started")
 
     def job_wrapper(self, job, use_persisted_destination=False):
@@ -156,8 +157,6 @@ class JobHandlerQueue(object):
                 self.dispatcher.recover(job, job_wrapper)
         if self.sa_session.dirty:
             self.sa_session.flush()
-
-        # If we are using a message queue or application stack messaging for handler assignment, signal those as well.
 
     def __recover_job_wrapper(self, job):
         # Already dispatched and running
@@ -634,8 +633,8 @@ class JobHandlerQueue(object):
                             return JOB_WAIT
         return JOB_READY
 
-    def _handle_setup_msg(self, job_dict):
-        job = self.sa_session.query(model.Job).get(job_dict['job_id'])
+    def _handle_setup_msg(self, job_id=None):
+        job = self.sa_session.query(model.Job).get(job_id)
         if job.handler is None:
             job.handler = self.app.config.server_name
             self.sa_session.add(job)
@@ -647,12 +646,9 @@ class JobHandlerQueue(object):
 
     def handle_msg(self, msg):
         try:
-            job_dict = json.loads(msg)
-            assert 'msg_type' in job_dict, "Missing required 'msg_type' message parameter"
-            getattr(self, '_handle_%s_msg' % job_dict['msg_type'])(job_dict)
+            getattr(self, '_handle_%s_msg' % msg.task)(**msg.params)
         except:
             log.exception( "Exception in mule message handling" )
-        time.sleep( 1 )
 
     def put(self, job_id, tool_id):
         """Add a job to the queue (by job identifier)"""
@@ -668,9 +664,10 @@ class JobHandlerQueue(object):
         else:
             log.info("sending stop signal to worker thread")
             self.running = False
-            self.app.application_stack.terminate_handler()
             if not self.app.config.track_jobs_in_database:
                 self.queue.put(self.STOP_SIGNAL)
+            # A message could still be received while shutting down, should be ok since they will be picked up on next startup.
+            self.app.application_stack.deregister_message_handler(name=JobHandlerMessage.target)
             self.sleeper.wake()
             log.info("job handler queue stopped")
             self.dispatcher.shutdown()

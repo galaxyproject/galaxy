@@ -2,13 +2,13 @@
 Top-level Galaxy job manager, moves jobs to handler(s)
 """
 
-import json
 import logging
 
 from sqlalchemy.sql.expression import null
 
 from galaxy.jobs import handler, NoopQueue
 from galaxy.model import Job
+from galaxy.web.stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
 
@@ -89,13 +89,11 @@ class MessageJobQueue(object):
         self.app = app
 
     def put(self, job_id, tool_id):
-        # FIXME: uwsgi farm name hardcoded here
-        # TODO: probably need a single class that encodes and decodes messages
-        self.app.application_stack.send_msg(json.dumps({'msg_type': 'setup', 'job_id': job_id, 'state': Job.states.NEW}), self.app.config.job_handler_pool_name)
+        msg = JobHandlerMessage(task='setup', job_id=job_id)
+        self.app.application_stack.send_message(self.app.config.job_handler_pool_name, msg)
 
     def put_stop(self, *args):
-        return
+        pass
 
     def shutdown(self):
-        #self.app.application_stack.send_msg(json.dumps({'msg_type': 'shutdown'})) ...
-        return
+        pass

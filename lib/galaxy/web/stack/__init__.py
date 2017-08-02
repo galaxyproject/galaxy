@@ -1,6 +1,6 @@
 """Web application stack operations
 """
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 import inspect
 import logging
@@ -29,21 +29,67 @@ except:
 
 from six import string_types
 
-from galaxy import model
+from .message import ApplicationStackMessage, JobHandlerMessage, decode
+from .transport import ApplicationStackTransport, UWSGIFarmMessageTransport
 
 
 log = logging.getLogger(__name__)
 
 
+class ApplicationStackMessageDispatcher(object):
+    def __init__(self):
+        self.__funcs = {}
+
+    def __func_name(self, func, name):
+        if not name:
+            name = func.__name__
+        return name
+
+    def register_func(self, func, name=None):
+        name = self.__func_name(func, name)
+        self.__funcs[name] = func
+
+    def deregister_func(self, func=None, name=None):
+        name = self.__func_name(func, name)
+        del self.__func[name]
+
+    @property
+    def handler_count(self):
+        return len(self.__funcs)
+
+    def dispatch(self, msg_str):
+        msg = decode(msg_str)
+        try:
+            msg.validate()
+        except AssertionError as exc:
+            log.error('######## Invalid message received: %s, error: %s', msg_str, exc)
+            return
+        if msg.target not in self.__funcs:
+            log.error("######## Received message with target '%s' but no functions were registered with that name. Params were: %s", msg.target, msg.params)
+        else:
+            self.__funcs[msg.target](msg)
+
+
 class ApplicationStack(object):
     name = None
     prohibited_middleware = frozenset()
-    setup_jobs_with_msg = False
+    # TODO: this is a fairly clunky way of handling these cases
+    setup_jobs_with_msg = False # used in galaxy.jobs.manager to determine whether jobs should be sent via message
+    handle_jobs = False         # used by galaxy.jobs to determine whether this process handles jobs
+
+    transport_class = ApplicationStackTransport
 
     @classmethod
     def register_postfork_function(cls, f, *args, **kwargs):
         f(*args, **kwargs)
 
+    def __init__(self, app=None):
+        self.app = app
+
+    def start(self):
+        pass
+
+    # FIXME: used?
     def workers(self):
         return []
 
@@ -52,20 +98,61 @@ class ApplicationStack(object):
             middleware = middleware.__name__
         return middleware not in self.prohibited_middleware
 
-    def process_in_pool(self, pool_name):
-        return None
-
-    def initialize_msg_handler(self, app):
-        return None
-
-    def send_msg(self, msg, dest):
-        pass
-
     def set_postfork_server_name(self, app):
         pass
 
+    def process_in_pool(self, pool_name):
+        return None
 
-class UWSGIApplicationStack(ApplicationStack):
+    def register_message_handler(self, func, name=None):
+        pass
+
+    def deregister_message_handler(self, func=None, name=None):
+        pass
+
+    def send_message(self, dest, msg=None, target=None, params=None, **kwargs):
+        pass
+
+    def shutdown(self):
+        pass
+
+
+class MessageApplicationStack(ApplicationStack):
+    def __init__(self, app=None):
+        super(MessageApplicationStack, self).__init__(app=app)
+        self.dispatcher = ApplicationStackMessageDispatcher()
+        self.transport = self.transport_class(app, dispatcher=self.dispatcher)
+        #if app:
+        #    log.debug('######## registering self.start')
+        #    self.register_postfork_function(self.start)
+
+    def start(self):
+        self.transport.start()
+
+    def register_message_handler(self, func, name=None):
+        log.debug('######## %s register_message_handler called', uwsgi.mule_id())
+        self.dispatcher.register_func(func, name)
+        self.transport.start_if_needed()
+
+    def deregister_message_handler(self, func=None, name=None):
+        self.dispatcher.deregister_func(func, name)
+        self.transport.shutdown_if_needed()
+
+    def send_message(self, dest, msg=None, target=None, params=None, **kwargs):
+        assert msg is not None or target is not None, "Either 'msg' or 'target' parameters must be set"
+        if not msg:
+            msg = ApplicationStackMessage(
+                target=target,
+                params=params,
+                **kwargs
+            )
+        self.transport.send_message(msg.encode(), dest)
+
+    def shutdown(self):
+        self.transport.shutdown()
+
+
+class UWSGIApplicationStack(MessageApplicationStack):
     """Interface to the uWSGI application stack. Supports running additional webless Galaxy workers as mules. Mules
     must be farmed to be communicable via uWSGI mule messaging, unfarmed mules are not supported.
     """
@@ -76,16 +163,38 @@ class UWSGIApplicationStack(ApplicationStack):
     ])
     setup_jobs_with_msg = True
 
+    transport_class = UWSGIFarmMessageTransport
+    # FIXME: this is copied into UWSGIFarmMessageTransport
+    shutdown_msg = '__SHUTDOWN__'
     postfork_functions = []
+    # TODO: used?
     handler_prefix = 'mule-handler-'
-
-    # Define any static lock names here, additional locks will be appended for each configured farm's message handler
-    _locks = []
 
     @classmethod
     def register_postfork_function(cls, f, *args, **kwargs):
         cls.postfork_functions.append((f, args, kwargs))
 
+    def __init__(self, app=None):
+        super(UWSGIApplicationStack, self).__init__(app=app)
+
+    def __register_signal_handlers(self):
+        for name in ('TERM', 'INT', 'HUP'):
+            sig = getattr(signal, 'SIG%s' % name)
+            signal.signal(sig, self._handle_signal)
+
+    def _handle_signal(self, signum, frame):
+        if signum in (signal.SIGTERM, signal.SIGINT):
+            log.info('######## Mule %s received SIGINT/SIGTERM, shutting down', uwsgi.mule_id())
+            self.shutdown()
+            # This terminates the application loop in the handler entrypoint
+            self.app.exit = True
+        elif signum == signal.SIGHUP:
+            log.debug('######## Mule %s received SIGHUP, restarting', uwsgi.mule_id())
+            self.shutdown()
+            # uWSGI master will restart us
+            self.app.exit = True
+
+    # FIXME: these are copied into UWSGIFarmMessageTransport
     @property
     def _farms(self):
         if self._farms_dict is None:
@@ -105,125 +214,36 @@ class UWSGIApplicationStack(ApplicationStack):
             self._mules_list = [mules] if isinstance(mules, string_types) else mules
         return self._mules_list
 
-    def __initialize_locks(self):
-        num = int(uwsgi.opt.get('locks', 0)) + 1
-        farms = self._farms.keys()
-        need = len(farms)
-        #need = len(filter(lambda x: x.startswith('LOCK_'), dir(self)))
-        if num < need:
-            raise RuntimeError('Need %i uWSGI locks but only %i exist(s): Set `locks = %i` in uWSGI configuration' % (need, num, need - 1))
-            sys.exit(1)
-        self._locks.extend(map(lambda x: 'RECV_MSG_FARM_' + x, farms))
-        # This would be nice, but in my 2.0.15 uWSGI, the uwsgi module has no set_option function. And I don't know if it'd work.
-        #if len(self.lock_map) > 1:
-        #    uwsgi.set_option('locks', len(self.lock_map))
-        #    log.debug('Created %s uWSGI locks' % len(self.lock_map))
-
-    def __register_signal_handlers(self):
-        for name in ('TERM', 'INT', 'HUP'):
-            sig = getattr(signal, 'SIG%s' % name)
-            signal.signal(sig, self._handle_signal)
-
-    def __handle_msgs(self):
-        while self.running:
-            # We are going to do this a lot, so cache the lock number
-            lock = self._farm_recv_msg_lock_num()
-            try:
-                self._lock(lock)
-                log.debug('######## Mule %s acquired message receive lock, waiting for new message', uwsgi.mule_id())
-                msg = uwsgi.farm_get_msg()
-                log.debug('######## Mule %s received message: %s', uwsgi.mule_id(), msg)
-                self._unlock(lock)
-                self.msg_handler(msg)
-            except:
-                log.exception( "Exception in mule message handling" )
-        log.info('uWSGI Mule (id: %s) message handler shutting down', uwsgi.mule_id())
-
-    def __init__(self):
-        super(UWSGIApplicationStack, self).__init__()
-        self._farms_dict = None
-        self._mules_list = None
-        self.app = None
-        self.running = False
-        self.msg_handler = None
-        self.msg_thread = None
-        self.msg_thread = threading.Thread(name="UWSGIApplicationStack.mule_msg_thread", target=self.__handle_msgs)
-        self.msg_thread.daemon = True
-        self.__initialize_locks()
-
-    def _lock(self, name_or_id):
-        try:
-            uwsgi.lock(name_or_id)
-        except TypeError:
-            uwsgi.lock(self._locks.index(name_or_id))
-
-    def _unlock(self, name_or_id):
-        try:
-            uwsgi.unlock(name_or_id)
-        except TypeError:
-            uwsgi.unlock(self._locks.index(name_or_id))
-
-    @property
-    def _farm_name(self):
-        for name, mules in self._farms.items():
-            if uwsgi.mule_id() in mules:
-                return name
-        return None
-
-    def _farm_recv_msg_lock_num(self):
-        return self._locks.index('RECV_MSG_FARM_' + self._farm_name)
-
-    def _handle_signal(self, signum, frame):
-        if signum in (signal.SIGTERM, signal.SIGINT):
-            log.info('######## Mule %s received SIGINT/SIGTERM, shutting down', uwsgi.mule_id())
-            # This terminates the application loop in the handler entrypoint
-            self.app.exit = True
-        elif signum == signal.SIGHUP:
-            log.debug('######## Mule %s received SIGHUP, restarting', uwsgi.mule_id())
-            # uWSGI master will restart us
-            self.app.exit = True
-
-    def workers(self):
-        return uwsgi.workers()
-
-    def process_in_pool(self, pool_name):
-        return self._farm_name == pool_name
-
-    def initialize_msg_handler(self, app, handler_func):
-        """ Post-fork initialization.
-        """
-        self.app = app
-        self.running = True
-        if not uwsgi.in_farm():
-            raise RuntimeError('Mule %s is not in a farm! Set `farm = %s:%s` in uWSGI configuration'
-                               % (uwsgi.mule_id(),
-                                  app.config.job_handler_pool_name,
-                                  ','.join(map(str, range(1, len(filter(lambda x: x.endswith('galaxy/web/stack/uwsgi_mule/handler.py'), self._mules)) + 1)))))
+    def start(self):
         self.__register_signal_handlers()
-        self.msg_handler = handler_func
-        self.msg_thread.start()
-        log.info('######## Job handler mule started, mule id: %s, farm name: %s, handler id: %s', uwsgi.mule_id(), self._farm_name, self.app.config.server_name)
-
-    def send_msg(self, msg, dest):
-        # TODO: the handler farm name should be configurable
-        #log.debug('################## sending message from mule %s: %s', uwsgi.mule_id(), msg)
-        log.debug('######## Sending message to farm %s: %s', dest, msg)
-        uwsgi.farm_msg(dest, msg)
-        log.debug('######## Message sent')
-
-    def terminate_handler(self):
-        self.running = False
+        super(UWSGIApplicationStack, self).start()
 
     def set_postfork_server_name(self, app):
         app.config.server_name += ".%d" % uwsgi.worker_id()
 
+    # FIXME: used?
+    def workers(self):
+        return uwsgi.workers()
+
+    def process_in_pool(self, pool_name):
+        return self.transport._farm_name == pool_name
+
+    def shutdown(self):
+        super(UWSGIApplicationStack, self).shutdown()
+        for farm in self._farms:
+            for mule in self._mules:
+                # This will possibly generate more than we need, but that's ok
+                self.transport.send_message(self.shutdown_msg, farm)
+
 
 class PasteApplicationStack(ApplicationStack):
     name = 'Python Paste'
+    handle_jobs = True
 
 
 class WeblessApplicationStack(ApplicationStack):
     name = 'Webless'
+    handle_jobs = True
 
 
 def application_stack_class():
@@ -240,9 +260,9 @@ def application_stack_class():
     return WeblessApplicationStack
 
 
-def application_stack_instance():
+def application_stack_instance(app=None):
     stack_class = application_stack_class()
-    return stack_class()
+    return stack_class(app=app)
 
 
 def register_postfork_function(f, *args, **kwargs):

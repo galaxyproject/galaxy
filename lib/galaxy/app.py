@@ -55,7 +55,8 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         self.name = 'galaxy'
         self.startup_timer = ExecutionTimer()
         self.new_installation = False
-        self.application_stack = application_stack_instance()
+        self.application_stack = application_stack_instance(app=self)
+        self.application_stack.register_postfork_function(self.application_stack.start)
         # Read config file and check for errors
         self.config = config.Configuration(**kwargs)
         self.config.check()
@@ -233,6 +234,8 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
                 os.unlink(self.datatypes_registry.integrated_datatypes_configs)
         except:
             pass
+        self.application_stack.shutdown()
+        # This is used to signal the webless application loop to terminate
         self.exit = True
 
     def configure_fluent_log(self):
