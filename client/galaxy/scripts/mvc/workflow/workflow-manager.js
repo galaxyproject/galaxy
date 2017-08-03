@@ -182,6 +182,7 @@ function( Connector, Toastr ) {
                     id : node.id,
                     type : node.type,
                     content_id : node.content_id,
+                    tool_version:node.tool_version,
                     tool_state : node.tool_state,
                     errors : node.errors,
                     input_connections : input_connections,

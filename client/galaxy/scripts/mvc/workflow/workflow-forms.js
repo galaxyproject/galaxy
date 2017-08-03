@@ -37,7 +37,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                     text_disable    : 'Set at Runtime',
                     narrow          : true,
                     initial_errors  : true,
-                    sustain_version : true,
+                    sustain_version : false,
                     cls             : 'ui-portlet-narrow',
                     postchange      : function( process, form ) {
                         var options = form.model.attributes;

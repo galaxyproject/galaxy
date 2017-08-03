@@ -185,6 +185,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             var nodeView = node.nodeView;
             this.tool_state = data.tool_state;
             this.config_form = data.config_form;
+            this.tool_version = this.config_form.version;
             this.errors = data.errors;
             this.annotation = data['annotation'];
             this.label = data.label;
