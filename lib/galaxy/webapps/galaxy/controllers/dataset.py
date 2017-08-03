@@ -1160,7 +1160,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 try:
                     # Load the tool
                     toolbox = self.get_toolbox()
-                    tool = toolbox.get_tool( job.tool_id )
+                    tool = toolbox.get_tool( job.tool_id, job.tool_version )
                     assert tool is not None, 'Requested tool has not been loaded.'
                     # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
                     try:
