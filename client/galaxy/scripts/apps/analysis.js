@@ -6,6 +6,7 @@ var jQuery = require( 'jquery' ),
     HistoryPanel = require( './panels/history-panel' ),
     Page = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
+    FormWrapper = require( 'mvc/form/form-wrapper' ),
     UserPreferences = require( 'mvc/user/user-preferences' ),
     CustomBuilds = require( 'mvc/user/user-custom-builds' ),
     Tours = require( 'mvc/tours' ),
@@ -87,7 +88,8 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_user_form : function( form_id ) {
-            this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+            var model = new UserPreferences.Model( { user_id: Galaxy.params.id } );
+            this.page.display( new FormWrapper.View ( model.get( form_id ) ) );
         },
 
         show_visualizations : function( action_id ) {
