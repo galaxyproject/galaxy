@@ -164,11 +164,19 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                 },{
                     action      : 'TagDatasetAction',
                     pja_arg     : 'tags',
-                    label       : 'Tags',
+                    label       : 'Add Tags',
                     type        : 'text',
                     value       : '',
                     ignore      : '',
                     help        : 'This action will set tags for the dataset.'
+                },{
+                    action      : 'RemoveTagDatasetAction',
+                    pja_arg     : 'tags',
+                    label       : 'Remove Tags',
+                    type        : 'text',
+                    value       : '',
+                    ignore      : '',
+                    help        : 'This action will remove tags for the dataset.'
                 },{
                     title   : 'Assign columns',
                     type    : 'section',
