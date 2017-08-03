@@ -182,16 +182,16 @@ function( Connector, Toastr ) {
                     id : node.id,
                     type : node.type,
                     content_id : node.content_id,
-                    tool_version:node.tool_version,
+                    tool_version : node.tool_version,
                     tool_state : node.tool_state,
                     errors : node.errors,
                     input_connections : input_connections,
                     position : $(node.element).position(),
-                    annotation: node.annotation,
-                    post_job_actions: node.post_job_actions,
-                    uuid: node.uuid,
-                    label: node.label,
-                    workflow_outputs: node.workflow_outputs
+                    annotation : node.annotation,
+                    post_job_actions : node.post_job_actions,
+                    uuid : node.uuid,
+                    label : node.label,
+                    workflow_outputs : node.workflow_outputs
                 };
                 nodes[ node.id ] = node_data;
             });
