@@ -2,6 +2,7 @@ var jQuery = require( 'jquery' ),
     $ = jQuery,
     GalaxyApp = require( 'galaxy' ).GalaxyApp,
     AdminPanel = require( './panels/admin-panel' ),
+    FormWrapper = require( 'mvc/form/form-wrapper' ),
     GridView = require( 'mvc/grid/grid-view' ),
     Ui = require( 'mvc/ui/ui-misc' ),
     Router = require( 'layout/router' ),
@@ -14,7 +15,8 @@ window.app = function app( options, bootstrapped ){
     /** Routes */
     var AdminRouter = Router.extend({
         routes: {
-            '(/)admin(/)users' : 'show_users'
+            '(/)admin(/)users' : 'show_users',
+            '(/)admin(/)forms(/)(:form_id)' : 'show_forms'
         },
 
         authenticate: function( args, name ) {
@@ -23,6 +25,15 @@ window.app = function app( options, bootstrapped ){
 
         show_users: function() {
             this.page.display( new GridView( { url_base: Galaxy.root + 'admin/users_list', url_data: Galaxy.params, dict_format: true } ) );
+        },
+
+        show_forms : function( form_id ) {
+            var options = {
+                title           : 'Reset passwords',
+                url             : 'admin/reset_user_password?' + $.param( Galaxy.params ),
+                icon            : 'fa-user'
+            };
+            this.page.display( new FormWrapper.View ( options ) );
         }
     });
 

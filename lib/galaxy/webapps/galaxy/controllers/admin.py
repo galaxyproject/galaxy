@@ -130,7 +130,7 @@ class UserListGrid( grids.Grid ):
         grids.GridOperation( "Reset Password",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=True,
-                             url_args=dict( webapp="galaxy", action="reset_user_password" ),
+                             url_args=dict( action="forms/reset_password" ),
                              target="top" ),
         grids.GridOperation( "Recalculate Disk Usage",
                              condition=( lambda item: not item.deleted ),
@@ -1610,53 +1610,13 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                                           cntrller='admin' ) )
 
     @web.expose
+    @web.json
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
-        user_id = kwd.get( 'id', None )
-        message = ''
-        status = ''
-        users = []
-        if user_id:
-            user_ids = util.listify( user_id )
-            if 'reset_user_password_button' in kwd:
-                message = ''
-                status = ''
-                for user_id in user_ids:
-                    user = get_user( trans, user_id )
-                    password = kwd.get( 'password', None )
-                    confirm = kwd.get( 'confirm', None )
-                    if len( password ) < 6:
-                        message = "Use a password of at least 6 characters."
-                        status = 'error'
-                        break
-                    elif password != confirm:
-                        message = "Passwords do not match."
-                        status = 'error'
-                        break
-                    else:
-                        user.set_password_cleartext( password )
-                        trans.sa_session.add( user )
-                        trans.sa_session.flush()
-                if not message and not status:
-                    message = "Passwords reset for %d %s." % ( len( user_ids ), util.inflector.cond_plural( len( user_ids ), 'user' ) )
-                    status = "done"
-                    trans.response.send_redirect( web.url_for( controller='admin',
-                                                               action='users',
-                                                               message=util.sanitize_text( message ),
-                                                               status=status ) )
-            users = [ get_user( trans, user_id ) for user_id in user_ids ]
-            if len( user_ids ) > 1:
-                user_id = ','.join( user_ids )
-        else:
-            message = 'No users received for resetting passwords.'
-            status = 'error'
-        return trans.fill_template( '/admin/user/reset_password.mako',
-                                    id=user_id,
-                                    message=util.sanitize_text( message ),
-                                    status=status,
-                                    users=users,
-                                    password='',
-                                    confirm='' )
+        users = util.listify( kwd.get( 'id' ) )
+        return {
+            'inputs' : [ { 'name': user_id } for user_id in users ]
+        }
 
     @web.expose
     @web.require_admin
