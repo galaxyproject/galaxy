@@ -26,7 +26,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             tooltip  : options.submit_tooltip,
                             title    : options.submit_title || 'Save settings',
                             icon     : options.submit_icon || 'fa-save',
-                            onclick  : function() { self._submit( form, options ) }
+                            onclick  : function() { self._submit( form ) }
                         })
                     }
                 });
@@ -40,10 +40,10 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
         },
 
-        _submit: function( form, options ) {
+        _submit: function( form ) {
             var self = this;
             $.ajax( {
-                url         : Galaxy.root + options.url,
+                url         : Galaxy.root + self.url,
                 data        : JSON.stringify( form.data.create() ),
                 type        : 'PUT',
                 contentType : 'application/json'
