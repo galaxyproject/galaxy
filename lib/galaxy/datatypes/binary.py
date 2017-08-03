@@ -10,10 +10,12 @@ import struct
 import subprocess
 import tempfile
 import zipfile
+from json import dumps
 
 import pysam
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
+from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
 from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
@@ -235,6 +237,9 @@ class Bam( Binary ):
     MetadataElement( name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
     MetadataElement( name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
     MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
+    MetadataElement( name="columns", default=12, desc="Number of columns", readonly=True, visible=False, no_value=0 )
+    MetadataElement( name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
+    MetadataElement( name="column_names", default=[ 'QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT' ], desc="Column names", readonly=True, visible=False, optional=True, no_value=[] )
 
     def _get_samtools_version( self ):
         version = '0.0.0'
@@ -461,6 +466,55 @@ class Bam( Binary ):
         rel_paths.append("%s.%s.bai" % (name or dataset.file_name, dataset.extension))
         file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
+
+    def get_chunk( self, trans, dataset, offset=0, ck_size=None ):
+        index_file = dataset.metadata.bam_index
+        with pysam.AlignmentFile( dataset.file_name, "rb", index_filename=index_file.file_name ) as bamfile:
+            ck_size = 300  # 300 lines
+            ck_data = ""
+            header_line_count = 0
+            if offset == 0:
+                ck_data = bamfile.text.replace('\t', ' ')
+                header_line_count = bamfile.text.count('\n')
+            else:
+                bamfile.seek( offset )
+            for line_number, alignment in enumerate( bamfile ) :
+                # return only Header lines if 'header_line_count' exceeds 'ck_size'
+                # FIXME: Can be problematic if bam has million lines of header
+                offset = bamfile.tell()
+                if ( line_number + header_line_count ) > ck_size:
+                    break
+                else:
+                    bamline = alignment.tostring( bamfile )
+                    # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
+                    # Below code will remove spaces between each tag.
+                    bamline_modified = ('\t').join( bamline.split()[:11] + [ (' ').join(bamline.split()[11:]) ] )
+                    ck_data = "%s\n%s" % ( ck_data, bamline_modified )
+        return dumps( { 'ck_data': util.unicodify( ck_data ),
+                        'offset': offset } )
+
+    def display_data( self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+        preview = util.string_as_bool( preview )
+        if offset is not None:
+            return self.get_chunk( trans, dataset, offset, ck_size )
+        elif to_ext or not preview:
+            return super( Bam, self ).display_data( trans, dataset, preview, filename, to_ext, **kwd )
+        else:
+            column_names = dataset.metadata.column_names
+            if not column_names:
+                column_names = []
+            column_types = dataset.metadata.column_types
+            if not column_types:
+                column_types = []
+            column_number = dataset.metadata.columns
+            if column_number is None:
+                column_number = 1
+            return trans.fill_template( "/dataset/tabular_chunked.mako",
+                                        dataset=dataset,
+                                        chunk=self.get_chunk( trans, dataset, 0 ),
+                                        column_number=column_number,
+                                        column_names=column_names,
+                                        column_types=column_types )
 
     # ------------- Dataproviders
     # pipe through samtools view
