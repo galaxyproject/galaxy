@@ -1761,27 +1761,41 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == false() ) \
                                                                       .order_by( trans.app.model.Role.table.c.name ):
                 if role in [ x.role for x in user.roles ]:
-                    in_roles.append( role.id )
-                if role.type != trans.app.model.Role.types.PRIVATE and role.id not in in_roles:
+                    in_roles.append( trans.security.encode_id( role.id ) )
+                if role.type != trans.app.model.Role.types.PRIVATE:
                     # There is a 1 to 1 mapping between a user and a PRIVATE role, so private roles should
                     # not be listed in the roles form fields, except for the currently selected user's private
                     # role, which should always be in in_roles.  The check above is added as an additional
                     # precaution, since for a period of time we were including private roles in the form fields.
                     all_roles.append( ( role.name, trans.security.encode_id( role.id ) ) )
-
-
             for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == false() ) \
                                                                         .order_by( trans.app.model.Group.table.c.name ):
                 if group in [ x.group for x in user.groups ]:
-                    in_groups.append( group.id )
+                    in_groups.append( trans.security.encode_id( group.id ) )
                 all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
             return { 'title'  : 'Roles and groups for \'%s\'' % user.email,
                      'message': 'User \'%s\' is currently associated with %d role(s) and is a member of %d group(s).' % \
-                                ( user.email, len( in_roles ), len( in_groups ) ),
+                                ( user.email, len( in_roles ) - 1, len( in_groups ) ),
                      'status' : 'info',
                      'inputs' : [ build_select_input( 'roles', 'Roles', all_roles, in_roles ),
                                   build_select_input( 'groups', 'Groups', all_groups, in_groups ) ] }
-        return {'message': 'Permissions unchanged.'}
+        else:
+            in_roles = payload.get( 'roles' ) or []
+            in_groups = payload.get( 'groups' ) or []
+            if in_roles:
+                in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( in_roles ) ]
+            if in_groups:
+                in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( in_groups ) ]
+
+            # make sure the user is not dis-associating himself from his private role
+            private_role = trans.app.security_agent.get_private_user_role( user )
+            if private_role not in in_roles:
+                in_roles.append( private_role )
+
+            trans.app.security_agent.set_entity_user_associations( users=[ user ], roles=in_roles, groups=in_groups )
+            trans.sa_session.refresh( user )
+            return { 'message' : 'User \'%s\' has been updated with %d associated roles and %d associated groups (private roles are not displayed).' % \
+                     ( user.email, len( in_roles ) - 1, len( in_groups ) ) }
 
     @web.expose
     @web.require_admin
