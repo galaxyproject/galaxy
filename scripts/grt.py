@@ -117,8 +117,8 @@ class Sanitization:
         if data['src'] == 'hda':
             try:
                 dataset = self.sa_session.query(self.model.Dataset.id, self.model.Dataset.total_size) \
-                        .filter_by(id=data['id']) \
-                        .first()
+                    .filter_by(id=data['id']) \
+                    .first()
                 if dataset and dataset[1]:
                     data['size'] = int(dataset[1])
                 else:
@@ -131,7 +131,6 @@ class Sanitization:
             return data
         else:
             raise Exception("Cannot handle {src} yet".format(data))
-
 
     def _sanitize_dict(self, unsanitized_dict, path=""):
         # if it is a file dictionary, handle specially.
@@ -268,15 +267,15 @@ def main(argv):
                 .all():
 
             # TODO: blacklisted
-            handle_job.write(str(job[0])) # id
+            handle_job.write(str(job[0]))  # id
             handle_job.write('\t')
-            handle_job.write(job[2]) # tool_id
+            handle_job.write(job[2])  # tool_id
             handle_job.write('\t')
-            handle_job.write(job[3]) # tool_version
+            handle_job.write(job[3])  # tool_version
             handle_job.write('\t')
-            handle_job.write(job[4]) # state
+            handle_job.write(job[4])  # state
             handle_job.write('\t')
-            handle_job.write(str(job[5])) # create_time
+            handle_job.write(str(job[5]))  # create_time
             handle_job.write('\n')
             # meta counts
             job_state_data[job[4]] += 1

@@ -8,7 +8,6 @@ from __future__ import print_function
 import argparse
 import os
 import sys
-import time
 import yaml
 import logging
 import requests
@@ -53,7 +52,7 @@ def main(argv):
     # so now we can know which to send.
     local_reports = [x.strip('.json') for x in os.listdir(REPORT_DIR) if x.endswith('.json')]
     for report_id in local_reports:
-        if not report_id in remote_reports:
+        if report_id not in remote_reports:
             print("Uploading %s" % report_id)
             files = {
                 'meta': open(os.path.join(sys.argv[1], report_id + '.json'), 'rb'),
