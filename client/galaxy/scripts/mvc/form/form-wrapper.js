@@ -21,7 +21,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 var form = new Form({
                     title  : options.title,
                     message: options.message,
-                    status : options.status,
+                    status : options.status || 'warning',
                     icon   : options.icon,
                     inputs : options.inputs,
                     buttons: {
