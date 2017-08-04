@@ -297,6 +297,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                         if index:
                             panel_dict.insert_tool(index, tool)
                             inserted = True
+                else:
+                    log.warning("Could not find lineage for tool '%s'", tool.id)
                 if not inserted:
                     if (
                         tool.guid is None or
@@ -954,6 +956,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     lineage_id = lineage_tool.id
                     if panel_dict.has_tool_with_id( lineage_id ):
                         return panel_dict.get_tool_with_id( lineage_id )
+        else:
+            log.warning("Could not find lineage for tool '%s'", tool.id)
         return None
 
     def _newer_tool( self, tool1, tool2 ):
