@@ -1562,12 +1562,13 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 return {
                     'message': 'Changes password(s) for: %s.' % ', '.join( [ user.email for user in users.itervalues() ] ),
                     'status' : 'info',
-                    'inputs' : [{   'name'  : 'password',
-                                    'label' : 'New password',
-                                    'type'  : 'password'
-                                },{ 'name'  : 'confirm',
-                                    'label' : 'Confirm password',
-                                    'type'  : 'password' } ]
+                    'inputs' : [{
+                            'name'  : 'password',
+                            'label' : 'New password',
+                            'type'  : 'password'
+                        }, { 'name'  : 'confirm',
+                            'label' : 'Confirm password',
+                            'type'  : 'password' } ]
                 }
             else:
                 password = payload.get( 'password' )
@@ -1718,7 +1719,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     in_groups.append( trans.security.encode_id( group.id ) )
                 all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
             return { 'title'  : 'Roles and groups for \'%s\'' % user.email,
-                     'message': 'User \'%s\' is currently associated with %d role(s) and is a member of %d group(s).' % \
+                     'message': 'User \'%s\' is currently associated with %d role(s) and is a member of %d group(s).' %
                                 ( user.email, len( in_roles ) - 1, len( in_groups ) ),
                      'status' : 'info',
                      'inputs' : [ build_select_input( 'roles', 'Roles', all_roles, in_roles ),
@@ -1738,7 +1739,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
             trans.app.security_agent.set_entity_user_associations( users=[ user ], roles=in_roles, groups=in_groups )
             trans.sa_session.refresh( user )
-            return { 'message' : 'User \'%s\' has been updated with %d associated roles and %d associated groups (private roles are not displayed).' % \
+            return { 'message' : 'User \'%s\' has been updated with %d associated roles and %d associated groups (private roles are not displayed).' %
                      ( user.email, len( in_roles ) - 1, len( in_groups ) ) }
 
     @web.expose
