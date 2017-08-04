@@ -845,8 +845,8 @@ class Task( object, JobLike ):
         Read encoded parameter values from the database and turn back into a
         dict of tool parameter values.
         """
-        param_dict = dict( [ ( p.name, p.value ) for p in self.parent_job.parameters ] )
-        tool = app.toolbox.get_tool( self.tool_id, tool_version=self.job.tool_version )
+        param_dict = dict( [ ( p.name, p.value ) for p in self.job.parameters ] )
+        tool = app.toolbox.get_tool( self.job.tool_id, tool_version=self.job.tool_version )
         param_dict = tool.params_from_strings( param_dict, app )
         return param_dict
 
