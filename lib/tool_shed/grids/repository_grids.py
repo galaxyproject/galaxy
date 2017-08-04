@@ -197,7 +197,6 @@ class RepositoryGrid( grids.Grid ):
 
     title = "Repositories"
     model_class = model.Repository
-    template = '/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "name"
     use_hide_message = False
     columns = [
@@ -339,7 +338,6 @@ class MatchedRepositoryGrid( grids.Grid ):
     # Grid definition
     title = "Matching repositories"
     model_class = model.RepositoryMetadata
-    template = '/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "Repository.name"
     use_hide_message = False
     columns = [
@@ -956,7 +954,6 @@ class RepositoryMetadataGrid( grids.Grid ):
 
     title = "Repository metadata"
     model_class = model.RepositoryMetadata
-    template = '/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "Repository.name"
     columns = [
         RepositoryNameColumn( "Repository name",
