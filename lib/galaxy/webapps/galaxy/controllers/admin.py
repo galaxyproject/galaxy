@@ -1613,10 +1613,21 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.json
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
-        users = util.listify( kwd.get( 'id' ) )
-        return {
-            'inputs' : [ { 'id': user_id, 'name': user_id } for user_id in users ]
-        }
+        users = { user_id: get_user( trans, user_id ) for user_id in util.listify( kwd.get( 'id' ) ) }
+        if users:
+            return {
+                'inputs' : [{   'name'  : 'users',
+                                'label' : ', '.join( [ user.email for user in users.itervalues() ] ),
+                                'value' : ','.join( [ id for id in users.iterkeys() ] ),
+                                'hidden': True
+                            },{ 'name'  : 'new_password',
+                                'label' : 'New password',
+                                'help'  : 'Changes passwords for: %s' % ', '.join( [ user.email for user in users.itervalues() ] )
+                            },{ 'name'  : 'confirm_password',
+                                'label' : 'Confirm password' } ]
+            }
+        else:
+            raise MessageException( 'Please specify user ids.' )
 
     @web.expose
     @web.require_admin

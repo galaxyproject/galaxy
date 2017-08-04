@@ -32,7 +32,8 @@ window.app = function app( options, bootstrapped ){
             var options = {
                 title           : 'Reset passwords',
                 url             : 'admin/reset_user_password?id=' + QueryStringParsing.get( 'id' ),
-                icon            : 'fa-user'
+                icon            : 'fa-user',
+                submit_title    : 'Save new password'
             };
             this.page.display( new FormWrapper.View ( options ) );
         }
