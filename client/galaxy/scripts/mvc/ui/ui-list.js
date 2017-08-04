@@ -25,7 +25,6 @@ var View = Backbone.View.extend({
         // create insert new list element button
         this.button = new Ui.ButtonIcon({
             icon        : 'fa fa-sign-in',
-            floating    : 'left',
             tooltip     : 'Insert new ' + this.name,
             onclick     : function() {
                 self.add({
