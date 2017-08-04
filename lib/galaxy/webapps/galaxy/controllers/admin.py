@@ -1621,10 +1621,10 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                 'value' : ','.join( [ id for id in users.iterkeys() ] ),
                                 'hidden': True
                             },{ 'name'  : 'new_password',
-                                'label' : 'New password',
-                                'help'  : 'Changes passwords for: %s' % ', '.join( [ user.email for user in users.itervalues() ] )
+                                'label' : 'New password'
                             },{ 'name'  : 'confirm_password',
-                                'label' : 'Confirm password' } ]
+                                'label' : 'Confirm password',
+                                'help'  : 'Changes password(s) for: %s' % ', '.join( [ user.email for user in users.itervalues() ] ) } ]
             }
         else:
             raise MessageException( 'Please specify user ids.' )
