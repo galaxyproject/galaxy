@@ -20,6 +20,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 var options = $.extend( {}, self.model.attributes, response );
                 var form = new Form({
                     title  : options.title,
+                    message: options.message,
+                    status : options.status,
                     icon   : options.icon,
                     inputs : options.inputs,
                     operations: {

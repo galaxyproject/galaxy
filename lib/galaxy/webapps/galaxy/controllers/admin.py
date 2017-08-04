@@ -126,7 +126,7 @@ class UserListGrid( grids.Grid ):
         grids.GridOperation( "Manage Roles and Groups",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
-                             url_args=dict( webapp="galaxy", action="manage_roles_and_groups_for_user" ) ),
+                             url_args=dict( action="forms/manage_roles_and_groups_for_user" ) ),
         grids.GridOperation( "Reset Password",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=True,
@@ -1745,78 +1745,42 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             ac_data = ac_data + user.email + "\n"
         return ac_data
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def manage_roles_and_groups_for_user( self, trans, **kwd ):
-        user_id = kwd.get( 'id', None )
-        message = ''
-        status = ''
+    def manage_roles_and_groups_for_user( self, trans, payload={}, **kwd ):
+        user_id = kwd.get( 'id' )
         if not user_id:
-            message += "Invalid user id (%s) received" % str( user_id )
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
+            return message_exception( trans, 'Invalid user id (%s) received' % str( user_id ) )
         user = get_user( trans, user_id )
-        private_role = trans.app.security_agent.get_private_user_role( user )
-        if kwd.get( 'user_roles_groups_edit_button', False ):
-            # Make sure the user is not dis-associating himself from his private role
-            out_roles = kwd.get( 'out_roles', [] )
-            if out_roles:
-                out_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( out_roles ) ]
-            if private_role in out_roles:
-                message += "You cannot eliminate a user's private role association.  "
-                status = 'error'
-            in_roles = kwd.get( 'in_roles', [] )
-            if in_roles:
-                in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( in_roles ) ]
-            out_groups = kwd.get( 'out_groups', [] )
-            if out_groups:
-                out_groups = [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in util.listify( out_groups ) ]
-            in_groups = kwd.get( 'in_groups', [] )
-            if in_groups:
-                in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in util.listify( in_groups ) ]
-            if in_roles:
-                trans.app.security_agent.set_entity_user_associations( users=[ user ], roles=in_roles, groups=in_groups )
-                trans.sa_session.refresh( user )
-                message += "User '%s' has been updated with %d associated roles and %d associated groups (private roles are not displayed)" % \
-                    ( user.email, len( in_roles ), len( in_groups ) )
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='users',
-                                                           message=util.sanitize_text( message ),
-                                                           status='done' ) )
-        in_roles = []
-        out_roles = []
-        in_groups = []
-        out_groups = []
-        for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == false() ) \
-                                                                  .order_by( trans.app.model.Role.table.c.name ):
-            if role in [ x.role for x in user.roles ]:
-                in_roles.append( ( role.id, role.name ) )
-            elif role.type != trans.app.model.Role.types.PRIVATE:
-                # There is a 1 to 1 mapping between a user and a PRIVATE role, so private roles should
-                # not be listed in the roles form fields, except for the currently selected user's private
-                # role, which should always be in in_roles.  The check above is added as an additional
-                # precaution, since for a period of time we were including private roles in the form fields.
-                out_roles.append( ( role.id, role.name ) )
-        for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == false() ) \
-                                                                    .order_by( trans.app.model.Group.table.c.name ):
-            if group in [ x.group for x in user.groups ]:
-                in_groups.append( ( group.id, group.name ) )
-            else:
-                out_groups.append( ( group.id, group.name ) )
-        message += "User '%s' is currently associated with %d roles and is a member of %d groups" % \
-            ( user.email, len( in_roles ), len( in_groups ) )
-        if not status:
-            status = 'done'
-        return trans.fill_template( '/admin/user/user.mako',
-                                    user=user,
-                                    in_roles=in_roles,
-                                    out_roles=out_roles,
-                                    in_groups=in_groups,
-                                    out_groups=out_groups,
-                                    message=message,
-                                    status=status )
+        if trans.request.method == 'GET':
+            in_roles = []
+            all_roles = []
+            in_groups = []
+            all_groups = []
+            for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == false() ) \
+                                                                      .order_by( trans.app.model.Role.table.c.name ):
+                if role in [ x.role for x in user.roles ]:
+                    in_roles.append( role.id )
+                if role.type != trans.app.model.Role.types.PRIVATE and role.id not in in_roles:
+                    # There is a 1 to 1 mapping between a user and a PRIVATE role, so private roles should
+                    # not be listed in the roles form fields, except for the currently selected user's private
+                    # role, which should always be in in_roles.  The check above is added as an additional
+                    # precaution, since for a period of time we were including private roles in the form fields.
+                    all_roles.append( ( role.name, trans.security.encode_id( role.id ) ) )
+
+
+            for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == false() ) \
+                                                                        .order_by( trans.app.model.Group.table.c.name ):
+                if group in [ x.group for x in user.groups ]:
+                    in_groups.append( group.id )
+                all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
+            return { 'title'  : 'Roles and groups for \'%s\'' % user.email,
+                     'message': 'User \'%s\' is currently associated with %d role(s) and is a member of %d group(s).' % \
+                                ( user.email, len( in_roles ), len( in_groups ) ),
+                     'status' : 'info',
+                     'inputs' : [ build_select_input( 'roles', 'Roles', all_roles, in_roles ),
+                                  build_select_input( 'groups', 'Groups', all_groups, in_groups ) ] }
+        return {'message': 'Permissions unchanged.'}
 
     @web.expose
     @web.require_admin
@@ -1968,6 +1932,15 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
 
 # ---- Utility methods -------------------------------------------------------
+
+def build_select_input( name, label, options, value ):
+    return { 'type'      : 'select',
+             'multiple'  : True,
+             'optional'  : True,
+             'name'      : name,
+             'label'     : label,
+             'options'   : options,
+             'value'     : value }
 
 
 def message_exception( trans, message ):

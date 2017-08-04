@@ -30,11 +30,16 @@ window.app = function app( options, bootstrapped ){
 
         show_forms : function( form_id ) {
             var form_defs = {
-                'reset_user_password': {
+                reset_user_password: {
                     title           : 'Reset passwords',
                     url             : 'admin/reset_user_password?id=' + QueryStringParsing.get( 'id' ),
                     icon            : 'fa-user',
                     submit_title    : 'Save new password',
+                    redirect        : Galaxy.root + 'admin/users'
+                },
+                manage_roles_and_groups_for_user: {
+                    url             : 'admin/manage_roles_and_groups_for_user?id=' + QueryStringParsing.get( 'id' ),
+                    icon            : 'fa-users',
                     redirect        : Galaxy.root + 'admin/users'
                 }
             };
