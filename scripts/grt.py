@@ -82,18 +82,27 @@ class Sanitization:
             self.sanitization_config['tool_params'] = {}
 
     def blacklisted_tree(self, path):
-        if self.tool_id in self.sanitization_config['tool_params']:
-            if path.lstrip('.') in self.sanitization_config['tool_params'][self.tool_id]:
-                return True
+        if path.lstrip('.') in self.sanitization_config['tool_params'][self.tool_id]:
+            return True
         return False
 
     def sanitize_data(self, tool_id, key, value):
         # If the tool is blacklisted, skip it.
         if tool_id in self.sanitization_config['tools']:
             return 'null'
+        # Thus, all tools below here are not blacklisted at the top level.
 
-        # If it isn't in tool_params, return quickly without parsing.
+        # If it isn't in tool_params, there are no keys being sanitized for
+        # this tool so we can return quickly without parsing.
         if tool_id not in self.sanitization_config['tool_params']:
+            return value
+
+        # If the key is listed precisely (not a sub-tree), we can also return slightly more quickly.
+        if key in self.sanitization_config['tool_params'][tool_id]:
+            return 'null'
+
+        # If the key isn't a prefix for any of the keys being sanitized, then this is safe.
+        if not any(san_key.startswith(key) for san_key in self.sanitization_config['tool_params'][tool_id]):
             return value
 
         # Slow path.
@@ -237,6 +246,7 @@ def main(argv):
 
     # Unfortunately we have to keep this mapping for the sanitizer to work properly.
     job_tool_map = {}
+    blacklisted_tools = config['sanitization']['tools']
 
     annotate('export_jobs_start', 'Exporting Jobs')
     handle_job = open(REPORT_BASE + '.jobs.tsv', 'w')
@@ -276,6 +286,9 @@ def main(argv):
                 .filter(model.JobMetricNumeric.job_id > offset_start) \
                 .filter(model.JobMetricNumeric.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all():
+            # If the tool is blacklisted, exclude everywhere
+            if job_tool_map[metric[0]] in blacklisted_tools:
+                continue
 
             handle_metric_num.write(str(metric[0]))
             handle_metric_num.write('\t')
@@ -297,6 +310,9 @@ def main(argv):
                 .filter(model.JobParameter.job_id > offset_start) \
                 .filter(model.JobParameter.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all():
+            # If the tool is blacklisted, exclude everywhere
+            if job_tool_map[param[0]] in blacklisted_tools:
+                continue
 
             sanitized = san.sanitize_data(job_tool_map[param[0]], param[1], param[2])
 
