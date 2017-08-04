@@ -696,7 +696,7 @@ class Job( object, JobLike, Dictifiable ):
         dict of tool parameter values.
         """
         param_dict = self.raw_param_dict()
-        tool = app.toolbox.get_tool( self.tool_id )
+        tool = app.toolbox.get_tool( self.tool_id, tool_version=self.tool_version )
         param_dict = tool.params_from_strings( param_dict, app, ignore_errors=ignore_errors )
         return param_dict
 
@@ -845,8 +845,8 @@ class Task( object, JobLike ):
         Read encoded parameter values from the database and turn back into a
         dict of tool parameter values.
         """
-        param_dict = dict( [ ( p.name, p.value ) for p in self.parent_job.parameters ] )
-        tool = app.toolbox.get_tool( self.tool_id )
+        param_dict = dict( [ ( p.name, p.value ) for p in self.job.parameters ] )
+        tool = app.toolbox.get_tool( self.job.tool_id, tool_version=self.job.tool_version )
         param_dict = tool.params_from_strings( param_dict, app )
         return param_dict
 
