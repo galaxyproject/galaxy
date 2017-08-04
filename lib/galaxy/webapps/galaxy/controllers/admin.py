@@ -1614,13 +1614,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 return {
                     'message': 'Changes password(s) for: %s.' % ', '.join( [ user.email for user in users.itervalues() ] ),
                     'status' : 'info',
-                    'inputs' : [{
-                            'name'  : 'password',
-                            'label' : 'New password',
-                            'type'  : 'password'
-                        }, { 'name'  : 'confirm',
-                            'label' : 'Confirm password',
-                            'type'  : 'password' } ]
+                    'inputs' : [{ 'name' : 'password', 'label' : 'New password', 'type' : 'password' },
+                                { 'name' : 'confirm', 'label' : 'Confirm password', 'type' : 'password' }]
                 }
             else:
                 password = payload.get( 'password' )
