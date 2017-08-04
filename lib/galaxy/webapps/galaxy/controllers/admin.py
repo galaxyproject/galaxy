@@ -187,7 +187,6 @@ class RoleListGrid( grids.Grid ):
     # Grid definition
     title = "Roles"
     model_class = model.Role
-    template = '/admin/dataset_security/role/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -276,7 +275,6 @@ class GroupListGrid( grids.Grid ):
     # Grid definition
     title = "Groups"
     model_class = model.Group
-    template = '/admin/dataset_security/group/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -364,7 +362,6 @@ class QuotaListGrid( grids.Grid ):
     # Grid definition
     title = "Quotas"
     model_class = model.Quota
-    template = '/admin/quota/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -474,7 +471,6 @@ class ToolVersionListGrid( grids.Grid ):
     # Grid definition
     title = "Tool versions"
     model_class = install_model.ToolVersion
-    template = '/admin/tool_version/grid.mako'
     default_sort_key = "tool_id"
     columns = [
         ToolIdColumn( "Tool id",
