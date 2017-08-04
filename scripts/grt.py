@@ -81,13 +81,8 @@ class Sanitization:
         if 'tool_params' not in self.sanitization_config:
             self.sanitization_config['tool_params'] = {}
 
-        if '__any__' not in self.sanitization_config['tool_params']:
-            self.sanitization_config['tool_params']['__any__'] = []
-
     def blacklisted_tree(self, path):
-        if path.lstrip('.') in self.sanitization_config['tool_params']['__any__']:
-            return True
-        elif self.tool_id in self.sanitization_config['tool_params']:
+        if self.tool_id in self.sanitization_config['tool_params']:
             if path.lstrip('.') in self.sanitization_config['tool_params'][self.tool_id]:
                 return True
         return False
