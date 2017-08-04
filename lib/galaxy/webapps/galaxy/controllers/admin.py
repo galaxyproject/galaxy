@@ -1616,13 +1616,14 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         if users:
             if trans.request.method == 'GET':
                 return {
+                    'message': 'Changes password(s) for: %s.' % ', '.join( [ user.email for user in users.itervalues() ] ),
+                    'status' : 'info',
                     'inputs' : [{   'name'  : 'password',
                                     'label' : 'New password',
                                     'type'  : 'password'
                                 },{ 'name'  : 'confirm',
                                     'label' : 'Confirm password',
-                                    'type'  : 'password',
-                                    'help'  : 'Changes password(s) for: %s' % ', '.join( [ user.email for user in users.itervalues() ] ) } ]
+                                    'type'  : 'password' } ]
                 }
             else:
                 password = payload.get( 'password' )

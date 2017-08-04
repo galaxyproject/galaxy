@@ -51,7 +51,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 type        : 'PUT',
                 contentType : 'application/json'
             }).done( function( response ) {
-                var success_message = { message: response.message, status: 'success' };
+                var success_message = { message: response.message, status: 'success', persistent: false };
                 if ( self.redirect ) {
                     window.location = self.redirect + '?' + $.param( success_message );
                 } else {
@@ -61,7 +61,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     form.message.update( success_message );
                 }
             }).fail( function( response ) {
-                form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
+                form.message.update( { message: response.responseJSON.err_msg, status: 'danger', persistent: false } );
             });
         }
     });
