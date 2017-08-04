@@ -565,8 +565,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     tool.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
                     tool.guid = guid
                     tool.version = item.elem.find( "version" ).text
-                # Make sure tools are registered in self._lineage_map.
-                tool._lineage = self._lineage_map.register( tool )
                 if item.has_elem:
                     self._tool_tag_manager.handle_tags( tool.id, item.elem )
                 self.__add_tool( tool, load_panel_dict, panel_dict )
@@ -631,6 +629,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         # changed, so the tool should always be reloaded here.  We used to
         # only load the tool if it was not found in self._tools_by_id, but
         # performing that check did not enable this scenario.
+        tool._lineage = self._lineage_map.register( tool )
         self.register_tool( tool )
         if load_panel_dict:
             self.__add_tool_to_tool_panel( tool, panel_dict, section=isinstance( panel_dict, ToolSection ) )
@@ -704,7 +703,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         def quick_load( tool_file, async=True ):
             try:
                 tool = self.load_tool( tool_file )
-                tool._lineage = self._lineage_map.register( tool )
                 self.__add_tool( tool, load_panel_dict, elems )
                 # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
                 key = 'tool_%s' % str( tool.id )
