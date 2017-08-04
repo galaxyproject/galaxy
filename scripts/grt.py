@@ -238,6 +238,12 @@ def main(argv):
     end_job_id = sa_session.query(model.Job.id) \
         .order_by(model.Job.id.desc()) \
         .first()[0]
+
+    # Allow users to only report N records at once.
+    if args.max_records > 0:
+        if end_job_id - last_job_sent > args.max_records:
+            end_job_id = last_job_sent + args.max_records
+
     annotate('endpoint_end', 'Processing jobs (%s, %s]' % (last_job_sent, end_job_id))
 
     # Remember the last job sent.
@@ -246,10 +252,6 @@ def main(argv):
         # So we can just quit now.
         sys.exit(0)
 
-    # Allow users to only report N records at once.
-    if args.max_records > 0:
-        if end_job_id - last_job_sent > args.max_records:
-            end_job_id = last_job_sent + args.max_records
 
     # Unfortunately we have to keep this mapping for the sanitizer to work properly.
     job_tool_map = {}
