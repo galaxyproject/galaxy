@@ -1621,9 +1621,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                 'value' : ','.join( [ id for id in users.iterkeys() ] ),
                                 'hidden': True
                             },{ 'name'  : 'new_password',
-                                'label' : 'New password'
+                                'label' : 'New password',
+                                'type'  : 'password'
                             },{ 'name'  : 'confirm_password',
                                 'label' : 'Confirm password',
+                                'type'  : 'password',
                                 'help'  : 'Changes password(s) for: %s' % ', '.join( [ user.email for user in users.itervalues() ] ) } ]
             }
         else:
