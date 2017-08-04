@@ -1,5 +1,5 @@
 /** User Preferences view */
-define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
+define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'utils/query-string-parsing' ], function( Form, Ui, QueryStringParsing ) {
 
     /** Contains descriptive dictionaries describing user forms */
     var Model = Backbone.Model.extend({
@@ -12,7 +12,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     title           : 'Manage information',
                     description     : 'Edit your email, addresses and custom parameters or change your username.',
                     url             : 'api/users/' + options.user_id + '/information/inputs',
-                    icon            : 'fa-user'
+                    icon            : 'fa-user',
+                    redirect        : 'user'
                 },
                 'password': {
                     title           : 'Change password',
@@ -20,19 +21,22 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     icon            : 'fa-unlock-alt',
                     url             : 'api/users/' + options.user_id + '/password/inputs',
                     submit_title    : 'Save password',
+                    redirect        : 'user'
                 },
                 'communication': {
                     title           : 'Change communication settings',
                     description     : 'Enable or disable the communication feature to chat with other users.',
                     url             : 'api/users/' + options.user_id + '/communication/inputs',
-                    icon            : 'fa-comments-o'
+                    icon            : 'fa-comments-o',
+                    redirect        : 'user'
                 },
                 'permissions': {
                     title           : 'Set dataset permissions for new histories',
                     description     : 'Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.',
                     url             : 'api/users/' + options.user_id + '/permissions/inputs',
                     icon            : 'fa-users',
-                    submit_title    : 'Save permissions'
+                    submit_title    : 'Save permissions',
+                    redirect        : 'user'
                 },
                 'api_key': {
                     title           : 'Manage API key',
@@ -47,7 +51,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     description     : 'Customize your Toolbox by displaying or omitting sets of Tools.',
                     url             : 'api/users/' + options.user_id + '/toolbox_filters/inputs',
                     icon            : 'fa-filter',
-                    submit_title    : 'Save filters'
+                    submit_title    : 'Save filters',
+                    redirect        : 'user'
                 },
                 'openids': {
                     title           : 'Manage OpenIDs',
@@ -89,7 +94,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
         initialize: function() {
             this.model = new Model();
-            this.message = new Ui.Message();
             this.setElement( '<div/>' );
             this.render();
         },
@@ -99,10 +103,14 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             var config = Galaxy.config;
             $.getJSON( Galaxy.root + 'api/users/' + Galaxy.user.id, function( data ) {
                 self.$preferences = $( '<div/>' ).addClass( 'ui-panel' )
-                                                 .append( self.message.$el )
                                                  .append( $( '<h2/>' ).append( 'User preferences' ) )
                                                  .append( $( '<p/>' ).append( 'You are logged in as <strong>' +  _.escape( data.email ) + '</strong>.' ) )
                                                  .append( self.$table = $( '<table/>' ).addClass( 'ui-panel-table' ) );
+                var message = QueryStringParsing.get( 'message' );
+                var status  = QueryStringParsing.get( 'status' );
+                if( message && status ) {
+                    self.$preferences.prepend( ( new Ui.Message( { message: message, status: status } ) ).$el );
+                }
                 if( !config.use_remote_user ) {
                     self._addLink( 'information' );
                     self._addLink( 'password' );

@@ -40,17 +40,17 @@ window.app = function app( options, bootstrapped ){
                     url             : 'admin/reset_user_password?id=' + QueryStringParsing.get( 'id' ),
                     icon            : 'fa-user',
                     submit_title    : 'Save new password',
-                    redirect        : Galaxy.root + 'admin/users'
+                    redirect        : 'admin/users'
                 },
                 manage_roles_and_groups_for_user: {
                     url             : 'admin/manage_roles_and_groups_for_user?id=' + QueryStringParsing.get( 'id' ),
                     icon            : 'fa-users',
-                    redirect        : Galaxy.root + 'admin/users'
+                    redirect        : 'admin/users'
                 },
                 rename_role: {
                     url             : 'admin/rename_role?id=' + QueryStringParsing.get( 'id' ),
                     icon            : 'fa-users',
-                    redirect        : Galaxy.root + 'admin/roles'
+                    redirect        : 'admin/roles'
                 }
             };
             this.page.display( new FormWrapper.View ( form_defs[ form_id ] ) );
