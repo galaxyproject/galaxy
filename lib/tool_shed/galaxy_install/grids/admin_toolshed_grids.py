@@ -124,7 +124,6 @@ class InstalledRepositoryGrid( grids.Grid ):
     # Grid definition
     title = "Installed tool shed repositories"
     model_class = tool_shed_install.ToolShedRepository
-    template = '/admin/tool_shed_repository/grid.mako'
     default_sort_key = "name"
     columns = [
         ToolShedStatusColumn( label="" ),
