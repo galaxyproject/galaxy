@@ -6,6 +6,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         initialize: function( options ) {
             this.model = new Backbone.Model( options );
             this.url = this.model.get( 'url' );
+            this.redirect = this.model.get( 'redirect' );
             this.setElement( '<div/>' );
             this.render();
         },
@@ -48,10 +49,15 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 type        : 'PUT',
                 contentType : 'application/json'
             }).done( function( response ) {
-                form.data.matchModel( response, function ( input, input_id ) {
-                    form.field_list[ input_id ].value( input.value );
-                });
-                form.message.update( { message: response.message, status: 'success' } );
+                var success_message = { message: response.message, status: 'success' };
+                if ( self.redirect ) {
+                    window.location = self.redirect + '?' + $.param( success_message );
+                } else {
+                    form.data.matchModel( response, function ( input, input_id ) {
+                        form.field_list[ input_id ].value( input.value );
+                    });
+                    form.message.update( success_message );
+                }
             }).fail( function( response ) {
                 form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
             });

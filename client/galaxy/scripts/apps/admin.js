@@ -33,7 +33,8 @@ window.app = function app( options, bootstrapped ){
                 title           : 'Reset passwords',
                 url             : 'admin/reset_user_password?id=' + QueryStringParsing.get( 'id' ),
                 icon            : 'fa-user',
-                submit_title    : 'Save new password'
+                submit_title    : 'Save new password',
+                redirect        : Galaxy.root + 'admin/users'
             };
             this.page.display( new FormWrapper.View ( options ) );
         }
