@@ -1093,31 +1093,23 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                             } ]
             }
         else:
+            print payload
             old_name = role.name
-            new_name = util.restore_text( params.name )
-            new_description = util.restore_text( params.description )
+            new_name = util.restore_text( payload.get( 'name' ) )
+            new_description = util.restore_text( payload.get( 'description' ) )
             if not new_name:
                 return message_exception( trans, 'Enter a valid role name.' )
             else:
                 existing_role = trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == new_name ).first()
                 if existing_role and existing_role.id != role.id:
-                    message = 'A role with that name already exists'
-                    status = 'error'
+                    return message_exception( trans, 'A role with that name already exists.' )
                 else:
                     if not ( role.name == new_name and role.description == new_description ):
                         role.name = new_name
                         role.description = new_description
                         trans.sa_session.add( role )
                         trans.sa_session.flush()
-                        message = "Role '%s' has been renamed to '%s'" % ( old_name, new_name )
-                    return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                      action='roles',
-                                                                      message=util.sanitize_text( message ),
-                                                                      status='done' ) )
-        return trans.fill_template( '/admin/dataset_security/role/role_rename.mako',
-                                    role=role,
-                                    message=message,
-                                    status=status )
+            return { 'message': 'Role \'%s\' has been renamed to \'%s\'.' % ( old_name, new_name ) }
 
     @web.expose
     @web.require_admin

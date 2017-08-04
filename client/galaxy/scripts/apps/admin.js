@@ -50,7 +50,7 @@ window.app = function app( options, bootstrapped ){
                 rename_role: {
                     url             : 'admin/rename_role?id=' + QueryStringParsing.get( 'id' ),
                     icon            : 'fa-users',
-                    redirect        : Galaxy.root + 'admin/users'
+                    redirect        : Galaxy.root + 'admin/roles'
                 }
             };
             this.page.display( new FormWrapper.View ( form_defs[ form_id ] ) );
