@@ -178,6 +178,8 @@ def main(argv):
                         help="Set the logging level", default='warning')
     parser.add_argument("-b", "--batch-size", type=int, default=1000,
                         help="Batch size for sql queries")
+    parser.add_argument("-m", "--max-records", type=int, default=0,
+                        help="Maximum number of records to include in a single report. This option should ONLY be used when reporting historical data. Setting this may require running GRT multiple times to capture all historical logs.")
 
     args = parser.parse_args()
     logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
@@ -243,6 +245,11 @@ def main(argv):
         logging.info("No new jobs to report")
         # So we can just quit now.
         sys.exit(0)
+
+    # Allow users to only report N records at once.
+    if args.max_records > 0:
+        if end_job_id - last_job_sent > args.max_records:
+            end_job_id = last_job_sent + args.max_records
 
     # Unfortunately we have to keep this mapping for the sanitizer to work properly.
     job_tool_map = {}
