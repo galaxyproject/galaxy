@@ -245,6 +245,7 @@ def main(argv):
 
     annotate('export_jobs_start', 'Exporting Jobs')
     handle_job = open(REPORT_BASE + '.jobs.tsv', 'w')
+    handle_job.write('\t'.join(('id', 'tool_id', 'tool_version', 'state', 'create_time')) + '\n')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
         for job in sa_session.query(model.Job.id, model.Job.user_id, model.Job.tool_id, model.Job.tool_version, model.Job.state, model.Job.create_time) \
@@ -261,7 +262,7 @@ def main(argv):
             handle_job.write('\t')
             handle_job.write(job[4]) # state
             handle_job.write('\t')
-            handle_job.write(job[5]) # create_time
+            handle_job.write(str(job[5])) # create_time
             handle_job.write('\n')
             # meta counts
             job_state_data[job[4]] += 1
@@ -273,6 +274,7 @@ def main(argv):
 
     annotate('export_metric_num_start', 'Exporting Metrics (Numeric)')
     handle_metric_num = open(REPORT_BASE + '.metric_num.tsv', 'w')
+    handle_metric_num.write('\t'.join(('job_id', 'plugin', 'name', 'value')) + '\n')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
         for metric in sa_session.query(model.JobMetricNumeric.job_id, model.JobMetricNumeric.plugin, model.JobMetricNumeric.metric_name, model.JobMetricNumeric.metric_value) \
@@ -313,6 +315,7 @@ def main(argv):
 
     annotate('export_params_start', 'Export Job Parameters')
     handle_params = open(REPORT_BASE + '.params.tsv', 'w')
+    handle_params.write('\t'.join(('job_id', 'name', 'value')) + '\n')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
         for param in sa_session.query(model.JobParameter.job_id, model.JobParameter.name, model.JobParameter.value) \
@@ -320,7 +323,7 @@ def main(argv):
                 .filter(model.JobParameter.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all():
 
-            sanitized = san.sanitize_data(job_tool_map[param[0]], param[i], param[2])
+            sanitized = san.sanitize_data(job_tool_map[param[0]], param[1], param[2])
 
             handle_params.write(str(param[0]))
             handle_params.write('\t')

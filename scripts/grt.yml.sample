@@ -12,7 +12,9 @@ grt:
     url: http://localhost:8080
     # Are you willing to share your toolbox? I.e. what tools are installed.
     # If your instance is public, this can help us direct users to your
-    # instance.
+    # instance. If you elect to not send your entire toolbox, we will still
+    # (necessarily) receive a list of tools that have been run, just not the
+    # complete list.
     share_toolbox: True
 
 
