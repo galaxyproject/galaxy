@@ -1609,27 +1609,35 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                                           action='create',
                                                           cntrller='admin' ) )
 
-    @web.expose
-    @web.json
+    @web.expose_api
     @web.require_admin
-    def reset_user_password( self, trans, **kwd ):
+    def reset_user_password( self, trans, payload=None, **kwd ):
         users = { user_id: get_user( trans, user_id ) for user_id in util.listify( kwd.get( 'id' ) ) }
         if users:
-            return {
-                'inputs' : [{   'name'  : 'users',
-                                'label' : ', '.join( [ user.email for user in users.itervalues() ] ),
-                                'value' : ','.join( [ id for id in users.iterkeys() ] ),
-                                'hidden': True
-                            },{ 'name'  : 'new_password',
-                                'label' : 'New password',
-                                'type'  : 'password'
-                            },{ 'name'  : 'confirm_password',
-                                'label' : 'Confirm password',
-                                'type'  : 'password',
-                                'help'  : 'Changes password(s) for: %s' % ', '.join( [ user.email for user in users.itervalues() ] ) } ]
-            }
+            if trans.request.method == 'GET':
+                return {
+                    'inputs' : [{   'name'  : 'password',
+                                    'label' : 'New password',
+                                    'type'  : 'password'
+                                },{ 'name'  : 'confirm',
+                                    'label' : 'Confirm password',
+                                    'type'  : 'password',
+                                    'help'  : 'Changes password(s) for: %s' % ', '.join( [ user.email for user in users.itervalues() ] ) } ]
+                }
+            else:
+                password = payload.get( 'password' )
+                confirm = payload.get( 'confirm' )
+                if len( password ) < 6:
+                    return message_exception( trans, 'Use a password of at least 6 characters.' )
+                elif password != confirm:
+                    return message_exception( trans, 'Passwords do not match.' )
+                for user in users.itervalues():
+                    user.set_password_cleartext( password )
+                    trans.sa_session.add( user )
+                    trans.sa_session.flush()
+                return { 'message': 'Passwords reset for %d user(s).' % len( users ) }
         else:
-            raise MessageException( 'Please specify user ids.' )
+            return message_exception( trans, 'Please specify user ids.' )
 
     @web.expose
     @web.require_admin
@@ -1960,6 +1968,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
 
 # ---- Utility methods -------------------------------------------------------
+
+
+def message_exception( trans, message ):
+    trans.response.status = 400
+    return { 'err_msg': message }
 
 
 def get_user( trans, user_id ):
