@@ -24,11 +24,13 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     status : options.status,
                     icon   : options.icon,
                     inputs : options.inputs,
-                    operations: {
-                        'submit': new Ui.ButtonIcon({
+                    buttons: {
+                        'submit': new Ui.Button({
                             tooltip  : options.submit_tooltip,
                             title    : options.submit_title || 'Save settings',
                             icon     : options.submit_icon || 'fa-save',
+                            cls      : 'ui-button btn btn-primary',
+                            floating : 'clear',
                             onclick  : function() { self._submit( form ) }
                         })
                     }
