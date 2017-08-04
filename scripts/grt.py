@@ -293,26 +293,6 @@ def main(argv):
     handle_metric_num.close()
     annotate('export_metric_num_end')
 
-    annotate('export_metric_txt_start', 'Exporting Metrics (Text)')
-    handle_metric_txt = open(REPORT_BASE + '.metric_txt.tsv', 'w')
-    for offset_start in range(last_job_sent, end_job_id, args.batch_size):
-        logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
-        for metric in sa_session.query(model.JobMetricText.job_id, model.JobMetricText.plugin, model.JobMetricText.metric_name, model.JobMetricText.metric_value) \
-                .filter(model.JobMetricText.job_id > offset_start) \
-                .filter(model.JobMetricText.job_id <= min(end_job_id, offset_start + args.batch_size)) \
-                .all():
-
-            handle_metric_txt.write(str(metric[0]))
-            handle_metric_txt.write('\t')
-            handle_metric_txt.write(metric[1])
-            handle_metric_txt.write('\t')
-            handle_metric_txt.write(metric[2])
-            handle_metric_txt.write('\t')
-            handle_metric_txt.write(metric[3])
-            handle_metric_txt.write('\n')
-    handle_metric_txt.close()
-    annotate('export_metric_txt_end')
-
     annotate('export_params_start', 'Export Job Parameters')
     handle_params = open(REPORT_BASE + '.params.tsv', 'w')
     handle_params.write('\t'.join(('job_id', 'name', 'value')) + '\n')
@@ -336,10 +316,10 @@ def main(argv):
 
     # Now on to outputs.
     with tarfile.open(REPORT_BASE + '.tar.gz', 'w:gz') as handle:
-        for name in ('jobs', 'metric_num', 'metric_txt', 'params'):
+        for name in ('jobs', 'metric_num', 'params'):
             handle.add(REPORT_BASE + '.' + name + '.tsv')
 
-    for name in ('jobs', 'metric_num', 'metric_txt', 'params'):
+    for name in ('jobs', 'metric_num', 'params'):
         os.unlink(REPORT_BASE + '.' + name + '.tsv')
 
     _times.append(('job_finish', time.time() - _start_time))
