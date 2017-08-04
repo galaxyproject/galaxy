@@ -981,8 +981,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.json
     @web.require_admin
     def roles_list( self, trans, **kwargs ):
-        message = kwargs.get( 'message', '' )
-        status = kwargs.get( 'status', '' )
+        message = kwargs.get( 'message' )
+        status = kwargs.get( 'status' )
         if 'operation' in kwargs:
             id = kwargs.get( 'id', None )
             if not id:
@@ -996,8 +996,9 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             elif operation == 'purge':
                 message, status = self.purge_role( trans, ids )
         kwargs[ 'dict_format' ] = True
-        kwargs[ 'message' ] = util.sanitize_text( message )
-        kwargs[ 'status' ] = status
+        if message and status:
+            kwargs[ 'message' ] = util.sanitize_text( message )
+            kwargs[ 'status' ] = status
         return self.role_list_grid( trans, **kwargs )
 
     @web.expose
