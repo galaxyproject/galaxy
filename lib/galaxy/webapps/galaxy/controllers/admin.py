@@ -130,7 +130,7 @@ class UserListGrid( grids.Grid ):
         grids.GridOperation( "Reset Password",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=True,
-                             url_args=dict( action="forms/reset_password" ),
+                             url_args=dict( action="forms/reset_user_password" ),
                              target="top" ),
         grids.GridOperation( "Recalculate Disk Usage",
                              condition=( lambda item: not item.deleted ),
@@ -1615,7 +1615,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     def reset_user_password( self, trans, **kwd ):
         users = util.listify( kwd.get( 'id' ) )
         return {
-            'inputs' : [ { 'name': user_id } for user_id in users ]
+            'inputs' : [ { 'id': user_id, 'name': user_id } for user_id in users ]
         }
 
     @web.expose

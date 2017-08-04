@@ -5,6 +5,7 @@ var jQuery = require( 'jquery' ),
     FormWrapper = require( 'mvc/form/form-wrapper' ),
     GridView = require( 'mvc/grid/grid-view' ),
     Ui = require( 'mvc/ui/ui-misc' ),
+    QueryStringParsing = require( 'utils/query-string-parsing' ),
     Router = require( 'layout/router' ),
     Page = require( 'layout/page' );
 
@@ -30,7 +31,7 @@ window.app = function app( options, bootstrapped ){
         show_forms : function( form_id ) {
             var options = {
                 title           : 'Reset passwords',
-                url             : 'admin/reset_user_password?' + $.param( Galaxy.params ),
+                url             : 'admin/reset_user_password?id=' + QueryStringParsing.get( 'id' ),
                 icon            : 'fa-user'
             };
             this.page.display( new FormWrapper.View ( options ) );
