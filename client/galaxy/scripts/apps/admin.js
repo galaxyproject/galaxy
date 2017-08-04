@@ -46,6 +46,11 @@ window.app = function app( options, bootstrapped ){
                     url             : 'admin/manage_roles_and_groups_for_user?id=' + QueryStringParsing.get( 'id' ),
                     icon            : 'fa-users',
                     redirect        : Galaxy.root + 'admin/users'
+                },
+                rename_role: {
+                    url             : 'admin/rename_role?id=' + QueryStringParsing.get( 'id' ),
+                    icon            : 'fa-users',
+                    redirect        : Galaxy.root + 'admin/users'
                 }
             };
             this.page.display( new FormWrapper.View ( form_defs[ form_id ] ) );

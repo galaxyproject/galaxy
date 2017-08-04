@@ -223,7 +223,7 @@ class RoleListGrid( grids.Grid ):
     operations = [ grids.GridOperation( "Edit",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="rename_role" ) ),
+                                        url_args=dict( action="forms/rename_role" ) ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=True ),
@@ -1076,27 +1076,28 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                     message=message,
                                     status=status )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def rename_role( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
+    def rename_role( self, trans, payload=None, **kwd ):
+        id = kwd.get( 'id' )
         if not id:
-            message = "No role ids received for renaming"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='roles',
-                                                       message=message,
-                                                       status='error' ) )
+            return message_exception( trans, 'No role id received for renaming.' )
         role = get_role( trans, id )
-        if params.get( 'rename_role_button', False ):
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Change role name and description for \'%s\'' % util.sanitize_text( role.name ),
+                'inputs' : [{   'name'  : 'name',
+                                'label' : 'Name'
+                            },{ 'name'  : 'description',
+                                'label' : 'Description'
+                            } ]
+            }
+        else:
             old_name = role.name
             new_name = util.restore_text( params.name )
             new_description = util.restore_text( params.description )
             if not new_name:
-                message = 'Enter a valid name'
-                status = 'error'
+                return message_exception( trans, 'Enter a valid role name.' )
             else:
                 existing_role = trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == new_name ).first()
                 if existing_role and existing_role.id != role.id:
