@@ -126,11 +126,11 @@ class UserListGrid( grids.Grid ):
         grids.GridOperation( "Manage Roles and Groups",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
-                             url_args=dict( webapp="galaxy", action="manage_roles_and_groups_for_user" ) ),
+                             url_args=dict( action="forms/manage_roles_and_groups_for_user" ) ),
         grids.GridOperation( "Reset Password",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=True,
-                             url_args=dict( webapp="galaxy", action="reset_user_password" ),
+                             url_args=dict( action="forms/reset_user_password" ),
                              target="top" ),
         grids.GridOperation( "Recalculate Disk Usage",
                              condition=( lambda item: not item.deleted ),
@@ -273,7 +273,6 @@ class GroupListGrid( grids.Grid ):
     # Grid definition
     title = "Groups"
     model_class = model.Group
-    template = '/admin/dataset_security/group/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -361,7 +360,6 @@ class QuotaListGrid( grids.Grid ):
     # Grid definition
     title = "Quotas"
     model_class = model.Quota
-    template = '/admin/quota/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -471,7 +469,6 @@ class ToolVersionListGrid( grids.Grid ):
     # Grid definition
     title = "Tool versions"
     model_class = install_model.ToolVersion
-    template = '/admin/tool_version/grid.mako'
     default_sort_key = "tool_id"
     columns = [
         ToolIdColumn( "Tool id",
@@ -1562,54 +1559,36 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                                           action='create',
                                                           cntrller='admin' ) )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def reset_user_password( self, trans, **kwd ):
-        user_id = kwd.get( 'id', None )
-        message = ''
-        status = ''
-        users = []
-        if user_id:
-            user_ids = util.listify( user_id )
-            if 'reset_user_password_button' in kwd:
-                message = ''
-                status = ''
-                for user_id in user_ids:
-                    user = get_user( trans, user_id )
-                    password = kwd.get( 'password', None )
-                    confirm = kwd.get( 'confirm', None )
-                    if len( password ) < 6:
-                        message = "Use a password of at least 6 characters."
-                        status = 'error'
-                        break
-                    elif password != confirm:
-                        message = "Passwords do not match."
-                        status = 'error'
-                        break
-                    else:
-                        user.set_password_cleartext( password )
-                        trans.sa_session.add( user )
-                        trans.sa_session.flush()
-                if not message and not status:
-                    message = "Passwords reset for %d %s." % ( len( user_ids ), util.inflector.cond_plural( len( user_ids ), 'user' ) )
-                    status = "done"
-                    trans.response.send_redirect( web.url_for( controller='admin',
-                                                               action='users',
-                                                               message=util.sanitize_text( message ),
-                                                               status=status ) )
-            users = [ get_user( trans, user_id ) for user_id in user_ids ]
-            if len( user_ids ) > 1:
-                user_id = ','.join( user_ids )
+    def reset_user_password( self, trans, payload=None, **kwd ):
+        users = { user_id: get_user( trans, user_id ) for user_id in util.listify( kwd.get( 'id' ) ) }
+        if users:
+            if trans.request.method == 'GET':
+                return {
+                    'message': 'Changes password(s) for: %s.' % ', '.join( [ user.email for user in users.itervalues() ] ),
+                    'status' : 'info',
+                    'inputs' : [{   'name'  : 'password',
+                                    'label' : 'New password',
+                                    'type'  : 'password'
+                                },{ 'name'  : 'confirm',
+                                    'label' : 'Confirm password',
+                                    'type'  : 'password' } ]
+                }
+            else:
+                password = payload.get( 'password' )
+                confirm = payload.get( 'confirm' )
+                if len( password ) < 6:
+                    return message_exception( trans, 'Use a password of at least 6 characters.' )
+                elif password != confirm:
+                    return message_exception( trans, 'Passwords do not match.' )
+                for user in users.itervalues():
+                    user.set_password_cleartext( password )
+                    trans.sa_session.add( user )
+                    trans.sa_session.flush()
+                return { 'message': 'Passwords reset for %d user(s).' % len( users ) }
         else:
-            message = 'No users received for resetting passwords.'
-            status = 'error'
-        return trans.fill_template( '/admin/user/reset_password.mako',
-                                    id=user_id,
-                                    message=util.sanitize_text( message ),
-                                    status=status,
-                                    users=users,
-                                    password='',
-                                    confirm='' )
+            return message_exception( trans, 'Please specify user ids.' )
 
     @web.expose
     @web.require_admin
@@ -1717,78 +1696,56 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             ac_data = ac_data + user.email + "\n"
         return ac_data
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def manage_roles_and_groups_for_user( self, trans, **kwd ):
-        user_id = kwd.get( 'id', None )
-        message = ''
-        status = ''
+    def manage_roles_and_groups_for_user( self, trans, payload={}, **kwd ):
+        user_id = kwd.get( 'id' )
         if not user_id:
-            message += "Invalid user id (%s) received" % str( user_id )
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
+            return message_exception( trans, 'Invalid user id (%s) received' % str( user_id ) )
         user = get_user( trans, user_id )
-        private_role = trans.app.security_agent.get_private_user_role( user )
-        if kwd.get( 'user_roles_groups_edit_button', False ):
-            # Make sure the user is not dis-associating himself from his private role
-            out_roles = kwd.get( 'out_roles', [] )
-            if out_roles:
-                out_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( out_roles ) ]
-            if private_role in out_roles:
-                message += "You cannot eliminate a user's private role association.  "
-                status = 'error'
-            in_roles = kwd.get( 'in_roles', [] )
+        if trans.request.method == 'GET':
+            in_roles = []
+            all_roles = []
+            in_groups = []
+            all_groups = []
+            for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == false() ) \
+                                                                      .order_by( trans.app.model.Role.table.c.name ):
+                if role in [ x.role for x in user.roles ]:
+                    in_roles.append( trans.security.encode_id( role.id ) )
+                if role.type != trans.app.model.Role.types.PRIVATE:
+                    # There is a 1 to 1 mapping between a user and a PRIVATE role, so private roles should
+                    # not be listed in the roles form fields, except for the currently selected user's private
+                    # role, which should always be in in_roles.  The check above is added as an additional
+                    # precaution, since for a period of time we were including private roles in the form fields.
+                    all_roles.append( ( role.name, trans.security.encode_id( role.id ) ) )
+            for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == false() ) \
+                                                                        .order_by( trans.app.model.Group.table.c.name ):
+                if group in [ x.group for x in user.groups ]:
+                    in_groups.append( trans.security.encode_id( group.id ) )
+                all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
+            return { 'title'  : 'Roles and groups for \'%s\'' % user.email,
+                     'message': 'User \'%s\' is currently associated with %d role(s) and is a member of %d group(s).' % \
+                                ( user.email, len( in_roles ) - 1, len( in_groups ) ),
+                     'status' : 'info',
+                     'inputs' : [ build_select_input( 'roles', 'Roles', all_roles, in_roles ),
+                                  build_select_input( 'groups', 'Groups', all_groups, in_groups ) ] }
+        else:
+            in_roles = payload.get( 'roles' ) or []
+            in_groups = payload.get( 'groups' ) or []
             if in_roles:
-                in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( in_roles ) ]
-            out_groups = kwd.get( 'out_groups', [] )
-            if out_groups:
-                out_groups = [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in util.listify( out_groups ) ]
-            in_groups = kwd.get( 'in_groups', [] )
+                in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( in_roles ) ]
             if in_groups:
-                in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in util.listify( in_groups ) ]
-            if in_roles:
-                trans.app.security_agent.set_entity_user_associations( users=[ user ], roles=in_roles, groups=in_groups )
-                trans.sa_session.refresh( user )
-                message += "User '%s' has been updated with %d associated roles and %d associated groups (private roles are not displayed)" % \
-                    ( user.email, len( in_roles ), len( in_groups ) )
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='users',
-                                                           message=util.sanitize_text( message ),
-                                                           status='done' ) )
-        in_roles = []
-        out_roles = []
-        in_groups = []
-        out_groups = []
-        for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == false() ) \
-                                                                  .order_by( trans.app.model.Role.table.c.name ):
-            if role in [ x.role for x in user.roles ]:
-                in_roles.append( ( role.id, role.name ) )
-            elif role.type != trans.app.model.Role.types.PRIVATE:
-                # There is a 1 to 1 mapping between a user and a PRIVATE role, so private roles should
-                # not be listed in the roles form fields, except for the currently selected user's private
-                # role, which should always be in in_roles.  The check above is added as an additional
-                # precaution, since for a period of time we were including private roles in the form fields.
-                out_roles.append( ( role.id, role.name ) )
-        for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == false() ) \
-                                                                    .order_by( trans.app.model.Group.table.c.name ):
-            if group in [ x.group for x in user.groups ]:
-                in_groups.append( ( group.id, group.name ) )
-            else:
-                out_groups.append( ( group.id, group.name ) )
-        message += "User '%s' is currently associated with %d roles and is a member of %d groups" % \
-            ( user.email, len( in_roles ), len( in_groups ) )
-        if not status:
-            status = 'done'
-        return trans.fill_template( '/admin/user/user.mako',
-                                    user=user,
-                                    in_roles=in_roles,
-                                    out_roles=out_roles,
-                                    in_groups=in_groups,
-                                    out_groups=out_groups,
-                                    message=message,
-                                    status=status )
+                in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( in_groups ) ]
+
+            # make sure the user is not dis-associating himself from his private role
+            private_role = trans.app.security_agent.get_private_user_role( user )
+            if private_role not in in_roles:
+                in_roles.append( private_role )
+
+            trans.app.security_agent.set_entity_user_associations( users=[ user ], roles=in_roles, groups=in_groups )
+            trans.sa_session.refresh( user )
+            return { 'message' : 'User \'%s\' has been updated with %d associated roles and %d associated groups (private roles are not displayed).' % \
+                     ( user.email, len( in_roles ) - 1, len( in_groups ) ) }
 
     @web.expose
     @web.require_admin
@@ -1940,6 +1897,20 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
 
 # ---- Utility methods -------------------------------------------------------
+
+def build_select_input( name, label, options, value ):
+    return { 'type'      : 'select',
+             'multiple'  : True,
+             'optional'  : True,
+             'name'      : name,
+             'label'     : label,
+             'options'   : options,
+             'value'     : value }
+
+
+def message_exception( trans, message ):
+    trans.response.status = 400
+    return { 'err_msg': message }
 
 
 def get_user( trans, user_id ):

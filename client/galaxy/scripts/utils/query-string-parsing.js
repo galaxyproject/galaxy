@@ -2,14 +2,14 @@ define([], function(){
 // ============================================================================
 function get( key, queryString ){
     queryString = queryString || window.location.search.substr( 1 );
-    var keyRegex = new RegExp( key + '=([^&#$]+)' ),
-        matches = queryString.match( keyRegex );
+    var keyRegex = new RegExp( key + '=([^&#$]+)', 'g' );
+    var matches = queryString.match( keyRegex );
     if( !matches || !matches.length ){
         return undefined;
     }
-    matches = matches.splice( 1 );
+    matches = _.map( matches, function( match ) { return match.substr( key.length + 1 ) } );
     if( matches.length === 1 ){
-        return matches[0];
+        return matches[ 0 ];
     }
     return matches;
 }

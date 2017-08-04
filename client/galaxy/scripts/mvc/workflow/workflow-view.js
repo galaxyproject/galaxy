@@ -256,7 +256,7 @@ define([
                 "Save" : save_current_workflow,
                 "Save As": workflow_save_as,
                 "Run": function() {
-                    window.location = self.urls.run_workflow;
+                    window.location = Galaxy.root + "workflow/run?id=" + self.options.id;
                 },
                 "Edit Attributes" : function() { self.workflow.clear_active_node() },
                 "Auto Re-layout": layout_editor,
