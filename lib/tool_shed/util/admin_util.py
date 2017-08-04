@@ -704,7 +704,7 @@ class Admin( object ):
         users = [ get_user( trans, user_id ) for user_id in user_ids ]
         if len( user_ids ) > 1:
             user_id = ','.join( user_ids )
-        return trans.fill_template( '/admin/user/reset_password.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/user/reset_password.mako',
                                     id=user_id,
                                     users=users,
                                     password='',
@@ -942,7 +942,7 @@ class Admin( object ):
             ( user.email, len( in_roles ), len( in_groups ) )
         if not status:
             status = 'done'
-        return trans.fill_template( '/admin/user/user.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/user/user.mako',
                                     user=user,
                                     in_roles=in_roles,
                                     out_roles=out_roles,

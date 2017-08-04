@@ -72,7 +72,6 @@ class UserGrid( grids.Grid ):
 
     title = "Users"
     model_class = model.User
-    template = '/admin/user/grid.mako'
     default_sort_key = "email"
     columns = [
         UserLoginColumn( "Email",
