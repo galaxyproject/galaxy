@@ -39,7 +39,7 @@ class RuleHelper( object ):
             tool = job_or_tool.tool
         else:
             # Have a Job object.
-            tool = self.app.toolbox.get_tool( job_or_tool.tool_id )
+            tool = self.app.toolbox.get_tool( job_or_tool.tool_id, tool_version=job_or_tool.tool_version )
         # Can't import at top because circular import between galaxy.tools and galaxy.jobs.
         import galaxy.tools.deps.containers
         tool_info = galaxy.tools.deps.containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment)

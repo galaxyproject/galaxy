@@ -75,7 +75,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             body    : 'Do you want to continue and sign out of all active sessions?',
                             buttons : {
                                 'Cancel'    : function() { Galaxy.modal.hide(); },
-                                'Sign out'  : function() { window.location.href = Galaxy.root + 'user/logout'; }
+                                'Sign out'  : function() { window.location.href = Galaxy.root + 'user/logout?session_csrf_token=' + Galaxy.session_csrf_token; }
                             }
                         });
                     }
@@ -119,7 +119,9 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 if( config.enable_openid && !config.use_remote_user ) {
                     self._addLink( 'openids' );
                 }
-                self._addLink( 'logout' );
+                if(Galaxy.session_csrf_token) {
+                    self._addLink( 'logout' );
+                }
                 self.$preferences.append( self._templateFooter( data ) );
                 self.$el.empty().append( self.$preferences );
             });

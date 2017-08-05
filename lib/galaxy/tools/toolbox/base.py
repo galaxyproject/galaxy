@@ -297,6 +297,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                         if index:
                             panel_dict.insert_tool(index, tool)
                             inserted = True
+                else:
+                    log.warning("Could not find lineage for tool '%s'", tool.id)
                 if not inserted:
                     if (
                         tool.guid is None or
@@ -565,8 +567,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     tool.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
                     tool.guid = guid
                     tool.version = item.elem.find( "version" ).text
-                # Make sure tools are registered in self._lineage_map.
-                tool._lineage = self._lineage_map.register( tool )
                 if item.has_elem:
                     self._tool_tag_manager.handle_tags( tool.id, item.elem )
                 self.__add_tool( tool, load_panel_dict, panel_dict )
@@ -631,6 +631,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         # changed, so the tool should always be reloaded here.  We used to
         # only load the tool if it was not found in self._tools_by_id, but
         # performing that check did not enable this scenario.
+        tool._lineage = self._lineage_map.register( tool )
         self.register_tool( tool )
         if load_panel_dict:
             self.__add_tool_to_tool_panel( tool, panel_dict, section=isinstance( panel_dict, ToolSection ) )
@@ -955,6 +956,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     lineage_id = lineage_tool.id
                     if panel_dict.has_tool_with_id( lineage_id ):
                         return panel_dict.get_tool_with_id( lineage_id )
+        else:
+            log.warning("Could not find lineage for tool '%s'", tool.id)
         return None
 
     def _newer_tool( self, tool1, tool2 ):
