@@ -267,7 +267,7 @@ class JSAppLauncher( BaseUIController ):
             'root'               : root,
             'user'               : self.user_serializer.serialize( trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans ),
             'config'             : self._get_site_configuration( trans ),
-            'params'             : dict( trans.request.params )
+            'params'             : dict( trans.request.params ),
             'session_csrf_token' : trans.session_csrf_token,
         }
         return js_options
