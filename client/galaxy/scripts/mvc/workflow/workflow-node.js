@@ -158,6 +158,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.errors = data.errors;
             this.tooltip = data.tooltip ? data.tooltip : "";
             this.annotation = data.annotation;
+            this.output_terminals = {};  // removes outputs when switching tool versions
             this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
             this.label = data.label;
             this.uuid = data.uuid;
