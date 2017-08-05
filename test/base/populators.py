@@ -1,3 +1,4 @@
+import contextlib
 import json
 import time
 
@@ -102,6 +103,18 @@ class BaseDatasetPopulator( object ):
 
     def _summarize_history_errors( self, history_id ):
         pass
+
+    @contextlib.contextmanager
+    def test_history(self, **kwds):
+        # TODO: In the future allow targetting a specfic history here
+        # and/or deleting everything in the resulting history when done.
+        # These would be cool options for remote Galaxy test execution.
+        try:
+            history_id = self.new_history()
+            yield history_id
+        except Exception:
+            self._summarize_history_errors(history_id)
+            raise
 
     def new_history( self, **kwds ):
         name = kwds.get( "name", "API Test History" )

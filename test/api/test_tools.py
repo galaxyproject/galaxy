@@ -87,10 +87,10 @@ class ToolsTestCase( api.ApiTestCase ):
         return tool_info
 
     def test_upload1_paste( self ):
-        history_id = self.dataset_populator.new_history()
-        payload = self.dataset_populator.upload_payload( history_id, 'Hello World' )
-        create_response = self._post( "tools", data=payload )
-        self._assert_has_keys( create_response.json(), 'outputs' )
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.upload_payload( history_id, 'Hello World' )
+            create_response = self._post( "tools", data=payload )
+            self._assert_has_keys( create_response.json(), 'outputs' )
 
     def test_upload_posix_newline_fixes( self ):
         windows_content = "1\t2\t3\r4\t5\t6\r"
@@ -120,174 +120,176 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( rdata_metadata[ "file_ext" ], "rdata" )
 
     def test_unzip_collection( self ):
-        history_id = self.dataset_populator.new_history()
-        hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
-        inputs = {
-            "input": { "src": "hdca", "id": hdca_id },
-        }
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        response = self._run( "__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True )
-        outputs = response[ "outputs" ]
-        self.assertEquals( len(outputs), 2 )
-        output_forward = outputs[ 0 ]
-        output_reverse = outputs[ 1 ]
-        output_forward_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output_forward )
-        output_reverse_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output_reverse )
-        assert output_forward_content.strip() == "123"
-        assert output_reverse_content.strip() == "456"
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
+            inputs = {
+                "input": { "src": "hdca", "id": hdca_id },
+            }
+            self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+            response = self._run( "__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True )
+            outputs = response[ "outputs" ]
+            self.assertEquals( len(outputs), 2 )
+            output_forward = outputs[ 0 ]
+            output_reverse = outputs[ 1 ]
+            output_forward_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output_forward )
+            output_reverse_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output_reverse )
+            assert output_forward_content.strip() == "123"
+            assert output_reverse_content.strip() == "456"
 
-        output_forward = self.dataset_populator.get_history_dataset_details( history_id, dataset=output_forward )
-        output_reverse = self.dataset_populator.get_history_dataset_details( history_id, dataset=output_reverse )
+            output_forward = self.dataset_populator.get_history_dataset_details( history_id, dataset=output_forward )
+            output_reverse = self.dataset_populator.get_history_dataset_details( history_id, dataset=output_reverse )
 
-        assert output_forward["history_id"] == history_id
-        assert output_reverse["history_id"] == history_id
+            assert output_forward["history_id"] == history_id
+            assert output_reverse["history_id"] == history_id
 
     def test_unzip_nested( self ):
-        history_id = self.dataset_populator.new_history()
-        hdca_list_id = self.__build_nested_list( history_id )
-        inputs = {
-            "input": {
-                'batch': True,
-                'values': [ { 'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_list_id }],
+        with self.dataset_populator.test_history() as history_id:
+            hdca_list_id = self.__build_nested_list( history_id )
+            inputs = {
+                "input": {
+                    'batch': True,
+                    'values': [ { 'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_list_id }],
+                }
             }
-        }
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        self._run( "__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True )
+            self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+            self._run( "__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True )
 
     def test_zip_inputs( self ):
-        history_id = self.dataset_populator.new_history()
-        hda1 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='1\t2\t3' ) )
-        hda2 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='4\t5\t6' ) )
-        inputs = {
-            "input_forward": hda1,
-            "input_reverse": hda2,
-        }
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        response = self._run( "__ZIP_COLLECTION__", history_id, inputs, assert_ok=True )
-        output_collections = response[ "output_collections" ]
-        self.assertEquals( len(output_collections), 1 )
-        self.dataset_populator.wait_for_job( response["jobs"][0]["id"], assert_ok=True )
-        zipped_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_collections[0]["hid"])
-        assert zipped_hdca["collection_type"] == "paired"
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='1\t2\t3' ) )
+            hda2 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='4\t5\t6' ) )
+            inputs = {
+                "input_forward": hda1,
+                "input_reverse": hda2,
+            }
+            self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+            response = self._run( "__ZIP_COLLECTION__", history_id, inputs, assert_ok=True )
+            output_collections = response[ "output_collections" ]
+            self.assertEquals( len(output_collections), 1 )
+            self.dataset_populator.wait_for_job( response["jobs"][0]["id"], assert_ok=True )
+            zipped_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_collections[0]["hid"])
+            assert zipped_hdca["collection_type"] == "paired"
 
     def test_zip_list_inputs( self ):
-        history_id = self.dataset_populator.new_history()
-        hdca1_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"] ).json()["id"]
-        hdca2_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["1\n2\n3\n4", "5\n6\n7\n8"] ).json()["id"]
-        inputs = {
-            "input_forward": { 'batch': True, 'values': [ {"src": "hdca", "id": hdca1_id} ] },
-            "input_reverse": { 'batch': True, 'values': [ {"src": "hdca", "id": hdca2_id} ] },
-        }
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        response = self._run( "__ZIP_COLLECTION__", history_id, inputs, assert_ok=True )
-        implicit_collections = response[ "implicit_collections" ]
-        self.assertEquals( len(implicit_collections), 1 )
-        self.dataset_populator.wait_for_job( response["jobs"][0]["id"], assert_ok=True )
-        zipped_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=implicit_collections[0]["hid"])
-        assert zipped_hdca["collection_type"] == "list:paired"
+        with self.dataset_populator.test_history() as history_id:
+            hdca1_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"] ).json()["id"]
+            hdca2_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["1\n2\n3\n4", "5\n6\n7\n8"] ).json()["id"]
+            inputs = {
+                "input_forward": { 'batch': True, 'values': [ {"src": "hdca", "id": hdca1_id} ] },
+                "input_reverse": { 'batch': True, 'values': [ {"src": "hdca", "id": hdca2_id} ] },
+            }
+            self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+            response = self._run( "__ZIP_COLLECTION__", history_id, inputs, assert_ok=True )
+            implicit_collections = response[ "implicit_collections" ]
+            self.assertEquals( len(implicit_collections), 1 )
+            self.dataset_populator.wait_for_job( response["jobs"][0]["id"], assert_ok=True )
+            zipped_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=implicit_collections[0]["hid"])
+            assert zipped_hdca["collection_type"] == "list:paired"
 
     def test_filter_failed( self ):
-        history_id = self.dataset_populator.new_history()
-        ok_hdca_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["0", "1", "0", "1"] ).json()["id"]
-        exit_code_inputs = {
-            "input": { 'batch': True, 'values': [ {"src": "hdca", "id": ok_hdca_id} ] },
-        }
-        response = self._run( "exit_code_from_file", history_id, exit_code_inputs, assert_ok=False ).json()
-        self.dataset_populator.wait_for_history( history_id, assert_ok=False )
+        with self.dataset_populator.test_history() as history_id:
+            history_id = self.dataset_populator.new_history()
+            ok_hdca_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["0", "1", "0", "1"] ).json()["id"]
+            exit_code_inputs = {
+                "input": { 'batch': True, 'values': [ {"src": "hdca", "id": ok_hdca_id} ] },
+            }
+            response = self._run( "exit_code_from_file", history_id, exit_code_inputs, assert_ok=False ).json()
+            self.dataset_populator.wait_for_history( history_id, assert_ok=False )
 
-        mixed_implicit_collections = response[ "implicit_collections" ]
-        self.assertEquals( len(mixed_implicit_collections), 1 )
-        mixed_hdca_hid = mixed_implicit_collections[0]["hid"]
-        mixed_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=mixed_hdca_hid, wait=False)
+            mixed_implicit_collections = response[ "implicit_collections" ]
+            self.assertEquals( len(mixed_implicit_collections), 1 )
+            mixed_hdca_hid = mixed_implicit_collections[0]["hid"]
+            mixed_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=mixed_hdca_hid, wait=False)
 
-        def get_state(dce):
-            return dce["object"]["state"]
+            def get_state(dce):
+                return dce["object"]["state"]
 
-        mixed_states = [get_state(_) for _ in mixed_hdca["elements"]]
-        assert mixed_states == [u"ok", u"error", u"ok", u"error"], mixed_states
-        inputs = {
-            "input": { "src": "hdca", "id": mixed_hdca["id"] },
-        }
-        response = self._run( "__FILTER_FAILED_DATASETS__", history_id, inputs, assert_ok=False ).json()
-        self.dataset_populator.wait_for_history( history_id, assert_ok=False )
-        filter_output_collections = response[ "output_collections" ]
-        self.assertEquals( len(filter_output_collections), 1 )
-        filtered_hid = filter_output_collections[0]["hid"]
-        filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid, wait=False)
-        filtered_states = [get_state(_) for _ in filtered_hdca["elements"]]
-        assert filtered_states == [u"ok", u"ok"], filtered_states
+            mixed_states = [get_state(_) for _ in mixed_hdca["elements"]]
+            assert mixed_states == [u"ok", u"error", u"ok", u"error"], mixed_states
+            inputs = {
+                "input": { "src": "hdca", "id": mixed_hdca["id"] },
+            }
+            response = self._run( "__FILTER_FAILED_DATASETS__", history_id, inputs, assert_ok=False ).json()
+            self.dataset_populator.wait_for_history( history_id, assert_ok=False )
+            filter_output_collections = response[ "output_collections" ]
+            self.assertEquals( len(filter_output_collections), 1 )
+            filtered_hid = filter_output_collections[0]["hid"]
+            filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid, wait=False)
+            filtered_states = [get_state(_) for _ in filtered_hdca["elements"]]
+            assert filtered_states == [u"ok", u"ok"], filtered_states
 
     @skip_without_tool( "multi_select" )
     def test_multi_select_as_list( self ):
-        history_id = self.dataset_populator.new_history()
-        inputs = {
-            "select_ex": ["--ex1", "ex2"],
-        }
-        response = self._run( "multi_select", history_id, inputs, assert_ok=True )
-        output = response[ "outputs" ][ 0 ]
-        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output )
+        with self.dataset_populator.test_history() as history_id:
+            inputs = {
+                "select_ex": ["--ex1", "ex2"],
+            }
+            response = self._run( "multi_select", history_id, inputs, assert_ok=True )
+            output = response[ "outputs" ][ 0 ]
+            output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output )
 
-        assert output1_content == "--ex1,ex2"
+            assert output1_content == "--ex1,ex2"
 
     @skip_without_tool( "multi_select" )
     def test_multi_select_optional( self ):
-        history_id = self.dataset_populator.new_history()
-        inputs = {
-            "select_ex": ["--ex1"],
-            "select_optional": None,
-        }
-        response = self._run( "multi_select", history_id, inputs, assert_ok=True )
-        output = response[ "outputs" ]
-        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 0 ] )
-        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 1 ] )
-        assert output1_content.strip() == "--ex1"
-        assert output2_content.strip() == "None", output2_content
+        with self.dataset_populator.test_history() as history_id:
+            inputs = {
+                "select_ex": ["--ex1"],
+                "select_optional": None,
+            }
+            response = self._run( "multi_select", history_id, inputs, assert_ok=True )
+            output = response[ "outputs" ]
+            output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 0 ] )
+            output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 1 ] )
+            assert output1_content.strip() == "--ex1"
+            assert output2_content.strip() == "None", output2_content
 
     @skip_without_tool( "library_data" )
     def test_library_data_param( self ):
-        history_id = self.dataset_populator.new_history()
-        ld = LibraryPopulator( self ).new_library_dataset( "lda_test_library" )
-        inputs = {
-            "library_dataset": ld[ "ldda_id" ],
-            "library_dataset_multiple": [ld[ "ldda_id" ], ld[ "ldda_id" ]]
-        }
-        response = self._run( "library_data", history_id, inputs, assert_ok=True )
-        output = response[ "outputs" ]
-        output_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 0 ] )
-        assert output_content == "TestData\n", output_content
-        output_multiple_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 1 ] )
-        assert output_multiple_content == "TestData\nTestData\n", output_multiple_content
+        with self.dataset_populator.test_history() as history_id:
+            ld = LibraryPopulator( self ).new_library_dataset( "lda_test_library" )
+            inputs = {
+                "library_dataset": ld[ "ldda_id" ],
+                "library_dataset_multiple": [ld[ "ldda_id" ], ld[ "ldda_id" ]]
+            }
+            response = self._run( "library_data", history_id, inputs, assert_ok=True )
+            output = response[ "outputs" ]
+            output_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 0 ] )
+            assert output_content == "TestData\n", output_content
+            output_multiple_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 1 ] )
+            assert output_multiple_content == "TestData\nTestData\n", output_multiple_content
 
     @skip_without_tool( "multi_data_param" )
     def test_multidata_param( self ):
-        history_id = self.dataset_populator.new_history()
-        hda1 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='1\t2\t3' ) )
-        hda2 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='4\t5\t6' ) )
-        inputs = {
-            "f1": { 'batch': False, 'values': [ hda1, hda2 ] },
-            "f2": { 'batch': False, 'values': [ hda2, hda1 ] },
-        }
-        response = self._run( "multi_data_param", history_id, inputs, assert_ok=True )
-        output1 = response[ "outputs" ][ 0 ]
-        output2 = response[ "outputs" ][ 1 ]
-        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
-        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
-        assert output1_content == "1\t2\t3\n4\t5\t6\n", output1_content
-        assert output2_content == "4\t5\t6\n1\t2\t3\n", output2_content
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='1\t2\t3' ) )
+            hda2 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='4\t5\t6' ) )
+            inputs = {
+                "f1": { 'batch': False, 'values': [ hda1, hda2 ] },
+                "f2": { 'batch': False, 'values': [ hda2, hda1 ] },
+            }
+            response = self._run( "multi_data_param", history_id, inputs, assert_ok=True )
+            output1 = response[ "outputs" ][ 0 ]
+            output2 = response[ "outputs" ][ 1 ]
+            output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+            output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
+            assert output1_content == "1\t2\t3\n4\t5\t6\n", output1_content
+            assert output2_content == "4\t5\t6\n1\t2\t3\n", output2_content
 
     @skip_without_tool( "cat1" )
     def test_run_cat1( self ):
-        # Run simple non-upload tool with an input data parameter.
-        history_id = self.dataset_populator.new_history()
-        new_dataset = self.dataset_populator.new_dataset( history_id, content='Cat1Test' )
-        inputs = dict(
-            input1=dataset_to_param( new_dataset ),
-        )
-        outputs = self._cat1_outputs( history_id, inputs=inputs )
-        self.assertEquals( len( outputs ), 1 )
-        output1 = outputs[ 0 ]
-        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
-        self.assertEqual( output1_content.strip(), "Cat1Test" )
+        with self.dataset_populator.test_history() as history_id:
+            # Run simple non-upload tool with an input data parameter.
+            history_id = self.dataset_populator.new_history()
+            new_dataset = self.dataset_populator.new_dataset( history_id, content='Cat1Test' )
+            inputs = dict(
+                input1=dataset_to_param( new_dataset ),
+            )
+            outputs = self._cat1_outputs( history_id, inputs=inputs )
+            self.assertEquals( len( outputs ), 1 )
+            output1 = outputs[ 0 ]
+            output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+            self.assertEqual( output1_content.strip(), "Cat1Test" )
 
     @skip_without_tool( "cat1" )
     def test_run_cat1_listified_param( self ):
