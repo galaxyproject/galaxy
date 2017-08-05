@@ -254,9 +254,10 @@ class JSAppLauncher( BaseUIController ):
         """
         root = root or web.url_for( '/' )
         js_options = {
-            'root'      : root,
-            'user'      : self.user_serializer.serialize( trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans ),
-            'config'    : self._get_site_configuration( trans )
+            'root': root,
+            'user': self.user_serializer.serialize( trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans ),
+            'config': self._get_site_configuration( trans ),
+            'session_csrf_token': trans.session_csrf_token,
         }
         return js_options
 
