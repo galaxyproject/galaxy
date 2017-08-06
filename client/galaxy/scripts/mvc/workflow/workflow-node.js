@@ -184,6 +184,31 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
         update_field_data : function( data ) {
             var node = this;
             var nodeView = node.nodeView;
+            // remove unused output views and remove pre-exisiting output views from data.data_outputs,
+            // so that these are not added twice.
+            _.each(nodeView.outputViews, function(output_view) {
+                var cur_name = output_view.output.name;
+                var data_names = data.data_outputs;
+                var delete_terminal = true;
+                $.each(data_names, function(i, data_output) {
+                    console.log(data_output);
+                    if (data_output.name === cur_name) {
+                        delete_terminal = false;
+                        data.data_outputs.splice(i, 1);
+                    }
+                });
+                if (delete_terminal) {
+                    _.each(output_view.terminalElement.terminal.connectors, function (x) {
+                        if (x) {
+                            x.destroy();
+                        }
+                    })
+                    output_view.remove();
+                }
+            });
+
+            this.output_terminals = {},
+            nodeView.outputViews = {};
             this.tool_state = data.tool_state;
             this.config_form = data.config_form;
             if (this.config_form) {
@@ -213,6 +238,9 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             _.each( _.difference( _.values( nodeView.terminalViews ), _.values( newTerminalViews ) ), function( unusedView ) {
                 unusedView.el.terminal.destroy();
             } );
+            $.each( data.data_outputs, function( i, output ) {
+                nodeView.addDataOutput( output );
+            } );
             nodeView.terminalViews = newTerminalViews;
             node.nodeView.render();
             // In general workflow editor assumes tool outputs don't change in # or
@@ -230,6 +258,8 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             // If active, reactivate with new config_form
             this.markChanged();
             this.redraw();
+            // nodeView.render();
+            this.app.workflow.node_changed( this, true);
         },
         error : function ( text ) {
             var b = $(this.element).find( ".toolFormBody" );

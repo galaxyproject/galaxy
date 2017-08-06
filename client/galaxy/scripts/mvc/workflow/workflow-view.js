@@ -658,6 +658,7 @@ define([
             var cls = 'right-content';
             var id  = cls + '-' + node.id;
             var $container = $( '#' + cls );
+            $container.find( '#' + id ).remove();
             if ( content && $container.find( '#' + id ).length == 0 ) {
                 var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );
                 var form_wrapper = null;
