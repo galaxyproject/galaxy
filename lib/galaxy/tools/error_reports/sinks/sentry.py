@@ -46,7 +46,7 @@ class SentryPlugin( ErrorSinkPlugin ):
                 message="Galaxy Job Error: %s  v.%s" % (job.tool_id, job.tool_version),
                 extra=extra,
             )
-            return ( 'Submitted bug report to Sentry. Your guru meditation number is %s' % response, 'done' )
+            return ( 'Submitted bug report to Sentry. Your guru meditation number is %s' % response, 'success' )
 
 
 __all__ = ( 'SentryPlugin', )

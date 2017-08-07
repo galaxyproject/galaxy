@@ -51,7 +51,7 @@ class JsonPlugin( ErrorSinkPlugin ):
                 data['message'] = kwargs['message']
 
             json.dump(data, handle, indent=2)
-        return ( 'Wrote error report to %s' % path, 'done' )
+        return ( 'Wrote error report to %s' % path, 'success' )
 
 
 __all__ = ( 'JsonPlugin', )
