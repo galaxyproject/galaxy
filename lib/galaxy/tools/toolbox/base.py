@@ -397,7 +397,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 self._integrated_tool_panel.stub_label( key )
 
     def get_tool( self, tool_id, tool_version=None, get_all_versions=False, exact=False ):
-        """Attempt to locate a tool in the tool box."""
+        """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""
         if tool_version:
             tool_version = str( tool_version )
 
