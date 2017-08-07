@@ -32,14 +32,10 @@ preferences:
               type: text
               required: True
 
-    bioinfo_account:
-        description: Your BioInformatics Account
+    webhook_overlay_search:
+        description: Configuration option for your search results
         inputs:
-            - name: username
-              label: BioInfo Username
+            - name: max_search_results
+              label: Maximum number of search results
               type: text
-              required: False
-            - name: password
-              label: BioInfo Password
-              type: password
               required: False
