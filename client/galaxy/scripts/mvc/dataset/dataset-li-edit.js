@@ -199,7 +199,6 @@ var DatasetListItemEdit = _super.extend(
             title       : _l( 'View or report this error' ),
             href        : Galaxy.root + 'datasets/error?dataset_id=' + this.model.attributes.id,
             classes     : 'report-error-btn',
-            target      : this.linkTarget,
             faIcon      : 'fa-bug'
         });
     },
