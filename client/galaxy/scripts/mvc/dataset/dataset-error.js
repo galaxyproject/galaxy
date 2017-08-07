@@ -59,13 +59,20 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view' ], function( Uti
         },
 
         /** Display actions messages */
-        display_message: function( response, $el, safe ) {
+        display_message: function( response, $el, doNotClear, safe ) {
             if(!safe){
-                $el.empty().html( new Ui.Message( response ).$el );
+                if(doNotClear) {
+                    $el.append( new Ui.Message( response ).$el );
+                } else {
+                    $el.empty().html( new Ui.Message( response ).$el );
+                }
             } else {
-                $el.empty().html( new Ui.UnescapedMessage( response ).$el );
+                if(doNotClear) {
+                    $el.append( new Ui.UnescapedMessage( response ).$el );
+                } else {
+                    $el.empty().html( new Ui.UnescapedMessage( response ).$el );
+                }
             }
-
         },
 
         /** Main template */
@@ -147,7 +154,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view' ], function( Uti
                             'status': message[1],
                             'message': message[0],
                             'persistent': true,
-                        }, self.$( '.response-message' ), true );
+                        }, self.$( '.response-message' ), true, true );
                     });
                 },
                 error   : function( response ) {
