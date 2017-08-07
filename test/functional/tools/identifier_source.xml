@@ -2,8 +2,8 @@
     <description>verifies identifier source can be specified from input</description>
     <command>
 <![CDATA[
-    cat $inputA $inputB > outputA &&
-    cat $inputA $inputB > outputA
+    cat '$inputA' '$inputB' >'$outputA' &&
+    cat '$inputA' '$inputB' > '$outputB'
 ]]>
     </command>
     <inputs>
