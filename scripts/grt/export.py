@@ -248,7 +248,6 @@ def main(argv):
         # So we can just quit now.
         sys.exit(0)
 
-
     # Unfortunately we have to keep this mapping for the sanitizer to work properly.
     job_tool_map = {}
     blacklisted_tools = config['sanitization']['tools']
