@@ -274,7 +274,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         Add values to the fields if present
         """
         if not preferences:
-           return []
+            return []
         data = []
         # Get data if present
         data_key = "extra_user_preferences"
@@ -288,8 +288,8 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     input['help'] = 'Required' if input['required'] else ''
                     field = item + '|' + input['name']
                     for data_item in data:
-                       if field in data_item:
-                           input['value'] = data[data_item]
+                        if field in data_item:
+                            input['value'] = data[data_item]
                 extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
         return extra_pref_inputs
 
@@ -360,13 +360,10 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 address_repeat['cache'].append(address_cache)
             inputs.append(address_repeat)
 
-
             # Build input sections for extra user preferences
             extra_user_pref = self._build_extra_user_pref_inputs( self._get_extra_user_preferences( trans ), user )
             for item in extra_user_pref:
                 inputs.append(item)
-
-
         else:
             if user.active_repositories:
                 inputs.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
@@ -446,7 +443,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                         # Show error message if the required field is empty
                         if payload[item] == "":
                             # Raise an exception when a required field is empty while saving the form
-                            keys = item.split("|");
+                            keys = item.split("|")
                             section = get_extra_pref_keys[keys[0]]
                             for input in section['inputs']:
                                 if input['name'] == keys[1] and input['required']:
