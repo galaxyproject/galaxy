@@ -14,8 +14,8 @@ grt:
     # If your instance is public, this can help us direct users to your
     # instance. If you elect to not send your entire toolbox, we will still
     # (necessarily) receive a list of tools that have been run, just not the
-    # complete list.
-    share_toolbox: True
+    # complete list. WARNING: This may not work on production instances, currently.
+    share_toolbox: False
 
 
 sanitization:
