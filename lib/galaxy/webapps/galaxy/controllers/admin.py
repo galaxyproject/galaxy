@@ -191,7 +191,7 @@ class RoleListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( action="manage_users_and_groups_for_role", id=item.id, webapp="galaxy" ) ),
+                    link=( lambda item: dict( action="forms/manage_users_and_groups_for_role", id=item.id, webapp="galaxy" ) ),
                     model_class=model.Role,
                     attach_popup=True,
                     filterable="advanced",
@@ -1111,101 +1111,86 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                         trans.sa_session.flush()
             return { 'message': 'Role \'%s\' has been renamed to \'%s\'.' % ( old_name, new_name ) }
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def manage_users_and_groups_for_role( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
-        if not id:
-            message = "No role ids received for managing users and groups"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='roles',
-                                                       message=message,
-                                                       status='error' ) )
-        role = get_role( trans, id )
-        if params.get( 'role_members_edit_button', False ):
-            in_users = [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
-            if trans.webapp.name == 'galaxy':
-                for ura in role.users:
-                    user = trans.sa_session.query( trans.app.model.User ).get( ura.user_id )
-                    if user not in in_users:
-                        # Delete DefaultUserPermissions for previously associated users that have been removed from the role
-                        for dup in user.default_permissions:
-                            if role == dup.role:
-                                trans.sa_session.delete( dup )
-                        # Delete DefaultHistoryPermissions for previously associated users that have been removed from the role
-                        for history in user.histories:
-                            for dhp in history.default_permissions:
-                                if role == dhp.role:
-                                    trans.sa_session.delete( dhp )
-                        trans.sa_session.flush()
-            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in util.listify( params.in_groups ) ]
+    def manage_users_and_groups_for_role( self, trans, payload={}, **kwd ):
+        role_id = kwd.get( 'id' )
+        if not role_id:
+            return message_exception( trans, 'Invalid role id (%s) received' % str( user_id ) )
+        role = get_role( trans, role_id )
+        if trans.request.method == 'GET':
+            in_users = []
+            all_users = []
+            in_groups = []
+            all_groups = []
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                if user in [ x.user for x in role.users ]:
+                    in_users.append( trans.security.encode_id( user.id ) )
+                all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
+            for group in trans.sa_session.query( trans.app.model.Group ) \
+                                         .filter( trans.app.model.Group.table.c.deleted == false() ) \
+                                         .order_by( trans.app.model.Group.table.c.name ):
+                if group in [ x.group for x in role.groups ]:
+                    in_groups.append( trans.security.encode_id( group.id ) )
+                all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
+            return { 'title'  : 'Role \'%s\'' % role.name,
+                     'message': 'Role \'%s\' is currently associated with %d user(s) and %d group(s).' %
+                                ( role.name, len( in_users ), len( in_groups ) ),
+                     'status' : 'info',
+                     'inputs' : [ build_select_input( 'users', 'Users', all_users, in_users ),
+                                  build_select_input( 'groups', 'Groups', all_groups, in_groups ) ] }
+            #library_dataset_actions = {}
+            #if len( role.dataset_actions ) < 25:
+                # Build a list of tuples that are LibraryDatasetDatasetAssociationss followed by a list of actions
+                # whose DatasetPermissions is associated with the Role
+                # [ ( LibraryDatasetDatasetAssociation [ action, action ] ) ]
+            #    for dp in role.dataset_actions:
+            #        for ldda in trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ) \
+            #                                    .filter( trans.app.model.LibraryDatasetDatasetAssociation.dataset_id == dp.dataset_id ):
+            #            root_found = False
+            #            folder_path = ''
+            #            folder = ldda.library_dataset.folder
+            #            while not root_found:
+            #                folder_path = '%s / %s' % ( folder.name, folder_path )
+            #                if not folder.parent:
+            #                    root_found = True
+            #                else:
+            #                    folder = folder.parent
+            #            folder_path = '%s %s' % ( folder_path, ldda.name )
+            #            library = trans.sa_session.query( trans.app.model.Library ) \
+            #                                      .filter( trans.app.model.Library.table.c.root_folder_id == folder.id ) \
+            #                                      .first()
+            #            if library not in library_dataset_actions:
+            #                library_dataset_actions[ library ] = {}
+            #            try:
+            #                library_dataset_actions[ library ][ folder_path ].append( dp.action )
+            #            except:
+            #                library_dataset_actions[ library ][ folder_path ] = [ dp.action ]
+            #else:
+            #    message = "Not showing associated datasets, there are too many."
+            #    status = 'info'
+            return { 'message' : 'Not showing associated datasets, there are too many.', 'info' : 'info' }
+        else:
+            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'users' ) ) ]
+            for ura in role.users:
+                user = trans.sa_session.query( trans.app.model.User ).get( ura.user_id )
+                if user not in in_users:
+                    # Delete DefaultUserPermissions for previously associated users that have been removed from the role
+                    for dup in user.default_permissions:
+                        if role == dup.role:
+                            trans.sa_session.delete( dup )
+                    # Delete DefaultHistoryPermissions for previously associated users that have been removed from the role
+                    for history in user.histories:
+                        for dhp in history.default_permissions:
+                            if role == dhp.role:
+                                trans.sa_session.delete( dhp )
+                    trans.sa_session.flush()
+            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'groups' ) ) ]
             trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( role )
-            message = "Role '%s' has been updated with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='roles',
-                                                       message=util.sanitize_text( message ),
-                                                       status=status ) )
-        in_users = []
-        out_users = []
-        in_groups = []
-        out_groups = []
-        for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted == false() ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
-            if user in [ x.user for x in role.users ]:
-                in_users.append( ( user.id, user.email ) )
-            else:
-                out_users.append( ( user.id, user.email ) )
-        for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted == false() ) \
-                                     .order_by( trans.app.model.Group.table.c.name ):
-            if group in [ x.group for x in role.groups ]:
-                in_groups.append( ( group.id, group.name ) )
-            else:
-                out_groups.append( ( group.id, group.name ) )
-        library_dataset_actions = {}
-        if trans.webapp.name == 'galaxy' and len(role.dataset_actions) < 25:
-            # Build a list of tuples that are LibraryDatasetDatasetAssociationss followed by a list of actions
-            # whose DatasetPermissions is associated with the Role
-            # [ ( LibraryDatasetDatasetAssociation [ action, action ] ) ]
-            for dp in role.dataset_actions:
-                for ldda in trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ) \
-                                            .filter( trans.app.model.LibraryDatasetDatasetAssociation.dataset_id == dp.dataset_id ):
-                    root_found = False
-                    folder_path = ''
-                    folder = ldda.library_dataset.folder
-                    while not root_found:
-                        folder_path = '%s / %s' % ( folder.name, folder_path )
-                        if not folder.parent:
-                            root_found = True
-                        else:
-                            folder = folder.parent
-                    folder_path = '%s %s' % ( folder_path, ldda.name )
-                    library = trans.sa_session.query( trans.app.model.Library ) \
-                                              .filter( trans.app.model.Library.table.c.root_folder_id == folder.id ) \
-                                              .first()
-                    if library not in library_dataset_actions:
-                        library_dataset_actions[ library ] = {}
-                    try:
-                        library_dataset_actions[ library ][ folder_path ].append( dp.action )
-                    except:
-                        library_dataset_actions[ library ][ folder_path ] = [ dp.action ]
-        else:
-            message = "Not showing associated datasets, there are too many."
-            status = 'info'
-        return trans.fill_template( '/admin/dataset_security/role/role.mako',
-                                    role=role,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    in_groups=in_groups,
-                                    out_groups=out_groups,
-                                    library_dataset_actions=library_dataset_actions,
-                                    message=message,
-                                    status=status )
+            return { 'message' : 'Role \'%s\' has been updated with %d associated users and %d associated groups' % ( role.name, len( in_users ), len( in_groups ) ) }
 
     @web.expose
     @web.require_admin

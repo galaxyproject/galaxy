@@ -47,9 +47,12 @@ window.app = function app( options, bootstrapped ){
                     icon            : 'fa-users',
                     redirect        : 'admin/users'
                 },
+                manage_users_and_groups_for_role: {
+                    url             : 'admin/manage_users_and_groups_for_role?id=' + QueryStringParsing.get( 'id' ),
+                    redirect        : 'admin/roles'
+                },
                 rename_role: {
                     url             : 'admin/rename_role?id=' + QueryStringParsing.get( 'id' ),
-                    icon            : 'fa-users',
                     redirect        : 'admin/roles'
                 }
             };
