@@ -197,7 +197,7 @@ var DatasetListItemEdit = _super.extend(
     _renderErrButton : function(){
         return faIconButton({
             title       : _l( 'View or report this error' ),
-            href        : this.model.urls.report_error,
+            href        : Galaxy.root + 'datasets/error?dataset_id=' + this.model.attributes.id,
             classes     : 'report-error-btn',
             target      : this.linkTarget,
             faIcon      : 'fa-bug'
