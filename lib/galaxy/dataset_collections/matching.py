@@ -75,7 +75,7 @@ class MatchingCollections( object ):
             return None
 
         matching_collections = MatchingCollections()
-        for input_key, to_match in collections_to_match.items():
+        for input_key, to_match in sorted(collections_to_match.items()):
             hdca = to_match.hdca
             collection_type_description = collection_type_descriptions.for_collection_type( hdca.collection.collection_type )
             subcollection_type = to_match.subcollection_type

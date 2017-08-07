@@ -78,6 +78,7 @@
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
   <tool file="explicit_conversion.xml" />
+  <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_multiple_in_conditional.xml" />
