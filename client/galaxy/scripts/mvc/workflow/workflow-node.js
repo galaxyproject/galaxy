@@ -158,7 +158,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.errors = data.errors;
             this.tooltip = data.tooltip ? data.tooltip : "";
             this.annotation = data.annotation;
-            this.output_terminals = {};  // removes outputs when switching tool versions
+            // this.output_terminals = {};  // removes outputs when switching tool versions
             this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
             this.label = data.label;
             this.uuid = data.uuid;
@@ -186,37 +186,43 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             var nodeView = node.nodeView;
             // remove unused output views and remove pre-exisiting output views from data.data_outputs,
             // so that these are not added twice.
-            _.each(nodeView.outputViews, function(output_view) {
+            var unused_outputs = [];
+            // nodeView.outputViews contains pre-existing outputs,
+            // while data.data_output contains what should be displayed.
+            // Now we gather the unused outputs
+            console.log(nodeView.outputViews);
+            $.each(nodeView.outputViews, function(i, output_view) {
                 var cur_name = output_view.output.name;
                 var data_names = data.data_outputs;
-                var delete_terminal = true;
-                $.each(data_names, function(i, data_output) {
-                    console.log(data_output);
-                    if (data_output.name === cur_name) {
-                        delete_terminal = false;
-                        data.data_outputs.splice(i, 1);
+                var cur_name_in_data_outputs = false;
+                _.each(data_names, function(data_name) {
+                    if (data_name.name == cur_name) {
+                        cur_name_in_data_outputs = true;
                     }
                 });
-                if (delete_terminal) {
-                    _.each(output_view.terminalElement.terminal.connectors, function (x) {
-                        if (x) {
-                            x.destroy();
-                        }
-                    })
-                    output_view.remove();
+                if (cur_name_in_data_outputs === false) {
+                    unused_outputs.push(cur_name)
                 }
             });
 
-            this.output_terminals = {},
-            nodeView.outputViews = {};
+            // Remove the unused outputs
+            _.each(unused_outputs, function(unused_output) {
+                _.each(nodeView.outputViews[unused_output].terminalElement.terminal.connectors, function(x) {
+                    if (x) {
+                            x.destroy();  // Removes the noodle connectors
+                        }
+                });
+                nodeView.outputViews[unused_output].remove();  // removes the rendered output
+                delete nodeView.outputViews[unused_output];  // removes the reference to the output
+                delete node.output_terminals[unused_output];  // removes the output terminal
+            });
+            $.each( data.data_outputs, function( i, output ) {
+                if (!nodeView.outputViews[output.name]) {
+                    nodeView.addDataOutput(output);  // add data output if it does not yet exist
+                }
+            });
             this.tool_state = data.tool_state;
             this.config_form = data.config_form;
-            if (this.config_form) {
-                this.tool_version = this.config_form.version;
-            } else {
-                // empty config_form should only happen in qunit tests
-                this.tool_version = null;
-            }
             this.errors = data.errors;
             this.annotation = data['annotation'];
             this.label = data.label;
@@ -238,9 +244,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             _.each( _.difference( _.values( nodeView.terminalViews ), _.values( newTerminalViews ) ), function( unusedView ) {
                 unusedView.el.terminal.destroy();
             } );
-            $.each( data.data_outputs, function( i, output ) {
-                nodeView.addDataOutput( output );
-            } );
+
             nodeView.terminalViews = newTerminalViews;
             node.nodeView.render();
             // In general workflow editor assumes tool outputs don't change in # or
@@ -258,7 +262,6 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             // If active, reactivate with new config_form
             this.markChanged();
             this.redraw();
-            // nodeView.render();
             this.app.workflow.node_changed( this, true);
         },
         error : function ( text ) {
