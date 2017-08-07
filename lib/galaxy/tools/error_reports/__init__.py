@@ -36,10 +36,21 @@ class ErrorSink(object):
 
     def __init__(self, plugin_classes, plugins_source, **kwargs):
         self.extra_kwargs = kwargs
+        self.app = kwargs['app']
         self.plugin_classes = plugin_classes
         self.plugins = self.__plugins_from_source(plugins_source)
 
-    def submit_report(self, dataset, job, tool, user_submission=False, **kwargs):
+    def _can_access_dataset(self, dataset, user):
+        if user:
+            roles = user.all_roles()
+        else:
+            roles = []
+        return self.app.security_agent.can_access_dataset(roles, dataset.dataset)
+
+    def submit_report(self, dataset, job, tool, user, user_submission=False, **kwargs):
+        if user_submission:
+            assert self._can_access_dataset(dataset, user), Exception("You are not allowed to access this dataset.")
+
         responses = []
         for plugin in self.plugins:
             if user_submission == plugin.user_submission:
