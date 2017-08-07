@@ -290,18 +290,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
         return extra_pref_inputs
 
-    def _check_if_field_required( self, trans, key ):
-        """
-        Return true if the required field is empty while saving the form
-        """
-        preferences = self._get_extra_user_preferences( trans )
-        keys = key.split("|");
-        section = preferences[keys[0]]
-        for input in section['inputs']:
-            if( input['name'] == keys[1] and input['required'] ):
-                return True
-        return False
-
     @expose_api
     def get_information(self, trans, id, **kwd):
         """
@@ -450,9 +438,13 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 for item in payload:
                     if item.startswith( key_prefix ):
                         # Show error message if the required field is empty
-                        if( payload[item] == "" ):
-                            if( self._check_if_field_required( trans, item ) ): 
-                                raise MessageException("Please fill the required field")
+                        if payload[item] == "":
+                            # Raise an exception when a required field is empty while saving the form
+                            keys = item.split("|");
+                            section = get_extra_pref_keys[keys[0]]
+                            for input in section['inputs']:
+                                if input['name'] == keys[1] and input['required']:
+                                    raise MessageException("Please fill the required field")
                         extra_user_pref_data[ item ] = payload[ item ]
             user.preferences[ "extra_user_preferences" ] = json.dumps( extra_user_pref_data )
 
