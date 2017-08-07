@@ -66,6 +66,12 @@ def build_command(
     if not commands_builder.commands:
         return None
 
+    # Version, dependency resolution, and task splitting are prepended to the
+    # command - so they need to appear in the following order to ensure that
+    # the underlying application used by version command is available in the
+    # after dependency resolution but the task splitting command still has
+    # Galaxy's Python environment.
+
     __handle_version_command(commands_builder, job_wrapper)
 
     # One could imagine also allowing dependencies inside of the container but
