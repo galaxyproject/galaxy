@@ -18,7 +18,7 @@ About the Script
 ----------------
 
 Once you've registered your Galaxy instance, you'll receive an instance ID and
-an API key which are used to run ``scripts/grt/grt.py``. The tool itself is very
+an API key which are used to run ``scripts/grt/export.py``. The tool itself is very
 simple to run. GRT will run and produce a directory of reports that can be
 synced with the GRT server. Every time it is run, GRT only processes the list
 of jobs that were run since the last time it was run. On first run, GRT will
@@ -72,10 +72,10 @@ Data Collection Process
 
 .. code-block:: console
 
-    cd $GALAXY; python scripts/grt/grt.py -l debug
+    cd $GALAXY; python scripts/grt/export.py -l debug
 
 
-``grt.py`` connects to your galaxy database and makes queries against the
+``export.py`` connects to your galaxy database and makes queries against the
 database for three primary tables:
 
 - job
@@ -99,9 +99,9 @@ Data Submission
 
 .. code-block:: console
 
-    cd $GALAXY; python scripts/grt/grt-submit.py
+    cd $GALAXY; python scripts/grt/upload.py
 
-``scripts/grt/grt-submit.py`` is a script which will submit your data to the
+``scripts/grt/upload.py`` is a script which will submit your data to the
 configured GRT server. You must first be registered with the server which will
 also walk you through the setup process.
 
