@@ -169,7 +169,20 @@ class BiostarErrorReporter( ErrorReporter ):
         assert self._can_access_dataset( user ), Exception( "You are not allowed to access this dataset." )
         tool_version_select_field, tools, tool = \
             self.app.toolbox.get_tool_components( self.tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=True )
-        payload = { 'title': 'Bug report on "%s" tool' % ( tool.name ), 'content': self.report.replace( '\n', '<br />' ).replace( '\r', '' ), 'tag_val': slugify( 'bug report' ) }
+
+        # Strip out unwanted HTML characters
+        html_remove = ['<html>', '<body>', '</body>', '</html>', '\n', '\r']
+        report = self.html_report
+        for tag in html_remove:
+            report = report.replace(tag, '')
+        # Must lstrip spaces or it isn't recognised as HTML
+        report = report.lstrip()
+
+        payload = {
+            'title': 'Bug report on "%s" tool' % ( tool.name ),
+            'content': report,
+            'tag_val': slugify( 'bug report' )
+        }
         # Get footer for email from here
         payload2 = populate_tool_payload( tool=tool )
         if 'content' in payload2:
