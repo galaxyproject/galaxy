@@ -3,8 +3,6 @@
 
 See doc/source/admin/grt.rst for more detailed usage information.
 """
-from __future__ import print_function
-
 import argparse
 import tarfile
 import json
@@ -15,7 +13,6 @@ import sys
 import time
 import yaml
 import logging
-# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 from collections import defaultdict
 
@@ -191,12 +188,12 @@ def main(argv):
             logging.info(human_label)
         _times.append((label, time.time() - _start_time))
 
-    annotate('init_start', 'Loading GRT ini...')
+    annotate('init_start', 'Loading GRT configuration...')
     try:
         with open(args.config) as handle:
             config = yaml.load(handle)
     except Exception:
-        logging.info('Using default GRT Configuration')
+        logging.info('Using default GRT configuration')
         with open(sample_config) as handle:
             config = yaml.load(handle)
     annotate('init_end')

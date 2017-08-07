@@ -27,12 +27,12 @@ def main(argv):
                         help="Set the logging level", default='warning')
     args = parser.parse_args()
 
-    logging.info('Loading GRT ini...')
+    logging.info('Loading GRT configuration...')
     try:
         with open(args.config) as handle:
             config = yaml.load(handle)
     except Exception:
-        logging.info('Using default GRT Configuration')
+        logging.info('Using default GRT configuration')
         with open(sample_config) as handle:
             config = yaml.load(handle)
 
@@ -53,7 +53,7 @@ def main(argv):
     local_reports = [x.strip('.json') for x in os.listdir(REPORT_DIR) if x.endswith('.json')]
     for report_id in local_reports:
         if report_id not in remote_reports:
-            print("Uploading %s" % report_id)
+            logging.info("Uploading %s", report_id)
             files = {
                 'meta': open(os.path.join(sys.argv[1], report_id + '.json'), 'rb'),
                 'data': open(os.path.join(sys.argv[1], report_id + '.tsv.gz'), 'rb')
@@ -62,7 +62,7 @@ def main(argv):
                 'identifier': report_id
             }
             r = requests.post(GRT_URL + 'api/v2/upload', files=files, headers=headers, data=data)
-            print(r.json())
+            logging.info("Uploaded successfully", report_id)
 
 
 if __name__ == '__main__':
