@@ -54,6 +54,7 @@ PATH_DEFAULTS = dict(
     workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
     modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
     local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
+    user_preferences_extra_config_file=[ 'config/user_preferences_extra_conf.xml', 'config/user_preferences_extra_conf.xml.sample' ],
     containers_config_file=['config/containers_conf.yml'],
 )
 
