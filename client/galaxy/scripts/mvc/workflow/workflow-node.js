@@ -159,7 +159,6 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.errors = data.errors;
             this.tooltip = data.tooltip ? data.tooltip : "";
             this.annotation = data.annotation;
-            // this.output_terminals = {};  // removes outputs when switching tool versions
             this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
             this.label = data.label;
             this.uuid = data.uuid;
@@ -223,7 +222,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             });
             this.tool_state = data.tool_state;
             this.config_form = data.config_form;
-            this.force_refesh = this.config_form && this.tool_version !== this.config_form.version;
+            this.force_refresh = this.config_form && this.tool_version !== this.config_form.version;
             this.tool_version = this.config_form && this.config_form.version;
             this.errors = data.errors;
             this.annotation = data['annotation'];
@@ -273,7 +272,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.app.workflow.node_changed( this );
         },
         markChanged: function() {
-            this.app.workflow.node_changed( this, this.force_refesh );
+            this.app.workflow.node_changed( this, this.force_refresh );
         }
     });
     return Node;
