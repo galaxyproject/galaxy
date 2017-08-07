@@ -7,9 +7,11 @@ import os
 import re
 import signal
 import subprocess
+import time
 
 # from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
+
 
 log = logging.getLogger( __name__ )
 
@@ -204,13 +206,23 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         signals = dict((k, v) for v, k in reversed(sorted(signal.__dict__.items()))
            if v.startswith('SIG') and not v.startswith('SIG_'))
         cmd = ['qacct', '-j', job_id]
-        p = subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-        stdout, stderr = p.communicate()
-        if p.returncode != 0:
+        slp = 1
+        # run qacct -j JOBID (since the accounting data for the job might not be available immediately a simple retry mechanism is implemented .. max wait is approx 1min)
+        while True:
+            p = subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            stdout, stderr = p.communicate()
             stderr = stderr.strip()
-            log.exception( '`%s` returned %s, stderr: %s' % ( ' '.join( cmd ), p.returncode, stderr ) )
-            return self.drmaa.JobState.UNDETERMINED
-
+            if p.returncode != 0:
+                if slp < 32 and "job id {jobid} not found".format(jobid=job_id) in stderr:
+                    log.exception( '`%s` returned %s, stderr: %s => retry after %ds' % ( ' '.join( cmd ), p.returncode, stderr, slp ) )
+                    time.sleep( slp )
+                    slp *= 2
+                    continue
+                else:
+                    log.exception( '`%s` returned %s, stderr: %s' % ( ' '.join( cmd ), p.returncode, stderr ) )
+                    return self.drmaa.JobState.UNDETERMINED
+            else:
+                break
         qacct = dict()
         for line in stdout.split("\n"):
             # remove header
