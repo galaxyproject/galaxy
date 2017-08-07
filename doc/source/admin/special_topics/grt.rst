@@ -18,7 +18,7 @@ About the Script
 ----------------
 
 Once you've registered your Galaxy instance, you'll receive an instance ID and
-an API key which are used to run ``scripts/grt.py``. The tool itself is very
+an API key which are used to run ``scripts/grt/grt.py``. The tool itself is very
 simple to run. GRT will run and produce a directory of reports that can be
 synced with the GRT server. Every time it is run, GRT only processes the list
 of jobs that were run since the last time it was run. On first run, GRT will
@@ -32,7 +32,7 @@ Data Privacy
 All data submitted to the GRT will be released into the public domain. If there
 are certain tools you do not want included, or certain parameters you wish to
 hide (e.g. because they contain API keys), then you can take advantage of the
-built-in sanitization. ``scripts/grt.yml.sample`` file allows you to build up
+built-in sanitization. ``scripts/grt/grt.yml.sample`` file allows you to build up
 sanitization for the job logs.
 
 .. code-block:: yaml
@@ -72,7 +72,7 @@ Data Collection Process
 
 .. code-block:: console
 
-    cd $GALAXY; python scripts/grt.py -l debug
+    cd $GALAXY; python scripts/grt/grt.py -l debug
 
 
 ``grt.py`` connects to your galaxy database and makes queries against the
@@ -99,9 +99,9 @@ Data Submission
 
 .. code-block:: console
 
-    cd $GALAXY; python scripts/grt-submit.py
+    cd $GALAXY; python scripts/grt/grt-submit.py
 
-``scripts/grt-submit.py`` is a script which will submit your data to the
+``scripts/grt/grt-submit.py`` is a script which will submit your data to the
 configured GRT server. You must first be registered with the server which will
 also walk you through the setup process.
 
