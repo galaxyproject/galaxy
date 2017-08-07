@@ -1,10 +1,14 @@
-from logging import getLogger
+import logging
+
+import paramiko
 
 from .local import LocalShell
+from ....util import Bunch
 
-log = getLogger(__name__)
+log = logging.getLogger(__name__)
+logging.getLogger("paramiko").setLevel(logging.WARNING)  # paramiko logging is very verbose
 
-__all__ = ('RemoteShell', 'SecureShell', 'GlobusSecureShell')
+__all__ = ('RemoteShell', 'SecureShell', 'GlobusSecureShell', 'ParamikoShell')
 
 
 class RemoteShell(LocalShell):
@@ -29,10 +33,41 @@ class RemoteShell(LocalShell):
 class SecureShell(RemoteShell):
     SSH_NEW_KEY_STRING = 'Are you sure you want to continue connecting'
 
-    def __init__(self, rsh='ssh', rcp='scp', **kwargs):
-        rsh += ' -oStrictHostKeyChecking=yes -oConnectTimeout=60'
-        rcp += ' -oStrictHostKeyChecking=yes -oConnectTimeout=60'
+    def __init__(self, rsh='ssh', rcp='scp', private_key=None, port=None, strict_host_key_checking=True, **kwargs):
+        strict_host_key_checking = "yes" if strict_host_key_checking else "no"
+        rsh += " -oStrictHostKeyChecking=%s -oConnectTimeout=60" % strict_host_key_checking
+        rcp += " -oStrictHostKeyChecking=%s -oConnectTimeout=60" % strict_host_key_checking
+        if private_key:
+            rsh += " -i %s" % private_key
+            rcp += " -i %s" % private_key
+        if port:
+            rsh += " -p %s" % port
+            rcp += " -p %s" % port
         super(SecureShell, self).__init__(rsh=rsh, rcp=rcp, **kwargs)
+
+
+class ParamikoShell(object):
+
+    def __init__(self, username, hostname, password=None, private_key=None, port=22, timeout=60, **kwargs):
+        self.username = username
+        self.hostname = hostname
+        self.password = password
+        self.private_key = private_key
+        self.port = int(port) if port else port
+        self.timeout = int(timeout) if timeout else timeout
+        self.ssh = paramiko.SSHClient()
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ssh.connect(hostname=self.hostname,
+                         port=self.port,
+                         username=self.username,
+                         password=self.password,
+                         key_filename=self.private_key,
+                         timeout=self.timeout)
+
+    def execute(self, cmd, timeout=60):
+        _, stdout, stderr = self.ssh.exec_command(cmd, timeout=timeout)
+        return_code = stdout.channel.recv_exit_status()
+        return Bunch(stdout=stdout.read(), stderr=stderr.read(), returncode=return_code)
 
 
 class GlobusSecureShell(SecureShell):
