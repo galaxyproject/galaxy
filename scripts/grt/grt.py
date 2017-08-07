@@ -262,8 +262,10 @@ def main(argv):
                 .filter(model.Job.id > offset_start) \
                 .filter(model.Job.id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all():
+            # If the tool is blacklisted, exclude everywhere
+            if job[2] in blacklisted_tools:
+                continue
 
-            # TODO: blacklisted
             handle_job.write(str(job[0]))  # id
             handle_job.write('\t')
             handle_job.write(job[2])  # tool_id
