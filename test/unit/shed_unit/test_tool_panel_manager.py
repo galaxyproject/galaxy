@@ -78,8 +78,8 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         for v in "1", "2", "3":
             self.__toolbox = self.get_new_toolbox()
             changeset = "0123456789abcde%s" % v
-            guid = DEFAULT_GUID + ("v%s" % v)
-            tool = self._init_ts_tool( guid=guid, filename="tool_v%s.xml" % v )
+            guid = DEFAULT_GUID + ("v/%s" % v)
+            tool = self._init_ts_tool( guid=guid, filename="tool_v%s.xml" % v, version=v )
             tool_path = self._tool_path( name="tool_v%s.xml" % v )
             new_tools = [{"guid": guid, "tool_config": tool_path}]
             tool_shed_repository = self._repo_install( changeset )
@@ -188,13 +188,10 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
             message = message_template % ( filename, open( filename, "r" ).read() )
             raise AssertionError( message )
 
-    def _init_dynamic_tool_conf( self ):
-        # Add a dynamic tool conf (such as a ToolShed managed one) to list of configs.
-        self._add_config( """<toolbox tool_path="%s"></toolbox>""" % self.test_directory )
-
     def _init_ts_tool( self, guid=DEFAULT_GUID, **kwds ):
         tool = self._init_tool( **kwds )
         tool.guid = guid
+        tool.version = kwds.get('version', '1.0')
         return tool
 
     @property

@@ -1,5 +1,6 @@
 import logging
 import re
+import galaxy.model
 
 from galaxy.util import unicodify
 from six import string_types
@@ -22,8 +23,8 @@ class TagManager( object ):
     Manages CRUD operations related to tagging objects.
     """
 
-    def __init__( self, app ):
-        self.app = app
+    def __init__( self, sa_session ):
+        self.sa_session = sa_session
         # Minimum tag length.
         self.min_tag_len = 2
         # Maximum tag length.
@@ -37,14 +38,26 @@ class TagManager( object ):
         # Initialize with known classes - add to this in subclasses.
         self.item_tag_assoc_info = {}
 
+    def add_tags_from_list( self, user, item, new_tags_list ):
+        new_tags_set = set( new_tags_list )
+        if item.tags:
+            new_tags_set.update( self.get_tags_str( item.tags ).split( ',' ) )
+        return self.set_tags_from_list( user, item, new_tags_set )
+
+    def remove_tags_from_list( self, user, item, tag_to_remove_list ):
+        tag_to_remove_set = set( tag_to_remove_list )
+        tags_set = set(self.get_tags_str( item.tags ).split( ',' ))
+        if item.tags:
+            tags_set -= tag_to_remove_set
+        return self.set_tags_from_list( user, item, tags_set )
+
     def set_tags_from_list( self, user, item, new_tags_list ):
         # precondition: item is already security checked against user
         # precondition: incoming tags is a list of sanitized/formatted strings
-
         self.delete_item_tags( user, item )
         new_tags_str = ','.join( new_tags_list )
         self.apply_item_tags( user, item, unicodify( new_tags_str, 'utf-8' ) )
-        self.app.model.context.flush()
+        self.sa_session.flush()
         return item.tags
 
     def get_tag_assoc_class( self, item_class ):
@@ -64,7 +77,7 @@ class TagManager( object ):
             return []
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count( '*' ) ]
-        from_obj = item_tag_assoc_class.table.join( item_class.table ).join( self.app.model.Tag.table )
+        from_obj = item_tag_assoc_class.table.join( item_class.table ).join( galaxy.model.Tag.table )
         where_clause = ( self.get_id_col_in_item_tag_assoc_table( item_class ) == item.id )
         order_by = [ func.count( "*" ).desc() ]
         group_by = item_tag_assoc_class.table.c.tag_id
@@ -75,7 +88,7 @@ class TagManager( object ):
                         group_by=group_by,
                         order_by=order_by,
                         limit=limit )
-        result_set = self.app.model.context.execute( query )
+        result_set = self.sa_session.execute( query )
         # Return community tags.
         community_tags = []
         for row in result_set:
@@ -84,8 +97,9 @@ class TagManager( object ):
         return community_tags
 
     def get_tool_tags( self ):
-        result_set = self.app.model.context.execute( select( columns=[ self.app.model.ToolTagAssociation.table.c.tag_id ],
-                                                             from_obj=self.app.model.ToolTagAssociation.table ).distinct() )
+        query = select( columns=[ galaxy.model.ToolTagAssociation.table.c.tag_id ],
+                        from_obj=galaxy.model.ToolTagAssociation.table ).distinct()
+        result_set = self.sa_session.execute( query )
 
         tags = []
         for row in result_set:
@@ -100,7 +114,7 @@ class TagManager( object ):
         # Remove association.
         if item_tag_assoc:
             # Delete association.
-            self.app.model.context.delete( item_tag_assoc )
+            self.sa_session.delete( item_tag_assoc )
             item.tags.remove( item_tag_assoc )
             return True
         return False
@@ -109,7 +123,7 @@ class TagManager( object ):
         """Delete tags from an item."""
         # Delete item-tag associations.
         for tag in item.tags:
-            self.app.model.context.delete( tag )
+            self.sa_session.delete( tag )
         # Delete tags from item.
         del item.tags[:]
 
@@ -118,7 +132,7 @@ class TagManager( object ):
         # Get tag name.
         if isinstance( tag, string_types ):
             tag_name = tag
-        elif isinstance( tag, self.app.model.Tag ):
+        elif isinstance( tag, galaxy.model.Tag ):
             tag_name = tag.name
         # Check for an item-tag association to see if item has a given tag.
         item_tag_assoc = self._get_item_tag_assoc( user, item, tag_name )
@@ -131,7 +145,9 @@ class TagManager( object ):
         lc_name = name.lower()
         # Get or create item-tag association.
         item_tag_assoc = self._get_item_tag_assoc( user, item, lc_name )
-        if not item_tag_assoc:
+        # If the association does not exist, or if it has a different value, add another.
+        # We do allow multiple associations with different values.
+        if not item_tag_assoc or (item_tag_assoc and item_tag_assoc.value != value):
             # Create item-tag association.
             # Create tag; if None, skip the tag (and log error).
             tag = self._get_or_create_tag( lc_name )
@@ -159,7 +175,7 @@ class TagManager( object ):
         # Parse tags.
         parsed_tags = self.parse_tags( tags_str )
         # Apply each tag.
-        for name, value in parsed_tags.items():
+        for name, value in parsed_tags:
             self.apply_item_tag( user, item, name, value )
 
     def get_tags_str( self, tags ):
@@ -178,12 +194,12 @@ class TagManager( object ):
 
     def get_tag_by_id( self, tag_id ):
         """Get a Tag object from a tag id."""
-        return self.app.model.context.query( self.app.model.Tag ).filter_by( id=tag_id ).first()
+        return self.sa_session.query( galaxy.model.Tag ).filter_by( id=tag_id ).first()
 
     def get_tag_by_name( self, tag_name ):
         """Get a Tag object from a tag name (string)."""
         if tag_name:
-            return self.app.model.context.query( self.app.model.Tag ).filter_by( name=tag_name.lower() ).first()
+            return self.sa_session.query( galaxy.model.Tag ).filter_by( name=tag_name.lower() ).first()
         return None
 
     def _create_tag( self, tag_str ):
@@ -194,9 +210,9 @@ class TagManager( object ):
         for sub_tag in tag_hierarchy:
             # Get or create subtag.
             tag_name = tag_prefix + self._scrub_tag_name( sub_tag )
-            tag = self.app.model.context.query( self.app.model.Tag ).filter_by( name=tag_name).first()
+            tag = self.sa_session.query( galaxy.model.Tag ).filter_by( name=tag_name).first()
             if not tag:
-                tag = self.app.model.Tag( type=0, name=tag_name )
+                tag = galaxy.model.Tag( type=0, name=tag_name )
             # Set tag parent.
             tag.parent = parent_tag
             # Update parent and tag prefix.
@@ -231,7 +247,7 @@ class TagManager( object ):
     def parse_tags( self, tag_str ):
         """
         Returns a list of raw (tag-name, value) pairs derived from a string; method scrubs tag names and values as well.
-        Return value is a dictionary where tag-names are keys.
+        Return value is a list of (tag_name, tag_value) tuples.
         """
         # Gracefully handle None.
         if not tag_str:
@@ -240,12 +256,13 @@ class TagManager( object ):
         reg_exp = re.compile( '[' + self.tag_separators + ']' )
         raw_tags = reg_exp.split( tag_str )
         # Extract name-value pairs.
-        name_value_pairs = dict()
+        name_value_pairs = []
         for raw_tag in raw_tags:
             nv_pair = self._get_name_value_pair( raw_tag )
             scrubbed_name = self._scrub_tag_name( nv_pair[0] )
             scrubbed_value = self._scrub_tag_value( nv_pair[1] )
-            name_value_pairs[scrubbed_name] = scrubbed_value
+            # Append tag_name, tag_value tuple -- TODO use NamedTuple
+            name_value_pairs.append(( scrubbed_name, scrubbed_value ))
         return name_value_pairs
 
     def _scrub_tag_value( self, value ):
@@ -293,9 +310,9 @@ class TagManager( object ):
 
 
 class GalaxyTagManager( TagManager ):
-    def __init__( self, app ):
+    def __init__( self, sa_session ):
         from galaxy import model
-        TagManager.__init__( self, app )
+        TagManager.__init__( self, sa_session )
         self.item_tag_assoc_info["History"] = ItemTagAssocInfo( model.History,
                                                                 model.HistoryTagAssociation,
                                                                 model.HistoryTagAssociation.table.c.history_id )
@@ -303,6 +320,10 @@ class GalaxyTagManager( TagManager ):
             ItemTagAssocInfo( model.HistoryDatasetAssociation,
                               model.HistoryDatasetAssociationTagAssociation,
                               model.HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id )
+        self.item_tag_assoc_info["HistoryDatasetCollectionAssociation"] = \
+            ItemTagAssocInfo( model.HistoryDatasetCollectionAssociation,
+                              model.HistoryDatasetCollectionTagAssociation,
+                              model.HistoryDatasetCollectionTagAssociation.table.c.history_dataset_collection_id )
         self.item_tag_assoc_info["Page"] = ItemTagAssocInfo( model.Page,
                                                              model.PageTagAssociation,
                                                              model.PageTagAssociation.table.c.page_id )
@@ -315,5 +336,5 @@ class GalaxyTagManager( TagManager ):
 
 
 class CommunityTagManager( TagManager):
-    def __init__( self, app ):
-        TagManager.__init__( self, app )
+    def __init__( self, sa_session ):
+        TagManager.__init__( self, sa_session )

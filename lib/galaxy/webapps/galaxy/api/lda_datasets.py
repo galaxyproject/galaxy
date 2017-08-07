@@ -6,7 +6,6 @@ import logging
 import os
 import os.path
 import string
-import sys
 import tempfile
 import zipfile
 from json import dumps
@@ -19,6 +18,7 @@ from galaxy import web
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import folders, roles
 from galaxy.tools.actions import upload_common
+from galaxy.tools.parameters import populate_state
 from galaxy.util.streamball import StreamBall
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
@@ -404,19 +404,19 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         """
         if payload:
             kwd.update(payload)
-        kwd['space_to_tab'] = False
-        kwd['to_posix_lines'] = True
+        kwd[ 'space_to_tab' ] = False
+        kwd[ 'to_posix_lines' ] = True
         kwd[ 'dbkey' ] = kwd.get( 'dbkey', '?' )
         kwd[ 'file_type' ] = kwd.get( 'file_type', 'auto' )
-        kwd['link_data_only'] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
+        kwd[ 'link_data_only' ] = 'link_to_files' if util.asbool( kwd.get( 'link_data', False ) ) else 'copy_files'
         encoded_folder_id = kwd.get( 'encoded_folder_id', None )
         if encoded_folder_id is not None:
             folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
         else:
-            raise exceptions.RequestParameterMissingException( 'The required atribute encoded_folder_id is missing.' )
+            raise exceptions.RequestParameterMissingException( 'The required attribute encoded_folder_id is missing.' )
         path = kwd.get( 'path', None)
         if path is None:
-            raise exceptions.RequestParameterMissingException( 'The required atribute path is missing.' )
+            raise exceptions.RequestParameterMissingException( 'The required attribute path is missing.' )
         folder = self.folder_manager.get( trans, folder_id )
 
         source = kwd.get( 'source', None )
@@ -451,7 +451,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         tool_id = 'upload1'
         tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
-        tool.populate_state( trans, tool.inputs, kwd, state.inputs )
+        populate_state( trans, tool.inputs, kwd, state.inputs )
         tool_params = state.inputs
         dataset_upload_inputs = []
         for input in tool.inputs.itervalues():
@@ -606,7 +606,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 log.exception( "Unable to create archive for download" )
                 raise exceptions.InternalServerError( "Unable to create archive for download." )
             except Exception:
-                log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[ 0 ] )
+                log.exception( "Unexpected error in create archive for download" )
                 raise exceptions.InternalServerError( "Unable to create archive for download." )
             composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
             seen = []
@@ -639,13 +639,13 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                         else:
                             archive.add( ldda.dataset.file_name, zpath, check_file=True )  # add the primary of a composite set
                     except IOError:
-                        log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name )
+                        log.exception( "Unable to add composite parent %s to temporary library download archive", ldda.dataset.file_name )
                         raise exceptions.InternalServerError( "Unable to create archive for download." )
                     except ObjectNotFound:
-                        log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
+                        log.exception( "Requested dataset %s does not exist on the host.", ldda.dataset.file_name )
                         raise exceptions.ObjectNotFound( "Requested dataset not found. " )
                     except Exception as e:
-                        log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name )
+                        log.exception( "Unable to add composite parent %s to temporary library download archive", ldda.dataset.file_name )
                         raise exceptions.InternalServerError( "Unable to add composite parent to temporary library download archive. " + str( e ) )
 
                     flist = glob.glob(os.path.join(ldda.dataset.extra_files_path, '*.*'))  # glob returns full paths
@@ -659,13 +659,13 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                             else:
                                 archive.add( fpath, fname, check_file=True )
                         except IOError:
-                            log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname) )
+                            log.exception( "Unable to add %s to temporary library download archive %s", fname, outfname )
                             raise exceptions.InternalServerError( "Unable to create archive for download." )
                         except ObjectNotFound:
-                            log.exception( "Requested dataset %s does not exist on the host." % fpath )
+                            log.exception( "Requested dataset %s does not exist on the host.", fpath )
                             raise exceptions.ObjectNotFound( "Requested dataset not found." )
                         except Exception as e:
-                            log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname ) )
+                            log.exception( "Unable to add %s to temporary library download archive %s", fname, outfname )
                             raise exceptions.InternalServerError( "Unable to add dataset to temporary library download archive . " + str( e ) )
 
                 else:  # simple case
@@ -675,13 +675,13 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                         else:
                             archive.add( ldda.dataset.file_name, path, check_file=True )
                     except IOError:
-                        log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name )
+                        log.exception( "Unable to write %s to temporary library download archive", ldda.dataset.file_name )
                         raise exceptions.InternalServerError( "Unable to create archive for download" )
                     except ObjectNotFound:
-                        log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
+                        log.exception( "Requested dataset %s does not exist on the host.", ldda.dataset.file_name )
                         raise exceptions.ObjectNotFound( "Requested dataset not found." )
                     except Exception as e:
-                        log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname ) )
+                        log.exception( "Unable to add %s to temporary library download archive %s", fname, outfname )
                         raise exceptions.InternalServerError( "Unknown error. " + str( e ) )
             lname = 'selected_dataset'
             fname = lname.replace( ' ', '_' ) + '_files'

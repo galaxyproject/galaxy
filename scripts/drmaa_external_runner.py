@@ -84,7 +84,8 @@ def validate_paramters():
 
 def set_user(uid, assign_all_groups):
     try:
-        # Get user's default group and set it to current process to make sure file permissions are inherited correctly
+        # Get user's default group and set it to current process to make sure
+        # file permissions are inherited correctly
         # Solves issue with permission denied for JSON files
         gid = pwd.getpwuid(uid).pw_gid
         import grp

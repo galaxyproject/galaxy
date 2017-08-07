@@ -17,6 +17,7 @@ database/files
 database/jobs_directory
 database/job_working_directory
 database/pbs
+database/test_errors
 database/tmp
 database/*.sqlite
 database/openid_consumer_cache
@@ -93,7 +94,7 @@ tool-data/genome/*
 tool-data/*.sample
 tool-data/testtoolshed.g2.bx.psu.edu/
 tool-data/toolshed.g2.bx.psu.edu/
-tool-data/**/*.fa 
+tool-data/**/*.fa
 
 # Test output
 test-data-cache
@@ -121,7 +122,7 @@ tool-data/shared/jars/
 sprite-*.less
 
 # JS, Local node_modules, and bower_components directories
-static/scripts/bundled
+static/scripts/bundled/[0-9]*
 node_modules
 bower_components
 
@@ -135,4 +136,4 @@ doc/source/dev/schema.rst
 .DS_Store
 *.rej
 *~
-.idea/
+.idea

@@ -59,14 +59,16 @@ class HistorySharingTestCase(SeleniumTestCase):
         user1_email = self._get_random_email()
         self.register(user1_email)
         self.share_history_with_user("invalid_user@test.com")
-        self.assert_error_message(contains='is not a valid Galaxy user')
+        with self.main_panel():
+            self.assert_error_message(contains='is not a valid Galaxy user')
 
     @selenium_test
     def test_sharing_with_self(self):
         user1_email = self._get_random_email()
         self.register(user1_email)
         self.share_history_with_user(user1_email)
-        self.assert_error_message(contains='You cannot send histories to yourself')
+        with self.main_panel():
+            self.assert_error_message(contains='You cannot send histories to yourself')
 
     def setup_two_users_with_one_shared_history(self, share_by_id=False):
         user1_email = self._get_random_email()
@@ -88,7 +90,8 @@ class HistorySharingTestCase(SeleniumTestCase):
             self.share_history_with_user(user2_email)
         else:
             self.share_history_with_user(user2_id)
-        self.assert_no_error_message()
+        with self.main_panel():
+            self.assert_no_error_message()
         self.logout_if_needed()
 
         return user1_email, user2_email, history_id
@@ -106,7 +109,11 @@ class HistorySharingTestCase(SeleniumTestCase):
 
     def share_history_with_user(self, email):
         self.navigate_to_history_user_share_page()
-        form_selector = "form#share"
-        form = self.wait_for_selector(form_selector)
-        self.select2_set_value(form_selector, email)
-        self.click_submit(form)
+        with self.main_panel():
+            form_selector = "form#share"
+            form = self.wait_for_selector(form_selector)
+            # If expose_user_info is on would fill form out with this
+            # line, in future dispatch on actual select2 div present or not.
+            # self.select2_set_value(form_selector, email)
+            self.fill(form, {"email": email})
+            self.click_submit(form)

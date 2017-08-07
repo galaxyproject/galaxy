@@ -62,14 +62,8 @@ return {
             }
             for (i in options.global_actions) {
                 var action = options.global_actions[i];
-                var label_cls = '';
-                if (action.inbound) {
-                    label_cls = 'use-inbound'
-                } else {
-                    label_cls = 'use-outbound'
-                }
                 tmpl +=         '<li>' +
-                                    '<a class="action-button ' + label_cls + '" href="' + action.url_args + '" onclick="return false;">' + action.label + '</a>' +
+                                    '<a class="action-button use-target" target="' + action.target + '" href="' + action.url_args + '" onclick="return false;" >' + action.label + '</a>' +
                                 '</li>';
             }
             if (show_popup) {
@@ -179,7 +173,7 @@ return {
                     // load attributes
                     var link = column_settings.link;
                     var value = column_settings.value;
-                    var inbound = column_settings.inbound;
+                    var target = column_settings.target;
                         
                     // unescape value
                     if (jQuery.type( value ) === 'string') {
@@ -206,14 +200,7 @@ return {
                         if (options.operations.length != 0) {
                             tmpl += '<div id="' + id + '" class="' + cls + '" style="float: left;">';
                         }
-
-                        var label_class = '';
-                        if (inbound) {
-                            label_class = 'use-inbound';
-                        } else {
-                            label_class = 'use-outbound';
-                        }
-                        tmpl += '<a class="menubutton-label ' + label_class + '" href="' + link + '" onclick="return false;">' + value + '</a>';
+                        tmpl += '<a class="menubutton-label use-target" target="' + target + '" href="' + link + '" onclick="return false;">' + value + '</a>';
                         if (options.operations.length != 0) {
                             tmpl += '</div>';
                         }
@@ -228,7 +215,7 @@ return {
         }
         return tmpl;
     },
-    
+
     // template
     footer: function(options) {
     
@@ -317,7 +304,7 @@ return {
                         '<input type="hidden" id="operation" name="operation" value="">' +
                         '<td></td>' +
                         '<td colspan="100">' +
-                            'For <span class="grid-selected-count"></span> selected ' + options.get_class_plural + ': ';
+                            'For <span class="grid-selected-count"></span> selected items: ';
             
             // configure buttons for operations
             for (i in options.operations) {

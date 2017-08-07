@@ -11,7 +11,13 @@
 
 <html>
     <head>
-        <title>Galaxy tool preview</title>
+        <title>
+            Galaxy
+            %if app.config.brand:
+            | ${app.config.brand}
+            %endif
+            | Tool Preview
+        </title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         ${h.css( "base" )}
     </head>
@@ -127,7 +133,7 @@
                 <div class="toolFormTitle">${tool.name | h} (version ${tool.version | h})</div>
                 <div class="toolFormBody">
                     <form id="tool_form" name="tool_form" action="" method="get">
-                        <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
+                        <input type="hidden" name="tool_state" value="">
                         ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, "" )}
                     </form>
                 </div>

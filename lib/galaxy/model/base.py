@@ -2,10 +2,17 @@
 Shared model and mapping code between Galaxy and Tool Shed, trying to
 generalize to generic database connections.
 """
+from inspect import (
+    getmembers,
+    isclass
+)
 
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import (
+    scoped_session,
+    sessionmaker
+)
+
 from galaxy.util.bunch import Bunch
-from inspect import getmembers, isclass
 
 
 # TODO: Refactor this to be a proper class, not a bunch.

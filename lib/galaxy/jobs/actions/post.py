@@ -5,7 +5,6 @@ immediate_actions listed below.  Currently only used in workflows.
 import datetime
 import logging
 import socket
-from json import dumps
 
 from markupsafe import escape
 
@@ -111,11 +110,12 @@ class RenameDatasetAction(DefaultJobAction):
             #      "replace" option so you can replace a portion of the name,
             #      support multiple #{name} in one rename action...
 
-            while new_name.find("#{") > -1:
+            start_pos = 0
+            while new_name.find("#{", start_pos) > -1:
                 to_be_replaced = ""
                 #  This assumes a single instance of #{variable} will exist
-                start_pos = new_name.find("#{") + 2
-                end_pos = new_name.find("}")
+                start_pos = new_name.find("#{", start_pos) + 2
+                end_pos = new_name.find("}", start_pos)
                 to_be_replaced = new_name[start_pos:end_pos]
                 input_file_var = to_be_replaced
                 #  Pull out the piped controls and store them for later
@@ -142,6 +142,15 @@ class RenameDatasetAction(DefaultJobAction):
                     if input_assoc.name == input_file_var:
                         replacement = input_assoc.dataset.name
 
+                # Ditto for collections...
+                for input_assoc in job.input_dataset_collections:
+                    if input_assoc.name == input_file_var:
+                        if input_assoc.dataset_collection:
+                            hdca = input_assoc.dataset_collection
+                            replacement = hdca.name
+
+                # In case name was None.
+                replacement = replacement or ''
                 #  Do operations on replacement
                 #  Any control that is not defined will be ignored.
                 #  This should be moved out to a class or module function
@@ -317,24 +326,43 @@ class DeleteIntermediatesAction(DefaultJobAction):
 class TagDatasetAction(DefaultJobAction):
     name = "TagDatasetAction"
     verbose_name = "Add tag to dataset"
+    action = "Add"
+    direction = "to"
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         if action.action_arguments:
-            tags = [t.strip() for t in action.action_arguments.get('tags', '').split(',')]
+            tags = [t.replace('#', 'name:') if t.startswith('#') else t for t in [t.strip() for t in action.action_arguments.get('tags', '').split(',') if t.strip()]]
             if tags:
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
-                        app.tag_handler.set_tags_from_list( job.user, dataset_assoc.dataset, tags)
+                        cls._execute( app, job.user, dataset_assoc.dataset, tags)
             sa_session.flush()
+
+    @classmethod
+    def _execute(cls, app, user, dataset, tags):
+        app.tag_handler.add_tags_from_list(user, dataset, tags)
 
     @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments and pja.action_arguments.get('tags', ''):
-            return "Add tag(s) '%s' to '%s'." % (escape(pja.action_arguments['tags']),
+            return "%s tag(s) '%s' %s '%s'." % ( cls.action,
+                                                 escape(pja.action_arguments['tags']),
+                                                 cls.direction,
                                                  escape(pja.output_name))
         else:
-            return "Tag addition action used without a tag specified.  No tag will be added."
+            return "%s Tag action used without a tag specified.  No tag will be added." % cls.action
+
+
+class RemoveTagDatasetAction(TagDatasetAction):
+    name = "RemoveTagDatasetAction"
+    verbose_name = "Remove tag from dataset"
+    action = "Remove"
+    direction = "from"
+
+    @classmethod
+    def _execute(cls, app, user, dataset, tags):
+        app.tag_handler.remove_tags_from_list(user, dataset, tags)
 
 
 class ActionBox(object):
@@ -346,12 +374,14 @@ class ActionBox(object):
                 "EmailAction": EmailAction,
                 "DeleteIntermediatesAction": DeleteIntermediatesAction,
                 "TagDatasetAction": TagDatasetAction,
+                "RemoveTagDatasetAction": RemoveTagDatasetAction,
                 }
     public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction',
                       'ColumnSetAction', 'EmailAction',
-                      'DeleteIntermediatesAction', 'TagDatasetAction']
+                      'DeleteIntermediatesAction', 'TagDatasetAction',
+                      'RemoveTagDatasetAction']
     immediate_actions = ['ChangeDatatypeAction', 'RenameDatasetAction',
-                         'TagDatasetAction']
+                         'TagDatasetAction', 'RemoveTagDatasetAction']
 
     @classmethod
     def get_short_str(cls, action):
@@ -380,7 +410,7 @@ class ActionBox(object):
             else:
                 # Not pja stuff.
                 pass
-        return dumps(npd)
+        return npd
 
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict=None):

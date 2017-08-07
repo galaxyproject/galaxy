@@ -5,7 +5,6 @@ from __future__ import absolute_import
 
 import abc
 import csv
-import gzip
 import logging
 import os
 import re
@@ -19,7 +18,7 @@ from galaxy import util
 from galaxy.datatypes import data, metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
-from galaxy.util.checkers import is_gzip
+from galaxy.util import compression_utils
 
 from . import dataproviders
 
@@ -81,7 +80,7 @@ class TabularData( data.Text ):
             return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(trans, dataset, to_ext)
+            return self._serve_raw(trans, dataset, to_ext, **kwd)
         elif dataset.metadata.columns > 50:
             # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
@@ -168,7 +167,7 @@ class TabularData( data.Text ):
                 out.append( '</th>' )
             out.append( '</tr>' )
         except Exception as exc:
-            log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
+            log.exception( 'make_html_peek_header failed on HDA %s', dataset.id )
             raise Exception( "Can't create peek header %s" % str( exc ) )
         return "".join( out )
 
@@ -199,7 +198,7 @@ class TabularData( data.Text ):
                             out.append( '<td>%s</td>' % escape( elem ) )
                         out.append( '</tr>' )
         except Exception as exc:
-            log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
+            log.exception( 'make_html_peek_rows failed on HDA %s', dataset.id )
             raise Exception( "Can't create peek rows %s" % str( exc ) )
         return "".join( out )
 
@@ -408,7 +407,7 @@ class Taxonomy( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super(Taxonomy, self).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
 
 @dataproviders.decorators.has_dataproviders
@@ -428,7 +427,7 @@ class Sam( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Sam, self ).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def sniff( self, filename ):
         """
@@ -614,7 +613,7 @@ class Pileup( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Pileup, self ).make_html_table( dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'baseCol': 'Base'} )
+        return self.make_html_table( dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'baseCol': 'Base'} )
 
     def repair_methods( self, dataset ):
         """Return options for removing errors along with a description"""
@@ -691,7 +690,7 @@ class Vcf( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Vcf, self ).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def set_meta( self, dataset, **kwd ):
         super( Vcf, self ).set_meta( dataset, **kwd )
@@ -788,12 +787,7 @@ class Eland( Tabular ):
             - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
-        try:
-            compress = is_gzip(filename)
-            if compress:
-                fh = gzip.GzipFile(filename, 'r')
-            else:
-                fh = open( filename )
+        with compression_utils.get_fileobj(filename, gzip_only=True) as fh:
             count = 0
             while True:
                 line = fh.readline()
@@ -804,59 +798,46 @@ class Eland( Tabular ):
                     line_pieces = line.split('\t')
                     if len(line_pieces) != 22:
                         return False
-                    try:
-                        if long(line_pieces[1]) < 0:
-                            raise Exception('Out of range')
-                        if long(line_pieces[2]) < 0:
-                            raise Exception('Out of range')
-                        if long(line_pieces[3]) < 0:
-                            raise Exception('Out of range')
-                        int(line_pieces[4])
-                        int(line_pieces[5])
-                        # can get a lot more specific
-                    except ValueError:
-                        fh.close()
-                        return False
+                    if long(line_pieces[1]) < 0:
+                        raise Exception('Out of range')
+                    if long(line_pieces[2]) < 0:
+                        raise Exception('Out of range')
+                    if long(line_pieces[3]) < 0:
+                        raise Exception('Out of range')
+                    int(line_pieces[4])
+                    int(line_pieces[5])
+                    # can get a lot more specific
                     count += 1
                     if count == 5:
                         break
             if count > 0:
-                fh.close()
                 return True
-        except:
-            pass
-        fh.close()
         return False
 
     def set_meta( self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd ):
         if dataset.has_data():
-            compress = is_gzip(dataset.file_name)
-            if compress:
-                dataset_fh = gzip.GzipFile(dataset.file_name, 'r')
-            else:
-                dataset_fh = open( dataset.file_name )
-            lanes = {}
-            tiles = {}
-            barcodes = {}
-            reads = {}
-            # Should always read the entire file (until we devise a more clever way to pass metadata on)
-            # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            # If the dataset is larger than optional_metadata, just count comment lines.
-            #     dataset.metadata.data_lines = None
-            # else:
-            # Otherwise, read the whole thing and set num data lines.
-            for i, line in enumerate(dataset_fh):
-                if line:
-                    line_pieces = line.split('\t')
-                    if len(line_pieces) != 22:
-                        raise Exception('%s:%d:Corrupt line!' % (dataset.file_name, i))
-                    lanes[line_pieces[2]] = 1
-                    tiles[line_pieces[3]] = 1
-                    barcodes[line_pieces[6]] = 1
-                    reads[line_pieces[7]] = 1
-                pass
-            dataset.metadata.data_lines = i + 1
-            dataset_fh.close()
+            with compression_utils.get_fileobj(dataset.file_name, gzip_only=True) as dataset_fh:
+                lanes = {}
+                tiles = {}
+                barcodes = {}
+                reads = {}
+                # Should always read the entire file (until we devise a more clever way to pass metadata on)
+                # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                # If the dataset is larger than optional_metadata, just count comment lines.
+                #     dataset.metadata.data_lines = None
+                # else:
+                # Otherwise, read the whole thing and set num data lines.
+                for i, line in enumerate(dataset_fh):
+                    if line:
+                        line_pieces = line.split('\t')
+                        if len(line_pieces) != 22:
+                            raise Exception('%s:%d:Corrupt line!' % (dataset.file_name, i))
+                        lanes[line_pieces[2]] = 1
+                        tiles[line_pieces[3]] = 1
+                        barcodes[line_pieces[6]] = 1
+                        reads[line_pieces[7]] = 1
+                    pass
+                dataset.metadata.data_lines = i + 1
             dataset.metadata.comment_lines = 0
             dataset.metadata.columns = 21
             dataset.metadata.column_types = ['str', 'int', 'int', 'int', 'int', 'int', 'str', 'int', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str']
@@ -975,31 +956,37 @@ class BaseCSV( TabularData ):
             return False
 
     def set_meta( self, dataset, **kwd ):
-        with open(dataset.file_name, 'r') as csvfile:
-            # Parse file with the correct dialect
-            reader = csv.reader(csvfile, self.dialect)
-            data_row = None
-            header_row = None
-            try:
-                header_row = next(reader)
-                data_row = next(reader)
-                for row in reader:
+        column_types = []
+        header_row = []
+        data_row = []
+        data_lines = 0
+        if dataset.has_data():
+            with open(dataset.file_name, 'r') as csvfile:
+                # Parse file with the correct dialect
+                reader = csv.reader(csvfile, self.dialect)
+                try:
+                    header_row = next(reader)
+                    data_row = next(reader)
+                    for row in reader:
+                        pass
+                except StopIteration:
                     pass
-            except csv.Error as e:
-                raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
+                except csv.Error as e:
+                    raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
+                else:
+                    data_lines = reader.line_num - 1
 
-            # Guess column types
-            column_types = []
-            for cell in data_row:
-                column_types.append(self.guess_type(cell))
+        # Guess column types
+        for cell in data_row:
+            column_types.append(self.guess_type(cell))
 
-            # Set metadata
-            dataset.metadata.data_lines = reader.line_num - 1
-            dataset.metadata.comment_lines = 1
-            dataset.metadata.column_types = column_types
-            dataset.metadata.columns = max( len( header_row ), len( data_row ) )
-            dataset.metadata.column_names = header_row
-            dataset.metadata.delimiter = reader.dialect.delimiter
+        # Set metadata
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.comment_lines = int(bool(header_row))
+        dataset.metadata.column_types = column_types
+        dataset.metadata.columns = max( len( header_row ), len( data_row ) )
+        dataset.metadata.column_names = header_row
+        dataset.metadata.delimiter = self.dialect.delimiter
 
 
 @dataproviders.decorators.has_dataproviders

@@ -11,6 +11,7 @@ from sqlalchemy import and_, desc, false, or_, true
 from galaxy import managers, model, util, web
 from galaxy.datatypes.interval import Bed
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.data_providers.genome import RawBedDataProvider
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
@@ -21,7 +22,6 @@ from galaxy.web import error
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import grids, time_ago
 
-from .library import LibraryListGrid
 import os
 import yaml
 
@@ -31,121 +31,40 @@ log = logging.getLogger( __name__ )
 #
 # -- Grids --
 #
-
-class NameColumn( grids.TextColumn ):
-    def get_value( self, trans, grid, history ):
-        return escape(history.get_display_name())
-
-    def get_link( self, trans, grid, history ):
-        # Provide link to list all datasets in history that have a given dbkey.
-        # Right now, only dbkey needs to be passed through, but pass through
-        # all for now since it's cleaner.
-        d = dict( action=grid.datasets_action, show_item_checkboxes=True )
-        d[ grid.datasets_param ] = trans.security.encode_id( history.id )
-        for filter, value in grid.cur_filter_dict.iteritems():
-            d[ "f-" + filter ] = value
-        return d
-
-
-class DbKeyPlaceholderColumn( grids.GridColumn ):
-    """ Placeholder to keep track of dbkey. """
-    def filter( self, trans, user, query, dbkey ):
-        return query
-
-
-class HistorySelectionGrid( grids.Grid ):
-    """
-    Grid enables user to select a history, which is then used to display
-    datasets from the history.
-    """
-    title = "Add Track: Select History"
-    model_class = model.History
-    template = '/tracks/history_select_grid.mako'
-    default_sort_key = "-update_time"
-    datasets_action = 'list_history_datasets'
-    datasets_param = "f-history"
-    columns = [
-        NameColumn( "History Name", key="name", filterable="standard", inbound=True ),
-        grids.GridColumn( "Last Updated", key="update_time", format=time_ago, visible=False ),
-        DbKeyPlaceholderColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
-    ]
-    num_rows_per_page = 10
-    use_async = True
-    use_paging = True
-
-    def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter_by( user=trans.user, purged=False, deleted=False, importing=False )
-
-
-class LibrarySelectionGrid( LibraryListGrid ):
-    """
-    Grid enables user to select a Library, which is then used to display
-    datasets from the history.
-    """
-    title = "Add Track: Select Library"
-    template = '/tracks/history_select_grid.mako'
-    model_class = model.Library
-    datasets_action = 'list_library_datasets'
-    datasets_param = "f-library"
-    columns = [
-        NameColumn( "Library Name", key="name", filterable="standard", inbound=True  )
-    ]
-    num_rows_per_page = 10
-    use_async = True
-    use_paging = True
-
-
-class DbKeyColumn( grids.GridColumn ):
-    """ Column for filtering by and displaying dataset dbkey. """
-    def filter( self, trans, user, query, dbkey ):
-        """ Filter by dbkey. """
-        # Use raw SQL b/c metadata is a BLOB.
-        dbkey_user, dbkey = decode_dbkey( dbkey )
-        dbkey = dbkey.replace("'", "\\'")
-        return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
-
-        # Use this query when datasets with matching dbkey *or* no dbkey can be added to the visualization.
-        # return query.filter( or_( \
-        #                        or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ), \
-        #                        or_( "metadata like '%%\"dbkey\": [\"?\"]%%'", "metadata like '%%\"dbkey\": \"?\"%%'" ) \
-        #                        )
-        #                    )
-
-
-class HistoryColumn( grids.GridColumn ):
-    """ Column for filtering by history id. """
-    def filter( self, trans, user, query, history_id ):
-        return query.filter( model.History.id == trans.security.decode_id(history_id) )
-
-
 class HistoryDatasetsSelectionGrid( grids.Grid ):
-    # Grid definition.
+
+    class DbKeyColumn( grids.GridColumn ):
+        def filter( self, trans, user, query, dbkey ):
+            """ Filter by dbkey through a raw SQL b/c metadata is a BLOB. """
+            dbkey_user, dbkey = decode_dbkey( dbkey )
+            dbkey = dbkey.replace("'", "\\'")
+            return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
+
+    class HistoryColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, hda):
+            return escape(hda.history.name)
+
+        def sort( self, trans, query, ascending, column_name=None ):
+            """Sort query using this column."""
+            return grids.GridColumn.sort( self, trans, query, ascending, column_name="history_id" )
+
     available_tracks = None
     title = "Add Datasets"
-    template = "tracks/history_datasets_select_grid.mako"
     model_class = model.HistoryDatasetAssociation
     default_filter = { "deleted": "False", "shared": "All" }
     default_sort_key = "-hid"
-    use_async = True
-    use_paging = False
     columns = [
         grids.GridColumn( "Id", key="hid" ),
         grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation ),
-        grids.TextColumn( "Filetype", key="extension", model_class=model.HistoryDatasetAssociation ),
-        HistoryColumn( "History", key="history", visible=False ),
-        DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=True, sortable=False )
+        grids.TextColumn( "Type", key="extension", model_class=model.HistoryDatasetAssociation ),
+        grids.TextColumn( "history_id", key="history_id", model_class=model.HistoryDatasetAssociation, visible=False ),
+        HistoryColumn( "History", key="history", visible=True ),
+        DbKeyColumn( "Build", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=True, sortable=False )
     ]
     columns.append(
         grids.MulticolFilterColumn( "Search name and filetype", cols_to_filter=[ columns[1], columns[2] ],
                                     key="free-text-search", visible=False, filterable="standard" )
     )
-
-    def get_current_item( self, trans, **kwargs ):
-        """
-        Current item for grid is the history being queried. This is a bit
-        of hack since current_item typically means the current item in the grid.
-        """
-        return trans.sa_session.query( model.History ).get( trans.security.decode_id( kwargs[ 'f-history' ] ) )
 
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).join( model.History.table ).join( model.Dataset.table )
@@ -159,10 +78,36 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
                     .filter( model.HistoryDatasetAssociation.visible == true() )
 
 
+class LibraryDatasetsSelectionGrid( grids.Grid ):
+    available_tracks = None
+    title = "Add Datasets"
+    model_class = model.LibraryDatasetDatasetAssociation
+    default_filter = { "deleted": "False" }
+    default_sort_key = "-id"
+    columns = [
+        grids.GridColumn( "Id", key="id" ),
+        grids.TextColumn( "Name", key="name", model_class=model.LibraryDatasetDatasetAssociation ),
+        grids.TextColumn( "Type", key="extension", model_class=model.LibraryDatasetDatasetAssociation ),
+    ]
+    columns.append(
+        grids.MulticolFilterColumn( "Search name and filetype", cols_to_filter=[ columns[1], columns[2] ],
+                                    key="free-text-search", visible=False, filterable="standard" )
+    )
+
+    def build_initial_query( self, trans, **kwargs ):
+        return trans.sa_session.query( self.model_class ).join( model.Dataset.table )
+
+    def apply_query_filter( self, trans, query, **kwargs ):
+        if self.available_tracks is None:
+            self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
+        return query.filter( model.LibraryDatasetDatasetAssociation.extension.in_(self.available_tracks) ) \
+                    .filter( model.Dataset.state == model.Dataset.states.OK ) \
+                    .filter( model.LibraryDatasetDatasetAssociation.deleted == false() ) \
+                    .filter( model.LibraryDatasetDatasetAssociation.visible == true() )
+
+
 class TracksterSelectionGrid( grids.Grid ):
-    # Grid definition.
     title = "Insert into visualization"
-    template = "/tracks/add_to_viz.mako"
     model_class = model.Visualization
     default_sort_key = "-update_time"
     use_async = True
@@ -170,15 +115,17 @@ class TracksterSelectionGrid( grids.Grid ):
     show_item_checkboxes = True
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Visualization, filterable="standard" ),
-        grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization ),
+        grids.TextColumn( "Build", key="dbkey", model_class=model.Visualization ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
 
     def build_initial_query( self, trans, **kwargs ):
-        return trans.sa_session.query( self.model_class ).filter( self.model_class.deleted == false() )
+        return trans.sa_session.query( self.model_class )
 
     def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter( self.model_class.user_id == trans.user.id )
+        return query.filter( self.model_class.user_id == trans.user.id ) \
+                    .filter( self.model_class.deleted == false() ) \
+                    .filter( self.model_class.type == "trackster" )
 
 
 class VisualizationListGrid( grids.Grid ):
@@ -211,7 +158,7 @@ class VisualizationListGrid( grids.Grid ):
     columns = [
         grids.TextColumn( "Title", key="title", attach_popup=True, link=get_url_args ),
         grids.TextColumn( "Type", method='get_display_name' ),
-        grids.TextColumn( "Dbkey", key="dbkey" ),
+        grids.TextColumn( "Build", key="dbkey" ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
@@ -224,14 +171,14 @@ class VisualizationListGrid( grids.Grid ):
             key="free-text-search", visible=False, filterable="standard" )
     )
     global_actions = [
-        grids.GridAction( "Create new visualization", dict( action='create' ), inbound=True )
+        grids.GridAction( "Create new visualization", dict( action='create' ), target="inbound" )
     ]
     operations = [
         grids.GridOperation( "Open", allow_multiple=False, url_args=get_url_args ),
         grids.GridOperation( "Open in Circster", allow_multiple=False, condition=( lambda item: item.type == 'trackster' ), url_args=dict( action='circster' ) ),
-        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit'), inbound=True),
+        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit'), target="inbound" ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted )),
-        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), url_args=dict( action='sharing' ) ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), confirm="Are you sure you want to delete this visualization?" ),
     ]
 
@@ -272,11 +219,10 @@ class VisualizationAllPublishedGrid( grids.Grid ):
 
 class VisualizationController( BaseUIController, SharableMixin, UsesVisualizationMixin,
                                UsesAnnotations, UsesItemRatings ):
-    _user_list_grid = VisualizationListGrid()
+    _visualization_list_grid = VisualizationListGrid()
     _published_list_grid = VisualizationAllPublishedGrid()
-    _libraries_grid = LibrarySelectionGrid()
-    _histories_grid = HistorySelectionGrid()
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
+    _library_datasets_grid = LibraryDatasetsSelectionGrid()
     _tracks_grid = TracksterSelectionGrid()
 
     def __init__( self, app ):
@@ -288,78 +234,47 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
     #
 
     @web.expose
+    @web.json
     @web.require_login( "see all available libraries" )
     def list_libraries( self, trans, **kwargs ):
         """List all libraries that can be used for selecting datasets."""
-
-        # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self._libraries_grid( trans, **kwargs )
 
     @web.expose
-    @web.require_login( "see a library's datasets that can added to this visualization" )
-    def list_library_datasets( self, trans, **kwargs ):
-        """List a library's datasets that can be added to a visualization."""
-
-        library = trans.sa_session.query( trans.app.model.Library ).get( self.decode_id( kwargs.get('f-library') ) )
-        return trans.fill_template( '/tracks/library_datasets_select_grid.mako',
-                                    cntrller="library",
-                                    use_panels=False,
-                                    library=library,
-                                    created_ldda_ids='',
-                                    hidden_folder_ids='',
-                                    show_deleted=False,
-                                    comptypes=[],
-                                    current_user_roles=trans.get_current_user_roles(),
-                                    message='',
-                                    status="done" )
-
-    @web.expose
-    @web.require_login( "see all available histories" )
-    def list_histories( self, trans, **kwargs ):
-        """List all histories that can be used for selecting datasets."""
-
-        # Render the list view
-        return self._histories_grid( trans, **kwargs )
-
-    @web.expose
-    @web.require_login( "see current history's datasets that can added to this visualization" )
-    def list_current_history_datasets( self, trans, **kwargs ):
-        """ List a history's datasets that can be added to a visualization. """
-
-        kwargs[ 'f-history' ] = trans.security.encode_id( trans.get_history().id )
-        kwargs[ 'show_item_checkboxes' ] = 'True'
-        return self.list_history_datasets( trans, **kwargs )
-
-    @web.expose
+    @web.json
     @web.require_login( "see a history's datasets that can added to this visualization" )
     def list_history_datasets( self, trans, **kwargs ):
         """List a history's datasets that can be added to a visualization."""
-
-        # Render the list view
+        kwargs[ 'show_item_checkboxes' ] = 'True'
+        kwargs[ 'dict_format' ] = True
         return self._history_datasets_grid( trans, **kwargs )
 
     @web.expose
-    @web.require_login( "see all available datasets" )
-    def list_datasets( self, trans, **kwargs ):
-        """List all datasets that can be added as tracks"""
-        # Render the list view
-        return self._data_grid( trans, **kwargs )
+    @web.json
+    @web.require_login( "see a history's datasets that can added to this visualization" )
+    def list_library_datasets( self, trans, **kwargs ):
+        """List a library's datasets that can be added to a visualization."""
+        kwargs[ 'show_item_checkboxes' ] = 'True'
+        kwargs[ 'dict_format' ] = True
+        return self._library_datasets_grid( trans, **kwargs )
 
     @web.expose
+    @web.json
     def list_tracks( self, trans, **kwargs ):
+        kwargs[ 'dict_format' ] = True
         return self._tracks_grid( trans, **kwargs )
 
     @web.expose
+    @web.json
     def list_published( self, trans, *args, **kwargs ):
-        kwargs[ 'embedded' ] = True
+        kwargs[ 'dict_format' ] = True
         grid = self._published_list_grid( trans, **kwargs )
-        if 'async' in kwargs:
-            return grid
-
-        # Render grid wrapped in panels
-        return trans.fill_template( "visualization/list_published.mako", embedded_grid=grid )
+        grid[ 'shared_by_others' ] = self._get_shared( trans )
+        return grid
 
     @web.expose
+    @web.json
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def list( self, trans, *args, **kwargs ):
 
@@ -372,13 +287,19 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                 item = session.query( model.Visualization ).get( self.decode_id( id ) )
                 if operation == "delete":
                     item.deleted = True
-                if operation == "share or publish":
-                    return self.sharing( trans, **kwargs )
                 if operation == "copy":
                     self.copy( trans, **kwargs )
             session.flush()
 
-        # Build list of visualizations shared with user.
+        # Build grid
+        kwargs[ 'embedded' ] = True
+        kwargs[ 'dict_format' ] = True
+        grid = self._visualization_list_grid( trans, *args, **kwargs )
+        grid[ 'shared_by_others' ] = self._get_shared( trans )
+        return grid
+
+    def _get_shared( self, trans ):
+        """Identify shared visualizations"""
         shared_by_others = trans.sa_session \
             .query( model.VisualizationUserShareAssociation ) \
             .filter_by( user=trans.get_user() ) \
@@ -386,10 +307,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             .filter( model.Visualization.deleted == false() ) \
             .order_by( desc( model.Visualization.update_time ) ) \
             .all()
-
-        kwargs[ 'embedded' ] = True
-        grid = self._user_list_grid( trans, *args, **kwargs )
-        return trans.fill_template( "visualization/list.mako", embedded_grid=grid, shared_by_others=shared_by_others )
+        return [ {  'username' : v.visualization.user.username,
+                    'slug'     : v.visualization.slug,
+                    'title'    : v.visualization.title } for v in shared_by_others ]
 
     #
     # -- Functions for operating on visualizations. --
@@ -521,7 +441,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
 
         session.flush()
 
-        return trans.fill_template( "/sharing_base.mako", item=visualization, use_panels=True )
+        return trans.fill_template( "/sharing_base.mako", item=visualization, controller_list='visualizations', use_panels=True )
 
     @web.expose
     @web.require_login( "share Galaxy visualizations" )
@@ -651,7 +571,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                 visualization_slug_err = rval[ 'slug_err' ]
             else:
                 # Successfully created viz.
-                return trans.response.send_redirect( web.url_for(controller='visualization', action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='visualizations', action='list' ) )
 
         viz_type_options = [ ( t, t ) for t in self.viz_types ]
         return trans.show_form(
@@ -712,7 +632,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                     self.add_item_annotation( trans.sa_session, trans.get_user(), visualization, visualization_annotation )
                 session.flush()
                 # Redirect to visualization list.
-                return trans.response.send_redirect( web.url_for(controller='visualization', action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='visualizations', action='list' ) )
         else:
             visualization_title = visualization.title
             # Create slug if it's not already set.
@@ -766,13 +686,13 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         """
         Log, raise if debugging; log and show html message if not.
         """
-        log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
+        log.exception( 'error rendering visualization (%s)', visualization_name )
         if trans.debug:
             raise
         return trans.show_error_message(
             "There was an error rendering the visualization. " +
             "Contact your Galaxy administrator if the problem persists." +
-            "<br/>Details: " + str( exception ), use_panels=False )
+            "<br/>Details: " + unicodify( exception ), use_panels=False )
 
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )

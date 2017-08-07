@@ -1,12 +1,12 @@
 """
 Dataproviders that iterate over lines from their sources.
 """
-
 import collections
+import logging
 import re
+
 from . import base
 
-import logging
 log = logging.getLogger( __name__ )
 
 _TODO = """

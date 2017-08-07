@@ -221,6 +221,13 @@
                 }
             }
         }
+        span.nametags {
+            span.label {
+                display: inline-block;
+                margin-right: 2px;
+                text-decoration: none;
+            }
+        }
     }
 }
 
@@ -383,82 +390,35 @@
 
 
 // ---------------------------------------------------------------------------- analyze data page - right panel
-.history-right-panel {
-    .three-rows-header-footer(@panel_header_height, @panel_footer_height);
-
-    > .header,
-    > .footer {
-        .unselectable();
-        border: solid @layout-border-color 0px;
-        background: @navbar-default-bg;
-        color: #555;
-        a {
-            color: #555;
-            &:hover {
-                color: maroon;
-            }
-        }
-    }
-
-    > .header {
-        text-shadow: rgba(255,255,255,.8) 0 1px 0;
-        border-bottom-width: 1px;
-        padding: 8px 10px 0;
-        font-weight: bold;
-        .buttons {
-            float: right;
-            & > * {
-                margin: 0;
-                padding: 0;
-                &:not(:first-child) {
-                    margin-left: 8px;
-                }
-                .fa {
-                    font-size: 1.4em;
-                }
-            }
-        }
-    }
-
-    > .middle {
-        overflow: auto;
-    }
-
-    > .footer {
-        border-top-width: 1px;
-        max-height: 25px;
-        // drag icon used as handle for changing width of panel
-        .drag {
-            height: @panel_footer_height;
-            width: @panel_footer_height - 5;
-            background: url(../images/visualization/draggable_horizontal.png) 50% 50% no-repeat;
-            cursor: ew-resize;
-        }
-    }
-}
-
-// yay! specificity wars!
 #right.history-right-panel {
     background-color: @panel-bg-color;
-}
-
-// ---------------------------------------------------------------------------- panel header buttons
-.history-panel-header {
-    .panel-header-button {
-        display : inline-block;
-        height  : @icon-btn-size;
-        width   : @icon-btn-size;
-        text-align  : center;
-        line-height : @icon-btn-size - 3;
-        font-size   : 1.2em;
-
-        padding: 0px;
-        &:not(:last-child) {
-            margin-right: 2px;
+    .unified-panel-header {
+        .unified-panel-header-inner {
+            .panel-header-buttons {
+                .panel-header-button {
+                    display : inline-block;
+                    height  : @icon-btn-size;
+                    width   : @icon-btn-size;
+                    text-align  : center;
+                    line-height : @icon-btn-size - 3;
+                    font-size   : 1.2em;
+                    padding: 0px;
+                    &:not(:last-child) {
+                        margin-right: 2px;
+                    }
+                }
+            }
+        }
+    }
+    .unified-panel-body {
+        display: -webkit-flex;
+        .middle {
+            overflow: auto;
+            width: 100%;
+            display: -webkit-flex !important;
         }
     }
 }
-
 
 // ---------------------------------------------------------------------------- multi-view / multi-panel
 .multi-panel-history {

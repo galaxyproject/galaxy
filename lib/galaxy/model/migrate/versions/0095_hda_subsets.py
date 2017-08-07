@@ -27,9 +27,8 @@ def upgrade(migrate_engine):
     # Create history_dataset_association_subset.
     try:
         HistoryDatasetAssociationSubset_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating history_dataset_association_subset table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating history_dataset_association_subset table failed.")
 
     # Manually create indexes because they are too long for MySQL databases.
     i1 = Index( "ix_hda_id", HistoryDatasetAssociationSubset_table.c.history_dataset_association_id )
@@ -37,9 +36,8 @@ def upgrade(migrate_engine):
     try:
         i1.create()
         i2.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Adding indices to table 'history_dataset_association_subset' table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding indices to table 'history_dataset_association_subset' table failed.")
 
 
 def downgrade(migrate_engine):
@@ -49,6 +47,5 @@ def downgrade(migrate_engine):
     # Drop history_dataset_association_subset table.
     try:
         HistoryDatasetAssociationSubset_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping history_dataset_association_subset table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping history_dataset_association_subset table failed.")

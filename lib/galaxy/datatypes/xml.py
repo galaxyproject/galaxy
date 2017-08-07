@@ -1,10 +1,13 @@
 """
 XML format classes
 """
-import re
-import data
 import logging
-import dataproviders
+import re
+
+from . import (
+    data,
+    dataproviders
+)
 
 log = logging.getLogger(__name__)
 

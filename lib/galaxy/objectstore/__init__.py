@@ -736,6 +736,9 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     elif store == 'azure_blob':
         from .azure_blob import AzureBlobObjectStore
         return AzureBlobObjectStore(config=config, config_xml=config_xml)
+    elif store == 'pithos':
+        from .pithos import PithosObjectStore
+        return PithosObjectStore(config=config, config_xml=config_xml)
     # Disable the Pulsar object store for now until it receives some attention
     # elif store == 'pulsar':
     #    from .pulsar import PulsarObjectStore

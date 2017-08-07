@@ -2,9 +2,8 @@
 Code to support database helper scripts (create_db.py, manage_db.py, etc...).
 """
 import logging
-import os.path
 
-from galaxy.util.properties import load_app_properties
+from galaxy.util.properties import find_config_file, load_app_properties
 
 
 log = logging.getLogger( __name__ )
@@ -40,25 +39,21 @@ DATABASE = {
 }
 
 
-def read_config_file_arg( argv, default, old_default ):
+def read_config_file_arg( argv, default, old_default, cwd=None ):
+    config_file = None
     if '-c' in argv:
         pos = argv.index( '-c' )
         argv.pop(pos)
         config_file = argv.pop( pos )
-    else:
-        if not os.path.exists( default ) and os.path.exists( old_default ):
-            config_file = old_default
-        elif os.path.exists( default ):
-            config_file = default
-        else:
-            config_file = default + ".sample"
-    return config_file
+
+    return find_config_file( default, old_default, config_file, cwd=cwd )
 
 
 def get_config( argv, cwd=None ):
     """
     Read sys.argv and parse out repository of migrations and database url.
 
+    >>> import os
     >>> from ConfigParser import SafeConfigParser
     >>> from tempfile import mkdtemp
     >>> config_dir = mkdtemp()
@@ -89,16 +84,11 @@ def get_config( argv, cwd=None ):
 
     default = database_defaults.get( 'config_file', DEFAULT_CONFIG_FILE )
     old_default = database_defaults.get( 'old_config_file' )
-    if cwd is not None:
-        default = os.path.join( cwd, default )
-        old_default = os.path.join( cwd, old_default )
-    config_file = read_config_file_arg( argv, default, old_default )
+    config_file = read_config_file_arg( argv, default, old_default, cwd=cwd )
     repo = database_defaults[ 'repo' ]
     config_prefix = database_defaults.get( 'config_prefix', DEFAULT_CONFIG_PREFIX )
     config_override = database_defaults.get( 'config_override', 'GALAXY_CONFIG_' )
     default_sqlite_file = database_defaults[ 'default_sqlite_file' ]
-    if cwd:
-        config_file = os.path.join( cwd, config_file )
 
     properties = load_app_properties( ini_file=config_file, config_prefix=config_override )
 

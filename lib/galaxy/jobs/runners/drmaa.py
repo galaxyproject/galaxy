@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import json
 import logging
 import os
+import shlex
 import string
 import subprocess
 import time
@@ -315,8 +316,9 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             if kill_script is None:
                 self.ds.kill( ext_id )
             else:
-                # FIXME: hardcoded path
-                subprocess.Popen( [ '/usr/bin/sudo', '-E', kill_script, str( ext_id ), str( self.userid ) ], shell=False )
+                command = shlex.split( kill_script )
+                command.extend( [ str( ext_id ), str( self.userid ) ])
+                subprocess.Popen( command, shell=False )
             log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.get_id(), ext_id ) )
         except drmaa.InvalidJobException:
             log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.get_id(), ext_id ) )
@@ -357,15 +359,10 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
     def external_runjob(self, external_runjob_script, jobtemplate_filename, username):
         """ runs an external script the will QSUB a new job.
-        The external script will be run with sudo, and will setuid() to the specified user.
+        The external script needs to be run with sudo, and will setuid() to the specified user.
         Effectively, will QSUB as a different user (then the one used by Galaxy).
         """
-        script_parts = external_runjob_script.split()
-        script = script_parts[0]
-        command = [ '/usr/bin/sudo', '-E', script]
-        for script_argument in script_parts[1:]:
-            command.append(script_argument)
-
+        command = shlex.split( external_runjob_script )
         command.extend( [ str(username), jobtemplate_filename ] )
         log.info("Running command %s" % command)
         p = subprocess.Popen(command,
@@ -394,7 +391,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             job_name += '_%s' % job_wrapper.tool.old_id
         if external_runjob_script is None:
             job_name += '_%s' % job_wrapper.user
-        job_name = ''.join( x if x in ( string.letters + string.digits + '_' ) else '_' for x in job_name )
+        job_name = ''.join( x if x in ( string.ascii_letters + string.digits + '_' ) else '_' for x in job_name )
         if self.restrict_job_name_length:
             job_name = job_name[:self.restrict_job_name_length]
         return job_name

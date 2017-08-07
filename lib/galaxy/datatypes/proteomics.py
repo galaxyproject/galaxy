@@ -61,12 +61,12 @@ class PepXmlReport(Tabular):
     file_ext = "pepxml.tsv"
 
     def __init__(self, **kwd):
-        Tabular.__init__(self, **kwd)
+        super(PepXmlReport, self).__init__(**kwd)
         self.column_names = ['Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan', 'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probabaility']
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
-        return Tabular.make_html_table(self, dataset, column_names=self.column_names)
+        return self.make_html_table(dataset, column_names=self.column_names)
 
 
 class ProtXmlReport(Tabular):
@@ -76,7 +76,7 @@ class ProtXmlReport(Tabular):
     comment_lines = 1
 
     def __init__(self, **kwd):
-        Tabular.__init__(self, **kwd)
+        super(ProtXmlReport, self).__init__(**kwd)
         self.column_names = [
             "Entry Number", "Group Probability",
             "Protein", "Protein Link", "Protein Probability",
@@ -91,7 +91,7 @@ class ProtXmlReport(Tabular):
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
-        return Tabular.make_html_table(self, dataset, column_names=self.column_names)
+        return self.make_html_table(dataset, column_names=self.column_names)
 
 
 class ProteomicsXml(GenericXml):
@@ -150,6 +150,14 @@ class MzXML(ProteomicsXml):
     file_ext = "mzxml"
     blurb = "mzXML Mass Spectrometry data"
     root = "mzXML"
+
+
+class MzData(ProteomicsXml):
+    """mzData data"""
+    edam_format = "format_3245"
+    file_ext = "mzdata"
+    blurb = "mzData Mass Spectrometry data"
+    root = "mzData"
 
 
 class MzIdentML(ProteomicsXml):
@@ -417,3 +425,42 @@ class XHunterAslFormat(Binary):
 class Sf3(Binary):
     """Class describing a Scaffold SF3 files"""
     file_ext = "sf3"
+
+
+class ImzML(Binary):
+    """
+        Class for imzML files.
+        http://www.imzml.org
+    """
+    edam_format = "format_3682"
+    file_ext = 'imzml'
+    allow_datatype_change = False
+    composite_type = 'auto_primary_file'
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+
+        """The metadata"""
+        self.add_composite_file(
+            'imzml',
+            description='The imzML metadata component.',
+            is_binary=False)
+
+        """The mass spectral data"""
+        self.add_composite_file(
+            'ibd',
+            description='The mass spectral data component.',
+            is_binary=True)
+
+    def generate_primary_file(self, dataset=None):
+        rval = ['<html><head><title>imzML Composite Dataset </title></head><p/>']
+        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
+            fn = composite_name
+            opt_text = ''
+            if composite_file.get('description'):
+                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+            else:
+                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+        rval.append('</ul></div></html>')
+        return "\n".join(rval)

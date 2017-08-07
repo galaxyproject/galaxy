@@ -1,10 +1,10 @@
 """
 This module manages loading of Galaxy webhooks.
 """
-
-import os
-import yaml
 import logging
+import os
+
+import yaml
 
 from galaxy.util import config_directories_from_setting
 
@@ -34,16 +34,15 @@ class Webhook(object):
 
 
 class WebhooksRegistry(object):
-    def __init__(self, webhooks_directories):
+    def __init__(self, webhooks_dirs):
         self.webhooks = []
         self.webhooks_directories = []
 
-        for webhook_dir in config_directories_from_setting(
-                webhooks_directories):
+        for webhook_dir in config_directories_from_setting(webhooks_dirs):
             for plugin_dir in os.listdir(webhook_dir):
-                self.webhooks_directories.append(
-                    os.path.join(webhook_dir, plugin_dir)
-                )
+                path = os.path.join(webhook_dir, plugin_dir)
+                if os.path.isdir(path):
+                    self.webhooks_directories.append(path)
 
         self.load_webhooks()
 

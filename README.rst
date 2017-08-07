@@ -1,4 +1,4 @@
-.. figure:: https://wiki.galaxyproject.org/Images/GalaxyLogo?action=AttachFile&do=get&target=galaxy_project_logo.jpg
+.. figure:: https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo.jpg
    :alt: Galaxy Logo
 
 The latest information about Galaxy is available via `https://galaxyproject.org/ <https://galaxyproject.org/>`__
@@ -9,9 +9,13 @@ The latest information about Galaxy is available via `https://galaxyproject.org/
 
 .. image:: https://img.shields.io/badge/chat-irc.freenode.net%23galaxyproject-blue.svg
     :target: https://webchat.freenode.net/?channels=galaxyproject
-    :alt: Chat with us
+    :alt: Chat on irc
+    
+.. image:: https://img.shields.io/badge/chat-gitter-blue.svg
+    :target: https://gitter.im/galaxyproject/Lobby
+    :alt: Chat on gitter
 
-.. image:: https://img.shields.io/badge/docs-release-green.svg
+.. image:: https://img.shields.io/badge/release-documentation-blue.svg
     :target: https://docs.galaxyproject.org/en/master/
     :alt: Release Documentation
 
@@ -45,7 +49,7 @@ done in the ``config/galaxy.ini`` file. Tools can be either installed
 from the Tool Shed or added manually. For details please see the Galaxy
 wiki:
 
-https://wiki.galaxyproject.org/Admin/Tools/AddToolFromToolShedTutorial
+https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/
 
 Not all dependencies are included for the tools provided in the sample
 ``tool_conf.xml``. A full list of external dependencies is available at:

@@ -8,6 +8,8 @@ import string
 import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, true
 
+import galaxy.tools.deps.requirements
+
 from galaxy import util
 from galaxy.util import checkers
 from galaxy.web import url_for
@@ -219,37 +221,18 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
         valid_tools = json_response[1].get('valid_tools', [])
         if valid_tools:
             tools.extend(valid_tools)
-    return get_unique_requirements_from_tools(tools)
+    return get_requirements_from_tools(tools)
 
 
-def get_unique_requirements_from_tools(tools):
-    requirements = []
-    for tool in tools:
-        if tool['requirements']:
-            requirements.append(tool['requirements'])
-    return get_unique_requirements(requirements)
+def get_requirements_from_tools(tools):
+    return {tool['id']: galaxy.tools.deps.requirements.ToolRequirements.from_list(tool['requirements']) for tool in tools}
 
 
-def get_unique_requirements(requirements):
-    uniq_reqs = dict()
-    for tool_requirements in requirements:
-        for req in tool_requirements:
-            name = req.get("name", None)
-            if not name:
-                continue  # A requirement without a name can't be resolved, so let's skip those
-            version = req.get("version", "versionless")
-            type = req.get("type", None)
-            if not type == "package":
-                continue
-            uniq_reqs["%s_%s" % (name, version)] = {'name': name, 'version': version, 'type': type}
-    return list(uniq_reqs.values())
-
-
-def get_unique_requirements_from_repository(repository):
+def get_requirements_from_repository(repository):
     if not repository.includes_tools:
-        return []
+        return {}
     else:
-        return get_unique_requirements_from_tools(repository.metadata.get('tools', []))
+        return get_requirements_from_tools(repository.metadata.get('tools', []))
 
 
 def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):

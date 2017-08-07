@@ -46,13 +46,13 @@ class PageListGrid( grids.Grid ):
                     key="free-text-search", visible=False, filterable="standard" )
                     )
     global_actions = [
-        grids.GridAction( "Add new page", dict( action='create' ) )
+        grids.GridAction( "Add new page", dict( action='create' ), target="inbound" )
     ]
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation( "View", allow_multiple=False ),
-        grids.GridOperation( "Edit content", allow_multiple=False, url_args=dict( action='edit_content') ),
-        grids.GridOperation( "Edit attributes", allow_multiple=False, url_args=dict( action='edit') ),
-        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Edit content", allow_multiple=False, url_args=dict( action='edit_content' ) ),
+        grids.GridOperation( "Edit attributes", allow_multiple=False, url_args=dict( action='edit' ) ),
+        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), url_args=dict( action='sharing' ) ),
         grids.GridOperation( "Delete", confirm="Are you sure you want to delete this page?" ),
     ]
 
@@ -103,7 +103,6 @@ class ItemSelectionGrid( grids.Grid ):
 
     # Grid definition.
     show_item_checkboxes = True
-    template = "/page/select_items_grid.mako"
     default_filter = { "deleted": "False", "sharing": "All" }
     default_sort_key = "-update_time"
     use_async = True
@@ -308,6 +307,7 @@ class PageController( BaseUIController, SharableMixin,
         self.hda_manager = managers.hdas.HDAManager( app )
 
     @web.expose
+    @web.json
     @web.require_login()
     def list( self, trans, *args, **kwargs ):
         """ List user's pages. """
@@ -320,16 +320,24 @@ class PageController( BaseUIController, SharableMixin,
                 item = session.query( model.Page ).get( self.decode_id( id ) )
                 if operation == "delete":
                     item.deleted = True
-                if operation == "share or publish":
-                    return self.sharing( trans, **kwargs )
             session.flush()
 
-        # HACK: to prevent the insertion of an entire html document inside another
-        kwargs[ 'embedded' ] = True
-        # Build grid HTML.
+        # Build grid dictionary.
+        kwargs[ 'dict_format' ] = True
         grid = self._page_list( trans, *args, **kwargs )
+        grid[ 'shared_by_others' ] = self._get_shared( trans )
+        return grid
 
-        # Build list of pages shared with user.
+    @web.expose
+    @web.json
+    def list_published( self, trans, *args, **kwargs ):
+        kwargs[ 'dict_format' ] = True
+        grid = self._all_published_list( trans, *args, **kwargs )
+        grid[ 'shared_by_others' ] = self._get_shared( trans )
+        return grid
+
+    def _get_shared( self, trans ):
+        """Identify shared pages"""
         shared_by_others = trans.sa_session \
             .query( model.PageUserShareAssociation ) \
             .filter_by( user=trans.get_user() ) \
@@ -337,19 +345,9 @@ class PageController( BaseUIController, SharableMixin,
             .filter( model.Page.deleted == false() ) \
             .order_by( desc( model.Page.update_time ) ) \
             .all()
-
-        # Render grid wrapped in panels
-        return trans.fill_template( "page/index.mako", embedded_grid=grid, shared_by_others=shared_by_others )
-
-    @web.expose
-    def list_published( self, trans, *args, **kwargs ):
-        kwargs[ 'embedded' ] = True
-        grid = self._all_published_list( trans, *args, **kwargs )
-        if 'async' in kwargs:
-            return grid
-
-        # Render grid wrapped in panels
-        return trans.fill_template( "page/list_published.mako", embedded_grid=grid )
+        return [ {  'username' : p.page.user.username,
+                    'slug'     : p.page.slug,
+                    'title'    : p.page.title } for p in shared_by_others ]
 
     @web.expose
     @web.require_login( "create pages" )
@@ -388,7 +386,7 @@ class PageController( BaseUIController, SharableMixin,
                 session.flush()
                 # Display the management page
                 # trans.set_message( "Page '%s' created" % page.title )
-                return trans.response.send_redirect( web.url_for(controller='page', action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='pages', action='list' ) )
         return trans.show_form(
             web.FormBuilder( web.url_for(controller='page', action='create'), "Create new page", submit_text="Submit" )
             .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
@@ -433,7 +431,7 @@ class PageController( BaseUIController, SharableMixin,
                 self.add_item_annotation( trans.sa_session, trans.get_user(), page, page_annotation )
                 session.flush()
                 # Redirect to page list.
-                return trans.response.send_redirect( web.url_for(controller='page', action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='pages', action='list' ) )
         else:
             page_title = page.title
             page_slug = page.slug
@@ -498,7 +496,7 @@ class PageController( BaseUIController, SharableMixin,
         session.flush()
 
         return trans.fill_template( "/sharing_base.mako",
-                                    item=page, use_panels=True )
+                                    item=page, controller_list='pages', use_panels=True )
 
     @web.expose
     @web.require_login( "use Galaxy pages" )
@@ -691,38 +689,43 @@ class PageController( BaseUIController, SharableMixin,
         return return_dict
 
     @web.expose
+    @web.json
     @web.require_login("select a history from saved histories")
     def list_histories_for_selection( self, trans, **kwargs ):
         """ Returns HTML that enables a user to select one or more histories. """
-        # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self._history_selection_grid( trans, **kwargs )
 
     @web.expose
+    @web.json
     @web.require_login("select a workflow from saved workflows")
     def list_workflows_for_selection( self, trans, **kwargs ):
         """ Returns HTML that enables a user to select one or more workflows. """
-        # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self._workflow_selection_grid( trans, **kwargs )
 
     @web.expose
+    @web.json
     @web.require_login("select a visualization from saved visualizations")
     def list_visualizations_for_selection( self, trans, **kwargs ):
         """ Returns HTML that enables a user to select one or more visualizations. """
-        # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self._visualization_selection_grid( trans, **kwargs )
 
     @web.expose
+    @web.json
     @web.require_login("select a page from saved pages")
     def list_pages_for_selection( self, trans, **kwargs ):
         """ Returns HTML that enables a user to select one or more pages. """
-        # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self._page_selection_grid( trans, **kwargs )
 
     @web.expose
+    @web.json
     @web.require_login("select a dataset from saved datasets")
     def list_datasets_for_selection( self, trans, **kwargs ):
         """ Returns HTML that enables a user to select one or more datasets. """
-        # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self._datasets_selection_grid( trans, **kwargs )
 
     @web.expose

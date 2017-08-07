@@ -204,7 +204,9 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         job = self.__get_job(trans, id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
-        tool = self.app.toolbox.get_tool( job.tool_id, job.tool_version )
+        tool = self.app.toolbox.get_tool( job.tool_id, kwd.get('tool_version') or job.tool_version )
+        if tool is None:
+            raise exceptions.ObjectNotFound( "Requested tool not found" )
         if not tool.is_workflow_compatible:
             raise exceptions.ConfigDoesNotAllowException( "Tool '%s' cannot be rerun." % ( job.tool_id ) )
         return tool.to_json(trans, {}, job=job)

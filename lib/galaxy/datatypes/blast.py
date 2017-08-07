@@ -30,14 +30,16 @@
 
 Covers the ``blastxml`` format and the BLAST databases.
 """
-
 import logging
 import os
 from time import sleep
 
-from galaxy.datatypes.data import get_file_peek
-from galaxy.datatypes.data import Data, Text
-from galaxy.datatypes.xml import GenericXml
+from .data import (
+    Data,
+    get_file_peek,
+    Text
+)
+from .xml import GenericXml
 
 log = logging.getLogger(__name__)
 

@@ -32,12 +32,28 @@ import parsley
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
-from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation,
-                          History, Library, LibraryFolder, LibraryDataset, StoredWorkflowTagAssociation,
-                          StoredWorkflow, HistoryTagAssociation, HistoryDatasetAssociationTagAssociation,
-                          ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, JobParameter,
-                          JobToInputLibraryDatasetAssociation, JobToInputDatasetAssociation, JobToOutputDatasetAssociation,
-                          Page, PageRevision)
+from galaxy.model import (
+    ExtendedMetadata,
+    ExtendedMetadataIndex,
+    History,
+    HistoryAnnotationAssociation,
+    HistoryDatasetAssociation,
+    HistoryDatasetAssociationTagAssociation,
+    HistoryTagAssociation,
+    Job,
+    JobParameter,
+    JobToInputDatasetAssociation,
+    JobToInputLibraryDatasetAssociation,
+    JobToOutputDatasetAssociation,
+    Library,
+    LibraryDataset,
+    LibraryDatasetDatasetAssociation,
+    LibraryFolder,
+    Page,
+    PageRevision,
+    StoredWorkflow,
+    StoredWorkflowTagAssociation
+)
 from galaxy.model.tool_shed_install import ToolVersion
 
 log = logging.getLogger( __name__ )

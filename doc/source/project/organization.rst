@@ -18,6 +18,7 @@ are:
 
 - this document
 - CODE_OF_CONDUCT_.
+- SECURITY_POLICY_.
 
 
 Committers
@@ -56,7 +57,6 @@ Members
 - Eric Rasche (@erasche)
 - Nicola Soranzo (@nsoranzo)
 - James Taylor (@jxtx)
-- Nitesh Turaga (@nturaga)
 - Marius van den Beek (@mvdbeek)
 
 Membership
@@ -216,5 +216,6 @@ handling of issues follows the procedures described in ISSUES_.
 
 .. _LICENSE: https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt
 .. _CODE_OF_CONDUCT: https://github.com/galaxyproject/galaxy/blob/dev/CODE_OF_CONDUCT.md
+.. _SECURITY_POLICY: https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md
 .. _ISSUES: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
 .. _ISSUE_REPORT: https://github.com/galaxyproject/galaxy/issues/

@@ -43,7 +43,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
         _addConditional: function( input_def ) {
             var self = this;
             input_def.test_param.id = input_def.id;
-            this.app.options.sustain_conditionals && ( input_def.test_param.disabled = true );
+            this.app.model.get( 'sustain_conditionals' ) && ( input_def.test_param.disabled = true );
             var field = this._addRow( input_def.test_param );
 
             // set onchange event for test parameter
@@ -109,7 +109,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
             }
 
             // hide options
-            this.app.options.sustain_repeats && repeat.hideOptions();
+            this.app.model.get( 'sustain_repeats' ) && repeat.hideOptions();
 
             // create input field wrapper
             var input_element = new InputElement( this.app, {
@@ -144,7 +144,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
             this.app.field_list[ id ] = field;
             var input_element = new InputElement( this.app, {
                 name                : input_def.name,
-                label               : input_def.label || input_def.name,
+                label               : input_def.hide_label ? '' : input_def.label || input_def.name,
                 value               : input_def.value,
                 text_value          : input_def.text_value,
                 collapsible_value   : input_def.collapsible_value,
@@ -156,6 +156,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
                 style               : input_def.style,
                 backdrop            : input_def.backdrop,
                 hidden              : input_def.hidden,
+                fixed               : input_def.fixed,
                 field               : field
             });
             this.app.element_list[ id ] = input_element;

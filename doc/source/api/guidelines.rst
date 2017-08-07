@@ -1,7 +1,7 @@
 API Design Guidelines
 =====================
 
-The following section outlines guidelines related to extending and/or modifing
+The following section outlines guidelines related to extending and/or modifying
 the Galaxy API. The Galaxy API has grown in an ad-hoc fashion over time by
 many contributors and so clients SHOULD NOT expect the API will conform to
 these guidelines - but developers contributing to the Galaxy API SHOULD follow
@@ -37,7 +37,7 @@ these guidelines.
       Various error conditions (once a format has been chosen and framework to
       enforce it in place) should be spelled out in this document.
     - Backward compatibility is important and should be maintained when possible.
-      If changing behavior in a non-backward compatibile way please ensure one
+      If changing behavior in a non-backward compatible way please ensure one
       of the following holds - there is a strong reason to believe no consumers
       depend on a behavior, the behavior is effectively broken, or the API
       method being modified has not been part of a tagged dist release.

@@ -69,9 +69,13 @@ class RemoteUser( object ):
             assert self.remote_user_header not in environ
             environ[ self.remote_user_header ] = self.single_user
 
-        # Apache sets REMOTE_USER to the string '(null)' when using the
-        # Rewrite* method for passing REMOTE_USER and a user is
-        # un-authenticated.  Any other possible values need to go here as well.
+        if environ.get(self.remote_user_header, '').startswith('(null)'):
+            # Throw away garbage headers.
+            # Apache sets REMOTE_USER to the string '(null)' when using the
+            # Rewrite* method for passing REMOTE_USER and a user is not authenticated.
+            # Any other possible values need to go here as well.
+            log.debug("Discarding invalid remote user header %s:%s.", self.remote_user_header, environ.get(self.remote_user_header, None))
+            environ.pop(self.remote_user_header)
         if self.remote_user_header in environ:
             # process remote user with configuration options.
             if self.normalize_remote_user_email:
@@ -126,10 +130,7 @@ class RemoteUser( object ):
                 """
                 return self.error( start_response, title, message )
 
-        # Apache sets REMOTE_USER to the string '(null)' when using the
-        # Rewrite* method for passing REMOTE_USER and a user is
-        # un-authenticated.  Any other possible values need to go here as well.
-        if not environ.get(self.remote_user_header, '(null)').startswith('(null)'):
+        if environ.get(self.remote_user_header, None):
             if not environ[ self.remote_user_header ].count( '@' ):
                 if self.maildomain is not None:
                     environ[ self.remote_user_header ] += '@' + self.maildomain
@@ -147,9 +148,11 @@ class RemoteUser( object ):
                     """
                     return self.error( start_response, title, message )
             user_accessible_paths = (
-                '/user/api_keys',
+                '/users',
+                '/user/api_key',
                 '/user/edit_username',
                 '/user/dbkeys',
+                '/user/logout',
                 '/user/toolbox_filters',
                 '/user/set_default_permissions',
                 '/user/change_communication',

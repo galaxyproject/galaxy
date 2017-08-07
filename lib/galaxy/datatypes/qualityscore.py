@@ -1,9 +1,10 @@
 """
 Qualityscore class
 """
-
-import data
 import logging
+
+from . import data
+
 log = logging.getLogger(__name__)
 
 

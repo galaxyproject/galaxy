@@ -25,15 +25,14 @@ def upgrade(migrate_engine):
         c = Column( "provider", TrimmedString( 255 ) )
         c.create( OpenID_table )
         assert c is OpenID_table.c.provider
-    except Exception as e:
-        print("Adding provider column to galaxy_user_openid table failed: %s" % str( e ))
-        log.debug( "Adding provider column to galaxy_user_openid table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding provider column to galaxy_user_openid table failed.")
 
     try:
         cmd = "DELETE FROM galaxy_user_openid WHERE openid='%s'" % ( BAD_IDENTIFIER )
         migrate_engine.execute( cmd )
-    except Exception as e:
-        log.debug( "Deleting bad Identifiers from galaxy_user_openid failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Deleting bad Identifiers from galaxy_user_openid failed.")
 
 
 def downgrade(migrate_engine):
@@ -42,6 +41,5 @@ def downgrade(migrate_engine):
     try:
         OpenID_table = Table( "galaxy_user_openid", metadata, autoload=True )
         OpenID_table.c.provider.drop()
-    except Exception as e:
-        print("Dropping provider column from galaxy_user_openid table failed: %s" % str( e ))
-        log.debug( "Dropping provider column from galaxy_user_openid table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping provider column from galaxy_user_openid table failed.")

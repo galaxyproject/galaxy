@@ -48,7 +48,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     burst_at = getattr( config, 'tool_submission_burst_at', 10 )
     burst_threads = getattr( config, 'tool_submission_burst_threads', 1 )
 
-    tool_action = tool.action
+    tool_action = tool.tool_action
     if hasattr( tool_action, "check_inputs_ready" ):
         for params in execution_tracker.param_combinations:
             # This will throw an exception if the tool is not ready.
@@ -86,7 +86,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     if collection_info:
         history = history or tool.get_default_history_by_trans( trans )
         if len(param_combinations) == 0:
-            template = "Attempting to map over an empty collection, this is not yet implemented. colleciton_info is [%s]"
+            template = "Attempting to map over an empty collection, this is not yet implemented. collection_info is [%s]"
             message = template % collection_info
             log.warn(message)
             raise Exception(message)
@@ -157,7 +157,21 @@ class ToolExecutionTracker( object ):
                 log.warning( "Problem matching up datasets while attempting to create implicit dataset collections")
                 continue
             output = self.tool.outputs[ output_name ]
-            element_identifiers = structure.element_identifiers_for_outputs( trans, outputs )
+
+            element_identifiers = None
+            if hasattr(output, "default_identifier_source"):
+                # Switch the structure for outputs if the output specified a default_identifier_source
+                collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
+
+                source_collection = self.collection_info.collections.get(output.default_identifier_source)
+                if source_collection:
+                    collection_type_description = collection_type_descriptions.for_collection_type(source_collection.collection.collection_type)
+                    _structure = structure.for_dataset_collection( source_collection.collection, collection_type_description=collection_type_description)
+                    if structure.can_match(_structure):
+                        element_identifiers = _structure.element_identifiers_for_outputs(trans, outputs)
+
+            if not element_identifiers:
+                element_identifiers = structure.element_identifiers_for_outputs( trans, outputs )
 
             implicit_collection_info = dict(
                 implicit_inputs=implicit_inputs,
