@@ -16,6 +16,7 @@ var jQuery = require( 'jquery' ),
     ToolFormComposite = require( 'mvc/tool/tool-form-composite' ),
     Utils = require( 'utils/utils' ),
     Ui = require( 'mvc/ui/ui-misc' ),
+    DatasetError = require( 'mvc/dataset/dataset-error' ),
     DatasetEditAttributes = require('mvc/dataset/dataset-edit-attributes');
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
@@ -38,7 +39,7 @@ window.app = function app( options, bootstrapped ){
             this.message = options.message || "Undefined Message";
             this.msg_status = options.type || 'info';
             this.render();
-		},
+        },
         render: function(){
             this.$el.html(_.escape(this.message)).addClass(this.msg_status + "message");
         }
@@ -61,7 +62,8 @@ window.app = function app( options, bootstrapped ){
             '(/)datasets(/)list(/)' : 'show_datasets',
             '(/)workflow/import_workflow' : 'show_import_workflow',
             '(/)custom_builds' : 'show_custom_builds',
-            '(/)datasets/edit': 'show_dataset_edit_attributes'
+            '(/)datasets/edit': 'show_dataset_edit_attributes',
+            '(/)datasets/error': 'show_dataset_error'
         },
 
         require_login: [
@@ -134,6 +136,10 @@ window.app = function app( options, bootstrapped ){
 
         show_dataset_edit_attributes : function() {
             this.page.display( new DatasetEditAttributes.View() );
+        },
+
+        show_dataset_error : function() {
+            this.page.display( new DatasetError.View() );
         },
 
         /**  */
