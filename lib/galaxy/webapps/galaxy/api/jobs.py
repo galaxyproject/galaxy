@@ -352,3 +352,37 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
             if all( list( a.dataset.deleted is False for a in job.output_datasets ) ):
                 out.append( self.encode_all_ids( trans, job.to_dict( 'element' ), True ) )
         return out
+
+    @expose_api
+    def error( self, trans, id, **kwd ):
+        """
+        error( trans, id )
+        * POST /api/jobs/{id}/error
+            submits a bug report via the API.
+
+        :type   id: string
+        :param  id: Encoded job id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing information regarding where the error report was sent.
+        """
+        # biostar_report = 'biostar' in str( kwd.get( 'submit_error_report') ).lower()
+        # if biostar_report:
+            # return trans.response.send_redirect( url_for( controller='biostar', action='biostar_tool_bug_report', hda=id, email=email, message=message ) )
+
+        # Get dataset on which this error was triggered
+        try:
+            decoded_dataset_id = self.decode_id( kwd['dataset_id'] )
+        except Exception:
+            raise exceptions.MalformedId()
+        dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( decoded_dataset_id )
+
+        # Get job
+        job = self.__get_job( trans, id )
+        tool = trans.app.toolbox.get_tool( job.tool_id, tool_version=job.tool_version ) or None
+        messages = trans.app.error_reports.default_error_sink.submit_report(
+            dataset, job, tool, user_submission=True, email=kwd.get('email', trans.user.email),
+            message=kwd.get('message', None)
+        )
+
+        return { 'messages': messages }

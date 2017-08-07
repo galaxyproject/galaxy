@@ -160,18 +160,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         return exit_code
 
     @web.expose
-    def report_error( self, trans, id, email='', message="", **kwd ):
-        biostar_report = 'biostar' in str( kwd.get( 'submit_error_report') ).lower()
-        if biostar_report:
-            return trans.response.send_redirect( url_for( controller='biostar', action='biostar_tool_bug_report', hda=id, email=email, message=message ) )
-
-        dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( self.decode_id( id ) )
-        job = self._get_job_for_dataset( trans, id )
-        tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
-        messages = trans.app.error_reports.default_error_sink.submit_report(dataset, job, tool, user_submission=True, email=email, message=message)
-        return trans.show_messages(messages)
-
-    @web.expose
     def default(self, trans, dataset_id=None, **kwd):
         return 'This link may not be followed from within Galaxy.'
 
