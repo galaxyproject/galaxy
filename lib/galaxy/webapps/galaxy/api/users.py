@@ -11,6 +11,8 @@ from datetime import datetime
 from markupsafe import escape
 from sqlalchemy import false, true, and_, or_
 
+import yaml
+
 from galaxy import exceptions, util, web
 from galaxy.exceptions import MessageException, ObjectInvalid
 from galaxy.managers import users
@@ -258,8 +260,9 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         path = trans.app.config.user_preferences_extra_config_file
         try:
             with open(path, 'r') as stream:
-                config = load(stream)
+                config = yaml.load(stream)
         except:
+            raise
             log.warn('Config file (%s) could not be found or is malformed.' % path)
             return {}
 
@@ -343,11 +346,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     info_field['cases'].append({'value': info_form['id'], 'inputs': info_form['inputs']})
                 inputs.append(info_field)
 
-            # Build input sections for extra user preferences
-            extra_user_pref = self._build_extra_user_pref_inputs( self._get_extra_user_preferences( trans ), user )
-            for item in extra_user_pref:
-                inputs.append(item)
-
             address_inputs = [{'type': 'hidden', 'name': 'id', 'hidden': True}]
             for field in AddressField.fields():
                 address_inputs.append({'type': 'text', 'name': field[0], 'label': field[1], 'help': field[2]})
@@ -361,6 +359,14 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     address_cache.append(input_copy)
                 address_repeat['cache'].append(address_cache)
             inputs.append(address_repeat)
+
+
+            # Build input sections for extra user preferences
+            extra_user_pref = self._build_extra_user_pref_inputs( self._get_extra_user_preferences( trans ), user )
+            for item in extra_user_pref:
+                inputs.append(item)
+
+
         else:
             if user.active_repositories:
                 inputs.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
