@@ -158,7 +158,6 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                                 self.deferred.execute( function( process ) {
                                     if ( options.hasOwnProperty( "workflow" ) ) {
                                         // this is needed for notifying the workflow editor form
-                                        options.old_version = options.version;
                                         options.version = version;
                                         self.model.get( 'postchange' )( process, self );
                                     } else {
