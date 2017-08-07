@@ -5,7 +5,7 @@ This is an opt-in service which Galaxy admins can configure to contribute their
 job run data back to the community. We hope that by collecting this information
 we can build accurate models of tool CPU/memory/time requirements. In turn,
 admins will be able to use this analyzed data to optimize their job
-distribution across highly heterogenous clusters.
+distribution across highly heterogeneous clusters.
 
 Registration
 ------------
@@ -24,7 +24,7 @@ synced with the GRT server. Every time it is run, GRT only processes the list
 of jobs that were run since the last time it was run. On first run, GRT will
 attempt to export all job data for your instance which may be very slow
 depending on your instance size. We have attempted to optimize this as much as
-is faesible.
+is feasible.
 
 Data Privacy
 ------------
@@ -83,11 +83,11 @@ database for three primary tables:
 - job_metric_numeric
 
 these are exported with very little processing, as tabular files to the GRT
-reports directory, ``$GALAXY/reports/``. (This script could really just be a
-set of SQL queries, but it has been written in python to be database agnostic.)
-Once the files have been exported, they are put in a compresesd archive, and
-some metadata about the export process is written to a json file with the same
-name as the report archive.
+reports directory, ``$GALAXY/reports/``. We only collect new job data that we
+have not seen since the previous run. The last-seen job ID is stored in
+``$GALAXY/reports/.checkpoint``. Once the files have been exported, they are
+put in a compressed archive, and some metadata about the export process is
+written to a json file with the same name as the report archive.
 
 You may wish to inspect these files to be sure that you're comfortable with the
 information being sent.
