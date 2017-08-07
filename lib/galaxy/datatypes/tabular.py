@@ -63,15 +63,15 @@ class TabularData( data.Text ):
             return False
 
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
-        f = compression_utils.get_fileobj(dataset.file_name)
-        f.seek(offset)
-        ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
-        if ck_data and ck_data[-1] != '\n':
-            cursor = f.read(1)
-            while cursor and cursor != '\n':
-                ck_data += cursor
+        with compression_utils.get_fileobj(dataset.file_name) as f:
+            f.seek(offset)
+            ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
+            if ck_data and ck_data[-1] != '\n':
                 cursor = f.read(1)
-        last_read = f.tell()
+                while cursor and cursor != '\n':
+                    ck_data += cursor
+                    cursor = f.read(1)
+            last_read = f.tell()
         return dumps( { 'ck_data': util.unicodify( ck_data ),
                         'offset': last_read } )
 
@@ -326,49 +326,48 @@ class Tabular( TabularData ):
         first_line_column_types = [default_column_type]  # default value is one column of type str
         if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
-            dataset_fh = compression_utils.get_fileobj(dataset.file_name)
-            i = 0
-            while True:
-                line = dataset_fh.readline()
-                if not line:
-                    break
-                line = line.rstrip( '\r\n' )
-                if i < skip or not line or line.startswith( '#' ):
-                    # We'll call blank lines comments
-                    comment_lines += 1
-                else:
-                    data_lines += 1
-                    if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
-                        fields = line.split( '\t' )
-                        for field_count, field in enumerate( fields ):
-                            if field_count >= len( column_types ):  # found a previously unknown column, we append None
-                                column_types.append( None )
-                            column_type = guess_column_type( field )
-                            if type_overrules_type( column_type, column_types[field_count] ):
-                                column_types[field_count] = column_type
-                    if i == 0 and requested_skip is None:
-                        # This is our first line, people seem to like to upload files that have a header line, but do not
-                        # start with '#' (i.e. all column types would then most likely be detected as str).  We will assume
-                        # that the first line is always a header (this was previous behavior - it was always skipped).  When
-                        # the requested skip is None, we only use the data from the first line if we have no other data for
-                        # a column.  This is far from perfect, as
-                        # 1,2,3	1.1	2.2	qwerty
-                        # 0	0		1,2,3
-                        # will be detected as
-                        # "column_types": ["int", "int", "float", "list"]
-                        # instead of
-                        # "column_types": ["list", "float", "float", "str"]  *** would seem to be the 'Truth' by manual
-                        # observation that the first line should be included as data.  The old method would have detected as
-                        # "column_types": ["int", "int", "str", "list"]
-                        first_line_column_types = column_types
-                        column_types = [ None for col in first_line_column_types ]
-                if max_data_lines is not None and data_lines >= max_data_lines:
-                    if dataset_fh.tell() != dataset.get_size():
-                        data_lines = None  # Clear optional data_lines metadata value
-                        comment_lines = None  # Clear optional comment_lines metadata value; additional comment lines could appear below this point
-                    break
-                i += 1
-            dataset_fh.close()
+            with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
+                i = 0
+                while True:
+                    line = dataset_fh.readline()
+                    if not line:
+                        break
+                    line = line.rstrip( '\r\n' )
+                    if i < skip or not line or line.startswith( '#' ):
+                        # We'll call blank lines comments
+                        comment_lines += 1
+                    else:
+                        data_lines += 1
+                        if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
+                            fields = line.split( '\t' )
+                            for field_count, field in enumerate( fields ):
+                                if field_count >= len( column_types ):  # found a previously unknown column, we append None
+                                    column_types.append( None )
+                                column_type = guess_column_type( field )
+                                if type_overrules_type( column_type, column_types[field_count] ):
+                                    column_types[field_count] = column_type
+                        if i == 0 and requested_skip is None:
+                            # This is our first line, people seem to like to upload files that have a header line, but do not
+                            # start with '#' (i.e. all column types would then most likely be detected as str).  We will assume
+                            # that the first line is always a header (this was previous behavior - it was always skipped).  When
+                            # the requested skip is None, we only use the data from the first line if we have no other data for
+                            # a column.  This is far from perfect, as
+                            # 1,2,3	1.1	2.2	qwerty
+                            # 0	0		1,2,3
+                            # will be detected as
+                            # "column_types": ["int", "int", "float", "list"]
+                            # instead of
+                            # "column_types": ["list", "float", "float", "str"]  *** would seem to be the 'Truth' by manual
+                            # observation that the first line should be included as data.  The old method would have detected as
+                            # "column_types": ["int", "int", "str", "list"]
+                            first_line_column_types = column_types
+                            column_types = [ None for col in first_line_column_types ]
+                    if max_data_lines is not None and data_lines >= max_data_lines:
+                        if dataset_fh.tell() != dataset.get_size():
+                            data_lines = None  # Clear optional data_lines metadata value
+                            comment_lines = None  # Clear optional comment_lines metadata value; additional comment lines could appear below this point
+                        break
+                    i += 1
 
         # we error on the larger number of columns
         # first we pad our column_types by using data from first line
@@ -1144,7 +1143,7 @@ class ConnectivityTable( Tabular ):
 
     def get_chunk(self, trans, dataset, chunk):
         ck_index = int(chunk)
-        f = compression_utils.get_fileobj(dataset.file_name)
+        f = open(dataset.file_name)
         f.seek(ck_index * trans.app.config.display_chunk_size)
         # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
         if f.tell() != 0:
