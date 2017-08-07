@@ -154,6 +154,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             }
             this.name = data.name;
             this.config_form = data.config_form;
+            this.tool_version = this.config_form && this.config_form.version;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.tooltip = data.tooltip ? data.tooltip : "";
@@ -184,13 +185,12 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
         update_field_data : function( data ) {
             var node = this;
             var nodeView = node.nodeView;
-            // remove unused output views and remove pre-exisiting output views from data.data_outputs,
+            // remove unused output views and remove pre-existing output views from data.data_outputs,
             // so that these are not added twice.
             var unused_outputs = [];
             // nodeView.outputViews contains pre-existing outputs,
             // while data.data_output contains what should be displayed.
             // Now we gather the unused outputs
-            console.log(nodeView.outputViews);
             $.each(nodeView.outputViews, function(i, output_view) {
                 var cur_name = output_view.output.name;
                 var data_names = data.data_outputs;
@@ -223,6 +223,8 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             });
             this.tool_state = data.tool_state;
             this.config_form = data.config_form;
+            this.force_refesh = this.config_form && this.tool_version !== this.config_form.version;
+            this.tool_version = this.config_form && this.config_form.version;
             this.errors = data.errors;
             this.annotation = data['annotation'];
             this.label = data.label;
@@ -262,7 +264,6 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             // If active, reactivate with new config_form
             this.markChanged();
             this.redraw();
-            this.app.workflow.node_changed( this, true);
         },
         error : function ( text ) {
             var b = $(this.element).find( ".toolFormBody" );
@@ -273,7 +274,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.app.workflow.node_changed( this );
         },
         markChanged: function() {
-            this.app.workflow.node_changed( this );
+            this.app.workflow.node_changed( this, this.force_refesh );
         }
     });
     return Node;
