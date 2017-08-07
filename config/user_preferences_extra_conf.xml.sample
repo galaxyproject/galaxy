@@ -27,16 +27,8 @@ preferences:
               label: Username
               type: text
               required: False
-            - name: password
-              label: Password
-              type: password
-              required: False
             - name: url
               label: Open Stack URL
-              type: text
-              required: True
-            - name: url_2
-              label: Open Stack URL 2
               type: text
               required: True
 
