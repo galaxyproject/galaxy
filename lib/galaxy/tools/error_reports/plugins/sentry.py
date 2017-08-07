@@ -1,14 +1,14 @@
-"""The module describes the ``sentry`` error sink plugin."""
+"""The module describes the ``sentry`` error plugin plugin."""
 import logging
 
 from galaxy.util import string_as_bool
 
-from ..sinks import ErrorSinkPlugin
+from ..plugins import ErrorPlugin
 
 log = logging.getLogger( __name__ )
 
 
-class SentryPlugin( ErrorSinkPlugin ):
+class SentryPlugin( ErrorPlugin ):
     """Send error report to Sentry.
     """
     plugin_type = "sentry"

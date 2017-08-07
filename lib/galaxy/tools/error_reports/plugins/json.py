@@ -1,4 +1,4 @@
-"""The module describes the ``json`` error sink plugin."""
+"""The module describes the ``json`` error plugin."""
 from __future__ import absolute_import
 
 import json
@@ -8,12 +8,12 @@ import tempfile
 
 from galaxy.util import string_as_bool
 
-from ..sinks import ErrorSinkPlugin
+from ..plugins import ErrorPlugin
 
 log = logging.getLogger( __name__ )
 
 
-class JsonPlugin( ErrorSinkPlugin ):
+class JsonPlugin( ErrorPlugin ):
     """Write error report to a JSON file.
     """
     plugin_type = "json"

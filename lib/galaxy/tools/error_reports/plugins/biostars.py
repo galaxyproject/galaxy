@@ -1,4 +1,4 @@
-"""The module describes the ``biostars`` error sink plugin."""
+"""The module describes the ``biostars`` error plugin."""
 from __future__ import absolute_import
 
 import logging
@@ -9,12 +9,12 @@ from galaxy.util import biostar
 from galaxy.web.base.controller import url_for
 
 
-from ..sinks import ErrorSinkPlugin
+from ..plugins import ErrorPlugin
 
 log = logging.getLogger( __name__ )
 
 
-class BiostarsPlugin( ErrorSinkPlugin ):
+class BiostarsPlugin( ErrorPlugin ):
     """Send error report as an issue on Biostars
     """
     plugin_type = "biostars"

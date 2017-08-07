@@ -1,4 +1,4 @@
-"""The module describes the ``email`` error sink plugin."""
+"""The module describes the ``email`` error plugin."""
 from __future__ import absolute_import
 
 import logging
@@ -6,12 +6,12 @@ import logging
 from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util import string_as_bool
 
-from ..sinks import ErrorSinkPlugin
+from ..plugins import ErrorPlugin
 
 log = logging.getLogger( __name__ )
 
 
-class EmailPlugin( ErrorSinkPlugin ):
+class EmailPlugin( ErrorPlugin ):
     """Send error report as an email
     """
     plugin_type = "email"

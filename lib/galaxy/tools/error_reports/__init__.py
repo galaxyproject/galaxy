@@ -10,13 +10,13 @@ log = logging.getLogger(__name__)
 
 
 class ErrorReports(object):
-    """Load and store a collection of :class:`ErrorSink` objects."""
+    """Load and store a collection of :class:`ErrorPlugin` objects."""
 
     def __init__(self, conf_file=None, **kwargs):
-        """Load :class:`ErrorSink` objects from specified configuration file."""
+        """Load :class:`ErrorPlugin` objects from specified configuration file."""
         self.plugin_classes = self.__plugins_dict()
-        self.default_error_sink = ErrorSink.from_file(self.plugin_classes, conf_file, **kwargs)
-        self.error_sinks = collections.defaultdict(lambda: self.default_error_sink)
+        self.default_error_plugin = ErrorPlugin.from_file(self.plugin_classes, conf_file, **kwargs)
+        self.error_plugin = collections.defaultdict(lambda: self.default_error_plugin)
 
     def __plugins_dict(self):
         import galaxy.tools.error_reports.sinks
@@ -29,7 +29,7 @@ class NullErrorSink(object):
         return "Submitted Bug Report"
 
 
-NULL_ERROR_SINK = NullErrorSink()
+NULL_ERROR_PLUGIN = NullErrorSink()
 
 
 class ErrorSink(object):
@@ -69,6 +69,6 @@ class ErrorSink(object):
     @staticmethod
     def from_file(plugin_classes, conf_file, **kwargs):
         if not conf_file or not os.path.exists(conf_file):
-            return NULL_ERROR_SINK
+            return NULL_ERROR_PLUGIN
         plugins_source = plugin_config.plugin_source_from_path(conf_file)
         return ErrorSink(plugin_classes, plugins_source, **kwargs)
