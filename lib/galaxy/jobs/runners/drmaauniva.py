@@ -38,21 +38,21 @@ class DRMAAWaitUnusable( Exception ):
 
 
 class DRMAAUnivaJobRunner( DRMAAJobRunner ):
-    runner_name = "DRMAAUnivaRunner"
+    runner_name = "DRMAAUnivaJobRunner"
     # restrict job name length as in the DRMAAJobRunner
     # restrict_job_name_length = 15
 
     def check_watched_item( self, ajs, new_watched ):
         # get state with job_info/qstat
         state = self._get_drmaa_state(ajs.job_id, self.ds, False)
-        logging.debug("DRMAAUnivaRunner:check_watched_item ({jobid}) -> state {state}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state]))
+        logging.debug("DRMAAUnivaJobRunner:check_watched_item ({jobid}) -> state {state}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state]))
         return state
 
     def _complete_terminal_job( self, ajs, drmaa_state, **kwargs ):
         extinfo = dict()
         # get state with job_info/qstat + wait/qacct
         state = self._get_drmaa_state(ajs.job_id, self.ds, True, extinfo)
-        logging.debug("DRMAAUnivaRunner:_complete_terminal_job ({jobid}) -> state {state} info {info}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state], info=extinfo))
+        logging.debug("DRMAAUnivaJobRunner:_complete_terminal_job ({jobid}) -> state {state} info {info}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state], info=extinfo))
 
         # for any job that is finished (regardless of successful or failed) check if there
         # were memory or time deletions or if the job was deleted
@@ -67,6 +67,8 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
 
             # check if the output contains indicators for a memory violation
             memviolation = _check_memory_limit( ajs.error_file )
+            logging.debug("DRMAAUnivaJobRunner:_complete_terminal_job ({jobid}) memviolation {mv}".format(jobid=ajs.job_id, mv=memviolation))
+
             # check job for run time or memory violation
             if "deleted" in extinfo and extinfo[ "deleted" ]:
                 log.info( '(%s/%s) Job was cancelled (e.g. with qdel)', ajs.job_wrapper.get_id_tag(), ajs.job_id )
@@ -242,6 +244,8 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
 
         extinfo["time_wasted"] = _parse_time( qacct["wallclock"] )
         extinfo["memory_wasted"] = _parse_mem( qacct["maxvmem"] )
+
+        logging.debug("DRMAAUniva: ({job_id}) qacct {qacct}".format(job_id=job_id, qacct=qacct))
 
 #         for q in qacct:
 #             logging.debug("%s : %s"%(q, qacct[q]))
@@ -425,7 +429,7 @@ class DRMAAUnivaJobRunner( DRMAAJobRunner ):
         the function returns the state (one of the drmaa states) and extended
         information in the extinfo dict
         """
-        logging.debug("DRMAAUnivaJobRunner._get_drmaa_state ({jobid})".format(jobid=job_id))
+        logging.debug("DRMAAUnivaJobRunner._get_drmaa_state ({jobid}) {qw}".format(jobid=job_id, qw=waitqacct))
         state = self.drmaa.JobState.UNDETERMINED
         # try to get the state with drmaa.job_status (does not work for jobs
         # started as real user) or  qstat (works only for jobs that are running)
@@ -568,9 +572,9 @@ def _check_memory_limit( efile_path ):
 
 def _parse_mem( mstring ):
     mem = None
-    m = re.search( "([0-9])([KGM]?)", mstring )
+    m = re.search( "([0-9.]+)([KGM]?)", mstring )
     if m is not None:
-        mem = int(m.group(1))
+        mem = float(m.group(1))
         if m.group(2) == 'K':
             mem *= 1024
         elif m.group(2) == 'M':
@@ -586,16 +590,16 @@ def _parse_mem( mstring ):
 
 def _parse_time( tstring ):
     tme = None
-    m = re.search( "([0-9:]+)", tstring )
+    m = re.search( "([0-9:.]+)", tstring )
     if m is not None:
         timespl = m.group(1).split(':')
-        tme = int( timespl[-1] )  # sec
+        tme = float( timespl[-1] )  # sec
         if len( timespl ) > 1:     # min
-            tme += int( timespl[-2] ) * 60
+            tme += float( timespl[-2] ) * 60
         if len( timespl ) > 2:     # hour
-            tme += int( timespl[-3] ) * 3600
+            tme += float( timespl[-3] ) * 3600
         if len( timespl ) > 3:     # day
-            tme += int( timespl[-4] ) * 86400
+            tme += float( timespl[-4] ) * 86400
     return tme
 
 
@@ -610,13 +614,13 @@ def _parse_native_specs( job_id, native_spec ):
     tme = None
     mem = None
     # parse time
-    m = re.search( "rt=([0-9:]+)\s", native_spec )
+    m = re.search( "rt=([0-9:]+)[\s,]*", native_spec )
     if m is not None:
         tme = _parse_time( m.group(1) )
         if tme is None:
             logging.error( "DRMAAUniva: job {job_id} has unparsable time native spec {spec}".format(job_id=job_id, spec=native_spec) )
     # parse memory
-    m = re.search( "mem=([0-9][KGM]?)", native_spec )
+    m = re.search( "mem=([0-9.]+[KGM]?)[\s,]*", native_spec )
     if m is not None:
         mem = _parse_mem( m.group(1) )
         if mem is None:
