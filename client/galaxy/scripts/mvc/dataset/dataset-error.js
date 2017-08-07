@@ -49,10 +49,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view' ], function( Uti
         /** Render the view */
         render_error_page: function( self, dataset, job ) {
             self.$el.empty().append( self._templateHeader() );
-            console.log(dataset, job);
-            //self.display_message( message, self.$( '.response-message' ) );
-            // Create all tabs
-            //self.create_tabs( response, self.$( '.edit-attr' ) );
+            self.$el.append('<h2>Dataset Error</h2>');
             self.$el.append('<p>An error occured while running the tool <b>' + job.tool_id + '</b>.</p>');
             self.$el.append('<p>Tool execution generated the following messages:</p>');
             self.$el.append('<pre class="code">' + job.stderr + '</pre>');
@@ -75,7 +72,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view' ], function( Uti
         _templateHeader: function() {
             return '<div class="page-container edit-attr">' +
                        '<div class="response-message"></div>' +
-                       '<h2>Dataset Error</h2>' +
                    '</div>';
         },
 
@@ -124,40 +120,46 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view' ], function( Uti
                         floating : 'clear',
                         onclick  : function() {
                             var form_data = form.data.create();
-                            var post_url = Galaxy.root + 'api/jobs/' + job.id + '/error'
-                            // Some required metadata
+                            var url = Galaxy.root + 'api/jobs/' + job.id + '/error'
                             form_data.dataset_id = dataset.id;
-                            $.ajax({
-                                type: "POST",
-                                url: post_url,
-                                data: form_data,
-                                success: function( response ) {
-                                    // Clear out the div
-                                    self.$el.empty().append( self._templateHeader() );
-                                    // And display the messages.
-                                    response.messages.forEach(function(message){
-                                        self.display_message( {
-                                            'status': message[1],
-                                            'message': message[0],
-                                            'persistent': true,
-                                        }, self.$( '.response-message' ), true );
-                                    });
-                                },
-                                error   : function( response ) {
-                                    var error_response = {
-                                        'status': 'error',
-                                        'message': 'Error occured while saving. Please fill all the required fields and try again.',
-                                        'persistent': true,
-                                        'cls': 'errormessage'
-                                    };
-                                    self.display_message( error_response, self.$( '.response-message' ) );
-                                }
-                            });
+                            self.submit(form_data, url)
                         }
                     })
                 },
             });
             return form.$el;
+        },
+
+        /** Make ajax request */
+        submit : function(form_data, url){
+            var self = this;
+            // Some required metadata
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: form_data,
+                success: function( response ) {
+                    // Clear out the div
+                    self.$el.empty().append( self._templateHeader() );
+                    // And display the messages.
+                    response.messages.forEach(function(message){
+                        self.display_message( {
+                            'status': message[1],
+                            'message': message[0],
+                            'persistent': true,
+                        }, self.$( '.response-message' ), true );
+                    });
+                },
+                error   : function( response ) {
+                    var error_response = {
+                        'status': 'error',
+                        'message': 'Error occured while saving. Please fill all the required fields and try again.',
+                        'persistent': true,
+                        'cls': 'errormessage'
+                    };
+                    self.display_message( error_response, self.$( '.response-message' ) );
+                }
+            });
         }
     });
 
