@@ -246,7 +246,6 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             _.each( _.difference( _.values( nodeView.terminalViews ), _.values( newTerminalViews ) ), function( unusedView ) {
                 unusedView.el.terminal.destroy();
             } );
-
             nodeView.terminalViews = newTerminalViews;
             node.nodeView.render();
             // In general workflow editor assumes tool outputs don't change in # or

@@ -58,9 +58,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                                 // module information for the tool to update the workflow
                                 // state stored on the client with. User needs to save
                                 // for this to take effect.
-
                                 self.node.update_field_data( data );
-
                                 Galaxy.emit.debug( 'tool-form-workflow::postchange()', 'Received new model.', data );
                                 process.resolve();
                             },
