@@ -1813,7 +1813,7 @@ class JobWrapper( object, HasResourceParameters ):
         job = self.get_job()
         tool = self.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
         for dataset in job.output_datasets:
-            self.app.error_reports.default_error_sink.submit_report(dataset, job, tool, user_submission=False)
+            self.app.error_reports.default_error_plugin.submit_report(dataset, job, tool, user_submission=False)
 
 
 class TaskWrapper(JobWrapper):

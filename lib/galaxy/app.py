@@ -103,7 +103,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # config so per-destination modifications can be made.
         self.job_metrics = job_metrics.JobMetrics( self.config.job_metrics_config_file, app=self )
 
-        # Initialize error report sinks.
+        # Initialize error report plugins.
         self.error_reports = ErrorReports( self.config.error_report_file, app=self )
 
         # Initialize the job management configuration

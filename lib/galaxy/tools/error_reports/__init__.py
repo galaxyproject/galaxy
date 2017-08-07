@@ -19,20 +19,20 @@ class ErrorReports(object):
         self.error_plugin = collections.defaultdict(lambda: self.default_error_plugin)
 
     def __plugins_dict(self):
-        import galaxy.tools.error_reports.sinks
-        return plugin_config.plugins_dict(galaxy.tools.error_reports.sinks, 'plugin_type')
+        import galaxy.tools.error_reports.plugins
+        return plugin_config.plugins_dict(galaxy.tools.error_reports.plugins, 'plugin_type')
 
 
-class NullErrorSink(object):
+class NullErrorPlugin(object):
 
     def submit_report(self, dataset, job, tool, **kwargs):
         return "Submitted Bug Report"
 
 
-NULL_ERROR_PLUGIN = NullErrorSink()
+NULL_ERROR_PLUGIN = NullErrorPlugin()
 
 
-class ErrorSink(object):
+class ErrorPlugin(object):
 
     def __init__(self, plugin_classes, plugins_source, **kwargs):
         self.extra_kwargs = kwargs
@@ -47,7 +47,7 @@ class ErrorSink(object):
             roles = []
         return self.app.security_agent.can_access_dataset(roles, dataset.dataset)
 
-    def submit_report(self, dataset, job, tool, user, user_submission=False, **kwargs):
+    def submit_report(self, dataset, job, tool, user=None, user_submission=False, **kwargs):
         if user_submission:
             assert self._can_access_dataset(dataset, user), Exception("You are not allowed to access this dataset.")
 
@@ -71,4 +71,4 @@ class ErrorSink(object):
         if not conf_file or not os.path.exists(conf_file):
             return NULL_ERROR_PLUGIN
         plugins_source = plugin_config.plugin_source_from_path(conf_file)
-        return ErrorSink(plugin_classes, plugins_source, **kwargs)
+        return ErrorPlugin(plugin_classes, plugins_source, **kwargs)

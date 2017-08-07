@@ -380,7 +380,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         # Get job
         job = self.__get_job( trans, id )
         tool = trans.app.toolbox.get_tool( job.tool_id, tool_version=job.tool_version ) or None
-        messages = trans.app.error_reports.default_error_sink.submit_report(
+        messages = trans.app.error_reports.default_error_plugin.submit_report(
             dataset, job, tool, user_submission=True, user=trans.user,
             email=kwd.get('email', trans.user.email),
             message=kwd.get('message', None)
