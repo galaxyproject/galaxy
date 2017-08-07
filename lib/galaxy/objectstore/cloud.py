@@ -326,7 +326,7 @@ class Cloud( ObjectStore ):
                     return True
                 start_time = datetime.now()
                 log.debug("Pushing cache file '%s' of size %s bytes to key '%s'", source_file,
-                            os.path.getsize(source_file), rel_path)
+                          os.path.getsize(source_file), rel_path)
                 self.transfer_progress = 0  # Reset transfer progress counter
                 if self.bucket.get(rel_path):
                     self.bucket.get(rel_path).upload(source_file)
@@ -335,7 +335,7 @@ class Cloud( ObjectStore ):
                     created_obj.upload(source_file)
                 end_time = datetime.now()
                 log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
-                            source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
+                          source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
                 return True
             else:
                 log.error("Tried updating key '%s' from source file '%s', but source file does not exist.",
