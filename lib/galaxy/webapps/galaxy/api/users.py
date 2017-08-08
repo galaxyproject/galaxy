@@ -254,7 +254,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     def _get_extra_user_preferences(self, trans):
         """
-        Reads the file user_preferences_extra_conf.xml to display
+        Reads the file user_preferences_extra_conf.yml to display
         admin defined user informations
         """
         path = trans.app.config.user_preferences_extra_config_file
