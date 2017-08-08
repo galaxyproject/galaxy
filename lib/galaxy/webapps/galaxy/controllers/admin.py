@@ -1612,8 +1612,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
             trans.app.security_agent.set_entity_user_associations( users=[ user ], roles=in_roles, groups=in_groups )
             trans.sa_session.refresh( user )
-            return { 'message' : 'User \'%s\' has been updated with %d associated roles and %d associated groups (private roles are not displayed).' %
-                     ( user.email, len( in_roles ) - 1, len( in_groups ) ) }
+            return { 'message' : 'User \'%s\' has been updated with %d associated roles and %d associated groups (private roles are not displayed).' % ( user.email, len( in_roles ) - 1, len( in_groups ) ) }
 
     @web.expose
     @web.require_admin
