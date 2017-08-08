@@ -316,12 +316,12 @@ class Interval( Tabular ):
         >>> Interval().sniff( fname )
         True
         """
-        headers = iter_headers( filename, '\t', comment_designator='#' )
         try:
             """
             If we got here, we already know the file is_column_based and is not bed,
             so we'll just look for some valid data.
             """
+            headers = iter_headers( filename, '\t', comment_designator='#' )
             for hdr in headers:
                 if hdr:
                     if len(hdr) < 3:
@@ -494,8 +494,8 @@ class Bed( Interval ):
         """
         if not get_headers( filename, '\t', comment_designator='#', count=1 ):
             return False
-        headers = iter_headers( filename, '\t', comment_designator='#' )
         try:
+            headers = iter_headers( filename, '\t', comment_designator='#' )
             for hdr in headers:
                 if hdr[0] == '':
                     continue
@@ -837,8 +837,8 @@ class Gff( Tabular, _RemoteCallMixin ):
         """
         if len(get_headers( filename, '\t', count=2 )) < 2:
             return False
-        headers = iter_headers( filename, '\t' )
         try:
+            headers = iter_headers( filename, '\t' )
             for hdr in headers:
                 if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '2' ) < 0:
                     return False
@@ -969,8 +969,8 @@ class Gff3( Gff ):
         """
         if len(get_headers( filename, '\t', count=2 )) < 2:
             return False
-        headers = iter_headers( filename, '\t' )
         try:
+            headers = iter_headers( filename, '\t' )
             for hdr in headers:
                 if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '3' ) >= 0:
                     return True
@@ -1044,8 +1044,8 @@ class Gtf( Gff ):
         """
         if len(get_headers( filename, '\t', count=2 )) < 2:
             return False
-        headers = iter_headers( filename, '\t' )
         try:
+            headers = iter_headers( filename, '\t' )
             for hdr in headers:
                 if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '2' ) < 0:
                     return False
@@ -1238,8 +1238,8 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         >>> Wiggle().sniff( fname )
         True
         """
-        headers = iter_headers( filename, None )
         try:
+            headers = iter_headers( filename, None )
             for hdr in headers:
                 if len(hdr) > 1 and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
                     return True
