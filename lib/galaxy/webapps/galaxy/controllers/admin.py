@@ -1087,13 +1087,14 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             return {
                 'title'  : 'Change role name and description for \'%s\'' % util.sanitize_text( role.name ),
                 'inputs' : [{   'name'  : 'name',
-                                'label' : 'Name'
+                                'label' : 'Name',
+                                'value' : role.name
                             },{ 'name'  : 'description',
-                                'label' : 'Description'
+                                'label' : 'Description',
+                                'value' : role.description
                             } ]
             }
         else:
-            print payload
             old_name = role.name
             new_name = util.restore_text( payload.get( 'name' ) )
             new_description = util.restore_text( payload.get( 'description' ) )
