@@ -24,6 +24,9 @@ SIMPLE_NESTED_WORKFLOW_YAML = """
 class: GalaxyWorkflow
 inputs:
   - id: outer_input
+outputs:
+  - id: outer_output
+    source: second_cat#out_file1
 steps:
   - tool_id: cat1
     label: first_cat
@@ -58,11 +61,6 @@ steps:
       queries:
         - input2:
             $link: nested_workflow#workflow_output
-
-test_data:
-  outer_input:
-    value: 1.bed
-    type: File
 """
 
 
@@ -861,7 +859,14 @@ test_data:
 
     def test_run_subworkflow_simple(self):
         history_id = self.dataset_populator.new_history()
-        self._run_jobs(SIMPLE_NESTED_WORKFLOW_YAML, history_id=history_id)
+        workflow_run_description = """%s
+
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+""" % SIMPLE_NESTED_WORKFLOW_YAML
+        self._run_jobs(workflow_run_description, history_id=history_id)
 
         content = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
@@ -1029,10 +1034,131 @@ test_data:
         assert len(invocation["outputs"]) == 0
         output_content = self.dataset_populator.get_history_collection_details(history_id, content_id=invocation["output_collections"]["wf_output_1"]["id"])
         self._assert_has_keys(output_content , "id", "elements")
+        assert output_content["collection_type"] == "list"
         elements = output_content["elements"]
         assert len(elements) == 1
         elements0 = elements[0]
         assert elements0["element_identifier"] == "el1"
+
+    def test_worklfow_input_mapping(self):
+        history_id = self.dataset_populator.new_history()
+        summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+outputs:
+  - id: wf_output_1
+    source: first_cat#out_file1
+steps:
+  - tool_id: cat
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+test_data:
+  input1:
+    type: list
+    name: the_dataset_list
+    elements:
+      - identifier: el1
+        value: 1.fastq
+        type: File
+      - identifier: el2
+        value: 1.fastq
+        type: File
+""", history_id=history_id)
+        workflow_id = summary.workflow_id
+        invocation_id = summary.invocation_id
+        invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+        self._assert_status_code_is(invocation_response, 200)
+        invocation = invocation_response.json()
+        self._assert_has_keys(invocation , "id", "outputs", "output_collections")
+        assert len(invocation["output_collections"]) == 1
+        assert len(invocation["outputs"]) == 0
+        output_content = self.dataset_populator.get_history_collection_details(history_id, content_id=invocation["output_collections"]["wf_output_1"]["id"])
+        self._assert_has_keys(output_content , "id", "elements")
+        elements = output_content["elements"]
+        assert len(elements) == 2
+        elements0 = elements[0]
+        assert elements0["element_identifier"] == "el1"
+
+    @skip_without_tool("collection_creates_pair")
+    def test_workflow_run_input_mapping_with_output_collections(self):
+        history_id = self.dataset_populator.new_history()
+        summary = self._run_jobs("""
+class: GalaxyWorkflow
+outputs:
+  - id: wf_output_1
+    source: split_up#paired_output
+steps:
+  - label: text_input
+    type: input
+  - label: split_up
+    tool_id: collection_creates_pair
+    state:
+      input1:
+        $link: text_input
+test_data:
+  text_input:
+    type: list
+    name: the_dataset_list
+    elements:
+      - identifier: el1
+        value: 1.fastq
+        type: File
+      - identifier: el2
+        value: 1.fastq
+        type: File
+""", history_id=history_id)
+        workflow_id = summary.workflow_id
+        invocation_id = summary.invocation_id
+        invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+        self._assert_status_code_is(invocation_response, 200)
+        invocation = invocation_response.json()
+        self._assert_has_keys(invocation , "id", "outputs", "output_collections")
+        assert len(invocation["output_collections"]) == 1
+        assert len(invocation["outputs"]) == 0
+        output_content = self.dataset_populator.get_history_collection_details(history_id, content_id=invocation["output_collections"]["wf_output_1"]["id"])
+        self._assert_has_keys(output_content , "id", "elements")
+        assert output_content["collection_type"] == "list:paired", output_content
+        elements = output_content["elements"]
+        assert len(elements) == 2
+        elements0 = elements[0]
+        assert elements0["element_identifier"] == "el1"
+
+    def test_workflow_run_input_mapping_with_subworkflows(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_jobs("""%s
+
+test_data:
+  outer_input:
+    type: list
+    name: the_dataset_list
+    elements:
+      - identifier: el1
+        value: 1.fastq
+        type: File
+      - identifier: el2
+        value: 1.fastq
+        type: File
+""" % SIMPLE_NESTED_WORKFLOW_YAML, history_id=history_id)
+            workflow_id = summary.workflow_id
+            invocation_id = summary.invocation_id
+            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            self._assert_status_code_is(invocation_response, 200)
+            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            self._assert_status_code_is(invocation_response, 200)
+            invocation = invocation_response.json()
+            self._assert_has_keys(invocation , "id", "outputs", "output_collections")
+            assert len(invocation["output_collections"]) == 1, invocation
+            assert len(invocation["outputs"]) == 0
+            output_content = self.dataset_populator.get_history_collection_details(history_id, content_id=invocation["output_collections"]["outer_output"]["id"])
+            self._assert_has_keys(output_content , "id", "elements")
+            assert output_content["collection_type"] == "list", output_content
+            elements = output_content["elements"]
+            assert len(elements) == 2
+            elements0 = elements[0]
+            assert elements0["element_identifier"] == "el1"
 
     @skip_without_tool("cat")
     def test_cancel_new_workflow_when_history_deleted(self):
