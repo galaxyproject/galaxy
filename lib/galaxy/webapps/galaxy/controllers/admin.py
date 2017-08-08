@@ -972,8 +972,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                     'name'  : 'description',
                                     'label' : 'Description'
                                 },
-                                build_select_input( 'groups', 'Groups', all_groups, [] ),
-                                build_select_input( 'users', 'Users', all_users, [] ),
+                                build_select_input( 'in_groups', 'Groups', all_groups, [] ),
+                                build_select_input( 'in_users', 'Users', all_users, [] ),
                                 {
                                     'name'  : 'auto_create',
                                     'label' : 'Create a new group of the same name for this role:',
@@ -983,8 +983,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             name = util.restore_text( payload.get( 'name', '' ) )
             description = util.restore_text( payload.get( 'description', '' ) )
             auto_create_checked = payload.get( 'auto_create' ) == 'true'
-            in_users = util.listify( payload.get( 'users', [] ) )
-            in_groups = util.listify( payload.get( 'groups', [] ) )
+            in_users = util.listify( payload.get( 'in_users' ) ) or []
+            in_groups = util.listify( payload.get( 'in_groups' ) ) or []
             if not name or not description:
                 return message_exception( trans, 'Enter a valid name and a description.' )
             elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == name ).first():
@@ -1083,11 +1083,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                      'message': 'Role \'%s\' is currently associated with %d user(s) and %d group(s).' %
                                 ( role.name, len( in_users ), len( in_groups ) ),
                      'status' : 'info',
-                     'inputs' : [ build_select_input( 'groups', 'Groups', all_groups, in_groups ),
-                                  build_select_input( 'users', 'Users', all_users, in_users ) ] }
+                     'inputs' : [ build_select_input( 'in_groups', 'Groups', all_groups, in_groups ),
+                                  build_select_input( 'in_users', 'Users', all_users, in_users ) ] }
             return { 'message' : 'Not showing associated datasets, there are too many.', 'info' : 'info' }
         else:
-            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'users' ) ) ]
+            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_users' ) ) ]
             for ura in role.users:
                 user = trans.sa_session.query( trans.app.model.User ).get( ura.user_id )
                 if user not in in_users:
@@ -1101,7 +1101,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                             if role == dhp.role:
                                 trans.sa_session.delete( dhp )
                     trans.sa_session.flush()
-            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'groups' ) ) ]
+            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_groups' ) ) ]
             trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( role )
             return { 'message' : 'Role \'%s\' has been updated with %d associated users and %d associated groups.' % ( role.name, len( in_users ), len( in_groups ) ) }
@@ -1249,12 +1249,12 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                      'message': 'Group \'%s\' is currently associated with %d user(s) and %d role(s).' %
                                 ( group.name, len( in_users ), len( in_roles ) ),
                      'status' : 'info',
-                     'inputs' : [ build_select_input( 'roles', 'Roles', all_roles, in_roles ),
-                                  build_select_input( 'users', 'Users', all_users, in_users ) ] }
+                     'inputs' : [ build_select_input( 'in_roles', 'Roles', all_roles, in_roles ),
+                                  build_select_input( 'in_users', 'Users', all_users, in_users ) ] }
             return { 'message' : 'Not showing associated datasets, there are too many.', 'info' : 'info' }
         else:
-            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'users' ) ) ]
-            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'roles' ) ) ]
+            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_users' ) ) ]
+            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_roles' ) ) ]
             trans.app.security_agent.set_entity_group_associations( groups=[ group ], users=in_users, roles=in_roles )
             trans.sa_session.refresh( group )
             return { 'message' : 'Group \'%s\' has been updated with %d associated users and %d associated roles.' % ( group.name, len( in_users ), len( in_roles ) ) }
@@ -1278,8 +1278,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                     'name'  : 'name',
                                     'label' : 'Name'
                                 },
-                                build_select_input( 'roles', 'Roles', all_roles, [] ),
-                                build_select_input( 'users', 'Users', all_users, [] ),
+                                build_select_input( 'in_roles', 'Roles', all_roles, [] ),
+                                build_select_input( 'in_users', 'Users', all_users, [] ),
                                 {
                                     'name'  : 'auto_create',
                                     'label' : 'Create a new role of the same name for this group:',
@@ -1288,8 +1288,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         else:
             name = util.restore_text( payload.get( 'name', '' ) )
             auto_create_checked = payload.get( 'auto_create' ) == 'true'
-            in_users = util.listify( payload.get( 'users', [] ) )
-            in_roles = util.listify( payload.get( 'roles', [] ) )
+            in_users = util.listify( payload.get( 'in_users' ) ) or []
+            in_roles = util.listify( payload.get( 'in_roles' ) ) or []
             if not name:
                 return message_exception( trans, 'Enter a valid name.' )
             elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == name ).first():
@@ -1525,11 +1525,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                      'message': 'User \'%s\' is currently associated with %d role(s) and is a member of %d group(s).' %
                                 ( user.email, len( in_roles ) - 1, len( in_groups ) ),
                      'status' : 'info',
-                     'inputs' : [ build_select_input( 'roles', 'Roles', all_roles, in_roles ),
-                                  build_select_input( 'groups', 'Groups', all_groups, in_groups ) ] }
+                     'inputs' : [ build_select_input( 'in_roles', 'Roles', all_roles, in_roles ),
+                                  build_select_input( 'in_groups', 'Groups', all_groups, in_groups ) ] }
         else:
-            in_roles = payload.get( 'roles' ) or []
-            in_groups = payload.get( 'groups' ) or []
+            in_roles = payload.get( 'in_roles' ) or []
+            in_groups = payload.get( 'in_groups' ) or []
             if in_roles:
                 in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( in_roles ) ]
             if in_groups:
