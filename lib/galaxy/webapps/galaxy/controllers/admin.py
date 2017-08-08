@@ -1421,7 +1421,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         for group_id in ids:
             group = get_group( trans, group_id )
             if not group.deleted:
-                return ( "Group '%s' has not been deleted, so it cannot be purged." % role.name, "error" )
+                return ( "Group '%s' has not been deleted, so it cannot be purged." % group.name, "error" )
             # Delete UserGroupAssociations
             for uga in group.users:
                 trans.sa_session.delete( uga )
