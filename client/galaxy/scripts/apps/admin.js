@@ -18,6 +18,7 @@ window.app = function app( options, bootstrapped ){
         routes: {
             '(/)admin(/)users' : 'show_users',
             '(/)admin(/)roles' : 'show_roles',
+            '(/)admin(/)groups' : 'show_groups',
             '(/)admin(/)forms(/)(:form_id)' : 'show_forms'
         },
 
