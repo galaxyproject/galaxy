@@ -1080,7 +1080,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 'title'  : 'Change role name and description for \'%s\'' % util.sanitize_text( role.name ),
                 'inputs' : [{
                                 'name'  : 'name',
-                                'label' : 'Name'
+                                'label' : 'Name',
                                 'value' : role.name
                             },{
                                 'name'  : 'description',
