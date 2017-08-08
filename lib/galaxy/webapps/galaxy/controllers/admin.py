@@ -301,16 +301,13 @@ class GroupListGrid( grids.Grid ):
                                         url_args=dict( action="forms/rename_group" ) ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="mark_group_deleted" ) ),
+                                        allow_multiple=True ),
                    grids.GridOperation( "Undelete",
                                         condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="undelete_group" ) ),
+                                        allow_multiple=True ),
                    grids.GridOperation( "Purge",
                                         condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="purge_group" ) ) ]
+                                        allow_multiple=True ) ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -990,11 +987,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             ids = util.listify( id )
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == 'delete':
-                message, status = self.mark_role_deleted( trans, ids )
+                message, status = self._delete_role( trans, ids )
             elif operation == 'undelete':
-                message, status = self.undelete_role( trans, ids )
+                message, status = self._undelete_role( trans, ids )
             elif operation == 'purge':
-                message, status = self.purge_role( trans, ids )
+                message, status = self._purge_role( trans, ids )
         kwargs[ 'dict_format' ] = True
         if message and status:
             kwargs[ 'message' ] = util.sanitize_text( message )
@@ -1157,9 +1154,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             trans.sa_session.refresh( role )
             return { 'message' : 'Role \'%s\' has been updated with %d associated users and %d associated groups' % ( role.name, len( in_users ), len( in_groups ) ) }
 
-    @web.expose
-    @web.require_admin
-    def mark_role_deleted( self, trans, ids ):
+    def _delete_role( self, trans, ids ):
         message = 'Deleted %d roles: ' % len( ids )
         for role_id in ids:
             role = get_role( trans, role_id )
@@ -1169,9 +1164,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             message += ' %s ' % role.name
         return ( message, 'done' )
 
-    @web.expose
-    @web.require_admin
-    def undelete_role( self, trans, ids ):
+    def _undelete_role( self, trans, ids ):
         count = 0
         undeleted_roles = ""
         for role_id in ids:
@@ -1185,9 +1178,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             undeleted_roles += " %s" % role.name
         return ( "Undeleted %d roles: %s" % ( count, undeleted_roles ), "done" )
 
-    @web.expose
-    @web.require_admin
-    def purge_role( self, trans, ids ):
+    def _purge_role( self, trans, ids ):
         # This method should only be called for a Role that has previously been deleted.
         # Purging a deleted Role deletes all of the following from the database:
         # - UserRoleAssociations where role_id == Role.id
@@ -1237,7 +1228,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             if operation == "create":
                 return self.create_group( trans, **kwargs )
             if operation == 'delete':
-                message, status = self._mark_group_deleted( trans, ids )
+                message, status = self._delete_group( trans, ids )
             elif operation == 'undelete':
                 message, status = self._undelete_group( trans, ids )
             elif operation == 'purge':
@@ -1401,7 +1392,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                     message=message,
                                     status=status )
 
-    def _mark_group_deleted( self, trans, ids ):
+    def _delete_group( self, trans, ids ):
         message = 'Deleted %d groups: ' % len( ids )
         for group_id in ids:
             group = get_group( trans, group_id )
