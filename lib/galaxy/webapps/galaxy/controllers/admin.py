@@ -1229,18 +1229,21 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         message = kwargs.get( 'message' )
         status = kwargs.get( 'status' )
         if 'operation' in kwargs:
+            id = kwargs.get( 'id' )
+            if not id:
+                return self.message_exception( 'Invalid group id (%s) received.' % str( id ) )
+            ids = util.listify( id )
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == "create":
                 return self.create_group( trans, **kwargs )
-            if operation == "delete":
-                return self.mark_group_deleted( trans, **kwargs )
+            if operation == 'delete':
+                message, status = self._mark_group_deleted( trans, ids )
             if operation == "undelete":
                 return self.undelete_group( trans, **kwargs )
             if operation == "purge":
                 return self.purge_group( trans, **kwargs )
             if operation == "manage users and roles":
                 return self.manage_users_and_roles_for_group( trans, **kwargs )
-        # Render the list view
         kwargs[ 'dict_format' ] = True
         if message and status:
             kwargs[ 'message' ] = util.sanitize_text( message )
@@ -1398,29 +1401,15 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                     message=message,
                                     status=status )
 
-    @web.expose
-    @web.require_admin
-    def mark_group_deleted( self, trans, **kwd ):
-        params = util.Params( kwd )
-        id = params.get( 'id', None )
-        if not id:
-            message = "No group ids received for marking deleted"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='groups',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
-        message = "Deleted %d groups: " % len( ids )
+    def _mark_group_deleted( self, trans, ids ):
+        message = 'Deleted %d groups: ' % len( ids )
         for group_id in ids:
             group = get_group( trans, group_id )
             group.deleted = True
             trans.sa_session.add( group )
             trans.sa_session.flush()
-            message += " %s " % group.name
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='groups',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+            message += ' %s ' % group.name
+        return ( message, 'done' )
 
     @web.expose
     @web.require_admin
