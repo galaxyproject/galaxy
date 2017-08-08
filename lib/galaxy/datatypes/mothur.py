@@ -36,7 +36,7 @@ class Otu(Text):
             comment_lines = 0
 
             headers = iter_headers(dataset.file_name, sep='\t', count=-1)
-            first_line = next(headers)
+            first_line = get_headers(dataset.file_name, sep='\t', count=1)
             # set otulabels
             if len(first_line) > 2:
                 otulabel_names = first_line[2:]
