@@ -439,7 +439,7 @@ class UtilityContainerManager( object ):
                          name='Name',
                          description='Description',
                          version='Version',
-                         profile='Minimum required Galaxy version',
+                         profile='Minimum Galaxy Version',
                          requirements='',
                          repository_id='',
                          changeset_revision='' )
