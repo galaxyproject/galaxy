@@ -1029,7 +1029,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         else:
             name = util.restore_text( payload.get( 'name', '' ) )
             description = util.restore_text( payload.get( 'description', '' ) )
-            create_group_for_role_checked = payload.get( 'create_group_for_role' )
+            create_group_for_role_checked = payload.get( 'create_group_for_role' ) == 'true'
             in_users = util.listify( payload.get( 'users', [] ) )
             in_groups = util.listify( payload.get( 'groups', [] ) )
             if not name or not description:
