@@ -851,12 +851,7 @@ class Admin( object ):
             elif operation == "create":
                 return self.create_new_user( trans, **kwd )
             elif operation == "information":
-                user_id = kwd.get( 'id', None )
-                if not user_id:
-                    kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received" % str( user_id ) )
-                    kwd[ 'status' ] = 'error'
-                else:
-                    return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
+                return trans.response.send_redirect( web.url_for( controller='user', action='manage_user_info', cntrller='user', **kwd ) )
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwd )
         if trans.app.config.allow_user_deletion:
