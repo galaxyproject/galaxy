@@ -4935,6 +4935,14 @@ class UserOpenID( object ):
         self.session = session
         self.openid = openid
 
+class UserOAuth2( object ):
+    def __init__( self, user, state_token, id_token, refresh_token, expiration_date, access_token=None ):
+        self.user = user
+        self.state_token = state_token
+        self.id_token = id_token
+        self.refresh_token = refresh_token
+        self.expiration_date = expiration_date
+        self.access_token = access_token
 
 class Page( object, Dictifiable ):
     dict_element_visible_keys = [ 'id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted' ]

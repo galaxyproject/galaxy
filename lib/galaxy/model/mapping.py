@@ -90,6 +90,16 @@ model.UserOpenID.table = Table(
     Column( "openid", TEXT, index=True, unique=True ),
     Column( "provider", TrimmedString( 255 ) ) )
 
+model.UserOAuth2.table = Table(
+    "galaxy_user_oauth2", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=False, index=True ),
+    Column( "state_token", String, nullable=False, index=True ),
+    Column( "id_token", String, nullable=False ),
+    Column( "refresh_token", String, nullable=False ),
+    Column( "expiration_date", DateTime, nullable=False ),
+    Column( "access_token", String ) )
+
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
     Column( "token", String( 32 ), primary_key=True, unique=True, index=True ),
@@ -1565,6 +1575,11 @@ mapper( model.UserOpenID, model.UserOpenID.table, properties=dict(
         primaryjoin=( model.UserOpenID.table.c.user_id == model.User.table.c.id ),
         backref='openids',
         order_by=desc( model.UserOpenID.table.c.update_time ) )
+) )
+
+mapper( model.UserOAuth2, model.UserOAuth2.table, properties=dict(
+    user=relation( model.User,
+        primaryjoin=( model.UserOAuth2.table.c.user_id == model.User.table.c.id ) )
 ) )
 
 mapper( model.ValidationError, model.ValidationError.table )
