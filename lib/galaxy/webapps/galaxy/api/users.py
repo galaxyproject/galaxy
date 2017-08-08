@@ -557,7 +557,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                            'name': index,
                            'label': action.action,
                            'help': action.description,
-                           'options': [(r.name, r.id) for r in roles],
+                           'options': list(set((r.name, r.id) for r in roles)),
                            'value': [a.role.id for a in user.default_permissions if a.action == action.action]})
         return {'message': 'Permissions unchanged.', 'inputs': inputs}
 
