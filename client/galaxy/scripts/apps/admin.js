@@ -19,6 +19,7 @@ window.app = function app( options, bootstrapped ){
             '(/)admin(/)users' : 'show_users',
             '(/)admin(/)roles' : 'show_roles',
             '(/)admin(/)groups' : 'show_groups',
+            '(/)admin(/)tool_versions' : 'show_tool_versions',
             '(/)admin(/)forms(/)(:form_id)' : 'show_forms'
         },
 
@@ -36,6 +37,10 @@ window.app = function app( options, bootstrapped ){
 
         show_groups: function() {
             this.page.display( new GridView( { url_base: Galaxy.root + 'admin/groups_list', url_data: Galaxy.params, dict_format: true } ) );
+        },
+
+        show_tool_versions: function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'admin/tool_versions_list', url_data: Galaxy.params, dict_format: true } ) );
         },
 
         show_forms : function( form_id ) {

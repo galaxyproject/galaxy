@@ -54,7 +54,8 @@ var AdminPanel = Backbone.View.extend({
                 url     : 'admin/package_tool'
             },{
                 title   : 'Tool lineage',
-                url     : 'admin/tool_versions'
+                url     : 'admin/tool_versions',
+                target  : '__use_router__'
             },{
                 title   : 'Reload a tool\'s configuration',
                 url     : 'admin/reload_tool'

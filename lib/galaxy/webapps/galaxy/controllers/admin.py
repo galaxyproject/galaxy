@@ -967,11 +967,13 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                     message=message,
                                     status=status )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def tool_versions( self, trans, **kwd ):
+    def tool_versions_list( self, trans, **kwd ):
         if 'message' not in kwd or not kwd[ 'message' ]:
             kwd[ 'message' ] = 'Tool ids for tools that are currently loaded into the tool panel are highlighted in green (click to display).'
+            kwd[ 'status' ] = 'info'
+        kwd[ 'dict_format' ] = True
         return self.tool_version_list_grid( trans, **kwd )
 
     @web.expose
