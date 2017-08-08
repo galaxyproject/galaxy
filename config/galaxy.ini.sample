@@ -1129,6 +1129,11 @@ use_interactive = True
 #openid_config_file = config/openid_conf.xml
 #openid_consumer_cache_path = database/openid_consumer_cache
 
+# Sets OAuth2.0 the path to client secret file. Note that this file should be
+# on a path inaccessible to public.
+#enable_oauth2 = True
+#oauth2_config_file = config/oauth2_config.xml
+
 # XML config file that allows the use of different authentication providers
 # (e.g. LDAP) instead or in addition to local authentication (.sample is used
 # if default does not exist).
