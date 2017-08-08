@@ -79,7 +79,8 @@ var AdminPanel = Backbone.View.extend({
                 target  : '__use_router__'
             },{
                 title   : 'Groups',
-                url     : 'admin/groups'
+                url     : 'admin/groups',
+                target  : '__use_router__'
             },{
                 title   : 'Roles',
                 url     : 'admin/roles',

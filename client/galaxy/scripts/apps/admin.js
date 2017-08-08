@@ -33,6 +33,10 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new GridView( { url_base: Galaxy.root + 'admin/roles_list', url_data: Galaxy.params, dict_format: true } ) );
         },
 
+        show_groups: function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'admin/groups_list', url_data: Galaxy.params, dict_format: true } ) );
+        },
+
         show_forms : function( form_id ) {
             var form_defs = {
                 reset_user_password: {

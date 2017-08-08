@@ -1223,9 +1223,9 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             message += " %s " % role.name
         return ( message, "done" )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def groups( self, trans, **kwargs ):
+    def groups_list( self, trans, **kwargs ):
         if 'operation' in kwargs:
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == "groups":
@@ -1243,6 +1243,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             if operation == "rename":
                 return self.rename_group( trans, **kwargs )
         # Render the list view
+        kwargs[ 'dict_format' ] = True
         return self.group_list_grid( trans, **kwargs )
 
     @web.expose
