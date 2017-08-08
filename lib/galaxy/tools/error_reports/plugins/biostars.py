@@ -3,7 +3,6 @@ from __future__ import absolute_import
 
 import logging
 
-from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util import string_as_bool
 from galaxy.util import biostar
 from galaxy.web.base.controller import url_for
@@ -25,7 +24,7 @@ class BiostarsPlugin( ErrorPlugin ):
         self.user_submission = string_as_bool(kwargs.get('user_submission', True))
 
     def submit_report( self, dataset, job, tool, **kwargs ):
-        """Send report as an email
+        """Doesn't do anything, just shows a link to submit on biostars.
         """
         try:
             assert biostar.biostar_enabled( self.app ), ValueError( "Biostar is not configured for this galaxy instance" )
