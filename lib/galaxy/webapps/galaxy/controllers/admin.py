@@ -12,7 +12,7 @@ from galaxy import util
 from galaxy import model
 from galaxy import web
 from galaxy.actions.admin import AdminActions
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
 from galaxy.util import nice_size, sanitize_text, url_get
 from galaxy.util.odict import odict
@@ -517,7 +517,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', '' )
         if 'operation' in kwd:
-            id = kwd.get( 'id', None )
+            id = kwd.get( 'id' )
             if not id:
                 message, status = ( 'Invalid user id (%s) received.' % str( id ), 'error' )
             ids = util.listify( id )
@@ -545,19 +545,19 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def quotas_list( self, trans, payload={}, **kwargs ):
+    def quotas_list( self, trans, payload=None, **kwargs ):
         message = kwargs.get( 'message', '' )
         status = kwargs.get( 'status', '' )
         if 'operation' in kwargs:
-            id = kwargs.get( 'id', None )
+            id = kwargs.get( 'id' )
             if not id:
-                return self.message_exception( 'Invalid quota id (%s) received.' % str( id ) )
+                return message_exception( trans, 'Invalid quota id (%s) received.' % str( id ) )
             quotas = []
             for quota_id in util.listify( id ):
                 try:
                     quotas.append( self.get_quota( trans, quota_id ) )
                 except MessageException as e:
-                    return self.message_exception( str( e ) )
+                    return message_exception( trans, str( e ) )
             operation = kwargs.pop('operation').lower()
             try:
                 if operation == 'delete':
@@ -566,11 +566,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     message = self._undelete_quota( quotas )
                 elif operation == 'purge':
                     message = self._purge_quota( quotas )
-            except MessageException as e:
-                return self.message_exception( e.err_msg )
+            except ActionInputError as e:
+                message, status = ( e.err_msg, 'error' )
         if message:
             kwargs[ 'message' ] = util.sanitize_text( message )
-            kwargs[ 'status' ] = 'done'
+            kwargs[ 'status' ] = status or 'done'
         kwargs[ 'dict_format' ] = True
         return self.quota_list_grid( trans, **kwargs )
 
@@ -623,7 +623,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def rename_quota( self, trans, payload={}, **kwd ):
+    def rename_quota( self, trans, payload=None, **kwd ):
         id = kwd.get( 'id' )
         if not id:
             return message_exception( trans, 'No quota id received for renaming.' )
@@ -939,7 +939,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def create_role( self, trans, payload={}, **kwd ):
+    def create_role( self, trans, payload=None, **kwd ):
         if trans.request.method == 'GET':
             all_users = []
             all_groups = []
@@ -1044,7 +1044,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def manage_users_and_groups_for_role( self, trans, payload={}, **kwd ):
+    def manage_users_and_groups_for_role( self, trans, payload=None, **kwd ):
         role_id = kwd.get( 'id' )
         if not role_id:
             return message_exception( trans, 'Invalid role id (%s) received' % str( role_id ) )
@@ -1161,7 +1161,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         if 'operation' in kwargs:
             id = kwargs.get( 'id' )
             if not id:
-                return self.message_exception( 'Invalid group id (%s) received.' % str( id ) )
+                return message_exception( trans, 'Invalid group id (%s) received.' % str( id ) )
             ids = util.listify( id )
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == 'delete':
@@ -1210,7 +1210,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def manage_users_and_roles_for_group( self, trans, payload={}, **kwd ):
+    def manage_users_and_roles_for_group( self, trans, payload=None, **kwd ):
         group_id = kwd.get( 'id' )
         if not group_id:
             return message_exception( trans, 'Invalid group id (%s) received' % str( group_id ) )
@@ -1248,7 +1248,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def create_group( self, trans, payload={}, **kwd ):
+    def create_group( self, trans, payload=None, **kwd ):
         if trans.request.method == 'GET':
             all_users = []
             all_roles = []
@@ -1483,7 +1483,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def manage_roles_and_groups_for_user( self, trans, payload={}, **kwd ):
+    def manage_roles_and_groups_for_user( self, trans, payload=None, **kwd ):
         user_id = kwd.get( 'id' )
         if not user_id:
             return message_exception( trans, 'Invalid user id (%s) received' % str( user_id ) )
