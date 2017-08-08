@@ -6,7 +6,6 @@ from __future__ import absolute_import
 import imp
 import logging
 import os
-import tempfile
 from collections import OrderedDict as odict
 from xml.etree.ElementTree import Element
 
@@ -672,7 +671,6 @@ class Registry(object):
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
-        self.to_xml_file()
         set_meta_tool = toolbox.load_hidden_lib_tool("galaxy/datatypes/set_metadata_tool.xml")
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug("Loaded external metadata tool: %s", self.set_external_metadata_tool.id)
@@ -876,16 +874,8 @@ class Registry(object):
             return self.xml_filename
         return self.xml_filename
 
-    def to_xml_file(self):
-        if self.xml_filename is not None:
-            # If persisted previously, attempt to remove the temporary file in which we were written.
-            try:
-                os.unlink(self.xml_filename)
-            except:
-                pass
-            self.xml_filename = None
-        fd, filename = tempfile.mkstemp()
-        self.xml_filename = os.path.abspath(filename)
+    def to_xml_file(self, path=None):
+        path = os.path.abspath(path)
         if self.converters_path_attr:
             converters_path_str = ' converters_path="%s"' % self.converters_path_attr
         else:
@@ -894,19 +884,19 @@ class Registry(object):
             display_path_str = ' display_path="%s"' % self.display_path_attr
         else:
             display_path_str = ''
-        os.write(fd, '<?xml version="1.0"?>\n')
-        os.write(fd, '<datatypes>\n')
-        os.write(fd, '<registration%s%s>\n' % (converters_path_str, display_path_str))
-        for elem in self.datatype_elems:
-            os.write(fd, '%s' % galaxy.util.xml_to_string(elem))
-        os.write(fd, '</registration>\n')
-        os.write(fd, '<sniffers>\n')
-        for elem in self.sniffer_elems:
-            os.write(fd, '%s' % galaxy.util.xml_to_string(elem))
-        os.write(fd, '</sniffers>\n')
-        os.write(fd, '</datatypes>\n')
-        os.close(fd)
-        os.chmod(self.xml_filename, 0o644)
+        with open(path, 'w') as registry_xml:
+            os.chmod(path, 0o644)
+            registry_xml.write('<?xml version="1.0"?>\n')
+            registry_xml.write('<datatypes>\n')
+            registry_xml.write('<registration%s%s>\n' % (converters_path_str, display_path_str))
+            for elem in self.datatype_elems:
+                registry_xml.write('%s' % galaxy.util.xml_to_string(elem))
+            registry_xml.write('</registration>\n')
+            registry_xml.write('<sniffers>\n')
+            for elem in self.sniffer_elems:
+                registry_xml.write('%s' % galaxy.util.xml_to_string(elem))
+            registry_xml.write('</sniffers>\n')
+            registry_xml.write('</datatypes>\n')
 
     def get_extension(self, elem):
         """
