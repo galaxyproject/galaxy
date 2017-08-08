@@ -411,8 +411,7 @@ class QuotaListGrid( grids.Grid ):
                                         url_args=dict( webapp="galaxy", action="set_quota_default" ) ),
                    grids.GridOperation( "Unset as default",
                                         condition=( lambda item: item.default and not item.deleted ),
-                                        allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="unset_quota_default" ) ),
+                                        allow_multiple=False ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted and not item.default ),
                                         allow_multiple=True ),
@@ -566,6 +565,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     message = self._undelete_quota( quotas )
                 elif operation == 'purge':
                     message = self._purge_quota( quotas )
+                elif operation == 'unset quota default':
+                    message = self._unset_quota_default( quotas[ 0 ] )
             except ActionInputError as e:
                 message, status = ( e.err_msg, 'error' )
         if message:
@@ -728,18 +729,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                     webapp=params.webapp,
                                     message=params.message,
                                     status=params.status )
-
-    @web.expose
-    @web.require_admin
-    def unset_quota_default( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, True, self._unset_quota_default, kwd )
-        if not quota:
-            return
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='quotas',
-                                                          webapp=params.webapp,
-                                                          message=sanitize_text( params.message ),
-                                                          status='error' ) )
 
     @web.expose
     @web.require_admin
