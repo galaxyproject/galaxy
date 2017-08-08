@@ -1016,13 +1016,17 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                          .order_by( trans.app.model.Group.table.c.name ):
                 all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
             return { 'title'  : 'Create Role',
-                     'inputs' : [ {   'name'  : 'name',
-                                      'label' : 'Name',
-                                },{   'name'  : 'description',
-                                      'label' : 'Description'
-                                }, build_select_input( 'groups', 'Groups', all_groups, [] ),
-                                   build_select_input( 'users', 'Users', all_users, [] ),
-                                {   'name'  : 'create_group_for_role',
+                     'inputs' : [{
+                                    'name'  : 'name',
+                                    'label' : 'Name'
+                                },{
+                                    'name'  : 'description',
+                                    'label' : 'Description'
+                                },
+                                build_select_input( 'groups', 'Groups', all_groups, [] ),
+                                build_select_input( 'users', 'Users', all_users, [] ),
+                                {
+                                    'name'  : 'create_group_for_role',
                                     'label' : 'Create a new role of the same name for this group:',
                                     'type'  : 'boolean'
                                 } ] }
@@ -1074,10 +1078,12 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         if trans.request.method == 'GET':
             return {
                 'title'  : 'Change role name and description for \'%s\'' % util.sanitize_text( role.name ),
-                'inputs' : [{   'name'  : 'name',
-                                'label' : 'Name',
+                'inputs' : [{
+                                'name'  : 'name',
+                                'label' : 'Name'
                                 'value' : role.name
-                            },{ 'name'  : 'description',
+                            },{
+                                'name'  : 'description',
                                 'label' : 'Description',
                                 'value' : role.description
                             }]
@@ -1105,7 +1111,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     def manage_users_and_groups_for_role( self, trans, payload={}, **kwd ):
         role_id = kwd.get( 'id' )
         if not role_id:
-            return message_exception( trans, 'Invalid role id (%s) received' % str( user_id ) )
+            return message_exception( trans, 'Invalid role id (%s) received' % str( role_id ) )
         role = get_role( trans, role_id )
         if trans.request.method == 'GET':
             in_users = []
@@ -1130,36 +1136,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                      'status' : 'info',
                      'inputs' : [ build_select_input( 'groups', 'Groups', all_groups, in_groups ),
                                   build_select_input( 'users', 'Users', all_users, in_users ) ] }
-            #library_dataset_actions = {}
-            #if len( role.dataset_actions ) < 25:
-                # Build a list of tuples that are LibraryDatasetDatasetAssociationss followed by a list of actions
-                # whose DatasetPermissions is associated with the Role
-                # [ ( LibraryDatasetDatasetAssociation [ action, action ] ) ]
-            #    for dp in role.dataset_actions:
-            #        for ldda in trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ) \
-            #                                    .filter( trans.app.model.LibraryDatasetDatasetAssociation.dataset_id == dp.dataset_id ):
-            #            root_found = False
-            #            folder_path = ''
-            #            folder = ldda.library_dataset.folder
-            #            while not root_found:
-            #                folder_path = '%s / %s' % ( folder.name, folder_path )
-            #                if not folder.parent:
-            #                    root_found = True
-            #                else:
-            #                    folder = folder.parent
-            #            folder_path = '%s %s' % ( folder_path, ldda.name )
-            #            library = trans.sa_session.query( trans.app.model.Library ) \
-            #                                      .filter( trans.app.model.Library.table.c.root_folder_id == folder.id ) \
-            #                                      .first()
-            #            if library not in library_dataset_actions:
-            #                library_dataset_actions[ library ] = {}
-            #            try:
-            #                library_dataset_actions[ library ][ folder_path ].append( dp.action )
-            #            except:
-            #                library_dataset_actions[ library ][ folder_path ] = [ dp.action ]
-            #else:
-            #    message = "Not showing associated datasets, there are too many."
-            #    status = 'info'
             return { 'message' : 'Not showing associated datasets, there are too many.', 'info' : 'info' }
         else:
             in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'users' ) ) ]
