@@ -94,6 +94,7 @@ model.UserOAuth2.table = Table(
     "galaxy_user_oauth2", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=False, index=True ),
+    Column( "provider", String, nullable=False ),
     Column( "state_token", String, nullable=False, index=True ),
     Column( "id_token", String, nullable=False ),
     Column( "refresh_token", String, nullable=False ),
