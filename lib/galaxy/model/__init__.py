@@ -4935,6 +4935,7 @@ class UserOpenID( object ):
         self.session = session
         self.openid = openid
 
+
 class UserOAuth2( object ):
     def __init__( self, user, state_token, id_token, refresh_token, expiration_date, access_token=None ):
         self.user = user
