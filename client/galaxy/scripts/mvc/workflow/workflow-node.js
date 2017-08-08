@@ -215,6 +215,11 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
                 delete nodeView.outputViews[unused_output];  // removes the reference to the output
                 delete node.output_terminals[unused_output];  // removes the output terminal
             });
+            $.each( node.workflow_outputs, function(i, wf_output){
+                if (wf_output && !node.output_terminals[wf_output.output_name]) {
+                    node.workflow_outputs.splice(i, 1);  // removes output from list of workflow outputs
+                }
+            });
             $.each( data.data_outputs, function( i, output ) {
                 if (!nodeView.outputViews[output.name]) {
                     nodeView.addDataOutput(output);  // add data output if it does not yet exist
