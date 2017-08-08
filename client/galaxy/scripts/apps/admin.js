@@ -70,6 +70,10 @@ window.app = function app( options, bootstrapped ){
                     url             : 'admin/manage_users_and_roles_for_group?id=' + QueryStringParsing.get( 'id' ),
                     redirect        : 'admin/groups'
                 },
+                manage_users_and_groups_for_quota: {
+                    url             : 'admin/manage_users_and_groups_for_quota?id=' + QueryStringParsing.get( 'id' ),
+                    redirect        : 'admin/quotas'
+                },
                 create_role: {
                     url             : 'admin/create_role?id=' + QueryStringParsing.get( 'id' ),
                     redirect        : 'admin/roles'

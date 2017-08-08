@@ -72,12 +72,12 @@ class AdminActions( object ):
             message = "Quota '%s' has been renamed to '%s'." % ( old_name, params.name )
             return message
 
-    def _manage_users_and_groups_for_quota( self, quota, params ):
+    def _manage_users_and_groups_for_quota( self, quota, params, decode_id=None ):
         if quota.default:
             raise ActionInputError( 'Default quotas cannot be associated with specific users and groups.' )
         else:
-            in_users = [ self.sa_session.query( self.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
-            in_groups = [ self.sa_session.query( self.app.model.Group ).get( x ) for x in util.listify( params.in_groups ) ]
+            in_users = [ self.sa_session.query( self.app.model.User ).get( decode_id( x ) if decode_id else x ) for x in util.listify( params.in_users ) ]
+            in_groups = [ self.sa_session.query( self.app.model.Group ).get( decode_id( x ) if decode_id else x ) for x in util.listify( params.in_groups ) ]
             self.app.quota_agent.set_entity_quota_associations( quotas=[ quota ], users=in_users, groups=in_groups )
             self.sa_session.refresh( quota )
             message = "Quota '%s' has been updated with %d associated users and %d associated groups." % ( quota.name, len( in_users ), len( in_groups ) )

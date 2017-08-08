@@ -400,7 +400,7 @@ class QuotaListGrid( grids.Grid ):
                    grids.GridOperation( "Manage users and groups",
                                         condition=( lambda item: not item.default and not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="manage_users_and_groups_for_quota" ) ),
+                                        url_args=dict( action="forms/manage_users_and_groups_for_quota" ) ),
                    grids.GridOperation( "Set as different type of default",
                                         condition=( lambda item: item.default ),
                                         allow_multiple=False,
@@ -554,7 +554,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             quotas = []
             for quota_id in util.listify( id ):
                 try:
-                    quotas.append( self.get_quota( trans, quota_id ) )
+                    quotas.append( get_quota( trans, quota_id ) )
                 except MessageException as e:
                     return message_exception( trans, str( e ) )
             operation = kwargs.pop('operation').lower()
@@ -648,40 +648,41 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             except ActionInputError as e:
                 return message_exception( trans, e.err_msg )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def manage_users_and_groups_for_quota( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, 'quota_members_edit_button', self._manage_users_and_groups_for_quota, kwd )
-        if not quota:
-            return
-        in_users = []
-        out_users = []
-        in_groups = []
-        out_groups = []
-        for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted == expression.false() ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
-            if user in [ x.user for x in quota.users ]:
-                in_users.append( ( user.id, user.email ) )
-            else:
-                out_users.append( ( user.id, user.email ) )
-        for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted == expression.false()) \
-                                     .order_by( trans.app.model.Group.table.c.name ):
-            if group in [ x.group for x in quota.groups ]:
-                in_groups.append( ( group.id, group.name ) )
-            else:
-                out_groups.append( ( group.id, group.name ) )
-        return trans.fill_template( '/admin/quota/quota.mako',
-                                    id=params.id,
-                                    name=quota.name,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    in_groups=in_groups,
-                                    out_groups=out_groups,
-                                    webapp=params.webapp,
-                                    message=params.message,
-                                    status=params.status )
+    def manage_users_and_groups_for_quota( self, trans, payload=None, **kwd ):
+        quota_id = kwd.get( 'id' )
+        if not quota_id:
+            return message_exception( trans, 'Invalid quota id (%s) received' % str( role_id ) )
+        quota = get_quota( trans, quota_id )
+        if trans.request.method == 'GET':
+            in_users = []
+            all_users = []
+            in_groups = []
+            all_groups = []
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                if user in [ x.user for x in quota.users ]:
+                    in_users.append( trans.security.encode_id( user.id ) )
+                all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
+            for group in trans.sa_session.query( trans.app.model.Group ) \
+                                         .filter( trans.app.model.Group.table.c.deleted == false() ) \
+                                         .order_by( trans.app.model.Group.table.c.name ):
+                if group in [ x.group for x in quota.groups ]:
+                    in_groups.append( trans.security.encode_id( group.id ) )
+                all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
+            return { 'title'  : 'Quota \'%s\'' % quota.name,
+                     'message': 'Quota \'%s\' is currently associated with %d user(s) and %d group(s).' %
+                                ( quota.name, len( in_users ), len( in_groups ) ),
+                     'status' : 'info',
+                     'inputs' : [ build_select_input( 'in_groups', 'Groups', all_groups, in_groups ),
+                                  build_select_input( 'in_users', 'Users', all_users, in_users ) ] }
+        else:
+            try:
+                return { 'message': self._manage_users_and_groups_for_quota( quota, util.Params( payload ), trans.security.decode_id ) }
+            except ActionInputError as e:
+                return message_exception( trans, e.err_msg )
 
     @web.expose_api
     @web.require_admin
