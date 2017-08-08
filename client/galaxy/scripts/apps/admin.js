@@ -63,7 +63,11 @@ window.app = function app( options, bootstrapped ){
                 create_role: {
                     url             : 'admin/create_role?id=' + QueryStringParsing.get( 'id' ),
                     redirect        : 'admin/roles'
-                }
+                },
+                rename_group: {
+                    url             : 'admin/rename_group?id=' + QueryStringParsing.get( 'id' ),
+                    redirect        : 'admin/groups'
+                },
             };
             this.page.display( new FormWrapper.View ( form_defs[ form_id ] ) );
         }

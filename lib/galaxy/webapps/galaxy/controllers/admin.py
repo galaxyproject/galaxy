@@ -298,7 +298,7 @@ class GroupListGrid( grids.Grid ):
     operations = [ grids.GridOperation( "Rename",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="rename_group" ) ),
+                                        url_args=dict( action="forms/rename_group" ) ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=True,
@@ -1226,6 +1226,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.expose_api
     @web.require_admin
     def groups_list( self, trans, **kwargs ):
+        message = kwargs.get( 'message' )
+        status = kwargs.get( 'status' )
         if 'operation' in kwargs:
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == "groups":
@@ -1240,51 +1242,44 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 return self.purge_group( trans, **kwargs )
             if operation == "manage users and roles":
                 return self.manage_users_and_roles_for_group( trans, **kwargs )
-            if operation == "rename":
-                return self.rename_group( trans, **kwargs )
         # Render the list view
         kwargs[ 'dict_format' ] = True
+        if message and status:
+            kwargs[ 'message' ] = util.sanitize_text( message )
+            kwargs[ 'status' ] = status
         return self.group_list_grid( trans, **kwargs )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def rename_group( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
+    def rename_group( self, trans, payload=None, **kwd ):
+        id = kwd.get( 'id' )
         if not id:
-            message = "No group ids received for renaming"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='groups',
-                                                       message=message,
-                                                       status='error' ) )
+            return message_exception( trans, 'No group id received for renaming.' )
         group = get_group( trans, id )
-        if params.get( 'rename_group_button', False ):
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Change group name for \'%s\'' % util.sanitize_text( group.name ),
+                'inputs' : [{
+                                'name'  : 'name',
+                                'label' : 'Name',
+                                'value' : group.name
+                            }]
+            }
+        else:
             old_name = group.name
-            new_name = util.restore_text( params.name )
+            new_name = util.restore_text( payload.get( 'name' ) )
             if not new_name:
-                message = 'Enter a valid name'
-                status = 'error'
+                return message_exception( trans, 'Enter a valid group name.' )
             else:
                 existing_group = trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == new_name ).first()
                 if existing_group and existing_group.id != group.id:
-                    message = 'A group with that name already exists'
-                    status = 'error'
+                    return message_exception( trans, 'A group with that name already exists.' )
                 else:
-                    if group.name != new_name:
+                    if not ( group.name == new_name ):
                         group.name = new_name
                         trans.sa_session.add( group )
                         trans.sa_session.flush()
-                        message = "Group '%s' has been renamed to '%s'" % ( old_name, new_name )
-                    return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                      action='groups',
-                                                                      message=util.sanitize_text( message ),
-                                                                      status='done' ) )
-        return trans.fill_template( '/admin/dataset_security/group/group_rename.mako',
-                                    group=group,
-                                    message=message,
-                                    status=status )
+            return { 'message': 'Group \'%s\' has been renamed to \'%s\'.' % ( old_name, new_name ) }
 
     @web.expose
     @web.require_admin
