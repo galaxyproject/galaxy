@@ -122,7 +122,7 @@ class AdminActions( object ):
                     message = "Quota '%s' is not a default." % quota.name
             return message
 
-    def _unset_quota_default( self, quota, params ):
+    def _unset_quota_default( self, quota, params=None ):
         if not quota.default:
             raise ActionInputError( "Quota '%s' is not a default." % quota.name )
         else:
@@ -132,7 +132,7 @@ class AdminActions( object ):
             self.sa_session.flush()
             return message
 
-    def _delete_quota( self, quota ):
+    def _delete_quota( self, quota, params=None ):
         quotas = util.listify( quota )
         names = []
         for q in quotas:
@@ -151,7 +151,7 @@ class AdminActions( object ):
         message += ', '.join( names )
         return message
 
-    def _undelete_quota( self, quota ):
+    def _undelete_quota( self, quota, params=None ):
         quotas = util.listify( quota )
         names = []
         for q in quotas:
@@ -170,7 +170,7 @@ class AdminActions( object ):
         message += ', '.join( names )
         return message
 
-    def _purge_quota( self, quota ):
+    def _purge_quota( self, quota, params=None ):
         """
         This method should only be called for a Quota that has previously been deleted.
         Purging a deleted Quota deletes all of the following from the database:
