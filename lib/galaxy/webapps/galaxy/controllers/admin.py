@@ -218,7 +218,7 @@ class RoleListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Add new role", url_args=dict( webapp="galaxy", action="create_role" ) )
+        grids.GridAction( "Add new role", url_args=dict( action="forms/create_role" ) )
     ]
     operations = [ grids.GridOperation( "Edit",
                                         condition=( lambda item: not item.deleted ),
@@ -1001,40 +1001,51 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             kwargs[ 'status' ] = status
         return self.role_list_grid( trans, **kwargs )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def create_role( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        name = util.restore_text( params.get( 'name', '' ) )
-        description = util.restore_text( params.get( 'description', '' ) )
-        in_users = util.listify( params.get( 'in_users', [] ) )
-        out_users = util.listify( params.get( 'out_users', [] ) )
-        in_groups = util.listify( params.get( 'in_groups', [] ) )
-        out_groups = util.listify( params.get( 'out_groups', [] ) )
-        create_group_for_role = params.get( 'create_group_for_role', '' )
-        create_group_for_role_checked = CheckboxField.is_checked( create_group_for_role )
-        ok = True
-        if params.get( 'create_role_button', False ):
+    def create_role( self, trans, payload={}, **kwd ):
+        if trans.request.method == 'GET':
+            all_users = []
+            all_groups = []
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
+            for group in trans.sa_session.query( trans.app.model.Group ) \
+                                         .filter( trans.app.model.Group.table.c.deleted == false() ) \
+                                         .order_by( trans.app.model.Group.table.c.name ):
+                all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
+            return { 'title'  : 'Create Role',
+                     'inputs' : [ {   'name'  : 'name',
+                                      'label' : 'Name',
+                                },{   'name'  : 'description',
+                                      'label' : 'Description'
+                                }, build_select_input( 'groups', 'Groups', all_groups, [] ),
+                                   build_select_input( 'users', 'Users', all_users, [] ),
+                                {   'name'  : 'create_group_for_role',
+                                    'label' : 'Create a group with the same name?',
+                                    'type'  : 'boolean'
+                                } ] }
+        else:
+            name = util.restore_text( payload.get( 'name', '' ) )
+            description = util.restore_text( payload.get( 'description', '' ) )
+            create_group_for_role_checked = payload.get( 'create_group_for_role' )
+            in_users = util.listify( payload.get( 'users', [] ) )
+            in_groups = util.listify( payload.get( 'groups', [] ) )
             if not name or not description:
-                message = "Enter a valid name and a description."
-                status = 'error'
-                ok = False
+                return message_exception( trans, 'Enter a valid name and a description.' )
             elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == name ).first():
-                message = "Role names must be unique and a role with that name already exists, so choose another name."
-                status = 'error'
-                ok = False
+                return message_exception( trans, 'Role names must be unique and a role with that name already exists, so choose another name.' )
             else:
                 # Create the role
                 role = trans.app.model.Role( name=name, description=description, type=trans.app.model.Role.types.ADMIN )
                 trans.sa_session.add( role )
                 # Create the UserRoleAssociations
-                for user in [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in in_users ]:
+                for user in [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in in_users ]:
                     ura = trans.app.model.UserRoleAssociation( user, role )
                     trans.sa_session.add( ura )
                 # Create the GroupRoleAssociations
-                for group in [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in in_groups ]:
+                for group in [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in in_groups ]:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
                 if create_group_for_role_checked:
@@ -1048,33 +1059,10 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 else:
                     num_in_groups = len( in_groups )
                 trans.sa_session.flush()
-                message = "Role '%s' has been created with %d associated users and %d associated groups.  " \
-                    % ( role.name, len( in_users ), num_in_groups )
+                message = 'Role \'%s\' has been created with %d associated users and %d associated groups.' % ( role.name, len( in_users ), num_in_groups )
                 if create_group_for_role_checked:
                     message += 'One of the groups associated with this role is the newly created group with the same name.'
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='roles',
-                                                           message=util.sanitize_text( message ),
-                                                           status='done' ) )
-        if ok:
-            for user in trans.sa_session.query( trans.app.model.User ) \
-                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
-                                        .order_by( trans.app.model.User.table.c.email ):
-                out_users.append( ( user.id, user.email ) )
-            for group in trans.sa_session.query( trans.app.model.Group ) \
-                                         .filter( trans.app.model.Group.table.c.deleted == false() ) \
-                                         .order_by( trans.app.model.Group.table.c.name ):
-                out_groups.append( ( group.id, group.name ) )
-        return trans.fill_template( '/admin/dataset_security/role/role_create.mako',
-                                    name=name,
-                                    description=description,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    in_groups=in_groups,
-                                    out_groups=out_groups,
-                                    create_group_for_role_checked=create_group_for_role_checked,
-                                    message=message,
-                                    status=status )
+                return { 'message' : message }
 
     @web.expose_api
     @web.require_admin
@@ -1092,7 +1080,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                             },{ 'name'  : 'description',
                                 'label' : 'Description',
                                 'value' : role.description
-                            } ]
+                            }]
             }
         else:
             old_name = role.name
@@ -1140,8 +1128,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                      'message': 'Role \'%s\' is currently associated with %d user(s) and %d group(s).' %
                                 ( role.name, len( in_users ), len( in_groups ) ),
                      'status' : 'info',
-                     'inputs' : [ build_select_input( 'users', 'Users', all_users, in_users ),
-                                  build_select_input( 'groups', 'Groups', all_groups, in_groups ) ] }
+                     'inputs' : [ build_select_input( 'groups', 'Groups', all_groups, in_groups ),
+                                  build_select_input( 'users', 'Users', all_users, in_users ) ] }
             #library_dataset_actions = {}
             #if len( role.dataset_actions ) < 25:
                 # Build a list of tuples that are LibraryDatasetDatasetAssociationss followed by a list of actions
