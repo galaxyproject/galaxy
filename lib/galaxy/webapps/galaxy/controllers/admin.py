@@ -546,9 +546,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         kwd[ 'dict_format' ] = True
         return self.user_list_grid( trans, **kwd )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def quotas( self, trans, **kwargs ):
+    def quotas_list( self, trans, **kwargs ):
+        message = kwargs.get( 'message', '' )
+        status = kwargs.get( 'status', '' )
         if 'operation' in kwargs:
             operation = kwargs.pop('operation').lower()
             if operation == "quotas":
@@ -569,7 +571,10 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 return self.rename_quota( trans, **kwargs )
             if operation == "edit":
                 return self.edit_quota( trans, **kwargs )
-        # Render the list view
+        if message and status:
+            kwargs[ 'message' ] = util.sanitize_text( message )
+            kwargs[ 'status' ] = status
+        kwargs[ 'dict_format' ] = True
         return self.quota_list_grid( trans, **kwargs )
 
     @web.expose
