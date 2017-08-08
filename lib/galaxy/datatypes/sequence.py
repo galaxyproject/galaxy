@@ -9,6 +9,7 @@ import re
 import string
 import sys
 from cgi import escape
+from itertools import islice
 
 import bx.align.maf
 
@@ -16,7 +17,10 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.sniff import (
+    get_headers,
+    iter_headers
+)
 from galaxy.util import (
     compression_utils,
     nice_size
@@ -611,7 +615,7 @@ class BaseFastq ( Sequence ):
         compressed = is_gzip(filename) or is_bz2(filename)
         if compressed and not isinstance(self, Binary):
             return False
-        headers = get_headers( filename, None, count=1000 )
+        headers = iter_headers( filename, None, count=1000 )
 
         # If this is a FastqSanger-derived class, then check to see if the base qualities match
         if isinstance(self, FastqSanger) or isinstance(self, FastqSangerGz) or isinstance(self, FastqSangerBz2):
@@ -621,7 +625,8 @@ class BaseFastq ( Sequence ):
         bases_regexp = re.compile( "^[NGTAC]*" )
         # check that first block looks like a fastq block
         try:
-            if len( headers ) >= 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
+            headers = get_headers( filename, None, count=4 )
+            if len( headers ) == 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
                 # Check the sequence line, make sure it contains only G/C/A/T/N
                 if not bases_regexp.match( headers[1][0] ):
                     return False
@@ -695,7 +700,7 @@ class BaseFastq ( Sequence ):
     @staticmethod
     def sangerQualities( lines ):
         """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
-        for line in lines[3::4]:
+        for line in islice(lines, 3, None, 4):
             if not all(_ >= '!' and _ <= 'M' for _ in line[0]):
                 return False
         return True

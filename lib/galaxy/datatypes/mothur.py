@@ -7,7 +7,10 @@ import sys
 
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.sniff import (
+    get_headers,
+    iter_headers
+)
 from galaxy.datatypes.tabular import Tabular
 
 log = logging.getLogger(__name__)
@@ -32,10 +35,11 @@ class Otu(Text):
             data_lines = 0
             comment_lines = 0
 
-            headers = get_headers(dataset.file_name, sep='\t', count=-1)
+            headers = iter_headers(dataset.file_name, sep='\t', count=-1)
+            first_line = next(headers)
             # set otulabels
-            if len(headers[0]) > 2:
-                otulabel_names = headers[0][2:]
+            if len(first_line) > 2:
+                otulabel_names = first_line[2:]
             # set label names and number of lines
             for line in headers:
                 if len(line) >= 2 and not line[0].startswith('@'):
@@ -64,7 +68,7 @@ class Otu(Text):
         >>> Otu().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(filename, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -109,7 +113,7 @@ class Sabund(Otu):
         >>> Sabund().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(filename, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -151,7 +155,7 @@ class GroupAbund(Otu):
             comment_lines = 0
             ncols = 0
 
-            headers = get_headers(dataset.file_name, sep='\t', count=-1)
+            headers = iter_headers(dataset.file_name, sep='\t', count=-1)
             for line in headers:
                 if line[0] == 'label' and line[1] == 'Group':
                     skip = 1
@@ -187,7 +191,7 @@ class GroupAbund(Otu):
         >>> GroupAbund().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(filename, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -234,7 +238,7 @@ class SecondaryStructureMap(Tabular):
         >>> SecondaryStructureMap().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(filename, sep='\t')
         line_num = 0
         rowidxmap = {}
         for line in headers:
@@ -302,7 +306,7 @@ class DistanceMatrix(Text):
     def set_meta(self, dataset, overwrite=True, skip=0, **kwd):
         super(DistanceMatrix, self).set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
-        headers = get_headers(dataset.file_name, sep='\t')
+        headers = iter_headers(dataset.file_name, sep='\t')
         for line in headers:
             if not line[0].startswith('@'):
                 try:
@@ -344,7 +348,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         False
         """
         numlines = 300
-        headers = get_headers(filename, sep='\t', count=numlines)
+        headers = iter_headers(filename, sep='\t', count=numlines)
         line_num = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -405,7 +409,7 @@ class SquareDistanceMatrix(DistanceMatrix):
         False
         """
         numlines = 300
-        headers = get_headers(filename, sep='\t', count=numlines)
+        headers = iter_headers(filename, sep='\t', count=numlines)
         line_num = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -461,7 +465,7 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         >>> PairwiseDistanceMatrix().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(filename, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -525,7 +529,7 @@ class Group(Tabular):
         super(Group, self).set_meta(dataset, overwrite, skip, max_data_lines)
 
         group_names = set()
-        headers = get_headers(dataset.file_name, sep='\t', count=-1)
+        headers = iter_headers(dataset.file_name, sep='\t', count=-1)
         for line in headers:
             if len(line) > 1:
                 group_names.add(line[1])
@@ -558,7 +562,7 @@ class Oligos(Text):
         >>> Oligos().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(filename, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@') and not line[0].startswith('#'):
@@ -602,7 +606,7 @@ class Frequency(Tabular):
         >>> Frequency().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(filename, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
@@ -653,7 +657,7 @@ class Quantile(Tabular):
         >>> Quantile().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(filename, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@') and not line[0].startswith('#'):
@@ -691,7 +695,7 @@ class LaneMask(Text):
         >>> LaneMask().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = get_headers(filename, sep='\t', count=2)
         if len(headers) != 1 or len(headers[0]) != 1:
             return False
 
@@ -774,7 +778,7 @@ class RefTaxonomy(Tabular):
         >>> RefTaxonomy().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t', count=300)
+        headers = iter_headers(filename, sep='\t', count=300)
         count = 0
         pat_prog = re.compile('^([^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?(;[^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?)*(;)?)$')
         found_semicolons = False
@@ -849,7 +853,7 @@ class Axes(Tabular):
         >>> Axes().sniff( fname )
         False
         """
-        headers = get_headers(filename, sep='\t')
+        headers = iter_headers(filename, sep='\t')
         count = 0
         col_cnt = None
         all_integers = True
