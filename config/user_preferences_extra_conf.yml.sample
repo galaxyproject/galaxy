@@ -12,7 +12,7 @@ preferences:
               type: text
               # by defaul all inputs are required
               required: True
-            - name: appollo_text
+            - name: apollo_text
               label: Apollo Text
               # type of input field that will be displayed to the user
               # can be string or password
