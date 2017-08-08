@@ -94,6 +94,10 @@ window.app = function app( options, bootstrapped ){
                     url             : 'admin/edit_quota?id=' + QueryStringParsing.get( 'id' ),
                     redirect        : 'admin/quotas'
                 },
+                set_quota_default: {
+                    url             : 'admin/set_quota_default?id=' + QueryStringParsing.get( 'id' ),
+                    redirect        : 'admin/quotas'
+                },
             };
             this.page.display( new FormWrapper.View ( form_defs[ form_id ] ) );
         }

@@ -404,11 +404,11 @@ class QuotaListGrid( grids.Grid ):
                    grids.GridOperation( "Set as different type of default",
                                         condition=( lambda item: item.default ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="set_quota_default" ) ),
+                                        url_args=dict( action="forms/set_quota_default" ) ),
                    grids.GridOperation( "Set as default",
                                         condition=( lambda item: not item.default and not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="set_quota_default" ) ),
+                                        url_args=dict( action="forms/set_quota_default" ) ),
                    grids.GridOperation( "Unset as default",
                                         condition=( lambda item: item.default and not item.deleted ),
                                         allow_multiple=False ),
@@ -565,7 +565,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     message = self._undelete_quota( quotas )
                 elif operation == 'purge':
                     message = self._purge_quota( quotas )
-                elif operation == 'unset quota default':
+                elif operation == 'unset as default':
                     message = self._unset_quota_default( quotas[ 0 ] )
             except ActionInputError as e:
                 message, status = ( e.err_msg, 'error' )
@@ -711,24 +711,33 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             except ActionInputError as e:
                 return message_exception( trans, e.err_msg )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def set_quota_default( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, 'set_default_quota_button', self._set_quota_default, kwd )
-        if not quota:
-            return
-        if params.default:
-            default = params.default
-        elif quota.default:
-            default = quota.default[0].type
+    def set_quota_default( self, trans, payload=None, **kwd ):
+        id = kwd.get( 'id' )
+        if not id:
+            return message_exception( trans, 'No quota id received for renaming.' )
+        quota = get_quota( trans, id )
+        if trans.request.method == 'GET':
+            default_value = quota.default[ 0 ].type if quota.default else 'no'
+            default_options = [ ( 'No', 'no' ) ]
+            for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
+                default_options.append( ( 'Yes, ' + typ, typ ) )
+            return {
+                'title'  : 'Set quota default for \'%s\'' % util.sanitize_text( quota.name ),
+                'inputs' : [{
+                                'name'    : 'default',
+                                'label'   : 'Assign, increase by amount, or decrease by amount?',
+                                'options' : default_options,
+                                'value'   : default_value,
+                                'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
+                            }]
+            }
         else:
-            default = "no"
-        return trans.fill_template( '/admin/quota/quota_set_default.mako',
-                                    id=params.id,
-                                    default=default,
-                                    webapp=params.webapp,
-                                    message=params.message,
-                                    status=params.status )
+            try:
+                return { 'message': self._set_quota_default( quota, util.Params( payload ) ) }
+            except ActionInputError as e:
+                return message_exception( trans, e.err_msg )
 
     @web.expose
     @web.require_admin
