@@ -262,7 +262,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             with open(path, 'r') as stream:
                 config = yaml.load(stream)
         except:
-            raise
             log.warn('Config file (%s) could not be found or is malformed.' % path)
             return {}
 
