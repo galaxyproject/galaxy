@@ -69,18 +69,18 @@ class AdminActions( object ):
             quota.description = params.description
             self.sa_session.add( quota )
             self.sa_session.flush()
-            message = "Quota '%s' has been renamed to '%s'" % ( old_name, params.name )
+            message = "Quota '%s' has been renamed to '%s'." % ( old_name, params.name )
             return message
 
     def _manage_users_and_groups_for_quota( self, quota, params ):
         if quota.default:
-            raise ActionInputError( 'Default quotas cannot be associated with specific users and groups' )
+            raise ActionInputError( 'Default quotas cannot be associated with specific users and groups.' )
         else:
             in_users = [ self.sa_session.query( self.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
             in_groups = [ self.sa_session.query( self.app.model.Group ).get( x ) for x in util.listify( params.in_groups ) ]
             self.app.quota_agent.set_entity_quota_associations( quotas=[ quota ], users=in_users, groups=in_groups )
             self.sa_session.refresh( quota )
-            message = "Quota '%s' has been updated with %d associated users and %d associated groups" % ( quota.name, len( in_users ), len( in_groups ) )
+            message = "Quota '%s' has been updated with %d associated users and %d associated groups." % ( quota.name, len( in_users ), len( in_groups ) )
             return message
 
     def _edit_quota( self, quota, params ):
@@ -92,17 +92,17 @@ class AdminActions( object ):
             except AssertionError:
                 new_amount = False
         if not params.amount:
-            raise ActionInputError( 'Enter a valid amount' )
+            raise ActionInputError( 'Enter a valid amount.' )
         elif new_amount is False:
-            raise ActionInputError( 'Unable to parse the provided amount' )
+            raise ActionInputError( 'Unable to parse the provided amount.' )
         elif params.operation not in self.app.model.Quota.valid_operations:
-            raise ActionInputError( 'Enter a valid operation' )
+            raise ActionInputError( 'Enter a valid operation.' )
         else:
             quota.amount = new_amount
             quota.operation = params.operation
             self.sa_session.add( quota )
             self.sa_session.flush()
-            message = "Quota '%s' is now '%s'" % ( quota.name, quota.operation + quota.display_amount )
+            message = "Quota '%s' is now '%s'." % ( quota.name, quota.operation + quota.display_amount )
             return message
 
     def _set_quota_default( self, quota, params ):
@@ -111,7 +111,7 @@ class AdminActions( object ):
         else:
             if params.default != 'no':
                 self.app.quota_agent.set_default_quota( params.default, quota )
-                message = "Quota '%s' is now the default for %s users" % ( quota.name, params.default )
+                message = "Quota '%s' is now the default for %s users." % ( quota.name, params.default )
             else:
                 if quota.default:
                     message = "Quota '%s' is no longer the default for %s users." % ( quota.name, quota.default[0].type )
@@ -139,7 +139,7 @@ class AdminActions( object ):
             if q.default:
                 names.append( q.name )
         if len( names ) == 1:
-            raise ActionInputError( "Quota '%s' is a default, please unset it as a default before deleting it" % ( names[0] ) )
+            raise ActionInputError( "Quota '%s' is a default, please unset it as a default before deleting it." % ( names[0] ) )
         elif len( names ) > 1:
             raise ActionInputError( "Quotas are defaults, please unset them as defaults before deleting them: " + ', '.join( names ) )
         message = "Deleted %d quotas: " % len( quotas )

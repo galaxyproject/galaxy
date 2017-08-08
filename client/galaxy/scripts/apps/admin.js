@@ -90,6 +90,10 @@ window.app = function app( options, bootstrapped ){
                     url             : 'admin/rename_quota?id=' + QueryStringParsing.get( 'id' ),
                     redirect        : 'admin/quotas'
                 },
+                edit_quota: {
+                    url             : 'admin/edit_quota?id=' + QueryStringParsing.get( 'id' ),
+                    redirect        : 'admin/quotas'
+                },
             };
             this.page.display( new FormWrapper.View ( form_defs[ form_id ] ) );
         }

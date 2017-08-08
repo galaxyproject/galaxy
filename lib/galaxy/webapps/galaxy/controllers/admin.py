@@ -396,7 +396,7 @@ class QuotaListGrid( grids.Grid ):
                    grids.GridOperation( "Change amount",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="edit_quota" ) ),
+                                        url_args=dict( action="forms/edit_quota" ) ),
                    grids.GridOperation( "Manage users and groups",
                                         condition=( lambda item: not item.default and not item.deleted ),
                                         allow_multiple=False,
@@ -644,8 +644,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         else:
             try:
                 return { 'message': self._rename_quota( quota, util.Params( payload ) ) }
-            except Exception as e:
-                return message_exception( trans, str( e ) )
+            except ActionInputError as e:
+                return message_exception( trans, e.err_msg )
 
     @web.expose
     @web.require_admin
@@ -682,19 +682,33 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                     message=params.message,
                                     status=params.status )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def edit_quota( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, 'edit_quota_button', self._edit_quota, kwd )
-        if not quota:
-            return
-        return trans.fill_template( '/admin/quota/quota_edit.mako',
-                                    id=params.id,
-                                    operation=params.operation or quota.operation,
-                                    display_amount=params.amount or quota.display_amount,
-                                    webapp=params.webapp,
-                                    message=params.message,
-                                    status=params.status )
+    def edit_quota( self, trans, payload=None, **kwd ):
+        id = kwd.get( 'id' )
+        if not id:
+            return message_exception( trans, 'No quota id received for renaming.' )
+        quota = get_quota( trans, id )
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Edit quota size for \'%s\'' % util.sanitize_text( quota.name ),
+                'inputs' : [{
+                                'name'    : 'amount',
+                                'label'   : 'Amount',
+                                'value'   : quota.display_amount,
+                                'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
+                            },{
+                                'name'    : 'operation',
+                                'label'   : 'Assign, increase by amount, or decrease by amount?',
+                                'options' : [ ('=', '=' ), ( '+', '+' ), ( '-', '-' ) ],
+                                'value'   : quota.operation
+                            }]
+            }
+        else:
+            try:
+                return { 'message': self._edit_quota( quota, util.Params( payload ) ) }
+            except ActionInputError as e:
+                return message_exception( trans, e.err_msg )
 
     @web.expose
     @web.require_admin
