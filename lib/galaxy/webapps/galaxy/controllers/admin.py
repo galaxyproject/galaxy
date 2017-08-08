@@ -1238,8 +1238,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 return self.create_group( trans, **kwargs )
             if operation == 'delete':
                 message, status = self._mark_group_deleted( trans, ids )
-            if operation == "undelete":
-                return self.undelete_group( trans, **kwargs )
+            elif operation == 'undelete':
+                message, status = self._undelete_group( trans, ids )
             if operation == "purge":
                 return self.purge_group( trans, **kwargs )
             if operation == "manage users and roles":
@@ -1411,37 +1411,19 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             message += ' %s ' % group.name
         return ( message, 'done' )
 
-    @web.expose
-    @web.require_admin
-    def undelete_group( self, trans, **kwd ):
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No group ids received for undeleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='groups',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
+    def _undelete_group( self, trans, ids ):
         count = 0
         undeleted_groups = ""
         for group_id in ids:
             group = get_group( trans, group_id )
             if not group.deleted:
-                message = "Group '%s' has not been deleted, so it cannot be undeleted." % group.name
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='groups',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
+                return ( "Group '%s' has not been deleted, so it cannot be undeleted." % group.name, "error" )
             group.deleted = False
             trans.sa_session.add( group )
             trans.sa_session.flush()
             count += 1
             undeleted_groups += " %s" % group.name
-        message = "Undeleted %d groups: %s" % ( count, undeleted_groups )
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='groups',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+        return ( "Undeleted %d groups: %s" % ( count, undeleted_groups ), "done" )
 
     @web.expose
     @web.require_admin
