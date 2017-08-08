@@ -30,7 +30,7 @@
 
 # Submit error reports to sentry. If a sentry_dsn is configured in your
 # galaxy.ini, then Galaxy will submit the job error to Sentry.
-- name: sentry
+- type: sentry
   user_submission: false
 
 # Allow users to submit error reports to biostars. This requires that the
@@ -38,5 +38,5 @@
 # user_submission is true, as it only generates the link for the user to click
 # on and submit the bug report, it does not actually submit the bug report on
 # their behalf.
-# - name: biostars
+# - type: biostars
 #   user_submission: true
