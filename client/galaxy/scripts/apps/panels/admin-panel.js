@@ -99,6 +99,7 @@ var AdminPanel = Backbone.View.extend({
             items : [ {
                 title   : 'Quotas',
                 url     : 'admin/quotas',
+                target  : '__use_router__',
                 enabled : self.config.enable_quotas
             },{
                 title   : 'Data libraries',

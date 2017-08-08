@@ -415,16 +415,13 @@ class QuotaListGrid( grids.Grid ):
                                         url_args=dict( webapp="galaxy", action="unset_quota_default" ) ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted and not item.default ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="mark_quota_deleted" ) ),
+                                        allow_multiple=True ),
                    grids.GridOperation( "Undelete",
                                         condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="undelete_quota" ) ),
+                                        allow_multiple=True ),
                    grids.GridOperation( "Purge",
                                         condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="purge_quota" ) ) ]
+                                        allow_multiple=True ) ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -548,32 +545,32 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def quotas_list( self, trans, **kwargs ):
+    def quotas_list( self, trans, payload={}, **kwargs ):
         message = kwargs.get( 'message', '' )
         status = kwargs.get( 'status', '' )
         if 'operation' in kwargs:
+            id = kwargs.get( 'id', None )
+            if not id:
+                return self.message_exception( 'Invalid quota id (%s) received.' % str( id ) )
+            quotas = []
+            for quota_id in util.listify( id ):
+                try:
+                    quotas.append( self.get_quota( trans, quota_id ) )
+                except MessageException as e:
+                    return self.message_exception( str( e ) )
             operation = kwargs.pop('operation').lower()
-            if operation == "quotas":
-                return self.quota( trans, **kwargs )
-            if operation == "create":
-                return self.create_quota( trans, **kwargs )
-            if operation == "delete":
-                return self.mark_quota_deleted( trans, **kwargs )
-            if operation == "undelete":
-                return self.undelete_quota( trans, **kwargs )
-            if operation == "purge":
-                return self.purge_quota( trans, **kwargs )
-            if operation == "change amount":
-                return self.edit_quota( trans, **kwargs )
-            if operation == "manage users and groups":
-                return self.manage_users_and_groups_for_quota( trans, **kwargs )
-            if operation == "rename":
-                return self.rename_quota( trans, **kwargs )
-            if operation == "edit":
-                return self.edit_quota( trans, **kwargs )
-        if message and status:
+            try:
+                if operation == 'delete':
+                    message = self._delete_quota( quotas )
+                elif operation == 'undelete':
+                    message = self._undelete_quota( quotas )
+                elif operation == 'purge':
+                    message = self._purge_quota( quotas )
+            except MessageException as e:
+                return self.message_exception( e.err_msg )
+        if message:
             kwargs[ 'message' ] = util.sanitize_text( message )
-            kwargs[ 'status' ] = status
+            kwargs[ 'status' ] = 'done'
         kwargs[ 'dict_format' ] = True
         return self.quota_list_grid( trans, **kwargs )
 
@@ -717,80 +714,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                                           webapp=params.webapp,
                                                           message=sanitize_text( params.message ),
                                                           status='error' ) )
-
-    @web.expose
-    @web.require_admin
-    def mark_quota_deleted( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, True, self._mark_quota_deleted, kwd, listify=True )
-        if not quota:
-            return
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='quotas',
-                                                          webapp=params.webapp,
-                                                          message=sanitize_text( params.message ),
-                                                          status='error' ) )
-
-    @web.expose
-    @web.require_admin
-    def undelete_quota( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, True, self._undelete_quota, kwd, listify=True )
-        if not quota:
-            return
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='quotas',
-                                                          webapp=params.webapp,
-                                                          message=sanitize_text( params.message ),
-                                                          status='error' ) )
-
-    @web.expose
-    @web.require_admin
-    def purge_quota( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, True, self._purge_quota, kwd, listify=True )
-        if not quota:
-            return
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='quotas',
-                                                          webapp=params.webapp,
-                                                          message=sanitize_text( params.message ),
-                                                          status='error' ) )
-
-    def _quota_op( self, trans, do_op, op_method, kwd, listify=False ):
-        params = self.get_quota_params( kwd )
-        if listify:
-            quota = []
-            messages = []
-            for id in util.listify( params.id ):
-                try:
-                    quota.append( self.get_quota( trans, id ) )
-                except MessageException as e:
-                    messages.append( str( e ) )
-            if messages:
-                return None, trans.response.send_redirect( web.url_for( controller='admin',
-                                                                        action='quotas',
-                                                                        webapp=params.webapp,
-                                                                        message=sanitize_text( ', '.join( messages ) ),
-                                                                        status='error' ) )
-        else:
-            try:
-                quota = self.get_quota( trans, params.id, deleted=False )
-            except MessageException as e:
-                return None, trans.response.send_redirect( web.url_for( controller='admin',
-                                                                        action='quotas',
-                                                                        webapp=params.webapp,
-                                                                        message=sanitize_text( str( e ) ),
-                                                                        status='error' ) )
-        if do_op is True or ( do_op is not False and params.get( do_op, False ) ):
-            try:
-                message = op_method( quota, params )
-                return None, trans.response.send_redirect( web.url_for( controller='admin',
-                                                                        action='quotas',
-                                                                        webapp=params.webapp,
-                                                                        message=sanitize_text( message ),
-                                                                        status='done' ) )
-            except MessageException as e:
-                params.message = e.err_msg
-                params.status = e.type
-        return quota, params
 
     @web.expose
     @web.require_admin
@@ -1759,7 +1682,7 @@ def build_select_input( name, label, options, value ):
 
 def message_exception( trans, message ):
     trans.response.status = 400
-    return { 'err_msg': message }
+    return { 'err_msg': sanitize_text( message ) }
 
 
 def get_user( trans, user_id ):
