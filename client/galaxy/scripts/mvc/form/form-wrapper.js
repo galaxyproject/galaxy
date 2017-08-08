@@ -59,11 +59,19 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     form.data.matchModel( response, function ( input, input_id ) {
                         form.field_list[ input_id ].value( input.value );
                     });
-                    form.message.update( success_message );
+                    self._showMessage( form, success_message );
                 }
             }).fail( function( response ) {
-                form.message.update( { message: response.responseJSON.err_msg, status: 'danger', persistent: false } );
+                self._showMessage( form, { message: response.responseJSON.err_msg, status: 'danger', persistent: false } );
             });
+        },
+
+        _showMessage: function( form, options ) {
+            var $panel = form.$el.parents().filter(function() {
+                return [ 'auto', 'scroll' ].indexOf( $( this ).css( 'overflow' ) ) != -1;
+            }).first();
+            $panel.animate( { scrollTop : 0 }, 500 );
+            form.message.update( options );
         }
     });
 
