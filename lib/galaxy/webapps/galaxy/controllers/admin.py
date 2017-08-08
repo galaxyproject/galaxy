@@ -526,13 +526,13 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             ids = util.listify( id )
             operation = kwd['operation'].lower()
             if operation == 'delete':
-                message, status = self.mark_user_deleted( trans, ids )
+                message, status = self._delete_user( trans, ids )
             elif operation == 'undelete':
-                message, status = self.undelete_user( trans, ids )
+                message, status = self._undelete_user( trans, ids )
             elif operation == 'purge':
-                message, status = self.purge_user( trans, ids )
+                message, status = self._purge_user( trans, ids )
             elif operation == 'recalculate disk usage':
-                message, status = self.recalculate_user_disk_usage( trans, id )
+                message, status = self._recalculate_user( trans, id )
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append( self.delete_operation )
@@ -1466,9 +1466,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         else:
             return message_exception( trans, 'Please specify user ids.' )
 
-    @web.expose
-    @web.require_admin
-    def mark_user_deleted( self, trans, ids ):
+    def _delete_user( self, trans, ids ):
         message = 'Deleted %d users: ' % len( ids )
         for user_id in ids:
             user = get_user( trans, user_id )
@@ -1478,9 +1476,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             message += ' %s ' % user.email
         return ( message, 'done' )
 
-    @web.expose
-    @web.require_admin
-    def undelete_user( self, trans, ids ):
+    def _undelete_user( self, trans, ids ):
         count = 0
         undeleted_users = ""
         for user_id in ids:
@@ -1496,9 +1492,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         message = 'Undeleted %d users: %s' % ( count, undeleted_users )
         return ( message, 'done' )
 
-    @web.expose
-    @web.require_admin
-    def purge_user( self, trans, ids ):
+    def _purge_user( self, trans, ids ):
         # This method should only be called for a User that has previously been deleted.
         # We keep the User in the database ( marked as purged ), and stuff associated
         # with the user's private role in case we want the ability to unpurge the user
@@ -1548,9 +1542,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             message += '%s ' % user.email
         return ( message, 'done' )
 
-    @web.expose
-    @web.require_admin
-    def recalculate_user_disk_usage( self, trans, user_id ):
+    def _recalculate_user( self, trans, user_id ):
         user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
         if not user:
             return ( 'User not found for id (%s)' % sanitize_text( str( user_id ) ), 'error' )
