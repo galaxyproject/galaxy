@@ -1240,8 +1240,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 message, status = self._mark_group_deleted( trans, ids )
             elif operation == 'undelete':
                 message, status = self._undelete_group( trans, ids )
-            if operation == "purge":
-                return self.purge_group( trans, **kwargs )
+            elif operation == 'purge':
+                message, status = self._purge_group( trans, ids )
             if operation == "manage users and roles":
                 return self.manage_users_and_roles_for_group( trans, **kwargs )
         kwargs[ 'dict_format' ] = True
@@ -1425,29 +1425,12 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             undeleted_groups += " %s" % group.name
         return ( "Undeleted %d groups: %s" % ( count, undeleted_groups ), "done" )
 
-    @web.expose
-    @web.require_admin
-    def purge_group( self, trans, **kwd ):
-        # This method should only be called for a Group that has previously been deleted.
-        # Purging a deleted Group simply deletes all UserGroupAssociations and GroupRoleAssociations.
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No group ids received for purging"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='groups',
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        ids = util.listify( id )
+    def _purge_group( self, trans, ids ):
         message = "Purged %d groups: " % len( ids )
         for group_id in ids:
             group = get_group( trans, group_id )
             if not group.deleted:
-                # We should never reach here, but just in case there is a bug somewhere...
-                message = "Group '%s' has not been deleted, so it cannot be purged." % group.name
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='groups',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
+                return ( "Group '%s' has not been deleted, so it cannot be purged." % role.name, "error" )
             # Delete UserGroupAssociations
             for uga in group.users:
                 trans.sa_session.delete( uga )
@@ -1456,10 +1439,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 trans.sa_session.delete( gra )
             trans.sa_session.flush()
             message += " %s " % group.name
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='groups',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+        return ( message, "done" )
 
     @web.expose
     @web.require_admin
