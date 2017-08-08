@@ -104,7 +104,8 @@ var AdminPanel = Backbone.View.extend({
                 url     : 'library_admin/browse_libraries'
             },{
                 title   : 'Roles',
-                url     : 'admin/roles'
+                url     : 'admin/roles',
+                target  : '__use_router__'
             },{
                 title   : 'Local data',
                 url     : 'data_manager'
