@@ -1230,8 +1230,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         status = kwargs.get( 'status' )
         if 'operation' in kwargs:
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
-            if operation == "groups":
-                return self.group( trans, **kwargs )
             if operation == "create":
                 return self.create_group( trans, **kwargs )
             if operation == "delete":
