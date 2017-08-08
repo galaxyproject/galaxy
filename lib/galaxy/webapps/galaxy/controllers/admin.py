@@ -277,7 +277,7 @@ class GroupListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Manage users and roles", id=item.id, webapp="galaxy" ) ),
+                    link=( lambda item: dict( action="forms/manage_users_and_roles_for_group", id=item.id, webapp="galaxy" ) ),
                     model_class=model.Group,
                     attach_popup=True,
                     filterable="advanced" ),
@@ -1152,7 +1152,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'groups' ) ) ]
             trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( role )
-            return { 'message' : 'Role \'%s\' has been updated with %d associated users and %d associated groups' % ( role.name, len( in_users ), len( in_groups ) ) }
+            return { 'message' : 'Role \'%s\' has been updated with %d associated users and %d associated groups.' % ( role.name, len( in_users ), len( in_groups ) ) }
 
     def _delete_role( self, trans, ids ):
         message = 'Deleted %d roles: ' % len( ids )
@@ -1231,8 +1231,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 message, status = self._undelete_group( trans, ids )
             elif operation == 'purge':
                 message, status = self._purge_group( trans, ids )
-            if operation == "manage users and roles":
-                return self.manage_users_and_roles_for_group( trans, **kwargs )
         kwargs[ 'dict_format' ] = True
         if message and status:
             kwargs[ 'message' ] = util.sanitize_text( message )
@@ -1271,50 +1269,43 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                         trans.sa_session.flush()
             return { 'message': 'Group \'%s\' has been renamed to \'%s\'.' % ( old_name, new_name ) }
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def manage_users_and_roles_for_group( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        group = get_group( trans, params.id )
-        if params.get( 'group_roles_users_edit_button', False ):
-            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( params.in_roles ) ]
-            in_users = [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
-            trans.app.security_agent.set_entity_group_associations( groups=[ group ], roles=in_roles, users=in_users )
+    def manage_users_and_roles_for_group( self, trans, payload={}, **kwd ):
+        group_id = kwd.get( 'id' )
+        if not group_id:
+            return message_exception( trans, 'Invalid group id (%s) received' % str( group_id ) )
+        group = get_group( trans, group_id )
+        if trans.request.method == 'GET':
+            in_users = []
+            all_users = []
+            in_roles = []
+            all_roles = []
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                if user in [ x.user for x in group.users ]:
+                    in_users.append( trans.security.encode_id( user.id ) )
+                all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
+            for role in trans.sa_session.query( trans.app.model.Role ) \
+                                         .filter( trans.app.model.Role.table.c.deleted == false() ) \
+                                         .order_by( trans.app.model.Role.table.c.name ):
+                if role in [ x.role for x in group.roles ]:
+                    in_roles.append( trans.security.encode_id( role.id ) )
+                all_roles.append( ( role.name, trans.security.encode_id( role.id ) ) )
+            return { 'title'  : 'Group \'%s\'' % group.name,
+                     'message': 'Group \'%s\' is currently associated with %d user(s) and %d role(s).' %
+                                ( group.name, len( in_users ), len( in_roles ) ),
+                     'status' : 'info',
+                     'inputs' : [ build_select_input( 'roles', 'Roles', all_roles, in_roles ),
+                                  build_select_input( 'users', 'Users', all_users, in_users ) ] }
+            return { 'message' : 'Not showing associated datasets, there are too many.', 'info' : 'info' }
+        else:
+            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'users' ) ) ]
+            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'roles' ) ) ]
+            trans.app.security_agent.set_entity_group_associations( groups=[ group ], users=in_users, roles=in_roles )
             trans.sa_session.refresh( group )
-            message += "Group '%s' has been updated with %d associated roles and %d associated users" % ( group.name, len( in_roles ), len( in_users ) )
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='groups',
-                                                       message=util.sanitize_text( message ),
-                                                       status=status ) )
-        in_roles = []
-        out_roles = []
-        in_users = []
-        out_users = []
-        for role in trans.sa_session.query(trans.app.model.Role ) \
-                                    .filter( trans.app.model.Role.table.c.deleted == false() ) \
-                                    .order_by( trans.app.model.Role.table.c.name ):
-            if role in [ x.role for x in group.roles ]:
-                in_roles.append( ( role.id, role.name ) )
-            else:
-                out_roles.append( ( role.id, role.name ) )
-        for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted == false() ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
-            if user in [ x.user for x in group.users ]:
-                in_users.append( ( user.id, user.email ) )
-            else:
-                out_users.append( ( user.id, user.email ) )
-        message += 'Group %s is currently associated with %d roles and %d users' % ( group.name, len( in_roles ), len( in_users ) )
-        return trans.fill_template( '/admin/dataset_security/group/group.mako',
-                                    group=group,
-                                    in_roles=in_roles,
-                                    out_roles=out_roles,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    message=message,
-                                    status=status )
+            return { 'message' : 'Group \'%s\' has been updated with %d associated users and %d associated roles.' % ( group.name, len( in_users ), len( in_roles ) ) }
 
     @web.expose_api
     @web.require_admin
