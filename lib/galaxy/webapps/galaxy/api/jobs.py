@@ -366,10 +366,6 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         :rtype:     dictionary
         :returns:   dictionary containing information regarding where the error report was sent.
         """
-        # biostar_report = 'biostar' in str( kwd.get( 'submit_error_report') ).lower()
-        # if biostar_report:
-            # return trans.response.send_redirect( url_for( controller='biostar', action='biostar_tool_bug_report', hda=id, email=email, message=message ) )
-
         # Get dataset on which this error was triggered
         try:
             decoded_dataset_id = self.decode_id( kwd['dataset_id'] )
