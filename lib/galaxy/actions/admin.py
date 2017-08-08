@@ -60,9 +60,9 @@ class AdminActions( object ):
 
     def _rename_quota( self, quota, params ):
         if not params.name:
-            raise ActionInputError( 'Enter a valid name' )
+            raise ActionInputError( 'Enter a valid name.' )
         elif params.name != quota.name and self.sa_session.query( self.app.model.Quota ).filter( self.app.model.Quota.table.c.name == params.name ).first():
-            raise ActionInputError( 'A quota with that name already exists' )
+            raise ActionInputError( 'A quota with that name already exists.' )
         else:
             old_name = quota.name
             quota.name = params.name

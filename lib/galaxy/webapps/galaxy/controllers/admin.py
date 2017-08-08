@@ -392,7 +392,7 @@ class QuotaListGrid( grids.Grid ):
     operations = [ grids.GridOperation( "Rename",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="rename_quota" ) ),
+                                        url_args=dict( action="forms/rename_quota" ) ),
                    grids.GridOperation( "Change amount",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
@@ -621,19 +621,31 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                     message=params.message,
                                     status=params.status )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def rename_quota( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, 'rename_quota_button', self._rename_quota, kwd )
-        if not quota:
-            return
-        return trans.fill_template( '/admin/quota/quota_rename.mako',
-                                    id=params.id,
-                                    name=params.name or quota.name,
-                                    description=params.description or quota.description,
-                                    webapp=params.webapp,
-                                    message=params.message,
-                                    status=params.status )
+    def rename_quota( self, trans, payload={}, **kwd ):
+        id = kwd.get( 'id' )
+        if not id:
+            return message_exception( trans, 'No quota id received for renaming.' )
+        quota = get_quota( trans, id )
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Change quota name and description for \'%s\'' % util.sanitize_text( quota.name ),
+                'inputs' : [{
+                                'name'  : 'name',
+                                'label' : 'Name',
+                                'value' : quota.name
+                            },{
+                                'name'  : 'description',
+                                'label' : 'Description',
+                                'value' : quota.description
+                            }]
+            }
+        else:
+            try:
+                return { 'message': self._rename_quota( quota, util.Params( payload ) ) }
+            except Exception as e:
+                return message_exception( trans, str( e ) )
 
     @web.expose
     @web.require_admin
