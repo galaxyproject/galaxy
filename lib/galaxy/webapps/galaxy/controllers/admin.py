@@ -361,7 +361,7 @@ class QuotaListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Change amount", id=item.id, webapp="galaxy" ) ),
+                    link=( lambda item: dict( action="forms/edit_quota", id=item.id ) ),
                     model_class=model.Quota,
                     attach_popup=True,
                     filterable="advanced" ),
