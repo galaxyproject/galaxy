@@ -293,7 +293,7 @@ class GroupListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Add new group", dict( controller='admin', action='groups', operation='create', webapp="galaxy" ) )
+        grids.GridAction( "Add new group", url_args=dict( action="forms/create_group" ) )
     ]
     operations = [ grids.GridOperation( "Rename",
                                         condition=( lambda item: not item.deleted ),
@@ -1023,14 +1023,14 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                 build_select_input( 'groups', 'Groups', all_groups, [] ),
                                 build_select_input( 'users', 'Users', all_users, [] ),
                                 {
-                                    'name'  : 'create_group_for_role',
-                                    'label' : 'Create a new role of the same name for this group:',
+                                    'name'  : 'auto_create',
+                                    'label' : 'Create a new group of the same name for this role:',
                                     'type'  : 'boolean'
                                 } ] }
         else:
             name = util.restore_text( payload.get( 'name', '' ) )
             description = util.restore_text( payload.get( 'description', '' ) )
-            create_group_for_role_checked = payload.get( 'create_group_for_role' ) == 'true'
+            auto_create_checked = payload.get( 'auto_create' ) == 'true'
             in_users = util.listify( payload.get( 'users', [] ) )
             in_groups = util.listify( payload.get( 'groups', [] ) )
             if not name or not description:
@@ -1049,7 +1049,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 for group in [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in in_groups ]:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
-                if create_group_for_role_checked:
+                if auto_create_checked:
                     # Create the group
                     group = trans.app.model.Group( name=name )
                     trans.sa_session.add( group )
@@ -1061,7 +1061,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     num_in_groups = len( in_groups )
                 trans.sa_session.flush()
                 message = 'Role \'%s\' has been created with %d associated users and %d associated groups.' % ( role.name, len( in_users ), num_in_groups )
-                if create_group_for_role_checked:
+                if auto_create_checked:
                     message += 'One of the groups associated with this role is the newly created group with the same name.'
                 return { 'message' : message }
 
@@ -1225,8 +1225,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 return self.message_exception( 'Invalid group id (%s) received.' % str( id ) )
             ids = util.listify( id )
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
-            if operation == "create":
-                return self.create_group( trans, **kwargs )
             if operation == 'delete':
                 message, status = self._delete_group( trans, ids )
             elif operation == 'undelete':
@@ -1318,79 +1316,68 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                     message=message,
                                     status=status )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def create_group( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        name = util.restore_text( params.get( 'name', '' ) )
-        in_users = util.listify( params.get( 'in_users', [] ) )
-        out_users = util.listify( params.get( 'out_users', [] ) )
-        in_roles = util.listify( params.get( 'in_roles', [] ) )
-        out_roles = util.listify( params.get( 'out_roles', [] ) )
-        create_role_for_group = params.get( 'create_role_for_group', '' )
-        create_role_for_group_checked = CheckboxField.is_checked( create_role_for_group )
-        ok = True
-        if params.get( 'create_group_button', False ):
+    def create_group( self, trans, payload={}, **kwd ):
+        if trans.request.method == 'GET':
+            all_users = []
+            all_roles = []
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
+            for role in trans.sa_session.query( trans.app.model.Role ) \
+                                         .filter( trans.app.model.Role.table.c.deleted == false() ) \
+                                         .order_by( trans.app.model.Role.table.c.name ):
+                all_roles.append( ( role.name, trans.security.encode_id( role.id ) ) )
+            return { 'title'  : 'Create Group',
+                     'inputs' : [{
+                                    'name'  : 'name',
+                                    'label' : 'Name'
+                                },
+                                build_select_input( 'roles', 'Roles', all_roles, [] ),
+                                build_select_input( 'users', 'Users', all_users, [] ),
+                                {
+                                    'name'  : 'auto_create',
+                                    'label' : 'Create a new role of the same name for this group:',
+                                    'type'  : 'boolean'
+                                } ] }
+        else:
+            name = util.restore_text( payload.get( 'name', '' ) )
+            auto_create_checked = payload.get( 'auto_create' ) == 'true'
+            in_users = util.listify( payload.get( 'users', [] ) )
+            in_roles = util.listify( payload.get( 'roles', [] ) )
             if not name:
-                message = "Enter a valid name."
-                status = 'error'
-                ok = False
+                return message_exception( trans, 'Enter a valid name.' )
             elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == name ).first():
-                message = "Group names must be unique and a group with that name already exists, so choose another name."
-                status = 'error'
-                ok = False
+                return message_exception( trans, 'Group names must be unique and a group with that name already exists, so choose another name.' )
             else:
-                # Create the group
+                # Create the role
                 group = trans.app.model.Group( name=name )
                 trans.sa_session.add( group )
-                trans.sa_session.flush()
                 # Create the UserRoleAssociations
-                for user in [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in in_users ]:
+                for user in [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in in_users ]:
                     uga = trans.app.model.UserGroupAssociation( user, group )
                     trans.sa_session.add( uga )
                 # Create the GroupRoleAssociations
-                for role in [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]:
+                for role in [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in in_roles ]:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
-                if create_role_for_group_checked:
+                if auto_create_checked:
                     # Create the role
                     role = trans.app.model.Role( name=name, description='Role for group %s' % name )
                     trans.sa_session.add( role )
-                    # Associate the role with the group
+                    # Associate the group with the role
                     gra = trans.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
                     num_in_roles = len( in_roles ) + 1
                 else:
                     num_in_roles = len( in_roles )
                 trans.sa_session.flush()
-                message = "Group '%s' has been created with %d associated users and %d associated roles.  " \
-                    % ( group.name, len( in_users ), num_in_roles )
-                if create_role_for_group_checked:
+                message = 'Group \'%s\' has been created with %d associated users and %d associated roles.' % ( group.name, len( in_users ), num_in_roles )
+                if auto_create_checked:
                     message += 'One of the roles associated with this group is the newly created role with the same name.'
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='groups',
-                                                           message=util.sanitize_text( message ),
-                                                           status='done' ) )
-        if ok:
-            for user in trans.sa_session.query( trans.app.model.User ) \
-                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
-                                        .order_by( trans.app.model.User.table.c.email ):
-                out_users.append( ( user.id, user.email ) )
-            for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( trans.app.model.Role.table.c.deleted == false() ) \
-                                        .order_by( trans.app.model.Role.table.c.name ):
-                out_roles.append( ( role.id, role.name ) )
-        return trans.fill_template( '/admin/dataset_security/group/group_create.mako',
-                                    name=name,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    in_roles=in_roles,
-                                    out_roles=out_roles,
-                                    create_role_for_group_checked=create_role_for_group_checked,
-                                    message=message,
-                                    status=status )
+                return { 'message' : message }
 
     def _delete_group( self, trans, ids ):
         message = 'Deleted %d groups: ' % len( ids )

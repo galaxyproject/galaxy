@@ -56,13 +56,17 @@ window.app = function app( options, bootstrapped ){
                     url             : 'admin/manage_users_and_groups_for_role?id=' + QueryStringParsing.get( 'id' ),
                     redirect        : 'admin/roles'
                 },
+                create_role: {
+                    url             : 'admin/create_role?id=' + QueryStringParsing.get( 'id' ),
+                    redirect        : 'admin/roles'
+                },
                 rename_role: {
                     url             : 'admin/rename_role?id=' + QueryStringParsing.get( 'id' ),
                     redirect        : 'admin/roles'
                 },
-                create_role: {
-                    url             : 'admin/create_role?id=' + QueryStringParsing.get( 'id' ),
-                    redirect        : 'admin/roles'
+                create_group: {
+                    url             : 'admin/create_group?id=' + QueryStringParsing.get( 'id' ),
+                    redirect        : 'admin/groups'
                 },
                 rename_group: {
                     url             : 'admin/rename_group?id=' + QueryStringParsing.get( 'id' ),
