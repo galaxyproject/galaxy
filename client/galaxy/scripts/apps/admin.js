@@ -49,57 +49,62 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_forms : function( form_id ) {
+            var id = '?id=' + QueryStringParsing.get( 'id' );
             var form_defs = {
                 reset_user_password: {
                     title           : 'Reset passwords',
-                    url             : 'admin/reset_user_password?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/reset_user_password' + id,
                     icon            : 'fa-user',
                     submit_title    : 'Save new password',
                     redirect        : 'admin/users'
                 },
                 manage_roles_and_groups_for_user: {
-                    url             : 'admin/manage_roles_and_groups_for_user?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/manage_roles_and_groups_for_user' + id,
                     icon            : 'fa-users',
                     redirect        : 'admin/users'
                 },
                 manage_users_and_groups_for_role: {
-                    url             : 'admin/manage_users_and_groups_for_role?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/manage_users_and_groups_for_role' + id,
                     redirect        : 'admin/roles'
                 },
                 manage_users_and_roles_for_group: {
-                    url             : 'admin/manage_users_and_roles_for_group?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/manage_users_and_roles_for_group' + id,
                     redirect        : 'admin/groups'
                 },
                 manage_users_and_groups_for_quota: {
-                    url             : 'admin/manage_users_and_groups_for_quota?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/manage_users_and_groups_for_quota' + id,
                     redirect        : 'admin/quotas'
                 },
                 create_role: {
-                    url             : 'admin/create_role?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/create_role',
                     redirect        : 'admin/roles'
                 },
                 create_group: {
-                    url             : 'admin/create_group?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/create_group',
                     redirect        : 'admin/groups'
                 },
+                create_quota: {
+                    url             : 'admin/create_quota',
+                    redirect        : 'admin/quotas'
+                },
                 rename_role: {
-                    url             : 'admin/rename_role?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/rename_role' + id,
                     redirect        : 'admin/roles'
                 },
                 rename_group: {
-                    url             : 'admin/rename_group?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/rename_group' + id,
                     redirect        : 'admin/groups'
                 },
                 rename_quota: {
-                    url             : 'admin/rename_quota?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/rename_quota' + id,
                     redirect        : 'admin/quotas'
                 },
                 edit_quota: {
-                    url             : 'admin/edit_quota?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/edit_quota' + id,
                     redirect        : 'admin/quotas'
                 },
                 set_quota_default: {
-                    url             : 'admin/set_quota_default?id=' + QueryStringParsing.get( 'id' ),
+                    url             : 'admin/set_quota_default' + id,
                     redirect        : 'admin/quotas'
                 },
             };

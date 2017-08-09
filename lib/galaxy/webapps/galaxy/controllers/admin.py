@@ -387,7 +387,7 @@ class QuotaListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Add new quota", dict( controller='admin', action='quotas', operation='create' ) )
+        grids.GridAction( "Add new quota", dict( action='forms/create_quota' ) )
     ]
     operations = [ grids.GridOperation( "Rename",
                                         condition=( lambda item: not item.deleted ),
@@ -575,52 +575,52 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         kwargs[ 'dict_format' ] = True
         return self.quota_list_grid( trans, **kwargs )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def create_quota( self, trans, **kwd ):
-        params = self.get_quota_params( kwd )
-        if params.get( 'create_quota_button', False ):
+    def create_quota( self, trans, payload=None, **kwd ):
+        if trans.request.method == 'GET':
+            all_users = []
+            all_groups = []
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
+            for group in trans.sa_session.query( trans.app.model.Group ) \
+                                         .filter( trans.app.model.Group.table.c.deleted == false() ) \
+                                         .order_by( trans.app.model.Group.table.c.name ):
+                all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
+            default_options = [ ( 'No', 'no' ) ]
+            for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
+                default_options.append( ( 'Yes, ' + typ, typ ) )
+            return { 'title'  : 'Create Quota',
+                     'inputs' : [{
+                                    'name'    : 'name',
+                                    'label'   : 'Name'
+                                },{
+                                    'name'    : 'description',
+                                    'label'   : 'Description'
+                                },{
+                                    'name'    : 'amount',
+                                    'label'   : 'Amount',
+                                    'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
+                                },{
+                                    'name'    : 'operation',
+                                    'label'   : 'Assign, increase by amount, or decrease by amount?',
+                                    'options' : [ ('=', '=' ), ( '+', '+' ), ( '-', '-' ) ]
+                                },{
+                                    'name'    : 'default',
+                                    'label'   : 'Assign, increase by amount, or decrease by amount?',
+                                    'options' : default_options,
+                                    'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
+                                },
+                                build_select_input( 'in_groups', 'Groups', all_groups, [] ),
+                                build_select_input( 'in_users', 'Users', all_users, [] ) ] }
+        else:
             try:
-                quota, message = self._create_quota( params )
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='quotas',
-                                                                  webapp=params.webapp,
-                                                                  message=sanitize_text( message ),
-                                                                  status='done' ) )
-            except MessageException as e:
-                params.message = str( e )
-                params.status = 'error'
-        in_users = map( int, params.in_users )
-        in_groups = map( int, params.in_groups )
-        new_in_users = []
-        new_in_groups = []
-        for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted == expression.false() ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
-            if user.id in in_users:
-                new_in_users.append( ( user.id, user.email ) )
-            else:
-                params.out_users.append( ( user.id, user.email ) )
-        for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted == expression.false() ) \
-                                     .order_by( trans.app.model.Group.table.c.name ):
-            if group.id in in_groups:
-                new_in_groups.append( ( group.id, group.name ) )
-            else:
-                params.out_groups.append( ( group.id, group.name ) )
-        return trans.fill_template( '/admin/quota/quota_create.mako',
-                                    webapp=params.webapp,
-                                    name=params.name,
-                                    description=params.description,
-                                    amount=params.amount,
-                                    operation=params.operation,
-                                    default=params.default,
-                                    in_users=new_in_users,
-                                    out_users=params.out_users,
-                                    in_groups=new_in_groups,
-                                    out_groups=params.out_groups,
-                                    message=params.message,
-                                    status=params.status )
+                quota, message = self._create_quota( util.Params( payload ) )
+                return { 'message': message }
+            except ActionInputError as e:
+                return message_exception( trans, e.err_msg )
 
     @web.expose_api
     @web.require_admin
