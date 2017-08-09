@@ -892,7 +892,7 @@ class UsesVisualizationMixin( UsesLibraryMixinItems ):
         if not job:
             return None
 
-        tool = trans.app.toolbox.get_tool( job.tool_id )
+        tool = trans.app.toolbox.get_tool( job.tool_id, tool_version=job.tool_version )
         if not tool:
             return None
 

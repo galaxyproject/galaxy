@@ -49,7 +49,7 @@ class RepoToolModule( ToolModule ):
                     break
         else:
             # We're in Galaxy.
-            self.tool = trans.app.toolbox.get_tool( self.tool_id )
+            self.tool = trans.app.toolbox.get_tool( self.tool_id, tool_version=self.tool_version )
             if self.tool is None:
                 self.errors = 'unavailable'
         self.post_job_actions = {}
