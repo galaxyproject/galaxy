@@ -27,15 +27,30 @@ class AuthnzManager( object ):
             tree = ET.parse( config )
             root = tree.getroot()
             if root.tag != 'OAuth2.0':
-                raise ParseError( "The root element in OAuth2.0 config xml file is expected to be `OAuth2.0`, found `{}` instead -- unable to continue.".format( root.tag ) )
+                raise ParseError( "The root element in OAuth2.0 config xml file is expected to be `OAuth2.0`, "
+                                  "found `{}` instead -- unable to continue.".format( root.tag ) )
             for child in root:
                 if child.tag != 'provider':
-                    raise ParseError( "Expect a node with `provider` tag, found a node with `{}` tag instead -- unable to continue.".format( child.tag ) )
+                    log.error( "Expect a node with `provider` tag, found a node with `{}` tag instead; "
+                               "skipping the node.".format( child.tag ) )
+                    continue
                 if 'name' not in child.attrib:
-                    raise ParseError( "Could not find a node attribute 'name' -- unable to continue." )
-                if 'client_secret_file' not in child.attrib:
-                    raise ParseError("Could not find a node attribute 'client_secret_file' -- unable to continue.")
-                self.providers[child.get( 'name' )] = child.get( 'client_secret_file' )
+                    log.error( "Could not find a node attribute 'name'; skipping the node '{}'.".format( child.tag ) )
+                    continue
+                client_secret_file = child.find('client_secret_file')
+                if client_secret_file is None:
+                    log.error( "Did not find `client_secret_file` key in the configuration; skipping the node '{}'."
+                               .format( child.tag ) )
+                    continue
+                redirect_uri = child.find( 'redirect_uri' )
+                if redirect_uri is None:
+                    log.error( "Did not find `redirect_uri` key in the configuration; skipping the node '{}'."
+                               .format( child.tag ) )
+                    continue
+                self.providers[child.get( 'name' )] = { 'client_secret_file': client_secret_file.text,
+                                                        'redirect_uri': redirect_uri.text }
+            if len( self.providers ) == 0:
+                raise ParseError( "No valid provider configuration parsed." )
         except Exception:
             log.exception("Malformed OAuth2.0 Configuration XML -- unable to continue.")
             raise

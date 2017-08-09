@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<OAuth2.0>
+    <provider name="Google">
+        <!-- Keep the client_secret file on a path inaccessible to public.  -->
+        <client_secret_file>./oauth2/client_secret.json</client_secret_file>
+        <redirect_uri>https://usegalaxy.org//OAuth2Callback/google</redirect_uri>
+    </provider>
+</OAuth2.0>
