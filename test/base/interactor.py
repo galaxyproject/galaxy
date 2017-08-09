@@ -327,7 +327,7 @@ class GalaxyInteractorApi( object ):
             return self._state_ready( state, error_msg="Job in error state." )
         except Exception:
             if VERBOSE_ERRORS:
-                self._summarize_history_errors( history_id )
+                self._summarize_history( history_id )
             raise
 
     def __history_ready( self, history_id ):
@@ -339,13 +339,13 @@ class GalaxyInteractorApi( object ):
             return self._state_ready( state, error_msg="History in error state." )
         except Exception:
             if VERBOSE_ERRORS:
-                self._summarize_history_errors( history_id )
+                self._summarize_history( history_id )
             raise
 
-    def _summarize_history_errors( self, history_id ):
+    def _summarize_history( self, history_id ):
         if history_id is None:
-            raise ValueError("_summarize_history_errors passed empty history_id")
-        print("History with id %s in error - summary of datasets in error below." % history_id)
+            raise ValueError("_summarize_history passed empty history_id")
+        print("Problem in history with id %s - summary of datasets below." % history_id)
         try:
             history_contents = self.__contents( history_id )
         except Exception:
@@ -354,8 +354,6 @@ class GalaxyInteractorApi( object ):
         for history_content in history_contents:
 
             dataset = history_content
-            if dataset.get( 'state', 'ok' ) != 'error':
-                continue
 
             print(ERROR_MESSAGE_DATASET_SEP)
             dataset_id = dataset.get( 'id', None )
@@ -367,26 +365,28 @@ class GalaxyInteractorApi( object ):
 
             try:
                 dataset_info = self._dataset_info( history_id, dataset_id )
+                print("| Dataset State:")
+                print(self.format_for_summary(dataset_info.get("state"), "Dataset state is unknown."))
                 print("| Dataset Blurb:")
-                print(self.format_for_error( dataset_info.get( "misc_blurb", "" ), "Dataset blurb was empty." ))
+                print(self.format_for_summary( dataset_info.get( "misc_blurb", "" ), "Dataset blurb was empty." ))
                 print("| Dataset Info:")
-                print(self.format_for_error( dataset_info.get( "misc_info", "" ), "Dataset info is empty." ))
+                print(self.format_for_summary( dataset_info.get( "misc_info", "" ), "Dataset info is empty." ))
                 print("| Peek:")
-                print(self.format_for_error( dataset_info.get( "peek", ""), "Peek unavilable."))
+                print(self.format_for_summary( dataset_info.get( "peek", ""), "Peek unavilable."))
             except Exception:
                 print("| *TEST FRAMEWORK ERROR FETCHING DATASET DETAILS*")
             try:
                 provenance_info = self._dataset_provenance( history_id, dataset_id )
                 print("| Dataset Job Standard Output:")
-                print(self.format_for_error( provenance_info.get( "stdout", "" ), "Standard output was empty." ))
+                print(self.format_for_summary( provenance_info.get( "stdout", "" ), "Standard output was empty." ))
                 print("| Dataset Job Standard Error:")
-                print(self.format_for_error( provenance_info.get( "stderr", "" ), "Standard error was empty." ))
+                print(self.format_for_summary( provenance_info.get( "stderr", "" ), "Standard error was empty." ))
             except Exception:
                 print("| *TEST FRAMEWORK ERROR FETCHING JOB DETAILS*")
             print("|")
         print(ERROR_MESSAGE_DATASET_SEP)
 
-    def format_for_error( self, blob, empty_message, prefix="|  " ):
+    def format_for_summary( self, blob, empty_message, prefix="|  " ):
         contents = "\n".join([ "%s%s" % (prefix, line.strip()) for line in StringIO(blob).readlines() if line.rstrip("\n\r") ] )
         return contents or "%s*%s*" % ( prefix, empty_message )
 

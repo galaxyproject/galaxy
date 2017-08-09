@@ -92,7 +92,7 @@ class BaseDatasetPopulator( object ):
         try:
             return wait_on_state( lambda: self._get( "histories/%s" % history_id ), assert_ok=assert_ok, timeout=timeout )
         except AssertionError:
-            self._summarize_history_errors( history_id )
+            self._summarize_history( history_id )
             raise
 
     def wait_for_job( self, job_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
@@ -101,7 +101,7 @@ class BaseDatasetPopulator( object ):
     def get_job_details( self, job_id, full=False ):
         return self._get( "jobs/%s?full=%s" % (job_id, full) )
 
-    def _summarize_history_errors( self, history_id ):
+    def _summarize_history( self, history_id ):
         pass
 
     @contextlib.contextmanager
@@ -113,7 +113,7 @@ class BaseDatasetPopulator( object ):
             history_id = self.new_history()
             yield history_id
         except Exception:
-            self._summarize_history_errors(history_id)
+            self._summarize_history(history_id)
             raise
 
     def new_history( self, **kwds ):
@@ -230,8 +230,8 @@ class DatasetPopulator( BaseDatasetPopulator ):
     def _get( self, route ):
         return self.galaxy_interactor.get( route )
 
-    def _summarize_history_errors( self, history_id ):
-        self.galaxy_interactor._summarize_history_errors( history_id )
+    def _summarize_history( self, history_id ):
+        self.galaxy_interactor._summarize_history( history_id )
 
     def wait_for_dataset(self, history_id, dataset_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
         return wait_on_state(lambda: self._get("histories/%s/contents/%s" % (history_id, dataset_id)), assert_ok=assert_ok, timeout=timeout)
