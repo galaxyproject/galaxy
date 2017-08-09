@@ -1015,21 +1015,21 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                          .filter( trans.app.model.Group.table.c.deleted == false() ) \
                                          .order_by( trans.app.model.Group.table.c.name ):
                 all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
-            return { 'title'  : 'Create Role',
-                     'inputs' : [{
-                                    'name'  : 'name',
-                                    'label' : 'Name'
-                                },{
-                                    'name'  : 'description',
-                                    'label' : 'Description'
-                                },
-                                build_select_input( 'groups', 'Groups', all_groups, [] ),
-                                build_select_input( 'users', 'Users', all_users, [] ),
-                                {
-                                    'name'  : 'create_group_for_role',
-                                    'label' : 'Create a new role of the same name for this group:',
-                                    'type'  : 'boolean'
-                                } ] }
+            return {
+                'title'  : 'Create Role',
+                'inputs' : [{
+                    'name'  : 'name',
+                    'label' : 'Name'
+                }, {
+                    'name'  : 'description',
+                    'label' : 'Description'
+                },
+                    build_select_input( 'groups', 'Groups', all_groups, [] ),
+                    build_select_input( 'users', 'Users', all_users, [] ), {
+                    'name'  : 'create_group_for_role',
+                    'label' : 'Create a new role of the same name for this group:',
+                    'type'  : 'boolean'
+                } ] }
         else:
             name = util.restore_text( payload.get( 'name', '' ) )
             description = util.restore_text( payload.get( 'description', '' ) )
@@ -1079,14 +1079,14 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             return {
                 'title'  : 'Change role name and description for \'%s\'' % util.sanitize_text( role.name ),
                 'inputs' : [{
-                                'name'  : 'name',
-                                'label' : 'Name',
-                                'value' : role.name
-                            },{
-                                'name'  : 'description',
-                                'label' : 'Description',
-                                'value' : role.description
-                            }]
+                    'name'  : 'name',
+                    'label' : 'Name',
+                    'value' : role.name
+                }, {
+                    'name'  : 'description',
+                    'label' : 'Description',
+                    'value' : role.description
+                } ]
             }
         else:
             old_name = role.name
