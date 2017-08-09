@@ -373,7 +373,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_model = None
             if step.type == 'tool':
                 incoming = {}
-                tool = trans.app.toolbox.get_tool( step.tool_id )
+                tool = trans.app.toolbox.get_tool( step.tool_id, tool_version=step.tool_version )
                 params_to_incoming( incoming, tool.inputs, step.state.inputs, trans.app )
                 step_model = tool.to_json( trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY )
                 step_model[ 'post_job_actions' ] = [{

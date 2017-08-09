@@ -8,8 +8,8 @@ import six
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
 
-@six.add_metaclass(ABCMeta)
 @six.python_2_unicode_compatible
+@six.add_metaclass(ABCMeta)
 class ToolSource(object):
     """ This interface represents an abstract source to parse tool
     information from.

@@ -17,7 +17,10 @@ from json import dumps
 from galaxy import util
 from galaxy.datatypes import data, metadata
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.sniff import (
+    get_headers,
+    iter_headers
+)
 from galaxy.util import compression_utils
 
 from . import dataproviders
@@ -638,7 +641,7 @@ class Pileup( Tabular ):
         >>> Pileup().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t' )
+        headers = iter_headers( filename, '\t' )
         try:
             for hdr in headers:
                 if hdr and not hdr[0].startswith( '#' ):

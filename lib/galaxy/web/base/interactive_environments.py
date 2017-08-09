@@ -1,4 +1,3 @@
-import ConfigParser
 import json
 import logging
 import os
@@ -6,11 +5,11 @@ import random
 import stat
 import tempfile
 import uuid
-
 from subprocess import PIPE, Popen
 from sys import platform as _platform
 
 import yaml
+from six.moves import configparser
 
 from galaxy import model, web
 from galaxy.containers import build_container_interfaces
@@ -121,7 +120,7 @@ class InteractiveEnvironmentRequest(object):
 
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
-        # will need to be recorded here. The ConfigParser doesn't provide a
+        # will need to be recorded here. The configparser doesn't provide a
         # .get() that will ignore missing sections, so we must make use of
         # their defaults dictionary instead.
         default_dict = {
@@ -133,7 +132,7 @@ class InteractiveEnvironmentRequest(object):
             'docker_galaxy_temp_dir': None,
             'docker_connect_port': None,
         }
-        viz_config = ConfigParser.SafeConfigParser(default_dict)
+        viz_config = configparser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
         if not os.path.exists( conf_path ):
             conf_path = "%s.sample" % conf_path
@@ -253,7 +252,7 @@ class InteractiveEnvironmentRequest(object):
             env_override = {}
         conf = self.get_conf_dict()
         conf.update(env_override)
-        return dict([(key.upper(), item) for key, item in conf.items()])
+        return dict((key.upper(), item) for key, item in conf.items())
 
     def _get_import_volume_for_run(self):
         if self.use_volumes and self.attr.import_volume:
@@ -271,8 +270,8 @@ class InteractiveEnvironmentRequest(object):
             volumes = []
         env = self._get_env_for_run(env_override)
         import_volume_def = self._get_import_volume_for_run()
-        env_str = ' '.join(['-e "%s=%s"' % (key, item) for key, item in env.items()])
-        volume_str = ' '.join(['-v "%s"' % volume for volume in volumes]) if self.use_volumes else ''
+        env_str = ' '.join('-e "%s=%s"' % (key, item) for key, item in env.items())
+        volume_str = ' '.join('-v "%s"' % volume for volume in volumes) if self.use_volumes else ''
         import_volume_str = '-v "{import_volume}"'.format(import_volume=import_volume_def) if import_volume_def else ''
         name = None
         # This is the basic docker command such as "sudo -u docker docker {docker_args}"
