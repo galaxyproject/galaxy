@@ -81,6 +81,8 @@ def add_file( dataset, registry, json_file, output_path ):
     link_data_only = dataset.get( 'link_data_only', 'copy_files' )
     in_place = dataset.get( 'in_place', True )
     purge_source = dataset.get( 'purge_source', True )
+    check_content = dataset.get( 'check_content' , True )
+
     try:
         ext = dataset.file_type
     except AttributeError:
@@ -132,7 +134,7 @@ def add_file( dataset, registry, json_file, output_path ):
             ext = dataset.file_type
         else:
             # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
-            is_gzipped, is_valid = check_gzip( dataset.path )
+            is_gzipped, is_valid = check_gzip( dataset.path, check_content=check_content )
             if is_gzipped and not is_valid:
                 file_err( 'The gzipped uploaded file contains inappropriate content', dataset, json_file )
                 return
@@ -165,7 +167,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 data_type = 'gzip'
             if not data_type and bz2 is not None:
                 # See if we have a bz2 file, much like gzip
-                is_bzipped, is_valid = check_bz2( dataset.path )
+                is_bzipped, is_valid = check_bz2( dataset.path, check_content )
                 if is_bzipped and not is_valid:
                     file_err( 'The gzipped uploaded file contains inappropriate content', dataset, json_file )
                     return
@@ -265,7 +267,7 @@ def add_file( dataset, registry, json_file, output_path ):
                     parts = dataset.name.split( "." )
                     if len( parts ) > 1:
                         ext = parts[-1].strip().lower()
-                        if not Binary.is_ext_unsniffable(ext):
+                        if check_content and not Binary.is_ext_unsniffable(ext):
                             file_err( 'The uploaded binary file contains inappropriate content', dataset, json_file )
                             return
                         elif Binary.is_ext_unsniffable(ext) and dataset.file_type != ext:
@@ -274,7 +276,7 @@ def add_file( dataset, registry, json_file, output_path ):
                             return
             if not data_type:
                 # We must have a text file
-                if check_html( dataset.path ):
+                if check_content and check_html( dataset.path ):
                     file_err( 'The uploaded file contains inappropriate HTML content', dataset, json_file )
                     return
             if data_type != 'binary':
@@ -297,6 +299,8 @@ def add_file( dataset, registry, json_file, output_path ):
                     ext = dataset.file_type
                 data_type = ext
     # Save job info for the framework
+    if ext == 'auto' and data_type == 'binary':
+        ext = 'data'
     if ext == 'auto' and dataset.ext:
         ext = dataset.ext
     if ext == 'auto':
@@ -336,8 +340,7 @@ def add_file( dataset, registry, json_file, output_path ):
     if dataset.get('uuid', None) is not None:
         info['uuid'] = dataset.get('uuid')
     json_file.write( dumps( info ) + "\n" )
-
-    if link_data_only == 'copy_files' and datatype.dataset_content_needs_grooming( output_path ):
+    if link_data_only == 'copy_files' and datatype and datatype.dataset_content_needs_grooming( output_path ):
         # Groom the dataset content if necessary
         datatype.groom_dataset_content( output_path )
 

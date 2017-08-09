@@ -350,6 +350,7 @@ def create_paramfile( trans, uploaded_datasets ):
                          purge_source=purge_source,
                          space_to_tab=uploaded_dataset.space_to_tab,
                          in_place=trans.app.config.external_chown_script is None,
+                         check_content=trans.app.config.check_upload_content,
                          path=uploaded_dataset.path )
             # TODO: This will have to change when we start bundling inputs.
             # Also, in_place above causes the file to be left behind since the
