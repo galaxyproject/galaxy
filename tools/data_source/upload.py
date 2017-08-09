@@ -82,7 +82,7 @@ def add_file( dataset, registry, json_file, output_path ):
     in_place = dataset.get( 'in_place', True )
     purge_source = dataset.get( 'purge_source', True )
     check_content = dataset.get( 'check_content' , True )
-
+    auto_decompress = dataset.get( 'auto_decompress', True )
     try:
         ext = dataset.file_type
     except AttributeError:
@@ -138,7 +138,7 @@ def add_file( dataset, registry, json_file, output_path ):
             if is_gzipped and not is_valid:
                 file_err( 'The gzipped uploaded file contains inappropriate content', dataset, json_file )
                 return
-            elif is_gzipped and is_valid:
+            elif is_gzipped and is_valid and auto_decompress:
                 if link_data_only == 'copy_files':
                     # We need to uncompress the temp_name file, but BAM files must remain compressed in the BGZF format
                     CHUNK_SIZE = 2 ** 20  # 1Mb
@@ -171,7 +171,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 if is_bzipped and not is_valid:
                     file_err( 'The gzipped uploaded file contains inappropriate content', dataset, json_file )
                     return
-                elif is_bzipped and is_valid:
+                elif is_bzipped and is_valid and auto_decompress:
                     if link_data_only == 'copy_files':
                         # We need to uncompress the temp_name file
                         CHUNK_SIZE = 2 ** 20  # 1Mb
@@ -201,7 +201,7 @@ def add_file( dataset, registry, json_file, output_path ):
             if not data_type:
                 # See if we have a zip archive
                 is_zipped = check_zip( dataset.path )
-                if is_zipped:
+                if is_zipped and auto_decompress:
                     if link_data_only == 'copy_files':
                         CHUNK_SIZE = 2 ** 20  # 1Mb
                         uncompressed = None

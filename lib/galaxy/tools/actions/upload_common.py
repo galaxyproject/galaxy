@@ -347,6 +347,7 @@ def create_paramfile( trans, uploaded_datasets ):
                          link_data_only=link_data_only,
                          uuid=uuid_str,
                          to_posix_lines=getattr(uploaded_dataset, "to_posix_lines", True),
+                         auto_decompress=getattr(uploaded_dataset, "auto_decompress", True),
                          purge_source=purge_source,
                          space_to_tab=uploaded_dataset.space_to_tab,
                          in_place=trans.app.config.external_chown_script is None,

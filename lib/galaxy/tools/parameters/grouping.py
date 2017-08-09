@@ -360,6 +360,9 @@ class UploadDataset( Group ):
             to_posix_lines = False
             if context.get( 'to_posix_lines', None ) not in [ "None", None, False ]:
                 to_posix_lines = True
+            auto_decompress = False
+            if context.get( 'auto_decompress', None ) not in [ "None", None, False ]:
+                auto_decompress = True
             space_to_tab = False
             if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
@@ -399,6 +402,7 @@ class UploadDataset( Group ):
                     if file_bunch.path:
                         break
             file_bunch.to_posix_lines = to_posix_lines
+            file_bunch.auto_decompress = auto_decompress
             file_bunch.space_to_tab = space_to_tab
             file_bunch.uuid = uuid
             return file_bunch, warnings
@@ -413,6 +417,9 @@ class UploadDataset( Group ):
             to_posix_lines = False
             if context.get( 'to_posix_lines', None ) not in [ "None", None, False ]:
                 to_posix_lines = True
+            auto_decompress = False
+            if context.get( 'auto_decompress', None ) not in [ "None", None, False ]:
+                auto_decompress = True
             space_to_tab = False
             if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
@@ -420,12 +427,14 @@ class UploadDataset( Group ):
             file_bunch.uuid = uuid
             if file_bunch.path:
                 file_bunch.to_posix_lines = to_posix_lines
+                file_bunch.auto_decompress = auto_decompress
                 file_bunch.space_to_tab = space_to_tab
                 rval.append( file_bunch )
             for file_bunch in get_url_paste_urls_or_filename( context, override_name=name, override_info=info ):
                 if file_bunch.path:
                     file_bunch.uuid = uuid
                     file_bunch.to_posix_lines = to_posix_lines
+                    file_bunch.auto_decompress = auto_decompress
                     file_bunch.space_to_tab = space_to_tab
                     rval.append( file_bunch )
             # look for files uploaded via FTP
@@ -463,6 +472,7 @@ class UploadDataset( Group ):
                 file_bunch = get_data_file_filename( ftp_data_file, override_name=name, override_info=info, purge=purge )
                 if file_bunch.path:
                     file_bunch.to_posix_lines = to_posix_lines
+                    file_bunch.auto_decompress = auto_decompress
                     file_bunch.space_to_tab = space_to_tab
                     rval.append( file_bunch )
             return rval
@@ -505,12 +515,14 @@ class UploadDataset( Group ):
                 temp_name, is_multi_byte = sniff.stream_to_file( StringIO( d_type.generate_primary_file( dataset ) ), prefix='upload_auto_primary_file' )
                 dataset.primary_file = temp_name
                 dataset.to_posix_lines = True
+                dataset.auto_decompress = True
                 dataset.space_to_tab = False
             else:
                 file_bunch, warnings = get_one_filename( groups_incoming[ 0 ] )
                 writable_files_offset = 1
                 dataset.primary_file = file_bunch.path
                 dataset.to_posix_lines = file_bunch.to_posix_lines
+                dataset.auto_decompress = file_bunch.auto_decompress
                 dataset.space_to_tab = file_bunch.space_to_tab
                 dataset.warnings.extend( warnings )
             if dataset.primary_file is None:  # remove this before finish, this should create an empty dataset

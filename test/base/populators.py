@@ -129,6 +129,8 @@ class BaseDatasetPopulator( object ):
             upload_params[ "files_0|to_posix_lines"] = kwds[ "to_posix_lines" ]
         if "space_to_tab" in kwds:
             upload_params[ "files_0|space_to_tab" ] = kwds[ "space_to_tab" ]
+        if "auto_decompress" in kwds:
+            upload_params[ "files_0|auto_decompress" ] = kwds[ "auto_decompress" ]
         return self.run_tool_payload(
             tool_id='upload1',
             inputs=upload_params,
