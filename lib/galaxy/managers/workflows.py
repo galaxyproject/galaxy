@@ -294,6 +294,9 @@ class WorkflowContentsManager(UsesAnnotations):
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
         for step_dict in self.__walk_step_dicts( data ):
+            self.__load_subworkflows( trans, step_dict )
+
+        for step_dict in self.__walk_step_dicts( data ):
             module, step = self.__module_from_dict( trans, steps, steps_by_external_id, step_dict, **kwds )
             is_tool = is_tool_module_type( module.type )
             if is_tool and module.tool is None:
@@ -815,6 +818,14 @@ class WorkflowContentsManager(UsesAnnotations):
 
             yield step_dict
 
+    def __load_subworkflows( self, trans, step_dict ):
+        step_type = step_dict.get("type", None)
+        if step_type == "subworkflow":
+            subworkflow = self.__load_subworkflow_from_step_dict(
+                trans, step_dict
+            )
+            step_dict["subworkflow"] = subworkflow
+
     def __module_from_dict( self, trans, steps, steps_by_external_id, step_dict, **kwds ):
         """ Create a WorkflowStep model object and corresponding module
         representing type-specific functionality from the incoming dictionary.
@@ -826,12 +837,6 @@ class WorkflowContentsManager(UsesAnnotations):
             step.uuid = step_dict["uuid"]
         if "label" in step_dict:
             step.label = step_dict["label"]
-        step_type = step_dict.get("type", None)
-        if step_type == "subworkflow":
-            subworkflow = self.__load_subworkflow_from_step_dict(
-                trans, step_dict
-            )
-            step_dict["subworkflow"] = subworkflow
 
         module = module_factory.from_dict( trans, step_dict, **kwds )
         self.__set_default_label( step, module, step_dict.get( 'tool_state' ) )
