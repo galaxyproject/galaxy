@@ -27,6 +27,7 @@ lib/galaxy/tools/
 lib/galaxy/tours/
 lib/galaxy/util/
 lib/galaxy/visualization/
+lib/galaxy/web/base/
 lib/galaxy/web/buildapp.py
 lib/galaxy/web/framework/base.py
 lib/galaxy/web/framework/decorators.py

@@ -454,7 +454,10 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # We now likely have a Toolshed guid passed in, but no supporting database entries
             # If the tool exists by exact id and is loaded then provide exact match within a list
             if tool_id in self._tools_by_id:
-                return[ self._tools_by_id[ tool_id ] ]
+                if get_all_versions:
+                    return [ self._tools_by_id[ tool_id ] ]
+                else:
+                    return self._tools_by_id[ tool_id ]
         return None
 
     def has_tool( self, tool_id, tool_version=None, exact=False ):

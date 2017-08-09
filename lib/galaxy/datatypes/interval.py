@@ -13,7 +13,10 @@ from six.moves.urllib.parse import quote_plus
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.sniff import (
+    get_headers,
+    iter_headers
+)
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
 from galaxy.web import url_for
@@ -313,12 +316,12 @@ class Interval( Tabular ):
         >>> Interval().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t', comment_designator='#' )
         try:
             """
             If we got here, we already know the file is_column_based and is not bed,
             so we'll just look for some valid data.
             """
+            headers = iter_headers( filename, '\t', comment_designator='#' )
             for hdr in headers:
                 if hdr:
                     if len(hdr) < 3:
@@ -489,10 +492,10 @@ class Bed( Interval ):
         >>> Bed().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t', comment_designator='#' )
+        if not get_headers( filename, '\t', comment_designator='#', count=1 ):
+            return False
         try:
-            if not headers:
-                return False
+            headers = iter_headers( filename, '\t', comment_designator='#' )
             for hdr in headers:
                 if hdr[0] == '':
                     continue
@@ -832,10 +835,10 @@ class Gff( Tabular, _RemoteCallMixin ):
         >>> Gff().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t' )
+        if len(get_headers( filename, '\t', count=2 )) < 2:
+            return False
         try:
-            if len(headers) < 2:
-                return False
+            headers = iter_headers( filename, '\t' )
             for hdr in headers:
                 if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '2' ) < 0:
                     return False
@@ -964,10 +967,10 @@ class Gff3( Gff ):
         >>> Gff3().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t' )
+        if len(get_headers( filename, '\t', count=2 )) < 2:
+            return False
         try:
-            if len(headers) < 2:
-                return False
+            headers = iter_headers( filename, '\t' )
             for hdr in headers:
                 if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '3' ) >= 0:
                     return True
@@ -1039,10 +1042,10 @@ class Gtf( Gff ):
         >>> Gtf().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t' )
+        if len(get_headers( filename, '\t', count=2 )) < 2:
+            return False
         try:
-            if len(headers) < 2:
-                return False
+            headers = iter_headers( filename, '\t' )
             for hdr in headers:
                 if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '2' ) < 0:
                     return False
@@ -1235,8 +1238,8 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         >>> Wiggle().sniff( fname )
         True
         """
-        headers = get_headers( filename, None )
         try:
+            headers = iter_headers( filename, None )
             for hdr in headers:
                 if len(hdr) > 1 and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
                     return True
@@ -1371,7 +1374,7 @@ class CustomTrack ( Tabular ):
         >>> CustomTrack().sniff( fname )
         True
         """
-        headers = get_headers( filename, None )
+        headers = iter_headers( filename, None )
         first_line = True
         for hdr in headers:
             if first_line:
