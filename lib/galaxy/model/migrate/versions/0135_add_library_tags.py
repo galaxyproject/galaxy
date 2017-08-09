@@ -14,14 +14,16 @@ log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 
-LibraryDatasetDatasetAssociationTagAssociation_table = Table( "library_dataset_dataset_association_tag_association", metadata,
-                                                       Column("id", Integer, primary_key=True),
-                                                       Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
-                                                       Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-                                                       Column( "user_tname", TrimmedString(255), index=True),
-                                                       Column( "value", TrimmedString(255), index=True),
-                                                       Column( "user_value", TrimmedString(255), index=True),
-                                                       Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ) )
+LibraryDatasetDatasetAssociationTagAssociation_table = Table(
+    "library_dataset_dataset_association_tag_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_tname", TrimmedString(255), index=True),
+    Column( "value", TrimmedString(255), index=True),
+    Column( "user_value", TrimmedString(255), index=True),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
+)
 
 
 def upgrade(migrate_engine):
