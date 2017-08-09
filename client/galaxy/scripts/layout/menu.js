@@ -56,7 +56,7 @@ var Collection = Backbone.Collection.extend({
                     url     : 'library/list'
                 },{
                     title   : _l('Histories'),
-                    url     : 'history/list_published'
+                    url     : 'histories/list_published'
                 },{
                     title   : _l('Workflows'),
                     url     : 'workflows/list_published'
@@ -93,7 +93,7 @@ var Collection = Backbone.Collection.extend({
         this.add({
             id              : 'visualization',
             title           : _l('Visualization'),
-            url             : 'visualization/list',
+            url             : 'visualizations/list',
             tooltip         : _l('Visualize datasets'),
             disabled        : !Galaxy.user.id,
             menu            : [{
@@ -102,7 +102,7 @@ var Collection = Backbone.Collection.extend({
                     target  : '_frame'
                 },{
                     title   : _l('Saved Visualizations'),
-                    url     : 'visualization/list',
+                    url     : 'visualizations/list',
                     target  : '_frame'
                 },{
                     title   : _l('Interactive Environments'),
@@ -285,7 +285,7 @@ var Collection = Backbone.Collection.extend({
                         }
                     },{
                         title   : _l('Logout'),
-                        url     : 'user/logout',
+                        url     : 'user/logout?session_csrf_token=' + Galaxy.session_csrf_token,
                         target  : '_top',
                         divider : true
                     },{

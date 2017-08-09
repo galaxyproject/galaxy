@@ -157,7 +157,21 @@ class ToolExecutionTracker( object ):
                 log.warning( "Problem matching up datasets while attempting to create implicit dataset collections")
                 continue
             output = self.tool.outputs[ output_name ]
-            element_identifiers = structure.element_identifiers_for_outputs( trans, outputs )
+
+            element_identifiers = None
+            if hasattr(output, "default_identifier_source"):
+                # Switch the structure for outputs if the output specified a default_identifier_source
+                collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
+
+                source_collection = self.collection_info.collections.get(output.default_identifier_source)
+                if source_collection:
+                    collection_type_description = collection_type_descriptions.for_collection_type(source_collection.collection.collection_type)
+                    _structure = structure.for_dataset_collection( source_collection.collection, collection_type_description=collection_type_description)
+                    if structure.can_match(_structure):
+                        element_identifiers = _structure.element_identifiers_for_outputs(trans, outputs)
+
+            if not element_identifiers:
+                element_identifiers = structure.element_identifiers_for_outputs( trans, outputs )
 
             implicit_collection_info = dict(
                 implicit_inputs=implicit_inputs,

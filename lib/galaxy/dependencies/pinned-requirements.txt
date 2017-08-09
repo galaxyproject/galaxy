@@ -22,7 +22,7 @@ WebOb==1.4.1
 WebHelpers==1.3
 Mako==1.0.2
 pytz==2015.4
-Babel==2.1.1
+Babel==2.4.0
 Beaker==1.7.0
 dictobj==0.3.1
 nose==1.3.7
@@ -39,7 +39,7 @@ Markdown==2.6.3
 # BioBlend and dependencies
 bioblend==0.7.0
 boto==2.38.0
-requests==2.8.1
+requests==2.10.0
 requests-toolbelt==0.4.0
 
 # kombu and dependencies
@@ -63,8 +63,8 @@ svgwrite==1.1.6
 pyparsing==2.1.1
 
 # Fabric and dependencies
-Fabric==1.10.2
-paramiko==1.15.2
+Fabric==1.13.2
+paramiko==2.2.1
 ecdsa==0.13
 
 # Flexible BAM index naming

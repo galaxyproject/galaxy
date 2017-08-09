@@ -79,9 +79,7 @@ lib/galaxy/visualization/__init__.py
 lib/galaxy/visualization/plugins/__init__.py
 lib/galaxy/visualization/plugins/utils.py
 lib/galaxy/visualization/tracks/
-lib/galaxy/web/base/controllers/__init__.py
-lib/galaxy/web/base/__init__.py
-lib/galaxy/web/base/interactive_environments.py
+lib/galaxy/web/base/
 lib/galaxy/web/buildapp.py
 lib/galaxy/web/formatting.py
 lib/galaxy/web/framework/base.py

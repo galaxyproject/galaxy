@@ -289,13 +289,16 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 inserted = True
             if not inserted:
                 # Check the tool's installed versions.
-                versions = tool.lineage.get_versions()
-                for tool_lineage_version in versions:
-                    lineage_id = tool_lineage_version.id
-                    index = self._integrated_tool_panel.index_of_tool_id(lineage_id)
-                    if index:
-                        panel_dict.insert_tool(index, tool)
-                        inserted = True
+                if tool.lineage is not None:
+                    versions = tool.lineage.get_versions()
+                    for tool_lineage_version in versions:
+                        lineage_id = tool_lineage_version.id
+                        index = self._integrated_tool_panel.index_of_tool_id(lineage_id)
+                        if index:
+                            panel_dict.insert_tool(index, tool)
+                            inserted = True
+                else:
+                    log.warning("Could not find lineage for tool '%s'", tool.id)
                 if not inserted:
                     if (
                         tool.guid is None or
@@ -394,7 +397,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 self._integrated_tool_panel.stub_label( key )
 
     def get_tool( self, tool_id, tool_version=None, get_all_versions=False, exact=False ):
-        """Attempt to locate a tool in the tool box."""
+        """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""
         if tool_version:
             tool_version = str( tool_version )
 
@@ -451,7 +454,10 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # We now likely have a Toolshed guid passed in, but no supporting database entries
             # If the tool exists by exact id and is loaded then provide exact match within a list
             if tool_id in self._tools_by_id:
-                return[ self._tools_by_id[ tool_id ] ]
+                if get_all_versions:
+                    return [ self._tools_by_id[ tool_id ] ]
+                else:
+                    return self._tools_by_id[ tool_id ]
         return None
 
     def has_tool( self, tool_id, tool_version=None, exact=False ):
@@ -564,8 +570,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     tool.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
                     tool.guid = guid
                     tool.version = item.elem.find( "version" ).text
-                # Make sure tools are registered in self._lineage_map.
-                tool._lineage = self._lineage_map.register( tool )
                 if item.has_elem:
                     self._tool_tag_manager.handle_tags( tool.id, item.elem )
                 self.__add_tool( tool, load_panel_dict, panel_dict )
@@ -630,6 +634,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         # changed, so the tool should always be reloaded here.  We used to
         # only load the tool if it was not found in self._tools_by_id, but
         # performing that check did not enable this scenario.
+        tool._lineage = self._lineage_map.register( tool )
         self.register_tool( tool )
         if load_panel_dict:
             self.__add_tool_to_tool_panel( tool, panel_dict, section=isinstance( panel_dict, ToolSection ) )
@@ -946,13 +951,16 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         if tool_lineage is None:
             assert tool is not None
             tool_lineage = tool.lineage
-        lineage_tool_versions = reversed(tool_lineage.get_versions())
-        for lineage_tool_version in lineage_tool_versions:
-            lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
-            if lineage_tool:
-                lineage_id = lineage_tool.id
-                if panel_dict.has_tool_with_id( lineage_id ):
-                    return panel_dict.get_tool_with_id( lineage_id )
+        if tool_lineage is not None:
+            lineage_tool_versions = reversed(tool_lineage.get_versions())
+            for lineage_tool_version in lineage_tool_versions:
+                lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
+                if lineage_tool:
+                    lineage_id = lineage_tool.id
+                    if panel_dict.has_tool_with_id( lineage_id ):
+                        return panel_dict.get_tool_with_id( lineage_id )
+        else:
+            log.warning("Could not find lineage for tool '%s'", tool.id)
         return None
 
     def _newer_tool( self, tool1, tool2 ):

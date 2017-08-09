@@ -10,13 +10,13 @@ var jQuery = require( 'jquery' ),
     CustomBuilds = require( 'mvc/user/user-custom-builds' ),
     Tours = require( 'mvc/tours' ),
     GridView = require( 'mvc/grid/grid-view' ),
-    PageList = require( 'mvc/page/page-list' ),
+    GridShared = require( 'mvc/grid/grid-shared' ),
     Workflows = require( 'mvc/workflow/workflow' ),
     HistoryList = require( 'mvc/history/history-list' ),
-    WorkflowsConfigureMenu = require( 'mvc/workflow/workflow-configure-menu' ),
     ToolFormComposite = require( 'mvc/tool/tool-form-composite' ),
     Utils = require( 'utils/utils' ),
-    Ui = require( 'mvc/ui/ui-misc' );
+    Ui = require( 'mvc/ui/ui-misc' ),
+    DatasetEditAttributes = require('mvc/dataset/dataset-edit-attributes');
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -88,20 +88,19 @@ window.app = function app( options, bootstrapped ){
             '(/)workflow(/)' : 'show_workflows',
             '(/)workflow/run(/)' : 'show_run',
             '(/)pages(/)(:action_id)' : 'show_pages',
-            '(/)visualizations/list_published(/)' : 'show_visualizations',
+            '(/)visualizations/(:action_id)' : 'show_visualizations',
             '(/)workflows/list_published(/)' : 'show_workflows_published',
             '(/)histories(/)(:action_id)' : 'show_histories',
             '(/)datasets(/)list(/)' : 'show_datasets',
-            '(/)workflow/configure_menu(/)' : 'show_configure_menu',
             '(/)workflow/import_workflow' : 'show_import_workflow',
-            '(/)custom_builds' : 'show_custom_builds'
+            '(/)custom_builds' : 'show_custom_builds',
+            '(/)datasets/edit': 'show_dataset_edit_attributes'
         },
 
         require_login: [
             'show_user',
             'show_user_form',
-            'show_workflows',
-            'show_configure_menu'
+            'show_workflows'
         ],
 
         loginRequired: function() {
@@ -128,8 +127,8 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
         },
 
-        show_visualizations : function() {
-            this.page.display( new GridView( { url_base: Galaxy.root + 'visualization/list_published', dict_format: true } ) );
+        show_visualizations : function( action_id ) {
+            this.page.display( new GridShared.View( { action_id: action_id, plural: 'Visualizations', item: 'visualization' } ) );
         },
 
         show_workflows_published : function() {
@@ -145,11 +144,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_pages : function( action_id ) {
-            if ( action_id == 'list' ) {
-                this.page.display( new PageList.View() );
-            } else {
-                this.page.display( new GridView( { url_base: Galaxy.root + 'page/list_published', dict_format: true } ) );
-            }
+            this.page.display( new GridShared.View( { action_id: action_id, plural: 'Pages', item: 'page' } ) );
         },
 
         show_workflows : function(){
@@ -164,10 +159,6 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new Workflows.ImportWorkflowView() );
         },
 
-        show_configure_menu : function(){
-            this.page.display( new WorkflowsConfigureMenu.View() );
-        },
-
         show_custom_builds : function() {
             var self = this;
             var historyPanel = this.page.historyPanel.historyView;
@@ -176,6 +167,10 @@ window.app = function app( options, bootstrapped ){
                 return;
             }
             this.page.display( new CustomBuilds.View() );
+        },
+
+        show_dataset_edit_attributes : function() {
+            this.page.display( new DatasetEditAttributes.View() );
         },
 
         /**  */
@@ -206,7 +201,7 @@ window.app = function app( options, bootstrapped ){
         /** load the center panel with a tool form described by the given params obj */
         _loadToolForm : function( params ){
             //TODO: load tool form code async
-            params.id = params.tool_id;
+            params.id = decodeURIComponent( params.tool_id );
             this.page.display( new ToolForm.View( params ) );
         },
 

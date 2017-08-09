@@ -17,7 +17,10 @@ from json import dumps
 from galaxy import util
 from galaxy.datatypes import data, metadata
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.sniff import (
+    get_headers,
+    iter_headers
+)
 from galaxy.util import compression_utils
 
 from . import dataproviders
@@ -638,7 +641,7 @@ class Pileup( Tabular ):
         >>> Pileup().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t' )
+        headers = iter_headers( filename, '\t' )
         try:
             for hdr in headers:
                 if hdr and not hdr[0].startswith( '#' ):
@@ -956,31 +959,37 @@ class BaseCSV( TabularData ):
             return False
 
     def set_meta( self, dataset, **kwd ):
-        with open(dataset.file_name, 'r') as csvfile:
-            # Parse file with the correct dialect
-            reader = csv.reader(csvfile, self.dialect)
-            data_row = None
-            header_row = None
-            try:
-                header_row = next(reader)
-                data_row = next(reader)
-                for row in reader:
+        column_types = []
+        header_row = []
+        data_row = []
+        data_lines = 0
+        if dataset.has_data():
+            with open(dataset.file_name, 'r') as csvfile:
+                # Parse file with the correct dialect
+                reader = csv.reader(csvfile, self.dialect)
+                try:
+                    header_row = next(reader)
+                    data_row = next(reader)
+                    for row in reader:
+                        pass
+                except StopIteration:
                     pass
-            except csv.Error as e:
-                raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
+                except csv.Error as e:
+                    raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
+                else:
+                    data_lines = reader.line_num - 1
 
-            # Guess column types
-            column_types = []
-            for cell in data_row:
-                column_types.append(self.guess_type(cell))
+        # Guess column types
+        for cell in data_row:
+            column_types.append(self.guess_type(cell))
 
-            # Set metadata
-            dataset.metadata.data_lines = reader.line_num - 1
-            dataset.metadata.comment_lines = 1
-            dataset.metadata.column_types = column_types
-            dataset.metadata.columns = max( len( header_row ), len( data_row ) )
-            dataset.metadata.column_names = header_row
-            dataset.metadata.delimiter = reader.dialect.delimiter
+        # Set metadata
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.comment_lines = int(bool(header_row))
+        dataset.metadata.column_types = column_types
+        dataset.metadata.columns = max( len( header_row ), len( data_row ) )
+        dataset.metadata.column_names = header_row
+        dataset.metadata.delimiter = self.dialect.delimiter
 
 
 @dataproviders.decorators.has_dataproviders

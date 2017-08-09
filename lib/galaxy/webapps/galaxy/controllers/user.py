@@ -459,6 +459,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     refresh_frames = [ 'masthead', 'history', 'tools' ]
                 else:
                     refresh_frames = [ 'masthead', 'history' ]
+            csrf_check = trans.check_csrf_token()
+            if csrf_check:
+                return csrf_check
             message, status, user, success = self.__validate_login( trans, **kwd )
             if success:
                 redirect_url = redirect
@@ -615,8 +618,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         return ( time_difference > delta or activation_grace_period == 0 )
 
     @web.expose
-    def logout( self, trans, logout_all=False ):
+    def logout( self, trans, logout_all=False, **kwd ):
         if trans.webapp.name == 'galaxy':
+            csrf_check = trans.check_csrf_token()
+            if csrf_check:
+                return csrf_check
+
             if trans.app.config.require_login:
                 refresh_frames = [ 'masthead', 'history', 'tools' ]
             else:
@@ -689,6 +696,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         refresh_frames = [ 'masthead' ]
                 # Create the user, save all the user info and login to Galaxy
                 if params.get( 'create_user_button', False ):
+                    csrf_check = trans.check_csrf_token()
+                    if csrf_check:
+                        return csrf_check
+
                     # Check email and password validity
                     message = self.__validate( trans, params, email, password, confirm, username )
                     if not message:

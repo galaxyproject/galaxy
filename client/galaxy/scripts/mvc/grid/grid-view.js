@@ -7,7 +7,7 @@ define([
     'utils/utils',
     'mvc/grid/grid-model',
     'mvc/grid/grid-template',
-    "mvc/ui/popup-menu"
+    'mvc/ui/popup-menu'
 ], function(Utils, GridModel, Templates, PopupMenu) {
 
 // grid view
@@ -17,8 +17,7 @@ return Backbone.View.extend({
     grid: null,
 
     // Initialize
-    initialize: function(grid_config)
-    {
+    initialize: function(grid_config) {
         this.dict_format = grid_config.dict_format;
         var self = this;
         window.add_tag_to_grid_filter = function( tag_name, tag_value ){
@@ -36,9 +35,15 @@ return Backbone.View.extend({
         if ( this.dict_format ) {
             this.setElement('<div/>');
             if ( grid_config.url_base && !grid_config.items ) {
-                Utils.get({
-                    url: grid_config.url_base,
-                    success: function( response ) {
+                var url_data = {};
+                _.each(grid_config.filters, function(v, k) {
+                    url_data['f-' + k] = v;
+                });
+                $.ajax({
+                    url     : grid_config.url_base + '?' + $.param( url_data ),
+                    success : function( response ) {
+                        response.embedded = grid_config.embedded;
+                        response.filters  = grid_config.filters;
                         self.init_grid( response );
                     }
                 });
@@ -71,8 +76,7 @@ return Backbone.View.extend({
     },
 
     // Initialize
-    init_grid: function(grid_config)
-    {
+    init_grid: function(grid_config) {
         // link grid model
         this.grid = new GridModel(grid_config);
 
@@ -429,8 +433,7 @@ return Backbone.View.extend({
     },
 
     // confirmation/submission of operation request
-    submit_operation: function (operation_button, confirmation_text)
-    {
+    submit_operation: function (operation_button, confirmation_text) {
         // identify operation
         var operation_name = $(operation_button).val();
 
@@ -464,26 +467,11 @@ return Backbone.View.extend({
     },
 
     check_all_items: function () {
-        var chk_all = document.getElementById('check_all'),
-            checks = document.getElementsByTagName('input'),
-            total = 0,
-            i;
-        if ( chk_all.checked === true ) {
-            for ( i=0; i < checks.length; i++ ) {
-                if ( checks[i].name.indexOf( 'id' ) !== -1) {
-                   checks[i].checked = true;
-                   total++;
-                }
-            }
-        }
-        else {
-            for ( i=0; i < checks.length; i++ ) {
-                if ( checks[i].name.indexOf( 'id' ) !== -1) {
-                   checks[i].checked = false;
-                }
-
-            }
-        }
+        var check = this.$('.grid-row-select-checkbox');
+        var state = this.$( '#check_all' ).prop( 'checked' );
+        _.each( check, function( c ) {
+            $( c ).prop( 'checked', state );
+        });
         this.init_grid_elements();
     },
 
