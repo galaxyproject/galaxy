@@ -813,7 +813,7 @@ class ToolModule(WorkflowModule):
             execution_state.inputs = make_dict_copy(execution_state.inputs)
 
             expected_replacement_keys = set(step.input_connections_by_name.keys())
-            found_replacement_keys = set([])
+            found_replacement_keys = set()
 
             # Connect up
             def callback(input, prefixed_name, **kwargs):
@@ -979,7 +979,7 @@ class WorkflowModuleFactory(object):
         Return module initialized from the data in dictionary `d`.
         """
         type = d['type']
-        assert type in self.module_types, "Unexpected workflow step type [%s] not found in [%s]"% (type, self.module_types.keys())
+        assert type in self.module_types, "Unexpected workflow step type [%s] not found in [%s]" % (type, self.module_types.keys())
         return self.module_types[type].from_dict(trans, d, **kwargs)
 
     def from_workflow_step(self, trans, step):
