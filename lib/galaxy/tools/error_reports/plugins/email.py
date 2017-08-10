@@ -29,7 +29,7 @@ class EmailPlugin( ErrorPlugin ):
             error_reporter.send_report( user=job.get_user(), email=kwargs.get('email', None), message=kwargs.get('message', None) )
             return ( "Your error report has been sent", "success" )
         except Exception as e:
-            return ( "An error occurred sending the report by email: %s" % str( e ), "error" )
+            return ( "An error occurred sending the report by email: %s" % str( e ), "danger" )
 
 
 __all__ = ( 'EmailPlugin', )
