@@ -503,6 +503,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         data = payload['workflow']
 
         import_tools = util.string_as_bool( payload.get( "import_tools", False ) )
+        if import_tools and not trans.user_is_admin():
+            raise exceptions.AdminRequiredException()
+
         publish = util.string_as_bool( payload.get( "publish", False ) )
         # If 'publish' set, default to importable.
         importable = util.string_as_bool( payload.get( "importable", publish ) )
