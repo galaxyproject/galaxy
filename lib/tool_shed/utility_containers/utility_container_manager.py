@@ -136,7 +136,7 @@ class RepositoryDependency( object ):
 class Tool( object ):
     """Tool object"""
 
-    def __init__( self, id=None, tool_config=None, tool_id=None, name=None, description=None, version=None, requirements=None,
+    def __init__( self, id=None, tool_config=None, tool_id=None, name=None, description=None, version=None, profile=None, requirements=None,
                   repository_id=None, changeset_revision=None, repository_installation_status=None ):
         self.id = id
         self.tool_config = tool_config
@@ -144,6 +144,7 @@ class Tool( object ):
         self.name = name
         self.description = description
         self.version = version
+        self.profile = profile
         self.requirements = requirements
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
@@ -438,6 +439,7 @@ class UtilityContainerManager( object ):
                          name='Name',
                          description='Description',
                          version='Version',
+                         profile='Minimum Galaxy Version',
                          requirements='',
                          repository_id='',
                          changeset_revision='' )
@@ -479,6 +481,7 @@ class UtilityContainerManager( object ):
                     name = str( tool_dict.get( 'name', 'unknown' ) )
                     description = str( tool_dict.get( 'description', '' ) )
                     version = str( tool_dict.get( 'version', 'unknown' ) )
+                    profile = str( tool_dict.get('profile', 'any'))
                 except Exception as e:
                     tool_config = str( e )
                     tool_id = 'unknown'
@@ -491,6 +494,7 @@ class UtilityContainerManager( object ):
                              name=name,
                              description=description,
                              version=version,
+                             profile=profile,
                              requirements=requirements_str,
                              repository_id=repository_id,
                              changeset_revision=changeset_revision,

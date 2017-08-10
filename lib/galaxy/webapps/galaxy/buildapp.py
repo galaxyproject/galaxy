@@ -122,6 +122,7 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/histories/list_shared' )
     webapp.add_client_route( '/datasets/list' )
     webapp.add_client_route( '/datasets/edit' )
+    webapp.add_client_route( '/datasets/error' )
     webapp.add_client_route( '/workflow/run' )
     webapp.add_client_route( '/workflow/import_workflow' )
     webapp.add_client_route( '/custom_builds' )
@@ -761,6 +762,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( 'job_inputs', '/api/jobs/{id}/inputs', controller='jobs', action='inputs', conditions=dict( method=['GET'] ) )
     webapp.mapper.connect( 'job_outputs', '/api/jobs/{id}/outputs', controller='jobs', action='outputs', conditions=dict( method=['GET'] ) )
     webapp.mapper.connect( 'build_for_rerun', '/api/jobs/{id}/build_for_rerun', controller='jobs', action='build_for_rerun', conditions=dict( method=['GET'] ) )
+    webapp.mapper.connect( 'job_error', '/api/jobs/{id}/error', controller='jobs', action='error', conditions=dict( method=['POST'] ) )
 
     # Job files controllers. Only for consumption by remote job runners.
     webapp.mapper.resource( 'file',

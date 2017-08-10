@@ -200,19 +200,7 @@ def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+", tmp_dir=None, 
         return ( i + 1, temp_name )
 
 
-def get_headers( fname, sep, count=60, is_multi_byte=False, comment_designator=None ):
-    """
-    Returns a list with the first 'count' lines split by 'sep', ignoring lines
-    starting with 'comment_designator'
-
-    >>> fname = get_test_fname('complete.bed')
-    >>> get_headers(fname,'\\t')
-    [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
-    >>> fname = get_test_fname('test.gff')
-    >>> get_headers(fname, '\\t', count=5, comment_designator='#')
-    [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
-    """
-    headers = []
+def iter_headers( fname, sep, count=60, is_multi_byte=False, comment_designator=None ):
     with compression_utils.get_fileobj(fname) as in_file:
         idx = 0
         for line in in_file:
@@ -225,11 +213,25 @@ def get_headers( fname, sep, count=60, is_multi_byte=False, comment_designator=N
                     comment_designator = comment_designator.encode( 'utf-8' )
             if comment_designator is not None and comment_designator != '' and line.startswith( comment_designator ):
                 continue
-            headers.append( line.split(sep) )
+            yield line.split(sep)
             idx += 1
             if idx == count:
                 break
-    return headers
+
+
+def get_headers( fname, sep, count=60, is_multi_byte=False, comment_designator=None ):
+    """
+    Returns a list with the first 'count' lines split by 'sep', ignoring lines
+    starting with 'comment_designator'
+
+    >>> fname = get_test_fname('complete.bed')
+    >>> get_headers(fname,'\\t')
+    [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
+    >>> fname = get_test_fname('test.gff')
+    >>> get_headers(fname, '\\t', count=5, comment_designator='#')
+    [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
+    """
+    return list(iter_headers(fname=fname, sep=sep, count=count, is_multi_byte=is_multi_byte, comment_designator=comment_designator))
 
 
 def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):

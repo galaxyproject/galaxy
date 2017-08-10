@@ -16,7 +16,7 @@ import logging
 
 from collections import defaultdict
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 from galaxy.util.properties import load_app_properties
 import galaxy
@@ -32,7 +32,7 @@ def _init(config, need_app=False):
     if config.startswith('/'):
         config_file = os.path.abspath(config)
     else:
-        config_file = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, config))
+        config_file = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, config))
 
     properties = load_app_properties(ini_file=config_file)
     config = galaxy.config.Configuration(**properties)
@@ -292,6 +292,9 @@ def main(argv):
                 .filter(model.JobMetricNumeric.job_id > offset_start) \
                 .filter(model.JobMetricNumeric.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all():
+            # No associated job
+            if metric[0] not in job_tool_map:
+                continue
             # If the tool is blacklisted, exclude everywhere
             if job_tool_map[metric[0]] in blacklisted_tools:
                 continue
@@ -316,6 +319,9 @@ def main(argv):
                 .filter(model.JobParameter.job_id > offset_start) \
                 .filter(model.JobParameter.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all():
+            # No associated job
+            if param[0] not in job_tool_map:
+                continue
             # If the tool is blacklisted, exclude everywhere
             if job_tool_map[param[0]] in blacklisted_tools:
                 continue

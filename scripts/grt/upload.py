@@ -3,8 +3,6 @@
 
 See doc/source/admin/grt.rst for more detailed usage information.
 """
-from __future__ import print_function
-
 import argparse
 import os
 import sys
@@ -37,7 +35,7 @@ def main(argv):
             config = yaml.load(handle)
 
     REPORT_DIR = args.report_directory
-    GRT_URL = config['grt']['url']
+    GRT_URL = config['grt']['url'].rstrip('/') + '/'
     GRT_INSTANCE_ID = config['grt']['instance_id']
     GRT_API_KEY = config['grt']['api_key']
 
@@ -55,8 +53,8 @@ def main(argv):
         if report_id not in remote_reports:
             logging.info("Uploading %s", report_id)
             files = {
-                'meta': open(os.path.join(sys.argv[1], report_id + '.json'), 'rb'),
-                'data': open(os.path.join(sys.argv[1], report_id + '.tsv.gz'), 'rb')
+                'meta': open(os.path.join(REPORT_DIR, report_id + '.json'), 'rb'),
+                'data': open(os.path.join(REPORT_DIR, report_id + '.tar.gz'), 'rb')
             }
             data = {
                 'identifier': report_id

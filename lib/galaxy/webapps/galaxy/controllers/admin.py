@@ -1017,14 +1017,13 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 'inputs' : [{
                     'name'  : 'name',
                     'label' : 'Name'
-                },{
+                }, {
                     'name'  : 'description',
                     'label' : 'Description'
                 },
                     build_select_input( 'groups', 'Groups', all_groups, [] ),
-                    build_select_input( 'users', 'Users', all_users, [] ),
-                {
-                    'name'  : 'auto_create',
+                    build_select_input( 'users', 'Users', all_users, [] ), {
+                    'name'  : 'create_group_for_role',
                     'label' : 'Create a new role of the same name for this group:',
                     'type'  : 'boolean'
                 } ] }
@@ -1080,7 +1079,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     'name'  : 'name',
                     'label' : 'Name',
                     'value' : role.name
+<<<<<<< HEAD
                 },{
+=======
+                }, {
+>>>>>>> admin_grid_roles
                     'name'  : 'description',
                     'label' : 'Description',
                     'value' : role.description
