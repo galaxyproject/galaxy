@@ -19,7 +19,6 @@ from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base import controller
 from galaxy.web.base.controller import UsesQuotaMixin
-from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
 from galaxy.tools import global_tool_errors
@@ -1079,11 +1078,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     'name'  : 'name',
                     'label' : 'Name',
                     'value' : role.name
-<<<<<<< HEAD
-                },{
-=======
                 }, {
->>>>>>> admin_grid_roles
                     'name'  : 'description',
                     'label' : 'Description',
                     'value' : role.description
@@ -1226,7 +1221,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         if 'operation' in kwargs:
             id = kwargs.get( 'id' )
             if not id:
-                return self.message_exception( 'Invalid group id (%s) received.' % str( id ) )
+                return message_exception( 'Invalid group id (%s) received.' % str( id ) )
             ids = util.listify( id )
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == 'delete':
@@ -1252,10 +1247,10 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             return {
                 'title'  : 'Change group name for \'%s\'' % util.sanitize_text( group.name ),
                 'inputs' : [{
-                                'name'  : 'name',
-                                'label' : 'Name',
-                                'value' : group.name
-                            }]
+                    'name'  : 'name',
+                    'label' : 'Name',
+                    'value' : group.name
+                }]
             }
         else:
             old_name = group.name
@@ -1292,8 +1287,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     in_users.append( trans.security.encode_id( user.id ) )
                 all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
             for role in trans.sa_session.query( trans.app.model.Role ) \
-                                         .filter( trans.app.model.Role.table.c.deleted == false() ) \
-                                         .order_by( trans.app.model.Role.table.c.name ):
+                                        .filter( trans.app.model.Role.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.Role.table.c.name ):
                 if role in [ x.role for x in group.roles ]:
                     in_roles.append( trans.security.encode_id( role.id ) )
                 all_roles.append( ( role.name, trans.security.encode_id( role.id ) ) )
@@ -1322,21 +1317,22 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                         .order_by( trans.app.model.User.table.c.email ):
                 all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
             for role in trans.sa_session.query( trans.app.model.Role ) \
-                                         .filter( trans.app.model.Role.table.c.deleted == false() ) \
-                                         .order_by( trans.app.model.Role.table.c.name ):
+                                        .filter( trans.app.model.Role.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.Role.table.c.name ):
                 all_roles.append( ( role.name, trans.security.encode_id( role.id ) ) )
-            return { 'title'  : 'Create Group',
-                     'inputs' : [{
-                                    'name'  : 'name',
-                                    'label' : 'Name'
-                                },
-                                build_select_input( 'roles', 'Roles', all_roles, [] ),
-                                build_select_input( 'users', 'Users', all_users, [] ),
-                                {
-                                    'name'  : 'auto_create',
-                                    'label' : 'Create a new role of the same name for this group:',
-                                    'type'  : 'boolean'
-                                } ] }
+            return {
+                'title'  : 'Create Group',
+                'inputs' : [{
+                    'name'  : 'name',
+                    'label' : 'Name'
+                },
+                    build_select_input( 'roles', 'Roles', all_roles, [] ),
+                    build_select_input( 'users', 'Users', all_users, [] ), {
+                    'name'  : 'auto_create',
+                    'label' : 'Create a new role of the same name for this group:',
+                    'type'  : 'boolean'
+                } ]
+            }
         else:
             name = util.restore_text( payload.get( 'name', '' ) )
             auto_create_checked = payload.get( 'auto_create' ) == 'true'
