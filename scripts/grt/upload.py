@@ -37,7 +37,7 @@ def main(argv):
             config = yaml.load(handle)
 
     REPORT_DIR = args.report_directory
-    GRT_URL = config['grt']['url']
+    GRT_URL = config['grt']['url'].rstrip('/') + '/'
     GRT_INSTANCE_ID = config['grt']['instance_id']
     GRT_API_KEY = config['grt']['api_key']
 
