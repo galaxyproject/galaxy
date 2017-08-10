@@ -11,3 +11,4 @@ Special Topics
    chat
    webhooks
    performance_tracking
+   bug_reports
