@@ -1,23 +1,25 @@
 """
 Test lib/galaxy/visualization/plugins/plugin.
 """
-import imp
 import os
+import sys
 import unittest
 
 from six import string_types
 
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), os.pardir, os.pardir, 'unittest_utils', 'utility.py' ) )
-import galaxy_mock
+from galaxy.visualization.plugins import (
+    plugin as vis_plugin,
+    resource_parser,
+    utils as vis_utils
+)
 
-from galaxy.visualization.plugins import plugin as vis_plugin
-from galaxy.visualization.plugins import resource_parser
-from galaxy.visualization.plugins import utils as vis_utils
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import galaxy_mock, utility
 
 
 # -----------------------------------------------------------------------------
-class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
+class VisualizationsPlugin_TestCase( unittest.TestCase ):
     plugin_class = vis_plugin.VisualizationPlugin
 
     def test_default_init( self ):
@@ -154,7 +156,7 @@ class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
         """
         # use the python in a template to test for variables that should be there
         # TODO: gotta be a better way
-        testing_template = test_utils.clean_multiline_string( """\
+        testing_template = utility.clean_multiline_string( """\
         <%
             found_all = True
             should_have = [

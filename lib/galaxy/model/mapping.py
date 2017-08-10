@@ -5,8 +5,28 @@ are encapsulated here.
 
 import logging
 
-from sqlalchemy import ( and_, asc, Boolean, Column, DateTime, desc, false, ForeignKey, Integer,
-    MetaData, not_, Numeric, select, String, Table, Text, TEXT, true, Unicode, UniqueConstraint )
+from sqlalchemy import (
+    and_,
+    asc,
+    Boolean,
+    Column,
+    DateTime,
+    desc,
+    false,
+    ForeignKey,
+    Integer,
+    MetaData,
+    not_,
+    Numeric,
+    select,
+    String,
+    Table,
+    TEXT,
+    Text,
+    true,
+    Unicode,
+    UniqueConstraint
+)
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import backref, class_mapper, deferred, mapper, object_session, relation
@@ -27,7 +47,7 @@ metadata = MetaData()
 
 model.User.table = Table(
     "galaxy_user", metadata,
-    Column( "id", Integer, primary_key=True),
+    Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "email", TrimmedString( 255 ), index=True, nullable=False ),
@@ -44,19 +64,19 @@ model.User.table = Table(
 
 model.UserAddress.table = Table(
     "user_address", metadata,
-    Column( "id", Integer, primary_key=True),
+    Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "desc", TrimmedString( 255 )),
-    Column( "name", TrimmedString( 255 ), nullable=False),
-    Column( "institution", TrimmedString( 255 )),
-    Column( "address", TrimmedString( 255 ), nullable=False),
-    Column( "city", TrimmedString( 255 ), nullable=False),
-    Column( "state", TrimmedString( 255 ), nullable=False),
-    Column( "postal_code", TrimmedString( 255 ), nullable=False),
-    Column( "country", TrimmedString( 255 ), nullable=False),
-    Column( "phone", TrimmedString( 255 )),
+    Column( "desc", TrimmedString( 255 ) ),
+    Column( "name", TrimmedString( 255 ), nullable=False ),
+    Column( "institution", TrimmedString( 255 ) ),
+    Column( "address", TrimmedString( 255 ), nullable=False ),
+    Column( "city", TrimmedString( 255 ), nullable=False ),
+    Column( "state", TrimmedString( 255 ), nullable=False ),
+    Column( "postal_code", TrimmedString( 255 ), nullable=False ),
+    Column( "country", TrimmedString( 255 ), nullable=False ),
+    Column( "phone", TrimmedString( 255 ) ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
@@ -78,7 +98,7 @@ model.PasswordResetToken.table = Table(
 
 model.History.table = Table(
     "history", metadata,
-    Column( "id", Integer, primary_key=True),
+    Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
@@ -158,7 +178,7 @@ model.HistoryDatasetAssociationSubset.table = Table(
     Column( "id", Integer, primary_key=True ),
     Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "history_dataset_association_subset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
-    Column( "location", Unicode(255), index=True) )
+    Column( "location", Unicode( 255 ), index=True ) )
 
 model.ImplicitlyConvertedDatasetAssociation.table = Table(
     "implicitly_converted_dataset_association", metadata,
@@ -377,8 +397,8 @@ model.ExtendedMetadataIndex.table = Table(
     Column( "id", Integer, primary_key=True ),
     Column( "extended_metadata_id", Integer,
         ForeignKey("extended_metadata.id", onupdate="CASCADE", ondelete="CASCADE" ), index=True ),
-    Column( "path", String( 255 )),
-    Column( "value", TEXT))
+    Column( "path", String( 255 ) ),
+    Column( "value", TEXT ) )
 
 model.Library.table = Table(
     "library", metadata,
@@ -460,7 +480,7 @@ model.Job.table = Table(
     Column( "destination_params", JSONType, nullable=True ),
     Column( "object_store_id", TrimmedString( 255 ), index=True ),
     Column( "imported", Boolean, default=False, index=True ),
-    Column( "params", TrimmedString(255), index=True ),
+    Column( "params", TrimmedString( 255 ), index=True ),
     Column( "handler", TrimmedString( 255 ), index=True ) )
 
 model.JobStateHistory.table = Table(
@@ -476,7 +496,7 @@ model.JobParameter.table = Table(
     "job_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
-    Column( "name", String(255) ),
+    Column( "name", String( 255 ) ),
     Column( "value", TEXT ) )
 
 model.JobToInputDatasetAssociation.table = Table(
@@ -484,49 +504,49 @@ model.JobToInputDatasetAssociation.table = Table(
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
-    Column( "name", String(255) ) )
+    Column( "name", String( 255 ) ) )
 
 model.JobToOutputDatasetAssociation.table = Table(
     "job_to_output_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
-    Column( "name", String(255) ) )
+    Column( "name", String( 255 ) ) )
 
 model.JobToInputDatasetCollectionAssociation.table = Table(
     "job_to_input_dataset_collection", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ),
-    Column( "name", Unicode(255) ) )
+    Column( "name", Unicode( 255 ) ) )
 
 model.JobToImplicitOutputDatasetCollectionAssociation.table = Table(
     "job_to_implicit_output_dataset_collection", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "dataset_collection_id", Integer, ForeignKey( "dataset_collection.id" ), index=True ),
-    Column( "name", Unicode(255) ) )
+    Column( "name", Unicode( 255 ) ) )
 
 model.JobToOutputDatasetCollectionAssociation.table = Table(
     "job_to_output_dataset_collection", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ),
-    Column( "name", Unicode(255) ) )
+    Column( "name", Unicode( 255 ) ) )
 
 model.JobToInputLibraryDatasetAssociation.table = Table(
     "job_to_input_library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
-    Column( "name", String(255) ) )
+    Column( "name", String( 255 ) ) )
 
 model.JobToOutputLibraryDatasetAssociation.table = Table(
     "job_to_output_library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
-    Column( "name", String(255) ) )
+    Column( "name", String( 255 ) ) )
 
 model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
     "implicitly_created_dataset_collection_inputs", metadata,
@@ -535,7 +555,7 @@ model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
         ForeignKey( "history_dataset_collection_association.id" ), index=True ),
     Column( "input_dataset_collection_id", Integer,
         ForeignKey( "history_dataset_collection_association.id" ), index=True ),
-    Column( "name", Unicode(255) ) )
+    Column( "name", Unicode( 255 ) ) )
 
 model.JobExternalOutputMetadata.table = Table(
     "job_external_output_metadata", metadata,
@@ -578,24 +598,24 @@ model.JobMetricText.table = Table(
     "job_metric_text", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
-    Column( "plugin", Unicode(255) ),
-    Column( "metric_name", Unicode(255) ),
-    Column( "metric_value", Unicode(JOB_METRIC_MAX_LENGTH) ) )
+    Column( "plugin", Unicode( 255 ) ),
+    Column( "metric_name", Unicode( 255 ) ),
+    Column( "metric_value", Unicode( JOB_METRIC_MAX_LENGTH ) ) )
 
 model.TaskMetricText.table = Table(
     "task_metric_text", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "task_id", Integer, ForeignKey( "task.id" ), index=True ),
-    Column( "plugin", Unicode(255) ),
-    Column( "metric_name", Unicode(255) ),
-    Column( "metric_value", Unicode(JOB_METRIC_MAX_LENGTH) ) )
+    Column( "plugin", Unicode( 255 ) ),
+    Column( "metric_name", Unicode( 255 ) ),
+    Column( "metric_value", Unicode( JOB_METRIC_MAX_LENGTH ) ) )
 
 model.JobMetricNumeric.table = Table(
     "job_metric_numeric", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
-    Column( "plugin", Unicode(255) ),
-    Column( "metric_name", Unicode(255) ),
+    Column( "plugin", Unicode( 255 ) ),
+    Column( "metric_name", Unicode( 255 ) ),
     Column( "metric_value", Numeric( 22, 7 ) ) )
 
 model.TaskMetricNumeric.table = Table(
@@ -603,7 +623,7 @@ model.TaskMetricNumeric.table = Table(
     Column( "id", Integer, primary_key=True ),
     Column( "task_id", Integer, ForeignKey( "task.id" ), index=True ),
     Column( "plugin", Unicode(255) ),
-    Column( "metric_name", Unicode(255) ),
+    Column( "metric_name", Unicode( 255 ) ),
     Column( "metric_value", Numeric( 22, 7 ) ) )
 
 
@@ -636,7 +656,7 @@ model.Task.table = Table(
     Column( "info", TrimmedString( 255 ) ),
     Column( "traceback", TEXT ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True, nullable=False ),
-    Column( "working_directory", String(1024)),
+    Column( "working_directory", String( 1024 )),
     Column( "task_runner_name", String( 255 ) ),
     Column( "task_runner_external_id", String( 255 ) ),
     Column( "prepare_input_files_cmd", TEXT ) )
@@ -645,8 +665,8 @@ model.PostJobAction.table = Table(
     "post_job_action", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True, nullable=False ),
-    Column( "action_type", String(255), nullable=False ),
-    Column( "output_name", String(255), nullable=True ),
+    Column( "action_type", String( 255 ), nullable=False ),
+    Column( "output_name", String( 255 ), nullable=True ),
     Column( "action_arguments", JSONType, nullable=True ) )
 
 model.PostJobActionAssociation.table = Table(
@@ -696,7 +716,7 @@ model.HistoryDatasetCollectionAssociation.table = Table(
     Column( "deleted", Boolean, default=False ),
     Column( "copied_from_history_dataset_collection_association_id", Integer,
         ForeignKey( "history_dataset_collection_association.id" ), nullable=True ),
-    Column( "implicit_output_name", Unicode(255), nullable=True ) )
+    Column( "implicit_output_name", Unicode( 255 ), nullable=True ) )
 
 model.LibraryDatasetCollectionAssociation.table = Table(
     "library_dataset_collection_association", metadata,
@@ -717,7 +737,7 @@ model.DatasetCollectionElement.table = Table(
     Column( "child_collection_id", Integer, ForeignKey( "dataset_collection.id" ), index=True, nullable=True ),
     # Element index and identifier to define this parent-child relationship.
     Column( "element_index", Integer ),
-    Column( "element_identifier", Unicode(255), ) )
+    Column( "element_identifier", Unicode( 255 ), ) )
 
 model.Event.table = Table(
     "event", metadata,
@@ -746,7 +766,7 @@ model.GalaxySession.table = Table(
     # saves a reference to the previous session so we have a way to chain them together
     Column( "prev_session_id", Integer ),
     Column( "disk_usage", Numeric( 15, 0 ), index=True ),
-    Column( "last_action", DateTime) )
+    Column( "last_action", DateTime ) )
 
 model.GalaxySessionToHistoryAssociation.table = Table(
     "galaxy_session_to_history", metadata,
@@ -789,7 +809,7 @@ model.WorkflowStep.table = Table(
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "workflow_id", Integer, ForeignKey( "workflow.id" ), index=True, nullable=False ),
     Column( "subworkflow_id", Integer, ForeignKey( "workflow.id" ), index=True, nullable=True ),
-    Column( "type", String(64) ),
+    Column( "type", String( 64 ) ),
     Column( "tool_id", TEXT ),
     # Reserved for future
     Column( "tool_version", TEXT ),
@@ -800,24 +820,24 @@ model.WorkflowStep.table = Table(
     Column( "order_index", Integer ),
     Column( "uuid", UUIDType ),
     # Column( "input_connections", JSONType ),
-    Column( "label", Unicode(255) ) )
+    Column( "label", Unicode( 255 ) ) )
 
 model.WorkflowRequestStepState.table = Table(
     "workflow_request_step_states", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "workflow_invocation_id", Integer,
-        ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE" )),
-    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id" )),
+        ForeignKey( "workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE" ) ),
+    Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ) ),
     Column( "value", JSONType ) )
 
 model.WorkflowRequestInputParameter.table = Table(
     "workflow_request_input_parameters", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "workflow_invocation_id", Integer,
-        ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE" )),
-    Column( "name", Unicode(255) ),
+        ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE" ) ),
+    Column( "name", Unicode( 255 ) ),
     Column( "value", TEXT ),
-    Column( "type", Unicode(255) ) )
+    Column( "type", Unicode( 255 ) ) )
 
 model.WorkflowRequestInputStepParmeter.table = Table(
     "workflow_request_input_step_parameter", metadata,
@@ -830,17 +850,17 @@ model.WorkflowRequestInputStepParmeter.table = Table(
 model.WorkflowRequestToInputDatasetAssociation.table = Table(
     "workflow_request_to_input_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "name", String(255) ),
+    Column( "name", String( 255 ) ),
     Column( "workflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
-    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id") ),
+    Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ) ),
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ) )
 
 model.WorkflowRequestToInputDatasetCollectionAssociation.table = Table(
     "workflow_request_to_input_collection_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "name", String(255) ),
+    Column( "name", String( 255 ) ),
     Column( "workflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
-    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id") ),
+    Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ) ),
     Column( "dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ) )
 
 model.WorkflowStepConnection.table = Table(
@@ -856,9 +876,9 @@ model.WorkflowStepConnection.table = Table(
 model.WorkflowOutput.table = Table(
     "workflow_output", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False ),
-    Column( "output_name", String(255), nullable=True ),
-    Column( "label", Unicode(255) ),
+    Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True, nullable=False ),
+    Column( "output_name", String( 255 ), nullable=True ),
+    Column( "label", Unicode( 255 ) ),
     Column( "uuid", UUIDType ),
 )
 
@@ -889,7 +909,7 @@ model.WorkflowInvocationToSubworkflowInvocationAssociation.table = Table(
     Column( "id", Integer, primary_key=True ),
     Column( "workflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
     Column( "subworkflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
-    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id") ),
+    Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ) ),
 )
 
 model.StoredWorkflowUserShareAssociation.table = Table(
@@ -983,7 +1003,7 @@ model.FormValues.table = Table(
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-    Column( "content", JSONType()) )
+    Column( "content", JSONType() ) )
 
 model.Request.table = Table(
     "request", metadata,
@@ -1169,9 +1189,9 @@ model.HistoryTagAssociation.table = Table(
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True ),
-    Column( "value", TrimmedString(255), index=True ),
-    Column( "user_value", TrimmedString(255), index=True ) )
+    Column( "user_tname", TrimmedString( 255 ), index=True ),
+    Column( "value", TrimmedString( 255 ), index=True ),
+    Column( "user_value", TrimmedString( 255 ), index=True ) )
 
 model.DatasetTagAssociation.table = Table(
     "dataset_tag_association", metadata,
@@ -1179,14 +1199,24 @@ model.DatasetTagAssociation.table = Table(
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True ),
-    Column( "value", TrimmedString(255), index=True ),
-    Column( "user_value", TrimmedString(255), index=True ) )
+    Column( "user_tname", TrimmedString( 255 ), index=True ),
+    Column( "value", TrimmedString( 255 ), index=True ),
+    Column( "user_value", TrimmedString( 255 ), index=True ) )
 
 model.HistoryDatasetAssociationTagAssociation.table = Table(
     "history_dataset_association_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "user_tname", TrimmedString( 255 ), index=True ),
+    Column( "value", TrimmedString( 255 ), index=True ),
+    Column( "user_value", TrimmedString( 255 ), index=True ) )
+
+model.LibraryDatasetDatasetAssociationTagAssociation.table = Table(
+    "library_dataset_dataset_association_tag_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "user_tname", TrimmedString(255), index=True ),
@@ -1199,9 +1229,9 @@ model.StoredWorkflowTagAssociation.table = Table(
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", Unicode(255), index=True ),
-    Column( "value", Unicode(255), index=True ),
-    Column( "user_value", Unicode(255), index=True ) )
+    Column( "user_tname", Unicode( 255 ), index=True ),
+    Column( "value", Unicode( 255 ), index=True ),
+    Column( "user_value", Unicode( 255 ), index=True ) )
 
 model.PageTagAssociation.table = Table(
     "page_tag_association", metadata,
@@ -1209,9 +1239,9 @@ model.PageTagAssociation.table = Table(
     Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True ),
-    Column( "value", TrimmedString(255), index=True ),
-    Column( "user_value", TrimmedString(255), index=True ) )
+    Column( "user_tname", TrimmedString( 255 ), index=True ),
+    Column( "value", TrimmedString( 255 ), index=True ),
+    Column( "user_value", TrimmedString( 255 ), index=True ) )
 
 model.WorkflowStepTagAssociation.table = Table(
     "workflow_step_tag_association", metadata,
@@ -1219,9 +1249,9 @@ model.WorkflowStepTagAssociation.table = Table(
     Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", Unicode(255), index=True ),
-    Column( "value", Unicode(255), index=True ),
-    Column( "user_value", Unicode(255), index=True ) )
+    Column( "user_tname", Unicode( 255 ), index=True ),
+    Column( "value", Unicode( 255 ), index=True ),
+    Column( "user_value", Unicode( 255 ), index=True ) )
 
 model.VisualizationTagAssociation.table = Table(
     "visualization_tag_association", metadata,
@@ -1229,9 +1259,9 @@ model.VisualizationTagAssociation.table = Table(
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True ),
-    Column( "value", TrimmedString(255), index=True ),
-    Column( "user_value", TrimmedString(255), index=True ) )
+    Column( "user_tname", TrimmedString( 255 ), index=True ),
+    Column( "value", TrimmedString( 255 ), index=True ),
+    Column( "user_value", TrimmedString( 255 ), index=True ) )
 
 model.HistoryDatasetCollectionTagAssociation.table = Table(
     "history_dataset_collection_tag_association", metadata,
@@ -1240,9 +1270,9 @@ model.HistoryDatasetCollectionTagAssociation.table = Table(
         ForeignKey( "history_dataset_collection_association.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True ),
-    Column( "value", TrimmedString(255), index=True ),
-    Column( "user_value", TrimmedString(255), index=True ) )
+    Column( "user_tname", TrimmedString( 255 ), index=True ),
+    Column( "value", TrimmedString( 255 ), index=True ),
+    Column( "user_value", TrimmedString( 255 ), index=True ) )
 
 model.LibraryDatasetCollectionTagAssociation.table = Table(
     "library_dataset_collection_tag_association", metadata,
@@ -1251,9 +1281,9 @@ model.LibraryDatasetCollectionTagAssociation.table = Table(
         ForeignKey( "library_dataset_collection_association.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True ),
-    Column( "value", TrimmedString(255), index=True ),
-    Column( "user_value", TrimmedString(255), index=True ) )
+    Column( "user_tname", TrimmedString( 255 ), index=True ),
+    Column( "value", TrimmedString( 255 ), index=True ),
+    Column( "user_value", TrimmedString( 255 ), index=True ) )
 
 model.ToolTagAssociation.table = Table(
     "tool_tag_association", metadata,
@@ -1261,9 +1291,9 @@ model.ToolTagAssociation.table = Table(
     Column( "tool_id", TrimmedString(255), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True ),
-    Column( "value", TrimmedString(255), index=True ),
-    Column( "user_value", TrimmedString(255), index=True ) )
+    Column( "user_tname", TrimmedString( 255 ), index=True ),
+    Column( "value", TrimmedString( 255 ), index=True ),
+    Column( "user_value", TrimmedString( 255 ), index=True ) )
 
 # Annotation tables.
 
@@ -1436,7 +1466,7 @@ mapper( model.FormValues, model.FormValues.table, properties=dict(
 
 mapper( model.Request, model.Request.table, properties=dict(
     values=relation( model.FormValues,
-        primaryjoin=( model.Request.table.c.form_values_id == model.FormValues.table.c.id )),
+        primaryjoin=( model.Request.table.c.form_values_id == model.FormValues.table.c.id ) ),
     type=relation( model.RequestType,
         primaryjoin=( model.Request.table.c.request_type_id == model.RequestType.table.c.id ) ),
     user=relation( model.User,
@@ -1663,7 +1693,7 @@ mapper( model.History, model.History.table, properties=dict(
     galaxy_sessions=relation( model.GalaxySessionToHistoryAssociation ),
     datasets=relation( model.HistoryDatasetAssociation,
         backref="history",
-        order_by=asc(model.HistoryDatasetAssociation.table.c.hid) ),
+        order_by=asc( model.HistoryDatasetAssociation.table.c.hid ) ),
     exports=relation( model.JobExportHistoryArchive,
         primaryjoin=( model.JobExportHistoryArchive.table.c.history_id == model.History.table.c.id ),
         order_by=desc( model.JobExportHistoryArchive.table.c.id ) ),
@@ -1721,7 +1751,7 @@ mapper( model.HistoryUserShareAssociation, model.HistoryUserShareAssociation.tab
 mapper( model.User, model.User.table, properties=dict(
     histories=relation( model.History,
         backref="user",
-        order_by=desc(model.History.table.c.update_time ) ),
+        order_by=desc( model.History.table.c.update_time ) ),
     active_histories=relation( model.History,
         primaryjoin=(
             ( model.History.table.c.user_id == model.User.table.c.id ) &
@@ -1737,7 +1767,7 @@ mapper( model.User, model.User.table, properties=dict(
         collection_class=ordering_list( 'order_index' ) ),
     _preferences=relation( model.UserPreference,
         backref="user",
-        collection_class=attribute_mapped_collection('name')),
+        collection_class=attribute_mapped_collection( 'name' ) ),
     # addresses=relation( UserAddress,
     #     primaryjoin=( User.table.c.id == UserAddress.table.c.user_id ) ),
     values=relation( model.FormValues,
@@ -1970,10 +2000,13 @@ mapper( model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoc
             ( model.LibraryDatasetDatasetAssociation.table.c.visible == true() )
         ),
         remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id] ),
+    tags=relation(model.LibraryDatasetDatasetAssociationTagAssociation,
+                  order_by=model.LibraryDatasetDatasetAssociationTagAssociation.table.c.id,
+                  backref='history_tag_associations'),
     extended_metadata=relation( model.ExtendedMetadata,
         primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
     ),
-    _metadata=deferred(model.LibraryDatasetDatasetAssociation.table.c._metadata)
+    _metadata=deferred( model.LibraryDatasetDatasetAssociation.table.c._metadata )
 ) )
 
 mapper( model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetInfoAssociation.table, properties=dict(
@@ -2006,8 +2039,7 @@ mapper( model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation
 mapper( model.JobToInputDatasetCollectionAssociation, model.JobToInputDatasetCollectionAssociation.table, properties=dict(
     job=relation( model.Job ),
     dataset_collection=relation( model.HistoryDatasetCollectionAssociation,
-        lazy=False,
-        backref="dependent_jobs" )
+        lazy=False )
 ) )
 
 mapper( model.JobToOutputDatasetCollectionAssociation, model.JobToOutputDatasetCollectionAssociation.table, properties=dict(
@@ -2089,7 +2121,7 @@ mapper( model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=d
 mapper(model.PostJobAction, model.PostJobAction.table, properties=dict(
     workflow_step=relation( model.WorkflowStep,
         backref='post_job_actions',
-        primaryjoin=(model.WorkflowStep.table.c.id == model.PostJobAction.table.c.workflow_step_id ) )
+        primaryjoin=( model.WorkflowStep.table.c.id == model.PostJobAction.table.c.workflow_step_id ) )
 ) )
 
 mapper( model.PostJobActionAssociation, model.PostJobActionAssociation.table, properties=dict(
@@ -2290,7 +2322,7 @@ mapper( model.StoredWorkflowMenuEntry, model.StoredWorkflowMenuEntry.table, prop
 ) )
 
 mapper( model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict(
-    history=relation( model.History ),
+    history=relation( model.History, backref=backref('workflow_invocations', uselist=True ) ),
     input_parameters=relation( model.WorkflowRequestInputParameter ),
     step_states=relation( model.WorkflowRequestStepState ),
     input_step_parameters=relation( model.WorkflowRequestInputStepParmeter ),
@@ -2423,11 +2455,13 @@ simple_mapping( model.Tag,
 
 
 def tag_mapping( tag_association_class, backref_name ):
-    simple_mapping( tag_association_class, tag=relation( model.Tag, backref=backref_name), user=relation( model.User ) )
+    simple_mapping( tag_association_class, tag=relation( model.Tag, backref=backref_name ), user=relation( model.User ) )
+
 
 tag_mapping( model.HistoryTagAssociation, "tagged_histories" )
 tag_mapping( model.DatasetTagAssociation, "tagged_datasets" )
 tag_mapping( model.HistoryDatasetAssociationTagAssociation, "tagged_history_dataset_associations" )
+tag_mapping( model.LibraryDatasetDatasetAssociationTagAssociation, "tagged_library_dataset_dataset_associations" )
 tag_mapping( model.PageTagAssociation, "tagged_pages" )
 tag_mapping( model.StoredWorkflowTagAssociation, "tagged_workflows" )
 tag_mapping( model.WorkflowStepTagAssociation, "tagged_workflow_steps" )
@@ -2439,8 +2473,9 @@ tag_mapping( model.ToolTagAssociation, "tagged_tools" )
 
 # Annotation tables.
 def annotation_mapping( annotation_class, **kwds ):
-    kwds = dict( (key, relation( value ) ) for key, value in kwds.items() )
+    kwds = dict( ( key, relation( value ) ) for key, value in kwds.items() )
     simple_mapping( annotation_class, **dict(user=relation( model.User ), **kwds ) )
+
 
 annotation_mapping( model.HistoryAnnotationAssociation, history=model.History )
 annotation_mapping( model.HistoryDatasetAssociationAnnotationAssociation, hda=model.HistoryDatasetAssociation )
@@ -2456,8 +2491,9 @@ annotation_mapping( model.LibraryDatasetCollectionAnnotationAssociation,
 
 # Rating tables.
 def rating_mapping( rating_class, **kwds ):
-    kwds = dict( (key, relation( value ) ) for key, value in kwds.items() )
-    simple_mapping( rating_class, **dict(user=relation( model.User ), **kwds ) )
+    kwds = dict( ( key, relation( value ) ) for key, value in kwds.items() )
+    simple_mapping( rating_class, **dict( user=relation( model.User ), **kwds ) )
+
 
 rating_mapping( model.HistoryRatingAssociation, history=model.History )
 rating_mapping( model.HistoryDatasetAssociationRatingAssociation, hda=model.HistoryDatasetAssociation )
@@ -2526,6 +2562,7 @@ def db_next_hid( self, n=1 ):
         trans.rollback()
         raise
 
+
 model.History._next_hid = db_next_hid
 
 
@@ -2533,14 +2570,16 @@ def _workflow_invocation_update( self ):
     conn = object_session( self ).connection()
     table = self.table
     now_val = now()
-    stmt = table.update().values(update_time=now_val).where(and_(table.c.id == self.id, table.c.update_time < now_val))
-    conn.execute(stmt)
+    stmt = table.update().values( update_time=now_val ).where( and_( table.c.id == self.id, table.c.update_time < now_val ) )
+    conn.execute( stmt )
+
 
 model.WorkflowInvocation.update = _workflow_invocation_update
 
 
 def init( file_path, url, engine_options={}, create_tables=False, map_install_models=False,
-        database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True ):
+        database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
+        slow_query_log_threshold=0):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     model.Dataset.file_path = file_path
@@ -2549,7 +2588,7 @@ def init( file_path, url, engine_options={}, create_tables=False, map_install_mo
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
-    engine = build_engine( url, engine_options, database_query_profiling_proxy, trace_logger )
+    engine = build_engine( url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold )
 
     # Connect the metadata to the database.
     metadata.bind = engine
@@ -2558,9 +2597,9 @@ def init( file_path, url, engine_options={}, create_tables=False, map_install_mo
     if map_install_models:
         import galaxy.model.tool_shed_install.mapping  # noqa: F401
         from galaxy.model import tool_shed_install
-        model_modules.append(tool_shed_install)
+        model_modules.append( tool_shed_install )
 
-    result = ModelMapping(model_modules, engine=engine)
+    result = ModelMapping( model_modules, engine=engine )
 
     # Create tables if needed
     if create_tables:

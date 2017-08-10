@@ -30,5 +30,6 @@ def main():
     # Column indices are 0-based.
     ctabix.tabix_index(output_fname, seq_col=options.chrom_col, start_col=options.start_col, end_col=options.end_col)
 
+
 if __name__ == "__main__":
     main()

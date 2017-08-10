@@ -3,6 +3,7 @@
 See the file error_codes.json for actual error code descriptions.
 """
 from json import loads
+
 from pkg_resources import resource_string
 
 
@@ -39,6 +40,7 @@ def _from_dict(entry):
     code = entry.get("code")
     message = entry.get("message")
     return (name, ErrorCode(code, message))
+
 
 error_codes_json = resource_string(__name__, 'error_codes.json').decode("UTF-8")
 for entry in loads(error_codes_json):

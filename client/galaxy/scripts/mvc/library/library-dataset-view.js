@@ -186,7 +186,7 @@ var LibraryDatasetView = Backbone.View.extend({
     this.histories.fetch({
       success: function (histories){
         if (histories.length === 0){
-          mod_toastr.warning('You have to create history first. Click this to do so.', '', {onclick: function() {window.location='/';}});
+          mod_toastr.warning('You have to create history first. Click this to do so.', '', {onclick: function() {window.location=Galaxy.root;}});
         } else {
           callback(self);
         }
@@ -233,7 +233,7 @@ var LibraryDatasetView = Backbone.View.extend({
     historyItem.save({ content : this.id, source : 'library' }, {
       success : function(){
         Galaxy.modal.hide();
-        mod_toastr.success('Dataset imported. Click this to start analyzing it.', '', {onclick: function() {window.location='/';}});
+        mod_toastr.success('Dataset imported. Click this to start analyzing it.', '', {onclick: function() {window.location=Galaxy.root;}});
       },
       error : function(model, response){
         if (typeof response.responseJSON !== "undefined"){
@@ -721,6 +721,12 @@ var LibraryDatasetView = Backbone.View.extend({
             '<td scope="row"><%= _.escape(item.get("misc_info")) %></td>',
           '</tr>',
         '<% } %>',
+        '<% if (item.get("tags")) { %>',
+          '<tr>',
+            '<th scope="row">Tags</th>',
+            '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+          '</tr>',
+        '<% } %>',
       '</table>',
 
     '<div>',
@@ -850,6 +856,12 @@ var LibraryDatasetView = Backbone.View.extend({
               '<td scope="row"><%= _.escape(ldda.get("misc_info")) %></td>',
             '</tr>',
           '<% } %>',
+          '<% if (item.get("tags")) { %>',
+            '<tr>',
+              '<th scope="row">Tags</th>',
+              '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+            '</tr>',
+          '<% } %>',
         '</table>',
         '<div>',
           '<pre class="peek">',
@@ -951,6 +963,13 @@ var LibraryDatasetView = Backbone.View.extend({
             '<th scope="row">Miscellaneous blurb</th>',
             '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
           '</tr>',
+          //TODO: add functionality to modify tags here
+          '<% if (item.get("tags")) { %>',
+            '<tr>',
+              '<th scope="row">Tags</th>',
+              '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+            '</tr>',
+          '<% } %>',
         '</table>',
         '<div>',
           '<pre class="peek">',

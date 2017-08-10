@@ -1,11 +1,11 @@
-<tool id="CONVERTER_wiggle_to_interval_0" name="Wiggle to Interval">
-  <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <!-- Used on the metadata edit page. -->
-  <command interpreter="python">wiggle_to_simple_converter.py $input $out_file1 </command>
-  <inputs>
-    <param format="wig" name="input" type="data" label="Convert"/>
-  </inputs>
-  <outputs>
-    <data format="interval" name="out_file1" />
-  </outputs>
+<tool id="CONVERTER_wiggle_to_interval_0" name="Wiggle to Interval" version="1.0.0">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <command>python '$__tool_directory__/wiggle_to_simple_converter.py' '$input' '$out_file1'</command>
+    <inputs>
+        <param format="wig" name="input" type="data" label="Convert"/>
+    </inputs>
+    <outputs>
+        <data format="interval" name="out_file1" />
+    </outputs>
 </tool>

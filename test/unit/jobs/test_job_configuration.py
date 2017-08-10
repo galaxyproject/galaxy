@@ -4,13 +4,14 @@ import shutil
 import tempfile
 import unittest
 
-from galaxy.util import bunch
 from galaxy.jobs import JobConfiguration
+from galaxy.util import bunch
 
 # File would be slightly more readable if contents were embedded directly, but
 # there are advantages to testing the documentation/examples.
 SIMPLE_JOB_CONF = os.path.join( os.path.dirname( __file__ ), "..", "..", "..", "config", "job_conf.xml.sample_basic" )
 ADVANCED_JOB_CONF = os.path.join( os.path.dirname( __file__ ), "..", "..", "..", "config", "job_conf.xml.sample_advanced" )
+CONDITIONAL_RUNNER_JOB_CONF = os.path.join( os.path.dirname( __file__ ), "conditional_runners_job_conf.xml" )
 
 
 class JobConfXmlParserTestCase( unittest.TestCase ):
@@ -22,6 +23,7 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
             use_tasked_jobs=False,
             job_resource_params_file="/tmp/fake_absent_path",
             config_dict={},
+            default_job_resubmission_condition="",
         )
         self.__write_config_from( SIMPLE_JOB_CONF )
         self.app = bunch.Bunch( config=self.config, job_metrics=MockJobMetrics() )
@@ -100,6 +102,7 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
         assert limits.anonymous_user_concurrent_jobs is None
         assert limits.walltime is None
         assert limits.walltime_delta is None
+        assert limits.total_walltime == {}
         assert limits.output_size is None
         assert limits.destination_user_concurrent_jobs == {}
         assert limits.destination_total_concurrent_jobs == {}
@@ -113,6 +116,8 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
         assert limits.destination_user_concurrent_jobs[ "mycluster" ] == 2
         assert limits.destination_user_concurrent_jobs[ "longjobs" ] == 1
         assert limits.walltime_delta == datetime.timedelta( 0, 0, 0, 0, 0, 24 )
+        assert limits.total_walltime["delta"] == datetime.timedelta( 0, 0, 0, 0, 0, 24)
+        assert limits.total_walltime["window"] == 30
 
     def test_env_parsing( self ):
         self.__with_advanced_config()
@@ -132,6 +137,30 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
         self.__with_advanced_config()
         for name in ["foo_small", "foo_medium", "foo_large", "foo_longrunning"]:
             assert self.job_config.destinations[ name ]
+
+    def test_conditional_runners( self ):
+        self.__write_config_from( CONDITIONAL_RUNNER_JOB_CONF )
+        runner_ids = [ r[ "id" ] for r in self.job_config.runner_plugins ]
+        assert "local2" in runner_ids
+        assert "local3" not in runner_ids
+
+        assert "local2_dest" in self.job_config.destinations
+        assert "local3_dest" not in self.job_config.destinations
+
+    def test_conditional_runners_from_environ( self ):
+        self.__write_config_from( CONDITIONAL_RUNNER_JOB_CONF )
+        os.environ["LOCAL2_ENABLED"] = "False"
+        os.environ["LOCAL3_ENABLED"] = "True"
+        try:
+            runner_ids = [ r[ "id" ] for r in self.job_config.runner_plugins ]
+            assert "local2" not in runner_ids
+            assert "local3" in runner_ids
+
+            assert "local2_dest" not in self.job_config.destinations
+            assert "local3_dest" in self.job_config.destinations
+        finally:
+            del os.environ["LOCAL2_ENABLED"]
+            del os.environ["LOCAL3_ENABLED"]
 
     # TODO: Add job metrics parsing test.
 

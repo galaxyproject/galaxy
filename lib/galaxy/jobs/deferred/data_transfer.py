@@ -18,7 +18,7 @@ from galaxy.workflow.modules import module_factory
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'DataTransfer' ]
+__all__ = ( 'DataTransfer', )
 
 
 class DataTransfer( object ):
@@ -162,10 +162,10 @@ class DataTransfer( object ):
                 # execute_workflow with either the provided history, or a new one.
                 sub_done = True
                 rep_done = False
-                for k, v in sample.workflow[ 'mappings' ].iteritems():
+                for k, v in sample.workflow[ 'mappings' ].items():
                     if 'hda' not in v and v[ 'ds_tag' ].startswith( 'hi|' ):
                         sample.workflow[ 'mappings' ][ k ][ 'hda' ] = self.app.security.decode_id( v[ 'ds_tag' ][3:] )
-                for key, value in sample.workflow[ 'mappings' ].iteritems():
+                for key, value in sample.workflow[ 'mappings' ].items():
                     if 'url' in value and value[ 'url' ] == job.params[ 'result' ][ 'url' ]:
                         # DBTODO Make sure all ds| mappings get the URL of the dataset, for linking to later.
                         # If this dataset maps to what we just finished, update the ldda id in the sample.
@@ -211,7 +211,7 @@ class DataTransfer( object ):
                 self._update_request_state( sample.request.id )
 
     def _missing_params( self, params, required_params ):
-        missing_params = filter( lambda x: x not in params, required_params )
+        missing_params = [x for x in required_params if x not in params]
         if missing_params:
             log.error( 'Job parameters missing required keys: %s' % ', '.join( missing_params ) )
             return True
@@ -270,7 +270,7 @@ class DataTransfer( object ):
             # TODO: handle email notification if it is configured to be sent when the samples are in this state.
 
     def _execute_workflow( self, sample):
-        for key, value in sample.workflow['mappings'].iteritems():
+        for key, value in sample.workflow['mappings'].items():
             if 'hda' not in value and 'ldda' in value:
                 # If HDA is already here, it's an external input, we're not copying anything.
                 ldda = self.sa_session.query( self.app.model.LibraryDatasetDatasetAssociation ).get( value['ldda'] )

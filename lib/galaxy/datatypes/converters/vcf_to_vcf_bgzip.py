@@ -20,5 +20,6 @@ def main():
 
     ctabix.tabix_compress(input_fname, output_fname, force=True)
 
+
 if __name__ == "__main__":
     main()

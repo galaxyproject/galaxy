@@ -6,6 +6,7 @@ defining any or all of the following: args, remoteCommand, outputPath,
 errorPath, nativeSpecification, name, email, project
 """
 from __future__ import print_function
+
 import errno
 import json
 import os
@@ -83,7 +84,8 @@ def validate_paramters():
 
 def set_user(uid, assign_all_groups):
     try:
-        # Get user's default group and set it to current process to make sure file permissions are inherited correctly
+        # Get user's default group and set it to current process to make sure
+        # file permissions are inherited correctly
         # Solves issue with permission denied for JSON files
         gid = pwd.getpwuid(uid).pw_gid
         import grp
@@ -130,6 +132,7 @@ def main():
 
     # Print the Job-ID and exit. Galaxy will pick it up from there.
     print(jobId)
+
 
 if __name__ == "__main__":
     main()

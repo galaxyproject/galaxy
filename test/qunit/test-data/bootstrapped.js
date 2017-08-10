@@ -3,9 +3,9 @@ define([], function(){
         config  : {
             "allow_user_deletion": false,
             "allow_user_creation": true,
-            "wiki_url": "https://wiki.galaxyproject.org/",
+            "wiki_url": "https://galaxyproject.org/",
             "ftp_upload_site": null,
-            "support_url": "https://wiki.galaxyproject.org/Support",
+            "support_url": "https://galaxyproject.org/support/",
             "allow_user_dataset_purge": false,
             "allow_library_path_paste": false,
             "user_library_import_dir": null,

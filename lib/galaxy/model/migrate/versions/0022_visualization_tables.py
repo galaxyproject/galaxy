@@ -38,12 +38,12 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         Visualization_table.create()
-    except:
-        log.debug( "Could not create page table" )
+    except Exception:
+        log.exception("Could not create page table")
     try:
         VisualizationRevision_table.create()
-    except:
-        log.debug( "Could not create page_revision table" )
+    except Exception:
+        log.exception("Could not create page_revision table")
 
 
 def downgrade(migrate_engine):

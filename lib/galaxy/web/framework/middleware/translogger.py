@@ -3,10 +3,10 @@
 """
 Middleware for logging requests, using Apache combined log format
 """
-
 import logging
 import time
 import urllib
+
 from six import string_types
 
 
@@ -116,5 +116,6 @@ def make_filter(
         logger_name=logger_name,
         setup_console_handler=asbool(setup_console_handler),
         set_logger_level=set_logger_level)
+
 
 make_filter.__doc__ = TransLogger.__doc__

@@ -71,6 +71,13 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                 archive_dir = jiha.archive_dir
                 user = jiha.job.user
 
+                # Bioblend previous to 17.01 exported histories with an extra subdir.
+                if not os.path.exists( os.path.join( archive_dir, 'history_attrs.txt' ) ):
+                    for d in os.listdir( archive_dir ):
+                        if os.path.isdir( os.path.join( archive_dir, d ) ):
+                            archive_dir = os.path.join( archive_dir, d )
+                            break
+
                 #
                 # Create history.
                 #
@@ -342,7 +349,7 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
 
         def prepare_metadata( metadata ):
             """ Prepare metatdata for exporting. """
-            for name, value in metadata.items():
+            for name, value in list(metadata.items()):
                 # Metadata files are not needed for export because they can be
                 # regenerated.
                 if isinstance( value, trans.app.model.MetadataFile ):

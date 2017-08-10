@@ -135,6 +135,12 @@ class MetadataCollection( object ):
                 return self.spec[name].no_value
             return rval
 
+    def get_metadata_parameter( self, name, **kwd ):
+        if name in self.spec:
+            html_field = self.spec[name].param.get_html_field( getattr( self, name ), self, None, **kwd )
+            html_field.value = getattr( self, name )
+            return html_field
+
     def make_dict_copy( self, to_copy ):
         """Makes a deep copy of input iterable to_copy according to self.spec"""
         rval = {}
@@ -339,6 +345,7 @@ class MetadataElementSpec( object ):
         spec_dict = dict( param_class=self.param.__class__.__name__ )
         spec_dict.update( self.__dict__ )
         return ( "{name} ({param_class}): {desc}, defaults to '{default}'".format( **spec_dict ) )
+
 
 # create a statement class that, when called,
 #   will add a new MetadataElementSpec to a class's metadata_spec
@@ -871,6 +878,7 @@ class JobExternalOutputMetadataWrapper( object ):
             metadata_files.job_runner_external_pid = pid
             sa_session.add( metadata_files )
             sa_session.flush()
+
 
 __all__ = (
     "Statement",

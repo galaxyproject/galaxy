@@ -182,7 +182,9 @@ class TestInstallRepositoryMultipleOwners( ShedTwillTestCase ):
         datatypes_repository = self.test_db_util.get_installed_repository_by_name_owner( datatypes_repository_name, common.test_user_2_name )
         current_datatypes = int( self.get_datatypes_count() )
         expected_count = base_datatypes_count + repository_datatypes_count
-        assert current_datatypes == expected_count, 'Installing %s did not add new datatypes. Expected: %d. Found: %d' % \
+        # Once the BLAST datatypes have been included in Galaxy itself, the count won't change
+        assert current_datatypes == base_datatypes_count or current_datatypes == expected_count, \
+            'Installing %s did not add new datatypes. Expected: %d. Found: %d' % \
             ( 'blastxml_to_top_descr_0120', expected_count, current_datatypes )
         strings_displayed = [ 'Installed repository dependencies', 'user1', 'blast_datatypes_0120' ]
         strings_displayed.extend( [ 'Valid tools', 'BLAST top hit', 'Make a table', datatypes_repository.installed_changeset_revision ] )

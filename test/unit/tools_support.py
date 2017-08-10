@@ -36,7 +36,7 @@ class UsesApp( object ):
 
 
 # Simple tool with just one text parameter and output.
-SIMPLE_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool" version="$version">
+SIMPLE_TOOL_CONTENTS = '''<tool id="${tool_id}" name="Test Tool" version="$version" profile="$profile">
     <command>echo "$param1" &lt; $out1</command>
     <inputs>
         <param type="text" name="param1" value="" />
@@ -49,7 +49,7 @@ SIMPLE_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool" version="$versio
 
 
 # A tool with data parameters (kind of like cat1) my favorite test tool :)
-SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool" version="$version">
+SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="${tool_id}" name="Test Tool" version="$version" profile="$profile">
     <command>cat "$param1" #for $r in $repeat# "$r.param2" #end for# &lt; $out1</command>
     <inputs>
         <param type="data" format="tabular" name="param1" value="" />
@@ -70,12 +70,14 @@ class UsesTools( object ):
         self,
         tool_contents=SIMPLE_TOOL_CONTENTS,
         filename="tool.xml",
-        version="1.0"
+        version="1.0",
+        profile="16.01",
+        tool_id="test_tool",
     ):
         self._init_app_for_tools()
         self.tool_file = os.path.join( self.test_directory, filename )
         contents_template = string.Template( tool_contents )
-        tool_contents = contents_template.safe_substitute( dict( version=version ) )
+        tool_contents = contents_template.safe_substitute( dict( version=version, profile=profile, tool_id=tool_id ) )
         self.__write_tool( tool_contents )
         return self.__setup_tool( )
 
@@ -87,8 +89,11 @@ class UsesTools( object ):
 
     def __setup_tool( self ):
         tool_source = get_tool_source( self.tool_file )
-        self.tool = Tool( self.tool_file, tool_source, self.app )
-        if getattr( self, "tool_action", None ):
+        try:
+            self.tool = Tool( self.tool_file, tool_source, self.app )
+        except Exception:
+            self.tool = None
+        if getattr( self, "tool_action", None and self.tool):
             self.tool.tool_action = self.tool_action
         return self.tool
 
@@ -120,6 +125,7 @@ class MockApp( object ):
             builds_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' ),
             migrated_tools_config=os.path.join(test_directory, "migrated_tools_conf.xml"),
             server_name="test_server",
+            preserve_python_environment="always",
         )
 
         # Setup some attributes for downstream extension by specific tests.
@@ -153,11 +159,6 @@ class MockApp( object ):
         self.container_finder = NullContainerFinder()
         self.name = "galaxy"
         self._toolbox_lock = MockLock()
-        self.tool_version_cache = Bunch(app=self,
-                                        tool_version_by_id={},
-                                        tool_version_by_tool_id={},
-                                        tool_id_to_parent_id={},
-                                        parent_id_to_tool_id={})
 
     def wait_for_toolbox_reload(self, toolbox):
         # TODO: If the tpm test case passes, does the operation really

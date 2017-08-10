@@ -3,11 +3,12 @@ Generic module for managing manual data transfer jobs using Galaxy's built-in fi
 This module can be used by various external services that are configured to transfer data manually.
 """
 import logging
-from data_transfer import DataTransfer
+
+from .data_transfer import DataTransfer
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'ManualDataTransferPlugin' ]
+__all__ = ( 'ManualDataTransferPlugin', )
 
 
 class ManualDataTransferPlugin( DataTransfer ):
@@ -21,7 +22,7 @@ class ManualDataTransferPlugin( DataTransfer ):
             external_service = kwd[ 'external_service' ]
             external_service_type = kwd[ 'external_service_type' ]
             # TODO: is there a better way to store the protocol?
-            protocol = external_service_type.data_transfer.keys()[0]
+            protocol = next(iter(external_service_type.data_transfer.keys()))
             host = external_service.form_values.content[ 'host' ]
             user_name = external_service.form_values.content[ 'user_name' ]
             password = external_service.form_values.content[ 'password' ]

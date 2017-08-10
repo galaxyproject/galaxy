@@ -11,6 +11,7 @@ import logging
 import numbers
 import operator
 import os
+import pwd
 import socket
 import time
 from datetime import datetime, timedelta
@@ -27,7 +28,10 @@ import galaxy.model.metadata
 import galaxy.model.orm.now
 import galaxy.security.passwords
 import galaxy.util
+
+from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
 from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
                          restore_text, send_mail, unicodify, unique_id)
@@ -80,6 +84,26 @@ def set_datatypes_registry( d_registry ):
     """
     global _datatypes_registry
     _datatypes_registry = d_registry
+
+
+class HasTags( object ):
+    dict_collection_visible_keys = ( 'tags' )
+    dict_element_visible_keys = ( 'tags' )
+
+    def to_dict(self, *args, **kwargs):
+        rval = super( HasTags, self ).to_dict(*args, **kwargs)
+        rval['tags'] = self.make_tag_string_list()
+        return rval
+
+    def make_tag_string_list(self):
+        # add tags string list
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        return tags_str_list
 
 
 class HasName:
@@ -150,9 +174,9 @@ class User( object, Dictifiable ):
     histories, credentials, and roles.
     """
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
-    dict_collection_visible_keys = ( 'id', 'email', 'username' )
+    dict_collection_visible_keys = ( 'id', 'email', 'username', 'deleted', 'active', 'last_password_change' )
     # attributes that will be accessed and returned when calling to_dict( view='element' )
-    dict_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
+    dict_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change' )
 
     def __init__( self, email=None, password=None ):
         self.email = email
@@ -184,6 +208,31 @@ class User( object, Dictifiable ):
         Check if `cleartext` matches user password when hashed.
         """
         return galaxy.security.passwords.check_password( cleartext, self.password )
+
+    def system_user_pwent(self, real_system_username):
+        """
+        Gives the system user pwent entry based on e-mail or username depending
+        on the value in real_system_username
+        """
+        system_user_pwent = None
+        if real_system_username == 'user_email':
+            try:
+                system_user_pwent = pwd.getpwnam(self.email.split('@')[0])
+            except KeyError:
+                pass
+        elif real_system_username == 'username':
+            try:
+                system_user_pwent = pwd.getpwnam(self.username)
+            except KeyError:
+                pass
+        else:
+            try:
+                system_user_pwent = pwd.getpwnam(real_system_username)
+            except KeyError:
+                log.warning("invalid configuration of real_system_username")
+                system_user_pwent = None
+                pass
+        return system_user_pwent
 
     def all_roles( self ):
         """
@@ -274,6 +323,31 @@ class User( object, Dictifiable ):
                     dataset_ids.append( hda.dataset.id )
                     total += hda.dataset.get_total_size()
         return total
+
+    def calculate_and_set_disk_usage( self ):
+        """
+        Calculates and sets user disk usage.
+        """
+        new = None
+        db_session = object_session(self)
+        current = self.get_disk_usage()
+        if db_session.get_bind().dialect.name not in ( 'postgres', 'postgresql' ):
+            done = False
+            while not done:
+                new = self.calculate_disk_usage()
+                db_session.refresh( self )
+                # make sure usage didn't change while calculating
+                # set done if it has not, otherwise reset current and iterate again.
+                if self.get_disk_usage() == current:
+                    done = True
+                else:
+                    current = self.get_disk_usage()
+        else:
+            new = pgcalc(db_session, self.id)
+        if new not in (current, None):
+            self.set_disk_usage( new )
+            db_session.add( self )
+            db_session.flush()
 
     @staticmethod
     def user_template_environment( user ):
@@ -593,8 +667,8 @@ class Job( object, JobLike, Dictifiable ):
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
 
-    def add_input_dataset_collection( self, name, dataset ):
-        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset ) )
+    def add_input_dataset_collection( self, name, dataset_collection ):
+        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset_collection ) )
 
     def add_output_dataset_collection( self, name, dataset_collection_instance ):
         self.output_dataset_collection_instances.append( JobToOutputDatasetCollectionAssociation( name, dataset_collection_instance ) )
@@ -624,7 +698,7 @@ class Job( object, JobLike, Dictifiable ):
         dict of tool parameter values.
         """
         param_dict = self.raw_param_dict()
-        tool = app.toolbox.get_tool( self.tool_id )
+        tool = app.toolbox.get_tool( self.tool_id, tool_version=self.tool_version )
         param_dict = tool.params_from_strings( param_dict, app, ignore_errors=ignore_errors )
         return param_dict
 
@@ -732,6 +806,10 @@ class Job( object, JobLike, Dictifiable ):
             config_value = default
         return config_value
 
+    @property
+    def seconds_since_update( self ):
+        return (galaxy.model.orm.now.now() - self.update_time).total_seconds()
+
 
 class Task( object, JobLike ):
     """
@@ -769,8 +847,8 @@ class Task( object, JobLike ):
         Read encoded parameter values from the database and turn back into a
         dict of tool parameter values.
         """
-        param_dict = dict( [ ( p.name, p.value ) for p in self.parent_job.parameters ] )
-        tool = app.toolbox.get_tool( self.tool_id )
+        param_dict = dict( [ ( p.name, p.value ) for p in self.job.parameters ] )
+        tool = app.toolbox.get_tool( self.job.tool_id, tool_version=self.job.tool_version )
         param_dict = tool.params_from_strings( param_dict, app )
         return param_dict
 
@@ -920,9 +998,9 @@ class JobToOutputDatasetAssociation( object ):
 
 
 class JobToInputDatasetCollectionAssociation( object ):
-    def __init__( self, name, dataset ):
+    def __init__( self, name, dataset_collection ):
         self.name = name
-        self.dataset = dataset
+        self.dataset_collection = dataset_collection
 
 
 # Many jobs may map to one HistoryDatasetCollection using these for a given
@@ -1127,7 +1205,7 @@ def is_hda(d):
     return isinstance( d, HistoryDatasetAssociation )
 
 
-class History( object, Dictifiable, UsesAnnotations, HasName ):
+class History( HasTags, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
@@ -1312,15 +1390,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         # Get basic value.
         rval = super( History, self ).to_dict( view=view, value_mapper=value_mapper )
 
-        # Add tags.
-        tags_str_list = []
-        for tag in self.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            tags_str_list.append( tag_str )
-        rval[ 'tags' ] = tags_str_list
-
         if view == 'element':
             rval[ 'size' ] = int( self.disk_size )
 
@@ -1402,20 +1471,20 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         return galaxy.util.nice_size( self.disk_size )
 
     @property
-    def active_datasets_children_and_roles( self ):
-        if not hasattr(self, '_active_datasets_children_and_roles'):
+    def active_datasets_and_roles( self ):
+        if not hasattr(self, '_active_datasets_and_roles'):
             db_session = object_session( self )
             query = ( db_session.query( HistoryDatasetAssociation )
                       .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
                       .filter( not_( HistoryDatasetAssociation.deleted ) )
                       .order_by( HistoryDatasetAssociation.table.c.hid.asc() )
-                      .options( joinedload("children"),
-                                joinedload("dataset"),
+                      .options( joinedload("dataset"),
                                 joinedload("dataset.actions"),
                                 joinedload("dataset.actions.role"),
+                                joinedload("tags"),
                                 ))
-            self._active_datasets_children_and_roles = query.all()
-        return self._active_datasets_children_and_roles
+            self._active_datasets_and_roles = query.all()
+        return self._active_datasets_and_roles
 
     @property
     def active_contents( self ):
@@ -1917,7 +1986,14 @@ class DatasetInstance( object ):
 
     @property
     def datatype( self ):
-        return _get_datatypes_registry().get_datatype_by_extension( self.extension )
+        extension = self.extension
+        if not extension or extension == 'auto' or extension == '_sniff_':
+            extension = 'data'
+        ret = _get_datatypes_registry().get_datatype_by_extension( extension )
+        if ret is None:
+            log.warning("Datatype class not found for extension '%s'" % extension)
+            return _get_datatypes_registry().get_datatype_by_extension( 'data' )
+        return ret
 
     def get_metadata( self ):
         # using weakref to store parent (to prevent circ ref),
@@ -2041,7 +2117,7 @@ class DatasetInstance( object ):
             depends_list = []
         return dict([ (dep, self.get_converted_dataset(trans, dep)) for dep in depends_list ])
 
-    def get_converted_dataset(self, trans, target_ext, target_context=None):
+    def get_converted_dataset(self, trans, target_ext, target_context=None, history=None):
         """
         Return converted dataset(s) if they exist, along with a dict of dependencies.
         If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
@@ -2080,15 +2156,21 @@ class DatasetInstance( object ):
             raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass  # No deps
-        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=True, target_context=target_context ).values()))
-        new_dataset.hid = self.hid
+        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, target_context=target_context, history=history ).values()))
         new_dataset.name = self.name
+        self.copy_attributes( new_dataset )
         assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False )
         session = trans.sa_session
         session.add( new_dataset )
         session.add( assoc )
         session.flush()
         return new_dataset
+
+    def copy_attributes( self, new_dataset ):
+        """
+        Copies attributes to a new datasets, used for implicit conversions
+        """
+        pass
 
     def get_metadata_dataset( self, dataset_ext ):
         """
@@ -2284,7 +2366,8 @@ class DatasetInstance( object ):
         return msg
 
 
-class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, HasName ):
+class HistoryDatasetAssociation( DatasetInstance, HasTags, Dictifiable, UsesAnnotations,
+                                 HasName ):
     """
     Resource class that creates a relation between a dataset and a user history.
     """
@@ -2342,8 +2425,11 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         object_session( self ).flush()
         return hda
 
-    def to_library_dataset_dataset_association( self, trans, target_folder,
-                                                replace_dataset=None, parent_id=None, user=None, roles=None, ldda_message='' ):
+    def copy_attributes( self, new_dataset ):
+        new_dataset.hid = self.hid
+
+    def to_library_dataset_dataset_association( self, trans, target_folder, replace_dataset=None,
+                                                parent_id=None, user=None, roles=None, ldda_message='', element_identifier=None ):
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
@@ -2361,7 +2447,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         if not user:
             # This should never happen since users must be authenticated to upload to a data library
             user = self.history.user
-        ldda = LibraryDatasetDatasetAssociation( name=self.name,
+        ldda = LibraryDatasetDatasetAssociation( name=element_identifier or self.name,
                                                  info=self.info,
                                                  blurb=self.blurb,
                                                  peek=self.peek,
@@ -2386,6 +2472,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
             trans.sa_session.flush()
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
         ldda.metadata = self.metadata
+        # TODO: copy #tags from history
         if ldda_message:
             ldda.message = ldda_message
         if not replace_dataset:
@@ -2455,6 +2542,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
         # other model classes.
+        original_rval = super( HistoryDatasetAssociation, self ).to_dict(view=view)
         hda = self
         rval = dict( id=hda.id,
                      hda_ldda='hda',
@@ -2477,14 +2565,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      misc_info=hda.info.strip() if isinstance( hda.info, string_types ) else hda.info,
                      misc_blurb=hda.blurb )
 
-        # add tags string list
-        tags_str_list = []
-        for tag in self.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            tags_str_list.append( tag_str )
-        rval[ 'tags' ] = tags_str_list
+        rval.update(original_rval)
 
         if hda.copied_from_library_dataset_dataset_association is not None:
             rval['copied_from_ldda_id'] = hda.copied_from_library_dataset_dataset_association.id
@@ -2842,6 +2923,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
         self.user = user
 
     def to_history_dataset_association( self, target_history, parent_id=None, add_to_history=False ):
+        sa_session = object_session( self )
         hda = HistoryDatasetAssociation( name=self.name,
                                          info=self.info,
                                          blurb=self.blurb,
@@ -2855,8 +2937,13 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                          parent_id=parent_id,
                                          copied_from_library_dataset_dataset_association=self,
                                          history=target_history )
-        object_session( self ).add( hda )
-        object_session( self ).flush()
+
+        tag_manager = tags.GalaxyTagManager( sa_session )
+        src_ldda_tags = tag_manager.get_tags_str(self.tags)
+        tag_manager.apply_item_tags( user=self.user, item=hda, tags_str=src_ldda_tags )
+
+        sa_session.add( hda )
+        sa_session.flush()
         hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
         if add_to_history and target_history:
             target_history.add_dataset( hda )
@@ -2864,10 +2951,11 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
             child.to_history_dataset_association( target_history=target_history, parent_id=hda.id, add_to_history=False )
         if not self.datatype.copy_safe_peek:
             hda.set_peek()  # in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        object_session( self ).flush()
+        sa_session.flush()
         return hda
 
     def copy( self, copy_children=False, parent_id=None, target_folder=None ):
+        sa_session = object_session( self )
         ldda = LibraryDatasetDatasetAssociation( name=self.name,
                                                  info=self.info,
                                                  blurb=self.blurb,
@@ -2881,8 +2969,13 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                                  parent_id=parent_id,
                                                  copied_from_library_dataset_dataset_association=self,
                                                  folder=target_folder )
-        object_session( self ).add( ldda )
-        object_session( self ).flush()
+
+        tag_manager = tags.GalaxyTagManager( sa_session )
+        src_ldda_tags = tag_manager.get_tags_str(self.tags)
+        tag_manager.apply_item_tags( user=self.user, item=ldda, tags_str=src_ldda_tags )
+
+        sa_session.add( ldda )
+        sa_session.flush()
         # Need to set after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
         if copy_children:
@@ -2891,7 +2984,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
-        object_session( self ).flush()
+        sa_session.flush()
         return ldda
 
     def clear_associated_files( self, metadata_safe=False, purge=False ):
@@ -2929,6 +3022,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
         except OSError:
             file_size = 0
 
+        # TODO: render tags here
         rval = dict( id=ldda.id,
                      hda_ldda='ldda',
                      model_class=self.__class__.__name__,
@@ -3130,14 +3224,14 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
     def populated( self ):
         top_level_populated = self.populated_state == DatasetCollection.populated_states.OK
         if top_level_populated and self.has_subcollections:
-            return all(map(lambda e: e.child_collection.populated, self.elements))
+            return all(e.child_collection.populated for e in self.elements)
         return top_level_populated
 
     @property
     def waiting_for_elements( self ):
         top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
         if not top_level_waiting and self.has_subcollections:
-            return any(map(lambda e: e.child_collection.waiting_for_elements, self.elements))
+            return any(e.child_collection.waiting_for_elements for e in self.elements)
         return top_level_waiting
 
     def mark_as_populated( self ):
@@ -3272,7 +3366,10 @@ class DatasetCollectionInstance( object, HasName ):
         return changed
 
 
-class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnotations, Dictifiable ):
+class HistoryDatasetCollectionAssociation( DatasetCollectionInstance,
+                                           HasTags,
+                                           Dictifiable,
+                                           UsesAnnotations ):
     """ Associates a DatasetCollection with a History. """
     editable_keys = ( 'name', 'deleted', 'visible' )
 
@@ -3328,6 +3425,7 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
             return rval if multiple else rval[ 0 ]
 
     def to_dict( self, view='collection' ):
+        original_dict_value = super(HistoryDatasetCollectionAssociation, self).to_dict( view=view )
         dict_value = dict(
             hid=self.hid,
             history_id=self.history.id,
@@ -3336,6 +3434,9 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
             deleted=self.deleted,
             **self._base_to_dict(view=view)
         )
+
+        dict_value.update(original_dict_value)
+
         return dict_value
 
     def add_implicit_input_collection( self, name, history_dataset_collection ):
@@ -3372,7 +3473,7 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
         return hdca
 
 
-class LibraryDatasetCollectionAssociation( DatasetCollectionInstance, Dictifiable ):
+class LibraryDatasetCollectionAssociation( DatasetCollectionInstance ):
     """ Associates a DatasetCollection with a library folder. """
     editable_keys = ( 'name', 'deleted' )
 
@@ -3473,6 +3574,14 @@ class DatasetCollectionElement( object, Dictifiable ):
         else:
             return element_object
 
+    @property
+    def dataset_instances( self ):
+        element_object = self.element_object
+        if isinstance( element_object, DatasetCollection ):
+            return element_object.dataset_instances
+        else:
+            return [element_object]
+
     def copy_to_collection( self, collection, destination=None, element_destination=None ):
         element_object = self.element_object
         if element_destination:
@@ -3561,7 +3670,7 @@ class UCI( object ):
         self.user = None
 
 
-class StoredWorkflow( object, Dictifiable):
+class StoredWorkflow( HasTags, Dictifiable ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted' )
@@ -3583,13 +3692,6 @@ class StoredWorkflow( object, Dictifiable):
 
     def to_dict( self, view='collection', value_mapper=None ):
         rval = super( StoredWorkflow, self ).to_dict( view=view, value_mapper=value_mapper )
-        tags_str_list = []
-        for tag in self.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            tags_str_list.append( tag_str )
-        rval['tags'] = tags_str_list
         rval['latest_workflow_uuid'] = ( lambda uuid: str( uuid ) if self.latest_workflow.uuid else None )( self.latest_workflow.uuid )
         return rval
 
@@ -3987,11 +4089,11 @@ class WorkflowInvocation( object, Dictifiable ):
             and_conditions.append( WorkflowInvocation.handler == handler )
 
         query = sa_session.query(
-            WorkflowInvocation
-        ).filter( and_( *and_conditions ) )
+            WorkflowInvocation.id
+        ).filter( and_( *and_conditions ) ).order_by( WorkflowInvocation.table.c.id.asc() )
         # Immediately just load all ids into memory so time slicing logic
         # is relatively intutitive.
-        return [wi.id for wi in query.all()]
+        return [wid for wid in query.all()]
 
     def to_dict( self, view='collection', value_mapper=None, step_details=False ):
         rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
@@ -4050,6 +4152,11 @@ class WorkflowInvocation( object, Dictifiable ):
             if content.workflow_step_id == step_id:
                 return True
         return False
+
+    @property
+    def seconds_since_created( self ):
+        create_time = self.create_time or galaxy.model.orm.now.now()  # In case not flushed yet
+        return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
 class WorkflowInvocationToSubworkflowInvocationAssociation( object, Dictifiable ):
@@ -4199,6 +4306,21 @@ class FormDefinition( object, Dictifiable ):
         self.type = form_type
         self.layout = layout
 
+    def to_dict( self, user=None, values=None, security=None ):
+        values = values or {}
+        form_def = { 'id': security.encode_id( self.id ) if security else self.id, 'name': self.name, 'inputs': [] }
+        for field in self.fields:
+            FieldClass = ( { 'AddressField'         : AddressField,
+                             'CheckboxField'        : CheckboxField,
+                             'HistoryField'         : HistoryField,
+                             'PasswordField'        : PasswordField,
+                             'SelectField'          : SelectField,
+                             'TextArea'             : TextArea,
+                             'TextField'            : TextField,
+                             'WorkflowField'        : WorkflowField } ).get( field[ 'type' ], TextField )
+            form_def[ 'inputs' ].append( FieldClass( user=user, value=values.get( field[ 'name' ], field[ 'default' ] ), security=security, **field ).to_dict() )
+        return form_def
+
     def grid_fields( self, grid_index ):
         # Returns a dictionary whose keys are integers corresponding to field positions
         # on the grid and whose values are the field.
@@ -4269,13 +4391,11 @@ class FormDefinition( object, Dictifiable ):
                 field_widget.params = params
             elif field_type == 'SelectField':
                 for option in field[ 'selectlist' ]:
-
                     if option == value:
                         field_widget.add_option( option, option, selected=True )
                     else:
                         field_widget.add_option( option, option )
             elif field_type == 'CheckboxField':
-
                 field_widget.set_checked( value )
             if field[ 'required' ] == 'required':
                 req = 'Required'
@@ -4285,10 +4405,7 @@ class FormDefinition( object, Dictifiable ):
                 helptext = '%s (%s)' % ( field[ 'helptext' ], req )
             else:
                 helptext = '(%s)' % req
-            widgets.append( dict( label=field[ 'label' ],
-
-                                  widget=field_widget,
-                                  helptext=helptext ) )
+            widgets.append( dict( label=field[ 'label' ], widget=field_widget, helptext=helptext ) )
         return widgets
 
     def field_as_html( self, field ):
@@ -4823,6 +4940,18 @@ class UserAddress( object ):
         self.country = country
         self.phone = phone
 
+    def to_dict( self, trans ):
+        return { 'id'           : trans.security.encode_id( self.id ),
+                 'name'         : sanitize_html( self.name ),
+                 'desc'         : sanitize_html( self.desc ),
+                 'institution'  : sanitize_html( self.institution ),
+                 'address'      : sanitize_html( self.address ),
+                 'city'         : sanitize_html( self.city ),
+                 'state'        : sanitize_html( self.state ),
+                 'postal_code'  : sanitize_html( self.postal_code ),
+                 'country'      : sanitize_html( self.country ),
+                 'phone'        : sanitize_html( self.phone ) }
+
     def get_html(self):
         # This should probably be deprecated eventually.  It should currently
         # sanitize.
@@ -5025,6 +5154,10 @@ class DatasetTagAssociation ( ItemTagAssociation ):
 
 
 class HistoryDatasetAssociationTagAssociation ( ItemTagAssociation ):
+    pass
+
+
+class LibraryDatasetDatasetAssociationTagAssociation ( ItemTagAssociation ):
     pass
 
 

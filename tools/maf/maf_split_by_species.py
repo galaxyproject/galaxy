@@ -41,5 +41,6 @@ def __main__():
     else:
         print("No alignment blocks were created.")
 
+
 if __name__ == "__main__":
     __main__()

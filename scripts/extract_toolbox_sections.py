@@ -132,5 +132,6 @@ def getfnl(startdir):
                     filenamelist.append(fullfn)
     return filenamelist
 
+
 if __name__ == "__main__":
     main()

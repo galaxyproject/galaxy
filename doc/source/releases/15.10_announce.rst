@@ -52,7 +52,7 @@ Upgrade
       % hg update latest_15.10
 
 
-See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
+See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
 
 Deprecation Notices
@@ -61,7 +61,7 @@ Deprecation Notices
 The Mercurial repository at https://bitbucket.org/galaxy/galaxy-dist is deprecated.
 **We recommend deployers to switch their instances to git** and follow the `master`
 branch of GitHub repository https://github.com/galaxyproject/galaxy
-Details are available at https://wiki.galaxyproject.org/Develop/SourceCode
+Details are available at https://galaxyproject.org/develop/source-code/
 *The next few releases will still be available on Bitbucket, but they may be
 less up to date than the corresponding GitHub branches.*
 

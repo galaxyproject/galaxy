@@ -5,18 +5,23 @@ Dataproviders that use either:
     - or provide data in some way relevant to bioinformatic data
         (e.g. parsing genomic regions from their source)
 """
-
-
-import base
-import line
-import column
-import external
-from galaxy.util import sqlite
+import logging
 import sys
 
-from bx import seq as bx_seq
-from bx import wiggle as bx_wig
-from bx import bbi as bx_bbi
+from bx import (
+    bbi as bx_bbi,
+    seq as bx_seq,
+    wiggle as bx_wig
+)
+
+from galaxy.util import sqlite
+
+from . import (
+    base,
+    column,
+    external,
+    line
+)
 
 _TODO = """
 use bx as much as possible
@@ -25,7 +30,6 @@ gff3 hierarchies
 change SamtoolsDataProvider to use pysam
 """
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -56,6 +60,7 @@ class DatasetDataProvider( base.DataProvider ):
     def get_column_metadata_from_dataset( cls, dataset ):
         """
         Convenience class method to get column metadata from a dataset.
+
         :returns: a dictionary of `column_count`, `column_types`, and `column_names`
             if they're available, setting each to `None` if not.
         """
@@ -69,6 +74,7 @@ class DatasetDataProvider( base.DataProvider ):
     def get_metadata_column_types( self, indeces=None ):
         """
         Return the list of `column_types` for this dataset or `None` if unavailable.
+
         :param indeces: the indeces for the columns of which to return the types.
             Optional: defaults to None (return all types)
         :type indeces: list of ints
@@ -88,6 +94,7 @@ class DatasetDataProvider( base.DataProvider ):
     def get_metadata_column_names( self, indeces=None ):
         """
         Return the list of `column_names` for this dataset or `None` if unavailable.
+
         :param indeces: the indeces for the columns of which to return the names.
             Optional: defaults to None (return all names)
         :type indeces: list of ints
@@ -108,8 +115,10 @@ class DatasetDataProvider( base.DataProvider ):
     def get_indeces_by_column_names( self, list_of_column_names ):
         """
         Return the list of column indeces when given a list of column_names.
+
         :param list_of_column_names: the names of the columns of which to get indeces.
         :type list_of_column_names: list of strs
+
         :raises KeyError: if column_names are not found
         :raises ValueError: if an entry in list_of_column_names is not in column_names
         """
@@ -145,7 +154,7 @@ class DatasetDataProvider( base.DataProvider ):
         """
         region_column_names = ( 'chromCol', 'startCol', 'endCol' )
         region_indices = [ self.get_metadata_column_index_by_name( name ) for name in region_column_names ]
-        if check and not all( map( lambda i: i is not None, region_indices) ):
+        if check and not all( _ is not None for _ in region_indices ):
             raise ValueError( "Could not determine proper column indices for chrom, start, end: %s" % ( str( region_indices ) ) )
         return region_indices
 
@@ -291,7 +300,7 @@ class GenomicRegionDataProvider( column.ColumnarDataProvider ):
         if end_column is None:
             end_column = dataset_source.get_metadata_column_index_by_name( 'endCol' )
         indeces = [ chrom_column, start_column, end_column ]
-        if not all( map( lambda i: i is not None, indeces ) ):
+        if not all( _ is not None for _ in indeces ):
             raise ValueError( "Could not determine proper column indeces for" +
                               " chrom, start, end: %s" % ( str( indeces ) ) )
         kwargs.update({ 'indeces' : indeces })
@@ -399,7 +408,8 @@ class IntervalDataProvider( column.ColumnarDataProvider ):
 #   WITHOUT reading the entire seq into memory - possibly apply some version of limit/offset
 class FastaDataProvider( base.FilteredDataProvider ):
     """
-    Class that returns fasta format data in a list of maps of the form:
+    Class that returns fasta format data in a list of maps of the form::
+
         {
             id: <fasta header id>,
             sequence: <joined lines of nucleotide/amino data>
@@ -432,7 +442,8 @@ class FastaDataProvider( base.FilteredDataProvider ):
 
 class TwoBitFastaDataProvider( DatasetDataProvider ):
     """
-    Class that returns fasta format data in a list of maps of the form:
+    Class that returns fasta format data in a list of maps of the form::
+
         {
             id: <fasta header id>,
             sequence: <joined lines of nucleotide/amino data>

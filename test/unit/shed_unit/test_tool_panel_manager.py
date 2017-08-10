@@ -2,11 +2,12 @@ import os
 
 from galaxy.util import parse_xml
 
-from tools.test_toolbox import BaseToolBoxTestCase
-from tools.test_toolbox import SimplifiedToolBox
 from tool_shed.galaxy_install.tools import tool_panel_manager
-
 from tool_shed.tools import tool_version_manager
+from tools.test_toolbox import (
+    BaseToolBoxTestCase,
+    SimplifiedToolBox
+)
 
 DEFAULT_GUID = "123456"
 
@@ -77,8 +78,8 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         for v in "1", "2", "3":
             self.__toolbox = self.get_new_toolbox()
             changeset = "0123456789abcde%s" % v
-            guid = DEFAULT_GUID + ("v%s" % v)
-            tool = self._init_ts_tool( guid=guid, filename="tool_v%s.xml" % v )
+            guid = DEFAULT_GUID + ("v/%s" % v)
+            tool = self._init_ts_tool( guid=guid, filename="tool_v%s.xml" % v, version=v )
             tool_path = self._tool_path( name="tool_v%s.xml" % v )
             new_tools = [{"guid": guid, "tool_config": tool_path}]
             tool_shed_repository = self._repo_install( changeset )
@@ -161,11 +162,11 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         if section:
             section = new_toolbox._tool_panel["tid"]
             assert len(section.elems) == 1
-            assert section.elems.values()[0].id == "github.com/galaxyproject/example/test_tool/0.1"
+            assert next(iter(section.elems.values())).id == "github.com/galaxyproject/example/test_tool/0.1"
 
             assert "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel["tid"].elems
         else:
-            self.toolbox._tool_panel.values()[0].id == "github.com/galaxyproject/example/test_tool/0.1"
+            next(iter(self.toolbox._tool_panel.values())).id == "github.com/galaxyproject/example/test_tool/0.1"
             assert "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel
 
     def _remove_guids( self, guids, uninstall, shed_tool_conf="tool_conf.xml" ):
@@ -187,13 +188,10 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
             message = message_template % ( filename, open( filename, "r" ).read() )
             raise AssertionError( message )
 
-    def _init_dynamic_tool_conf( self ):
-        # Add a dynamic tool conf (such as a ToolShed managed one) to list of configs.
-        self._add_config( """<toolbox tool_path="%s"></toolbox>""" % self.test_directory )
-
     def _init_ts_tool( self, guid=DEFAULT_GUID, **kwds ):
         tool = self._init_tool( **kwds )
         tool.guid = guid
+        tool.version = kwds.get('version', '1.0')
         return tool
 
     @property

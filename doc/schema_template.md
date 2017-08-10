@@ -10,10 +10,8 @@ If you find a bug please report it [here](https://github.com/galaxyproject/galax
 
 This document serves as reference documentation. If you would like to learn
 how to build tools for Galaxy,
-[Planemo](http://planemo.readthedocs.io/en/latest/writing.html) features a
+[Planemo](https://planemo.readthedocs.io/en/latest/writing.html) features a
 number of tutorials on building Galaxy tools that would better serve that purpose.
-
-$toc
 
 $tag:tool://element[@name='tool']
 $tag:tool|description://element[@name='tool']//element[@name='description']
@@ -27,6 +25,7 @@ $tag:tool|inputs|conditional|when://complexType[@name='ConditionalWhen']
 $tag:tool|inputs|param://complexType[@name='Param']
 $tag:tool|inputs|param|validator://complexType[@name='Validator']
 $tag:tool|inputs|param|option://complexType[@name='ParamOption']
+$tag:tool|inputs|param|conversion://complexType[@name='ParamConversion']
 $tag:tool|inputs|param|options://complexType[@name='ParamOptions']
 $tag:tool|inputs|param|options|column://complexType[@name='Column']
 $tag:tool|inputs|param|options|filter://complexType[@name='Filter']

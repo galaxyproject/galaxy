@@ -83,6 +83,7 @@ def get_sa_session_and_needed_config_settings( ini_file ):
     model = galaxy.model.mapping.init( config_settings.file_path, db_con, engine_options={}, create_tables=False )
     return model.context.current, config_settings
 
+
 if __name__ == "__main__":
     if whoosh_search_enabled:
         ini_file = sys.argv[1]

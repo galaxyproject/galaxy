@@ -8,7 +8,7 @@
     <requirements>
         <requirement type="package">samtools</requirement>
     </requirements>
-    <command interpreter="python">sam_to_bam.py $input1 $output</command>
+    <command>python '$__tool_directory__/sam_to_bam.py' '$input1' '$output'</command>
     <inputs>
         <param name="input1" type="data" format="sam" label="SAM file"/>
     </inputs>

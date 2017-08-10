@@ -19,6 +19,7 @@ See recent changes that would be built with:
 from __future__ import print_function
 
 import os
+import sys
 import time
 
 from ._cli import arg_parser
@@ -40,7 +41,8 @@ def _fetch_repo_data(args):
     if repo_data is None:
         repo_data = "%s-repodata.json" % channel
     if not os.path.exists(repo_data):
-        check_output("wget --quiet https://conda.anaconda.org/%s/linux-64/repodata.json.bz2 -O '%s.bz2' && bzip2 -d '%s.bz2'" % (channel, repo_data, repo_data))
+        platform_tag = 'osx-64' if sys.platform == 'darwin' else 'linux-64'
+        check_output("wget --quiet https://conda.anaconda.org/%s/%s/repodata.json.bz2 -O '%s.bz2' && bzip2 -d '%s.bz2'" % (channel, platform_tag, repo_data, repo_data))
     return repo_data
 
 
@@ -85,6 +87,8 @@ def add_channel_arguments(parser):
     parser.add_argument('--diff-hours', dest='diff_hours', default="25",
                         help='If finding all recently changed recipes, use this number of hours.')
     parser.add_argument('--recipes-dir', dest="recipes_dir", default="./bioconda-recipes")
+    parser.add_argument('--force-rebuild', dest="force_rebuild", action="store_true",
+                        help="Rebuild package even if already published.")
 
 
 def main(argv=None):

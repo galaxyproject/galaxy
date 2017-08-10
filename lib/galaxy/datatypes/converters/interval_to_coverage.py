@@ -120,6 +120,7 @@ class CoverageWriter( object ):
         self.out_stream.flush()
         self.out_stream.close()
 
+
 if __name__ == "__main__":
     options, args = doc_optparse.parse( __doc__ )
     try:

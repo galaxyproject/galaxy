@@ -304,6 +304,15 @@ JobExternalOutputMetadata_table = Table( "job_external_output_metadata", metadat
 Index( "ix_jeom_library_dataset_dataset_association_id", JobExternalOutputMetadata_table.c.library_dataset_dataset_association_id )
 
 
+def engine_false(migrate_engine):
+    if migrate_engine.name in ['postgres', 'postgresql']:
+        return "FALSE"
+    elif migrate_engine.name in ['mysql', 'sqlite']:
+        return 0
+    else:
+        raise Exception('Unknown database type: %s' % migrate_engine.name)
+
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     # Load existing tables
@@ -325,14 +334,6 @@ def upgrade(migrate_engine):
         else:
             raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
 
-    def boolean_false():
-        if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
-            return False
-        elif migrate_engine.name == 'sqlite':
-            return 0
-        else:
-            raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
-
     # Add 2 new columns to the galaxy_user table
     try:
         User_table = Table( "galaxy_user", metadata, autoload=True )
@@ -344,14 +345,14 @@ def upgrade(migrate_engine):
             col = Column( 'deleted', Boolean, index=True, default=False )
             col.create( User_table, index_name='ix_user_deleted')
             assert col is User_table.c.deleted
-        except Exception as e:
-            log.debug( "Adding column 'deleted' to galaxy_user table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'deleted' to galaxy_user table failed.")
         try:
             col = Column( 'purged', Boolean, index=True, default=False )
             col.create( User_table, index_name='ix_user_purged')
             assert col is User_table.c.purged
-        except Exception as e:
-            log.debug( "Adding column 'purged' to galaxy_user table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'purged' to galaxy_user table failed.")
     # Add 1 new column to the history_dataset_association table
     try:
         HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
@@ -363,8 +364,8 @@ def upgrade(migrate_engine):
             col = Column( 'copied_from_library_dataset_dataset_association_id', Integer, nullable=True )
             col.create( HistoryDatasetAssociation_table)
             assert col is HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id
-        except Exception as e:
-            log.debug( "Adding column 'copied_from_library_dataset_dataset_association_id' to history_dataset_association table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'copied_from_library_dataset_dataset_association_id' to history_dataset_association table failed.")
     # Add 1 new column to the metadata_file table
     try:
         MetadataFile_table = Table( "metadata_file", metadata, autoload=True )
@@ -376,8 +377,8 @@ def upgrade(migrate_engine):
             col = Column( 'lda_id', Integer, index=True, nullable=True )
             col.create( MetadataFile_table, index_name='ix_metadata_file_lda_id')
             assert col is MetadataFile_table.c.lda_id
-        except Exception as e:
-            log.debug( "Adding column 'lda_id' to metadata_file table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'lda_id' to metadata_file table failed.")
     # Add 1 new column to the stored_workflow table - changeset 2328
     try:
         StoredWorkflow_table = Table( "stored_workflow", metadata,
@@ -392,8 +393,8 @@ def upgrade(migrate_engine):
             col = Column( 'importable', Boolean, default=False )
             col.create( StoredWorkflow_table )
             assert col is StoredWorkflow_table.c.importable
-        except Exception as e:
-            log.debug( "Adding column 'importable' to stored_workflow table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'importable' to stored_workflow table failed.")
     # Create an index on the Job.state column - changeset 2192
     try:
         Job_table = Table( "job", metadata, autoload=True )
@@ -404,8 +405,8 @@ def upgrade(migrate_engine):
         try:
             i = Index( 'ix_job_state', Job_table.c.state )
             i.create()
-        except Exception as e:
-            log.debug( "Adding index to job.state column failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding index to job.state column failed.")
     # Add all of the new tables above
     metadata.create_all()
     # Add 1 foreign key constraint to the history_dataset_association table
@@ -426,8 +427,8 @@ def upgrade(migrate_engine):
                                          name='history_dataset_association_copied_from_library_dataset_da_fkey' )
             # Create the constraint
             cons.create()
-        except Exception as e:
-            log.debug( "Adding foreign key constraint 'history_dataset_association_copied_from_library_dataset_da_fkey' to table 'history_dataset_association' failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding foreign key constraint 'history_dataset_association_copied_from_library_dataset_da_fkey' to table 'history_dataset_association' failed.")
     # Add 1 foreign key constraint to the metadata_file table
     try:
         MetadataFile_table = Table( "metadata_file", metadata, autoload=True )
@@ -448,8 +449,8 @@ def upgrade(migrate_engine):
                                              name='metadata_file_lda_id_fkey' )
                 # Create the constraint
                 cons.create()
-            except Exception as e:
-                log.debug( "Adding foreign key constraint 'metadata_file_lda_id_fkey' to table 'metadata_file' failed: %s" % ( str( e ) ) )
+            except Exception:
+                log.exception("Adding foreign key constraint 'metadata_file_lda_id_fkey' to table 'metadata_file' failed.")
     # Make sure we have at least 1 user
     cmd = "SELECT * FROM galaxy_user;"
     users = migrate_engine.execute( cmd ).fetchall()
@@ -469,7 +470,7 @@ def upgrade(migrate_engine):
                 "%s AS deleted " + \
                 "FROM galaxy_user " + \
                 "ORDER BY id;"
-            cmd = cmd % ( nextval('role'), localtimestamp(), localtimestamp(), boolean_false() )
+            cmd = cmd % ( nextval('role'), localtimestamp(), localtimestamp(), engine_false(migrate_engine) )
             migrate_engine.execute( cmd )
             # Create private roles for each user - pass 2
             if migrate_engine.name in ['postgres', 'postgresql', 'sqlite']:
@@ -513,7 +514,7 @@ def upgrade(migrate_engine):
                 "FROM history " + \
                 "JOIN user_role_association ON user_role_association.user_id = history.user_id " + \
                 "WHERE history.purged = %s AND history.user_id IS NOT NULL;"
-            cmd = cmd % ( nextval('default_history_permissions'), boolean_false() )
+            cmd = cmd % ( nextval('default_history_permissions'), engine_false(migrate_engine) )
             migrate_engine.execute( cmd )
             # Create "manage permissions" dataset_permissions for all activate-able datasets
             cmd = \
@@ -529,7 +530,7 @@ def upgrade(migrate_engine):
                 "JOIN dataset ON history_dataset_association.dataset_id = dataset.id " + \
                 "JOIN user_role_association ON user_role_association.user_id = history.user_id " + \
                 "WHERE dataset.purged = %s AND history.user_id IS NOT NULL;"
-            cmd = cmd % ( nextval('dataset_permissions'), localtimestamp(), localtimestamp(), boolean_false() )
+            cmd = cmd % ( nextval('dataset_permissions'), localtimestamp(), localtimestamp(), engine_false(migrate_engine) )
             migrate_engine.execute( cmd )
 
 
@@ -556,8 +557,8 @@ def downgrade(migrate_engine):
                                          name='metadata_file_lda_id_fkey' )
             # Drop the constraint
             cons.drop()
-        except Exception as e:
-            log.debug( "Dropping foreign key constraint 'metadata_file_lda_id_fkey' from table 'metadata_file' failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Dropping foreign key constraint 'metadata_file_lda_id_fkey' from table 'metadata_file' failed.")
     # Drop 1 foreign key constraint from the history_dataset_association table
     try:
         HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
@@ -576,133 +577,133 @@ def downgrade(migrate_engine):
                                          name='history_dataset_association_copied_from_library_dataset_da_fkey' )
             # Drop the constraint
             cons.drop()
-        except Exception as e:
-            log.debug( "Dropping foreign key constraint 'history_dataset_association_copied_from_library_dataset_da_fkey' from table 'history_dataset_association' failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Dropping foreign key constraint 'history_dataset_association_copied_from_library_dataset_da_fkey' from table 'history_dataset_association' failed.")
     # Drop all of the new tables above
     try:
         UserGroupAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping user_group_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping user_group_association table failed.")
     try:
         UserRoleAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping user_role_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping user_role_association table failed.")
     try:
         GroupRoleAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping group_role_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping group_role_association table failed.")
     try:
         Group_table.drop()
-    except Exception as e:
-        log.debug( "Dropping galaxy_group table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping galaxy_group table failed.")
     try:
         DatasetPermissions_table.drop()
-    except Exception as e:
-        log.debug( "Dropping dataset_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping dataset_permissions table failed.")
     try:
         LibraryPermissions_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_permissions table failed.")
     try:
         LibraryFolderPermissions_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_folder_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_folder_permissions table failed.")
     try:
         LibraryDatasetPermissions_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset_permissions table failed.")
     try:
         LibraryDatasetDatasetAssociationPermissions_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset_dataset_association_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset_dataset_association_permissions table failed.")
     try:
         LibraryItemInfoPermissions_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info_permissions table failed.")
     try:
         LibraryItemInfoTemplatePermissions_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info_template_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info_template_permissions table failed.")
     try:
         DefaultUserPermissions_table.drop()
-    except Exception as e:
-        log.debug( "Dropping default_user_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping default_user_permissions table failed.")
     try:
         DefaultHistoryPermissions_table.drop()
-    except Exception as e:
-        log.debug( "Dropping default_history_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping default_history_permissions table failed.")
     try:
         Role_table.drop()
-    except Exception as e:
-        log.debug( "Dropping role table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping role table failed.")
     try:
         LibraryDatasetDatasetInfoAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset_dataset_info_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset_dataset_info_association table failed.")
     try:
         LibraryDataset_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset table failed.")
     try:
         LibraryDatasetDatasetAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset_dataset_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset_dataset_association table failed.")
     try:
         LibraryDatasetDatasetInfoTemplateAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset_dataset_info_template_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset_dataset_info_template_association table failed.")
     try:
         JobExternalOutputMetadata_table.drop()
-    except Exception as e:
-        log.debug( "Dropping job_external_output_metadata table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping job_external_output_metadata table failed.")
     try:
         Library_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library table failed.")
     try:
         LibraryFolder_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_folder table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_folder table failed.")
     try:
         LibraryItemInfoTemplateElement_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info_template_element table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info_template_element table failed.")
     try:
         LibraryInfoTemplateAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_info_template_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_info_template_association table failed.")
     try:
         LibraryFolderInfoTemplateAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_folder_info_template_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_folder_info_template_association table failed.")
     try:
         LibraryDatasetInfoTemplateAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset_info_template_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset_info_template_association table failed.")
     try:
         LibraryInfoAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_info_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_info_association table failed.")
     try:
         LibraryFolderInfoAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_folder_info_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_folder_info_association table failed.")
     try:
         LibraryDatasetInfoAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset_info_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset_info_association table failed.")
     try:
         LibraryItemInfoElement_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info_element table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info_element table failed.")
     try:
         LibraryItemInfo_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info table failed.")
     try:
         LibraryItemInfoTemplate_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info_template table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info_template table failed.")
     # Drop the index on the Job.state column - changeset 2192
     try:
         Job_table = Table( "job", metadata, autoload=True )
@@ -713,8 +714,8 @@ def downgrade(migrate_engine):
         try:
             i = Index( 'ix_job_state', Job_table.c.state )
             i.drop()
-        except Exception as e:
-            log.debug( "Dropping index from job.state column failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Dropping index from job.state column failed.")
     # Drop 1 column from the stored_workflow table - changeset 2328
     try:
         StoredWorkflow_table = Table( "stored_workflow", metadata, autoload=True )
@@ -725,8 +726,8 @@ def downgrade(migrate_engine):
         try:
             col = StoredWorkflow_table.c.importable
             col.drop()
-        except Exception as e:
-            log.debug( "Dropping column 'importable' from stored_workflow table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Dropping column 'importable' from stored_workflow table failed.")
     # Drop 1 column from the metadata_file table
     try:
         MetadataFile_table = Table( "metadata_file", metadata, autoload=True )
@@ -737,8 +738,8 @@ def downgrade(migrate_engine):
         try:
             col = MetadataFile_table.c.lda_id
             col.drop()
-        except Exception as e:
-            log.debug( "Dropping column 'lda_id' from metadata_file table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Dropping column 'lda_id' from metadata_file table failed.")
     # Drop 1 column from the history_dataset_association table
     try:
         HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
@@ -749,8 +750,8 @@ def downgrade(migrate_engine):
         try:
             col = HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id
             col.drop()
-        except Exception as e:
-            log.debug( "Dropping column 'copied_from_library_dataset_dataset_association_id' from history_dataset_association table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Dropping column 'copied_from_library_dataset_dataset_association_id' from history_dataset_association table failed.")
     # Drop 2 columns from the galaxy_user table
     try:
         User_table = Table( "galaxy_user", metadata, autoload=True )
@@ -761,10 +762,10 @@ def downgrade(migrate_engine):
         try:
             col = User_table.c.deleted
             col.drop()
-        except Exception as e:
-            log.debug( "Dropping column 'deleted' from galaxy_user table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Dropping column 'deleted' from galaxy_user table failed.")
         try:
             col = User_table.c.purged
             col.drop()
-        except Exception as e:
-            log.debug( "Dropping column 'purged' from galaxy_user table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Dropping column 'purged' from galaxy_user table failed.")

@@ -1,8 +1,7 @@
-
+import logging
 import os
 import tempfile
 
-import logging
 logging.getLogger( __name__ )
 log = logging
 

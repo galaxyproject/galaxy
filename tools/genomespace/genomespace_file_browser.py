@@ -206,6 +206,7 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
     metadata_parameter_file.close()
     return True
 
+
 if __name__ == '__main__':
     parser = optparse.OptionParser()
     parser.add_option( '-p', '--json_parameter_file', dest='json_parameter_file', action='store', type="string", default=None, help='json_parameter_file' )

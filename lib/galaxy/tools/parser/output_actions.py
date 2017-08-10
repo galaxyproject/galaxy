@@ -648,6 +648,7 @@ def compare_re_search( value1, value2 ):
     # checks pattern=value2 in value1
     return bool( re.search( value2, value1 ) )
 
+
 compare_types = {
     'eq': compare_eq,
     'neq': compare_neq,

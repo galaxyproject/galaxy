@@ -1,0 +1,22 @@
+<tool id="implicit_conversion" name="implicit_conversion">
+  <command>
+    cut -f 1 '$input1' > '$output1'
+  </command>
+  <inputs>
+    <param type="data" format="tabular" name="input1" label="Input 1" />
+  </inputs>
+  <outputs>
+    <data name="output1" format="tabular" />
+  </outputs>
+  <tests>
+    <!-- Test implicit conversion. -->
+    <test>
+      <param name="input1" value="1.fasta" ftype="fasta" />
+      <output name="output1">
+        <assert_contents>
+          <has_line line="hg17" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

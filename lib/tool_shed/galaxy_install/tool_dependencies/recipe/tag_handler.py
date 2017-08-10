@@ -566,71 +566,73 @@ class SetEnvironment( RecipeTag ):
             # </set_environment>
             elems = [ env_var_elem for env_var_elem in elem ]
         for env_var_elem in elems:
-            env_var_name = env_var_elem.get( 'name', None )
+            env_var_name = env_var_elem.get( 'name' )
+            if not env_var_name:
+                raise Exception('The <environment_variable> tag must have a name attribute')
             # The value of env_var_name must match the text value of at least 1 <requirement> tag in the
             # tool config's <requirements> tag set whose "type" attribute is "set_environment" (e.g.,
             # <requirement type="set_environment">R_SCRIPT_PATH</requirement>).
-            env_var_action = env_var_elem.get( 'action', None )
-            if env_var_name and env_var_action:
-                # Tool dependencies of type "set_environment" always have the version attribute set to None.
-                attr_tup = ( env_var_name, None, 'set_environment' )
-                if attr_tup in attr_tups_of_dependencies_for_install:
-                    install_dir = \
-                        tool_dependency_util.get_tool_dependency_install_dir( app=self.app,
-                                                                              repository_name=tool_shed_repository.name,
-                                                                              repository_owner=tool_shed_repository.owner,
-                                                                              repository_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                                              tool_dependency_type='set_environment',
-                                                                              tool_dependency_name=env_var_name,
-                                                                              tool_dependency_version=None )
-                    install_environment = InstallEnvironment( app=self.app,
-                                                              tool_shed_repository_install_dir=tool_shed_repository_install_dir,
-                                                              install_dir=install_dir )
-                    env_var_dict = env_manager.create_env_var_dict( elem=env_var_elem,
-                                                                    install_environment=install_environment )
-                    if env_var_dict:
-                        if not os.path.exists( install_dir ):
-                            os.makedirs( install_dir )
-                        status = self.app.install_model.ToolDependency.installation_status.INSTALLING
+            env_var_action = env_var_elem.get( 'action' )
+            if not env_var_action:
+                raise Exception('The <environment_variable> tag must have an action attribute')
+            # Tool dependencies of type "set_environment" always have the version attribute set to None.
+            attr_tup = ( env_var_name, None, 'set_environment' )
+            if attr_tup in attr_tups_of_dependencies_for_install:
+                install_dir = \
+                    tool_dependency_util.get_tool_dependency_install_dir( app=self.app,
+                                                                          repository_name=tool_shed_repository.name,
+                                                                          repository_owner=tool_shed_repository.owner,
+                                                                          repository_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                                          tool_dependency_type='set_environment',
+                                                                          tool_dependency_name=env_var_name,
+                                                                          tool_dependency_version=None )
+                install_environment = InstallEnvironment( app=self.app,
+                                                          tool_shed_repository_install_dir=tool_shed_repository_install_dir,
+                                                          install_dir=install_dir )
+                env_var_dict = env_manager.create_env_var_dict( elem=env_var_elem,
+                                                                install_environment=install_environment )
+                if not os.path.exists( install_dir ):
+                    os.makedirs( install_dir )
+                status = self.app.install_model.ToolDependency.installation_status.INSTALLING
+                tool_dependency = \
+                    tool_dependency_util.create_or_update_tool_dependency( app=self.app,
+                                                                           tool_shed_repository=tool_shed_repository,
+                                                                           name=env_var_name,
+                                                                           version=None,
+                                                                           type='set_environment',
+                                                                           status=status,
+                                                                           set_status=True )
+                if env_var_version == '1.0':
+                    # Create this tool dependency's env.sh file.
+                    env_file_builder = EnvFileBuilder( install_dir )
+                    return_code = env_file_builder.append_line( make_executable=True, **env_var_dict )
+                    if return_code:
+                        error_message = 'Error creating env.sh file for tool dependency %s, return_code: %s' % \
+                            ( str( tool_dependency.name ), str( return_code ) )
+                        log.debug( error_message )
+                        status = self.app.install_model.ToolDependency.installation_status.ERROR
                         tool_dependency = \
-                            tool_dependency_util.create_or_update_tool_dependency( app=self.app,
-                                                                                   tool_shed_repository=tool_shed_repository,
-                                                                                   name=env_var_name,
-                                                                                   version=None,
-                                                                                   type='set_environment',
-                                                                                   status=status,
-                                                                                   set_status=True )
-                        if env_var_version == '1.0':
-                            # Create this tool dependency's env.sh file.
-                            env_file_builder = EnvFileBuilder( install_dir )
-                            return_code = env_file_builder.append_line( make_executable=True, **env_var_dict )
-                            if return_code:
-                                error_message = 'Error creating env.sh file for tool dependency %s, return_code: %s' % \
-                                    ( str( tool_dependency.name ), str( return_code ) )
-                                log.debug( error_message )
-                                status = self.app.install_model.ToolDependency.installation_status.ERROR
-                                tool_dependency = \
-                                    tool_dependency_util.set_tool_dependency_attributes( self.app,
-                                                                                         tool_dependency=tool_dependency,
-                                                                                         status=status,
-                                                                                         error_message=error_message )
-                            else:
-                                if tool_dependency.status not in [ self.app.install_model.ToolDependency.installation_status.ERROR,
-                                                                   self.app.install_model.ToolDependency.installation_status.INSTALLED ]:
-                                    status = self.app.install_model.ToolDependency.installation_status.INSTALLED
-                                    tool_dependency = \
-                                        tool_dependency_util.set_tool_dependency_attributes( self.app,
-                                                                                             tool_dependency=tool_dependency,
-                                                                                             status=status )
-                                    log.debug( 'Environment variable %s set in %s for tool dependency %s.' %
-                                        ( str( env_var_name ), str( install_dir ), str( tool_dependency.name ) ) )
-                        else:
-                            error_message = 'Only set_environment version 1.0 is currently supported (i.e., change your tag to be <set_environment version="1.0">).'
-                            status = self.app.install_model.ToolDependency.installation_status.ERROR
+                            tool_dependency_util.set_tool_dependency_attributes( self.app,
+                                                                                 tool_dependency=tool_dependency,
+                                                                                 status=status,
+                                                                                 error_message=error_message )
+                    else:
+                        if tool_dependency.status not in [ self.app.install_model.ToolDependency.installation_status.ERROR,
+                                                           self.app.install_model.ToolDependency.installation_status.INSTALLED ]:
+                            status = self.app.install_model.ToolDependency.installation_status.INSTALLED
                             tool_dependency = \
                                 tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                      tool_dependency=tool_dependency,
-                                                                                     status=status,
-                                                                                     error_message=error_message )
-            tool_dependencies.append( tool_dependency )
+                                                                                     status=status )
+                            log.debug( 'Environment variable %s set in %s for tool dependency %s.' %
+                                ( str( env_var_name ), str( install_dir ), str( tool_dependency.name ) ) )
+                else:
+                    error_message = 'Only set_environment version 1.0 is currently supported (i.e., change your tag to be <set_environment version="1.0">).'
+                    status = self.app.install_model.ToolDependency.installation_status.ERROR
+                    tool_dependency = \
+                        tool_dependency_util.set_tool_dependency_attributes( self.app,
+                                                                             tool_dependency=tool_dependency,
+                                                                             status=status,
+                                                                             error_message=error_message )
+                tool_dependencies.append( tool_dependency )
         return tool_dependencies

@@ -285,6 +285,7 @@ def scp_transfer( transfer_job ):
     except Exception as e:
         return dict( state=transfer_job.states.ERROR, info='Error during file transfer: %s' % str( e ) )
 
+
 if __name__ == '__main__':
     arg_handler = ArgHandler()
     arg_handler.parse()

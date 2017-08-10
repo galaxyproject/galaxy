@@ -5,24 +5,26 @@ from time import strftime
 
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
 
+from sqlalchemy import and_
 import tool_shed.util.shed_util_common as suc
 from galaxy import util
 from galaxy import web
 from galaxy import exceptions
+
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import workflow_util
-from tool_shed.util import tool_util
 from tool_shed.util import repository_util
+from tool_shed.util import tool_util
+from tool_shed.util import workflow_util
 
-from sqlalchemy import and_
 
 log = logging.getLogger( __name__ )
 
@@ -33,8 +35,7 @@ def get_message_for_no_shed_tool_config():
     message += 'tag that includes a tool_path attribute value which is a directory relative to the Galaxy installation directory in order to '
     message += 'automatically install tools from a tool shed into Galaxy (e.g., the file name shed_tool_conf.xml whose <toolbox> tag is '
     message += '<toolbox tool_path="../shed_tools">).  For details, see the "Installation of Galaxy tool shed repository tools into a local '
-    message += 'Galaxy instance" section of the Galaxy tool shed wiki at http://wiki.galaxyproject.org/InstallingRepositoriesToGalaxy#'
-    message += 'Installing_Galaxy_tool_shed_repository_tools_into_a_local_Galaxy_instance.'
+    message += 'Galaxy instance" section of the Galaxy tool shed wiki at https://galaxyproject.org/installing-repositories-to-galaxy/'
     return message
 
 
@@ -194,26 +195,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
     @expose_api
     @web.require_admin
-    def shed_categories( self, trans, **kwd ):
-        """
-        GET /api/tool_shed_repositories/shed_categories
-
-        Display a list of categories in the selected toolshed.
-
-        :param tool_shed_url: the url of the toolshed to get categories from
-        """
-        tool_shed_url = kwd.get( 'tool_shed_url', '' )
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
-        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'categories' ] )
-        categories = json.loads( util.url_get( url ) )
-        repositories = []
-        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'repositories' ] )
-        for repo in json.loads( util.url_get( url ) ):
-            repositories.append( dict( value=repo[ 'id' ], label='%s/%s' % ( repo[ 'owner' ], repo[ 'name' ] ) ) )
-        return { 'categories': categories, 'repositories': repositories }
-
-    @expose_api
-    @web.require_admin
     def shed_category( self, trans, **kwd ):
         """
         GET /api/tool_shed_repositories/shed_category
@@ -225,8 +206,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         """
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         category_id = kwd.get( 'category_id', '' )
+        params = dict( installable=True )
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
-        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'categories', category_id, 'repositories' ] )
+        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'categories', category_id, 'repositories' ], params=params )
         category = json.loads( util.url_get( url ) )
         return category
 
@@ -238,12 +220,22 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
         Get details about the specified repository from its shed.
 
-        :param tsr_id: the tool_shed_repository_id
+        :param tsr_id:          the tool_shed_repository_id
+        :param tsr_id:          str
+
+        :param tool_shed_url:   the URL of the toolshed whence to retrieve repository details
+        :param tool_shed_url:   str
+
+        :param tool_ids:         (optional) comma-separated list of tool IDs
+        :param tool_ids:         str
         """
         tool_dependencies = dict()
         tools = dict()
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
-        tsr_id = kwd.get( 'tsr_id', '' )
+        tsr_id = kwd.get( 'tsr_id', None )
+        tool_ids = kwd.get( 'tool_ids', None )
+        if tool_ids is not None:
+            tool_ids = util.listify( tool_ids )
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
         tool_panel_section_dict = { 'name': tool_panel_section_select_field.name,
                                     'id': tool_panel_section_select_field.field_id,
@@ -251,8 +243,22 @@ class ToolShedRepositoriesController( BaseAPIController ):
         for name, id, _ in tool_panel_section_select_field.options:
             tool_panel_section_dict['sections'].append( dict( id=id, name=name ) )
         repository_data = dict()
-        repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
-        repository_data[ 'repository' ][ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
+        if tool_ids is not None:
+            if len( tool_shed_url ) == 0:
+                # By design, this list should always be from the same toolshed. If
+                # this is ever not the case, this code will need to be updated.
+                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_ids[ 0 ].split( '/' )[ 0 ] )
+            found_repository = json.loads( util.url_get( tool_shed_url, params=dict( tool_ids=','.join( tool_ids ) ), pathspec=[ 'api', 'repositories' ] ) )
+            fr_keys = found_repository.keys()
+            tsr_id = found_repository[ fr_keys[0] ][ 'repository_id' ]
+            repository_data[ 'current_changeset' ] = found_repository[ 'current_changeset' ]
+            repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
+            del found_repository[ 'current_changeset' ]
+            repository_data[ 'repository' ][ 'metadata' ] = found_repository
+            repository_data[ 'tool_shed_url' ] = tool_shed_url
+        else:
+            repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
+            repository_data[ 'repository' ][ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
         repository_data[ 'shed_conf' ] = tool_util.build_shed_tool_conf_select_field( trans.app ).get_html().replace('\n', '')
         repository_data[ 'panel_section_html' ] = tool_panel_section_select_field.get_html( extra_attr={ 'style': 'width: 30em;' } ).replace( '\n', '' )
         repository_data[ 'panel_section_dict' ] = tool_panel_section_dict
@@ -279,12 +285,32 @@ class ToolShedRepositoriesController( BaseAPIController ):
                     del( dependency_dict[ 'readme' ] )
                 if dependency_dict not in tool_dependencies[ changeset ]:
                     tool_dependencies[ changeset ].append( dependency_dict )
-                    # log.debug(tool_dependencies)
             if metadata[ 'has_repository_dependencies' ]:
                 for repository_dependency in metadata[ 'repository_dependencies' ]:
                     tool_dependencies[ changeset ] = self.__get_tool_dependencies( repository_dependency, tool_dependencies[ changeset ] )
         repository_data[ 'tool_dependencies' ] = tool_dependencies
         return repository_data
+
+    @expose_api
+    @web.require_admin
+    def shed_search( self, trans, **kwd ):
+        """
+        GET /api/tool_shed_repositories/shed_search
+
+        Search for a specific repository in the toolshed.
+
+        :param q:          the query string to search for
+        :param q:          str
+
+        :param tool_shed_url:   the URL of the toolshed to search
+        :param tool_shed_url:   str
+        """
+        tool_shed_url = kwd.get( 'tool_shed_url', None )
+        q = kwd.get( 'term', None )
+        if None in [ q, tool_shed_url ]:
+            return {}
+        response = json.loads( util.url_get( tool_shed_url, params=dict( q=q ), pathspec=[ 'api', 'repositories' ] ) )
+        return response
 
     @expose_api
     def import_workflow( self, trans, payload, **kwd ):
@@ -590,6 +616,46 @@ class ToolShedRepositoriesController( BaseAPIController ):
             elif isinstance( installed_tool_shed_repositories, list ):
                 all_installed_tool_shed_repositories.extend( installed_tool_shed_repositories )
         return all_installed_tool_shed_repositories
+
+    @expose_api
+    def uninstall_repository(self, trans, id=None, **kwd):
+        """
+        DELETE /api/tool_shed_repositories/id
+        DELETE /api/tool_shed_repositories/
+
+        :param id:  encoded repository id. Either id or name, owner, changeset_revision and tool_shed_url need to be supplied
+        :param kwd: 'remove_from_disk'  : Remove repository from disk or deactivate repository.
+                                          Defaults to `True` (= remove repository from disk).
+                    'name'   : Repository name
+                    'owner'  : Repository owner
+                    'changeset_revision': Changeset revision to uninstall
+                    'tool_shed_url'     : Tool Shed URL
+        """
+        if id:
+            try:
+                repository = repository_util.get_tool_shed_repository_by_id(self.app, id)
+            except ValueError:
+                raise HTTPBadRequest(detail="No repository with id '%s' found" % id)
+        else:
+            tsr_arguments = ['name', 'owner', 'changeset_revision', 'tool_shed_url']
+            try:
+                tsr_arguments = {key: kwd[key] for key in tsr_arguments}
+            except KeyError as e:
+                raise HTTPBadRequest(detail="Missing required parameter '%s'" % e.args[0])
+            repository = repository_util.get_installed_repository(app=self.app,
+                                                                  tool_shed=tsr_arguments['tool_shed_url'],
+                                                                  name=tsr_arguments['name'],
+                                                                  owner=tsr_arguments['owner'],
+                                                                  changeset_revision=tsr_arguments['changeset_revision'])
+            if not repository:
+                raise HTTPBadRequest(detail="Repository not found")
+        irm = InstalledRepositoryManager(app=self.app)
+        errors = irm.uninstall_repository(repository=repository, remove_from_disk=kwd.get('remove_from_disk', True))
+        if not errors:
+            action = 'removed' if kwd.get('remove_from_disk', True) else 'deactivated'
+            return {'message': 'The repository named %s has been %s.' % (repository.name, action)}
+        else:
+            raise Exception('Attempting to uninstall tool dependencies for repository named %s resulted in errors: %s' % (repository.name, errors))
 
     @expose_api
     def repair_repository_revision( self, trans, payload, **kwd ):

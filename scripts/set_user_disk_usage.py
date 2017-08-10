@@ -74,6 +74,7 @@ def quotacheck( sa_session, users, engine ):
             sa_session.add( user )
             sa_session.flush()
 
+
 if __name__ == '__main__':
     print 'Loading Galaxy model...'
     model, object_store, engine = init()

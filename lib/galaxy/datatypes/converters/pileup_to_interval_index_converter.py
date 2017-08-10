@@ -5,10 +5,10 @@ Convert from pileup file to interval index file.
 
 usage: %prog <options> in_file out_file
 """
-
 from __future__ import division
 
 import optparse
+
 from bx.interval_index_file import Indexes
 
 
@@ -30,6 +30,7 @@ def main():
         offset += len( line )
 
     index.write( open(output_fname, "w") )
+
 
 if __name__ == "__main__":
     main()

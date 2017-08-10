@@ -128,6 +128,7 @@ def inherit(context):
 
     <div id="registrationForm" class="toolForm">
         <form name="registration" id="registration" action="${form_action}" method="post" >
+            <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
             <div class="toolFormTitle">Create account</div>
             <div class="form-row">
                 <label>Email address:</label>
@@ -175,27 +176,6 @@ def inherit(context):
                     <p>See <a href="http://galaxyproject.org/wiki/Mailing%20Lists" target="_blank">
                     all Galaxy project mailing lists</a>.</p>
                 </div>
-            %endif
-            %if user_type_fd_id_select_field and len( user_type_fd_id_select_field.options ) >= 1:
-                <div class="form-row">
-                    <label>User type</label>
-                    ${user_type_fd_id_select_field.get_html()}
-                </div>
-            %endif
-            %if user_type_form_definition:
-                %for field in widgets:
-                    <div class="form-row">
-                        <label>${field['label']}</label>
-                        ${field['widget'].get_html()}
-                        <div class="toolParamHelp" style="clear: both;">
-                            ${field['helptext']}
-                        </div>
-                        <div style="clear: both"></div>
-                    </div>
-                %endfor
-                %if not user_type_fd_id_select_field:
-                    <input type="hidden" name="user_type_fd_id" value="${trans.security.encode_id( user_type_form_definition.id )}"/>
-                %endif
             %endif
             <div id="for_bears">
             If you see this, please leave following field blank.

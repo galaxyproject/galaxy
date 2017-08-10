@@ -15,7 +15,7 @@ from posixpath import join as path_join
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import safe_relpath
 
-from ..objectstore import DiskObjectStore, local_extra_dirs, ObjectStore
+from ..objectstore import DiskObjectStore, local_extra_dirs
 
 try:
     import irods
@@ -29,7 +29,7 @@ IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this '
 log = logging.getLogger( __name__ )
 
 
-class IRODSObjectStore( DiskObjectStore, ObjectStore ):
+class IRODSObjectStore( DiskObjectStore ):
     """
     Galaxy object store based on iRODS
     """
@@ -324,6 +324,7 @@ def _rods_strerror( errno ):
             if type( v ) == int and v < 0:
                 irods.__rods_strerror_map[ v ] = name
     return irods.__rods_strerror_map.get( errno, 'GALAXY_NO_ERRNO_MAPPING_FOUND' )
+
 
 if irods is not None:
     irods.strerror = _rods_strerror

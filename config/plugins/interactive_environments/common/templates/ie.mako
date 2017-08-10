@@ -9,6 +9,7 @@ ie_password = '${ ie_request.notebook_pw }';
 
 var galaxy_root = '${ ie_request.attr.root }';
 var app_root = '${ ie_request.attr.app_root }';
+var ie_readiness_url = '${ h.url_for("/interactive_environments/ready") }';
 </%def>
 
 

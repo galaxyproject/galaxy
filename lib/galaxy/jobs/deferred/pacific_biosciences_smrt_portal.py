@@ -4,14 +4,15 @@ produced by SMRT Portal.
 """
 import json
 import logging
-import urllib2
 from string import Template
 
-from data_transfer import DataTransfer
+from six.moves.urllib.request import urlopen
+
+from .data_transfer import DataTransfer
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'SMRTPortalPlugin' ]
+__all__ = ( 'SMRTPortalPlugin', )
 
 
 class SMRTPortalPlugin( DataTransfer ):
@@ -34,7 +35,7 @@ class SMRTPortalPlugin( DataTransfer ):
             # TODO: is there a better way to store the protocol?
             # external_service_type.data_transfer looks somethng like
             # {'http': <galaxy.sample_tracking.data_transfer.HttpDataTransferFactory object at 0x1064239d0>}
-            protocol = external_service_type.data_transfer.keys()[0]
+            protocol = next(iter(external_service_type.data_transfer.keys()))
             results = {}
             for k, v in external_service.form_values.content.items():
                 match = self.dataset_name_re.match( k ) or self.dataset_datatype_re.match( k )
@@ -50,7 +51,7 @@ class SMRTPortalPlugin( DataTransfer ):
                 results[ id ][ 'url' ] = url
                 if sample.workflow:
                     # DBTODO Make sure all ds| mappings get the URL of the dataset, for linking to later.
-                    for k, v in sample.workflow[ 'mappings' ].iteritems():
+                    for k, v in sample.workflow[ 'mappings' ].items():
                         if 'ds|%s' % id in v.values():
                             sample.workflow['mappings'][k]['url'] = url
             self.sa_session.add(sample)
@@ -87,7 +88,7 @@ class SMRTPortalPlugin( DataTransfer ):
             if self._missing_params( job.params, [ 'smrt_host', 'smrt_job_id' ] ):
                 return self.job_states.INVALID
             url = 'http://' + job.params[ 'smrt_host' ] + self.api_path + '/Jobs/' + job.params[ 'smrt_job_id' ] + '/Status'
-            r = urllib2.urlopen( url )
+            r = urlopen( url )
             status = json.loads( r.read() )
             # TODO: error handling: unexpected json or bad response, bad url, etc.
             if status[ 'Code' ] == 'Completed':

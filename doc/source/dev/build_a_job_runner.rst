@@ -1,8 +1,8 @@
-BUILD RUNNER FOR GALAXY
------------------------
+Build a job runner
+==================
 
-A walk through the steps of building a runner for Galaxy.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A walk through the steps of building a runner for Galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In this tutorial, we would build the runner in a block by block fashion
 (like the building blocks), so we would divide the runner into
@@ -11,10 +11,10 @@ components based on their function.
 We assume you are familiar with setting up and managing a local installation of Galaxy.
 
 To learn more about the basics, please refer to:
-https://wiki.galaxyproject.org/Admin/GetGalaxy
+https://galaxyproject.org/admin/get-galaxy/
 
 To explore existing runners, please refer to:
-https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runner
+https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runners
 
 What is required to make a runner for Galaxy?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,13 +51,12 @@ Implementation of parent class (galaxy.jobs.runners.\_\_init\_\_.py)
 -  .. rubric:: Class Inheritance structure
       :name: class-inheritance-structure
 
-   .. figure:: https://github.com/varunshankar/galaxy-godocker/raw/master/inherit.png
-      :alt: 
+   .. image:: inherit.png
 
 -  .. rubric:: The big picture!
       :name: the-big-picture-1
 
-   .. figure:: https://raw.githubusercontent.com/varunshankar/galaxy-godocker/master/runner_diag.png
+   .. image:: runner_diag.png
 
 The whole process is divided into different stages for understanding
 purpose.
@@ -82,7 +81,7 @@ The input params are read from job\_conf.xml and passed to the runner by
 the Galaxy framework. Configuration of where to run jobs and external
 runner configuration is performed in the job\_conf.xml file. More
 information about job\_conf.xml is available
-`here <https://wiki.galaxyproject.org/Admin/Config/Jobs>`__.
+`here <https://galaxyproject.org/admin/config/jobs/>`__.
 
 Have a look at the sample job\_conf.xml:
 
@@ -218,7 +217,7 @@ Output params: AsynchronousJobState object
 
 Without going into much detail, assume there is a queue to track the status of every job. eg:
 
-.. image:: https://raw.githubusercontent.com/varunshankar/galaxy-godocker/master/queue.png
+.. image:: queue.png
     :align: center
 
 The galaxy framework updates the status of a job by iterating through the
@@ -229,7 +228,7 @@ copy the output files for the completed jobs.
 
 Updated result after an iteration (after invocation of check\_watched\_item 6 times):
 
-.. image:: https://raw.githubusercontent.com/varunshankar/galaxy-godocker/master/queue_b.png
+.. image:: queue_b.png
     :align: center
 
 

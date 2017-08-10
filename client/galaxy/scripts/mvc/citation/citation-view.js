@@ -151,7 +151,7 @@ var CitationListView = Backbone.View.extend({
                 ' citations explicitly at this time. When writing up your analysis, please manually',
                 ' review your histories and find all references',
                 ' that should be cited in order to completely describe your work. Also, please remember to',
-                ' <a href="https://wiki.galaxyproject.org/CitingGalaxy">cite Galaxy</a>.',
+                ' <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.',
                 '</div>',
             ].join('');
         } else {

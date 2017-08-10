@@ -1,12 +1,12 @@
 """
 Dataproviders that iterate over lines from their sources.
 """
-
 import collections
+import logging
 import re
+
 from . import base
 
-import logging
 log = logging.getLogger( __name__ )
 
 _TODO = """
@@ -88,7 +88,7 @@ class RegexLineDataProvider( FilteredLineDataProvider ):
     of regexs.
 
     .. note:: the regex matches are effectively OR'd (if **any** regex matches
-    the line it is considered valid and will be provided).
+        the line it is considered valid and will be provided).
     """
     settings = {
         'regex_list'    : 'list:escaped',

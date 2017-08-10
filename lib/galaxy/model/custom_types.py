@@ -3,17 +3,21 @@ import copy
 import json
 import logging
 import uuid
-
-from sys import getsizeof
-from itertools import chain
 from collections import deque
+from itertools import chain
+from sys import getsizeof
 
 import sqlalchemy
+from sqlalchemy.ext.mutable import Mutable
+from sqlalchemy.types import (
+    CHAR,
+    LargeBinary,
+    String,
+    TypeDecorator
+)
 
 from galaxy import app
 from galaxy.util.aliaspickler import AliasPickleModule
-from sqlalchemy.types import CHAR, LargeBinary, String, TypeDecorator
-from sqlalchemy.ext.mutable import Mutable
 
 log = logging.getLogger( __name__ )
 
@@ -234,6 +238,7 @@ def total_size(o, handlers={}, verbose=False):
     """
     def dict_handler(d):
         return chain.from_iterable(d.items())
+
     all_handlers = { tuple: iter,
                      list: iter,
                      deque: iter,
@@ -268,7 +273,7 @@ class MetadataType( JSONType ):
     def process_bind_param(self, value, dialect):
         if value is not None:
             if app.app and app.app.config.max_metadata_value_size:
-                for k, v in value.items():
+                for k, v in list(value.items()):
                     sz = total_size(v)
                     if sz > app.app.config.max_metadata_value_size:
                         del value[k]

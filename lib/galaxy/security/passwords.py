@@ -1,10 +1,11 @@
-import hmac
 import hashlib
-from struct import Struct
-from operator import xor
-from itertools import starmap
-from os import urandom
+import hmac
 from base64 import b64encode
+from itertools import starmap
+from operator import xor
+from os import urandom
+from struct import Struct
+
 from galaxy.util import safe_str_cmp
 
 SALT_LENGTH = 12
@@ -53,9 +54,9 @@ def check_password_PBKDF2( guess, hashed ):
     encoded_guess = b64encode( hashed_guess )
     return safe_str_cmp( encoded_original, encoded_guess )
 
+
 # Taken from https://github.com/mitsuhiko/python-pbkdf2/blob/master/pbkdf2.py
 # (c) Copyright 2011 by Armin Ronacher, BSD LICENSE
-
 _pack_int = Struct('>I').pack
 
 
@@ -77,6 +78,6 @@ def pbkdf2_bin( data, salt, iterations=1000, keylen=24, hashfunc=None ):
         rv = u = _pseudorandom(salt + _pack_int(block))
         for i in range(iterations - 1):
             u = _pseudorandom(''.join(map(chr, u)))
-            rv = starmap( xor, zip( rv, u ) )  # Python < 2.6.8: starmap requires function inputs to be tuples, so we need to use zip instead of izip
+            rv = starmap( xor, zip( rv, u ) )
         buf.extend(rv)
     return ''.join(map(chr, buf))[:keylen]

@@ -385,5 +385,6 @@ def main():
 
     return join_files( filename1, column1, filename2, column2, out_filename, split, options.buffer, options.keep_unmatched, options.keep_partial, options.index_depth, fill_options=fill_options )
 
+
 if __name__ == "__main__":
     main()

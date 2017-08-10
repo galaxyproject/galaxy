@@ -6,7 +6,7 @@ import logging
 import socket
 from datetime import datetime, timedelta
 
-from sqlalchemy import and_, false, or_, not_
+from sqlalchemy import and_, false, not_, or_
 from sqlalchemy.orm import eagerload_all
 
 from galaxy.util import listify
@@ -25,8 +25,8 @@ class Action( object ):
 class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
-        DATASET_MANAGE_PERMISSIONS=Action( "manage permissions", "Users having associated role can manage the roles associated with permissions on this dataset", "grant" ),
-        DATASET_ACCESS=Action( "access", "Users having associated role can import this dataset into their history for analysis", "restrict" ),
+        DATASET_MANAGE_PERMISSIONS=Action( "manage permissions", "Users having associated role can manage the roles associated with permissions on this dataset.", "grant" ),
+        DATASET_ACCESS=Action( "access", "Users having associated role can import this dataset into their history for analysis.", "restrict" ),
         LIBRARY_ACCESS=Action( "access library", "Restrict access to this library to only users having associated role", "restrict" ),
         LIBRARY_ADD=Action( "add library item", "Users having associated role can add library items to this library item", "grant" ),
         LIBRARY_MODIFY=Action( "modify library item", "Users having associated role can modify this library item", "grant" ),
@@ -1008,7 +1008,7 @@ class GalaxyRBACAgent( RBACAgent ):
         # Add the new permissions on library_item
         for item_class, permission_class in self.library_item_assocs:
             if isinstance( library_item, item_class ):
-                for action, roles in permissions.items():
+                for action, roles in list(permissions.items()):
                     if isinstance( action, Action ):
                         action = action.action
                     for role_assoc in [ permission_class( action, library_item, role ) for role in roles ]:
@@ -1194,7 +1194,10 @@ class GalaxyRBACAgent( RBACAgent ):
         private_role_found = False
         error = False
         for k, v in get_permitted_actions( filter='DATASET' ).items():
-            in_roles = [ self.sa_session.query( self.model.Role ).get( x ) for x in listify( kwd.get( k + '_in', [] ) ) ]
+            # Change for removing the prefix '_in' from the roles select box
+            in_roles = [ self.sa_session.query( self.model.Role ).get( x ) for x in listify( kwd[ k ] ) ]
+            if not in_roles:
+                in_roles = [ self.sa_session.query( self.model.Role ).get( x ) for x in listify( kwd.get( k + '_in', [] ) ) ]
             if v == self.permitted_actions.DATASET_ACCESS and in_roles:
                 if library:
                     item = self.sa_session.query( self.model.Library ).get( item_id )

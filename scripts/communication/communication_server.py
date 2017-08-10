@@ -128,6 +128,7 @@ def crossdomain(origin=None, methods=None, headers=None,
         return update_wrapper(wrapped_function, f)
     return decorator
 
+
 script_dir = os.path.dirname(os.path.realpath( __file__))
 communication_directory = os.path.join( script_dir, 'template' )
 
@@ -203,7 +204,6 @@ def leave(message):
 
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser(description='Real-time communication server for Galaxy.')
     parser.add_argument('--port', type=int, default="7070", help='Port number on which the server should run.')
     parser.add_argument('--host', default='localhost', help='Hostname of the communication server.')

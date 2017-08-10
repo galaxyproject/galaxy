@@ -1,5 +1,8 @@
-from base import api
+import time
 
+from requests import put
+
+from base import api
 
 HIDDEN_DURING_UPLOAD_DATATYPE = "fli"
 
@@ -55,6 +58,19 @@ class DatatypesApiTestCase( api.ApiTestCase ):
                 found_fasta_to_tabular = True
 
         assert found_fasta_to_tabular
+
+    def test_converter_present_after_toolbox_reload( self ):
+        response = self._get( "tools", data={'tool_id': 'CONVERTER_fasta_to_tabular'} )
+        self._assert_status_code_is( response, 200 )
+        converters = len(response.json())
+        assert converters == 1
+        url = self._api_url( 'configuration/toolbox' )
+        put_response = put( url, params=dict( key=self.master_api_key ) )
+        self._assert_status_code_is( put_response, 200 )
+        time.sleep(2)
+        response = self._get( "tools", data={'tool_id': 'CONVERTER_fasta_to_tabular'} )
+        self._assert_status_code_is( response, 200 )
+        assert converters == len(response.json())
 
     def _index_datatypes( self, data={} ):
         response = self._get( "datatypes", data=data )

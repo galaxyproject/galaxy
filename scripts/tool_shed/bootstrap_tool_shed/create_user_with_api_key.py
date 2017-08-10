@@ -116,6 +116,7 @@ def validate_publicname( username ):
         return "Public name must contain only lower-case letters, numbers and '-'"
     return ''
 
+
 if __name__ == "__main__":
     parser = optparse.OptionParser( description='Create a user with API key.' )
     parser.add_option( '-c', dest='config', action='store', help='.ini file to retried toolshed configuration from' )

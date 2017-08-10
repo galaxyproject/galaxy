@@ -1,3 +1,5 @@
+import logging
+
 from galaxy.tools.actions import (
     DefaultToolAction,
     OutputCollections,
@@ -5,14 +7,17 @@ from galaxy.tools.actions import (
 )
 from galaxy.util.odict import odict
 
-import logging
 log = logging.getLogger( __name__ )
 
 
 class ModelOperationToolAction( DefaultToolAction ):
 
-    def check_inputs_ready( self, tool, trans, incoming, history ):
-        history, inp_data, inp_dataset_collections = self._collect_inputs(tool, trans, incoming, history)
+    def check_inputs_ready( self, tool, trans, incoming, history, execution_cache=None ):
+        if execution_cache is None:
+            execution_cache = ToolExecutionCache(trans)
+
+        current_user_roles = execution_cache.current_user_roles
+        history, inp_data, inp_dataset_collections = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
 
         tool.check_inputs_ready( inp_data, inp_dataset_collections )
 
@@ -30,7 +35,7 @@ class ModelOperationToolAction( DefaultToolAction ):
         wrapped_params = self._wrapped_params( trans, tool, incoming )
 
         out_data = odict()
-        input_collections = dict( [ (k, v[0][0]) for k, v in inp_dataset_collections.iteritems() ] )
+        input_collections = dict( (k, v[0][0]) for k, v in inp_dataset_collections.items() )
         output_collections = OutputCollections(
             trans,
             history,

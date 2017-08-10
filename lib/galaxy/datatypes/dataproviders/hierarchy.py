@@ -1,14 +1,17 @@
 """
 Dataproviders that iterate over lines from their sources.
 """
+import logging
+from xml.etree.ElementTree import (
+    Element,
+    iterparse
+)
 
-import line
-from xml.etree.ElementTree import Element, iterparse
+from . import line
 
 _TODO = """
 """
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -88,7 +91,7 @@ class XMLDataProvider( HierarchalDataProvider ):
         :param  max_depth:  the number of generations of descendents to return
         """
         if not isinstance( max_depth, int ) or max_depth >= 1:
-            for child in element.getchildren():
+            for child in element:
                 child_data = self.element_as_dict( child )
 
                 next_depth = max_depth - 1 if isinstance( max_depth, int ) else None

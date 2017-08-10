@@ -204,7 +204,9 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         job = self.__get_job(trans, id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
-        tool = self.app.toolbox.get_tool( job.tool_id, job.tool_version )
+        tool = self.app.toolbox.get_tool( job.tool_id, kwd.get('tool_version') or job.tool_version )
+        if tool is None:
+            raise exceptions.ObjectNotFound( "Requested tool not found" )
         if not tool.is_workflow_compatible:
             raise exceptions.ConfigDoesNotAllowException( "Tool '%s' cannot be rerun." % ( job.tool_id ) )
         return tool.to_json(trans, {}, job=job)
@@ -350,3 +352,34 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
             if all( list( a.dataset.deleted is False for a in job.output_datasets ) ):
                 out.append( self.encode_all_ids( trans, job.to_dict( 'element' ), True ) )
         return out
+
+    @expose_api
+    def error( self, trans, id, **kwd ):
+        """
+        error( trans, id )
+        * POST /api/jobs/{id}/error
+            submits a bug report via the API.
+
+        :type   id: string
+        :param  id: Encoded job id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing information regarding where the error report was sent.
+        """
+        # Get dataset on which this error was triggered
+        try:
+            decoded_dataset_id = self.decode_id( kwd['dataset_id'] )
+        except Exception:
+            raise exceptions.MalformedId()
+        dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( decoded_dataset_id )
+
+        # Get job
+        job = self.__get_job( trans, id )
+        tool = trans.app.toolbox.get_tool( job.tool_id, tool_version=job.tool_version ) or None
+        messages = trans.app.error_reports.default_error_plugin.submit_report(
+            dataset, job, tool, user_submission=True, user=trans.user,
+            email=kwd.get('email', trans.user.email),
+            message=kwd.get('message', None)
+        )
+
+        return { 'messages': messages }

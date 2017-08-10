@@ -675,6 +675,7 @@ var FolderToolbarView = Backbone.View.extend({
     var link_data = this.modal.$el.find( '.link-checkbox' ).is( ':checked' );
     var file_type = this.select_extension.value();
     var dbkey = this.select_genome.value();
+    var tag_using_filenames = this.modal.$el.find( '.tag-files' ).is( ':checked' );
     var selection_type = selected_nodes[0].type;
     var paths = [];
     if ( selected_nodes.length < 1 ){
@@ -694,13 +695,15 @@ var FolderToolbarView = Backbone.View.extend({
                                           link_data: link_data,
                                           source: full_source,
                                           file_type: file_type,
-                                          dbkey: dbkey } );
+                                          dbkey: dbkey,
+                                          tag_using_filenames: tag_using_filenames } );
       } else if ( selection_type === 'file' ){
         var full_source = options.source + '_file';
         this.chainCallImportingUserdirFiles( { paths : paths,
                                                file_type: file_type,
                                                dbkey: dbkey,
-                                               source: full_source } );
+                                               source: full_source,
+                                               tag_using_filenames: tag_using_filenames } );
       }
     }
   },
@@ -729,27 +732,34 @@ var FolderToolbarView = Backbone.View.extend({
    */
   addAllDatasetsFromHistory : function (){
     var checked_hdas = this.modal.$el.find( '#selected_history_content' ).find( ':checked' );
-    var history_dataset_ids = [];
-    var hdas_to_add = [];
+    var history_item_ids = [];  // can be hda or hdca
+    var history_item_types = [];
+    var items_to_add = [];
     if ( checked_hdas.length < 1 ){
       mod_toastr.info( 'You must select some datasets first.' );
     } else {
       this.modal.disableButton( 'Add' );
       checked_hdas.each(function(){
         var hid = $( this.parentElement ).data( 'id' );
-          if ( hid ) {
-            history_dataset_ids.push( hid );
-          }
+        if ( hid ) {
+          var item_type = $( this.parentElement ).data( 'name' );
+          history_item_ids.push( hid );
+          history_item_types.push( item_type );
+        }
       });
-      for ( var i = history_dataset_ids.length - 1; i >= 0; i-- ) {
-        history_dataset_id = history_dataset_ids[i];
+      for ( var i = history_item_ids.length - 1; i >= 0; i-- ) {
+        history_item_id = history_item_ids[i];
         var folder_item = new mod_library_model.Item();
         folder_item.url = Galaxy.root + 'api/folders/' + this.options.id + '/contents';
-        folder_item.set( { 'from_hda_id':history_dataset_id } );
-        hdas_to_add.push( folder_item );
+        if (history_item_types[i] === 'collection') {
+          folder_item.set({'from_hdca_id': history_item_id});
+        } else {
+          folder_item.set({'from_hda_id': history_item_id});
+        }
+        items_to_add.push(folder_item);
       }
-      this.initChainCallControl( { length: hdas_to_add.length, action: 'adding_datasets' } );
-      this.chainCallAddingHdas( hdas_to_add );
+      this.initChainCallControl( { length: items_to_add.length, action: 'adding_datasets' } );
+      this.chainCallAddingHdas( items_to_add );
     }
   },
 
@@ -764,11 +774,11 @@ var FolderToolbarView = Backbone.View.extend({
     var popped_item = history_item_set.pop();
     if ( typeof popped_item == "undefined" ) {
       if ( this.options.chain_call_control.failed_number === 0 ){
-        mod_toastr.success( 'Selected datasets imported into history. Click this to start analyzing it.', '', { onclick: function() { window.location='/' } } );
+        mod_toastr.success( 'Selected datasets imported into history. Click this to start analyzing it.', '', { onclick: function() { window.location=Galaxy.root } } );
       } else if ( this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number ){
         mod_toastr.error( 'There was an error and no datasets were imported into history.' );
       } else if ( this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number ){
-        mod_toastr.warning( 'Some of the datasets could not be imported into history. Click this to see what was imported.', '', { onclick: function() { window.location='/' } } );
+        mod_toastr.warning( 'Some of the datasets could not be imported into history. Click this to see what was imported.', '', { onclick: function() { window.location=Galaxy.root } } );
       }
       Galaxy.modal.hide();
       return true;
@@ -787,9 +797,10 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   /**
-   * Take the array of paths and createa request for each of them
+   * Take the array of paths and create a request for each of them
    * calling them in chain. Update the progress bar in between each.
-   * @param  {array} paths           paths relative to user folder on Galaxy
+   * @param  {array} paths                    paths relative to user folder on Galaxy
+   * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
    */
   chainCallImportingUserdirFiles: function( options ){
 
@@ -808,7 +819,8 @@ var FolderToolbarView = Backbone.View.extend({
                                                        '&source=' + options.source +
                                                        '&path=' + popped_item +
                                                        '&file_type=' + options.file_type +
-                                                       '&dbkey=' + options.dbkey ) )
+                                                       '&dbkey=' + options.dbkey +
+                                                       '&tag_using_filenames=' + options.tag_using_filenames ) )
     promise.done( function( response ){
               that.updateProgress();
               that.chainCallImportingUserdirFiles( options );
@@ -823,11 +835,12 @@ var FolderToolbarView = Backbone.View.extend({
   /**
    * Take the array of paths and createa request for each of them
    * calling them in chain. Update the progress bar in between each.
-   * @param  {array} paths           paths relative to Galaxy root folder
-   * @param  {boolean} preserve_dirs indicates whether to preserve folder structure
-   * @param  {boolean} link_data     copy files to Galaxy or link instead
-   * @param  {str} source            string representing what type of folder
-   *                                 is the source of import
+   * @param  {array} paths                    paths relative to Galaxy root folder
+   * @param  {boolean} preserve_dirs          indicates whether to preserve folder structure
+   * @param  {boolean} link_data              copy files to Galaxy or link instead
+   * @param  {str} source                     string representing what type of folder
+   *                                          is the source of import
+   * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
    */
   chainCallImportingFolders: function( options ){
     // TODO need to check which paths to call
@@ -849,7 +862,8 @@ var FolderToolbarView = Backbone.View.extend({
                                                           '&preserve_dirs=' + options.preserve_dirs +
                                                           '&link_data=' + options.link_data +
                                                           '&file_type=' + options.file_type +
-                                                          '&dbkey=' + options.dbkey ) )
+                                                          '&dbkey=' + options.dbkey +
+                                                          '&tag_using_filenames=' + options.tag_using_filenames ) )
     promise.done(function(response){
               that.updateProgress();
               that.chainCallImportingFolders( options );
@@ -1144,7 +1158,7 @@ var FolderToolbarView = Backbone.View.extend({
               '&nbsp;Details',
             '</button>',
             '<span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki">',
-              '<a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank">',
+              '<a href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">',
                 '<button class="primary-button" type="button">',
                   '<span class="fa fa-question-circle"></span>',
                   '&nbsp;Help',
@@ -1334,7 +1348,13 @@ var FolderToolbarView = Backbone.View.extend({
       '<div>',
         'Type: <span id="library_extension_select" class="library-extension-select" />',
         'Genome: <span id="library_genome_select" class="library-genome-select" />',
-        '</div>',
+      '</div>',
+      '<div>',
+         '<label class="checkbox-inline tag-files">',
+            'Tag datasets based on file names.',
+            '<input class="tag-files" type="checkbox" value="tag_using_filenames" checked="checked">',
+         '</label>',
+      '</div>',
     '</div>'
     ].join(''));
   },
@@ -1387,9 +1407,26 @@ var FolderToolbarView = Backbone.View.extend({
     '<strong>Choose the datasets to import:</strong>',
     '<ul>',
       '<% _.each(history_contents, function(history_item) { %>',
-        '<li data-id="<%= _.escape(history_item.get("id")) %>">',
-          '<input style="margin: 0;" type="checkbox"> <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %>',
-        '</li>',
+        '<% if (history_item.get("deleted") != true ) { %>',
+          '<% if (history_item.get("type") === "collection") { %>',
+              '<% var collection_type = history_item.get("collection_type") %>',
+              '<% if (collection_type === "list") { %>',
+                '<li data-id="<%= _.escape(history_item.get("id")) %>" data-name="<%= _.escape(history_item.get("type")) %>">',
+                  '<input style="margin: 0;" type="checkbox"> <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %> (Dataset Collection)',
+                '</li>',
+               '<% } else { %>',
+                 '<li><input style="margin: 0;" type="checkbox" onclick="return false;" disabled="disabled">',
+                    '<span title="You can convert this collection into a collection of type list using the Collection Tools">',
+                      ' <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %> (Dataset Collection of type <%= _.escape(collection_type) %> not supported.)',
+                    '</span>',
+                  '</li>',
+                '<% } %>',
+          '<% } else if (history_item.get("visible") === true && history_item.get("state") === "ok") { %>',
+              '<li data-id="<%= _.escape(history_item.get("id")) %>" data-name="<%= _.escape(history_item.get("type")) %>">',
+                '<input style="margin: 0;" type="checkbox"> <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %>',
+              '</li>',
+          '<% } %>',
+        '<% } %>',
       '<% }); %>',
     '</ul>'
     ].join(''));

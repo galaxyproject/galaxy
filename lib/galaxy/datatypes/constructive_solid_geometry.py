@@ -130,11 +130,12 @@ class PlyBinary(Ply, Binary):
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
 
+
 Binary.register_sniffable_binary_format("plybinary", "plybinary", PlyBinary)
 
 
 class Vtk(object):
-    """
+    r"""
     The Visualization Toolkit provides a number of source and writer objects to
     read and write popular data file formats. The Visualization Toolkit also
     provides some of its own file formats.
@@ -151,8 +152,8 @@ class Vtk(object):
     i.e., the numbers that define points coordinates, scalars, cell indices, and
     so forth.
 
-    Binary data must be placed into the file immediately after the newline (\n)
-    character from the previous ASCII keyword and parameter sequence.
+    Binary data must be placed into the file immediately after the newline
+    ('\\n') character from the previous ASCII keyword and parameter sequence.
 
     TODO: only legacy formats are currently supported and support for XML formats
     should be added.
@@ -456,7 +457,12 @@ class VtkBinary(Vtk, Binary):
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
 
+
 Binary.register_sniffable_binary_format("vtkbinary", "vtkbinary", VtkBinary)
+
+
+class STL(data.Data):
+    file_ext = "stl"
 
 
 # Utility functions

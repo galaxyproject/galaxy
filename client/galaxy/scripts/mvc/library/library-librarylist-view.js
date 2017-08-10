@@ -66,6 +66,7 @@ var LibraryListView = Backbone.View.extend({
         var template = this.templateLibraryList();
         var libraries_to_render = null;
         var models = null;
+        var is_public = function(model){ return model.get('public') === true; }
         $( ".tooltip" ).hide();
         if ( typeof options !== 'undefined' ){
             models = typeof options.models !== 'undefined' ? options.models : null;
@@ -77,12 +78,18 @@ var LibraryListView = Backbone.View.extend({
             } else {
               libraries_to_render = this.collection.where( { deleted: false } );
             }
+            if ( Galaxy.libraries.preferences.get( 'without_restricted' ) ){
+              libraries_to_render = _.filter( libraries_to_render, is_public );
+            }
         } else if ( models !== null ){
             if ( Galaxy.libraries.preferences.get( 'with_deleted' ) ){
                 libraries_to_render = models;
             } else {
                 var is_deleted = function(model){ return model.get('deleted') === false; }
-                libraries_to_render = _.filter(models, is_deleted );
+                libraries_to_render = _.filter( models, is_deleted );
+            }
+            if ( Galaxy.libraries.preferences.get( 'without_restricted' ) ) {
+              libraries_to_render = _.filter( libraries_to_render, is_public );
             }
         } else {
             libraries_to_render = [];
@@ -232,7 +239,7 @@ var LibraryListView = Backbone.View.extend({
           '<% } else{ %>',
             '<div>',
               'There are no libraries visible to you here. If you expected some to show up please consult the',
-              ' <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">library security wikipage</a>',
+              ' <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>',
               ' or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.',
             '</div>',
           '<% }%>',

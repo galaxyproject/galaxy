@@ -5,6 +5,7 @@ Script that just echos the command line.
 from __future__ import print_function
 
 import sys
+
 from six.moves.urllib.request import urlopen
 
 assert sys.version_info[:2] >= ( 2, 4 )

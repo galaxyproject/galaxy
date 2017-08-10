@@ -35,6 +35,7 @@ def localtimestamp(migrate_engine):
     else:
         raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
 
+
 SampleDataset_table = Table('sample_dataset', metadata,
                             Column( "id", Integer, primary_key=True ),
                             Column( "create_time", DateTime, default=now ),
@@ -53,8 +54,8 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         SampleDataset_table.create()
-    except Exception as e:
-        log.debug( "Creating sample_dataset table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating sample_dataset table failed.")
 
     cmd = "SELECT id, dataset_files FROM sample"
     result = migrate_engine.execute( cmd )
@@ -85,8 +86,8 @@ def upgrade(migrate_engine):
     if Sample_table is not None:
         try:
             Sample_table.c.dataset_files.drop()
-        except Exception as e:
-            log.debug( "Deleting column 'dataset_files' from the 'sample' table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Deleting column 'dataset_files' from the 'sample' table failed.")
 
 
 def downgrade(migrate_engine):

@@ -33,7 +33,7 @@ class RoleManager( base.ModelManager ):
         :type   decoded_role_id:      int
 
         :returns:   the loaded Role object
-        :rtype:     Role
+        :rtype:     galaxy.model.Role
 
         :raises: InconsistentDatabase, RequestParameterInvalidException, InternalServerError
         """

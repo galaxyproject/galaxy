@@ -5,26 +5,28 @@ from __future__ import absolute_import
 
 import abc
 import csv
-import gzip
 import logging
 import os
 import re
+import shutil
 import subprocess
+import sys
 import tempfile
 from cgi import escape
 from json import dumps
 
-from six import PY3
-
 from galaxy import util
-from galaxy.datatypes import data, metadata
+from galaxy.datatypes import binary, data, metadata
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers
-from galaxy.util.checkers import is_gzip
+from galaxy.datatypes.sniff import (
+    get_headers,
+    iter_headers
+)
+from galaxy.util import compression_utils
 
 from . import dataproviders
 
-if PY3:
+if sys.version_info > (3,):
     long = int
 
 log = logging.getLogger(__name__)
@@ -64,7 +66,7 @@ class TabularData( data.Text ):
             return False
 
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
-        with open(dataset.file_name) as f:
+        with compression_utils.get_fileobj(dataset.file_name) as f:
             f.seek(offset)
             ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
             if ck_data and ck_data[-1] != '\n':
@@ -82,7 +84,7 @@ class TabularData( data.Text ):
             return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(trans, dataset, to_ext)
+            return self._serve_raw(trans, dataset, to_ext, **kwd)
         elif dataset.metadata.columns > 50:
             # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
@@ -169,7 +171,7 @@ class TabularData( data.Text ):
                 out.append( '</th>' )
             out.append( '</tr>' )
         except Exception as exc:
-            log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
+            log.exception( 'make_html_peek_header failed on HDA %s', dataset.id )
             raise Exception( "Can't create peek header %s" % str( exc ) )
         return "".join( out )
 
@@ -200,7 +202,7 @@ class TabularData( data.Text ):
                             out.append( '<td>%s</td>' % escape( elem ) )
                         out.append( '</tr>' )
         except Exception as exc:
-            log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
+            log.exception( 'make_html_peek_rows failed on HDA %s', dataset.id )
             raise Exception( "Can't create peek rows %s" % str( exc ) )
         return "".join( out )
 
@@ -327,49 +329,48 @@ class Tabular( TabularData ):
         first_line_column_types = [default_column_type]  # default value is one column of type str
         if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
-            dataset_fh = open( dataset.file_name )
-            i = 0
-            while True:
-                line = dataset_fh.readline()
-                if not line:
-                    break
-                line = line.rstrip( '\r\n' )
-                if i < skip or not line or line.startswith( '#' ):
-                    # We'll call blank lines comments
-                    comment_lines += 1
-                else:
-                    data_lines += 1
-                    if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
-                        fields = line.split( '\t' )
-                        for field_count, field in enumerate( fields ):
-                            if field_count >= len( column_types ):  # found a previously unknown column, we append None
-                                column_types.append( None )
-                            column_type = guess_column_type( field )
-                            if type_overrules_type( column_type, column_types[field_count] ):
-                                column_types[field_count] = column_type
-                    if i == 0 and requested_skip is None:
-                        # This is our first line, people seem to like to upload files that have a header line, but do not
-                        # start with '#' (i.e. all column types would then most likely be detected as str).  We will assume
-                        # that the first line is always a header (this was previous behavior - it was always skipped).  When
-                        # the requested skip is None, we only use the data from the first line if we have no other data for
-                        # a column.  This is far from perfect, as
-                        # 1,2,3	1.1	2.2	qwerty
-                        # 0	0		1,2,3
-                        # will be detected as
-                        # "column_types": ["int", "int", "float", "list"]
-                        # instead of
-                        # "column_types": ["list", "float", "float", "str"]  *** would seem to be the 'Truth' by manual
-                        # observation that the first line should be included as data.  The old method would have detected as
-                        # "column_types": ["int", "int", "str", "list"]
-                        first_line_column_types = column_types
-                        column_types = [ None for col in first_line_column_types ]
-                if max_data_lines is not None and data_lines >= max_data_lines:
-                    if dataset_fh.tell() != dataset.get_size():
-                        data_lines = None  # Clear optional data_lines metadata value
-                        comment_lines = None  # Clear optional comment_lines metadata value; additional comment lines could appear below this point
-                    break
-                i += 1
-            dataset_fh.close()
+            with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
+                i = 0
+                while True:
+                    line = dataset_fh.readline()
+                    if not line:
+                        break
+                    line = line.rstrip( '\r\n' )
+                    if i < skip or not line or line.startswith( '#' ):
+                        # We'll call blank lines comments
+                        comment_lines += 1
+                    else:
+                        data_lines += 1
+                        if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
+                            fields = line.split( '\t' )
+                            for field_count, field in enumerate( fields ):
+                                if field_count >= len( column_types ):  # found a previously unknown column, we append None
+                                    column_types.append( None )
+                                column_type = guess_column_type( field )
+                                if type_overrules_type( column_type, column_types[field_count] ):
+                                    column_types[field_count] = column_type
+                        if i == 0 and requested_skip is None:
+                            # This is our first line, people seem to like to upload files that have a header line, but do not
+                            # start with '#' (i.e. all column types would then most likely be detected as str).  We will assume
+                            # that the first line is always a header (this was previous behavior - it was always skipped).  When
+                            # the requested skip is None, we only use the data from the first line if we have no other data for
+                            # a column.  This is far from perfect, as
+                            # 1,2,3	1.1	2.2	qwerty
+                            # 0	0		1,2,3
+                            # will be detected as
+                            # "column_types": ["int", "int", "float", "list"]
+                            # instead of
+                            # "column_types": ["list", "float", "float", "str"]  *** would seem to be the 'Truth' by manual
+                            # observation that the first line should be included as data.  The old method would have detected as
+                            # "column_types": ["int", "int", "str", "list"]
+                            first_line_column_types = column_types
+                            column_types = [ None for col in first_line_column_types ]
+                    if max_data_lines is not None and data_lines >= max_data_lines:
+                        if dataset_fh.tell() != dataset.get_size():
+                            data_lines = None  # Clear optional data_lines metadata value
+                            comment_lines = None  # Clear optional comment_lines metadata value; additional comment lines could appear below this point
+                        break
+                    i += 1
 
         # we error on the larger number of columns
         # first we pad our column_types by using data from first line
@@ -409,7 +410,7 @@ class Taxonomy( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super(Taxonomy, self).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
 
 @dataproviders.decorators.has_dataproviders
@@ -429,7 +430,7 @@ class Sam( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Sam, self ).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def sniff( self, filename ):
         """
@@ -615,7 +616,7 @@ class Pileup( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Pileup, self ).make_html_table( dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'baseCol': 'Base'} )
+        return self.make_html_table( dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'baseCol': 'Base'} )
 
     def repair_methods( self, dataset ):
         """Return options for removing errors along with a description"""
@@ -640,7 +641,7 @@ class Pileup( Tabular ):
         >>> Pileup().sniff( fname )
         True
         """
-        headers = get_headers( filename, '\t' )
+        headers = iter_headers( filename, '\t' )
         try:
             for hdr in headers:
                 if hdr and not hdr[0].startswith( '#' ):
@@ -672,7 +673,7 @@ class Pileup( Tabular ):
 
 
 @dataproviders.decorators.has_dataproviders
-class Vcf( Tabular ):
+class BaseVcf( Tabular ):
     """ Variant Call Format for describing SNPs and other simple genome variations. """
     edam_format = "format_3016"
     track_type = "VariantTrack"
@@ -692,10 +693,10 @@ class Vcf( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return super( Vcf, self ).make_html_table( dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def set_meta( self, dataset, **kwd ):
-        super( Vcf, self ).set_meta( dataset, **kwd )
+        super( BaseVcf, self ).set_meta( dataset, **kwd )
         source = open( dataset.file_name )
 
         # Skip comments.
@@ -732,6 +733,46 @@ class Vcf( Tabular ):
     def genomic_region_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.genomic_region_dataprovider( dataset, **settings )
+
+
+class Vcf ( BaseVcf ):
+    extension = 'vcf'
+
+
+class VcfGz( BaseVcf, binary.Binary):
+    extension = 'vcf.gz'
+    compressed = True
+
+    MetadataElement( name="tabix_index", desc="Vcf Index File", param=metadata.FileParameter, file_ext="tbi", readonly=True, no_value=None, visible=False, optional=True )
+
+    def set_meta( self, dataset, **kwd ):
+        super(BaseVcf, self).set_meta(dataset, **kwd)
+        """ Creates the index for the VCF file. """
+        # These metadata values are not accessible by users, always overwrite
+        index_file = dataset.metadata.bcf_index
+        if not index_file:
+            index_file = dataset.metadata.spec['tabix_index'].param.new_file( dataset=dataset )
+        # Create the bcf index
+        # $ bcftools index
+        # Usage: bcftools index <in.bcf>
+
+        dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
+                                        '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) ) + ".vcf.gz"
+        os.symlink( dataset.file_name, dataset_symlink )
+
+        stderr_name = tempfile.NamedTemporaryFile( prefix="bcf_index_stderr" ).name
+        command = [ 'bcftools', 'index', '-t', dataset_symlink ]
+        try:
+            subprocess.check_call( args=command, stderr=open( stderr_name, 'wb' ) )
+            shutil.move( dataset_symlink + '.tbi', index_file.file_name )  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
+        except Exception as e:
+            stderr = open( stderr_name ).read().strip()
+            raise Exception('Error setting BCF metadata: %s' % (stderr or str(e)))
+        finally:
+            # Remove temp file and symlink
+            os.remove( stderr_name )
+            os.remove( dataset_symlink )
+        dataset.metadata.tabix_index = index_file
 
 
 class Eland( Tabular ):
@@ -789,12 +830,7 @@ class Eland( Tabular ):
             - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
-        try:
-            compress = is_gzip(filename)
-            if compress:
-                fh = gzip.GzipFile(filename, 'r')
-            else:
-                fh = open( filename )
+        with compression_utils.get_fileobj(filename, gzip_only=True) as fh:
             count = 0
             while True:
                 line = fh.readline()
@@ -805,59 +841,46 @@ class Eland( Tabular ):
                     line_pieces = line.split('\t')
                     if len(line_pieces) != 22:
                         return False
-                    try:
-                        if long(line_pieces[1]) < 0:
-                            raise Exception('Out of range')
-                        if long(line_pieces[2]) < 0:
-                            raise Exception('Out of range')
-                        if long(line_pieces[3]) < 0:
-                            raise Exception('Out of range')
-                        int(line_pieces[4])
-                        int(line_pieces[5])
-                        # can get a lot more specific
-                    except ValueError:
-                        fh.close()
-                        return False
+                    if long(line_pieces[1]) < 0:
+                        raise Exception('Out of range')
+                    if long(line_pieces[2]) < 0:
+                        raise Exception('Out of range')
+                    if long(line_pieces[3]) < 0:
+                        raise Exception('Out of range')
+                    int(line_pieces[4])
+                    int(line_pieces[5])
+                    # can get a lot more specific
                     count += 1
                     if count == 5:
                         break
             if count > 0:
-                fh.close()
                 return True
-        except:
-            pass
-        fh.close()
         return False
 
     def set_meta( self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd ):
         if dataset.has_data():
-            compress = is_gzip(dataset.file_name)
-            if compress:
-                dataset_fh = gzip.GzipFile(dataset.file_name, 'r')
-            else:
-                dataset_fh = open( dataset.file_name )
-            lanes = {}
-            tiles = {}
-            barcodes = {}
-            reads = {}
-            # Should always read the entire file (until we devise a more clever way to pass metadata on)
-            # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            # If the dataset is larger than optional_metadata, just count comment lines.
-            #     dataset.metadata.data_lines = None
-            # else:
-            # Otherwise, read the whole thing and set num data lines.
-            for i, line in enumerate(dataset_fh):
-                if line:
-                    line_pieces = line.split('\t')
-                    if len(line_pieces) != 22:
-                        raise Exception('%s:%d:Corrupt line!' % (dataset.file_name, i))
-                    lanes[line_pieces[2]] = 1
-                    tiles[line_pieces[3]] = 1
-                    barcodes[line_pieces[6]] = 1
-                    reads[line_pieces[7]] = 1
-                pass
-            dataset.metadata.data_lines = i + 1
-            dataset_fh.close()
+            with compression_utils.get_fileobj(dataset.file_name, gzip_only=True) as dataset_fh:
+                lanes = {}
+                tiles = {}
+                barcodes = {}
+                reads = {}
+                # Should always read the entire file (until we devise a more clever way to pass metadata on)
+                # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                # If the dataset is larger than optional_metadata, just count comment lines.
+                #     dataset.metadata.data_lines = None
+                # else:
+                # Otherwise, read the whole thing and set num data lines.
+                for i, line in enumerate(dataset_fh):
+                    if line:
+                        line_pieces = line.split('\t')
+                        if len(line_pieces) != 22:
+                            raise Exception('%s:%d:Corrupt line!' % (dataset.file_name, i))
+                        lanes[line_pieces[2]] = 1
+                        tiles[line_pieces[3]] = 1
+                        barcodes[line_pieces[6]] = 1
+                        reads[line_pieces[7]] = 1
+                    pass
+                dataset.metadata.data_lines = i + 1
             dataset.metadata.comment_lines = 0
             dataset.metadata.columns = 21
             dataset.metadata.column_types = ['str', 'int', 'int', 'int', 'int', 'int', 'str', 'int', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str']
@@ -976,31 +999,37 @@ class BaseCSV( TabularData ):
             return False
 
     def set_meta( self, dataset, **kwd ):
-        with open(dataset.file_name, 'r') as csvfile:
-            # Parse file with the correct dialect
-            reader = csv.reader(csvfile, self.dialect)
-            data_row = None
-            header_row = None
-            try:
-                header_row = next(reader)
-                data_row = next(reader)
-                for row in reader:
+        column_types = []
+        header_row = []
+        data_row = []
+        data_lines = 0
+        if dataset.has_data():
+            with open(dataset.file_name, 'r') as csvfile:
+                # Parse file with the correct dialect
+                reader = csv.reader(csvfile, self.dialect)
+                try:
+                    header_row = next(reader)
+                    data_row = next(reader)
+                    for row in reader:
+                        pass
+                except StopIteration:
                     pass
-            except csv.Error as e:
-                raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
+                except csv.Error as e:
+                    raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
+                else:
+                    data_lines = reader.line_num - 1
 
-            # Guess column types
-            column_types = []
-            for cell in data_row:
-                column_types.append(self.guess_type(cell))
+        # Guess column types
+        for cell in data_row:
+            column_types.append(self.guess_type(cell))
 
-            # Set metadata
-            dataset.metadata.data_lines = reader.line_num - 1
-            dataset.metadata.comment_lines = 1
-            dataset.metadata.column_types = column_types
-            dataset.metadata.columns = max( len( header_row ), len( data_row ) )
-            dataset.metadata.column_names = header_row
-            dataset.metadata.delimiter = reader.dialect.delimiter
+        # Set metadata
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.comment_lines = int(bool(header_row))
+        dataset.metadata.column_types = column_types
+        dataset.metadata.columns = max( len( header_row ), len( data_row ) )
+        dataset.metadata.column_names = header_row
+        dataset.metadata.delimiter = self.dialect.delimiter
 
 
 @dataproviders.decorators.has_dataproviders
@@ -1059,31 +1088,31 @@ class ConnectivityTable( Tabular ):
         The ConnectivityTable (CT) is a file format used for describing
         RNA 2D structures by tools including MFOLD, UNAFOLD and
         the RNAStructure package. The tabular file format is defined as
-        follows:
+        follows::
 
-5	energy = -12.3	sequence name
-1	G	0	2	0	1
-2	A	1	3	0	2
-3	A	2	4	0	3
-4	A	3	5	0	4
-5	C	4	6	1	5
+            5	energy = -12.3	sequence name
+            1	G	0	2	0	1
+            2	A	1	3	0	2
+            3	A	2	4	0	3
+            4	A	3	5	0	4
+            5	C	4	6	1	5
 
         The links given at the edam ontology page do not indicate what
         type of separator is used (space or tab) while different
         implementations exist. The implementation that uses spaces as
-        separator (implemented in RNAStructure) is as follows:
+        separator (implemented in RNAStructure) is as follows::
 
-   10    ENERGY = -34.8  seqname
-    1 G       0    2    9    1
-    2 G       1    3    8    2
-    3 G       2    4    7    3
-    4 a       3    5    0    4
-    5 a       4    6    0    5
-    6 a       5    7    0    6
-    7 C       6    8    3    7
-    8 C       7    9    2    8
-    9 C       8   10    1    9
-   10 a       9    0    0   10
+            10    ENERGY = -34.8  seqname
+            1 G       0    2    9    1
+            2 G       1    3    8    2
+            3 G       2    4    7    3
+            4 a       3    5    0    4
+            5 a       4    6    0    5
+            6 a       5    7    0    6
+            7 C       6    8    3    7
+            8 C       7    9    2    8
+            9 C       8   10    1    9
+            10 a       9    0    0   10
         """
 
         i = 0

@@ -57,11 +57,8 @@ REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemon
 
 log = logging.getLogger(__name__)
 
-base_file = os.path.basename(__file__)
-if base_file == 'main.py':
-    GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-elif base_file == 'galaxy-main':
-    GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+real_file = os.path.realpath(__file__)
+GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(real_file), os.pardir))
 GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR, "lib")
 DEFAULT_INI_APP = "main"
 DEFAULT_INIS = ["config/galaxy.ini", "universe_wsgi.ini", "config/galaxy.ini.sample"]

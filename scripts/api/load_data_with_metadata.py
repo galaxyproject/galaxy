@@ -10,6 +10,7 @@ python load_data_with_metadata.py <api_key> <api_url> /data/folder "API Imports"
 NOTE:  The upload method used requires the data library filesystem upload allow_library_path_paste
 """
 from __future__ import print_function
+
 import argparse
 import json
 import os
@@ -70,6 +71,7 @@ def main(api_key, api_url, in_folder, data_library, uuid_field=None):
             if os.path.isfile(fullpath) and os.path.exists(fullpath + ".json"):
                 print("Loading", fullpath)
                 load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_field)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

@@ -12,7 +12,7 @@ import tempfile
 
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
-from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.sniff import iter_headers
 from galaxy.util import nice_size, string_as_bool
 
 log = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class Html( Text ):
         >>> Html().sniff( fname )
         True
         """
-        headers = get_headers( filename, None )
+        headers = iter_headers( filename, None )
         try:
             for i, hdr in enumerate(headers):
                 if hdr and hdr[0].lower().find( '<html>' ) >= 0:
@@ -68,6 +68,10 @@ class Json( Text ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
+
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'application/json'
 
     def sniff( self, filename ):
         """
@@ -108,7 +112,7 @@ class Ipynb( Json ):
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
-            dataset.blurb = "IPython Notebook"
+            dataset.blurb = "Jupyter Notebook"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
@@ -129,7 +133,7 @@ class Ipynb( Json ):
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         config = trans.app.config
-        trust = getattr( config, 'trust_ipython_notebook_conversion', False )
+        trust = getattr( config, 'trust_jupyter_notebook_conversion', False )
         if trust:
             return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
         else:
@@ -138,19 +142,19 @@ class Ipynb( Json ):
     def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         preview = string_as_bool( preview )
         if to_ext or not preview:
-            return self._serve_raw(trans, dataset, to_ext)
+            return self._serve_raw(trans, dataset, to_ext, **kwd)
         else:
             ofile_handle = tempfile.NamedTemporaryFile(delete=False)
             ofilename = ofile_handle.name
             ofile_handle.close()
             try:
-                cmd = 'ipython nbconvert --to html --template full %s --output %s' % (dataset.file_name, ofilename)
+                cmd = 'jupyter nbconvert --to html --template full %s --output %s' % (dataset.file_name, ofilename)
                 log.info("Calling command %s" % cmd)
                 subprocess.call(cmd, shell=True)
                 ofilename = '%s.html' % ofilename
             except:
                 ofilename = dataset.file_name
-                log.exception( 'Command "%s" failed. Could not convert the IPython Notebook to HTML, defaulting to plain text.' % cmd )
+                log.exception( 'Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', cmd )
             return open( ofilename )
 
     def set_meta( self, dataset, **kwd ):
@@ -424,7 +428,7 @@ class SnpEffDb( Text ):
         # search data_dir/genome_version for files
         regulation_pattern = 'regulation_(.+).bin'
         #  annotation files that are included in snpEff by a flag
-        annotations_dict = {'nextProt.bin': '-nextprot', 'motif.bin': '-motif'}
+        annotations_dict = {'nextProt.bin': '-nextprot', 'motif.bin': '-motif', 'interactions.bin': '-interaction'}
         regulations = []
         annotations = []
         genome_version = None

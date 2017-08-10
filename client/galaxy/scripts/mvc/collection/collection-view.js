@@ -45,6 +45,7 @@ var CollectionView = _super.extend(
         this.parentName = attributes.parentName;
         /** foldout or drilldown */
         this.foldoutStyle = attributes.foldoutStyle || 'foldout';
+        this.downloadUrl = this.model.attributes.url + '/download';
     },
 
     _queueNewRender : function( $newRender, speed ) {
@@ -169,7 +170,16 @@ CollectionView.prototype.templates = (function(){
                     '<% } %>',
                 '</div>',
             '</div>',
-        '</div>'
+
+            '<div class="tags-display"></div>',
+
+            '<div class="actions">',
+                '<a class="download-btn icon-btn" ',
+                    'href="<%- view.downloadUrl %>', '" title="" download="" data-original-title="Download Collection">',
+                    '<span class="fa fa-floppy-o"></span>',
+                '</a>',
+            '</div>',
+        '</div>',
     ], 'collection' );
 
     return _.extend( _.clone( _super.prototype.templates ), {

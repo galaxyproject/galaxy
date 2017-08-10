@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
-import os
 import logging
+import os
 import time
 import traceback
 from datetime import timedelta
@@ -15,16 +15,20 @@ except ImportError as exc:
                           'this feature, please install it or correct the '
                           'following error:\nImportError %s' % str(exc))
 
-from galaxy import model
-from galaxy import util
-from galaxy.util.bunch import Bunch
+from galaxy import (
+    model,
+    util
+)
 from galaxy.jobs import JobDestination
-from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
-
+from galaxy.jobs.runners import (
+    AsynchronousJobRunner,
+    AsynchronousJobState
+)
+from galaxy.util.bunch import Bunch
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'PBSJobRunner' ]
+__all__ = ( 'PBSJobRunner', )
 
 CLUSTER_ERROR_MESSAGE = "Job cannot be completed due to a cluster error, please retry it later: %s"
 

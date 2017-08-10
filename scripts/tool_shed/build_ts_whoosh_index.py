@@ -210,6 +210,7 @@ def get_sa_session_and_needed_config_settings( path_to_tool_shed_config ):
     model = galaxy.webapps.tool_shed.model.mapping.init( config_settings.file_path, db_con, engine_options={}, create_tables=False )
     return model.context.current, config_settings
 
+
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-c", "--config", dest="path_to_tool_shed_config", default="config/tool_shed.ini", help="specify tool_shed.ini location")

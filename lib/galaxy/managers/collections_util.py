@@ -1,6 +1,7 @@
 import logging
 
 from galaxy import exceptions, model, web
+from galaxy.util import string_as_bool
 
 log = logging.getLogger( __name__ )
 
@@ -26,6 +27,7 @@ def api_payload_to_create_params( payload ):
         collection_type=payload.get( "collection_type" ),
         element_identifiers=payload.get( "element_identifiers" ),
         name=payload.get( "name", None ),
+        hide_source_items=string_as_bool( payload.get( "hide_source_items", False ) )
     )
     return params
 
@@ -63,6 +65,32 @@ def validate_input_element_identifiers( element_identifiers ):
             validate_input_element_identifiers( element_identifier[ "element_identifiers" ] )
 
 
+def get_hda_and_element_identifiers(dataset_collection_instance):
+    name = dataset_collection_instance.name
+    names = []
+    hdas = []
+    collection = dataset_collection_instance.collection
+    if collection.has_subcollections:
+        for element in collection.elements:
+            subnames, subhdas = get_subcollections(element.child_collection, name="%s/%s" % (name, element.element_identifier))
+            names.extend(subnames)
+            hdas.extend(subhdas)
+    else:
+        for element in collection.elements:
+            names.append("%s/%s" % (name, element.element_identifier))
+            hdas.append(element.dataset_instance)
+    return names, hdas
+
+
+def get_subcollections(collection, name=""):
+    names = []
+    hdas = []
+    for element in collection.elements:
+        names.append("%s/%s" % (name, element.element_identifier))
+        hdas.append(element.dataset_instance)
+    return names, hdas
+
+
 def dictify_dataset_collection_instance( dataset_collection_instance, parent, security, view="element" ):
     dict_value = dataset_collection_instance.to_dict( view=view )
     encoded_id = security.encode_id( dataset_collection_instance.id )
@@ -93,5 +121,6 @@ def dictify_element( element ):
 
     dictified[ "object" ] = object_detials
     return dictified
+
 
 __all__ = ( 'api_payload_to_create_params', 'dictify_dataset_collection_instance' )

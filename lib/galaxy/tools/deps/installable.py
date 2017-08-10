@@ -2,12 +2,13 @@
 
 import logging
 import os
-
 from abc import (
     ABCMeta,
     abstractmethod,
     abstractproperty,
 )
+
+import six
 
 from galaxy.util.filelock import (
     FileLock,
@@ -17,10 +18,9 @@ from galaxy.util.filelock import (
 log = logging.getLogger(__name__)
 
 
+@six.add_metaclass(ABCMeta)
 class InstallableContext(object):
     """Represent a directory/configuration of something that can be installed."""
-
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def is_installed(self):
@@ -64,14 +64,14 @@ def ensure_installed(installable_context, install_func, auto_init):
             installed = True
         return installed
 
-    if not os.path.exists(parent_path):
+    if not os.path.lexists(parent_path):
         os.mkdir(parent_path)
 
     try:
         if auto_init and os.access(parent_path, os.W_OK):
-            with FileLock(os.path.join(parent_path, desc.lower())):
+            with FileLock(os.path.join(parent_path, desc.lower()), timeout=300):
                 return _check()
         else:
             return _check()
     except FileLockException:
-        return ensure_installed(installable_context, auto_init)
+        raise Exception("Failed to get file lock for %s" % os.path.join(parent_path, desc.lower()))

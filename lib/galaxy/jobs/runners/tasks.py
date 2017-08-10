@@ -1,17 +1,15 @@
-import logging
-
-from galaxy import model
-
-import os
 import errno
+import logging
+import os
 from time import sleep
 
+from galaxy import model
 from galaxy.jobs import TaskWrapper
 from galaxy.jobs.runners import BaseJobRunner
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'TaskedJobRunner' ]
+__all__ = ( 'TaskedJobRunner', )
 
 
 class TaskedJobRunner( BaseJobRunner ):
@@ -117,7 +115,7 @@ class TaskedJobRunner( BaseJobRunner ):
             stdout, stderr = splitter.do_merge(job_wrapper, task_wrappers)
         except Exception:
             job_wrapper.fail( "failure running job", exception=True )
-            log.exception("failure running job %d" % job_wrapper.job_id)
+            log.exception("failure running job %d", job_wrapper.job_id)
             return
 
         # run the metadata setting script here

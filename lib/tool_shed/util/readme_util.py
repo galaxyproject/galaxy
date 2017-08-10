@@ -45,7 +45,7 @@ def build_readme_files_dict( app, repository, changeset_revision, metadata, tool
                         text = unicodify( f.read() )
                         f.close()
                     except Exception as e:
-                        log.exception( "Error reading README file '%s' from disk: %s" % ( str( relative_path_to_readme_file ), str( e ) ) )
+                        log.exception( "Error reading README file '%s' from disk", str( relative_path_to_readme_file ) )
                         text = None
                     if text:
                         text_of_reasonable_length = basic_util.size_string( text )
@@ -58,7 +58,7 @@ def build_readme_files_dict( app, repository, changeset_revision, metadata, tool
                                                                                  app.security.encode_id( repository.id ),
                                                                                  text_of_reasonable_length )
                             except Exception as e:
-                                log.exception( "Exception in build_readme_files_dict, so images may not be properly displayed:\n%s" % str( e ) )
+                                log.exception( "Exception in build_readme_files_dict, so images may not be properly displayed" )
                             finally:
                                 lock.release()
                         if readme_file_name.endswith( '.rst' ):

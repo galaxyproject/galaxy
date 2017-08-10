@@ -48,5 +48,6 @@ def main():
 
     print("%d lav blocks read, %d regions written\n" % (lavsRead, bedsWritten))
 
+
 if __name__ == "__main__":
     main()

@@ -62,6 +62,7 @@ class ExternalServiceActionJQueryGridResultHandler( ExternalServiceActionResultH
         rval = loads( result.content )
         return trans.fill_template( '/external_services/generic_jquery_grid.mako', result=rval, param_dict=param_dict, action=self.parent )
 
+
 result_type_to_class = {}
 for handler_class in [ ExternalServiceActionResultHandler, ExternalServiceActionURLRedirectResultHandler, ExternalServiceActionJQueryGridResultHandler, ExternalServiceActionJSONResultHandler ]:
     result_type_to_class[handler_class.type] = handler_class

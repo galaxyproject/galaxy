@@ -2,9 +2,9 @@
 Neo4j Composite Dataset
 """
 import logging
-import sys
-import shutil
 import os
+import shutil
+import sys
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
@@ -29,7 +29,7 @@ class Neo4j(Html):
             '<html><head><title>Files for Composite Dataset (%s)</title></head><p/>\
             This composite dataset is composed of the following files:<p/><ul>' % (
                 self.file_ext)]
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             opt_text = ''
             if composite_file.optional:
                 opt_text = ' (optional)'
@@ -127,6 +127,7 @@ class Neo4jDB(Neo4j, Data):
         self.add_composite_file('neostore.schemastore.db', is_binary=True)
         self.add_composite_file('neostore.schemastore.db.id', is_binary=True)
         self.add_composite_file('neostore.transaction.db.0', is_binary=True)
+
 
 if __name__ == '__main__':
     import doctest

@@ -1,16 +1,15 @@
 import logging
 import os
-import sys
-sys.path.append("")
 import unittest
-import mockGalaxy as mg
-import ymltests as yt
-import galaxy.jobs.dynamic_tool_destination as dt
 
-from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
 from testfixtures import log_capture
+
+import galaxy.jobs.dynamic_tool_destination as dt
+from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
 from galaxy.jobs.mapper import JobMappingException
 
+from . import mockGalaxy as mg
+from . import ymltests as yt
 
 theApp = mg.App( "waffles_default", "test_spec")
 script_dir = os.path.dirname(__file__)
@@ -769,6 +768,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         self.assertEqual(dt.bytes_to_str( "\t\t1000000" ), "976.56 KB")
         self.assertEqual(dt.bytes_to_str( "1000000000\n" ), "953.67 MB")
         self.assertEqual(dt.bytes_to_str( 1024, "fda" ), "1.00 KB")
+
 
 if __name__ == '__main__':
     unittest.main()

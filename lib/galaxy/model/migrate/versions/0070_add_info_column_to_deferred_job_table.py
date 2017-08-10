@@ -20,9 +20,8 @@ def upgrade(migrate_engine):
         c = Column( "info", TEXT )
         c.create( TransferJob_table )
         assert c is TransferJob_table.c.info
-    except Exception as e:
-        print("Adding info column to transfer_job table failed: %s" % str( e ))
-        log.debug( "Adding info column to transfer_job table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding info column to transfer_job table failed.")
 
 
 def downgrade(migrate_engine):
@@ -31,6 +30,5 @@ def downgrade(migrate_engine):
     try:
         TransferJob_table = Table( "transfer_job", metadata, autoload=True )
         TransferJob_table.c.info.drop()
-    except Exception as e:
-        print("Dropping info column from transfer_job table failed: %s" % str( e ))
-        log.debug( "Dropping info column from transfer_job table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping info column from transfer_job table failed.")

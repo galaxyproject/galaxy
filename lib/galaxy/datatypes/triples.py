@@ -1,12 +1,15 @@
 """
 Triple format classes
 """
-import re
-import data
 import logging
-import xml
-import text
-import binary
+import re
+
+from . import (
+    binary,
+    data,
+    text,
+    xml
+)
 
 log = logging.getLogger(__name__)
 
@@ -183,5 +186,6 @@ class HDT( binary.Binary, Triples ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
 
 binary.Binary.register_sniffable_binary_format('HDT', 'HDT', HDT)

@@ -11,7 +11,10 @@ import sys
 
 import bx.wiggle
 
-from galaxy.util.ucsc import UCSCOutWrapper, UCSCLimitException
+from galaxy.util.ucsc import (
+    UCSCLimitException,
+    UCSCOutWrapper
+)
 
 
 def stop_err( msg ):
@@ -43,6 +46,7 @@ def main():
 
     in_file.close()
     out_file.close()
+
 
 if __name__ == "__main__":
     main()

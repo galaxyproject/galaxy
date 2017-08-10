@@ -6,15 +6,16 @@ Created on 15/07/2014
 
 import logging
 
-from galaxy.exceptions import ConfigurationError
-from ..providers import AuthProvider
 from galaxy.auth import _get_bool
+from galaxy.exceptions import ConfigurationError
+
+from ..providers import AuthProvider
 
 log = logging.getLogger(__name__)
 
 
 def _get_subs(d, k, params):
-    if k not in d:
+    if k not in d or not d[k]:
         raise ConfigurationError("Missing '%s' parameter in LDAP options" % k)
     return str(d[k]).format(**params)
 
@@ -24,17 +25,17 @@ def _parse_ldap_options(ldap, options_unparsed):
     if not options_unparsed:
         return []
 
-    if "=" not in options_unparsed:
-        log.error("LDAP authenticate: Invalid syntax in <ldap-options>. Syntax should be option1=value1,option2=value2")
-        return []
-
     ldap_options = []
 
     # Valid options must start with this prefix. See help(ldap)
     prefix = "OPT_"
 
     for opt in options_unparsed.split(","):
-        key, value = opt.split("=")
+        try:
+            key, value = opt.split("=")
+        except ValueError:
+            log.warning("LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2" % opt)
+            continue
 
         try:
             pair = []
@@ -108,14 +109,18 @@ class LDAP(AuthProvider):
         else:
             ldap_options = _parse_ldap_options(ldap, ldap_options_raw)
 
+        try:
+            # setup connection
+            ldap.set_option(ldap.OPT_REFERRALS, 0)
+
+            for opt in ldap_options:
+                ldap.set_option(*opt)
+        except Exception:
+            log.exception('LDAP authenticate: set_option exception')
+            return (failure_mode, '', '')
+
         if 'search-fields' in options:
             try:
-                # setup connection
-                ldap.set_option(ldap.OPT_REFERRALS, 0)
-
-                for opt in ldap_options:
-                    ldap.set_option(*opt)
-
                 l = ldap.initialize(_get_subs(options, 'server', params))
                 l.protocol_version = 3
 
@@ -154,17 +159,9 @@ class LDAP(AuthProvider):
 
         # bind as user to check their credentials
         try:
-            # setup connection
-            ldap.set_option(ldap.OPT_REFERRALS, 0)
-
-            for opt in ldap_options:
-                ldap.set_option(*opt)
-
             l = ldap.initialize(_get_subs(options, 'server', params))
             l.protocol_version = 3
             bind_password = _get_subs(options, 'bind-password', params)
-            if not bind_password:
-                raise RuntimeError('LDAP authenticate: empty password')
             l.simple_bind_s(_get_subs(
                 options, 'bind-user', params), bind_password)
             try:
@@ -197,4 +194,5 @@ class ActiveDirectory(LDAP):
     logic in the future. """
     plugin_type = 'activedirectory'
 
-__all__ = ['LDAP', 'ActiveDirectory']
+
+__all__ = ('LDAP', 'ActiveDirectory')

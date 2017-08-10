@@ -41,7 +41,7 @@ class UsesHomebrewMixin:
             return []
 
         names = os.listdir(recipe_base_path)
-        return filter(lambda n: os.path.isdir(os.path.join(recipe_base_path, n)), names)
+        return [n for n in names if os.path.isdir(os.path.join(recipe_base_path, n))]
 
 
 class UsesToolDependencyDirMixin:
@@ -53,14 +53,10 @@ class UsesToolDependencyDirMixin:
 class UsesInstalledRepositoriesMixin:
 
     def _get_installed_dependency( self, name, type, version=None, **kwds ):
-        installed_tool_dependencies = kwds.get("installed_tool_dependencies", [])
-        for installed_tool_dependency in (installed_tool_dependencies or []):
-            name_and_type_equal = installed_tool_dependency.name == name and installed_tool_dependency.type == type
-            if version:
-                if name_and_type_equal and installed_tool_dependency.version == version:
-                    return installed_tool_dependency
-            else:
-                if name_and_type_equal:
+        installed_tool_dependencies = kwds.get("installed_tool_dependencies") or []
+        for installed_tool_dependency in installed_tool_dependencies:
+            if installed_tool_dependency.name == name and installed_tool_dependency.type == type:
+                if not version or installed_tool_dependency.version == version:
                     return installed_tool_dependency
         return None
 

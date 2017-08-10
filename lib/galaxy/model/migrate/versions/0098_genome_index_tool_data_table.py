@@ -41,8 +41,8 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         GenomeIndexToolData_table.create()
-    except Exception as e:
-        log.debug( "Creating genome_index_tool_data table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating genome_index_tool_data table failed.")
 
 
 def downgrade(migrate_engine):
@@ -50,5 +50,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         GenomeIndexToolData_table.drop()
-    except Exception as e:
-        log.debug( "Dropping genome_index_tool_data table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping genome_index_tool_data table failed.")

@@ -258,7 +258,7 @@ elif entity_name == "WorkflowInvocation":
 ## render a job (as a toolForm) and its children (hdas)
     <div class="tool toolForm">
         <%
-            tool = trans.app.toolbox.get_tool( job.tool_id )
+            tool = trans.app.toolbox.get_tool( job.tool_id, tool_version=job.tool_version )
             if tool:
                 tool_name = tool.name
                 tool_desc = tool.description

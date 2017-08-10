@@ -1,13 +1,15 @@
-import sys
-import os.path
 import logging
+import os.path
+import sys
 
 from migrate.versioning import repository, schema
 
-from sqlalchemy import create_engine
-from sqlalchemy import MetaData
+from sqlalchemy import (
+    create_engine,
+    MetaData,
+    Table
+)
 from sqlalchemy.exc import NoSuchTableError
-from sqlalchemy import Table
 
 log = logging.getLogger( __name__ )
 
@@ -99,7 +101,11 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
 
 def migrate_to_current_version( engine, schema ):
     # Changes to get to current version
-    changeset = schema.changeset( None )
+    try:
+        changeset = schema.changeset( None )
+    except Exception as e:
+        log.error("Problem determining migration changeset for engine [%s]" % engine)
+        raise e
     for ver, change in changeset:
         nextver = ver + changeset.step
         log.info( 'Migrating %s -> %s... ' % ( ver, nextver ) )

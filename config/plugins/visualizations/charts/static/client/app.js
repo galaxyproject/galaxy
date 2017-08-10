@@ -11,7 +11,6 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
                 console.debug( Registry );
                 Utils.get({
                     url     : Galaxy.root + 'api/datasets/' + options.dataset_id,
-                    cache   : true,
                     success : function( dataset ) {
                         self.dataset = dataset;
                         self.types = {};

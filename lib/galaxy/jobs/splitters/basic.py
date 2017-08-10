@@ -1,5 +1,6 @@
 import logging
-import multi
+
+from . import multi
 
 log = logging.getLogger( __name__ )
 
@@ -8,7 +9,7 @@ def set_basic_defaults(job_wrapper):
     parent_job = job_wrapper.get_job()
     parallelism = job_wrapper.get_parallelism()
     parallelism.attributes['split_inputs'] = parent_job.input_datasets[0].name
-    parallelism.attributes['merge_outputs'] = job_wrapper.get_output_hdas_and_fnames().keys()[0]
+    parallelism.attributes['merge_outputs'] = next(iter(job_wrapper.get_output_hdas_and_fnames()))
 
 
 def do_split(job_wrapper):

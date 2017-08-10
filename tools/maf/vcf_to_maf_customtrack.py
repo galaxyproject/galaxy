@@ -158,5 +158,6 @@ def main():
     if non_spec_skipped:
         print('Skipped %i non-specification compliant indels.' % non_spec_skipped)
 
+
 if __name__ == "__main__":
     main()

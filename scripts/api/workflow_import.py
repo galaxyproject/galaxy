@@ -5,6 +5,7 @@ Example calls:
 python workflow_import.py <api_key> <galaxy_url> '/path/to/workflow/file [--add_to_menu]'
 """
 from __future__ import print_function
+
 import os
 import sys
 
@@ -25,6 +26,7 @@ def main():
         sys.exit(1)
     # print display( api_key, api_base_url + "/api/workflows" )
     submit( api_key, api_url, data, return_formatted=False )
+
 
 if __name__ == '__main__':
     main()

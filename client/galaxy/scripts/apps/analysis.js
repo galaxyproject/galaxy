@@ -1,14 +1,23 @@
-
 var jQuery = require( 'jquery' ),
     $ = jQuery,
     GalaxyApp = require( 'galaxy' ).GalaxyApp,
-    QUERY_STRING = require( 'utils/query-string-parsing' ),
-    PANEL = require( 'layout/panel' ),
-    ToolPanel = require( './tool-panel' ),
-    HistoryPanel = require( './history-panel' ),
-    PAGE = require( 'layout/page' ),
+    Router = require( 'layout/router' ),
+    ToolPanel = require( './panels/tool-panel' ),
+    HistoryPanel = require( './panels/history-panel' ),
+    Page = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
-    Tours = require( 'mvc/tours' );
+    UserPreferences = require( 'mvc/user/user-preferences' ),
+    CustomBuilds = require( 'mvc/user/user-custom-builds' ),
+    Tours = require( 'mvc/tours' ),
+    GridView = require( 'mvc/grid/grid-view' ),
+    GridShared = require( 'mvc/grid/grid-shared' ),
+    Workflows = require( 'mvc/workflow/workflow' ),
+    HistoryList = require( 'mvc/history/history-list' ),
+    ToolFormComposite = require( 'mvc/tool/tool-form-composite' ),
+    Utils = require( 'utils/utils' ),
+    Ui = require( 'mvc/ui/ui-misc' ),
+    DatasetError = require( 'mvc/dataset/dataset-error' ),
+    DatasetEditAttributes = require('mvc/dataset/dataset-edit-attributes');
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -24,92 +33,113 @@ var jQuery = require( 'jquery' ),
 window.app = function app( options, bootstrapped ){
     window.Galaxy = new GalaxyApp( options, bootstrapped );
     Galaxy.debug( 'analysis app' );
-    // TODO: use router as App base (combining with Galaxy)
 
-    // .................................................... panels and page
-    var config = options.config,
-        toolPanel = new ToolPanel({
-            el                  : '#left',
-            userIsAnonymous     : Galaxy.user.isAnonymous(),
-            search_url          : config.search_url,
-            toolbox             : config.toolbox,
-            toolbox_in_panel    : config.toolbox_in_panel,
-            stored_workflow_menu_entries : config.stored_workflow_menu_entries,
-            nginx_upload_path   : config.nginx_upload_path,
-            ftp_upload_site     : config.ftp_upload_site,
-            default_genome      : config.default_genome,
-            default_extension   : config.default_extension,
-        }),
-        centerPanel = new PANEL.CenterPanel({
-            el              : '#center'
-        }),
-        historyPanel = new HistoryPanel({
-            el              : '#right',
-            galaxyRoot      : Galaxy.root,
-            userIsAnonymous : Galaxy.user.isAnonymous(),
-            allow_user_dataset_purge: config.allow_user_dataset_purge,
-        }),
-        analysisPage = new PAGE.PageLayoutView( _.extend( options, {
-            el              : 'body',
-            left            : toolPanel,
-            center          : centerPanel,
-            right           : historyPanel,
-        }));
-
-    // .................................................... decorate the galaxy object
-    // TODO: most of this is becoming unnecessary as we move to apps
-    Galaxy.page = analysisPage;
-    Galaxy.params = Galaxy.config.params;
-
-    // add tool panel to Galaxy object
-    Galaxy.toolPanel = toolPanel.tool_panel;
-    Galaxy.upload = toolPanel.uploadButton;
-
-    Galaxy.currHistoryPanel = historyPanel.historyView;
-    Galaxy.currHistoryPanel.listenToGalaxy( Galaxy );
-
-    //HACK: move there
-    Galaxy.app = {
-        display : function( view, target ){
-            // TODO: Remove this line after select2 update
-            $( '.select2-hidden-accessible' ).remove();
-            centerPanel.display( view );
+    var routingMessage = Backbone.View.extend({
+        initialize: function(options) {
+            this.message = options.message || "Undefined Message";
+            this.msg_status = options.type || 'info';
+            this.render();
         },
-    };
+        render: function(){
+            this.$el.html(_.escape(this.message)).addClass(this.msg_status + "message");
+        }
+    });
 
-    // .................................................... routes
-    /**  */
-    var router = new ( Backbone.Router.extend({
-        // TODO: not many client routes at this point - fill and remove from server.
-        // since we're at root here, this may be the last to be routed entirely on the client.
-        initialize : function( options ){
-            this.options = options;
-        },
-
-        /** override to parse query string into obj and send to each route */
-        execute: function( callback, args, name ){
-            Galaxy.debug( 'router execute:', callback, args, name );
-            var queryObj = QUERY_STRING.parse( args.pop() );
-            args.push( queryObj );
-            if( callback ){
-                callback.apply( this, args );
-            }
-        },
-
+    /** Routes */
+    var AnalysisRouter = Router.extend({
         routes : {
             '(/)' : 'home',
-            // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
             '(/)tours(/)(:tour_id)' : 'show_tours',
+            '(/)user(/)' : 'show_user',
+            '(/)user(/)(:form_id)' : 'show_user_form',
+            '(/)workflow(/)' : 'show_workflows',
+            '(/)workflow/run(/)' : 'show_run',
+            '(/)pages(/)(:action_id)' : 'show_pages',
+            '(/)visualizations/(:action_id)' : 'show_visualizations',
+            '(/)workflows/list_published(/)' : 'show_workflows_published',
+            '(/)histories(/)(:action_id)' : 'show_histories',
+            '(/)datasets(/)list(/)' : 'show_datasets',
+            '(/)workflow/import_workflow' : 'show_import_workflow',
+            '(/)custom_builds' : 'show_custom_builds',
+            '(/)datasets/edit': 'show_dataset_edit_attributes',
+            '(/)datasets/error': 'show_dataset_error'
+        },
+
+        require_login: [
+            'show_user',
+            'show_user_form',
+            'show_workflows'
+        ],
+
+        authenticate: function( args, name ) {
+            return ( Galaxy.user && Galaxy.user.id ) || this.require_login.indexOf( name ) == -1;
         },
 
         show_tours : function( tour_id ){
-            if (tour_id){
-                Tours.giveTour(tour_id);
+            if ( tour_id ){
+                Tours.giveTour( tour_id );
+            } else {
+                this.page.display( new Tours.ToursView() );
             }
-            else{
-                centerPanel.display( new Tours.ToursView() );
+        },
+
+        show_user : function(){
+            this.page.display( new UserPreferences.View() );
+        },
+
+        show_user_form : function( form_id ) {
+            this.page.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
+        },
+
+        show_visualizations : function( action_id ) {
+            this.page.display( new GridShared.View( { action_id: action_id, plural: 'Visualizations', item: 'visualization' } ) );
+        },
+
+        show_workflows_published : function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'workflow/list_published', dict_format: true } ) );
+        },
+
+        show_histories : function( action_id ) {
+            this.page.display( new HistoryList.View( { action_id: action_id } ) );
+        },
+
+        show_datasets : function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'dataset/list', dict_format: true } ) );
+        },
+
+        show_pages : function( action_id ) {
+            this.page.display( new GridShared.View( { action_id: action_id, plural: 'Pages', item: 'page' } ) );
+        },
+
+        show_workflows : function(){
+            this.page.display( new Workflows.View() );
+        },
+
+        show_run : function() {
+            this._loadWorkflow();
+        },
+
+        show_import_workflow : function() {
+            this.page.display( new Workflows.ImportWorkflowView() );
+        },
+
+        show_custom_builds : function() {
+            var self = this;
+            var historyPanel = this.page.historyPanel.historyView;
+            if ( !historyPanel || !historyPanel.model || !historyPanel.model.id ) {
+                window.setTimeout(function() { self.show_custom_builds() }, 500)
+                return;
             }
+            this.page.display( new CustomBuilds.View() );
+        },
+
+        show_dataset_edit_attributes : function() {
+            this.page.display( new DatasetEditAttributes.View() );
+        },
+
+        show_dataset_error : function() {
+            this.page.display( new DatasetError.View() );
         },
 
         /**  */
@@ -118,7 +148,7 @@ window.app = function app( options, bootstrapped ){
             // load a tool by id (tool_id) or rerun a previous tool execution (job_id)
             if( params.tool_id || params.job_id ) {
                 if ( params.tool_id === 'upload1' ) {
-                    Galaxy.upload.show();
+                    this.page.toolPanel.upload.show();
                     this._loadCenterIframe( 'welcome' );
                 } else {
                     this._loadToolForm( params );
@@ -126,7 +156,7 @@ window.app = function app( options, bootstrapped ){
             } else {
                 // show the workflow run form
                 if( params.workflow_id ){
-                    this._loadCenterIframe( 'workflow/run?id=' + params.workflow_id );
+                    this._loadWorkflow();
                 // load the center iframe with controller.action: galaxy.org/?m_c=history&m_a=list -> history/list
                 } else if( params.m_c ){
                     this._loadCenterIframe( params.m_c + '/' + params.m_a );
@@ -140,39 +170,41 @@ window.app = function app( options, bootstrapped ){
         /** load the center panel with a tool form described by the given params obj */
         _loadToolForm : function( params ){
             //TODO: load tool form code async
-            params.id = params.tool_id;
-            centerPanel.display( new ToolForm.View( params ) );
+            params.id = decodeURIComponent( params.tool_id );
+            this.page.display( new ToolForm.View( params ) );
         },
 
         /** load the center panel iframe using the given url */
         _loadCenterIframe : function( url, root ){
             root = root || Galaxy.root;
             url = root + url;
-            centerPanel.$( '#galaxy_main' ).prop( 'src', url );
+            this.page.$( '#galaxy_main' ).prop( 'src', url );
         },
 
-    }))( options );
+        /** load workflow by its url in run mode */
+        _loadWorkflow: function() {
+            var self = this;
+            Utils.get({
+                url: Galaxy.root + 'api/workflows/' + Utils.getQueryString( 'id' ) + '/download',
+                data: { 'style': 'run' },
+                success: function( response ) {
+                    self.page.display( new ToolFormComposite.View( response ) );
+                },
+                error: function( response ) {
+                    var error_msg = "Error occurred while loading the resource.",
+                        options = { 'message': error_msg, 'status': 'error', 'persistent': true, 'cls': 'errormessage' };
+                    self.page.display( new Ui.Message( options ) );
+                }
+            });
+        }
+    });
 
-    // .................................................... when the page is ready
     // render and start the router
     $(function(){
-        analysisPage.render();
-        analysisPage.right.historyView.loadCurrentHistory();
-
-        // use galaxy to listen to history size changes and then re-fetch the user's total size (to update the quota meter)
-        // TODO: we have to do this here (and after every page.render()) because the masthead is re-created on each
-        // page render. It's re-created each time because there is no render function and can't be re-rendered without
-        // re-creating it.
-        Galaxy.listenTo( analysisPage.right.historyView, 'history-size-change', function(){
-            // fetch to update the quota meter adding 'current' for any anon-user's id
-            Galaxy.user.fetch({ url: Galaxy.user.urlRoot() + '/' + ( Galaxy.user.id || 'current' ) });
-        });
-        analysisPage.right.historyView.connectToQuotaMeter( analysisPage.masthead.quotaMeter );
-
-        // start the router - which will call any of the routes above
-        Backbone.history.start({
-            root        : Galaxy.root,
-            pushState   : true,
-        });
+        Galaxy.page = new Page.View( _.extend( options, {
+            Left   : ToolPanel,
+            Right  : HistoryPanel,
+            Router : AnalysisRouter
+        } ) );
     });
 };

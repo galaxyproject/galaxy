@@ -39,5 +39,6 @@ def __main__():
     print("%i regions were reverse complemented." % count)
     maf_writer.close()
 
+
 if __name__ == "__main__":
     __main__()

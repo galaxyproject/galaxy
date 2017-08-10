@@ -180,4 +180,5 @@ class DatasetCollectionMatcher( object ):
                 break
         return valid
 
+
 __all__ = ( 'DatasetMatcher', 'DatasetCollectionMatcher' )

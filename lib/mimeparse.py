@@ -131,6 +131,7 @@ def best_match(supported, header):
     weighted_matches.sort()
     return weighted_matches[-1][0][1] and weighted_matches[-1][1] or ''
 
+
 if __name__ == "__main__":
     import unittest
 
