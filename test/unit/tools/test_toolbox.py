@@ -163,6 +163,14 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         assert toolbox.get_tool( "test_tool" ) is not None
         assert toolbox.get_tool( "not_a_test_tool" ) is None
 
+    def test_enforce_tool_profile(self):
+        self._init_tool(filename="old_tool.xml", version="1.0", profile="17.01", tool_id="test_old_tool_profile")
+        self._init_tool(filename="new_tool.xml", version="2.0", profile="27.01", tool_id="test_new_tool_profile")
+        self._add_config("""<toolbox><tool file="old_tool.xml"/><tool file="new_tool.xml"/></toolbox>""")
+        toolbox = self.toolbox
+        assert toolbox.get_tool("test_old_tool_profile") is not None
+        assert toolbox.get_tool("test_new_tool_profile") is None
+
     def test_to_dict_in_panel( self ):
         for json_conf in [True, False]:
             self._init_tool_in_section(json=json_conf)

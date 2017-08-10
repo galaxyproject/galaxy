@@ -582,10 +582,11 @@ class Tool( object, Dictifiable ):
         if not self.id:
             raise Exception( "Missing tool 'id' for tool at '%s'" % tool_source )
 
-        if self.profile >= 16.04 and VERSION_MAJOR < self.profile:
+        profile = LooseVersion(str(self.profile))
+        if profile >= LooseVersion("16.04") and LooseVersion(VERSION_MAJOR) < profile:
             template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             message = template % (self.id, self.profile)
-            log.warning(message)
+            raise Exception(message)
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()

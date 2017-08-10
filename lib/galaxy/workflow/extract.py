@@ -305,7 +305,7 @@ class WorkflowSummary( object ):
 
 
 def step_inputs( trans, job ):
-    tool = trans.app.toolbox.get_tool( job.tool_id )
+    tool = trans.app.toolbox.get_tool( job.tool_id, tool_version=job.tool_version )
     param_values = job.get_param_values( trans.app, ignore_errors=True )  # If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
     associations = __cleanup_param_values( tool.inputs, param_values )
     tool_inputs = tool.params_to_strings( param_values, trans.app )

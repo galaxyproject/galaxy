@@ -1155,20 +1155,18 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         archive_file = kwargs.get( 'archive_file', None )
         archive_url = kwargs.get( 'archive_url', None )
         archive_source = None
-        if archive_file:
-            archive_source = archive_file
+        if hasattr(archive_file, 'file'):
+            archive_source = archive_file.file.name
             archive_type = 'file'
         elif archive_url:
             archive_source = archive_url
             archive_type = 'url'
         # If no source to create archive from, show form to upload archive or specify URL.
         if not archive_source:
-            return trans.show_form(
-                web.FormBuilder( web.url_for(controller='history', action='import_archive'), "Import a History from an Archive", submit_text="Submit" )
-                        .add_input( "text", "Archived History URL", "archive_url", value="", error=None )
-                # TODO: add support for importing via a file.
-                # .add_input( "file", "Archived History File", "archive_file", value=None, error=None )
-            )
+            form = web.FormBuilder( web.url_for(controller='history', action='import_archive'), "Import a History from an Archive", submit_text="Submit" )
+            form.add_input( "text", "Archived History URL", "archive_url", value="", error=None )
+            form.add_input( "file", "Archived History File", "archive_file", value="", error=None )
+            return trans.show_form( form )
         self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
         return trans.show_message( "Importing history from '%s'. \
                                     This history will be visible when the import is complete" % archive_source )

@@ -7,17 +7,19 @@ and base class for plugins that:
  * serve templated html
  * have some configuration at startup
 """
-
+import imp
+import logging
 import os.path
 import sys
-import imp
-
-from galaxy import util
-from galaxy.util import odict
-from galaxy.util import bunch
 
 import mako.lookup
-import logging
+
+from galaxy import util
+from galaxy.util import (
+    bunch,
+    odict
+)
+
 log = logging.getLogger( __name__ )
 
 

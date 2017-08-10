@@ -63,8 +63,8 @@ svgwrite==1.1.6
 pyparsing==2.1.1
 
 # Fabric and dependencies
-Fabric==1.10.2
-paramiko==1.15.2
+Fabric==1.13.2
+paramiko==2.2.1
 ecdsa==0.13
 
 # Flexible BAM index naming
