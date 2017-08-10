@@ -56,7 +56,7 @@ def main(argv):
             logging.info("Uploading %s", report_id)
             files = {
                 'meta': open(os.path.join(REPORT_DIR, report_id + '.json'), 'rb'),
-                'data': open(os.path.join(REPORT_DIR, report_id + '.tsv.gz'), 'rb')
+                'data': open(os.path.join(REPORT_DIR, report_id + '.tar.gz'), 'rb')
             }
             data = {
                 'identifier': report_id
