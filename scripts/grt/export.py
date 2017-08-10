@@ -292,6 +292,9 @@ def main(argv):
                 .filter(model.JobMetricNumeric.job_id > offset_start) \
                 .filter(model.JobMetricNumeric.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all():
+            # No associated job
+            if metric[0] not in job_tool_map:
+                continue
             # If the tool is blacklisted, exclude everywhere
             if job_tool_map[metric[0]] in blacklisted_tools:
                 continue
@@ -316,6 +319,9 @@ def main(argv):
                 .filter(model.JobParameter.job_id > offset_start) \
                 .filter(model.JobParameter.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all():
+            # No associated job
+            if param[0] not in job_tool_map:
+                continue
             # If the tool is blacklisted, exclude everywhere
             if job_tool_map[param[0]] in blacklisted_tools:
                 continue
