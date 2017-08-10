@@ -18,12 +18,6 @@
         width: 25%;
     }
 
-    .code {
-        white-space: pre-wrap;
-        background: #1d1f21;
-        color: white;
-        padding: 1em;
-    }
 </style>
 
 <%def name="inputs_recursive( input_params, param_values, depth=1, upgrade_messages=None )">

@@ -2510,6 +2510,30 @@ class FlattenTool( DatabaseOperationTool ):
         )
 
 
+class SortTool( DatabaseOperationTool ):
+    tool_type = 'sort_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        sorttype = incoming["sort_type"]
+        new_elements = odict()
+        elements = hdca.collection.elements
+        if sorttype == 'alpha':
+            presort_elements = [(dce.element_identifier, dce) for dce in elements]
+        elif sorttype == 'numeric':
+            presort_elements = [(int(re.sub('[^0-9]', '', dce.element_identifier)), dce) for dce in elements]
+        sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
+
+        for dce in sorted_elements:
+            dce_object = dce.element_object
+            copied_dataset = dce_object.copy()
+            history.add_dataset(copied_dataset, set_hid=False)
+            new_elements[dce.element_identifier] = copied_dataset
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements
+        )
+
+
 class RelabelFromFileTool(DatabaseOperationTool):
     tool_type = 'relabel_from_file'
 
