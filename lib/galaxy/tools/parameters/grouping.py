@@ -293,7 +293,6 @@ class UploadDataset( Group ):
     def get_uploaded_datasets( self, trans, context, override_name=None, override_info=None ):
         def get_data_file_filename( data_file, override_name=None, override_info=None, purge=True ):
             dataset_name = override_name
-            dataset_info = override_info
 
             def get_file_name( file_name ):
                 file_name = file_name.split( '\\' )[-1]
@@ -303,8 +302,6 @@ class UploadDataset( Group ):
                 # Use the existing file
                 if not dataset_name and 'filename' in data_file:
                     dataset_name = get_file_name( data_file['filename'] )
-                if not dataset_info:
-                    dataset_info = 'uploaded file'
                 return Bunch( type='file', path=data_file['local_filename'], name=dataset_name, purge_source=purge )
             except:
                 # The uploaded file should've been persisted by the upload tool action
@@ -340,22 +337,16 @@ class UploadDataset( Group ):
                                     raise ConfigDoesNotAllowException()
                                 upload_path = line[len("file://"):]
                                 dataset_name = os.path.basename(upload_path)
-                                dataset_info = "File copied from %s" % upload_path
                             else:
                                 dataset_name = line
-                                dataset_info = 'uploaded_url'
 
                             if override_name:
                                 dataset_name = override_name
-                            if override_info:
-                                dataset_info = override_info
                             yield Bunch( type='url', path=line, name=dataset_name )
                 else:
-                    dataset_name = dataset_info = 'Pasted Entry'  # we need to differentiate between various url pastes here
+                    dataset_name = 'Pasted Entry'  # we need to differentiate between various url pastes here
                     if override_name:
                         dataset_name = override_name
-                    if override_info:
-                        dataset_info = override_info
                     yield Bunch( type='file', path=url_paste_file, name=dataset_name )
 
         def get_one_filename( context ):
