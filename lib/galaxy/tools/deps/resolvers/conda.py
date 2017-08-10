@@ -39,7 +39,11 @@ from ..resolvers import (
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
-DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,r,defaults,conda-forge"
+# Conda channel order from highest to lowest, following the one used in
+# https://github.com/bioconda/bioconda-recipes/blob/master/config.yml , but
+# adding `iuc` as first channel (for Galaxy-specific packages) and `r` as last
+# (for old R packages)
+DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,conda-forge,defaults,r"
 CONDA_SOURCE_CMD = """[ "$CONDA_DEFAULT_ENV" = "%s" ] ||
 MAX_TRIES=3
 COUNT=0
