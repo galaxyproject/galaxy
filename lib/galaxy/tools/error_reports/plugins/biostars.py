@@ -3,10 +3,9 @@ from __future__ import absolute_import
 
 import logging
 
-from galaxy.util import string_as_bool
 from galaxy.util import biostar
+from galaxy.util import string_as_bool
 from galaxy.web.base.controller import url_for
-
 
 from ..plugins import ErrorPlugin
 
