@@ -9,7 +9,6 @@ from sqlalchemy import and_, false, func, or_
 
 import galaxy.queue_worker
 from galaxy import util
-from galaxy.util import inflector
 from galaxy import model
 from galaxy import web
 from galaxy.actions.admin import AdminActions
@@ -91,13 +90,12 @@ class UserListGrid( grids.Grid ):
     # Grid definition
     title = "Users"
     model_class = model.User
-    template = '/admin/user/grid.mako'
     default_sort_key = "email"
     columns = [
         EmailColumn( "Email",
                      key="email",
                      model_class=model.User,
-                     link=( lambda item: dict( operation="information", id=item.id, webapp="galaxy" ) ),
+                     link=( lambda item: dict( controller="user", action="information", id=item.id, webapp="galaxy" ) ),
                      attach_popup=True,
                      filterable="advanced",
                      target="top" ),
@@ -122,7 +120,7 @@ class UserListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Create new user", dict( controller='admin', action='users', operation='create', webapp="galaxy" ) )
+        grids.GridAction( "Create new user", url_args=dict( webapp="galaxy", action="create_new_user" ) )
     ]
     operations = [
         grids.GridOperation( "Manage Roles and Groups",
@@ -132,12 +130,11 @@ class UserListGrid( grids.Grid ):
         grids.GridOperation( "Reset Password",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=True,
-                             allow_popup=False,
-                             url_args=dict( webapp="galaxy", action="reset_user_password" ) ),
+                             url_args=dict( webapp="galaxy", action="reset_user_password" ),
+                             target="top" ),
         grids.GridOperation( "Recalculate Disk Usage",
                              condition=( lambda item: not item.deleted ),
-                             allow_multiple=False,
-                             url_args=dict( webapp="galaxy", action="recalculate_user_disk_usage" ) )
+                             allow_multiple=False )
     ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
@@ -526,6 +523,39 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         return self.template( trans, 'admin', settings=settings, message=message, status=status )
 
     @web.expose
+    @web.json
+    @web.require_admin
+    def users_list( self, trans, **kwd ):
+        message = kwd.get( 'message' )
+        status = kwd.get( 'status' )
+        if 'operation' in kwd:
+            id = kwd.get( 'id', None )
+            if not id:
+                message, status = ( 'Invalid user id (%s) received.' % str( id ), 'error' )
+            ids = util.listify( id )
+            operation = kwd['operation'].lower()
+            if operation == 'delete':
+                message, status = self.mark_user_deleted( trans, ids )
+            elif operation == 'undelete':
+                message, status = self.undelete_user( trans, ids )
+            elif operation == 'purge':
+                message, status = self.purge_user( trans, ids )
+            elif operation == 'recalculate disk usage':
+                message, status = self.recalculate_user_disk_usage( trans, id )
+        if trans.app.config.allow_user_deletion:
+            if self.delete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.delete_operation )
+            if self.undelete_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.undelete_operation )
+            if self.purge_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append( self.purge_operation )
+        if message and status:
+            kwd[ 'message' ] = util.sanitize_text( message )
+            kwd[ 'status' ] = status
+        kwd[ 'dict_format' ] = True
+        return self.user_list_grid( trans, **kwd )
+
+    @web.expose
     @web.require_admin
     def quotas( self, trans, **kwargs ):
         if 'operation' in kwargs:
@@ -890,25 +920,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         if not reloaded:
             return trans.show_warn_message( 'You need to request at least one display application to reload.' )
         return trans.show_ok_message( 'Reloaded %i requested display applications ("%s").' % ( len( reloaded ), '", "'.join( reloaded ) ) )
-
-    @web.expose
-    @web.require_admin
-    def recalculate_user_disk_usage( self, trans, **kwd ):
-        user_id = kwd.get( 'id', None )
-        user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
-        if not user:
-            return trans.show_error_message( "User not found for id (%s)" % sanitize_text( str( user_id ) ) )
-        current = user.get_disk_usage()
-        user.calculate_and_set_disk_usage()
-        new = user.get_disk_usage()
-        if new in ( current, None ):
-            message = 'Usage is unchanged at %s.' % nice_size( current )
-        else:
-            message = 'Usage has changed by %s to %s.' % ( nice_size( new - current ), nice_size( new )  )
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='users',
-                                                          message=sanitize_text( message ),
-                                                          status='info' ) )
 
     @web.expose
     @web.require_admin
@@ -1602,106 +1613,84 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
         user_id = kwd.get( 'id', None )
-        if not user_id:
-            message = "No users received for resetting passwords."
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=message,
-                                                       status='error' ) )
-        user_ids = util.listify( user_id )
-        if 'reset_user_password_button' in kwd:
-            message = ''
-            status = ''
-            for user_id in user_ids:
-                user = get_user( trans, user_id )
-                password = kwd.get( 'password', None )
-                confirm = kwd.get( 'confirm', None )
-                if len( password ) < 6:
-                    message = "Use a password of at least 6 characters."
-                    status = 'error'
-                    break
-                elif password != confirm:
-                    message = "Passwords do not match."
-                    status = 'error'
-                    break
-                else:
-                    user.set_password_cleartext( password )
-                    trans.sa_session.add( user )
-                    trans.sa_session.flush()
-            if not message and not status:
-                message = "Passwords reset for %d %s." % ( len( user_ids ), inflector.cond_plural( len( user_ids ), 'user' ) )
-                status = 'done'
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=util.sanitize_text( message ),
-                                                       status=status ) )
-        users = [ get_user( trans, user_id ) for user_id in user_ids ]
-        if len( user_ids ) > 1:
-            user_id = ','.join( user_ids )
+        message = ''
+        status = ''
+        users = []
+        if user_id:
+            user_ids = util.listify( user_id )
+            if 'reset_user_password_button' in kwd:
+                message = ''
+                status = ''
+                for user_id in user_ids:
+                    user = get_user( trans, user_id )
+                    password = kwd.get( 'password', None )
+                    confirm = kwd.get( 'confirm', None )
+                    if len( password ) < 6:
+                        message = "Use a password of at least 6 characters."
+                        status = 'error'
+                        break
+                    elif password != confirm:
+                        message = "Passwords do not match."
+                        status = 'error'
+                        break
+                    else:
+                        user.set_password_cleartext( password )
+                        trans.sa_session.add( user )
+                        trans.sa_session.flush()
+                if not message and not status:
+                    message = "Passwords reset for %d %s." % ( len( user_ids ), util.inflector.cond_plural( len( user_ids ), 'user' ) )
+                    status = "done"
+                    trans.response.send_redirect( web.url_for( controller='admin',
+                                                               action='users',
+                                                               message=util.sanitize_text( message ),
+                                                               status=status ) )
+            users = [ get_user( trans, user_id ) for user_id in user_ids ]
+            if len( user_ids ) > 1:
+                user_id = ','.join( user_ids )
+        else:
+            message = 'No users received for resetting passwords.'
+            status = 'error'
         return trans.fill_template( '/admin/user/reset_password.mako',
                                     id=user_id,
+                                    message=util.sanitize_text( message ),
+                                    status=status,
                                     users=users,
                                     password='',
                                     confirm='' )
 
     @web.expose
     @web.require_admin
-    def mark_user_deleted( self, trans, **kwd ):
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No user ids received for deleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
-        message = "Deleted %d users: " % len( ids )
+    def mark_user_deleted( self, trans, ids ):
+        message = 'Deleted %d users: ' % len( ids )
         for user_id in ids:
             user = get_user( trans, user_id )
             user.deleted = True
             trans.sa_session.add( user )
             trans.sa_session.flush()
-            message += " %s " % user.email
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='users',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+            message += ' %s ' % user.email
+        return ( message, 'done' )
 
     @web.expose
     @web.require_admin
-    def undelete_user( self, trans, **kwd ):
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No user ids received for undeleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
+    def undelete_user( self, trans, ids ):
         count = 0
         undeleted_users = ""
         for user_id in ids:
             user = get_user( trans, user_id )
             if not user.deleted:
-                message = "User '%s' has not been deleted, so it cannot be undeleted." % user.email
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='users',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
+                message = 'User \'%s\' has not been deleted, so it cannot be undeleted.' % user.email
+                return ( message, 'error' )
             user.deleted = False
             trans.sa_session.add( user )
             trans.sa_session.flush()
             count += 1
-            undeleted_users += " %s" % user.email
-        message = "Undeleted %d users: %s" % ( count, undeleted_users )
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='users',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+            undeleted_users += ' %s' % user.email
+        message = 'Undeleted %d users: %s' % ( count, undeleted_users )
+        return ( message, 'done' )
 
     @web.expose
     @web.require_admin
-    def purge_user( self, trans, **kwd ):
+    def purge_user( self, trans, ids ):
         # This method should only be called for a User that has previously been deleted.
         # We keep the User in the database ( marked as purged ), and stuff associated
         # with the user's private role in case we want the ability to unpurge the user
@@ -1714,24 +1703,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
         # - UserAddress where user_id == User.id
         # Purging Histories and Datasets must be handled via the cleanup_datasets.py script
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No user ids received for purging"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        ids = util.listify( id )
-        message = "Purged %d users: " % len( ids )
+        message = 'Purged %d users: ' % len( ids )
         for user_id in ids:
             user = get_user( trans, user_id )
             if not user.deleted:
-                # We should never reach here, but just in case there is a bug somewhere...
-                message = "User '%s' has not been deleted, so it cannot be purged." % user.email
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='users',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
+                return ( 'User \'%s\' has not been deleted, so it cannot be purged.' % user.email, 'error' )
             private_role = trans.app.security_agent.get_private_user_role( user )
             # Delete History
             for h in user.active_histories:
@@ -1761,47 +1737,23 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             user.purged = True
             trans.sa_session.add( user )
             trans.sa_session.flush()
-            message += "%s " % user.email
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='users',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+            message += '%s ' % user.email
+        return ( message, 'done' )
 
     @web.expose
     @web.require_admin
-    def users( self, trans, **kwd ):
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if operation == "roles":
-                return self.user( trans, **kwd )
-            elif operation == "reset password":
-                return self.reset_user_password( trans, **kwd )
-            elif operation == "delete":
-                return self.mark_user_deleted( trans, **kwd )
-            elif operation == "undelete":
-                return self.undelete_user( trans, **kwd )
-            elif operation == "purge":
-                return self.purge_user( trans, **kwd )
-            elif operation == "create":
-                return self.create_new_user( trans, **kwd )
-            elif operation == "information":
-                user_id = kwd.get( 'id', None )
-                if not user_id:
-                    kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received" % str( user_id ) )
-                    kwd[ 'status' ] = 'error'
-                else:
-                    return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
-            elif operation == "manage roles and groups":
-                return self.manage_roles_and_groups_for_user( trans, **kwd )
-        if trans.app.config.allow_user_deletion:
-            if self.delete_operation not in self.user_list_grid.operations:
-                self.user_list_grid.operations.append( self.delete_operation )
-            if self.undelete_operation not in self.user_list_grid.operations:
-                self.user_list_grid.operations.append( self.undelete_operation )
-            if self.purge_operation not in self.user_list_grid.operations:
-                self.user_list_grid.operations.append( self.purge_operation )
-        # Render the list view
-        return self.user_list_grid( trans, **kwd )
+    def recalculate_user_disk_usage( self, trans, user_id ):
+        user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
+        if not user:
+            return ( 'User not found for id (%s)' % sanitize_text( str( user_id ) ), 'error' )
+        current = user.get_disk_usage()
+        user.calculate_and_set_disk_usage()
+        new = user.get_disk_usage()
+        if new in ( current, None ):
+            message = 'Usage is unchanged at %s.' % nice_size( current )
+        else:
+            message = 'Usage has changed by %s to %s.' % ( nice_size( new - current ), nice_size( new )  )
+        return ( message, 'done' )
 
     @web.expose
     @web.require_admin

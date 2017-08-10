@@ -97,8 +97,8 @@ class WebApplication( object ):
         """
         self.mapper.connect( route, **kwargs )
 
-    def add_client_route( self, route ):
-        self.clientside_routes.connect( route, controller='root', action='client' )
+    def add_client_route( self, route, controller='root' ):
+        self.clientside_routes.connect( route, controller=controller, action='client' )
 
     def set_transaction_factory( self, transaction_factory ):
         """

@@ -35,7 +35,7 @@ return Backbone.View.extend({
         if ( this.dict_format ) {
             this.setElement('<div/>');
             if ( grid_config.url_base && !grid_config.items ) {
-                var url_data = {};
+                var url_data = grid_config.url_data || {};
                 _.each(grid_config.filters, function(v, k) {
                     url_data['f-' + k] = v;
                 });
@@ -456,13 +456,18 @@ return Backbone.View.extend({
         });
 
         // execute operation
-        this.execute({
-            operation: operation_name,
-            id: item_ids,
-            confirmation_text: confirmation_text
-        });
-
-        // return
+        var options = {
+            operation           : operation_name,
+            id                  : item_ids,
+            confirmation_text   : confirmation_text
+        };
+        if ( operation.target == 'top' ) {
+            options = _.extend( options, {
+                href   : operation.href,
+                target : operation.target
+            });
+        }
+        this.execute( options );
         return true;
     },
 
@@ -542,7 +547,9 @@ return Backbone.View.extend({
             });
 
             // Do operation. If operation cannot be performed asynchronously, redirect to location.
-            if (this.grid.can_async_op(operation) || this.dict_format) {
+            if ( target == 'top' ) {
+                window.top.location = href + '?' + $.param( this.grid.get_url_data() );
+            } else if ( this.grid.can_async_op(operation) || this.dict_format ) {
                 this.update_grid();
             } else {
                 this.go_to(target, href);

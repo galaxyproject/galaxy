@@ -156,7 +156,7 @@ class SharedHistoryListGrid( grids.Grid ):
     default_sort_key = "-update_time"
     default_filter = {}
     columns = [
-        grids.GridColumn( "Name", key="name", attach_popup=True ),  # link=( lambda item: dict( operation="View", id=item.id ) ), attach_popup=True ),
+        grids.GridColumn( "Name", key="name", attach_popup=True ),
         DatasetsByStateColumn( "Datasets", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
