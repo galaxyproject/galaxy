@@ -21,7 +21,7 @@ class SentryPlugin( ErrorPlugin ):
     def submit_report( self, dataset, job, tool, **kwargs ):
         """Submit the error report to sentry
         """
-        if self.app.sentry_client and job.state == job.states.ERROR:
+        if self.app.sentry_client:
             extra = {
                 'info' : job.info,
                 'id' : job.id,
