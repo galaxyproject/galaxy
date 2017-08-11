@@ -11,6 +11,10 @@ from six import (
 )
 
 from galaxy.datatypes import sniff
+from galaxy.exceptions import (
+    AdminRequiredException,
+    ConfigDoesNotAllowException,
+)
 from galaxy.util import (
     inflector,
     relpath,
@@ -289,7 +293,6 @@ class UploadDataset( Group ):
     def get_uploaded_datasets( self, trans, context, override_name=None, override_info=None ):
         def get_data_file_filename( data_file, override_name=None, override_info=None, purge=True ):
             dataset_name = override_name
-            dataset_info = override_info
 
             def get_file_name( file_name ):
                 file_name = file_name.split( '\\' )[-1]
@@ -299,8 +302,6 @@ class UploadDataset( Group ):
                 # Use the existing file
                 if not dataset_name and 'filename' in data_file:
                     dataset_name = get_file_name( data_file['filename'] )
-                if not dataset_info:
-                    dataset_info = 'uploaded file'
                 return Bunch( type='file', path=data_file['local_filename'], name=dataset_name, purge_source=purge )
             except:
                 # The uploaded file should've been persisted by the upload tool action
@@ -310,26 +311,42 @@ class UploadDataset( Group ):
             url_paste_file = group_incoming.get( 'url_paste', None )
             if url_paste_file is not None:
                 url_paste = open( url_paste_file, 'r' ).read( 1024 )
-                if url_paste.lstrip().lower().startswith( 'http://' ) or url_paste.lstrip().lower().startswith( 'ftp://' ) or url_paste.lstrip().lower().startswith( 'https://' ):
+
+                def start_of_url(content):
+                    start_of_url_paste = content.lstrip()[0:8].lower()
+                    looks_like_url = False
+                    for url_prefix in ["http://", "https://", "ftp://", "file://"]:
+                        if start_of_url_paste.startswith(url_prefix):
+                            looks_like_url = True
+                            break
+
+                    return looks_like_url
+
+                if start_of_url(url_paste):
                     url_paste = url_paste.replace( '\r', '' ).split( '\n' )
                     for line in url_paste:
                         line = line.strip()
                         if line:
-                            if not line.lower().startswith( 'http://' ) and not line.lower().startswith( 'ftp://' ) and not line.lower().startswith( 'https://' ):
+                            if not start_of_url(line):
                                 continue  # non-url line, ignore
-                            dataset_name = override_name
-                            if not dataset_name:
+
+                            if "file://" in line:
+                                if not trans.user_is_admin():
+                                    raise AdminRequiredException()
+                                elif not trans.app.config.allow_path_paste:
+                                    raise ConfigDoesNotAllowException()
+                                upload_path = line[len("file://"):]
+                                dataset_name = os.path.basename(upload_path)
+                            else:
                                 dataset_name = line
-                            dataset_info = override_info
-                            if not dataset_info:
-                                dataset_info = 'uploaded url'
+
+                            if override_name:
+                                dataset_name = override_name
                             yield Bunch( type='url', path=line, name=dataset_name )
                 else:
-                    dataset_name = dataset_info = 'Pasted Entry'  # we need to differentiate between various url pastes here
+                    dataset_name = 'Pasted Entry'  # we need to differentiate between various url pastes here
                     if override_name:
                         dataset_name = override_name
-                    if override_info:
-                        dataset_info = override_info
                     yield Bunch( type='file', path=url_paste_file, name=dataset_name )
 
         def get_one_filename( context ):
