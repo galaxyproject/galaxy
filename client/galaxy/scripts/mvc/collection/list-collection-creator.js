@@ -562,7 +562,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
     _errorHandler : function( data ){
         this.error( data );
 
-        var creator = this;
+        var creator = this,
             content = data.message || _l( 'An error occurred' );
         if( data.xhr ){
             var xhr = data.xhr,

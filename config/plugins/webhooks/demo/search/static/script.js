@@ -673,7 +673,7 @@ $(document).ready(function() {
             $el_removed_result.html( "" );
             // Build the removed result from web storage
             removed_results_html = self.getStorageObject( self, window.Galaxy.user.id, 'removed_results' );
-            for( item in removed_results_html ) {
+            for(var item in removed_results_html ) {
                 html_text = html_text + removed_results_html[ item ];
             }
             // Build html if there is an item

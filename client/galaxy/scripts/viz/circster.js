@@ -634,7 +634,7 @@ var CircsterTrackView = Backbone.View.extend({
             track.get('config').set_value('max_value', self.data_bounds[1], {silent: true});
 
             // Merge chroms layout with data.
-            layout_and_data = _.zip(chrom_arcs, genome_wide_data),
+            var layout_and_data = _.zip(chrom_arcs, genome_wide_data),
 
             // Render each chromosome's data.
             chroms_data_layout = _.map(layout_and_data, function(chrom_info) {

@@ -4,6 +4,9 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
         this.isCollection = true;
         this.rank = collectionType.split(":").length;
     }
+
+    var ANY_COLLECTION_TYPE_DESCRIPTION, NULL_COLLECTION_TYPE_DESCRIPTION;
+
     $.extend( CollectionTypeDescription.prototype, {
         append: function( otherCollectionTypeDescription ) {
             if( otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION ) {
