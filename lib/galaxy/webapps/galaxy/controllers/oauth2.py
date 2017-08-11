@@ -19,5 +19,6 @@ class OAuth2( BaseUIController ):
         return trans.response.send_redirect( web.url_for( trans.app.authnz_manager.authenticate( "Google", trans ) ) )
 
     @web.expose
-    def google_callback(self, trans, **kwargs):
-        trans.app.authnz_manager.callback( "Google", kwargs[ 'state' ], kwargs[ 'code' ], trans  )
+    def google_callback(self, trans, **kwargs):  # TODO: to be tested.
+        if trans.app.authnz_manager.callback( "Google", kwargs[ 'state' ], kwargs[ 'code' ], trans ) is False:
+            self.google_authn( trans )
