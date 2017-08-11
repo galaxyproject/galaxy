@@ -23,6 +23,8 @@ class JobManager(object):
 
     def __init__(self, app):
         self.app = app
+        self.job_handler = NoopHandler()
+        self.job_stop_queue = NoopQueue()
         if app.application_stack.setup_jobs_with_msg:
             # defer setup to postfork
             log.debug('######### registering manager init function')
@@ -40,9 +42,6 @@ class JobManager(object):
             # not a handler, but notification is via the application stack
             self.job_handler = MessageJobHandler( self.app )
             self.job_stop_queue = NoopQueue()
-        else:
-            self.job_handler = NoopHandler()
-            self.job_stop_queue = NoopQueue
         self.job_queue = self.job_handler.job_queue
         self.job_lock = False
 

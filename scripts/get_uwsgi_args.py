@@ -15,7 +15,7 @@ from galaxy.script import main_factory
 
 
 DESCRIPTION = "Script to determine uWSGI command line arguments."
-COMMAND_TEMPLATE = '{virtualenv}--ini-paste {galaxy_ini}{mule}{farm}'
+COMMAND_TEMPLATE = '{virtualenv}--ini-paste {galaxy_ini} --paste-logger --die-on-term --enable-threads{mule}{farm}'
 
 
 def _get_uwsgi_args(args, kwargs):

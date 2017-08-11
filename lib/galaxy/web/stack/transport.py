@@ -68,7 +68,7 @@ class ApplicationStackTransport(object):
         self.running = False
         if self.dispatcher_thread.is_alive():
             # FIXME
-            self.send_message(self.shutdown_msg, 'job-handlers')
+            #self.send_message(self.shutdown_msg, 'job-handlers')
             self.dispatcher_thread.join()
             log.debug('######## Joined dispatcher thread')
 

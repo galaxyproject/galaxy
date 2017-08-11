@@ -51,19 +51,18 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
             # configured.  The handler added here gets dumped and replaced with
             # an appropriately configured logger in configure_logging below.
             logging.basicConfig(level=logging.DEBUG)
-        log.debug("python path is: %s", ", ".join(sys.path))
         self.name = 'galaxy'
         self.startup_timer = ExecutionTimer()
         self.new_installation = False
-        self.application_stack = application_stack_instance(app=self)
-        # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
-        self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
-        self.application_stack.register_postfork_function(self.application_stack.start)
         # Read config file and check for errors
         self.config = config.Configuration(**kwargs)
         self.config.check()
         config.configure_logging(self.config)
+        log.debug("python path is: %s", ", ".join( sys.path ))
         self.configure_fluent_log()
+        # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
+        self.application_stack = application_stack_instance(app=self)
+        self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_whitelist(explicit='sanitize_whitelist_file' in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
         # control_worker *can* be initialized with a queue, but here we don't
@@ -210,6 +209,9 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         if self.heartbeat:
             handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
         self._configure_signal_handlers(handlers)
+
+        # Start web stack message handling
+        self.application_stack.register_postfork_function(self.application_stack.start)
 
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting

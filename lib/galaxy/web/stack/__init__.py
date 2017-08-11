@@ -51,7 +51,7 @@ class ApplicationStackMessageDispatcher(object):
 
     def deregister_func(self, func=None, name=None):
         name = self.__func_name(func, name)
-        del self.__func[name]
+        del self.__funcs[name]
 
     @property
     def handler_count(self):
@@ -150,7 +150,7 @@ class MessageApplicationStack(ApplicationStack):
 
     def deregister_message_handler(self, func=None, name=None):
         self.dispatcher.deregister_func(func, name)
-        self.transport.shutdown_if_needed()
+        self.transport.stop_if_unneeded()
 
     def send_message(self, dest, msg=None, target=None, params=None, **kwargs):
         assert msg is not None or target is not None, "Either 'msg' or 'target' parameters must be set"
@@ -214,13 +214,13 @@ class UWSGIApplicationStack(MessageApplicationStack):
         elif signum == signal.SIGINT:
             log.info('######## Mule %s received SIGINT, shutting down immediately', uwsgi.mule_id())
             self.shutdown()
-            ## This terminates the application loop in the handler entrypoint
-            #self.app.exit = True
+            # This terminates the application loop in the handler entrypoint
+            self.app.exit = True
         elif signum == signal.SIGHUP:
             log.debug('######## Mule %s received SIGHUP, restarting', uwsgi.mule_id())
-            #self.shutdown()
-            ## uWSGI master will restart us
-            #self.app.exit = True
+            self.shutdown()
+            # uWSGI master will restart us
+            self.app.exit = True
 
     # FIXME: these are copied into UWSGIFarmMessageTransport
     @property
@@ -265,11 +265,11 @@ class UWSGIApplicationStack(MessageApplicationStack):
         log.debug('######## STACK SHUTDOWN CALLED')
         super(UWSGIApplicationStack, self).shutdown()
         # FIXME: blech
-        #if not self._is_mule:
-        #    for farm in self._farms:
-        #        for mule in self._mules:
-        #            # This will possibly generate more than we need, but that's ok
-        #            self.transport.send_message(self.shutdown_msg, farm)
+        if not self._is_mule:
+            for farm in self._farms:
+                for mule in self._mules:
+                    # This will possibly generate more than we need, but that's ok
+                    self.transport.send_message(self.shutdown_msg, farm)
 
 
 class PasteApplicationStack(ApplicationStack):
@@ -317,8 +317,9 @@ def process_in_pool(pool_name):
 def _do_uwsgi_postfork():
     import os
     log.debug('######## postfork called, pid %s mule %s functions are: %s' % (os.getpid(), uwsgi.mule_id(), UWSGIApplicationStack.postfork_functions))
-    #if uwsgi.mule_id() > 0:
-    #    # mules will inherit the postfork function list and call them immediately upon fork, but should not do that
-    #    UWSGIApplicationStack.postfork_functions = []
+    if uwsgi.mule_id() > 0:
+        # mules will inherit the postfork function list and call them immediately upon fork, but should not do that
+        UWSGIApplicationStack.postfork_functions = []
+    log.debug('######## postfork called, pid %s mule %s NOW functions are: %s' % (os.getpid(), uwsgi.mule_id(), UWSGIApplicationStack.postfork_functions))
     for f, args, kwargs in [t for t in UWSGIApplicationStack.postfork_functions]:
         f(*args, **kwargs)
