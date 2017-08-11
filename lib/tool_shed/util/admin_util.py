@@ -704,7 +704,7 @@ class Admin( object ):
         users = [ get_user( trans, user_id ) for user_id in user_ids ]
         if len( user_ids ) > 1:
             user_id = ','.join( user_ids )
-        return trans.fill_template( '/admin/user/reset_password.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/user/reset_password.mako',
                                     id=user_id,
                                     users=users,
                                     password='',
@@ -851,12 +851,7 @@ class Admin( object ):
             elif operation == "create":
                 return self.create_new_user( trans, **kwd )
             elif operation == "information":
-                user_id = kwd.get( 'id', None )
-                if not user_id:
-                    kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received" % str( user_id ) )
-                    kwd[ 'status' ] = 'error'
-                else:
-                    return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
+                return trans.response.send_redirect( web.url_for( controller='user', action='manage_user_info', cntrller='user', **kwd ) )
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwd )
         if trans.app.config.allow_user_deletion:
@@ -942,7 +937,7 @@ class Admin( object ):
             ( user.email, len( in_roles ), len( in_groups ) )
         if not status:
             status = 'done'
-        return trans.fill_template( '/admin/user/user.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/user/user.mako',
                                     user=user,
                                     in_roles=in_roles,
                                     out_roles=out_roles,

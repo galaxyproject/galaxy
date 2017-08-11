@@ -355,8 +355,9 @@ return {
         
     // template
     message: function(options) {
+        var status = options.status == 'success' ? 'done' : options.status;
         return  '<p>' +
-                    '<div class="' + options.status + 'message transient-message">' + _.escape( options.message ) + '</div>' +
+                    '<div class="' + status + 'message transient-message">' + _.escape( options.message ) + '</div>' +
                     '<div style="clear: both"></div>' +
                 '</p>';
     },

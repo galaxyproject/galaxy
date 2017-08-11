@@ -160,66 +160,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         }
     });
 
-    /** View of individual user forms */
-    var Forms = Backbone.View.extend({
-
-        initialize: function( options ) {
-            this.model = new Model( options );
-            this.page = this.model.get( options.form_id );
-            this.setElement( '<div/>' );
-            this.render();
-        },
-
-        render: function() {
-            var self = this;
-            $.ajax({
-                url     : Galaxy.root + this.page.url,
-                type    : 'GET'
-            }).done( function( response ) {
-                var options = $.extend( {}, self.page, response );
-                var form = new Form({
-                    title  : options.title,
-                    icon   : options.icon,
-                    inputs : options.inputs,
-                    operations: {
-                        'submit': new Ui.ButtonIcon({
-                            tooltip  : options.submit_tooltip,
-                            title    : options.submit_title || 'Save settings',
-                            icon     : options.submit_icon || 'fa-save',
-                            onclick  : function() { self._submit( form, options ) }
-                        })
-                    }
-                });
-                self.$el.empty().append( form.$el );
-            }).fail( function( response ) {
-                self.$el.empty().append( new Ui.Message({
-                    message     : 'Failed to load resource ' + self.page.url + '.',
-                    status      : 'danger',
-                    persistent  : true
-                }).$el );
-            });
-        },
-
-        _submit: function( form, options ) {
-            var self = this;
-            $.ajax( {
-                url         : Galaxy.root + options.url,
-                data        : JSON.stringify( form.data.create() ),
-                type        : 'PUT',
-                contentType : 'application/json'
-            }).done( function( response ) {
-                form.data.matchModel( response, function ( input, input_id ) {
-                    form.field_list[ input_id ].value( input.value );
-                });
-                form.message.update( { message: response.message, status: 'success' } );
-            }).fail( function( response ) {
-                form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
-            });
-        }
-    });
-
     return {
         View  : View,
-        Forms : Forms
+        Model : Model
     };
 });

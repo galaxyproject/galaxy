@@ -72,7 +72,6 @@ class UserGrid( grids.Grid ):
 
     title = "Users"
     model_class = model.User
-    template = '/admin/user/grid.mako'
     default_sort_key = "email"
     columns = [
         UserLoginColumn( "Email",
@@ -175,7 +174,6 @@ class RoleGrid( grids.Grid ):
 
     title = "Roles"
     model_class = model.Role
-    template = '/admin/dataset_security/role/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -266,7 +264,6 @@ class GroupGrid( grids.Grid ):
 
     title = "Groups"
     model_class = model.Group
-    template = '/admin/dataset_security/group/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -472,7 +469,6 @@ class RepositoryMetadataGrid( grids.Grid ):
     # Grid definition
     title = "Repository Metadata"
     model_class = model.RepositoryMetadata
-    template = '/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "name"
     use_hide_message = False
     columns = [
