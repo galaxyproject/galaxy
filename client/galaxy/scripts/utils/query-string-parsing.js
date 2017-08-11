@@ -7,7 +7,9 @@ function get( key, queryString ){
     if( !matches || !matches.length ){
         return undefined;
     }
-    matches = _.map( matches, function( match ) { return match.substr( key.length + 1 ) } );
+    matches = _.map( matches, function( match ) {
+        return decodeURIComponent( match.substr( key.length + 1 ).replace( /\+/g, ' ' ) );
+    } );
     if( matches.length === 1 ){
         return matches[ 0 ];
     }

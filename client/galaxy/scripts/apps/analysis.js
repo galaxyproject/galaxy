@@ -35,17 +35,6 @@ window.app = function app( options, bootstrapped ){
     window.Galaxy = new GalaxyApp( options, bootstrapped );
     Galaxy.debug( 'analysis app' );
 
-    var routingMessage = Backbone.View.extend({
-        initialize: function(options) {
-            this.message = options.message || "Undefined Message";
-            this.msg_status = options.type || 'info';
-            this.render();
-        },
-        render: function(){
-            this.$el.html(_.escape(this.message)).addClass(this.msg_status + "message");
-        }
-    });
-
     /** Routes */
     var AnalysisRouter = Router.extend({
         routes : {

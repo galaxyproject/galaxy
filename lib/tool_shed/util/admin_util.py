@@ -127,7 +127,7 @@ class Admin( object ):
                                          .filter( trans.app.model.Group.table.c.deleted == false() ) \
                                          .order_by( trans.app.model.Group.table.c.name ):
                 out_groups.append( ( group.id, group.name ) )
-        return trans.fill_template( '/admin/dataset_security/role/role_create.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/role/role_create.mako',
                                     name=name,
                                     description=description,
                                     in_users=in_users,
@@ -175,7 +175,7 @@ class Admin( object ):
                                                                       action='roles',
                                                                       message=util.sanitize_text( message ),
                                                                       status='done' ) )
-        return trans.fill_template( '/admin/dataset_security/role/role_rename.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/role/role_rename.mako',
                                     role=role,
                                     message=message,
                                     status=status )
@@ -266,7 +266,7 @@ class Admin( object ):
         else:
             message = "Not showing associated datasets, there are too many."
             status = 'info'
-        return trans.fill_template( '/admin/dataset_security/role/role.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/role/role.mako',
                                     role=role,
                                     in_users=in_users,
                                     out_users=out_users,
@@ -850,8 +850,6 @@ class Admin( object ):
                 return self.purge_user( trans, **kwd )
             elif operation == "create":
                 return self.create_new_user( trans, **kwd )
-            elif operation == "information":
-                return trans.response.send_redirect( web.url_for( controller='user', action='manage_user_info', cntrller='user', **kwd ) )
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwd )
         if trans.app.config.allow_user_deletion:

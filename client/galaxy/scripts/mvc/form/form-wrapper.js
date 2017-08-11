@@ -21,14 +21,15 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 var form = new Form({
                     title  : options.title,
                     message: options.message,
-                    status : options.status,
+                    status : options.status || 'warning',
                     icon   : options.icon,
                     inputs : options.inputs,
-                    operations: {
-                        'submit': new Ui.ButtonIcon({
+                    buttons: {
+                        'submit': new Ui.Button({
                             tooltip  : options.submit_tooltip,
                             title    : options.submit_title || 'Save settings',
                             icon     : options.submit_icon || 'fa-save',
+                            cls      : 'btn btn-primary ui-clear-float',
                             onclick  : function() { self._submit( form ) }
                         })
                     }
@@ -53,16 +54,24 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             }).done( function( response ) {
                 var success_message = { message: response.message, status: 'success', persistent: false };
                 if ( self.redirect ) {
-                    window.location = self.redirect + '?' + $.param( success_message );
+                    window.location = Galaxy.root + self.redirect + '?' + $.param( success_message );
                 } else {
                     form.data.matchModel( response, function ( input, input_id ) {
                         form.field_list[ input_id ].value( input.value );
                     });
-                    form.message.update( success_message );
+                    self._showMessage( form, success_message );
                 }
             }).fail( function( response ) {
-                form.message.update( { message: response.responseJSON.err_msg, status: 'danger', persistent: false } );
+                self._showMessage( form, { message: response.responseJSON.err_msg, status: 'danger', persistent: false } );
             });
+        },
+
+        _showMessage: function( form, options ) {
+            var $panel = form.$el.parents().filter(function() {
+                return [ 'auto', 'scroll' ].indexOf( $( this ).css( 'overflow' ) ) != -1;
+            }).first();
+            $panel.animate( { scrollTop : 0 }, 500 );
+            form.message.update( options );
         }
     });
 

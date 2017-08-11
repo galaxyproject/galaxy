@@ -17,6 +17,7 @@ window.app = function app( options, bootstrapped ){
     var AdminRouter = Router.extend({
         routes: {
             '(/)admin(/)users' : 'show_users',
+            '(/)admin(/)roles' : 'show_roles',
             '(/)admin(/)forms(/)(:form_id)' : 'show_forms'
         },
 
@@ -28,6 +29,10 @@ window.app = function app( options, bootstrapped ){
             this.page.display( new GridView( { url_base: Galaxy.root + 'admin/users_list', url_data: Galaxy.params, dict_format: true } ) );
         },
 
+        show_roles: function() {
+            this.page.display( new GridView( { url_base: Galaxy.root + 'admin/roles_list', url_data: Galaxy.params, dict_format: true } ) );
+        },
+
         show_forms : function( form_id ) {
             var form_defs = {
                 reset_user_password: {
@@ -35,12 +40,24 @@ window.app = function app( options, bootstrapped ){
                     url             : 'admin/reset_user_password?id=' + QueryStringParsing.get( 'id' ),
                     icon            : 'fa-user',
                     submit_title    : 'Save new password',
-                    redirect        : Galaxy.root + 'admin/users'
+                    redirect        : 'admin/users'
                 },
                 manage_roles_and_groups_for_user: {
                     url             : 'admin/manage_roles_and_groups_for_user?id=' + QueryStringParsing.get( 'id' ),
                     icon            : 'fa-users',
-                    redirect        : Galaxy.root + 'admin/users'
+                    redirect        : 'admin/users'
+                },
+                manage_users_and_groups_for_role: {
+                    url             : 'admin/manage_users_and_groups_for_role?id=' + QueryStringParsing.get( 'id' ),
+                    redirect        : 'admin/roles'
+                },
+                rename_role: {
+                    url             : 'admin/rename_role?id=' + QueryStringParsing.get( 'id' ),
+                    redirect        : 'admin/roles'
+                },
+                create_role: {
+                    url             : 'admin/create_role?id=' + QueryStringParsing.get( 'id' ),
+                    redirect        : 'admin/roles'
                 }
             };
             this.page.display( new FormWrapper.View ( form_defs[ form_id ] ) );

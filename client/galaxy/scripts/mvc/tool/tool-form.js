@@ -16,8 +16,8 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                             icon     : 'fa-check',
                             tooltip  : 'Execute: ' + options.name + ' (' + options.version + ')',
                             title    : 'Execute',
-                            cls      : 'ui-button btn btn-primary',
-                            floating : 'clear',
+                            cls      : 'btn btn-primary ui-clear-float',
+                            wait_cls : 'btn btn-info ui-clear-float',
                             onclick  : function() {
                                 execute_btn.wait();
                                 form.portlet.disable();

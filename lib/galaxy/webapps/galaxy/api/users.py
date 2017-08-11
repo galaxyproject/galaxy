@@ -555,8 +555,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         """
         Return available password inputs.
         """
-        return {'message': 'Password unchanged.',
-                'inputs': [ {'name': 'current', 'type': 'password', 'label': 'Current password'},
+        return {'inputs': [ {'name': 'current', 'type': 'password', 'label': 'Current password'},
                             {'name': 'password', 'type': 'password', 'label': 'New password'},
                             {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'},
                             {'name': 'token', 'type': 'hidden', 'hidden': True, 'ignore': None} ]}
@@ -625,9 +624,9 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                            'name': index,
                            'label': action.action,
                            'help': action.description,
-                           'options': [(r.name, r.id) for r in roles],
+                           'options': list(set((r.name, r.id) for r in roles)),
                            'value': [a.role.id for a in user.default_permissions if a.action == action.action]})
-        return {'message': 'Permissions unchanged.', 'inputs': inputs}
+        return {'inputs': inputs}
 
     @expose_api
     def set_permissions(self, trans, id, payload={}, **kwd):
@@ -659,7 +658,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         factory = FilterFactory(trans.app.toolbox)
         for filter_type in filter_types:
             self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values)
-        return {'message': 'Toolbox filters unchanged.', 'inputs': inputs}
+        return {'inputs': inputs}
 
     @expose_api
     def set_toolbox_filters(self, trans, id, payload={}, **kwd):
@@ -745,8 +744,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         Build communication server inputs.
         """
         user = self._get_user(trans, id)
-        return {'message': 'Communication server settings unchanged.',
-                'inputs': [{'name': 'enable',
+        return {'inputs': [{'name': 'enable',
                             'type': 'boolean',
                             'label': 'Enable communication',
                             'value': user.preferences.get('communication_server', 'false')}]}
