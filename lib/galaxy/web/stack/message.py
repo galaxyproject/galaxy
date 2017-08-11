@@ -98,6 +98,6 @@ class JobHandlerMessage(ApplicationStackMessage):
 
 
 def decode(msg_str):
-    d = json.loads(s)
+    d = json.loads(msg_str)
     cls = d.pop('__classname__')
-    return globals()[cls](d)
+    return globals()[cls](**d)

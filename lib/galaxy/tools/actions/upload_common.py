@@ -418,7 +418,7 @@ def create_job(trans, params, tool, json_file_path, data_list, folder=None, hist
     trans.sa_session.flush()
 
     # Queue the job for execution
-    trans.app.job_queue.put(job.id, job.tool_id)
+    trans.app.job_manager.job_queue.put(job.id, job.tool_id)
     trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
     output = odict()
     for i, v in enumerate(data_list):

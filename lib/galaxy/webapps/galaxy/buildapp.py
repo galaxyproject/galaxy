@@ -181,7 +181,8 @@ def uwsgi_app_factory():
 
 def postfork_setup():
     from galaxy.app import app
-    app.application_stack.set_postfork_server_name(app)
+    # FIXME
+    #app.application_stack.set_postfork_server_name(app)
     app.control_worker.bind_and_start()
 
 

@@ -4,6 +4,10 @@ from __future__ import absolute_import
 
 import logging
 import threading
+try:
+    from queue import Empty, Queue
+except ImportError:
+    from Queue import Empty, Queue
 
 try:
     import uwsgi
@@ -17,9 +21,11 @@ log = logging.getLogger(__name__)
 
 
 class ApplicationStackTransport(object):
+    shutdown_msg = '__SHUTDOWN__'
+
     def __init_dispatcher_thread(self):
         self.dispatcher_thread = threading.Thread(name=self.__class__.__name__ + ".dispatcher_thread", target=self._dispatch_messages)
-        self.dispatcher_thread.daemon = True
+        #self.dispatcher_thread.daemon = True
 
     def __init__(self, app, dispatcher=None):
         """ Pre-fork initialization.
@@ -36,19 +42,10 @@ class ApplicationStackTransport(object):
 
     def start_if_needed(self):
         # Don't unnecessarily start a thread that we don't need.
-        log.debug('######## start_if_needed called')
-        log.debug('######## %s' % self.can_run)
-        log.debug('######## %s' % self.running)
-        log.debug('######## %s' % self.dispatcher_thread.is_alive())
-        log.debug('######## %s' % self.dispatcher)
-        log.debug('######## %s' % self.dispatcher.handler_count)
-        import traceback
-        traceback.print_stack()
-        # FIXME: can_run is False here in the mule, but start() was called way back when the app was loaded and it was True then, what's going on here?
         if self.can_run and not self.running and not self.dispatcher_thread.is_alive() and self.dispatcher and self.dispatcher.handler_count:
             self.running = True
             self.dispatcher_thread.start()
-            log.debug('######## Web stack IPC message dispatcher thread started')
+            log.debug('######## Web stack IPC message dispatcher thread started in mule %s', uwsgi.mule_id())
 
     def stop_if_unneeded(self):
         if self.can_run and self.running and self.dispatcher_thread.is_alive() and self.dispatcher and not self.dispatcher.handler_count:
@@ -67,12 +64,20 @@ class ApplicationStackTransport(object):
         pass
 
     def shutdown(self):
+        log.debug('######## TRANSPORT SHUTDOWN CALLED')
         self.running = False
-        self.dispatcher_thread.join()
+        if self.dispatcher_thread.is_alive():
+            # FIXME
+            self.send_message(self.shutdown_msg, 'job-handlers')
+            self.dispatcher_thread.join()
+            log.debug('######## Joined dispatcher thread')
 
 
 class UWSGIFarmMessageTransport(ApplicationStackTransport):
-    shutdown_msg = '__SHUTDOWN__'
+    """ Communication via uWSGI Mule Farm messages. Communication is unidirectional (workers -> mules).
+    """
+    # FIXME: do you need a clear "this is a producer, this is a consumer flag?
+    #shutdown_msg = '__SHUTDOWN__'
     # Define any static lock names here, additional locks will be appended for each configured farm's message handler
     _locks = []
 
@@ -94,6 +99,8 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
         super(UWSGIFarmMessageTransport, self).__init__(app, dispatcher=dispatcher)
         self._farms_dict = None
         self._mules_list = None
+        self._is_mule = False
+        self._msg_queue = Queue()
         self.__initialize_locks()
 
     @property
@@ -112,7 +119,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
         if self._mules_list is None:
             self._mules_list = []
             mules = uwsgi.opt.get('mule', [])
-            self._mules_list = [mules] if isinstance(mules, string_types) else mules
+            self._mules_list = [mules] if isinstance(mules, string_types) or mules is True else mules
         return self._mules_list
 
     def __lock(self, name_or_id):
@@ -139,31 +146,34 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
             try:
                 log.debug('######## Mule %s acquired message receive lock, waiting for new message', uwsgi.mule_id())
                 msg = uwsgi.farm_get_msg()
-                if msg == self.shutdown_msg:
-                    # all you need to do is pass here, self.running should already be set False by the signal handler calling the shutdown method defined in the superclass
-                    log.debug('######## SHUTTING DOWN %s', uwsgi.mule_id())
                 log.debug('######## Mule %s received message: %s', uwsgi.mule_id(), msg)
+                if msg == self.shutdown_msg or msg is None:
+                    # all you need to do is pass here, self.running should already be set False by the signal handler calling the shutdown method defined in the superclass
+                    self.running = False
+                    log.debug('######## SHUTTING DOWN %s', uwsgi.mule_id())
             except:
                 log.exception( "Exception in mule message handling" )
             finally:
                 self.__unlock(lock)
-            if msg:
+                log.debug('######## Mule %s released lock', uwsgi.mule_id())
+            if msg != self.shutdown_msg and msg is not None:
                 self.dispatcher.dispatch(msg)
         log.info('######## Mule %s message handler shutting down', uwsgi.mule_id())
 
     def start(self):
         """ Post-fork initialization.
         """
-        if uwsgi.mule_id() == 0:
-            # this is the main process
-            return
-        if not uwsgi.in_farm():
-            raise RuntimeError('Mule %s is not in a farm! Set `farm = %s:%s` in uWSGI configuration'
-                               % (uwsgi.mule_id(),
-                                  self.app.config.job_handler_pool_name,
-                                  ','.join(map(str, range(1, len(filter(lambda x: x.endswith('galaxy/main.py'), self._mules)) + 1)))))
+        # TODO: what happens if workers > 1??
+        self._is_mule = uwsgi.mule_id() > 0
+        if self._is_mule:
+            if not uwsgi.in_farm():
+                raise RuntimeError('Mule %s is not in a farm! Set `farm = %s:%s` in uWSGI configuration'
+                                   % (uwsgi.mule_id(),
+                                      self.app.config.job_handler_pool_name,
+                                      ','.join(map(str, range(1, len(filter(lambda x: x.endswith('galaxy/main.py'), self._mules)) + 1)))))
         super(UWSGIFarmMessageTransport, self).start()
-        log.info('######## Mule started, mule id: %s, farm name: %s, server name: %s', uwsgi.mule_id(), self._farm_name, self.app.config.server_name)
+        log.info('######## Mule transport started, worker id: %s, mule id: %s, farm name: %s, server name: %s', uwsgi.worker_id(), uwsgi.mule_id(), self._farm_name, self.app.config.server_name)
+        self._send_all_messages()
 
     @property
     def _farm_name(self):
@@ -172,7 +182,20 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
                 return name
         return None
 
+    def _send_all_messages(self):
+        # the sender doesn't have a running thread, all we are concerned with here is whether or not we've forked yet
+        if self.can_run and not self._is_mule:
+            while True:
+                try:
+                    msg, dest = self._msg_queue.get_nowait()
+                except Empty:
+                    break
+                log.debug('######## Sending message in mule %s to farm %s: %s', uwsgi.mule_id(), dest, msg)
+                uwsgi.farm_msg(dest, msg)
+                log.debug('######## Message sent')
+
+
     def send_message(self, msg, dest):
-        log.debug('######## Sending message to farm %s: %s', dest, msg)
-        uwsgi.farm_msg(dest, msg)
-        log.debug('######## Message sent')
+        log.debug('######## Queing message in mule %s to farm %s: %s', uwsgi.mule_id(), dest, msg)
+        self._msg_queue.put((msg, dest))
+        self._send_all_messages()

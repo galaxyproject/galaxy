@@ -56,6 +56,8 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         self.startup_timer = ExecutionTimer()
         self.new_installation = False
         self.application_stack = application_stack_instance(app=self)
+        # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
+        self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.application_stack.register_postfork_function(self.application_stack.start)
         # Read config file and check for errors
         self.config = config.Configuration(**kwargs)
@@ -189,10 +191,10 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         # Start the job manager
         from galaxy.jobs import manager
         self.job_manager = manager.JobManager(self)
-        self.job_manager.start()
+        self.application_stack.register_postfork_function(self.job_manager.start)
         # FIXME: These are exposed directly for backward compatibility
-        self.job_queue = self.job_manager.job_queue
-        self.job_stop_queue = self.job_manager.job_stop_queue
+        #self.job_queue = self.job_manager.job_queue
+        #self.job_stop_queue = self.job_manager.job_stop_queue
         self.proxy_manager = ProxyManager(self.config)
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection(

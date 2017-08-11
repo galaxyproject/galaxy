@@ -70,6 +70,20 @@ class ApplicationStackMessageDispatcher(object):
             self.__funcs[msg.target](msg)
 
 
+class ApplicationStackLogFilter(logging.Filter):
+    def filter(self, record):
+        record.worker_id = None
+        record.mule_id = None
+        return True
+
+
+class UWSGILogFilter(logging.Filter):
+    def filter(self, record):
+        record.worker_id = uwsgi.worker_id()
+        record.mule_id = uwsgi.mule_id()
+        return True
+
+
 class ApplicationStack(object):
     name = None
     prohibited_middleware = frozenset()
@@ -78,6 +92,7 @@ class ApplicationStack(object):
     handle_jobs = False         # used by galaxy.jobs to determine whether this process handles jobs
 
     transport_class = ApplicationStackTransport
+    log_filter_class = ApplicationStackLogFilter
 
     @classmethod
     def register_postfork_function(cls, f, *args, **kwargs):
@@ -130,7 +145,6 @@ class MessageApplicationStack(ApplicationStack):
         self.transport.start()
 
     def register_message_handler(self, func, name=None):
-        log.debug('######## %s register_message_handler called', uwsgi.mule_id())
         self.dispatcher.register_func(func, name)
         self.transport.start_if_needed()
 
@@ -164,6 +178,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
     setup_jobs_with_msg = True
 
     transport_class = UWSGIFarmMessageTransport
+    log_filter_class = UWSGILogFilter
     # FIXME: this is copied into UWSGIFarmMessageTransport
     shutdown_msg = '__SHUTDOWN__'
     postfork_functions = []
@@ -172,27 +187,40 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     @classmethod
     def register_postfork_function(cls, f, *args, **kwargs):
-        cls.postfork_functions.append((f, args, kwargs))
+        if uwsgi.mule_id() == 0:
+            cls.postfork_functions.append((f, args, kwargs))
+        else:
+            # mules are forked from the master and run the master's postfork functions immediately before the forked
+            # process is replaced. that is prevented in the _do_uwsgi_postfork function, and because mules are
+            # standalone non-forking processes, they should run postfork functions immediately
+            f(*args, **kwargs)
 
     def __init__(self, app=None):
         super(UWSGIApplicationStack, self).__init__(app=app)
+        self._farms_dict = None
+        self._mules_list = None
+        self._is_mule = None
 
     def __register_signal_handlers(self):
         for name in ('TERM', 'INT', 'HUP'):
+            log.debug('######## registered signal handler for SIG%s', name)
             sig = getattr(signal, 'SIG%s' % name)
             signal.signal(sig, self._handle_signal)
 
     def _handle_signal(self, signum, frame):
-        if signum in (signal.SIGTERM, signal.SIGINT):
-            log.info('######## Mule %s received SIGINT/SIGTERM, shutting down', uwsgi.mule_id())
+        if signum == signal.SIGTERM:
+            log.info('######## Mule %s received SIGTERM, shutting down gracefully', uwsgi.mule_id())
             self.shutdown()
-            # This terminates the application loop in the handler entrypoint
-            self.app.exit = True
+        elif signum == signal.SIGINT:
+            log.info('######## Mule %s received SIGINT, shutting down immediately', uwsgi.mule_id())
+            self.shutdown()
+            ## This terminates the application loop in the handler entrypoint
+            #self.app.exit = True
         elif signum == signal.SIGHUP:
             log.debug('######## Mule %s received SIGHUP, restarting', uwsgi.mule_id())
-            self.shutdown()
-            # uWSGI master will restart us
-            self.app.exit = True
+            #self.shutdown()
+            ## uWSGI master will restart us
+            #self.app.exit = True
 
     # FIXME: these are copied into UWSGIFarmMessageTransport
     @property
@@ -211,15 +239,20 @@ class UWSGIApplicationStack(MessageApplicationStack):
         if self._mules_list is None:
             self._mules_list = []
             mules = uwsgi.opt.get('mule', [])
-            self._mules_list = [mules] if isinstance(mules, string_types) else mules
+            self._mules_list = [mules] if isinstance(mules, string_types) or mules is True else mules
         return self._mules_list
 
     def start(self):
-        self.__register_signal_handlers()
+        self._is_mule = uwsgi.mule_id() > 0
+        if self._is_mule:
+            self.__register_signal_handlers()
         super(UWSGIApplicationStack, self).start()
 
     def set_postfork_server_name(self, app):
-        app.config.server_name += ".%d" % uwsgi.worker_id()
+        if uwsgi.mule_id() == 0:
+            app.config.server_name += ".worker%d" % uwsgi.worker_id()
+        else:
+            app.config.server_name += ".mule%d" % uwsgi.mule_id()
 
     # FIXME: used?
     def workers(self):
@@ -229,11 +262,14 @@ class UWSGIApplicationStack(MessageApplicationStack):
         return self.transport._farm_name == pool_name
 
     def shutdown(self):
+        log.debug('######## STACK SHUTDOWN CALLED')
         super(UWSGIApplicationStack, self).shutdown()
-        for farm in self._farms:
-            for mule in self._mules:
-                # This will possibly generate more than we need, but that's ok
-                self.transport.send_message(self.shutdown_msg, farm)
+        # FIXME: blech
+        #if not self._is_mule:
+        #    for farm in self._farms:
+        #        for mule in self._mules:
+        #            # This will possibly generate more than we need, but that's ok
+        #            self.transport.send_message(self.shutdown_msg, farm)
 
 
 class PasteApplicationStack(ApplicationStack):
@@ -265,6 +301,10 @@ def application_stack_instance(app=None):
     return stack_class(app=app)
 
 
+def application_stack_log_filter():
+    return application_stack_class().log_filter_class
+
+
 def register_postfork_function(f, *args, **kwargs):
     application_stack_class().register_postfork_function(f, *args, **kwargs)
 
@@ -274,6 +314,11 @@ def process_in_pool(pool_name):
 
 
 @uwsgi_postfork
-def _do_postfork():
+def _do_uwsgi_postfork():
+    import os
+    log.debug('######## postfork called, pid %s mule %s functions are: %s' % (os.getpid(), uwsgi.mule_id(), UWSGIApplicationStack.postfork_functions))
+    #if uwsgi.mule_id() > 0:
+    #    # mules will inherit the postfork function list and call them immediately upon fork, but should not do that
+    #    UWSGIApplicationStack.postfork_functions = []
     for f, args, kwargs in [t for t in UWSGIApplicationStack.postfork_functions]:
         f(*args, **kwargs)
