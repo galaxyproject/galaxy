@@ -1137,7 +1137,7 @@ class ExcelXls( Binary ):
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            dataset.peek = "Microsoft Excel 2003 file"
+            dataset.peek = "Microsoft Excel XLS file"
             dataset.blurb = data.nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
@@ -1147,7 +1147,7 @@ class ExcelXls( Binary ):
         try:
             return dataset.peek
         except:
-            return "Microsoft Excel 2003 file (%s)" % ( data.nice_size( dataset.get_size() ) )
+            return "Microsoft Excel XLS file (%s)" % ( data.nice_size( dataset.get_size() ) )
 
 
 Binary.register_sniffable_binary_format("excel.xls", "excel.xls", ExcelXls)
