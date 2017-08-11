@@ -4,7 +4,6 @@ import os
 from datetime import datetime, timedelta
 import six
 from string import punctuation as PUNCTUATION
-from sqlalchemy.sql import expression
 from sqlalchemy import and_, false, func, or_
 
 import galaxy.queue_worker
@@ -591,29 +590,29 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             default_options = [ ( 'No', 'no' ) ]
             for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
                 default_options.append( ( 'Yes, ' + typ, typ ) )
-            return { 'title'  : 'Create Quota',
-                     'inputs' : [{
-                                    'name'    : 'name',
-                                    'label'   : 'Name'
-                                },{
-                                    'name'    : 'description',
-                                    'label'   : 'Description'
-                                },{
-                                    'name'    : 'amount',
-                                    'label'   : 'Amount',
-                                    'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
-                                },{
-                                    'name'    : 'operation',
-                                    'label'   : 'Assign, increase by amount, or decrease by amount?',
-                                    'options' : [ ('=', '=' ), ( '+', '+' ), ( '-', '-' ) ]
-                                },{
-                                    'name'    : 'default',
-                                    'label'   : 'Assign, increase by amount, or decrease by amount?',
-                                    'options' : default_options,
-                                    'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
-                                },
-                                build_select_input( 'in_groups', 'Groups', all_groups, [] ),
-                                build_select_input( 'in_users', 'Users', all_users, [] ) ] }
+            return {    'title'  : 'Create Quota',
+                        'inputs' : [{
+                            'name'    : 'name',
+                            'label'   : 'Name'
+                        }, {
+                            'name'    : 'description',
+                            'label'   : 'Description'
+                        }, {
+                            'name'    : 'amount',
+                            'label'   : 'Amount',
+                            'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
+                        }, {
+                            'name'    : 'operation',
+                            'label'   : 'Assign, increase by amount, or decrease by amount?',
+                            'options' : [ ('=', '=' ), ( '+', '+' ), ( '-', '-' ) ]
+                        }, {
+                            'name'    : 'default',
+                            'label'   : 'Assign, increase by amount, or decrease by amount?',
+                            'options' : default_options,
+                            'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
+                        },
+                            build_select_input( 'in_groups', 'Groups', all_groups, [] ),
+                            build_select_input( 'in_users', 'Users', all_users, [] ) ] }
         else:
             try:
                 quota, message = self._create_quota( util.Params( payload ) )
@@ -632,14 +631,14 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             return {
                 'title'  : 'Change quota name and description for \'%s\'' % util.sanitize_text( quota.name ),
                 'inputs' : [{
-                                'name'  : 'name',
-                                'label' : 'Name',
-                                'value' : quota.name
-                            },{
-                                'name'  : 'description',
-                                'label' : 'Description',
-                                'value' : quota.description
-                            }]
+                    'name'  : 'name',
+                    'label' : 'Name',
+                    'value' : quota.name
+                }, {
+                    'name'  : 'description',
+                    'label' : 'Description',
+                    'value' : quota.description
+                }]
             }
         else:
             try:
@@ -652,7 +651,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
     def manage_users_and_groups_for_quota( self, trans, payload=None, **kwd ):
         quota_id = kwd.get( 'id' )
         if not quota_id:
-            return message_exception( trans, 'Invalid quota id (%s) received' % str( role_id ) )
+            return message_exception( trans, 'Invalid quota id (%s) received' % str( quota_id ) )
         quota = get_quota( trans, quota_id )
         if trans.request.method == 'GET':
             in_users = []
@@ -694,16 +693,16 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             return {
                 'title'  : 'Edit quota size for \'%s\'' % util.sanitize_text( quota.name ),
                 'inputs' : [{
-                                'name'    : 'amount',
-                                'label'   : 'Amount',
-                                'value'   : quota.display_amount,
-                                'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
-                            },{
-                                'name'    : 'operation',
-                                'label'   : 'Assign, increase by amount, or decrease by amount?',
-                                'options' : [ ('=', '=' ), ( '+', '+' ), ( '-', '-' ) ],
-                                'value'   : quota.operation
-                            }]
+                    'name'    : 'amount',
+                    'label'   : 'Amount',
+                    'value'   : quota.display_amount,
+                    'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
+                }, {
+                    'name'    : 'operation',
+                    'label'   : 'Assign, increase by amount, or decrease by amount?',
+                    'options' : [ ('=', '=' ), ( '+', '+' ), ( '-', '-' ) ],
+                    'value'   : quota.operation
+                }]
             }
         else:
             try:
@@ -726,12 +725,12 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             return {
                 'title'  : 'Set quota default for \'%s\'' % util.sanitize_text( quota.name ),
                 'inputs' : [{
-                                'name'    : 'default',
-                                'label'   : 'Assign, increase by amount, or decrease by amount?',
-                                'options' : default_options,
-                                'value'   : default_value,
-                                'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
-                            }]
+                    'name'    : 'default',
+                    'label'   : 'Assign, increase by amount, or decrease by amount?',
+                    'options' : default_options,
+                    'value'   : default_value,
+                    'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
+                }]
             }
         else:
             try:
