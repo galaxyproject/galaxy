@@ -16,9 +16,9 @@ UserOAuth2Table = Table(
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=False, index=True ),
     Column( "provider", TEXT, nullable=False ),
     Column( "state_token", TEXT, nullable=False, index=True ),
-    Column( "id_token", TEXT, nullable=False ),
-    Column( "refresh_token", TEXT, nullable=False ),
-    Column( "expiration_date", DateTime, nullable=False ),
+    Column( "id_token", TEXT ),
+    Column( "refresh_token", TEXT ),
+    Column( "expiration_date", DateTime ),
     Column( "access_token", TEXT ) )
 
 
