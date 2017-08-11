@@ -96,9 +96,9 @@ model.UserOAuth2.table = Table(
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=False, index=True ),
     Column( "provider", String, nullable=False ),
     Column( "state_token", String, nullable=False, index=True ),
-    Column( "id_token", String, nullable=False ),
-    Column( "refresh_token", String, nullable=False ),
-    Column( "expiration_date", DateTime, nullable=False ),
+    Column( "id_token", String ),
+    Column( "refresh_token", String ),
+    Column( "expiration_date", DateTime ),
     Column( "access_token", String ) )
 
 model.PasswordResetToken.table = Table(
