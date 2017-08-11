@@ -1123,6 +1123,7 @@ Binary.register_sniffable_binary_format("xlsx", "xlsx", Xlsx)
 class ExcelXls( Binary ):
     """Class describing an Excel (xls) file"""
     file_ext = "excel.xls"
+    edam_format = "format_3468"
 
     def sniff( self, filename ):
         mime_type = subprocess.check_output("file --mime-type '{}'".format(filename), shell=True).rstrip()
