@@ -32,6 +32,8 @@ from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
 
+from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+
 log = logging.getLogger(__name__)
 
 
@@ -500,6 +502,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __api_import_new_workflow( self, trans, payload, **kwd ):
         data = payload['workflow']
 
+        import_tools = util.string_as_bool( payload.get( "import_tools", False ) )
+        if import_tools and not trans.user_is_admin():
+            raise exceptions.AdminRequiredException()
+
         publish = util.string_as_bool( payload.get( "publish", False ) )
         # If 'publish' set, default to importable.
         importable = util.string_as_bool( payload.get( "importable", publish ) )
@@ -534,6 +540,32 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         rval.append(item)
 
+        #
+        if import_tools:
+            tools = {}
+            for key in data['steps']:
+                item = data['steps'][key]
+                if item is not None:
+                    if 'tool_shed_repository' in item:
+                        tool_shed_repository = item['tool_shed_repository']
+                        if 'owner' in tool_shed_repository and 'changeset_revision' in tool_shed_repository and 'name' in tool_shed_repository and 'tool_shed' in tool_shed_repository:
+                            toolstr = tool_shed_repository['owner'] \
+                                + tool_shed_repository['changeset_revision'] \
+                                + tool_shed_repository['name'] \
+                                + tool_shed_repository['tool_shed']
+                            tools[toolstr] = tool_shed_repository
+            irm = InstallRepositoryManager( self.app )
+            for k in tools:
+                item = tools[k]
+                tool_shed_url = 'https://' + item['tool_shed'] + '/'
+                name = item['name']
+                owner = item['owner']
+                changeset_revision = item['changeset_revision']
+                irm.install( tool_shed_url,
+                             name,
+                             owner,
+                             changeset_revision,
+                             payload )
         return item
 
     @expose_api

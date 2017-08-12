@@ -330,12 +330,18 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
     def test_upload_deprecated( self ):
         self.__test_upload( use_deprecated_route=True )
 
-    def __test_upload( self, use_deprecated_route=False, name="test_import", workflow=None, assert_ok=True ):
+    def test_import_tools_requires_admin( self ):
+        response = self.__test_upload( import_tools=True, assert_ok=False )
+        assert response.status_code == 403
+
+    def __test_upload( self, use_deprecated_route=False, name="test_import", workflow=None, assert_ok=True, import_tools=False ):
         if workflow is None:
             workflow = self.workflow_populator.load_workflow( name=name )
         data = dict(
             workflow=dumps( workflow ),
         )
+        if import_tools:
+            data["import_tools"] = import_tools
         if use_deprecated_route:
             route = "workflows/upload"
         else:
