@@ -159,6 +159,8 @@ def paste_app_factory( global_conf, **kwargs ):
 
 
 def uwsgi_app_factory():
+    # TODO: synchronize with galaxy.web.framework.webapp.build_native_uwsgi_app - should
+    # at least be using nice_config_parser for instance.
     import uwsgi
     root = os.path.abspath(uwsgi.opt.get('galaxy_root', os.getcwd()))
     config_file = uwsgi.opt.get('galaxy_config_file', os.path.join(root, 'config', 'galaxy.ini'))
