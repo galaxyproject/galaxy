@@ -77,8 +77,8 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_route( '/activate', controller='user', action='activate' )
 
     # OAuth2.0 endpoints. 
-    webapp.add_route('/OAuth2Authentication/google', controller='oauth2', action='google_authn')
-    webapp.add_route('/OAuth2Callback/google', controller='oauth2', action='google_callback')
+    webapp.add_route('/oauth2authentication/google', controller='oauth2', action='google_authn')
+    webapp.add_route('/oauth2callback/google', controller='oauth2', action='google_callback')
 
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
