@@ -165,7 +165,7 @@ class CondaContext(installable.InstallableContext):
         if self.use_local and not self.conda_build_available:
             conda_targets = [CondaTarget("conda-build", version=CONDA_BUILD_VERSION)]
             # Cannot use --use-local during installation fo conda-build.
-            return install_conda_targets(conda_targets, env_name=None, conda_context=self, allow_local=False)
+            return install_conda_targets(conda_targets, conda_context=self, env_name=None, allow_local=False)
         else:
             return 0
 
@@ -428,8 +428,7 @@ def hash_conda_packages(conda_packages, conda_target=None):
 
 # shell makes sense for planemo, in Galaxy this should just execute
 # these commands as Python
-def install_conda(conda_context=None, force_conda_build=False):
-    conda_context = _ensure_conda_context(conda_context)
+def install_conda(conda_context, force_conda_build=False):
     f, script_path = tempfile.mkstemp(suffix=".sh", prefix="conda_install")
     os.close(f)
     download_cmd = " ".join(commands.download_command(conda_link(), to=script_path, quote_url=True))
@@ -449,8 +448,7 @@ def install_conda(conda_context=None, force_conda_build=False):
             os.remove(script_path)
 
 
-def install_conda_targets(conda_targets, env_name=None, conda_context=None, allow_local=True):
-    conda_context = _ensure_conda_context(conda_context)
+def install_conda_targets(conda_targets, conda_context, env_name=None, allow_local=True):
     conda_context.ensure_channels_configured()
     if env_name is not None:
         create_args = [
@@ -463,10 +461,9 @@ def install_conda_targets(conda_targets, env_name=None, conda_context=None, allo
         return conda_context.exec_install([t.package_specifier for t in conda_targets], allow_local=allow_local)
 
 
-def install_conda_target(conda_target, conda_context=None, skip_environment=False):
+def install_conda_target(conda_target, conda_context, skip_environment=False):
     """ Install specified target into a its own environment.
     """
-    conda_context = _ensure_conda_context(conda_context)
     conda_context.ensure_channels_configured()
     if not skip_environment:
         create_args = [
@@ -478,8 +475,7 @@ def install_conda_target(conda_target, conda_context=None, skip_environment=Fals
         return conda_context.exec_install([conda_target.package_specifier])
 
 
-def cleanup_failed_install_of_environment(env, conda_context=None):
-    conda_context = _ensure_conda_context(conda_context)
+def cleanup_failed_install_of_environment(env, conda_context):
     if conda_context.has_env(env):
         conda_context.exec_remove([env])
 
@@ -488,12 +484,11 @@ def cleanup_failed_install(conda_target, conda_context=None):
     cleanup_failed_install_of_environment(conda_target.install_environment, conda_context=conda_context)
 
 
-def best_search_result(conda_target, conda_context=None, channels_override=None, offline=False):
+def best_search_result(conda_target, conda_context, channels_override=None, offline=False):
     """Find best "conda search" result for specified target.
 
     Return ``None`` if no results match.
     """
-    conda_context = _ensure_conda_context(conda_context)
     if not channels_override:
         conda_context.ensure_channels_configured()
 
@@ -529,22 +524,7 @@ def is_search_hit_exact(conda_target, search_hit):
     return not target_version or search_hit['version'] == target_version
 
 
-def is_target_available(conda_target, conda_context=None, channels_override=None):
-    """Check if a specified target is available for installation.
-
-    If the package name exists return ``True`` (the ``bool``). If in addition
-    the version matches exactly return "exact" (a string). Otherwise return
-    ``False``.
-    """
-    (best_hit, exact) = best_search_result(conda_target, conda_context, channels_override)
-    if best_hit:
-        return 'exact' if exact else True
-    else:
-        return False
-
-
-def is_conda_target_installed(conda_target, conda_context=None):
-    conda_context = _ensure_conda_context(conda_context)
+def is_conda_target_installed(conda_target, conda_context):
     # fail by default
     if conda_context.has_env(conda_target.install_environment):
         return True
@@ -552,8 +532,7 @@ def is_conda_target_installed(conda_target, conda_context=None):
         return False
 
 
-def filter_installed_targets(conda_targets, conda_context=None):
-    conda_context = _ensure_conda_context(conda_context)
+def filter_installed_targets(conda_targets, conda_context):
     installed = functools.partial(is_conda_target_installed,
                                   conda_context=conda_context)
     return list(filter(installed, conda_targets))
@@ -561,9 +540,9 @@ def filter_installed_targets(conda_targets, conda_context=None):
 
 def build_isolated_environment(
     conda_packages,
+    conda_context,
     path=None,
     copy=False,
-    conda_context=None,
     quiet=False,
 ):
     """ Build a new environment (or reuse an existing one from hashes)
@@ -573,7 +552,6 @@ def build_isolated_environment(
         conda_packages = [conda_packages]
 
     # Lots we could do in here, hashing, checking revisions, etc...
-    conda_context = _ensure_conda_context(conda_context)
     try:
         hash = hash_conda_packages(conda_packages)
         tempdir = tempfile.mkdtemp(prefix="jobdeps", suffix=hash)
@@ -624,7 +602,7 @@ def build_isolated_environment(
         shutil.rmtree(tempdir)
 
 
-def requirement_to_conda_targets(requirement, conda_context=None):
+def requirement_to_conda_targets(requirement):
     conda_target = None
     if requirement.type == "package":
         conda_target = CondaTarget(requirement.name,
@@ -632,17 +610,9 @@ def requirement_to_conda_targets(requirement, conda_context=None):
     return conda_target
 
 
-def requirements_to_conda_targets(requirements, conda_context=None):
-    r_to_ct = functools.partial(requirement_to_conda_targets,
-                                conda_context=conda_context)
-    conda_targets = (r_to_ct(_) for _ in requirements)
+def requirements_to_conda_targets(requirements):
+    conda_targets = (requirement_to_conda_targets(_) for _ in requirements)
     return [c for c in conda_targets if c is not None]
-
-
-def _ensure_conda_context(conda_context):
-    if conda_context is None:
-        conda_context = CondaContext()
-    return conda_context
 
 
 __all__ = (
