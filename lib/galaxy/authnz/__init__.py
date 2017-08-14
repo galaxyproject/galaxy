@@ -131,7 +131,7 @@ class AuthnzManager( object ):
     def callback( self, provider, state_token, authz_code, trans ):
         if provider in self.providers:
             try:
-                return self.providers[ provider ].callback( provider, state_token, authz_code, trans )
+                return self.providers[ provider ].callback( state_token, authz_code, trans )
             except:
                 raise
         else:
