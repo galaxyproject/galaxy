@@ -11,7 +11,6 @@ from distutils.version import LooseVersion
 from sys import platform as _platform
 
 import six
-import yaml
 
 from ..deps import commands
 from ..deps import installable
@@ -95,7 +94,6 @@ class CondaContext(installable.InstallableContext):
         else:
             ensure_channels = None
         self.ensure_channels = ensure_channels
-        self.ensured_channels = False
         self._conda_version = None
         self._miniconda_version = None
         self._conda_build_available = None
@@ -144,22 +142,14 @@ class CondaContext(installable.InstallableContext):
     def _conda_meta_path(self):
         return os.path.join(self.conda_prefix, "conda-meta")
 
-    def ensure_channels_configured(self):
-        if not self.ensured_channels:
-            self.ensured_channels = True
-
-            changed = False
-            conda_conf = self.load_condarc()
-            if "channels" not in conda_conf:
-                conda_conf["channels"] = []
-            channels = conda_conf["channels"]
+    @property
+    def _override_channels_args(self):
+        override_channels_args = []
+        if self.ensure_channels:
+            override_channels_args.append("--override-channels")
             for channel in self.ensure_channels:
-                if channel not in channels:
-                    changed = True
-                    channels.append(channel)
-
-            if changed:
-                self.save_condarc(conda_conf)
+                override_channels_args.extend(["--channel", channel])
+        return override_channels_args
 
     def ensure_conda_build_installed_if_needed(self):
         if self.use_local and not self.conda_build_available:
@@ -211,34 +201,6 @@ class CondaContext(installable.InstallableContext):
                         self.conda_prefix, self.conda_exec)
             return False
 
-    def load_condarc(self):
-        condarc = self.condarc
-        if os.path.exists(condarc):
-            with open(condarc, "r") as f:
-                return yaml.safe_load(f)
-        else:
-            return {"channels": ["defaults"]}
-
-    def save_condarc(self, conf):
-        condarc = self.condarc
-        try:
-            with open(condarc, "w") as f:
-                return yaml.safe_dump(conf, f)
-        except IOError:
-            template = ("Failed to update write to path [%s] while attempting to update conda configuration, "
-                        "please update the configuration to override the condarc location or "
-                        "grant this application write to the parent directory.")
-            message = template % condarc
-            raise Exception(message)
-
-    @property
-    def condarc(self):
-        if self.condarc_override:
-            return self.condarc_override
-        else:
-            home = os.path.expanduser("~")
-            return os.path.join(home, ".condarc")
-
     def command(self, operation, args):
         if isinstance(args, list):
             args = " ".join(args)
@@ -269,6 +231,7 @@ class CondaContext(installable.InstallableContext):
         ]
         if allow_local and self.use_local:
             create_base_args.extend(["--use-local"])
+        create_base_args.extend(self._override_channels_args)
         create_base_args.extend(args)
         return self.exec_command("create", create_base_args)
 
@@ -288,6 +251,7 @@ class CondaContext(installable.InstallableContext):
         ]
         if allow_local and self.use_local:
             install_base_args.extend(["--use-local"])
+        install_base_args.extend(self._override_channels_args)
         install_base_args.extend(args)
         return self.exec_command("install", install_base_args)
 
@@ -449,7 +413,6 @@ def install_conda(conda_context, force_conda_build=False):
 
 
 def install_conda_targets(conda_targets, conda_context, env_name=None, allow_local=True):
-    conda_context.ensure_channels_configured()
     if env_name is not None:
         create_args = [
             "--name", env_name,  # environment for package
@@ -464,7 +427,6 @@ def install_conda_targets(conda_targets, conda_context, env_name=None, allow_loc
 def install_conda_target(conda_target, conda_context, skip_environment=False):
     """ Install specified target into a its own environment.
     """
-    conda_context.ensure_channels_configured()
     if not skip_environment:
         create_args = [
             "--name", conda_target.install_environment,  # environment for package
@@ -489,9 +451,6 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
 
     Return ``None`` if no results match.
     """
-    if not channels_override:
-        conda_context.ensure_channels_configured()
-
     search_cmd = [conda_context.conda_exec, "search", "--full-name", "--json"]
     if offline:
         search_cmd.append("--offline")
@@ -499,6 +458,8 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
         search_cmd.append("--override-channels")
         for channel in channels_override:
             search_cmd.extend(["--channel", channel])
+    else:
+        search_cmd.extend(conda_context._override_channels_args)
     search_cmd.append(conda_target.package)
     res = commands.execute(search_cmd)
     hits = json.loads(res).get(conda_target.package, [])
