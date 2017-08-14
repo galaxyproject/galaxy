@@ -350,7 +350,7 @@ class FPS(GenericMolFile):
 
 class OBFS(Binary):
     """OpenBabel Fastsearch format (fs)."""
-    file_ext = 'fs'
+    file_ext = 'obfs'
     composite_type = 'basic'
     allow_datatype_change = False
 
