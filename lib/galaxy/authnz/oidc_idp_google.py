@@ -91,20 +91,20 @@ class OIDCIdPGoogle( IdentityProvider ):
             trans.sa_session.flush()
         return self._redirect_uri( trans )
 
-    def callback( self, state_token, authz_code, trans ):  # TODO: to be tested.
+    def callback( self, state_token, authz_code, trans ):
         query_result = trans.sa_session.query(trans.app.model.UserOAuth2 ).filter(
             trans.app.model.UserOAuth2.table.c.provider == self.provider ).filter(
             trans.app.model.UserOAuth2.table.c.state_token == state_token )
-        if query_result.count > 1:
+        if query_result.count() > 1:
             log.critical(
                 "Found `{}` records for user `{}` authentication against `{}` identity provider; at most one "
                 "record should exist. Now deleting all the `{}` records and prompt re-authentication.".format(
                     query_result.count(), trans.user.username, self.provider, query_result.count() ) )
             for record in query_result:
-                trans.sa_session.delete(record)
+                trans.sa_session.delete( record )
             trans.sa_session.flush()
             return False  # results in re-authentication.
-        if query_result.count == 0:
+        if query_result.count() == 0:
             log.critical( "Found `0` records for user `{}` authentication against `{}` identity provider;"
                           " an improperly initiated authentication flow. Now prompting re-authentication.".format(
                 trans.user.username, self.provider ) )
@@ -128,8 +128,9 @@ class OIDCIdPGoogle( IdentityProvider ):
         user_oauth_record = query_result.first()
         user_oauth_record.id_token = credentials.id_token_jwt
         user_oauth_record.refresh_token = credentials.refresh_token
-        user_oauth_record.expiration_date = datetime.now() + timedelta( seconds = access_token[ 'expires_in' ] )
-        user_oauth_record.access_token = access_token[ 'access_token' ]
-        trans.sa_session.commit()
+        user_oauth_record.expiration_date = datetime.now() + timedelta( seconds = access_token.expires_in )
+        user_oauth_record.access_token = access_token.access_token
         trans.sa_session.flush()
+        log.debug( "User `{}` authentication against `Google` identity provider, is successfully saved."
+                  .format( trans.user.username ) )
         return True
