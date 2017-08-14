@@ -1,10 +1,13 @@
 import logging
 import os
+
+from urlparse import urljoin
+from sqlalchemy.orm.exc import DetachedInstanceError
+
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.bunch import Bunch
 from galaxy.util import asbool
 from tool_shed.util import common_util
-from urlparse import urljoin
 
 log = logging.getLogger( __name__ )
 
@@ -624,10 +627,21 @@ class ToolVersion( object, Dictifiable ):
                     tool_versions.append( next_version )
                     __descendants( app, next_version )
 
-        __ancestors( app, self )
-        if self not in tool_versions:
-            tool_versions.append( self )
-        __descendants( app, self )
+        try:
+            __ancestors( app, self )
+            if self not in tool_versions:
+                tool_versions.append( self )
+            __descendants( app, self )
+        except DetachedInstanceError:
+            # This can happen when loading a tool while referencing
+            # and outdated tool version cache, so we build a new cache
+            tool_versions = []
+            from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
+            app.tool_version_cache = ToolVersionCache( app )
+            __ancestors( app, self )
+            if self not in tool_versions:
+                tool_versions.append( self )
+            __descendants( app, self )
         return tool_versions
 
     def get_version_ids( self, app, reverse=False ):
