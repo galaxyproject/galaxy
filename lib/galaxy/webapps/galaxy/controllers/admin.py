@@ -1132,7 +1132,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                      'status' : 'info',
                      'inputs' : [ build_select_input( 'groups', 'Groups', all_groups, in_groups ),
                                   build_select_input( 'users', 'Users', all_users, in_users ) ] }
-            return { 'message' : 'Not showing associated datasets, there are too many.', 'info' : 'info' }
         else:
             in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'users' ) ) ]
             for ura in role.users:
