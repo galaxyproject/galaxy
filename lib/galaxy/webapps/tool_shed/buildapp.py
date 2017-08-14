@@ -53,12 +53,13 @@ def add_ui_controllers( webapp, app ):
                     webapp.add_ui_controller( name, T( app ) )
 
 
-def app_factory( global_conf, **kwargs ):
+def app_factory( global_conf, load_app_kwds={}, **kwargs ):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy tool shed application unless passed in
     kwargs = load_app_properties(
         kwds=kwargs,
-        config_prefix='TOOL_SHED_CONFIG_'
+        config_prefix='TOOL_SHED_CONFIG_',
+        **load_app_kwds
     )
     if 'app' in kwargs:
         app = kwargs.pop( 'app' )
@@ -309,3 +310,7 @@ def _map_redirects( mapper ):
 
     mapper.redirect( "/repository/status_for_installed_repository", "/api/repositories/updates/", _redirect_code="301 Moved Permanently", conditions=dict( function=forward_qs ) )
     return mapper
+
+
+def uwsgi_app():
+    return galaxy.web.framework.webapp.build_native_uwsgi_app( app_factory, "tool_shed" )

@@ -954,6 +954,24 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         return str(template)
 
 
+def build_native_uwsgi_app( paste_factory, config_section ):
+    """uwsgi can load paste factories with --ini-paste, but this builds non-paste uwsgi apps.
+
+    In particular these are useful with --yaml or --json for config."""
+    import uwsgi
+    uwsgi_opt = uwsgi.opt
+    config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
+    if not config_file:
+        # Probably loaded via --ini-paste - expect paste app.
+        return None
+
+    uwsgi_app = paste_factory(uwsgi.opt, load_app_kwds={
+        "config_file": config_file,
+        "config_section": config_section,
+    })
+    return uwsgi_app
+
+
 def build_url_map( app, global_conf, local_conf ):
     from paste.urlmap import URLMap
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static

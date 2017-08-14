@@ -393,8 +393,12 @@ class Configuration( object ):
         self.ftp_upload_dir_template = kwargs.get( 'ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep )
         self.ftp_upload_purge = string_as_bool(  kwargs.get( 'ftp_upload_purge', 'True' ) )
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
-        self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
+        self.allow_path_paste = string_as_bool( kwargs.get('allow_path_paste', False ) )
+        # Support older library-specific path paste option but just default to the new
+        # allow_path_paste value.
+        self.allow_library_path_paste = string_as_bool( kwargs.get( 'allow_library_path_paste', self.allow_path_paste ) )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
+        self.check_upload_content = string_as_bool( kwargs.get( 'check_upload_content', True ) )
         self.watch_tools = kwargs.get( 'watch_tools', 'false' )
         self.watch_tool_data_dir = kwargs.get( 'watch_tool_data_dir', 'false' )
         # On can mildly speed up Galaxy startup time by disabling index of help,
