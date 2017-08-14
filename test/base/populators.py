@@ -80,12 +80,14 @@ class BaseDatasetPopulator( object ):
 
     def new_dataset( self, history_id, content='TestData123', wait=False, **kwds ):
         payload = self.upload_payload( history_id, content, **kwds )
-        run_response = self._post( "tools", data=payload ).json()
+        run_response = self._post( "tools", data=payload )
+        run = run_response.json()
         if wait:
-            job = run_response["jobs"][0]
+            assert run_response.status_code == 200, run
+            job = run["jobs"][0]
             self.wait_for_job(job["id"])
             self.wait_for_history(history_id, assert_ok=True)
-        return run_response["outputs"][0]
+        return run["outputs"][0]
 
     def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
         try:
@@ -127,6 +129,8 @@ class BaseDatasetPopulator( object ):
             upload_params[ "files_0|to_posix_lines"] = kwds[ "to_posix_lines" ]
         if "space_to_tab" in kwds:
             upload_params[ "files_0|space_to_tab" ] = kwds[ "space_to_tab" ]
+        if "auto_decompress" in kwds:
+            upload_params[ "files_0|auto_decompress" ] = kwds[ "auto_decompress" ]
         return self.run_tool_payload(
             tool_id='upload1',
             inputs=upload_params,
