@@ -131,6 +131,6 @@ class OIDCIdPGoogle( IdentityProvider ):
         user_oauth_record.expiration_date = datetime.now() + timedelta( seconds = access_token_info.expires_in )
         user_oauth_record.access_token = access_token_info.access_token
         trans.sa_session.flush()
-        log.debug( "User `{}` authentication against `Google` identity provider, is successfully saved."
+        log.debug( "User `{}` authentication against `Google` identity provider is successfully saved."
                   .format( trans.user.username ) )
         return True
