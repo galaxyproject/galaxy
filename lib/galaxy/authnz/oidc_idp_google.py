@@ -124,12 +124,12 @@ class OIDCIdPGoogle( IdentityProvider ):
         # The credentials object holds refresh and access tokens
         # that authorize access to a single user's data.
         credentials = flow.step2_exchange( authz_code )
-        access_token = credentials.get_access_token()
+        access_token_info = credentials.get_access_token()
         user_oauth_record = query_result.first()
         user_oauth_record.id_token = credentials.id_token_jwt
         user_oauth_record.refresh_token = credentials.refresh_token
-        user_oauth_record.expiration_date = datetime.now() + timedelta( seconds = access_token.expires_in )
-        user_oauth_record.access_token = access_token.access_token
+        user_oauth_record.expiration_date = datetime.now() + timedelta( seconds = access_token_info.expires_in )
+        user_oauth_record.access_token = access_token_info.access_token
         trans.sa_session.flush()
         log.debug( "User `{}` authentication against `Google` identity provider, is successfully saved."
                   .format( trans.user.username ) )
