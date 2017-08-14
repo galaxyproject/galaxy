@@ -169,7 +169,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
 
     def install_all(self, conda_targets):
         env = self.merged_environment_name(conda_targets)
-        return_code = install_conda_targets(conda_targets, env, conda_context=self.conda_context)
+        return_code = install_conda_targets(conda_targets, conda_context=self.conda_context, env_name=env)
         if return_code != 0:
             is_installed = False
         else:
@@ -452,9 +452,9 @@ class CondaDependency(Dependency):
     def build_environment(self):
         env_path, exit_code = build_isolated_environment(
             CondaTarget(self.name, self.version),
+            conda_context=self.conda_context,
             path=self.environment_path,
             copy=self.conda_context.copy_dependencies,
-            conda_context=self.conda_context,
         )
         if exit_code:
             if len(os.path.abspath(self.environment_path)) > 79:
