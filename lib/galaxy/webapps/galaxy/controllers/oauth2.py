@@ -21,4 +21,5 @@ class OAuth2( BaseUIController ):
     @web.expose
     def google_callback(self, trans, **kwargs):  # TODO: to be tested.
         if trans.app.authnz_manager.callback( "Google", kwargs[ 'state' ], kwargs[ 'code' ], trans ) is False:
+            # TODO: inform user why he/she is being re-authenticated.
             self.google_authn( trans )
