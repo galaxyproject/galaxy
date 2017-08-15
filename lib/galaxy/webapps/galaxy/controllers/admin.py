@@ -1000,6 +1000,9 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
                 if auto_create_checked:
+                    # Check if role with same name already exists
+                    if trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == name ).first():
+                        return message_exception( trans, 'A group with that name already exists, so choose another name or disable group creation.' )
                     # Create the group
                     group = trans.app.model.Group( name=name )
                     trans.sa_session.add( group )
@@ -1305,6 +1308,9 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
                 if auto_create_checked:
+                    # Check if role with same name already exists
+                    if trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == name ).first():
+                        return message_exception( trans, 'A role with that name already exists, so choose another name or disable role creation.' )
                     # Create the role
                     role = trans.app.model.Role( name=name, description='Role for group %s' % name )
                     trans.sa_session.add( role )
