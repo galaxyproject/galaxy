@@ -1697,6 +1697,7 @@ def build_select_input( name, label, options, value ):
     return { 'type'      : 'select',
              'multiple'  : True,
              'optional'  : True,
+             'individual': True,
              'name'      : name,
              'label'     : label,
              'options'   : options,
