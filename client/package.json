@@ -35,7 +35,7 @@
     "gulp-uglify": "^2.1.2",
     "gulp-watch": "^4.3.11",
     "jshint": "^2.9.4",
-    "webpack": "^2.4.1"
+    "webpack": "^3.5.4"
   },
   "scripts": {
     "watch": "concurrently \"npm run webpack-watch\" \"npm run gulp watch\"",
