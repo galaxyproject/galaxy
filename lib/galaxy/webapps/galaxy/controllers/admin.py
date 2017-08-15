@@ -607,7 +607,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                             'options' : [ ('=', '=' ), ( '+', '+' ), ( '-', '-' ) ]
                         }, {
                             'name'    : 'default',
-                            'label'   : 'Assign, increase by amount, or decrease by amount?',
+                            'label'   : 'Is this quota a default for a class of users (if yes, what type)?',
                             'options' : default_options,
                             'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
                         },
