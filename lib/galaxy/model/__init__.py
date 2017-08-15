@@ -28,6 +28,8 @@ import galaxy.model.metadata
 import galaxy.model.orm.now
 import galaxy.security.passwords
 import galaxy.util
+
+from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
@@ -696,7 +698,7 @@ class Job( object, JobLike, Dictifiable ):
         dict of tool parameter values.
         """
         param_dict = self.raw_param_dict()
-        tool = app.toolbox.get_tool( self.tool_id )
+        tool = app.toolbox.get_tool( self.tool_id, tool_version=self.tool_version )
         param_dict = tool.params_from_strings( param_dict, app, ignore_errors=ignore_errors )
         return param_dict
 
@@ -845,8 +847,8 @@ class Task( object, JobLike ):
         Read encoded parameter values from the database and turn back into a
         dict of tool parameter values.
         """
-        param_dict = dict( [ ( p.name, p.value ) for p in self.parent_job.parameters ] )
-        tool = app.toolbox.get_tool( self.tool_id )
+        param_dict = dict( [ ( p.name, p.value ) for p in self.job.parameters ] )
+        tool = app.toolbox.get_tool( self.job.tool_id, tool_version=self.job.tool_version )
         param_dict = tool.params_from_strings( param_dict, app )
         return param_dict
 
@@ -2470,6 +2472,7 @@ class HistoryDatasetAssociation( DatasetInstance, HasTags, Dictifiable, UsesAnno
             trans.sa_session.flush()
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
         ldda.metadata = self.metadata
+        # TODO: copy #tags from history
         if ldda_message:
             ldda.message = ldda_message
         if not replace_dataset:
@@ -2934,6 +2937,11 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                          parent_id=parent_id,
                                          copied_from_library_dataset_dataset_association=self,
                                          history=target_history )
+
+        tag_manager = tags.GalaxyTagManager( sa_session )
+        src_ldda_tags = tag_manager.get_tags_str(self.tags)
+        tag_manager.apply_item_tags( user=self.user, item=hda, tags_str=src_ldda_tags )
+
         sa_session.add( hda )
         sa_session.flush()
         hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
@@ -2961,6 +2969,11 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                                                  parent_id=parent_id,
                                                  copied_from_library_dataset_dataset_association=self,
                                                  folder=target_folder )
+
+        tag_manager = tags.GalaxyTagManager( sa_session )
+        src_ldda_tags = tag_manager.get_tags_str(self.tags)
+        tag_manager.apply_item_tags( user=self.user, item=ldda, tags_str=src_ldda_tags )
+
         sa_session.add( ldda )
         sa_session.flush()
         # Need to set after flushed, as MetadataFiles require dataset.id
@@ -3009,6 +3022,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
         except OSError:
             file_size = 0
 
+        # TODO: render tags here
         rval = dict( id=ldda.id,
                      hda_ldda='ldda',
                      model_class=self.__class__.__name__,
@@ -5140,6 +5154,10 @@ class DatasetTagAssociation ( ItemTagAssociation ):
 
 
 class HistoryDatasetAssociationTagAssociation ( ItemTagAssociation ):
+    pass
+
+
+class LibraryDatasetDatasetAssociationTagAssociation ( ItemTagAssociation ):
     pass
 
 

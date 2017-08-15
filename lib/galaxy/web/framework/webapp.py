@@ -880,6 +880,28 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                                    use_panels=( form.use_panels or use_panels ),
                                    active_view=active_view )
 
+    @property
+    def session_csrf_token(self):
+        token = ''
+        if self.galaxy_session:
+            token = self.security.encode_id(
+                self.galaxy_session.id, kind="session_csrf_token"
+            )
+        return token
+
+    def check_csrf_token(self):
+        session_csrf_token = self.request.params.get("session_csrf_token", None)
+        problem = False
+        if not session_csrf_token:
+            log.warn("No session_csrf_token set, denying request.")
+            problem = True
+        elif session_csrf_token != self.session_csrf_token:
+            log.warn("Wrong session token found, denying request.")
+            problem = True
+
+        if problem:
+            return self.show_warn_message("Failed to authorize action.")
+
     def fill_template(self, filename, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.
@@ -930,6 +952,24 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         template = Template( source=template_string,
                              searchList=[context or kwargs, dict(caller=self)] )
         return str(template)
+
+
+def build_native_uwsgi_app( paste_factory, config_section ):
+    """uwsgi can load paste factories with --ini-paste, but this builds non-paste uwsgi apps.
+
+    In particular these are useful with --yaml or --json for config."""
+    import uwsgi
+    uwsgi_opt = uwsgi.opt
+    config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
+    if not config_file:
+        # Probably loaded via --ini-paste - expect paste app.
+        return None
+
+    uwsgi_app = paste_factory(uwsgi.opt, load_app_kwds={
+        "config_file": config_file,
+        "config_section": config_section,
+    })
+    return uwsgi_app
 
 
 def build_url_map( app, global_conf, local_conf ):

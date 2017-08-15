@@ -11,6 +11,8 @@ from datetime import datetime
 from markupsafe import escape
 from sqlalchemy import false, true, and_, or_
 
+import yaml
+
 from galaxy import exceptions, util, web
 from galaxy.exceptions import MessageException, ObjectInvalid
 from galaxy.managers import users
@@ -250,6 +252,46 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 'nice_total_disk_usage': util.nice_size( usage ),
                 'quota_percent': percent}
 
+    def _get_extra_user_preferences(self, trans):
+        """
+        Reads the file user_preferences_extra_conf.yml to display
+        admin defined user informations
+        """
+        path = trans.app.config.user_preferences_extra_config_file
+        try:
+            with open(path, 'r') as stream:
+                config = yaml.load(stream)
+        except:
+            log.warn('Config file (%s) could not be found or is malformed.' % path)
+            return {}
+
+        return config['preferences'] if config else {}
+
+    def _build_extra_user_pref_inputs(self, preferences, user):
+        """
+        Build extra user preferences inputs list.
+        Add values to the fields if present
+        """
+        if not preferences:
+            return []
+        data = []
+        # Get data if present
+        data_key = "extra_user_preferences"
+        if data_key in user.preferences:
+            data = json.loads(user.preferences[data_key])
+        extra_pref_inputs = list()
+        # Build sections for different categories of inputs
+        for item, value in preferences.items():
+            if value is not None:
+                for input in value["inputs"]:
+                    input['help'] = 'Required' if input['required'] else ''
+                    field = item + '|' + input['name']
+                    for data_item in data:
+                        if field in data_item:
+                            input['value'] = data[data_item]
+                extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
+        return extra_pref_inputs
+
     @expose_api
     def get_information(self, trans, id, **kwd):
         """
@@ -302,6 +344,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     info_field['test_param']['data'].append({'label': info_form['name'], 'value': info_form['id']})
                     info_field['cases'].append({'value': info_form['id'], 'inputs': info_form['inputs']})
                 inputs.append(info_field)
+
             address_inputs = [{'type': 'hidden', 'name': 'id', 'hidden': True}]
             for field in AddressField.fields():
                 address_inputs.append({'type': 'text', 'name': field[0], 'label': field[1], 'help': field[2]})
@@ -315,6 +358,11 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     address_cache.append(input_copy)
                 address_repeat['cache'].append(address_cache)
             inputs.append(address_repeat)
+
+            # Build input sections for extra user preferences
+            extra_user_pref = self._build_extra_user_pref_inputs( self._get_extra_user_preferences( trans ), user )
+            for item in extra_user_pref:
+                inputs.append(item)
         else:
             if user.active_repositories:
                 inputs.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
@@ -382,6 +430,26 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             form_values = trans.model.FormValues(user_info_form, user_info_values)
             trans.sa_session.add(form_values)
             user.values = form_values
+
+        # Update values for extra user preference items
+        extra_user_pref_data = dict()
+        get_extra_pref_keys = self._get_extra_user_preferences( trans )
+        if get_extra_pref_keys is not None:
+            for key in get_extra_pref_keys:
+                key_prefix = key + '|'
+                for item in payload:
+                    if item.startswith( key_prefix ):
+                        # Show error message if the required field is empty
+                        if payload[item] == "":
+                            # Raise an exception when a required field is empty while saving the form
+                            keys = item.split("|")
+                            section = get_extra_pref_keys[keys[0]]
+                            for input in section['inputs']:
+                                if input['name'] == keys[1] and input['required']:
+                                    raise MessageException("Please fill the required field")
+                        extra_user_pref_data[ item ] = payload[ item ]
+            user.preferences[ "extra_user_preferences" ] = json.dumps( extra_user_pref_data )
+
         # Update user addresses
         address_dicts = {}
         address_count = 0
@@ -487,8 +555,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         """
         Return available password inputs.
         """
-        return {'message': 'Password unchanged.',
-                'inputs': [ {'name': 'current', 'type': 'password', 'label': 'Current password'},
+        return {'inputs': [ {'name': 'current', 'type': 'password', 'label': 'Current password'},
                             {'name': 'password', 'type': 'password', 'label': 'New password'},
                             {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'},
                             {'name': 'token', 'type': 'hidden', 'hidden': True, 'ignore': None} ]}
@@ -557,9 +624,9 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                            'name': index,
                            'label': action.action,
                            'help': action.description,
-                           'options': [(r.name, r.id) for r in roles],
+                           'options': list(set((r.name, r.id) for r in roles)),
                            'value': [a.role.id for a in user.default_permissions if a.action == action.action]})
-        return {'message': 'Permissions unchanged.', 'inputs': inputs}
+        return {'inputs': inputs}
 
     @expose_api
     def set_permissions(self, trans, id, payload={}, **kwd):
@@ -591,7 +658,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         factory = FilterFactory(trans.app.toolbox)
         for filter_type in filter_types:
             self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values)
-        return {'message': 'Toolbox filters unchanged.', 'inputs': inputs}
+        return {'inputs': inputs}
 
     @expose_api
     def set_toolbox_filters(self, trans, id, payload={}, **kwd):
@@ -677,8 +744,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         Build communication server inputs.
         """
         user = self._get_user(trans, id)
-        return {'message': 'Communication server settings unchanged.',
-                'inputs': [{'name': 'enable',
+        return {'inputs': [{'name': 'enable',
                             'type': 'boolean',
                             'label': 'Enable communication',
                             'value': user.preferences.get('communication_server', 'false')}]}

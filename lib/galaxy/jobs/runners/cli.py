@@ -148,23 +148,18 @@ class ShellJobRunner( AsynchronousJobRunner ):
                 shell, job_interface = self.get_cli_plugins(shell_params, job_params)
                 cmd_out = shell.execute(job_interface.get_single_status(external_job_id))
                 state = job_interface.parse_single_status(cmd_out.stdout, external_job_id)
-                if state == model.Job.states.OK:
-                    log.debug('(%s/%s) job execution finished, running job wrapper finish method' % ( id_tag, external_job_id ) )
-                    self.work_queue.put( ( self.finish_job, ajs ) )
-                    continue
-                else:
+                if not state == model.Job.states.OK:
                     log.warning('(%s/%s) job not found in batch state check, but found in individual state check' % ( id_tag, external_job_id ) )
-                    if state != old_state:
-                        ajs.job_wrapper.change_state( state )
-            else:
-                if state != old_state:
-                    log.debug("(%s/%s) state change: from %s to %s" % ( id_tag, external_job_id, old_state, state ) )
+            if state != old_state:
+                log.debug("(%s/%s) state change: from %s to %s" % ( id_tag, external_job_id, old_state, state ) )
+                if not state == model.Job.states.OK:
+                    # No need to change_state when the state is OK, this will be handled by `self.finish_job`
                     ajs.job_wrapper.change_state( state )
-                if state == model.Job.states.RUNNING and not ajs.running:
-                    ajs.running = True
-                    ajs.job_wrapper.change_state( model.Job.states.RUNNING )
+            if state == model.Job.states.RUNNING and not ajs.running:
+                ajs.running = True
             ajs.old_state = state
             if state == model.Job.states.OK:
+                log.debug('(%s/%s) job execution finished, running job wrapper finish method' % (id_tag, external_job_id))
                 self.work_queue.put( ( self.finish_job, ajs ) )
             else:
                 new_watched.append( ajs )

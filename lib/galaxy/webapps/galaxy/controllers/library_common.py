@@ -1151,6 +1151,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         uploaded_dataset.dbkey = params.get( 'dbkey', None )
         uploaded_dataset.to_posix_lines = params.get('to_posix_lines', None)
         uploaded_dataset.space_to_tab = params.get( 'space_to_tab', None )
+        uploaded_dataset.tag_using_filenames = params.get( 'tag_using_filenames', True )
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )

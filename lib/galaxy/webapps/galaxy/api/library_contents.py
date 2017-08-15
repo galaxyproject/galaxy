@@ -182,6 +182,8 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 folder to create
             * description: (optional, only if create_type is 'folder')
                 description of the folder to create
+            * tag_using_filename: (optional)
+                create tags on datasets using the file's original name
 
         :returns:   a dictionary describing the new item unless ``from_hdca_id`` is supplied,
                     in that case a list of such dictionaries is returned.

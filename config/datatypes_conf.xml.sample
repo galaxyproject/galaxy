@@ -240,7 +240,10 @@
     <datatype extension="percout" type="galaxy.datatypes.xml:GenericXml" subclass="true" />
     <datatype extension="hardklor" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
     <datatype extension="kronik" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="imzml" type="galaxy.datatypes.proteomics:ImzML" mimetype="application/xml" display_in_upload="true"/>
     <!-- End Proteomics Datatypes -->
+    <datatype extension="deeptools_compute_matrix_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
+    <datatype extension="deeptools_coverage_matrix" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="netcdf" type="galaxy.datatypes.binary:NetCDF" mimetype="application/octet-stream" display_in_upload="true" description="Format used by netCDF software library for writing and reading chromatography-MS data files." />
     <datatype extension="eps" type="galaxy.datatypes.images:Eps" mimetype="image/eps"/>
     <datatype extension="rast" type="galaxy.datatypes.images:Rast" mimetype="image/rast"/>
@@ -322,7 +325,7 @@
     <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="true" />
     <datatype extension="tabix" type="galaxy.datatypes.binary:Binary" subclass="true" />
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true" />
-    <datatype extension="vcf_bgzip" type_extension="bgzip" subclass="true" >
+    <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" type_extension="bgzip" subclass="true" display_in_upload="true">
       <display file="igv/vcf.xml" />
       <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>
     </datatype>
@@ -381,6 +384,7 @@
     <datatype extension="rdf" type="galaxy.datatypes.triples:Rdf" display_in_upload="true"/>
     <datatype extension="jsonld" type="galaxy.datatypes.triples:Jsonld" display_in_upload="true"/>
     <!-- Excel datatypes -->
+    <datatype extension="excel.xls" type="galaxy.datatypes.binary:ExcelXls" display_in_upload="true"/>
     <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true" />
     <datatype extension="btwisted" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="cai" type="galaxy.datatypes.data:Text" subclass="true"/>
@@ -548,8 +552,12 @@
         </datatype>
     <datatype extension="fps" type="galaxy.datatypes.molecules:FPS" mimetype="text/html" display_in_upload="true" />
     <datatype extension="obfs" type="galaxy.datatypes.molecules:OBFS" mimetype="text/html" display_in_upload="true" />
+    <datatype extension="drf" type="galaxy.datatypes.molecules:DRF" display_in_upload="true" />
     <datatype extension="phar" type="galaxy.datatypes.molecules:PHAR" display_in_upload="false" />
     <datatype extension="pdb" type="galaxy.datatypes.molecules:PDB" display_in_upload="true" />
+    <datatype extension="pdbqt" type="galaxy.datatypes.molecules:PDBQT" display_in_upload="true" />
+    <datatype extension="grd" type="galaxy.datatypes.molecules:grd" display_in_upload="true" />
+    <datatype extension="grd.tgz" type="galaxy.datatypes.molecules:grdtgz" display_in_upload="true" />
     <!-- mothur formats -->
     <datatype extension="mothur.otu" type="galaxy.datatypes.mothur:Otu" display_in_upload="true"/>
     <datatype extension="mothur.list" type="galaxy.datatypes.mothur:Otu" subclass="true" display_in_upload="true"/>

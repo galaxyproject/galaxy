@@ -22,7 +22,7 @@ class ConditionalDependencies( object ):
         self.get_conditional_requirements()
 
     def parse_configs( self ):
-        self.config = load_app_properties( ini_file=self.config_file )
+        self.config = load_app_properties( config_file=self.config_file )
         job_conf_xml = self.config.get(
             "job_config_file",
             join( dirname( self.config_file ), 'job_conf.xml' ) )

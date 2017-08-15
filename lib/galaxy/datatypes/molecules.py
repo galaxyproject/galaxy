@@ -10,7 +10,10 @@ from galaxy.datatypes import (
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.sniff import (
+    get_headers,
+    iter_headers
+)
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.xml import GenericXml
 
@@ -351,7 +354,7 @@ class FPS(GenericMolFile):
 
 class OBFS(Binary):
     """OpenBabel Fastsearch format (fs)."""
-    file_ext = 'fs'
+    file_ext = 'obfs'
     composite_type = 'basic'
     allow_datatype_change = False
 
@@ -461,7 +464,7 @@ class PDB(GenericMolFile):
         >>> PDB().sniff(fname)
         False
         """
-        headers = get_headers(filename, sep=' ', count=300)
+        headers = iter_headers(filename, sep=' ', count=300)
         h = t = c = s = k = e = False
         for line in headers:
             section_name = line[0].strip()
@@ -514,7 +517,7 @@ class PDBQT(GenericMolFile):
         >>> PDBQT().sniff(fname)
         False
         """
-        headers = get_headers(filename, sep=' ', count=300)
+        headers = iter_headers(filename, sep=' ', count=300)
         h = t = c = s = k = False
         for line in headers:
             section_name = line[0].strip()
@@ -607,7 +610,7 @@ class InChI(Tabular):
         >>> InChI().sniff(fname)
         False
         """
-        inchi_lines = get_headers(filename, sep=' ', count=10)
+        inchi_lines = iter_headers(filename, sep=' ', count=10)
         for inchi in inchi_lines:
             if not inchi[0].startswith('InChI='):
                 return False

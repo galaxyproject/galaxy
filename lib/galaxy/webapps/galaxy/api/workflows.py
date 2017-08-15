@@ -32,6 +32,8 @@ from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
 
+from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+
 log = logging.getLogger(__name__)
 
 
@@ -54,7 +56,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows
         """
-        return self.get_workflows_list( trans, False, kwd )
+        return self.get_workflows_list( trans, kwd )
 
     @expose_api
     def get_workflow_menu( self, trans, **kwd ):
@@ -66,7 +68,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         ids_in_menu = [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ]
         return {
             'ids_in_menu': ids_in_menu,
-            'workflows': self.get_workflows_list( trans, True, kwd )
+            'workflows': self.get_workflows_list( trans, kwd )
         }
 
     @expose_api
@@ -82,6 +84,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             workflow_ids = []
         elif type( workflow_ids ) != list:
             workflow_ids = [ workflow_ids ]
+        workflow_ids_decoded = []
+        # Decode the encoded workflow ids
+        for ids in workflow_ids:
+            workflow_ids_decoded.append( trans.security.decode_id( ids ) )
         sess = trans.sa_session
         # This explicit remove seems like a hack, need to figure out
         # how to make the association do it automatically.
@@ -91,20 +97,20 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         q = sess.query( model.StoredWorkflow )
         # To ensure id list is unique
         seen_workflow_ids = set()
-        for id in workflow_ids:
-            if id in seen_workflow_ids:
+        for wf_id in workflow_ids_decoded:
+            if wf_id in seen_workflow_ids:
                 continue
             else:
-                seen_workflow_ids.add( id )
+                seen_workflow_ids.add( wf_id )
             m = model.StoredWorkflowMenuEntry()
-            m.stored_workflow = q.get( id )
+            m.stored_workflow = q.get( wf_id )
             user.stored_workflow_menu_entries.append( m )
         sess.flush()
         message = "Menu updated."
         trans.set_message( message )
         return { 'message': message, 'status': 'done' }
 
-    def get_workflows_list( self, trans, for_menu, kwd ):
+    def get_workflows_list( self, trans, kwd ):
         """
         Displays a collection of workflows.
 
@@ -117,33 +123,39 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         missing_tools = util.string_as_bool( kwd.get( 'missing_tools', 'False' ) )
         rval = []
         filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
+        user = trans.get_user()
         if show_published:
             filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == true() ) )
         for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
                 filter1, trans.app.model.StoredWorkflow.table.c.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.table.c.update_time ) ).all():
-            if for_menu:
-                item = wf.to_dict()
-            else:
-                item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-                encoded_id = trans.security.encode_id(wf.id)
-                item['url'] = url_for('workflow', id=encoded_id)
+
+            item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+            encoded_id = trans.security.encode_id(wf.id)
+            item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
             item['number_of_steps'] = len( wf.latest_workflow.steps )
+            item['show_in_tool_panel'] = False
+            for x in user.stored_workflow_menu_entries:
+                if x.stored_workflow_id == wf.id:
+                    item['show_in_tool_panel'] = True
+                    break
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
                 trans.app.model.StoredWorkflow.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
-            if for_menu:
-                item = wf_sa.stored_workflow.to_dict()
-            else:
-                item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-                encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
-                item['url'] = url_for( 'workflow', id=encoded_id )
-                item['slug'] = wf_sa.stored_workflow.slug
+            item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+            encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
+            item['url'] = url_for( 'workflow', id=encoded_id )
+            item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
             item['number_of_steps'] = len( wf_sa.stored_workflow.latest_workflow.steps )
+            item['show_in_tool_panel'] = False
+            for x in user.stored_workflow_menu_entries:
+                if x.stored_workflow_id == wf_sa.id:
+                    item['show_in_tool_panel'] = True
+                    break
             rval.append(item)
         if missing_tools:
             workflows_missing_tools = []
@@ -490,6 +502,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __api_import_new_workflow( self, trans, payload, **kwd ):
         data = payload['workflow']
 
+        import_tools = util.string_as_bool( payload.get( "import_tools", False ) )
+        if import_tools and not trans.user_is_admin():
+            raise exceptions.AdminRequiredException()
+
         publish = util.string_as_bool( payload.get( "publish", False ) )
         # If 'publish' set, default to importable.
         importable = util.string_as_bool( payload.get( "importable", publish ) )
@@ -524,6 +540,32 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         rval.append(item)
 
+        #
+        if import_tools:
+            tools = {}
+            for key in data['steps']:
+                item = data['steps'][key]
+                if item is not None:
+                    if 'tool_shed_repository' in item:
+                        tool_shed_repository = item['tool_shed_repository']
+                        if 'owner' in tool_shed_repository and 'changeset_revision' in tool_shed_repository and 'name' in tool_shed_repository and 'tool_shed' in tool_shed_repository:
+                            toolstr = tool_shed_repository['owner'] \
+                                + tool_shed_repository['changeset_revision'] \
+                                + tool_shed_repository['name'] \
+                                + tool_shed_repository['tool_shed']
+                            tools[toolstr] = tool_shed_repository
+            irm = InstallRepositoryManager( self.app )
+            for k in tools:
+                item = tools[k]
+                tool_shed_url = 'https://' + item['tool_shed'] + '/'
+                name = item['name']
+                owner = item['owner']
+                changeset_revision = item['changeset_revision']
+                irm.install( tool_shed_url,
+                             name,
+                             owner,
+                             changeset_revision,
+                             payload )
         return item
 
     @expose_api

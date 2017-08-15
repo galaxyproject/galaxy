@@ -454,7 +454,7 @@
                         %if sample_widget_history:
                             %if trans.user == sample_widget_history.user:
                                 <td>
-                                    <a target='_parent' href="${h.url_for( controller='history', action='list', operation="Switch", id=trans.security.encode_id(sample_widget_history.id), use_panels=False )}">
+                                    <a target='_parent' href="${h.url_for( controller='histories', action='list', operation="Switch", id=trans.security.encode_id(sample_widget_history.id), use_panels=False )}">
                                     ${sample_widget_history.name | h}
                                     </a>
                                 </td>

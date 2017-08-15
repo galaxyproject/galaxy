@@ -1133,7 +1133,7 @@ var Circster = Backbone.View.extend(
         {
             icon_class: 'cross-circle', title: 'Close', on_click: function()
             {
-                window.location = Galaxy.root + "visualization/list";
+                window.location = Galaxy.root + "visualizations/list";
             }
         }], { tooltip_config: { placement: 'bottom' } });
 

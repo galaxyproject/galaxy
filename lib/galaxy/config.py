@@ -43,6 +43,7 @@ PATH_DEFAULTS = dict(
     job_config_file=['config/job_conf.xml', 'job_conf.xml'],
     tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
     job_metrics_config_file=['config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample'],
+    error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
     dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
     migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
@@ -54,6 +55,7 @@ PATH_DEFAULTS = dict(
     workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
     modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
     local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
+    user_preferences_extra_config_file=[ 'config/user_preferences_extra_conf.yml' ],
     containers_config_file=['config/containers_conf.yml'],
 )
 
@@ -391,8 +393,12 @@ class Configuration( object ):
         self.ftp_upload_dir_template = kwargs.get( 'ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep )
         self.ftp_upload_purge = string_as_bool(  kwargs.get( 'ftp_upload_purge', 'True' ) )
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
-        self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
+        self.allow_path_paste = string_as_bool( kwargs.get('allow_path_paste', False ) )
+        # Support older library-specific path paste option but just default to the new
+        # allow_path_paste value.
+        self.allow_library_path_paste = string_as_bool( kwargs.get( 'allow_library_path_paste', self.allow_path_paste ) )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
+        self.check_upload_content = string_as_bool( kwargs.get( 'check_upload_content', True ) )
         self.watch_tools = kwargs.get( 'watch_tools', 'false' )
         self.watch_tool_data_dir = kwargs.get( 'watch_tool_data_dir', 'false' )
         # On can mildly speed up Galaxy startup time by disabling index of help,

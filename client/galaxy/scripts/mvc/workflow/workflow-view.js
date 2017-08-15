@@ -256,7 +256,7 @@ define([
                 "Save" : save_current_workflow,
                 "Save As": workflow_save_as,
                 "Run": function() {
-                    window.location = self.urls.run_workflow;
+                    window.location = Galaxy.root + "workflow/run?id=" + self.options.id;
                 },
                 "Edit Attributes" : function() { self.workflow.clear_active_node() },
                 "Auto Re-layout": layout_editor,
@@ -653,11 +653,15 @@ define([
             $( '#edit-attributes' ).show();
         },
 
-        showForm: function ( content, node ) {
+        showForm: function ( content, node, force ) {
             var self = this;
             var cls = 'right-content';
             var id  = cls + '-' + node.id;
             var $container = $( '#' + cls );
+            if (force) {
+                $container.find( '#' + id ).remove();
+                $( '<div id="' + id + '" class="' + cls + '"/>').remove();
+            }
             if ( content && $container.find( '#' + id ).length == 0 ) {
                 var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );
                 var form_wrapper = null;
