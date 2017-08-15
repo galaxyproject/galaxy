@@ -24,5 +24,6 @@
     <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true"/>
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true" />
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" type_extension="bgzip" subclass="true" display_in_upload="true"/>
+    <datatype extension="html" type="galaxy.datatypes.text:Html" mimetype="text/html"/>
   </registration>
 </datatypes>

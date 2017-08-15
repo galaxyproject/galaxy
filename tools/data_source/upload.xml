@@ -42,6 +42,7 @@
            Pull Request 171 for more information. -->
       <param name="uuid" type="hidden" required="False" />
       <param name="to_posix_lines" type="hidden" value="Yes" />
+      <param name="auto_decompress" type="hidden" value="Yes" />
       <!--
       <param name="to_posix_lines" type="select" display="checkboxes" multiple="True" label="Convert universal line endings to Posix line endings" help="Turn this option off if you upload a gzip, bz2 or zip archive which contains a binary file." value="Yes"> 
         <option value="Yes" selected="true">Yes</option>
