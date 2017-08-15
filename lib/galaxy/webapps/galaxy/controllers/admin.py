@@ -642,7 +642,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             }
         else:
             try:
-                return { 'message': self._rename_quota( quota, util.Params( payload ) ) }
+                return { 'message': self._rename_quota( quota, util.Params( payload ), decode_id=trans.security.decode_id ) }
             except ActionInputError as e:
                 return message_exception( trans, e.err_msg )
 
@@ -678,7 +678,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                   build_select_input( 'in_users', 'Users', all_users, in_users ) ] }
         else:
             try:
-                return { 'message': self._manage_users_and_groups_for_quota( quota, util.Params( payload ), trans.security.decode_id ) }
+                return { 'message': self._manage_users_and_groups_for_quota( quota, util.Params( payload ), decode_id=trans.security.decode_id ) }
             except ActionInputError as e:
                 return message_exception( trans, e.err_msg )
 
@@ -981,8 +981,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             name = util.restore_text( payload.get( 'name', '' ) )
             description = util.restore_text( payload.get( 'description', '' ) )
             auto_create_checked = payload.get( 'auto_create' ) == 'true'
-            in_users = util.listify( payload.get( 'in_users' ) ) or []
-            in_groups = util.listify( payload.get( 'in_groups' ) ) or []
+            in_users = util.listify( payload.get( 'in_users' ) )
+            in_groups = util.listify( payload.get( 'in_groups' ) )
             if not name or not description:
                 return message_exception( trans, 'Enter a valid name and a description.' )
             elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == name ).first():
@@ -1286,8 +1286,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         else:
             name = util.restore_text( payload.get( 'name', '' ) )
             auto_create_checked = payload.get( 'auto_create' ) == 'true'
-            in_users = util.listify( payload.get( 'in_users' ) ) or []
-            in_roles = util.listify( payload.get( 'in_roles' ) ) or []
+            in_users = util.listify( payload.get( 'in_users' ) )
+            in_roles = util.listify( payload.get( 'in_roles' ) )
             if not name:
                 return message_exception( trans, 'Enter a valid name.' )
             elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == name ).first():

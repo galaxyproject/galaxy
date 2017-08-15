@@ -13,7 +13,7 @@ class AdminActions( object ):
     """
     Mixin for controllers that provide administrative functionality.
     """
-    def _create_quota( self, params ):
+    def _create_quota( self, params, decode_id=None ):
         if params.amount.lower() in ( 'unlimited', 'none', 'no limit' ):
             create_amount = None
         else:
@@ -39,6 +39,8 @@ class AdminActions( object ):
             raise ActionInputError( "Operation for an unlimited quota must be '='." )
         else:
             # Create the quota
+            in_users = util.listify( params.in_users )
+            in_groups = util.listify( params.in_groups )
             quota = self.app.model.Quota( name=params.name, description=params.description, amount=create_amount, operation=params.operation )
             self.sa_session.add( quota )
             # If this is a default quota, create the DefaultQuotaAssociation
@@ -46,16 +48,16 @@ class AdminActions( object ):
                 self.app.quota_agent.set_default_quota( params.default, quota )
             else:
                 # Create the UserQuotaAssociations
-                for user in [ self.sa_session.query( self.app.model.User ).get( x ) for x in params.in_users ]:
+                for user in [ self.sa_session.query( self.app.model.User ).get( decode_id( x ) if decode_id else x ) for x in in_users ]:
                     uqa = self.app.model.UserQuotaAssociation( user, quota )
                     self.sa_session.add( uqa )
                 # Create the GroupQuotaAssociations
-                for group in [ self.sa_session.query( self.app.model.Group ).get( x ) for x in params.in_groups ]:
+                for group in [ self.sa_session.query( self.app.model.Group ).get( decode_id( x ) if decode_id else x ) for x in in_groups ]:
                     gqa = self.app.model.GroupQuotaAssociation( group, quota )
                     self.sa_session.add( gqa )
             self.sa_session.flush()
             message = "Quota '%s' has been created with %d associated users and %d associated groups." % \
-                      ( quota.name, len( params.in_users ), len( params.in_groups ) )
+                      ( quota.name, len( in_users ), len( in_groups ) )
             return quota, message
 
     def _rename_quota( self, quota, params ):
