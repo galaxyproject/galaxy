@@ -49,10 +49,14 @@ class AdminActions( object ):
                 # Create the UserQuotaAssociations
                 in_users = [ self.sa_session.query( self.app.model.User ).get( decode_id( x ) if decode_id else x ) for x in util.listify( params.in_users ) ]
                 in_groups = [ self.sa_session.query( self.app.model.Group ).get( decode_id( x ) if decode_id else x ) for x in util.listify( params.in_groups ) ]
+                if None in in_users:
+                    raise ActionInputError( "One or more invalid user id has been provided." )
                 for user in in_users:
                     uqa = self.app.model.UserQuotaAssociation( user, quota )
                     self.sa_session.add( uqa )
                 # Create the GroupQuotaAssociations
+                if None in in_groups:
+                    raise ActionInputError( "One or more invalid group id has been provided." )
                 for group in in_groups:
                     gqa = self.app.model.GroupQuotaAssociation( group, quota )
                     self.sa_session.add( gqa )
@@ -79,7 +83,11 @@ class AdminActions( object ):
             raise ActionInputError( 'Default quotas cannot be associated with specific users and groups.' )
         else:
             in_users = [ self.sa_session.query( self.app.model.User ).get( decode_id( x ) if decode_id else x ) for x in util.listify( params.in_users ) ]
+            if None in in_users:
+                raise ActionInputError( "One or more invalid user id has been provided." )
             in_groups = [ self.sa_session.query( self.app.model.Group ).get( decode_id( x ) if decode_id else x ) for x in util.listify( params.in_groups ) ]
+            if None in in_groups:
+                raise ActionInputError( "One or more invalid group id has been provided." )
             self.app.quota_agent.set_entity_quota_associations( quotas=[ quota ], users=in_users, groups=in_groups )
             self.sa_session.refresh( quota )
             message = "Quota '%s' has been updated with %d associated users and %d associated groups." % ( quota.name, len( in_users ), len( in_groups ) )
