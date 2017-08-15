@@ -615,7 +615,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                             build_select_input( 'in_users', 'Users', all_users, [] ) ] }
         else:
             try:
-                quota, message = self._create_quota( util.Params( payload ) )
+                quota, message = self._create_quota( util.Params( payload ), decode_id=trans.security.decode_id )
                 return { 'message': message }
             except ActionInputError as e:
                 return message_exception( trans, e.err_msg )
@@ -642,7 +642,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             }
         else:
             try:
-                return { 'message': self._rename_quota( quota, util.Params( payload ), decode_id=trans.security.decode_id ) }
+                return { 'message': self._rename_quota( quota, util.Params( payload ) ) }
             except ActionInputError as e:
                 return message_exception( trans, e.err_msg )
 
