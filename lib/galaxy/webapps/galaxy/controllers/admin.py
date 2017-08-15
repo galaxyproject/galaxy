@@ -981,22 +981,24 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             name = util.restore_text( payload.get( 'name', '' ) )
             description = util.restore_text( payload.get( 'description', '' ) )
             auto_create_checked = payload.get( 'auto_create' ) == 'true'
-            in_users = util.listify( payload.get( 'in_users' ) )
-            in_groups = util.listify( payload.get( 'in_groups' ) )
+            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_users' ) ) ]
+            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_groups' ) ) ]
             if not name or not description:
                 return message_exception( trans, 'Enter a valid name and a description.' )
             elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == name ).first():
                 return message_exception( trans, 'Role names must be unique and a role with that name already exists, so choose another name.' )
+            elif None in in_users or None in in_groups:
+                return message_exception( trans, 'One or more invalid user/group id has been provided.' )
             else:
                 # Create the role
                 role = trans.app.model.Role( name=name, description=description, type=trans.app.model.Role.types.ADMIN )
                 trans.sa_session.add( role )
                 # Create the UserRoleAssociations
-                for user in [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in in_users ]:
+                for user in in_users:
                     ura = trans.app.model.UserRoleAssociation( user, role )
                     trans.sa_session.add( ura )
                 # Create the GroupRoleAssociations
-                for group in [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in in_groups ]:
+                for group in in_groups:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
                 if auto_create_checked:
@@ -1088,6 +1090,9 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                   build_select_input( 'in_users', 'Users', all_users, in_users ) ] }
         else:
             in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_users' ) ) ]
+            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_groups' ) ) ]
+            if None in in_users or None in in_groups:
+                return message_exception( trans, 'One or more invalid user/group id has been provided.' )
             for ura in role.users:
                 user = trans.sa_session.query( trans.app.model.User ).get( ura.user_id )
                 if user not in in_users:
@@ -1101,7 +1106,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                             if role == dhp.role:
                                 trans.sa_session.delete( dhp )
                     trans.sa_session.flush()
-            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_groups' ) ) ]
             trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( role )
             return { 'message' : 'Role \'%s\' has been updated with %d associated users and %d associated groups.' % ( role.name, len( in_users ), len( in_groups ) ) }
@@ -1255,6 +1259,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         else:
             in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_users' ) ) ]
             in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_roles' ) ) ]
+            if None in in_users or None in in_roles:
+                return message_exception( trans, 'One or more invalid user/role id has been provided.' )
             trans.app.security_agent.set_entity_group_associations( groups=[ group ], users=in_users, roles=in_roles )
             trans.sa_session.refresh( group )
             return { 'message' : 'Group \'%s\' has been updated with %d associated users and %d associated roles.' % ( group.name, len( in_users ), len( in_roles ) ) }
@@ -1289,22 +1295,24 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         else:
             name = util.restore_text( payload.get( 'name', '' ) )
             auto_create_checked = payload.get( 'auto_create' ) == 'true'
-            in_users = util.listify( payload.get( 'in_users' ) )
-            in_roles = util.listify( payload.get( 'in_roles' ) )
+            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_users' ) ) ]
+            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_roles' ) ) ]
             if not name:
                 return message_exception( trans, 'Enter a valid name.' )
             elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == name ).first():
                 return message_exception( trans, 'Group names must be unique and a group with that name already exists, so choose another name.' )
+            elif None in in_users or None in in_roles:
+                return message_exception( trans, 'One or more invalid user/role id has been provided.' )
             else:
                 # Create the role
                 group = trans.app.model.Group( name=name )
                 trans.sa_session.add( group )
                 # Create the UserRoleAssociations
-                for user in [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in in_users ]:
+                for user in in_users:
                     uga = trans.app.model.UserGroupAssociation( user, group )
                     trans.sa_session.add( uga )
                 # Create the GroupRoleAssociations
-                for role in [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in in_roles ]:
+                for role in in_roles:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
                 if auto_create_checked:
@@ -1532,12 +1540,10 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                      'inputs' : [ build_select_input( 'in_roles', 'Roles', all_roles, in_roles ),
                                   build_select_input( 'in_groups', 'Groups', all_groups, in_groups ) ] }
         else:
-            in_roles = payload.get( 'in_roles' ) or []
-            in_groups = payload.get( 'in_groups' ) or []
-            if in_roles:
-                in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( in_roles ) ]
-            if in_groups:
-                in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( in_groups ) ]
+            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_roles' ) ) ]
+            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_groups' ) ) ]
+            if None in in_groups or None in in_roles:
+                return message_exception( trans, 'One or more invalid role/group id has been provided.' )
 
             # make sure the user is not dis-associating himself from his private role
             private_role = trans.app.security_agent.get_private_user_role( user )
