@@ -1,7 +1,8 @@
 define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], function( Utils, Form, ToolFormBase ) {
 
     /** Augments the module form definition by adding label and annotation fields */
-    function _addLabelAnnotation ( options ) {
+    function _addLabelAnnotation ( form ) {
+        var options  = form.model.attributes;
         var workflow = options.workflow;
         var node     = options.node;
         options.inputs.unshift({
@@ -35,12 +36,27 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                 form.trigger( 'change' );
             }
         });
+        options.onchange = function() {
+            Utils.request({
+                type    : 'POST',
+                url     :  Galaxy.root + 'api/workflows/build_module',
+                data    : {
+                    id          : node.id,
+                    type        : node.type,
+                    content_id  : node.content_id,
+                    inputs      : form.data.create()
+                },
+                success : function( data ) {
+                    node.update_field_data( data );
+                }
+            });
+        };
     }
 
     /** Default form wrapper for non-tool modules in the workflow editor. */
     var Default = Backbone.View.extend({
         initialize: function( options ) {
-            _addLabelAnnotation( options );
+            options.customize = function( form ) { _addLabelAnnotation( form ) };
             this.form = new Form( options );
         }
     });
@@ -53,29 +69,37 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
             this.node     = options.node;
             if ( this.node ) {
                 this.post_job_actions = this.node.post_job_actions || {};
-                Utils.deepeach( options.inputs, function( input ) {
-                    if ( input.type ) {
-                        if ( [ 'data', 'data_collection' ].indexOf( input.type ) != -1 ) {
-                            input.type = 'hidden';
-                            input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions ) + ')';
-                            input.value = { '__class__': 'RuntimeValue' };
-                        } else if ( !input.fixed ) {
-                            input.collapsible_value = { '__class__': 'RuntimeValue' };
-                            input.is_workflow = ( input.options && input.options.length == 0 ) ||
-                                                ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );
-                        }
-                    }
-                });
-                Utils.deepeach( options.inputs, function( input ) {
-                    input.type == 'conditional' && ( input.test_param.collapsible_value = undefined );
-                });
-                this._makeSections( options );
                 this.form = new ToolFormBase( Utils.merge( options, {
                     text_enable     : 'Set in Advance',
                     text_disable    : 'Set at Runtime',
                     narrow          : true,
                     initial_errors  : true,
                     cls             : 'ui-portlet-narrow',
+                    customize       : function( form ) {
+                        var options  = form.model.attributes;
+                        Utils.deepeach( options.inputs, function( input ) {
+                            if ( input.type ) {
+                                if ( [ 'data', 'data_collection' ].indexOf( input.type ) != -1 ) {
+                                    input.type = 'hidden';
+                                    input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions ) + ')';
+                                    input.value = { '__class__': 'RuntimeValue' };
+                                } else if ( !input.fixed ) {
+                                    input.collapsible_value = { '__class__': 'RuntimeValue' };
+                                    input.is_workflow = ( input.options && input.options.length == 0 ) ||
+                                                        ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );
+                                }
+                            }
+                        });
+                        Utils.deepeach( options.inputs, function( input ) {
+                            input.type == 'conditional' && ( input.test_param.collapsible_value = undefined );
+                        });
+
+                        // build sections
+                        self._makeSections( options );
+
+                        // add label and annotation fields
+                        _addLabelAnnotation( form );
+                    },
                     postchange      : function( process, form ) {
                         var options = form.model.attributes;
                         var current_state = {
