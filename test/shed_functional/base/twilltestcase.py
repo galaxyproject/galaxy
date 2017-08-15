@@ -607,7 +607,14 @@ class ShedTwillTestCase( TwillTestCase ):
             self.submit_form( '1', 'login_button', login=email, redirect=redirect, password=password )
 
     def galaxy_logout( self ):
-        self.visit_galaxy_url( "/user/logout" )
+        self.visit_galaxy_url("/")
+        html = self.last_page()
+        token_def_index = html.find("session_csrf_token")
+        token_sep_index = html.find(":", token_def_index)
+        token_quote_start_index = html.find('"', token_sep_index)
+        token_quote_end_index = html.find('"', token_quote_start_index + 1)
+        token = html[(token_quote_start_index + 1):token_quote_end_index]
+        self.visit_galaxy_url( "/user/logout", dict(session_csrf_token=token) )
         self.check_page_for_string( "You have been logged out" )
         tc.browser.cj.clear()
 

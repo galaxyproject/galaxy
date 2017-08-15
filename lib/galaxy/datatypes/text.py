@@ -12,7 +12,7 @@ import tempfile
 
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
-from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.sniff import iter_headers
 from galaxy.util import nice_size, string_as_bool
 
 log = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class Html( Text ):
         >>> Html().sniff( fname )
         True
         """
-        headers = get_headers( filename, None )
+        headers = iter_headers( filename, None )
         try:
             for i, hdr in enumerate(headers):
                 if hdr and hdr[0].lower().find( '<html>' ) >= 0:

@@ -680,6 +680,7 @@ class MetadataGenerator( object ):
                           guid=guid,
                           name=tool.name,
                           version=tool.version,
+                          profile=tool.profile,
                           description=tool.description,
                           version_string_cmd=tool.version_string_cmd,
                           tool_config=tool_config,

@@ -36,11 +36,7 @@ var Collection = Backbone.Collection.extend({
             title           : _l('Workflow'),
             tooltip         : _l('Chain tools into workflows'),
             disabled        : !Galaxy.user.id,
-            url             : 'workflow',
-            target          : 'galaxy_main',
-            onclick         : function() {
-                                  window.location = Galaxy.root + 'workflow';
-                            }
+            url             : 'workflow'
         });
 
         //
@@ -190,15 +186,7 @@ var Collection = Backbone.Collection.extend({
                     target  : '_blank'
                 },{
                     title   : _l('Interactive Tours'),
-                    url     : 'tours',
-                    onclick : function(){
-                        if (Galaxy.router){
-                            Galaxy.router.navigate('tours', {'trigger': true});
-                        } else {
-                            // Redirect and use clientside routing to go to tour index
-                            window.location = Galaxy.root + "tours";
-                        }
-                    }
+                    url     : 'tours'
             }]
         };
         options.terms_url && helpTab.menu.push({
@@ -263,29 +251,13 @@ var Collection = Backbone.Collection.extend({
                         title   : _l('Logged in as') + ' ' + Galaxy.user.get( 'email' )
                     },{
                         title   : _l('Preferences'),
-                        url     : 'user',
-                        target  : 'galaxy_main',
-                        onclick : function() {
-                            if ( Galaxy.router ) {
-                                Galaxy.router.push( 'user' );
-                            } else {
-                                window.location = Galaxy.root + 'user';
-                            }
-                        }
+                        url     : 'user'
                     },{
                         title   : _l('Custom Builds'),
-                        url     : 'custom_builds',
-                        target  : 'galaxy_main',
-                        onclick : function() {
-                            if ( Galaxy.router ) {
-                                Galaxy.router.push( 'custom_builds' );
-                            } else {
-                                window.location = Galaxy.root + 'custom_builds';
-                            }
-                        }
+                        url     : 'custom_builds'
                     },{
                         title   : _l('Logout'),
-                        url     : 'user/logout',
+                        url     : 'user/logout?session_csrf_token=' + Galaxy.session_csrf_token,
                         target  : '_top',
                         divider : true
                     },{

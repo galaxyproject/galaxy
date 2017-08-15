@@ -37,7 +37,6 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                     text_disable    : 'Set at Runtime',
                     narrow          : true,
                     initial_errors  : true,
-                    sustain_version : true,
                     cls             : 'ui-portlet-narrow',
                     postchange      : function( process, form ) {
                         var options = form.model.attributes;
@@ -164,11 +163,19 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                 },{
                     action      : 'TagDatasetAction',
                     pja_arg     : 'tags',
-                    label       : 'Tags',
+                    label       : 'Add Tags',
                     type        : 'text',
                     value       : '',
                     ignore      : '',
                     help        : 'This action will set tags for the dataset.'
+                },{
+                    action      : 'RemoveTagDatasetAction',
+                    pja_arg     : 'tags',
+                    label       : 'Remove Tags',
+                    type        : 'text',
+                    value       : '',
+                    ignore      : '',
+                    help        : 'This action will remove tags for the dataset.'
                 },{
                     title   : 'Assign columns',
                     type    : 'section',

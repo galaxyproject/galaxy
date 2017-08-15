@@ -289,6 +289,7 @@ class XmlToolSource(ToolSource):
         output.format = output_format
         output.change_format = data_elem.findall("change_format")
         output.format_source = data_elem.get("format_source", default_format_source)
+        output.default_identifier_source = data_elem.get("default_identifier_source", 'None')
         output.metadata_source = data_elem.get("metadata_source", default_metadata_source)
         output.parent = data_elem.get("parent", None)
         output.label = xml_text( data_elem, "label" )

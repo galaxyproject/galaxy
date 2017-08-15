@@ -25,6 +25,7 @@
   <tool file="composite_output.xml" />
   <tool file="composite_output_tests.xml" />
   <tool file="unicode_stream.xml" />
+  <tool file="vcf_bgzip.xml" />
   <tool file="metadata.xml" />
   <tool file="metadata_bam.xml" />
   <tool file="metadata_bcf.xml" />
@@ -78,6 +79,7 @@
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
   <tool file="explicit_conversion.xml" />
+  <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_multiple_in_conditional.xml" />
@@ -148,6 +150,7 @@
   <tool file="${model_tools_path}/zip_collection.xml" />
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
+  <tool file="${model_tools_path}/sort_collection_list.xml" />
   <tool file="${model_tools_path}/merge_collection.xml" />
   <tool file="${model_tools_path}/relabel_from_file.xml" />
   <tool file="${model_tools_path}/filter_from_file.xml" />

@@ -2,40 +2,63 @@
 Contains functionality needed in every web interface
 """
 import logging
-import operator
 import re
 
-from six import string_types, text_type
+from paste.httpexceptions import (
+    HTTPBadRequest,
+    HTTPInternalServerError,
+    HTTPNotImplemented,
+    HTTPRequestRangeNotSatisfiable
+)
+from six import (
+    string_types,
+    text_type
+)
 from sqlalchemy import true
 
-from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
-from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
-from galaxy import exceptions
-from galaxy import web
-from galaxy import model
-from galaxy import security
-from galaxy import util
-
-from galaxy.web import error, url_for
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
-from galaxy.web.form_builder import build_select_field, HistoryField, PasswordField, WorkflowField, WorkflowMappingField
-from galaxy.workflow.modules import WorkflowModuleInjector
-from galaxy.security.validate_user_input import validate_publicname
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util.dictifiable import Dictifiable
-
+from galaxy import (
+    exceptions,
+    model,
+    security,
+    util,
+    web
+)
 from galaxy.datatypes.interval import ChromatinInteractions
-
-from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
-
-from galaxy.managers import api_keys
-from galaxy.managers import tags
-from galaxy.managers import workflows
-from galaxy.managers import base as managers_base
-from galaxy.managers import users
-from galaxy.managers import configuration
-
+from galaxy.managers import (
+    api_keys,
+    base as managers_base,
+    configuration,
+    tags,
+    users,
+    workflows
+)
+from galaxy.model import (
+    ExtendedMetadata,
+    ExtendedMetadataIndex,
+    HistoryDatasetAssociation,
+    LibraryDatasetDatasetAssociation
+)
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.security.validate_user_input import validate_publicname
+from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web import (
+    error,
+    url_for
+)
+from galaxy.web.form_builder import (
+    AddressField,
+    build_select_field,
+    CheckboxField,
+    HistoryField,
+    PasswordField,
+    SelectField,
+    TextArea,
+    TextField,
+    WorkflowField,
+    WorkflowMappingField
+)
+from galaxy.workflow.modules import WorkflowModuleInjector
 
 log = logging.getLogger( __name__ )
 
@@ -132,7 +155,7 @@ class BaseController( object ):
             values = [ values ]
         # TODO: it may be more helpful to the consumer if we error on incomplete 3-tuples
         #   (instead of relying on zip to shorten)
-        return zip( attrs, ops, values )
+        return list(zip( attrs, ops, values ))
 
     def parse_limit_offset( self, qdict ):
         """
@@ -211,8 +234,8 @@ class BaseAPIController( BaseController ):
             msg = "The following value(s) for associated users and/or groups could not be parsed: %s." % ', '.join( invalid )
             msg += "  Valid values are email addresses of users, names of groups, or IDs of both."
             raise Exception( msg )
-        payload['in_users'] = map( str, new_in_users )
-        payload['in_groups'] = map( str, new_in_groups )
+        payload['in_users'] = list(map( str, new_in_users ))
+        payload['in_groups'] = list(map( str, new_in_groups ))
 
     def not_implemented( self, trans, **kwd ):
         raise HTTPNotImplemented()
@@ -245,6 +268,16 @@ class JSAppLauncher( BaseUIController ):
         self.config_serializer = configuration.ConfigSerializer( app )
         self.admin_config_serializer = configuration.AdminConfigSerializer( app )
 
+    @web.expose
+    def client( self, trans, **kwd ):
+        """
+        Endpoint for clientside routes.  Currently a passthrough to index
+        (minus kwargs) though we can differentiate it more in the future.
+        Should not be used with url_for -- see
+        (https://github.com/galaxyproject/galaxy/issues/1878) for why.
+        """
+        return self.index(trans)
+
     def _get_js_options( self, trans, root=None ):
         """
         Return a dictionary of session/site configuration/options to jsonify
@@ -254,9 +287,11 @@ class JSAppLauncher( BaseUIController ):
         """
         root = root or web.url_for( '/' )
         js_options = {
-            'root'      : root,
-            'user'      : self.user_serializer.serialize( trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans ),
-            'config'    : self._get_site_configuration( trans )
+            'root'               : root,
+            'user'               : self.user_serializer.serialize( trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans ),
+            'config'             : self._get_site_configuration( trans ),
+            'params'             : dict( trans.request.params ),
+            'session_csrf_token' : trans.session_csrf_token,
         }
         return js_options
 
@@ -891,7 +926,7 @@ class UsesVisualizationMixin( UsesLibraryMixinItems ):
         if not job:
             return None
 
-        tool = trans.app.toolbox.get_tool( job.tool_id )
+        tool = trans.app.toolbox.get_tool( job.tool_id, tool_version=job.tool_version )
         if not tool:
             return None
 
@@ -2164,7 +2199,6 @@ class UsesTagsMixin( SharableItemSecurityMixin ):
         return self.get_tag_handler( trans )._get_item_tag_assoc( user, tagged_item, tag_name )
 
     def set_tags_from_list( self, trans, item, new_tags_list, user=None ):
-        # Method deprecated - try to use TagsHandler instead.
         tags_manager = tags.GalaxyTagManager( trans.app.model.context )
         return tags_manager.set_tags_from_list( user, item, new_tags_list )
 
@@ -2310,6 +2344,6 @@ def sort_by_attr( seq, attr ):
     # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
     # only to provide stable sorting, but mainly to eliminate comparison of objects
     # (which can be expensive or prohibited) in case of equal attribute values.
-    intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
+    intermed = [(getattr(v, attr), i, v) for i, v in enumerate(seq)]
     intermed.sort()
-    return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
+    return [_[-1] for _ in intermed]

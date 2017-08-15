@@ -126,8 +126,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/ui/ui-tabl
                         icon     : 'fa-save',
                         tooltip  : 'Create new Build',
                         title    : 'Save',
-                        cls      : 'ui-button btn btn-primary',
-                        floating : 'clear',
+                        cls      : 'btn btn-primary ui-clear-float',
                         onclick  : function() {
                             var data = form.data.create();
                             if ( !data.id || !data.name ) {

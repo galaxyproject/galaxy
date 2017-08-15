@@ -18,7 +18,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago, to_unicode
-from galaxy.tools.errors import EmailErrorReporter
 
 log = logging.getLogger( __name__ )
 
@@ -159,18 +158,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         except:
             exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
         return exit_code
-
-    @web.expose
-    def report_error( self, trans, id, email='', message="", **kwd ):
-        biostar_report = 'biostar' in str( kwd.get( 'submit_error_report') ).lower()
-        if biostar_report:
-            return trans.response.send_redirect( url_for( controller='biostar', action='biostar_tool_bug_report', hda=id, email=email, message=message ) )
-        try:
-            error_reporter = EmailErrorReporter( id, trans.app )
-            error_reporter.send_report( user=trans.user, email=email, message=message )
-            return trans.show_ok_message( "Your error report has been sent" )
-        except Exception as e:
-            return trans.show_error_message( "An error occurred sending the report by email: %s" % str( e ) )
 
     @web.expose
     def default(self, trans, dataset_id=None, **kwd):
@@ -1160,7 +1147,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 try:
                     # Load the tool
                     toolbox = self.get_toolbox()
-                    tool = toolbox.get_tool( job.tool_id )
+                    tool = toolbox.get_tool( job.tool_id, job.tool_version )
                     assert tool is not None, 'Requested tool has not been loaded.'
                     # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
                     try:

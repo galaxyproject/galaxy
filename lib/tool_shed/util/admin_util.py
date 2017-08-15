@@ -127,7 +127,7 @@ class Admin( object ):
                                          .filter( trans.app.model.Group.table.c.deleted == false() ) \
                                          .order_by( trans.app.model.Group.table.c.name ):
                 out_groups.append( ( group.id, group.name ) )
-        return trans.fill_template( '/admin/dataset_security/role/role_create.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/role/role_create.mako',
                                     name=name,
                                     description=description,
                                     in_users=in_users,
@@ -175,7 +175,7 @@ class Admin( object ):
                                                                       action='roles',
                                                                       message=util.sanitize_text( message ),
                                                                       status='done' ) )
-        return trans.fill_template( '/admin/dataset_security/role/role_rename.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/role/role_rename.mako',
                                     role=role,
                                     message=message,
                                     status=status )
@@ -266,7 +266,7 @@ class Admin( object ):
         else:
             message = "Not showing associated datasets, there are too many."
             status = 'info'
-        return trans.fill_template( '/admin/dataset_security/role/role.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/role/role.mako',
                                     role=role,
                                     in_users=in_users,
                                     out_users=out_users,
@@ -441,7 +441,7 @@ class Admin( object ):
                                                                       action='groups',
                                                                       message=util.sanitize_text( message ),
                                                                       status='done' ) )
-        return trans.fill_template( '/admin/dataset_security/group/group_rename.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/group/group_rename.mako',
                                     group=group,
                                     message=message,
                                     status=status )
@@ -482,7 +482,7 @@ class Admin( object ):
             else:
                 out_users.append( ( user.id, user.email ) )
         message += 'Group %s is currently associated with %d roles and %d users' % ( group.name, len( in_roles ), len( in_users ) )
-        return trans.fill_template( '/admin/dataset_security/group/group.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/group/group.mako',
                                     group=group,
                                     in_roles=in_roles,
                                     out_roles=out_roles,
@@ -555,7 +555,7 @@ class Admin( object ):
                                         .filter( trans.app.model.Role.table.c.deleted == false() ) \
                                         .order_by( trans.app.model.Role.table.c.name ):
                 out_roles.append( ( role.id, role.name ) )
-        return trans.fill_template( '/admin/dataset_security/group/group_create.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/group/group_create.mako',
                                     name=name,
                                     in_users=in_users,
                                     out_users=out_users,
@@ -704,7 +704,7 @@ class Admin( object ):
         users = [ get_user( trans, user_id ) for user_id in user_ids ]
         if len( user_ids ) > 1:
             user_id = ','.join( user_ids )
-        return trans.fill_template( '/admin/user/reset_password.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/user/reset_password.mako',
                                     id=user_id,
                                     users=users,
                                     password='',
@@ -850,13 +850,6 @@ class Admin( object ):
                 return self.purge_user( trans, **kwd )
             elif operation == "create":
                 return self.create_new_user( trans, **kwd )
-            elif operation == "information":
-                user_id = kwd.get( 'id', None )
-                if not user_id:
-                    kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received" % str( user_id ) )
-                    kwd[ 'status' ] = 'error'
-                else:
-                    return trans.response.send_redirect( web.url_for( controller='user', action='information', **kwd ) )
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwd )
         if trans.app.config.allow_user_deletion:
@@ -942,7 +935,7 @@ class Admin( object ):
             ( user.email, len( in_roles ), len( in_groups ) )
         if not status:
             status = 'done'
-        return trans.fill_template( '/admin/user/user.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/user/user.mako',
                                     user=user,
                                     in_roles=in_roles,
                                     out_roles=out_roles,

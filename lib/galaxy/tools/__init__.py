@@ -582,10 +582,11 @@ class Tool( object, Dictifiable ):
         if not self.id:
             raise Exception( "Missing tool 'id' for tool at '%s'" % tool_source )
 
-        if self.profile >= 16.04 and VERSION_MAJOR < self.profile:
+        profile = LooseVersion(str(self.profile))
+        if profile >= LooseVersion("16.04") and LooseVersion(VERSION_MAJOR) < profile:
             template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             message = template % (self.id, self.profile)
-            log.warning(message)
+            raise Exception(message)
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
@@ -2504,6 +2505,30 @@ class FlattenTool( DatabaseOperationTool ):
                     history.add_dataset(copied_dataset, set_hid=False)
                     new_elements[identifier] = copied_dataset
         add_elements(hdca.collection)
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements
+        )
+
+
+class SortTool( DatabaseOperationTool ):
+    tool_type = 'sort_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        sorttype = incoming["sort_type"]
+        new_elements = odict()
+        elements = hdca.collection.elements
+        if sorttype == 'alpha':
+            presort_elements = [(dce.element_identifier, dce) for dce in elements]
+        elif sorttype == 'numeric':
+            presort_elements = [(int(re.sub('[^0-9]', '', dce.element_identifier)), dce) for dce in elements]
+        sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
+
+        for dce in sorted_elements:
+            dce_object = dce.element_object
+            copied_dataset = dce_object.copy()
+            history.add_dataset(copied_dataset, set_hid=False)
+            new_elements[dce.element_identifier] = copied_dataset
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )

@@ -6,6 +6,7 @@ SQLAlchemy==1.0.15
 mercurial==3.7.3
 numpy==1.9.2
 pycrypto==2.6.1
+uWSGI==2.0.15
 
 # Install python_lzo if you want to support indexed access to lzo-compressed
 # locally cached maf files via bx-python
@@ -31,6 +32,11 @@ six==1.10.0
 Whoosh==2.7.4
 testfixtures==4.10.0
 galaxy_sequence_utils==1.0.2
+
+# pykwalify and dependencies
+pykwalify==1.5.1
+python-dateutil==2.5.3
+docopt==0.6.2
 
 # Cheetah and dependencies
 Cheetah==2.4.4
@@ -63,8 +69,8 @@ svgwrite==1.1.6
 pyparsing==2.1.1
 
 # Fabric and dependencies
-Fabric==1.10.2
-paramiko==1.15.2
+Fabric==1.13.2
+paramiko==2.2.1
 ecdsa==0.13
 
 # Flexible BAM index naming

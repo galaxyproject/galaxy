@@ -67,7 +67,7 @@ error_report_template_html = """
 <h3>Error Localization</h3>
 <table style="margin:1em">
     <tbody>
-        <tr><td>Dataset</td><td>${dataset_id} (${dataset_id_encoded})</td></tr>
+        <tr><td>Dataset</td><td><a href="${hda_show_params_link}">${dataset_id} (${dataset_id_encoded})</a></td></tr>
         <tr style="background-color: #f2f2f2"><td>History</td><td><a href="${history_view_link}">${history_id} (${history_id_encoded})</a></td></tr>
         <tr><td>Failed Job</td><td>${hid}: ${history_item_name} (${hda_id_encoded})</td></tr>
     </tbody>
@@ -84,7 +84,7 @@ ${message}
 
 <h3>Detailed Job Information</h3>
 
-Job environment and execution information is available at the job <a href="${hda_show_params_link}">Info Page</a>.
+Job environment and execution information is available at the job <a href="${hda_show_params_link}">info page</a>.
 
 <table style="margin:1em">
     <tbody>

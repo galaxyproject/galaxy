@@ -34,6 +34,12 @@
 @ui-margin-horizontal-small: 4px;
 @ui-margin-horizontal-large: 10px;
 
+// helpers
+.ui-clear-float {
+    clear: both !important;
+    float: none !important;
+}
+
 // margins
 .ui-margin-top {
     padding-top: @ui-margin-vertical !important;
@@ -135,6 +141,7 @@
 
 // buttons
 .ui-button-default {
+    float: right;
     .icon {
         font-size: 1.1em;
     }
@@ -154,6 +161,7 @@
     &:extend(.no-highlight);
     height: auto !important;
     width: auto !important;
+    float: right;
     ul {
         i {
             width: 1.2em;
@@ -195,6 +203,7 @@
     height: inherit !important;
     width: inherit !important;
     padding-right: 3px !important;
+    float: right;
 }
 
 // side panel
@@ -851,10 +860,12 @@
         .ui-button-icon {
             margin-top: 3px;
             margin-right: 5px;
+            float: left;
         }
     }
     .ui-list-message, .ui-list-portlet {
         clear: both;
+        padding-top: 1px;
     }
     .ui-list-id {
         cursor: pointer;
