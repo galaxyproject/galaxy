@@ -88,7 +88,7 @@ def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, c
         if len(param_combinations) == 0:
             template = "Attempting to map over an empty collection, this is not yet implemented. collection_info is [%s]"
             message = template % collection_info
-            log.warn(message)
+            log.warning(message)
             raise Exception(message)
         params = param_combinations[0]
         execution_tracker.create_output_collections(trans, history, params)

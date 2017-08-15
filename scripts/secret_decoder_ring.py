@@ -27,7 +27,7 @@ app_properties = load_app_properties(ini_file=config['config_file'])
 # We need the ID secret for configuring the security helper to decrypt
 # galaxysession cookies.
 if "id_secret" not in app_properties:
-    log.warn('No ID_SECRET specified. Please set the "id_secret" in your galaxy.ini.')
+    log.warning('No ID_SECRET specified. Please set the "id_secret" in your galaxy.ini.')
 
 id_secret = app_properties.get('id_secret', 'dangerous_default')
 

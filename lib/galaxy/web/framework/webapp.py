@@ -894,10 +894,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         session_csrf_token = self.request.params.get("session_csrf_token", None)
         problem = False
         if not session_csrf_token:
-            log.warn("No session_csrf_token set, denying request.")
+            log.warning("No session_csrf_token set, denying request.")
             problem = True
         elif session_csrf_token != self.session_csrf_token:
-            log.warn("Wrong session token found, denying request.")
+            log.warning("Wrong session token found, denying request.")
             problem = True
 
         if problem:
