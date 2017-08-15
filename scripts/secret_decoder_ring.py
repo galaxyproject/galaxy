@@ -2,19 +2,19 @@
 """
 Script to encode/decode the IDs that galaxy exposes to users and admins.
 """
+import logging
 import os
 import sys
+
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
-import logging
-logging.basicConfig()
-log = logging.getLogger(__name__)
-
-
-from galaxy.model.orm.scripts import get_config
 from galaxy.model import mapping
+from galaxy.model.orm.scripts import get_config
 from galaxy.util.properties import load_app_properties
 from galaxy.web.security import SecurityHelper
+
+logging.basicConfig()
+log = logging.getLogger(__name__)
 
 # Get config file and load up SA session
 config = get_config(sys.argv)

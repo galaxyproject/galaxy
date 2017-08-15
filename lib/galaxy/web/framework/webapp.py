@@ -1,41 +1,43 @@
 """
 """
 import datetime
-import inspect
-import os
 import hashlib
+import inspect
+import logging
+import os
 import random
 import socket
 import string
 import time
-import urlparse
-from Cookie import CookieError
 from importlib import import_module
 
-from Cheetah.Template import Template
-import mako.runtime
 import mako.lookup
-from babel.support import Translations
+import mako.runtime
 from babel import Locale
+from babel.support import Translations
+from Cheetah.Template import Template
 from six import string_types
+from six.moves.http_cookies import CookieError
+from six.moves.urllib.parse import urlparse
 from sqlalchemy import and_, true
-from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
-
-from galaxy.exceptions import MessageException
+from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import util
-from galaxy.util import asbool
-from galaxy.util import safe_str_cmp
-from galaxy.util.sanitize_html import sanitize_html
-
+from galaxy.exceptions import MessageException
 from galaxy.managers import context
-from galaxy.web.framework import url_for
-from galaxy.web.framework import base
-from galaxy.web.framework import helpers
-from galaxy.web.framework import formbuilder
+from galaxy.util import (
+    asbool,
+    safe_str_cmp
+)
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web.framework import (
+    base,
+    formbuilder,
+    helpers,
+    url_for
+)
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -303,7 +305,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             return False
 
         # boil origin header down to hostname
-        origin = urlparse.urlparse(origin_header).hostname
+        origin = urlparse(origin_header).hostname
         # check against the list of allowed strings/regexp hostnames, echo original if cleared
         if is_allowed_origin(origin):
             self.response.headers['Access-Control-Allow-Origin'] = origin_header
@@ -602,10 +604,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             username = remote_user_email.split('@', 1)[0].lower()
             random.seed()
             user = self.app.model.User(email=remote_user_email)
-            user.set_password_cleartext(''.join(random.sample(string.letters + string.digits, 12)))
+            user.set_password_cleartext(''.join(random.sample(string.ascii_letters + string.digits, 12)))
             user.external = True
             # Replace invalid characters in the username
-            for char in filter(lambda x: x not in string.ascii_lowercase + string.digits + '-', username):
+            for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-']:
                 username = username.replace(char, '-')
             # Find a unique username - user can change it later
             if self.sa_session.query(self.app.model.User).filter_by(username=username).first():

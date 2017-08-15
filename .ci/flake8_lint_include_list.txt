@@ -94,6 +94,7 @@ lib/galaxy/web/framework/middleware/static.py
 lib/galaxy/web/framework/middleware/statsd.py
 lib/galaxy/web/framework/middleware/translogger.py
 lib/galaxy/web/framework/middleware/xforwardedhost.py
+lib/galaxy/web/framework/webapp.py
 lib/galaxy/web/__init__.py
 lib/galaxy/web/params.py
 lib/galaxy/webapps/galaxy/api/genomes.py
@@ -106,6 +107,7 @@ lib/galaxy/webapps/galaxy/api/roles.py
 lib/galaxy/webapps/galaxy/api/samples.py
 lib/galaxy/webapps/galaxy/api/tools.py
 lib/galaxy/webapps/galaxy/api/tours.py
+lib/galaxy/webapps/galaxy/api/users.py
 lib/galaxy/webapps/galaxy/api/workflows.py
 lib/galaxy/webapps/galaxy/config_watchers.py
 lib/galaxy/webapps/galaxy/controllers/async.py
@@ -188,6 +190,7 @@ scripts/build_universe_config.py
 scripts/check_galaxy.py
 scripts/check_python.py
 scripts/cleanup_datasets/
+scripts/communication/
 scripts/create_db.py
 scripts/data_libraries/
 scripts/db_shell.py
@@ -214,6 +217,7 @@ scripts/migrate_tools/
 scripts/nosetests.py
 scripts/others/
 scripts/runtime_stats.py
+scripts/secret_decoder_ring.py
 scripts/set_dataset_sizes.py
 scripts/set_user_disk_usage.py
 scripts/sync_reports_config.py

@@ -35,9 +35,11 @@ lib/galaxy/web/framework/__init__.py
 lib/galaxy/web/framework/middleware/error.py
 lib/galaxy/web/framework/middleware/static.py
 lib/galaxy/web/framework/middleware/statsd.py
+lib/galaxy/web/framework/webapp.py
 lib/galaxy/web/__init__.py
 lib/galaxy/webapps/galaxy/api/histories.py
 lib/galaxy/webapps/galaxy/api/tours.py
+lib/galaxy/webapps/galaxy/api/users.py
 lib/galaxy/webapps/galaxy/api/workflows.py
 lib/galaxy/webapps/galaxy/controllers/external_services.py
 lib/galaxy/webapps/galaxy/controllers/search.py
@@ -64,9 +66,11 @@ scripts/check_eggs.py
 scripts/check_galaxy.py
 scripts/check_python.py
 scripts/cleanup_datasets/
+scripts/communication/
 scripts/data_libraries/build_whoosh_index.py
 scripts/db_shell.py
 scripts/drmaa_external_runner.py
+scripts/secret_decoder_ring.py
 test/
 tool_list.py
 tools/
