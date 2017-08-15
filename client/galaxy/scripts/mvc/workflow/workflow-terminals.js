@@ -134,7 +134,7 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
         },
         destroyInvalidConnections: function( ) {
             _.each( this.connectors, function( connector ) {
-                connector.destroyIfInvalid();
+                connector && connector.destroyIfInvalid();
             } );
         },
         setMapOver : function( val ) {
