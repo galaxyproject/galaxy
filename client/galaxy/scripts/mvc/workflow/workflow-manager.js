@@ -182,15 +182,16 @@ function( Connector, Toastr ) {
                     id : node.id,
                     type : node.type,
                     content_id : node.content_id,
+                    tool_version : node.config_form.version,
                     tool_state : node.tool_state,
                     errors : node.errors,
                     input_connections : input_connections,
                     position : $(node.element).position(),
-                    annotation: node.annotation,
-                    post_job_actions: node.post_job_actions,
-                    uuid: node.uuid,
-                    label: node.label,
-                    workflow_outputs: node.workflow_outputs
+                    annotation : node.annotation,
+                    post_job_actions : node.post_job_actions,
+                    uuid : node.uuid,
+                    label : node.label,
+                    workflow_outputs : node.workflow_outputs
                 };
                 nodes[ node.id ] = node_data;
             });
@@ -308,7 +309,7 @@ function( Connector, Toastr ) {
             if ( this.active_node == node && force ) {
                 // Force changes to be saved even on new connection (previously dumped)
                 this.check_changes_in_active_form();
-                this.app.showForm( node.config_form, node );
+                this.app.showForm( node.config_form, node, force );
             }
             this.app.showWorkflowParameters();
         },
