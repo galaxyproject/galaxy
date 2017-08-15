@@ -24,7 +24,7 @@ from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import unicodify
 
 log = logging.getLogger()
-log.setLevel(10)
+log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 assert sys.version_info[:2] >= (2, 4)

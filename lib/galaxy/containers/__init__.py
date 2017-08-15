@@ -310,7 +310,7 @@ def parse_containers_config(containers_config_file):
             conf.update(c.get('containers', {}))
     except (OSError, IOError) as exc:
         if exc.errno == errno.ENOENT:
-            log.warning("config file '%s' does not exist, running with default config", containers_config_file)
+            log.debug("config file '%s' does not exist, running with default config", containers_config_file)
         else:
             raise
     return conf
