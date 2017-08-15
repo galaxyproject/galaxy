@@ -156,13 +156,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                                 // queue model request
                                 self.deferred.reset();
                                 self.deferred.execute( function( process ) {
-                                    if ( options.hasOwnProperty( "workflow" ) ) {
-                                        // this is needed for notifying the workflow editor form
-                                        options.version = version;
-                                        self.model.get( 'postchange' )( process, self );
-                                    } else {
-                                        self._buildModel( process, { id : id, version : version } );
-                                    };
+                                    self._buildModel( process, { id : id, version : version } );
                                 });
                             }
                         });

@@ -1,8 +1,46 @@
 define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], function( Utils, Form, ToolFormBase ) {
 
+    /** Augments the module form definition by adding label and annotation fields */
+    function _addLabelAnnotation ( options ) {
+        var workflow = options.workflow;
+        var node     = options.node;
+        options.inputs.unshift({
+            type    : 'text',
+            name    : '__annotation',
+            label   : 'Annotation',
+            fixed   : true,
+            value   : node.annotation,
+            area    : true,
+            help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
+        });
+        options.inputs.unshift({
+            type    : 'text',
+            name    : '__label',
+            label   : 'Label',
+            value   : node.label,
+            help    : 'Add a step label.',
+            fixed   : true,
+            onchange: function( new_label ) {
+                var duplicate = false;
+                for ( var i in self.workflow.nodes ) {
+                    var n = workflow.nodes[ i ];
+                    if ( n.label && n.label == new_label && n.id != node.id ) {
+                        duplicate = true;
+                        break;
+                    }
+                }
+                var input_id = form.data.match( '__label' );
+                var input_element = form.element_list[ input_id ];
+                input_element.model.set( 'error_text', duplicate && 'Duplicate label. Please fix this before saving the workflow.' );
+                form.trigger( 'change' );
+            }
+        });
+    }
+
     /** Default form wrapper for non-tool modules in the workflow editor. */
     var Default = Backbone.View.extend({
         initialize: function( options ) {
+            _addLabelAnnotation( options );
             this.form = new Form( options );
         }
     });
