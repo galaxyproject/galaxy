@@ -101,7 +101,7 @@ def config_exception(e, file):
     abs_path = os.path.abspath(file)
     message = 'Problem parsing the XML in file %s, ' % abs_path
     message += 'please correct the indicated portion of the file and restart Galaxy. '
-    message += str(e)
+    message += unicodify(e)
     log.exception(message)
     return Exception(message)
 
@@ -1496,7 +1496,7 @@ class JobWrapper( object, HasResourceParameters ):
     def get_output_sizes( self ):
         sizes = []
         output_paths = self.get_output_fnames()
-        for outfile in [ str( o ) for o in output_paths ]:
+        for outfile in [ unicodify( o ) for o in output_paths ]:
             if os.path.exists( outfile ):
                 sizes.append( ( outfile, os.stat( outfile ).st_size ) )
             else:
