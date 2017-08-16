@@ -309,7 +309,7 @@ function( Connector, Toastr ) {
             if ( this.active_node == node && force ) {
                 // Force changes to be saved even on new connection (previously dumped)
                 this.check_changes_in_active_form();
-                this.app.showForm( node.config_form, node, force );
+                this.app.showForm( node.config_form, node );
             }
             this.app.showWorkflowParameters();
         },

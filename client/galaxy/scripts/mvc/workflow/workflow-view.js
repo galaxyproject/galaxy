@@ -653,15 +653,11 @@ define([
             $( '#edit-attributes' ).show();
         },
 
-        showForm: function ( content, node, force ) {
+        showForm: function ( content, node ) {
             var self = this;
             var cls = 'right-content';
             var id  = cls + '-' + node.id;
             var $container = $( '#' + cls );
-            if (force) {
-                $container.find( '#' + id ).remove();
-                $( '<div id="' + id + '" class="' + cls + '"/>').remove();
-            }
             if ( content && $container.find( '#' + id ).length == 0 ) {
                 var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );
                 content.node = node;

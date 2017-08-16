@@ -232,7 +232,6 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             });
             this.tool_state = data.tool_state;
             this.config_form = data.config_form;
-            this.force_refresh = this.config_form && this.tool_version !== this.config_form.version;
             this.tool_version = this.config_form && this.config_form.version;
             this.errors = data.errors;
             this.annotation = data['annotation'];
@@ -282,7 +281,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.app.workflow.node_changed( this );
         },
         markChanged: function() {
-            this.app.workflow.node_changed( this, this.force_refresh );
+            this.app.workflow.node_changed( this );
         }
     });
     return Node;
