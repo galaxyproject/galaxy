@@ -223,6 +223,11 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             $.each( data.data_outputs, function( i, output ) {
                 if (!nodeView.outputViews[output.name]) {
                     nodeView.addDataOutput(output);  // add data output if it does not yet exist
+                } else {
+                    // the output already exists, but the output formats may have changed.
+                    // Therefore we update the datatypes and destroy invalid connections.
+                    node.output_terminals[ output.name ].datatypes = output.extensions;
+                    node.output_terminals[ output.name ].destroyInvalidConnections();
                 }
             });
             this.tool_state = data.tool_state;
