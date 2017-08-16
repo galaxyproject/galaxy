@@ -10,7 +10,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             FormBase.prototype.initialize.call( this, options );
 
             // optional model update
-            this._update();
+            this._update( this.model.get( 'initialmodel' ) );
 
             // listen to history panel
             if ( this.model.get( 'listen_to_history' ) && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
@@ -23,12 +23,13 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
         },
 
         /** Allows tool form variation to update tool model */
-        _update: function() {
+        _update: function( callback ) {
             var self = this;
-            if ( !this.model.get( 'inputs' ) ) {
+            callback = callback || this.model.get( 'buildmodel' );
+            if ( callback ) {
                 this.deferred.reset();
                 this.deferred.execute( function( process ) {
-                    self.model.get( 'buildmodel' )( process, self );
+                    callback( process, self );
                     process.then( function() { self._render() } );
                 });
             } else {

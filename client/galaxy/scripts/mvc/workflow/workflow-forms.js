@@ -38,6 +38,10 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                 narrow          : true,
                 initial_errors  : true,
                 cls             : 'ui-portlet-narrow',
+                initialmodel    : function( process, form ) {
+                    self._customize( form );
+                    process.resolve();
+                },
                 buildmodel      : function( process, form ) {
                     form.model.get( 'postchange' )( process, form );
                 },
