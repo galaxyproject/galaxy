@@ -38,26 +38,8 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                 narrow          : true,
                 initial_errors  : true,
                 cls             : 'ui-portlet-narrow',
-                customize       : function( form ) {
-                    var options  = form.model.attributes;
-                    Utils.deepeach( options.inputs, function( input ) {
-                        if ( input.type ) {
-                            if ( [ 'data', 'data_collection' ].indexOf( input.type ) != -1 ) {
-                                input.type = 'hidden';
-                                input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions ) + ')';
-                                input.value = { '__class__': 'RuntimeValue' };
-                            } else if ( !input.fixed ) {
-                                input.collapsible_value = { '__class__': 'RuntimeValue' };
-                                input.is_workflow = ( input.options && input.options.length == 0 ) ||
-                                                    ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );
-                            }
-                        }
-                    });
-                    Utils.deepeach( options.inputs, function( input ) {
-                        input.type == 'conditional' && ( input.test_param.collapsible_value = undefined );
-                    });
-                    _addSections( form );
-                    _addLabelAnnotation( form );
+                buildmodel      : function( process, form ) {
+                    form.model.get( 'postchange' )( process, form );
                 },
                 postchange      : function( process, form ) {
                     var options = form.model.attributes;
@@ -73,6 +55,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                         url     : Galaxy.root + 'api/workflows/build_module',
                         data    : current_state,
                         success : function( data ) {
+                            self._customize( form );
                             form.update( data.config_form );
                             form.errors( data.config_form );
                             // This hasn't modified the workflow, just returned
@@ -90,6 +73,28 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                     });
                 }
             }));
+        },
+
+        _customize: function( form ) {
+            var options  = form.model.attributes;
+            Utils.deepeach( options.inputs, function( input ) {
+                if ( input.type ) {
+                    if ( [ 'data', 'data_collection' ].indexOf( input.type ) != -1 ) {
+                        input.type = 'hidden';
+                        input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions ) + ')';
+                        input.value = { '__class__': 'RuntimeValue' };
+                    } else if ( !input.fixed ) {
+                        input.collapsible_value = { '__class__': 'RuntimeValue' };
+                        input.is_workflow = ( input.options && input.options.length == 0 ) ||
+                                            ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );
+                    }
+                }
+            });
+            Utils.deepeach( options.inputs, function( input ) {
+                input.type == 'conditional' && ( input.test_param.collapsible_value = undefined );
+            });
+            _addSections( form );
+            _addLabelAnnotation( form );
         }
     });
 

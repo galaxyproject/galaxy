@@ -25,11 +25,10 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
         /** Allows tool form variation to update tool model */
         _update: function() {
             var self = this;
-            var buildmodel = this.model.get( 'buildmodel' );
-            if ( buildmodel ) {
+            if ( !this.model.get( 'inputs' ) ) {
                 this.deferred.reset();
                 this.deferred.execute( function( process ) {
-                    buildmodel( process, self );
+                    self.model.get( 'buildmodel' )( process, self );
                     process.then( function() { self._render() } );
                 });
             } else {
