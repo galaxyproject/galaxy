@@ -55,6 +55,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                         url     : Galaxy.root + 'api/workflows/build_module',
                         data    : current_state,
                         success : function( data ) {
+                            form.model.set( data.config_form );
                             self._customize( form );
                             form.update( data.config_form );
                             form.errors( data.config_form );
