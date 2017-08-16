@@ -16,7 +16,7 @@
     "babel-loader": "^7.1.1",
     "babel-preset-env": "^1.3.2",
     "concurrently": "^3.4.0",
-    "del": "^2.2.2",
+    "del": "^3.0.0",
     "grunt": "^0.4.5",
     "grunt-bower-install-simple": "^1.1.0",
     "grunt-check-modules": "^1.0.0",
