@@ -42,8 +42,68 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                         });
                     }
                 },
+                buildmodel: function( process, form, hide_message ) {
+                    var options = form.model.attributes;
+
+                    // build request url
+                    var build_url = '';
+                    var build_data = {};
+                    var job_id = options.job_id;
+                    if ( job_id ) {
+                        build_url = Galaxy.root + 'api/jobs/' + job_id + '/build_for_rerun';
+                    } else {
+                        build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
+                        build_data = $.extend( {}, Galaxy.params );
+                        build_data[ 'tool_id' ] && ( delete build_data[ 'tool_id' ] );
+                    }
+                    options.version && ( build_data[ 'tool_version' ] = options.version );
+
+                    // get initial model
+                    Utils.get({
+                        url     : build_url,
+                        data    : build_data,
+                        success : function( data ) {
+                            if( !data.display ) {
+                                window.location = Galaxy.root;
+                                return;
+                            }
+                            form.render( data );
+                            !hide_message && form.message.update({
+                                status      : 'success',
+                                message     : 'Now you are using \'' + options.name + '\' version ' + options.version + ', id \'' + options.id + '\'.',
+                                persistent  : false
+                            });
+                            Galaxy.emit.debug('tool-form-base::_buildModel()', 'Initial tool model ready.', data);
+                            process.resolve();
+                        },
+                        error   : function( response, status ) {
+                            var error_message = ( response && response.err_msg ) || 'Uncaught error.';
+                            if ( status == 401 ) {
+                                window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + options.id });
+                            } else if ( form.$el.is( ':empty' ) ) {
+                                form.$el.prepend( ( new Ui.Message({
+                                    message     : error_message,
+                                    status      : 'danger',
+                                    persistent  : true,
+                                    large       : true
+                                }) ).$el );
+                            } else {
+                                Galaxy.modal && Galaxy.modal.show({
+                                    title   : 'Tool request failed',
+                                    body    : error_message,
+                                    buttons : {
+                                        'Close' : function() {
+                                            Galaxy.modal.hide();
+                                        }
+                                    }
+                                });
+                            }
+                            Galaxy.emit.debug( 'tool-form-base::_buildModel()', 'Initial tool model request failed.', response );
+                            process.reject();
+                        }
+                    });
+                },
                 postchange          : function( process, form ) {
-                    var self = this;
                     var current_state = {
                         tool_id         : form.model.get( 'id' ),
                         tool_version    : form.model.get( 'version' ),

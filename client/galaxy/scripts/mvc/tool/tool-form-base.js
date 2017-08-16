@@ -12,7 +12,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 this._buildForm( this.model.attributes );
             } else {
                 this.deferred.execute( function( process ) {
-                    self._buildModel( process, self.model.attributes, true );
+                    self.model.get( 'buildmodel' )( process, self, true );
                 });
             }
             // listen to history panel
@@ -56,80 +56,6 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             }
         },
 
-        /** Builds a new model through api call and recreates the entire form */
-        _buildModel: function( process, new_options, hide_message ) {
-            var self = this;
-            var options = this.model.attributes;
-            options.version = new_options.version;
-            options.id = new_options.id;
-
-            // build request url
-            var build_url = '';
-            var build_data = {};
-            var job_id = '';
-            // When re-running a job the job_id is found in the new_options object.
-            // When re-running a job and requesting a new tool_version,
-            // the job_id is in the options object.
-            if ( new_options.job_id ) {
-                job_id = new_options.job_id;
-            } else if (options.job_id) {
-                job_id = options.job_id;
-            }
-            if ( job_id ) {
-                build_url = Galaxy.root + 'api/jobs/' + job_id + '/build_for_rerun';
-            } else {
-                build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
-                build_data = $.extend( {}, Galaxy.params );
-                build_data[ 'tool_id' ] && ( delete build_data[ 'tool_id' ] );
-            }
-            options.version && ( build_data[ 'tool_version' ] = options.version );
-
-            // get initial model
-            Utils.get({
-                url     : build_url,
-                data    : build_data,
-                success : function( data ) {
-                    if( !data.display ) {
-                        window.location = Galaxy.root;
-                        return;
-                    }
-                    self._buildForm( data );
-                    !hide_message && self.message.update({
-                        status      : 'success',
-                        message     : 'Now you are using \'' + options.name + '\' version ' + options.version + ', id \'' + options.id + '\'.',
-                        persistent  : false
-                    });
-                    Galaxy.emit.debug('tool-form-base::_buildModel()', 'Initial tool model ready.', data);
-                    process.resolve();
-                },
-                error   : function( response, status ) {
-                    var error_message = ( response && response.err_msg ) || 'Uncaught error.';
-                    if ( status == 401 ) {
-                        window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + options.id });
-                    } else if ( self.$el.is( ':empty' ) ) {
-                        self.$el.prepend( ( new Ui.Message({
-                            message     : error_message,
-                            status      : 'danger',
-                            persistent  : true,
-                            large       : true
-                        }) ).$el );
-                    } else {
-                        Galaxy.modal && Galaxy.modal.show({
-                            title   : 'Tool request failed',
-                            body    : error_message,
-                            buttons : {
-                                'Close' : function() {
-                                    Galaxy.modal.hide();
-                                }
-                            }
-                        });
-                    }
-                    Galaxy.emit.debug( 'tool-form-base::_buildModel()', 'Initial tool model request failed.', response );
-                    process.reject();
-                }
-            });
-        },
-
         /** Create tool operation menu */
         _operations: function() {
             var self = this;
@@ -156,13 +82,9 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                                 // queue model request
                                 self.deferred.reset();
                                 self.deferred.execute( function( process ) {
-                                    if ( options.hasOwnProperty( "workflow" ) ) {
-                                        // this is needed for notifying the workflow editor form
-                                        options.version = version;
-                                        self.model.get( 'postchange' )( process, self );
-                                    } else {
-                                        self._buildModel( process, { id : id, version : version } );
-                                    }
+                                    self.model.attributes.id = id;
+                                    self.model.attributes.version = version;
+                                    self.model.get( 'buildmodel' )( process, self );
                                 });
                             }
                         });
