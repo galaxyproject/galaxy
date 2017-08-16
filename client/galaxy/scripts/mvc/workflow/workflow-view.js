@@ -670,8 +670,8 @@ define([
                 content.icon = WorkflowIcons[ node.type ];
                 content.cls = 'ui-portlet-narrow';
                 if ( node ) {
-                    var form_wrapper = new FormWrappers[ node.type == 'tool' ? 'Tool' : 'Default' ];
-                    $el.append( form_wrapper( content ).$el );
+                    var form_type = ( node.type == 'tool' ? 'Tool' : 'Default' );
+                    $el.append( ( new FormWrappers[ form_type ]( content ) ).form.$el );
                     $container.append( $el );
                 } else {
                     Galaxy.emit.debug('workflow-view::initialize()', 'Node not found in workflow.');

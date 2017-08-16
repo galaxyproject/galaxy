@@ -3,7 +3,25 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
     /** Default form wrapper for non-tool modules in the workflow editor. */
     var Default = Backbone.View.extend({
         initialize: function( options ) {
-            this.form = new Form( options );
+            var self  = this;
+            var node  = options.node;
+            this.form = new Form( Utils.merge( options, {
+                 onchange: function() {
+                    Utils.request({
+                        type    : 'POST',
+                        url     :  Galaxy.root + 'api/workflows/build_module',
+                        data    : {
+                            id          : node.id,
+                            type        : node.type,
+                            content_id  : node.content_id,
+                            inputs      : self.form.data.create()
+                        },
+                        success : function( data ) {
+                            node.update_field_data( data );
+                        }
+                    } );
+                }
+            } ) );
             _addLabelAnnotation( this.form );
             this.form.render();
         }
@@ -111,21 +129,6 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                 form.trigger( 'change' );
             }
         });
-        options.onchange = function() {
-            Utils.request({
-                type    : 'POST',
-                url     :  Galaxy.root + 'api/workflows/build_module',
-                data    : {
-                    id          : node.id,
-                    type        : node.type,
-                    content_id  : node.content_id,
-                    inputs      : form.data.create()
-                },
-                success : function( data ) {
-                    node.update_field_data( data );
-                }
-            });
-        };
     }
 
     /** Builds all sub sections */
