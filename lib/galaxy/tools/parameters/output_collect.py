@@ -93,7 +93,24 @@ class ToolProvidedMetadata(object):
 
     def get_new_datasets(self, output_name):
         datasets = self.tool_provided_job_metadata.get(output_name, {}).get("datasets", [])
+        if not datasets:
+            elements = self.tool_provided_job_metadata.get(output_name, {}).get("elements", [])
+            if elements:
+                datasets = self._elements_to_datasets(elements)
         return datasets
+
+    def _elements_to_datasets(self, elements, level=0):
+        for element in elements:
+            extra_kwds = {"identifier_%d" % level: element["name"]}
+            if "elements" in element:
+                for inner_element in self._elements_to_datasets(element["elements"], level=level + 1):
+                    dataset = extra_kwds.copy()
+                    dataset.update(inner_element)
+                    yield dataset
+            else:
+                dataset = extra_kwds
+                extra_kwds.update(element)
+                yield extra_kwds
 
 
 def collect_dynamic_collections(

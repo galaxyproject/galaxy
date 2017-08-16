@@ -105,6 +105,7 @@
   <tool file="collection_split_on_column.xml" />
   <tool file="collection_creates_dynamic_nested.xml" />
   <tool file="collection_creates_dynamic_nested_from_json.xml" />
+  <tool file="collection_creates_dynamic_nested_from_json_elements.xml" />
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="collection_type_source.xml" />
   <tool file="collection_creates_list_fail.xml" />
