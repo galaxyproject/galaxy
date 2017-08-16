@@ -4,7 +4,6 @@ import os
 from datetime import datetime, timedelta
 import six
 from string import punctuation as PUNCTUATION
-from sqlalchemy.sql import expression
 from sqlalchemy import and_, false, func, or_
 
 import galaxy.queue_worker
@@ -12,7 +11,7 @@ from galaxy import util
 from galaxy import model
 from galaxy import web
 from galaxy.actions.admin import AdminActions
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
 from galaxy.util import nice_size, sanitize_text, url_get
 from galaxy.util.odict import odict
@@ -287,7 +286,7 @@ class GroupListGrid( grids.Grid ):
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
+                                                cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -360,7 +359,7 @@ class QuotaListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Change amount", id=item.id, webapp="galaxy" ) ),
+                    link=( lambda item: dict( action="forms/edit_quota", id=item.id ) ),
                     model_class=model.Quota,
                     attach_popup=True,
                     filterable="advanced" ),
@@ -372,8 +371,7 @@ class QuotaListGrid( grids.Grid ):
         AmountColumn( "Amount",
                       key='amount',
                       model_class=model.Quota,
-                      attach_popup=False,
-                      filterable="advanced" ),
+                      attach_popup=False ),
         UsersColumn( "Users", attach_popup=False ),
         GroupsColumn( "Groups", attach_popup=False ),
         StatusColumn( "Status", attach_popup=False ),
@@ -381,49 +379,45 @@ class QuotaListGrid( grids.Grid ):
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
+                                                cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Add new quota", dict( controller='admin', action='quotas', operation='create' ) )
+        grids.GridAction( "Add new quota", dict( action='forms/create_quota' ) )
     ]
     operations = [ grids.GridOperation( "Rename",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="rename_quota" ) ),
+                                        url_args=dict( action="forms/rename_quota" ) ),
                    grids.GridOperation( "Change amount",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="edit_quota" ) ),
+                                        url_args=dict( action="forms/edit_quota" ) ),
                    grids.GridOperation( "Manage users and groups",
                                         condition=( lambda item: not item.default and not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="manage_users_and_groups_for_quota" ) ),
+                                        url_args=dict( action="forms/manage_users_and_groups_for_quota" ) ),
                    grids.GridOperation( "Set as different type of default",
                                         condition=( lambda item: item.default ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="set_quota_default" ) ),
+                                        url_args=dict( action="forms/set_quota_default" ) ),
                    grids.GridOperation( "Set as default",
                                         condition=( lambda item: not item.default and not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="set_quota_default" ) ),
+                                        url_args=dict( action="forms/set_quota_default" ) ),
                    grids.GridOperation( "Unset as default",
                                         condition=( lambda item: item.default and not item.deleted ),
-                                        allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="unset_quota_default" ) ),
+                                        allow_multiple=False ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted and not item.default ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="mark_quota_deleted" ) ),
+                                        allow_multiple=True ),
                    grids.GridOperation( "Undelete",
                                         condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="undelete_quota" ) ),
+                                        allow_multiple=True ),
                    grids.GridOperation( "Purge",
                                         condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="purge_quota" ) ) ]
+                                        allow_multiple=True ) ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -519,7 +513,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', '' )
         if 'operation' in kwd:
-            id = kwd.get( 'id', None )
+            id = kwd.get( 'id' )
             if not id:
                 message, status = ( 'Invalid user id (%s) received.' % str( id ), 'error' )
             ids = util.listify( id )
@@ -545,246 +539,203 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         kwd[ 'dict_format' ] = True
         return self.user_list_grid( trans, **kwd )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def quotas( self, trans, **kwargs ):
+    def quotas_list( self, trans, payload=None, **kwargs ):
+        message = kwargs.get( 'message', '' )
+        status = kwargs.get( 'status', '' )
         if 'operation' in kwargs:
+            id = kwargs.get( 'id' )
+            if not id:
+                return message_exception( trans, 'Invalid quota id (%s) received.' % str( id ) )
+            quotas = []
+            for quota_id in util.listify( id ):
+                try:
+                    quotas.append( get_quota( trans, quota_id ) )
+                except MessageException as e:
+                    return message_exception( trans, str( e ) )
             operation = kwargs.pop('operation').lower()
-            if operation == "quotas":
-                return self.quota( trans, **kwargs )
-            if operation == "create":
-                return self.create_quota( trans, **kwargs )
-            if operation == "delete":
-                return self.mark_quota_deleted( trans, **kwargs )
-            if operation == "undelete":
-                return self.undelete_quota( trans, **kwargs )
-            if operation == "purge":
-                return self.purge_quota( trans, **kwargs )
-            if operation == "change amount":
-                return self.edit_quota( trans, **kwargs )
-            if operation == "manage users and groups":
-                return self.manage_users_and_groups_for_quota( trans, **kwargs )
-            if operation == "rename":
-                return self.rename_quota( trans, **kwargs )
-            if operation == "edit":
-                return self.edit_quota( trans, **kwargs )
-        # Render the list view
+            try:
+                if operation == 'delete':
+                    message = self._delete_quota( quotas )
+                elif operation == 'undelete':
+                    message = self._undelete_quota( quotas )
+                elif operation == 'purge':
+                    message = self._purge_quota( quotas )
+                elif operation == 'unset as default':
+                    message = self._unset_quota_default( quotas[ 0 ] )
+            except ActionInputError as e:
+                message, status = ( e.err_msg, 'error' )
+        if message:
+            kwargs[ 'message' ] = util.sanitize_text( message )
+            kwargs[ 'status' ] = status or 'done'
+        kwargs[ 'dict_format' ] = True
         return self.quota_list_grid( trans, **kwargs )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def create_quota( self, trans, **kwd ):
-        params = self.get_quota_params( kwd )
-        if params.get( 'create_quota_button', False ):
-            try:
-                quota, message = self._create_quota( params )
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='quotas',
-                                                                  webapp=params.webapp,
-                                                                  message=sanitize_text( message ),
-                                                                  status='done' ) )
-            except MessageException as e:
-                params.message = str( e )
-                params.status = 'error'
-        in_users = map( int, params.in_users )
-        in_groups = map( int, params.in_groups )
-        new_in_users = []
-        new_in_groups = []
-        for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted == expression.false() ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
-            if user.id in in_users:
-                new_in_users.append( ( user.id, user.email ) )
-            else:
-                params.out_users.append( ( user.id, user.email ) )
-        for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted == expression.false() ) \
-                                     .order_by( trans.app.model.Group.table.c.name ):
-            if group.id in in_groups:
-                new_in_groups.append( ( group.id, group.name ) )
-            else:
-                params.out_groups.append( ( group.id, group.name ) )
-        return trans.fill_template( '/admin/quota/quota_create.mako',
-                                    webapp=params.webapp,
-                                    name=params.name,
-                                    description=params.description,
-                                    amount=params.amount,
-                                    operation=params.operation,
-                                    default=params.default,
-                                    in_users=new_in_users,
-                                    out_users=params.out_users,
-                                    in_groups=new_in_groups,
-                                    out_groups=params.out_groups,
-                                    message=params.message,
-                                    status=params.status )
-
-    @web.expose
-    @web.require_admin
-    def rename_quota( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, 'rename_quota_button', self._rename_quota, kwd )
-        if not quota:
-            return
-        return trans.fill_template( '/admin/quota/quota_rename.mako',
-                                    id=params.id,
-                                    name=params.name or quota.name,
-                                    description=params.description or quota.description,
-                                    webapp=params.webapp,
-                                    message=params.message,
-                                    status=params.status )
-
-    @web.expose
-    @web.require_admin
-    def manage_users_and_groups_for_quota( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, 'quota_members_edit_button', self._manage_users_and_groups_for_quota, kwd )
-        if not quota:
-            return
-        in_users = []
-        out_users = []
-        in_groups = []
-        out_groups = []
-        for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted == expression.false() ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
-            if user in [ x.user for x in quota.users ]:
-                in_users.append( ( user.id, user.email ) )
-            else:
-                out_users.append( ( user.id, user.email ) )
-        for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted == expression.false()) \
-                                     .order_by( trans.app.model.Group.table.c.name ):
-            if group in [ x.group for x in quota.groups ]:
-                in_groups.append( ( group.id, group.name ) )
-            else:
-                out_groups.append( ( group.id, group.name ) )
-        return trans.fill_template( '/admin/quota/quota.mako',
-                                    id=params.id,
-                                    name=quota.name,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    in_groups=in_groups,
-                                    out_groups=out_groups,
-                                    webapp=params.webapp,
-                                    message=params.message,
-                                    status=params.status )
-
-    @web.expose
-    @web.require_admin
-    def edit_quota( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, 'edit_quota_button', self._edit_quota, kwd )
-        if not quota:
-            return
-        return trans.fill_template( '/admin/quota/quota_edit.mako',
-                                    id=params.id,
-                                    operation=params.operation or quota.operation,
-                                    display_amount=params.amount or quota.display_amount,
-                                    webapp=params.webapp,
-                                    message=params.message,
-                                    status=params.status )
-
-    @web.expose
-    @web.require_admin
-    def set_quota_default( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, 'set_default_quota_button', self._set_quota_default, kwd )
-        if not quota:
-            return
-        if params.default:
-            default = params.default
-        elif quota.default:
-            default = quota.default[0].type
-        else:
-            default = "no"
-        return trans.fill_template( '/admin/quota/quota_set_default.mako',
-                                    id=params.id,
-                                    default=default,
-                                    webapp=params.webapp,
-                                    message=params.message,
-                                    status=params.status )
-
-    @web.expose
-    @web.require_admin
-    def unset_quota_default( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, True, self._unset_quota_default, kwd )
-        if not quota:
-            return
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='quotas',
-                                                          webapp=params.webapp,
-                                                          message=sanitize_text( params.message ),
-                                                          status='error' ) )
-
-    @web.expose
-    @web.require_admin
-    def mark_quota_deleted( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, True, self._mark_quota_deleted, kwd, listify=True )
-        if not quota:
-            return
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='quotas',
-                                                          webapp=params.webapp,
-                                                          message=sanitize_text( params.message ),
-                                                          status='error' ) )
-
-    @web.expose
-    @web.require_admin
-    def undelete_quota( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, True, self._undelete_quota, kwd, listify=True )
-        if not quota:
-            return
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='quotas',
-                                                          webapp=params.webapp,
-                                                          message=sanitize_text( params.message ),
-                                                          status='error' ) )
-
-    @web.expose
-    @web.require_admin
-    def purge_quota( self, trans, **kwd ):
-        quota, params = self._quota_op( trans, True, self._purge_quota, kwd, listify=True )
-        if not quota:
-            return
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='quotas',
-                                                          webapp=params.webapp,
-                                                          message=sanitize_text( params.message ),
-                                                          status='error' ) )
-
-    def _quota_op( self, trans, do_op, op_method, kwd, listify=False ):
-        params = self.get_quota_params( kwd )
-        if listify:
-            quota = []
-            messages = []
-            for id in util.listify( params.id ):
-                try:
-                    quota.append( self.get_quota( trans, id ) )
-                except MessageException as e:
-                    messages.append( str( e ) )
-            if messages:
-                return None, trans.response.send_redirect( web.url_for( controller='admin',
-                                                                        action='quotas',
-                                                                        webapp=params.webapp,
-                                                                        message=sanitize_text( ', '.join( messages ) ),
-                                                                        status='error' ) )
+    def create_quota( self, trans, payload=None, **kwd ):
+        if trans.request.method == 'GET':
+            all_users = []
+            all_groups = []
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
+            for group in trans.sa_session.query( trans.app.model.Group ) \
+                                         .filter( trans.app.model.Group.table.c.deleted == false() ) \
+                                         .order_by( trans.app.model.Group.table.c.name ):
+                all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
+            default_options = [ ( 'No', 'no' ) ]
+            for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
+                default_options.append( ( 'Yes, ' + typ, typ ) )
+            return {    'title'  : 'Create Quota',
+                        'inputs' : [{
+                            'name'    : 'name',
+                            'label'   : 'Name'
+                        }, {
+                            'name'    : 'description',
+                            'label'   : 'Description'
+                        }, {
+                            'name'    : 'amount',
+                            'label'   : 'Amount',
+                            'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
+                        }, {
+                            'name'    : 'operation',
+                            'label'   : 'Assign, increase by amount, or decrease by amount?',
+                            'options' : [ ('=', '=' ), ( '+', '+' ), ( '-', '-' ) ]
+                        }, {
+                            'name'    : 'default',
+                            'label'   : 'Is this quota a default for a class of users (if yes, what type)?',
+                            'options' : default_options,
+                            'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
+                        },
+                            build_select_input( 'in_groups', 'Groups', all_groups, [] ),
+                            build_select_input( 'in_users', 'Users', all_users, [] ) ] }
         else:
             try:
-                quota = self.get_quota( trans, params.id, deleted=False )
-            except MessageException as e:
-                return None, trans.response.send_redirect( web.url_for( controller='admin',
-                                                                        action='quotas',
-                                                                        webapp=params.webapp,
-                                                                        message=sanitize_text( str( e ) ),
-                                                                        status='error' ) )
-        if do_op is True or ( do_op is not False and params.get( do_op, False ) ):
+                quota, message = self._create_quota( util.Params( payload ), decode_id=trans.security.decode_id )
+                return { 'message': message }
+            except ActionInputError as e:
+                return message_exception( trans, e.err_msg )
+
+    @web.expose_api
+    @web.require_admin
+    def rename_quota( self, trans, payload=None, **kwd ):
+        id = kwd.get( 'id' )
+        if not id:
+            return message_exception( trans, 'No quota id received for renaming.' )
+        quota = get_quota( trans, id )
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Change quota name and description for \'%s\'' % util.sanitize_text( quota.name ),
+                'inputs' : [{
+                    'name'  : 'name',
+                    'label' : 'Name',
+                    'value' : quota.name
+                }, {
+                    'name'  : 'description',
+                    'label' : 'Description',
+                    'value' : quota.description
+                }]
+            }
+        else:
             try:
-                message = op_method( quota, params )
-                return None, trans.response.send_redirect( web.url_for( controller='admin',
-                                                                        action='quotas',
-                                                                        webapp=params.webapp,
-                                                                        message=sanitize_text( message ),
-                                                                        status='done' ) )
-            except MessageException as e:
-                params.message = e.err_msg
-                params.status = e.type
-        return quota, params
+                return { 'message': self._rename_quota( quota, util.Params( payload ) ) }
+            except ActionInputError as e:
+                return message_exception( trans, e.err_msg )
+
+    @web.expose_api
+    @web.require_admin
+    def manage_users_and_groups_for_quota( self, trans, payload=None, **kwd ):
+        quota_id = kwd.get( 'id' )
+        if not quota_id:
+            return message_exception( trans, 'Invalid quota id (%s) received' % str( quota_id ) )
+        quota = get_quota( trans, quota_id )
+        if trans.request.method == 'GET':
+            in_users = []
+            all_users = []
+            in_groups = []
+            all_groups = []
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                if user in [ x.user for x in quota.users ]:
+                    in_users.append( trans.security.encode_id( user.id ) )
+                all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
+            for group in trans.sa_session.query( trans.app.model.Group ) \
+                                         .filter( trans.app.model.Group.table.c.deleted == false() ) \
+                                         .order_by( trans.app.model.Group.table.c.name ):
+                if group in [ x.group for x in quota.groups ]:
+                    in_groups.append( trans.security.encode_id( group.id ) )
+                all_groups.append( ( group.name, trans.security.encode_id( group.id ) ) )
+            return { 'title'  : 'Quota \'%s\'' % quota.name,
+                     'message': 'Quota \'%s\' is currently associated with %d user(s) and %d group(s).' %
+                                ( quota.name, len( in_users ), len( in_groups ) ),
+                     'status' : 'info',
+                     'inputs' : [ build_select_input( 'in_groups', 'Groups', all_groups, in_groups ),
+                                  build_select_input( 'in_users', 'Users', all_users, in_users ) ] }
+        else:
+            try:
+                return { 'message': self._manage_users_and_groups_for_quota( quota, util.Params( payload ), decode_id=trans.security.decode_id ) }
+            except ActionInputError as e:
+                return message_exception( trans, e.err_msg )
+
+    @web.expose_api
+    @web.require_admin
+    def edit_quota( self, trans, payload=None, **kwd ):
+        id = kwd.get( 'id' )
+        if not id:
+            return message_exception( trans, 'No quota id received for renaming.' )
+        quota = get_quota( trans, id )
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Edit quota size for \'%s\'' % util.sanitize_text( quota.name ),
+                'inputs' : [{
+                    'name'    : 'amount',
+                    'label'   : 'Amount',
+                    'value'   : quota.display_amount,
+                    'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
+                }, {
+                    'name'    : 'operation',
+                    'label'   : 'Assign, increase by amount, or decrease by amount?',
+                    'options' : [ ('=', '=' ), ( '+', '+' ), ( '-', '-' ) ],
+                    'value'   : quota.operation
+                }]
+            }
+        else:
+            try:
+                return { 'message': self._edit_quota( quota, util.Params( payload ) ) }
+            except ActionInputError as e:
+                return message_exception( trans, e.err_msg )
+
+    @web.expose_api
+    @web.require_admin
+    def set_quota_default( self, trans, payload=None, **kwd ):
+        id = kwd.get( 'id' )
+        if not id:
+            return message_exception( trans, 'No quota id received for renaming.' )
+        quota = get_quota( trans, id )
+        if trans.request.method == 'GET':
+            default_value = quota.default[ 0 ].type if quota.default else 'no'
+            default_options = [ ( 'No', 'no' ) ]
+            for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
+                default_options.append( ( 'Yes, ' + typ, typ ) )
+            return {
+                'title'  : 'Set quota default for \'%s\'' % util.sanitize_text( quota.name ),
+                'inputs' : [{
+                    'name'    : 'default',
+                    'label'   : 'Assign, increase by amount, or decrease by amount?',
+                    'options' : default_options,
+                    'value'   : default_value,
+                    'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
+                }]
+            }
+        else:
+            try:
+                return { 'message': self._set_quota_default( quota, util.Params( payload ) ) }
+            except ActionInputError as e:
+                return message_exception( trans, e.err_msg )
 
     @web.expose
     @web.require_admin
@@ -966,11 +917,10 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                                     message=message,
                                     status=status )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def tool_versions( self, trans, **kwd ):
-        if 'message' not in kwd or not kwd[ 'message' ]:
-            kwd[ 'message' ] = 'Tool ids for tools that are currently loaded into the tool panel are highlighted in green (click to display).'
+    def tool_versions_list( self, trans, **kwd ):
+        kwd[ 'dict_format' ] = True
         return self.tool_version_list_grid( trans, **kwd )
 
     @web.expose
@@ -999,7 +949,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def create_role( self, trans, payload={}, **kwd ):
+    def create_role( self, trans, payload=None, **kwd ):
         if trans.request.method == 'GET':
             all_users = []
             all_groups = []
@@ -1020,8 +970,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     'name'  : 'description',
                     'label' : 'Description'
                 },
-                    build_select_input( 'groups', 'Groups', all_groups, [] ),
-                    build_select_input( 'users', 'Users', all_users, [] ), {
+                    build_select_input( 'in_groups', 'Groups', all_groups, [] ),
+                    build_select_input( 'in_users', 'Users', all_users, [] ), {
                     'name'  : 'create_group_for_role',
                     'label' : 'Create a new role of the same name for this group:',
                     'type'  : 'boolean'
@@ -1030,25 +980,30 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             name = util.restore_text( payload.get( 'name', '' ) )
             description = util.restore_text( payload.get( 'description', '' ) )
             auto_create_checked = payload.get( 'auto_create' ) == 'true'
-            in_users = util.listify( payload.get( 'users', [] ) )
-            in_groups = util.listify( payload.get( 'groups', [] ) )
+            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_users' ) ) ]
+            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_groups' ) ) ]
             if not name or not description:
                 return message_exception( trans, 'Enter a valid name and a description.' )
             elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == name ).first():
                 return message_exception( trans, 'Role names must be unique and a role with that name already exists, so choose another name.' )
+            elif None in in_users or None in in_groups:
+                return message_exception( trans, 'One or more invalid user/group id has been provided.' )
             else:
                 # Create the role
                 role = trans.app.model.Role( name=name, description=description, type=trans.app.model.Role.types.ADMIN )
                 trans.sa_session.add( role )
                 # Create the UserRoleAssociations
-                for user in [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in in_users ]:
+                for user in in_users:
                     ura = trans.app.model.UserRoleAssociation( user, role )
                     trans.sa_session.add( ura )
                 # Create the GroupRoleAssociations
-                for group in [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in in_groups ]:
+                for group in in_groups:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
                 if auto_create_checked:
+                    # Check if role with same name already exists
+                    if trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == name ).first():
+                        return message_exception( trans, 'A group with that name already exists, so choose another name or disable group creation.' )
                     # Create the group
                     group = trans.app.model.Group( name=name )
                     trans.sa_session.add( group )
@@ -1104,7 +1059,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def manage_users_and_groups_for_role( self, trans, payload={}, **kwd ):
+    def manage_users_and_groups_for_role( self, trans, payload=None, **kwd ):
         role_id = kwd.get( 'id' )
         if not role_id:
             return message_exception( trans, 'Invalid role id (%s) received' % str( role_id ) )
@@ -1130,10 +1085,13 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                      'message': 'Role \'%s\' is currently associated with %d user(s) and %d group(s).' %
                                 ( role.name, len( in_users ), len( in_groups ) ),
                      'status' : 'info',
-                     'inputs' : [ build_select_input( 'groups', 'Groups', all_groups, in_groups ),
-                                  build_select_input( 'users', 'Users', all_users, in_users ) ] }
+                     'inputs' : [ build_select_input( 'in_groups', 'Groups', all_groups, in_groups ),
+                                  build_select_input( 'in_users', 'Users', all_users, in_users ) ] }
         else:
-            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'users' ) ) ]
+            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_users' ) ) ]
+            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_groups' ) ) ]
+            if None in in_users or None in in_groups:
+                return message_exception( trans, 'One or more invalid user/group id has been provided.' )
             for ura in role.users:
                 user = trans.sa_session.query( trans.app.model.User ).get( ura.user_id )
                 if user not in in_users:
@@ -1147,7 +1105,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                             if role == dhp.role:
                                 trans.sa_session.delete( dhp )
                     trans.sa_session.flush()
-            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'groups' ) ) ]
             trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( role )
             return { 'message' : 'Role \'%s\' has been updated with %d associated users and %d associated groups.' % ( role.name, len( in_users ), len( in_groups ) ) }
@@ -1220,7 +1177,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         if 'operation' in kwargs:
             id = kwargs.get( 'id' )
             if not id:
-                return message_exception( 'Invalid group id (%s) received.' % str( id ) )
+                return message_exception( trans, 'Invalid group id (%s) received.' % str( id ) )
             ids = util.listify( id )
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == 'delete':
@@ -1269,7 +1226,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def manage_users_and_roles_for_group( self, trans, payload={}, **kwd ):
+    def manage_users_and_roles_for_group( self, trans, payload=None, **kwd ):
         group_id = kwd.get( 'id' )
         if not group_id:
             return message_exception( trans, 'Invalid group id (%s) received' % str( group_id ) )
@@ -1295,19 +1252,21 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                      'message': 'Group \'%s\' is currently associated with %d user(s) and %d role(s).' %
                                 ( group.name, len( in_users ), len( in_roles ) ),
                      'status' : 'info',
-                     'inputs' : [ build_select_input( 'roles', 'Roles', all_roles, in_roles ),
-                                  build_select_input( 'users', 'Users', all_users, in_users ) ] }
+                     'inputs' : [ build_select_input( 'in_roles', 'Roles', all_roles, in_roles ),
+                                  build_select_input( 'in_users', 'Users', all_users, in_users ) ] }
             return { 'message' : 'Not showing associated datasets, there are too many.', 'info' : 'info' }
         else:
-            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'users' ) ) ]
-            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'roles' ) ) ]
+            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_users' ) ) ]
+            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_roles' ) ) ]
+            if None in in_users or None in in_roles:
+                return message_exception( trans, 'One or more invalid user/role id has been provided.' )
             trans.app.security_agent.set_entity_group_associations( groups=[ group ], users=in_users, roles=in_roles )
             trans.sa_session.refresh( group )
             return { 'message' : 'Group \'%s\' has been updated with %d associated users and %d associated roles.' % ( group.name, len( in_users ), len( in_roles ) ) }
 
     @web.expose_api
     @web.require_admin
-    def create_group( self, trans, payload={}, **kwd ):
+    def create_group( self, trans, payload=None, **kwd ):
         if trans.request.method == 'GET':
             all_users = []
             all_roles = []
@@ -1325,8 +1284,8 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     'name'  : 'name',
                     'label' : 'Name'
                 },
-                    build_select_input( 'roles', 'Roles', all_roles, [] ),
-                    build_select_input( 'users', 'Users', all_users, [] ), {
+                    build_select_input( 'in_roles', 'Roles', all_roles, [] ),
+                    build_select_input( 'in_users', 'Users', all_users, [] ), {
                     'name'  : 'auto_create',
                     'label' : 'Create a new role of the same name for this group:',
                     'type'  : 'boolean'
@@ -1335,25 +1294,30 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         else:
             name = util.restore_text( payload.get( 'name', '' ) )
             auto_create_checked = payload.get( 'auto_create' ) == 'true'
-            in_users = util.listify( payload.get( 'users', [] ) )
-            in_roles = util.listify( payload.get( 'roles', [] ) )
+            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_users' ) ) ]
+            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_roles' ) ) ]
             if not name:
                 return message_exception( trans, 'Enter a valid name.' )
             elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == name ).first():
                 return message_exception( trans, 'Group names must be unique and a group with that name already exists, so choose another name.' )
+            elif None in in_users or None in in_roles:
+                return message_exception( trans, 'One or more invalid user/role id has been provided.' )
             else:
                 # Create the role
                 group = trans.app.model.Group( name=name )
                 trans.sa_session.add( group )
                 # Create the UserRoleAssociations
-                for user in [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in in_users ]:
+                for user in in_users:
                     uga = trans.app.model.UserGroupAssociation( user, group )
                     trans.sa_session.add( uga )
                 # Create the GroupRoleAssociations
-                for role in [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in in_roles ]:
+                for role in in_roles:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
                 if auto_create_checked:
+                    # Check if role with same name already exists
+                    if trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == name ).first():
+                        return message_exception( trans, 'A role with that name already exists, so choose another name or disable role creation.' )
                     # Create the role
                     role = trans.app.model.Role( name=name, description='Role for group %s' % name )
                     trans.sa_session.add( role )
@@ -1543,7 +1507,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
     @web.expose_api
     @web.require_admin
-    def manage_roles_and_groups_for_user( self, trans, payload={}, **kwd ):
+    def manage_roles_and_groups_for_user( self, trans, payload=None, **kwd ):
         user_id = kwd.get( 'id' )
         if not user_id:
             return message_exception( trans, 'Invalid user id (%s) received' % str( user_id ) )
@@ -1572,15 +1536,13 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                      'message': 'User \'%s\' is currently associated with %d role(s) and is a member of %d group(s).' %
                                 ( user.email, len( in_roles ) - 1, len( in_groups ) ),
                      'status' : 'info',
-                     'inputs' : [ build_select_input( 'roles', 'Roles', all_roles, in_roles ),
-                                  build_select_input( 'groups', 'Groups', all_groups, in_groups ) ] }
+                     'inputs' : [ build_select_input( 'in_roles', 'Roles', all_roles, in_roles ),
+                                  build_select_input( 'in_groups', 'Groups', all_groups, in_groups ) ] }
         else:
-            in_roles = payload.get( 'roles' ) or []
-            in_groups = payload.get( 'groups' ) or []
-            if in_roles:
-                in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( in_roles ) ]
-            if in_groups:
-                in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( in_groups ) ]
+            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_roles' ) ) ]
+            in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'in_groups' ) ) ]
+            if None in in_groups or None in in_roles:
+                return message_exception( trans, 'One or more invalid role/group id has been provided.' )
 
             # make sure the user is not dis-associating himself from his private role
             private_role = trans.app.security_agent.get_private_user_role( user )
@@ -1746,6 +1708,7 @@ def build_select_input( name, label, options, value ):
     return { 'type'      : 'select',
              'multiple'  : True,
              'optional'  : True,
+             'individual': True,
              'name'      : name,
              'label'     : label,
              'options'   : options,
@@ -1754,7 +1717,7 @@ def build_select_input( name, label, options, value ):
 
 def message_exception( trans, message ):
     trans.response.status = 400
-    return { 'err_msg': message }
+    return { 'err_msg': sanitize_text( message ) }
 
 
 def get_user( trans, user_id ):

@@ -27,7 +27,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     buttons: {
                         'submit': new Ui.Button({
                             tooltip  : options.submit_tooltip,
-                            title    : options.submit_title || 'Save settings',
+                            title    : options.submit_title || 'Save',
                             icon     : options.submit_icon || 'fa-save',
                             cls      : 'btn btn-primary ui-clear-float',
                             onclick  : function() { self._submit( form ) }

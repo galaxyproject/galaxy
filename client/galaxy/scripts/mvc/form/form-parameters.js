@@ -103,6 +103,7 @@ define(['utils/utils',
                 multiple    : input_def.multiple,
                 optional    : input_def.optional,
                 onchange    : input_def.onchange,
+                individual  : input_def.individual,
                 searchable  : input_def.flavor !== 'workflow'
             });
         },

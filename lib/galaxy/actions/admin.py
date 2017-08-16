@@ -13,7 +13,7 @@ class AdminActions( object ):
     """
     Mixin for controllers that provide administrative functionality.
     """
-    def _create_quota( self, params ):
+    def _create_quota( self, params, decode_id=None ):
         if params.amount.lower() in ( 'unlimited', 'none', 'no limit' ):
             create_amount = None
         else:
@@ -44,43 +44,53 @@ class AdminActions( object ):
             # If this is a default quota, create the DefaultQuotaAssociation
             if params.default != 'no':
                 self.app.quota_agent.set_default_quota( params.default, quota )
+                message = "Default quota '%s' has been created."
             else:
                 # Create the UserQuotaAssociations
-                for user in [ self.sa_session.query( self.app.model.User ).get( x ) for x in params.in_users ]:
+                in_users = [ self.sa_session.query( self.app.model.User ).get( decode_id( x ) if decode_id else x ) for x in util.listify( params.in_users ) ]
+                in_groups = [ self.sa_session.query( self.app.model.Group ).get( decode_id( x ) if decode_id else x ) for x in util.listify( params.in_groups ) ]
+                if None in in_users:
+                    raise ActionInputError( "One or more invalid user id has been provided." )
+                for user in in_users:
                     uqa = self.app.model.UserQuotaAssociation( user, quota )
                     self.sa_session.add( uqa )
                 # Create the GroupQuotaAssociations
-                for group in [ self.sa_session.query( self.app.model.Group ).get( x ) for x in params.in_groups ]:
+                if None in in_groups:
+                    raise ActionInputError( "One or more invalid group id has been provided." )
+                for group in in_groups:
                     gqa = self.app.model.GroupQuotaAssociation( group, quota )
                     self.sa_session.add( gqa )
+                message = "Quota '%s' has been created with %d associated users and %d associated groups." % ( quota.name, len( in_users ), len( in_groups ) )
             self.sa_session.flush()
-            message = "Quota '%s' has been created with %d associated users and %d associated groups." % \
-                      ( quota.name, len( params.in_users ), len( params.in_groups ) )
             return quota, message
 
     def _rename_quota( self, quota, params ):
         if not params.name:
-            raise ActionInputError( 'Enter a valid name' )
+            raise ActionInputError( 'Enter a valid name.' )
         elif params.name != quota.name and self.sa_session.query( self.app.model.Quota ).filter( self.app.model.Quota.table.c.name == params.name ).first():
-            raise ActionInputError( 'A quota with that name already exists' )
+            raise ActionInputError( 'A quota with that name already exists.' )
         else:
             old_name = quota.name
             quota.name = params.name
             quota.description = params.description
             self.sa_session.add( quota )
             self.sa_session.flush()
-            message = "Quota '%s' has been renamed to '%s'" % ( old_name, params.name )
+            message = "Quota '%s' has been renamed to '%s'." % ( old_name, params.name )
             return message
 
-    def _manage_users_and_groups_for_quota( self, quota, params ):
+    def _manage_users_and_groups_for_quota( self, quota, params, decode_id=None ):
         if quota.default:
-            raise ActionInputError( 'Default quotas cannot be associated with specific users and groups' )
+            raise ActionInputError( 'Default quotas cannot be associated with specific users and groups.' )
         else:
-            in_users = [ self.sa_session.query( self.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
-            in_groups = [ self.sa_session.query( self.app.model.Group ).get( x ) for x in util.listify( params.in_groups ) ]
+            in_users = [ self.sa_session.query( self.app.model.User ).get( decode_id( x ) if decode_id else x ) for x in util.listify( params.in_users ) ]
+            if None in in_users:
+                raise ActionInputError( "One or more invalid user id has been provided." )
+            in_groups = [ self.sa_session.query( self.app.model.Group ).get( decode_id( x ) if decode_id else x ) for x in util.listify( params.in_groups ) ]
+            if None in in_groups:
+                raise ActionInputError( "One or more invalid group id has been provided." )
             self.app.quota_agent.set_entity_quota_associations( quotas=[ quota ], users=in_users, groups=in_groups )
             self.sa_session.refresh( quota )
-            message = "Quota '%s' has been updated with %d associated users and %d associated groups" % ( quota.name, len( in_users ), len( in_groups ) )
+            message = "Quota '%s' has been updated with %d associated users and %d associated groups." % ( quota.name, len( in_users ), len( in_groups ) )
             return message
 
     def _edit_quota( self, quota, params ):
@@ -92,17 +102,17 @@ class AdminActions( object ):
             except AssertionError:
                 new_amount = False
         if not params.amount:
-            raise ActionInputError( 'Enter a valid amount' )
+            raise ActionInputError( 'Enter a valid amount.' )
         elif new_amount is False:
-            raise ActionInputError( 'Unable to parse the provided amount' )
+            raise ActionInputError( 'Unable to parse the provided amount.' )
         elif params.operation not in self.app.model.Quota.valid_operations:
-            raise ActionInputError( 'Enter a valid operation' )
+            raise ActionInputError( 'Enter a valid operation.' )
         else:
             quota.amount = new_amount
             quota.operation = params.operation
             self.sa_session.add( quota )
             self.sa_session.flush()
-            message = "Quota '%s' is now '%s'" % ( quota.name, quota.operation + quota.display_amount )
+            message = "Quota '%s' is now '%s'." % ( quota.name, quota.operation + quota.display_amount )
             return message
 
     def _set_quota_default( self, quota, params ):
@@ -111,7 +121,7 @@ class AdminActions( object ):
         else:
             if params.default != 'no':
                 self.app.quota_agent.set_default_quota( params.default, quota )
-                message = "Quota '%s' is now the default for %s users" % ( quota.name, params.default )
+                message = "Quota '%s' is now the default for %s users." % ( quota.name, params.default )
             else:
                 if quota.default:
                     message = "Quota '%s' is no longer the default for %s users." % ( quota.name, quota.default[0].type )
@@ -122,7 +132,7 @@ class AdminActions( object ):
                     message = "Quota '%s' is not a default." % quota.name
             return message
 
-    def _unset_quota_default( self, quota, params ):
+    def _unset_quota_default( self, quota, params=None ):
         if not quota.default:
             raise ActionInputError( "Quota '%s' is not a default." % quota.name )
         else:
@@ -132,14 +142,14 @@ class AdminActions( object ):
             self.sa_session.flush()
             return message
 
-    def _mark_quota_deleted( self, quota, params ):
+    def _delete_quota( self, quota, params=None ):
         quotas = util.listify( quota )
         names = []
         for q in quotas:
             if q.default:
                 names.append( q.name )
         if len( names ) == 1:
-            raise ActionInputError( "Quota '%s' is a default, please unset it as a default before deleting it" % ( names[0] ) )
+            raise ActionInputError( "Quota '%s' is a default, please unset it as a default before deleting it." % ( names[0] ) )
         elif len( names ) > 1:
             raise ActionInputError( "Quotas are defaults, please unset them as defaults before deleting them: " + ', '.join( names ) )
         message = "Deleted %d quotas: " % len( quotas )
@@ -151,7 +161,7 @@ class AdminActions( object ):
         message += ', '.join( names )
         return message
 
-    def _undelete_quota( self, quota, params=None):
+    def _undelete_quota( self, quota, params=None ):
         quotas = util.listify( quota )
         names = []
         for q in quotas:
@@ -170,7 +180,7 @@ class AdminActions( object ):
         message += ', '.join( names )
         return message
 
-    def _purge_quota( self, quota, params ):
+    def _purge_quota( self, quota, params=None ):
         """
         This method should only be called for a Quota that has previously been deleted.
         Purging a deleted Quota deletes all of the following from the database:
