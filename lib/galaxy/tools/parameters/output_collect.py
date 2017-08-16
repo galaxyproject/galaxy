@@ -7,7 +7,6 @@ import operator
 import os
 import re
 
-from galaxy import jobs
 from galaxy import util
 from galaxy.tools.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
@@ -21,6 +20,68 @@ from galaxy.util import (
 DATASET_ID_TOKEN = "DATASET_ID"
 
 log = logging.getLogger(__name__)
+
+
+class NullToolProvidedMetadata(object):
+    pass
+
+    def get_new_dataset_meta_by_basename(self, output_name, basename):
+        return {}
+
+
+class LegacyToolProvidedMetadata(object):
+
+    def __init__(self, job_wrapper, meta_file):
+        self.job_wrapper = job_wrapper
+        self.tool_provided_job_metadata = []
+
+        with open(meta_file, 'r') as f:
+            for line in f:
+                try:
+                    line = json.loads(line)
+                    assert 'type' in line
+                except:
+                    log.exception('(%s) Got JSON data from tool, but data is improperly formatted or no "type" key in data' % job_wrapper.job_id)
+                    log.debug('Offending data was: %s' % line)
+                    continue
+                # Set the dataset id if it's a dataset entry and isn't set.
+                # This isn't insecure.  We loop the job's output datasets in
+                # the finish method, so if a tool writes out metadata for a
+                # dataset id that it doesn't own, it'll just be ignored.
+                if line['type'] == 'dataset' and 'dataset_id' not in line:
+                    try:
+                        line['dataset_id'] = job_wrapper.get_output_file_id(line['dataset'])
+                    except KeyError:
+                        log.warning('(%s) Tool provided job dataset-specific metadata without specifying a dataset' % job_wrapper.job_id)
+                        continue
+                self.tool_provided_job_metadata.append(line)
+
+    def get_meta_by_dataset_id(self, dataset_id):
+        for meta in self.tool_provided_job_metadata:
+            if meta['type'] == 'dataset' and meta['dataset_id'] == dataset_id:
+                return meta
+
+    def get_new_dataset_meta_by_basename(self, output_name, basename):
+        for meta in self.tool_provided_job_metadata:
+            if meta['type'] == 'new_primary_dataset' and meta['filename'] == basename:
+                return meta
+
+
+class ToolProvidedMetadata(object):
+
+    def __init__(self, job_wrapper, meta_file):
+        self.job_wrapper = job_wrapper
+        with open(meta_file, 'r') as f:
+            self.tool_provided_job_metadata = json.load(f)
+
+    def get_meta_by_name(self, name):
+        return self.tool_provided_job_metadata.get(name, {})
+
+    def get_new_dataset_meta_by_basename(self, output_name, basename):
+        datasets = self.tool_provided_job_metadata.get(output_name, {}).get("datasets", [])
+        for meta in datasets:
+            if meta['filename'] == basename:
+                return meta
 
 
 def collect_dynamic_collections(
@@ -164,7 +225,7 @@ class JobContext(object):
             # Associate new dataset with job
             if job:
                 element_identifier_str = ":".join(element_identifiers)
-                # Below was changed from '__new_primary_file_%s|%s__' % ( name, designation )
+                # Below was changed from '__new_primary_file_%s|%s__' % (name, designation )
                 assoc = app.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, element_identifier_str), dataset)
                 assoc.job = self.job
             sa_session.add(assoc)
@@ -212,7 +273,7 @@ class JobContext(object):
         return primary_data
 
 
-def collect_primary_datasets(tool, output, job_working_directory, input_ext, input_dbkey="?"):
+def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey="?"):
     app = tool.app
     sa_session = tool.sa_session
     new_primary_datasets = {}
@@ -294,8 +355,10 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
                 sa_session.add(assoc)
                 sa_session.flush()
             primary_data.state = outdata.state
+            # TODO: should be able to disambiguate files in different directories...
+            new_primary_filename = os.path.split(filename)[-1]
+            new_primary_datasets_attributes = tool_provided_metadata.get_new_dataset_meta_by_basename(name, new_primary_filename)
             # add tool/metadata provided information
-            new_primary_datasets_attributes = new_primary_datasets.get(os.path.split(filename)[-1], {})
             if new_primary_datasets_attributes:
                 dataset_att_by_name = dict(ext='extension')
                 for att_set in ['name', 'info', 'ext', 'dbkey']:

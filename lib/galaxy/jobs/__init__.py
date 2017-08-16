@@ -1213,7 +1213,7 @@ class JobWrapper(object, HasResourceParameters):
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
-            context = self.get_dataset_finish_context(job_context, dataset_assoc.dataset.dataset)
+            context = self.get_dataset_finish_context(job_context, dataset_assoc)
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
             # lets not allow this to occur
             # need to update all associated output hdas, i.e. history was shared with job running
@@ -1387,7 +1387,7 @@ class JobWrapper(object, HasResourceParameters):
             tool_working_directory = self.working_directory
         collected_datasets = {
             'children': self.tool.collect_child_datasets(out_data, tool_working_directory),
-            'primary': self.tool.collect_primary_datasets(out_data, tool_working_directory, input_ext, input_dbkey)
+            'primary': self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
         }
         self.tool.collect_dynamic_collections(
             out_collections,
@@ -1621,6 +1621,7 @@ class JobWrapper(object, HasResourceParameters):
         if self.tool_provided_job_metadata is not None:
             return self.tool_provided_job_metadata
 
+<<<<<<< HEAD
         # Look for JSONified job metadata
         self.tool_provided_job_metadata = []
         meta_file = os.path.join(self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE)
@@ -1655,6 +1656,21 @@ class JobWrapper(object, HasResourceParameters):
         for meta in self.get_tool_provided_job_metadata():
             if meta['type'] == 'dataset' and meta['dataset_id'] == dataset.id:
                 return ExpressionContext(meta, job_context)
+=======
+        self.tool_provided_job_metadata = self.tool.tool_provided_metadata( self )
+        return self.tool_provided_job_metadata
+
+    def get_dataset_finish_context( self, job_context, output_dataset_assoc ):
+        meta = {}
+        tool_provided_metadata = self.get_tool_provided_job_metadata()
+        if hasattr(tool_provided_metadata, "get_meta_by_dataset_id"):
+            meta = tool_provided_metadata.get_meta_by_dataset_id(output_dataset_assoc.dataset.dataset.id)
+        elif hasattr(tool_provided_metadata, "get_meta_by_name"):
+            meta = tool_provided_metadata.get_meta_by_name(output_dataset_assoc.name)
+
+        if meta:
+            return ExpressionContext( meta, job_context )
+>>>>>>> a73a0275a9... Overhaul of tool provided job metadata.
         return job_context
 
     def invalidate_external_metadata(self):
@@ -1674,8 +1690,13 @@ class JobWrapper(object, HasResourceParameters):
         if set_extension:
             for output_dataset_assoc in job.output_datasets:
                 if output_dataset_assoc.dataset.ext == 'auto':
+<<<<<<< HEAD
                     context = self.get_dataset_finish_context(dict(), output_dataset_assoc.dataset.dataset)
                     output_dataset_assoc.dataset.extension = context.get('ext', 'data')
+=======
+                    context = self.get_dataset_finish_context( dict(), output_dataset_assoc )
+                    output_dataset_assoc.dataset.extension = context.get( 'ext', 'data' )
+>>>>>>> a73a0275a9... Overhaul of tool provided job metadata.
             self.sa_session.flush()
         if tmp_dir is None:
             # this dir should should relative to the exec_dir
