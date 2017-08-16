@@ -335,7 +335,7 @@ class SeleniumSessionDatasetCollectionPopulator(populators.BaseDatasetCollection
         self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_test_case)
 
     def _create_collection(self, payload):
-        create_response = self._post( "dataset_collections", data=payload )
+        create_response = self._post("dataset_collections", data=payload)
         return create_response
 
 
@@ -360,4 +360,4 @@ class SeleniumSessionWorkflowPopulator(populators.BaseWorkflowPopulator, Seleniu
 
     def upload_yaml_workflow(self, has_yaml, **kwds):
         workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
-        return workflow[ "id" ]
+        return workflow["id"]

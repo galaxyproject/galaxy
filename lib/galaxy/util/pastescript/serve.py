@@ -386,7 +386,7 @@ MAXFD = 1024
 jython = sys.platform.startswith('java')
 
 
-class DaemonizeException( Exception ):
+class DaemonizeException(Exception):
     pass
 
 
@@ -637,7 +637,7 @@ class ServeCommand(Command):
 
         server = loadserver(server_spec, name=server_name, relative_to=base, global_conf=vars)
 
-        app = loadapp( app_spec, name=app_name, relative_to=base, global_conf=vars)
+        app = loadapp(app_spec, name=app_name, relative_to=base, global_conf=vars)
 
         if self.verbose > 0:
             if hasattr(os, 'getpid'):

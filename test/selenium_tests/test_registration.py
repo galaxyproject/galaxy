@@ -58,7 +58,7 @@ class RegistrationTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_bad_emails(self):
-        bad_emails = [ 'bob', 'bob@', 'bob@idontwanttocleanup', 'bob.cantmakeme' ]
+        bad_emails = ['bob', 'bob@', 'bob@idontwanttocleanup', 'bob.cantmakeme']
         good_email = self._get_random_email()
         password = DEFAULT_PASSWORD
         confirm = password

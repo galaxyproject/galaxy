@@ -78,7 +78,7 @@ def reload_tool(app, **kwargs):
     tool_id = params.get('tool_id', None)
     log.debug("Executing reload tool task for %s" % tool_id)
     if tool_id:
-        app.toolbox.reload_tool_by_id( tool_id )
+        app.toolbox.reload_tool_by_id(tool_id)
     else:
         log.error("Reload tool invoked without tool id.")
 
@@ -136,7 +136,7 @@ def reload_data_managers(app, **kwargs):
 def reload_display_application(app, **kwargs):
     display_application_ids = kwargs.get('display_application_ids', None)
     log.debug("Executing display application reload task for %s" % display_application_ids)
-    app.datatypes_registry.reload_display_applications( display_application_ids)
+    app.datatypes_registry.reload_display_applications(display_application_ids)
 
 
 def reload_sanitize_whitelist(app):
@@ -148,7 +148,7 @@ def recalculate_user_disk_usage(app, **kwargs):
     user_id = kwargs.get('user_id', None)
     sa_session = app.model.context
     if user_id:
-        user = sa_session.query( app.model.User ).get( app.security.decode_id( user_id ) )
+        user = sa_session.query(app.model.User).get(app.security.decode_id(user_id))
         if user:
             user.calculate_and_set_disk_usage()
         else:
@@ -178,7 +178,7 @@ def admin_job_lock(app, **kwargs):
              % (job_lock, "not" if job_lock else "now"))
 
 
-control_message_to_task = { 'create_panel_section': create_panel_section,
+control_message_to_task = {'create_panel_section': create_panel_section,
                             'reload_tool': reload_tool,
                             'reload_toolbox': reload_toolbox,
                             'reload_data_managers': reload_data_managers,

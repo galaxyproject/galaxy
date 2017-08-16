@@ -30,7 +30,7 @@ class Sentry(object):
         self.client = None
 
         def postfork_sentry_client():
-            self.client = Client( dsn )
+            self.client = Client(dsn)
 
         register_postfork_function(postfork_sentry_client)
 
@@ -90,7 +90,7 @@ class Sentry(object):
             },
             # Galaxy: add request id from environment if available
             extra={
-                'request_id': environ.get( 'request_id', 'Unknown' )
+                'request_id': environ.get('request_id', 'Unknown')
             }
         )
         # Galaxy: store event_id in environment so we can show it to the user

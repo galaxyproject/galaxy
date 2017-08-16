@@ -120,8 +120,8 @@ def get_affected_packages(args):
     pkg_list = check_output(cmd, shell=True)
     ret = list()
     for pkg in pkg_list.strip().split('\n'):
-        if pkg and os.path.exists(os.path.join( recipes_dir, pkg )):
-            ret.append( (get_pkg_name(args, pkg), get_tests(args, pkg)) )
+        if pkg and os.path.exists(os.path.join(recipes_dir, pkg)):
+            ret.append((get_pkg_name(args, pkg), get_tests(args, pkg)))
     return ret
 
 
@@ -216,7 +216,7 @@ def mull_targets(
         involucro_args.extend(["-set", "SINGULARITY='1'"])
         involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME='%s'" % singularity_image_name])
         involucro_args.extend(["-set", "SINGULARITY_IMAGE_DIR='%s'" % singularity_image_dir])
-        involucro_args.extend(["-set", "USER_ID='%s:%s'" % (os.getuid(), os.getgid() )])
+        involucro_args.extend(["-set", "USER_ID='%s:%s'" % (os.getuid(), os.getgid())])
     if conda_version is not None:
         verbose = "--verbose" if verbose else "--quiet"
         involucro_args.extend(["-set", "PREINSTALL='conda install %s --yes conda=%s'" % (verbose, conda_version)])

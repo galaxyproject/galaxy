@@ -403,7 +403,7 @@ class Declaration(NavigableString):
 class Tag(PageElement):
     """Represents a found HTML tag with its attributes and contents."""
 
-    XML_ENTITIES_TO_CHARS = { 'apos': "'",
+    XML_ENTITIES_TO_CHARS = {'apos': "'",
                               "quot": '"',
                               "amp": "&",
                               "lt": "<",
@@ -1340,12 +1340,12 @@ class BeautifulSoup(BeautifulStoneSoup):
     NESTABLE_BLOCK_TAGS = ['blockquote', 'div', 'fieldset', 'ins', 'del']
 
     # Lists can contain other lists, but there are restrictions.
-    NESTABLE_LIST_TAGS = { 'ol': [],
+    NESTABLE_LIST_TAGS = {'ol': [],
                            'ul': [],
                            'li': ['ul', 'ol'],
                            'dl': [],
                            'dd': ['dl'],
-                           'dt': ['dl'] }
+                           'dt': ['dl']}
 
     # Tables can contain other tables, but there are restrictions.
     NESTABLE_TABLE_TAGS = {'table': [],
@@ -1563,8 +1563,8 @@ class UnicodeDammit:
     # meta tags to the corresponding Python codec names. It only covers
     # values that aren't in Python's aliases and can't be determined
     # by the heuristics in find_codec.
-    CHARSET_ALIASES = { "macintosh": "mac-roman",
-                        "x-sjis": "shift-jis" }
+    CHARSET_ALIASES = {"macintosh": "mac-roman",
+                        "x-sjis": "shift-jis"}
 
     def __init__(self, markup, overrideEncodings=[],
                  smartQuotesTo='xml'):
@@ -1766,7 +1766,7 @@ class UnicodeDammit:
                 ''.join(map(chr, range(256))), ''.join(map(chr, emap)))
         return s.translate(c.EBCDIC_TO_ASCII_MAP)
 
-    MS_CHARS = { '\x80': ('euro', '20AC'),
+    MS_CHARS = {'\x80': ('euro', '20AC'),
                  '\x81': ' ',
                  '\x82': ('sbquo', '201A'),
                  '\x83': ('fnof', '192'),
@@ -1797,7 +1797,7 @@ class UnicodeDammit:
                  '\x9c': ('oelig', '153'),
                  '\x9d': '?',
                  '\x9e': ('#x17E', '17E'),
-                 '\x9f': ('Yuml', '178') }
+                 '\x9f': ('Yuml', '178')}
 
 #######################################################################
 

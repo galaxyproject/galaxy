@@ -12,13 +12,13 @@ log = logging.getLogger(__name__)
 
 # GeneTrack is no longer supported but leaving the datatype since
 # files of this type may still exist
-class GeneTrack( binary.Binary ):
+class GeneTrack(binary.Binary):
     edam_data = "data_3002"
     edam_format = "format_2919"
     file_ext = "genetrack"
 
     def __init__(self, **kwargs):
-        super( GeneTrack, self ).__init__( **kwargs )
+        super(GeneTrack, self).__init__(**kwargs)
         # self.add_display_app( 'genetrack', 'View in', '', 'genetrack_link' )
     # def get_display_links( self, dataset, type, app, base_url, target_frame='galaxy_main', **kwd ): #Force target_frame to be 'galaxy_main'
     #     return binary.Binary.get_display_links( self, dataset, type, app, base_url, target_frame=target_frame, **kwd )
@@ -40,7 +40,7 @@ class GeneTrack( binary.Binary ):
     #         return ret_val
 
 
-class UCSCTrackHub( Html ):
+class UCSCTrackHub(Html):
     """
     Datatype for UCSC TrackHub
     """
@@ -51,7 +51,7 @@ class UCSCTrackHub( Html ):
     def __init__(self, **kwd):
         Html.__init__(self, **kwd)
 
-    def generate_primary_file( self, dataset=None ):
+    def generate_primary_file(self, dataset=None):
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
@@ -60,26 +60,26 @@ class UCSCTrackHub( Html ):
             '<html><head><title>Files for Composite Dataset (%s)</title></head><p/>\
             This composite dataset is composed of the following files:<p/><ul>' % (
                 self.file_ext)]
-        for composite_name, composite_file in self.get_composite_files( dataset=dataset ).items():
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             opt_text = ''
             if composite_file.optional:
                 opt_text = ' (optional)'
-            rval.append('<li><a href="%s">%s</a>%s' % ( composite_name, composite_name, opt_text) )
+            rval.append('<li><a href="%s">%s</a>%s' % (composite_name, composite_name, opt_text))
         rval.append('</ul></html>')
         return "\n".join(rval)
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = "Track Hub structure: Visualization in UCSC Track Hub"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def display_peek( self, dataset ):
+    def display_peek(self, dataset):
         try:
             return dataset.peek
         except:
             return "Track Hub structure: Visualization in UCSC Track Hub"
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         return False

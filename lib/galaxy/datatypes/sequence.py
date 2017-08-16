@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 SNIFF_COMPRESSED_FASTQS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTQ_SNIFFING", "0") == "1"
 
 
-class SequenceSplitLocations( data.Text ):
+class SequenceSplitLocations(data.Text):
     """
     Class storing information about a sequence file composed of multiple gzip files concatenated as
     one OR an uncompressed file. In the GZIP case, each sub-file's location is stored in start and end.
@@ -56,12 +56,12 @@ class SequenceSplitLocations( data.Text ):
     """
     file_ext = "fqtoc"
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             try:
                 parsed_data = json.load(open(dataset.file_name))
                 # dataset.peek = json.dumps(data, sort_keys=True, indent=4)
-                dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+                dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
                 dataset.blurb = '%d sections' % len(parsed_data['sections'])
             except Exception:
                 dataset.peek = 'Not FQTOC file'
@@ -70,7 +70,7 @@ class SequenceSplitLocations( data.Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         if os.path.getsize(filename) < 50000:
             try:
                 data = json.load(open(filename))
@@ -84,25 +84,25 @@ class SequenceSplitLocations( data.Text ):
         return False
 
 
-class Sequence( data.Text ):
+class Sequence(data.Text):
     """Class describing a sequence"""
     edam_data = "data_2044"
 
     """Add metadata elements"""
-    MetadataElement( name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0 )
+    MetadataElement(name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0)
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta(self, dataset, **kwd):
         """
         Set the number of sequences and the number of data lines in dataset.
         """
         data_lines = 0
         sequences = 0
-        for line in open( dataset.file_name ):
+        for line in open(dataset.file_name):
             line = line.strip()
-            if line and line.startswith( '#' ):
+            if line and line.startswith('#'):
                 # We don't count comment lines for sequence data types
                 continue
-            if line and line.startswith( '>' ):
+            if line and line.startswith('>'):
                 sequences += 1
                 data_lines += 1
             else:
@@ -110,13 +110,13 @@ class Sequence( data.Text ):
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if dataset.metadata.sequences:
-                dataset.blurb = "%s sequences" % util.commaify( str( dataset.metadata.sequences ) )
+                dataset.blurb = "%s sequences" % util.commaify(str(dataset.metadata.sequences))
             else:
-                dataset.blurb = nice_size( dataset.get_size() )
+                dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -141,7 +141,7 @@ class Sequence( data.Text ):
         return sequences_per_file
     get_sequences_per_file = staticmethod(get_sequences_per_file)
 
-    def do_slow_split( cls, input_datasets, subdir_generator_function, split_params):
+    def do_slow_split(cls, input_datasets, subdir_generator_function, split_params):
         # count the sequences so we can split
         # TODO: if metadata is present, take the number of lines / 4
         if input_datasets[0].metadata is not None and input_datasets[0].metadata.sequences is not None:
@@ -157,7 +157,7 @@ class Sequence( data.Text ):
         return cls.write_split_files(input_datasets, None, subdir_generator_function, sequences_per_file)
     do_slow_split = classmethod(do_slow_split)
 
-    def do_fast_split( cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
+    def do_fast_split(cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
         data = json.load(open(toc_file_datasets[0].file_name))
         sections = data['sections']
         total_sequences = long(0)
@@ -201,7 +201,7 @@ class Sequence( data.Text ):
         return directories
     write_split_files = classmethod(write_split_files)
 
-    def split( cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets, subdir_generator_function, split_params):
         """Split a generic sequence file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -297,26 +297,26 @@ class Sequence( data.Text ):
     get_split_commands_sequential = staticmethod(get_split_commands_sequential)
 
 
-class Alignment( data.Text ):
+class Alignment(data.Text):
     """Class describing an alignment"""
     edam_data = "data_0863"
 
     """Add metadata elements"""
-    MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None )
+    MetadataElement(name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
 
-    def split( cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets, subdir_generator_function, split_params):
         """Split a generic alignment file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
         raise NotImplementedError("Can't split generic alignment files")
 
 
-class Fasta( Sequence ):
+class Fasta(Sequence):
     """Class representing a FASTA sequence"""
     edam_format = "format_1929"
     file_ext = "fasta"
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         """
         Determines whether the file is in fasta format
 
@@ -352,17 +352,17 @@ class Fasta( Sequence ):
         """
 
         try:
-            fh = open( filename )
+            fh = open(filename)
             while True:
                 line = fh.readline()
                 if not line:
                     break  # EOF
                 line = line.strip()
                 if line:  # first non-empty line
-                    if line.startswith( '>' ):
+                    if line.startswith('>'):
                         # The next line.strip() must not be '', nor startwith '>'
                         line = fh.readline().strip()
-                        if line == '' or line.startswith( '>' ):
+                        if line == '' or line.startswith('>'):
                             break
 
                         # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file
@@ -502,12 +502,12 @@ class Fasta( Sequence ):
     _count_split = classmethod(_count_split)
 
 
-class csFasta( Sequence ):
+class csFasta(Sequence):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
     edam_format = "format_3589"
     file_ext = "csfasta"
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         """
         Color-space sequence:
             >2_15_85_F3
@@ -522,20 +522,20 @@ class csFasta( Sequence ):
         True
         """
         try:
-            fh = open( filename )
+            fh = open(filename)
             while True:
                 line = fh.readline()
                 if not line:
                     break  # EOF
                 line = line.strip()
-                if line and not line.startswith( '#' ):  # first non-empty non-comment line
-                    if line.startswith( '>' ):
+                if line and not line.startswith('#'):  # first non-empty non-comment line
+                    if line.startswith('>'):
                         line = fh.readline().strip()
-                        if line == '' or line.startswith( '>' ):
+                        if line == '' or line.startswith('>'):
                             break
                         elif line[0] not in string.ascii_uppercase:
                             return False
-                        elif len( line ) > 1 and not re.search( '^[\d.]+$', line[1:] ):
+                        elif len(line) > 1 and not re.search('^[\d.]+$', line[1:]):
                             return False
                         return True
                     else:
@@ -545,20 +545,20 @@ class csFasta( Sequence ):
             pass
         return False
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta(self, dataset, **kwd):
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             dataset.metadata.data_lines = None
             dataset.metadata.sequences = None
             return
-        return Sequence.set_meta( self, dataset, **kwd )
+        return Sequence.set_meta(self, dataset, **kwd)
 
 
-class BaseFastq ( Sequence ):
+class BaseFastq (Sequence):
     """Base class for FastQ sequences"""
     edam_format = "format_1930"
     file_ext = "fastq"
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta(self, dataset, **kwd):
         """
         Set the number of sequences and the number of data lines
         in dataset.
@@ -574,12 +574,12 @@ class BaseFastq ( Sequence ):
         with compression_utils.get_fileobj(dataset.file_name) as in_file:
             for line in in_file:
                 line = line.strip()
-                if line and line.startswith( '#' ) and not data_lines:
+                if line and line.startswith('#') and not data_lines:
                     # We don't count comment lines for sequence data types
                     continue
                 seq_counter += 1
                 data_lines += 1
-                if line and line.startswith( '@' ):
+                if line and line.startswith('@'):
                     if seq_counter >= 4:
                         # count previous block
                         # blocks should be 4 lines long
@@ -591,7 +591,7 @@ class BaseFastq ( Sequence ):
             dataset.metadata.data_lines = data_lines
             dataset.metadata.sequences = sequences
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         """
         Determines whether the file is in generic fastq format
         For details, see http://maq.sourceforge.net/fastq.shtml
@@ -615,20 +615,20 @@ class BaseFastq ( Sequence ):
         compressed = is_gzip(filename) or is_bz2(filename)
         if compressed and not isinstance(self, Binary):
             return False
-        headers = iter_headers( filename, None, count=1000 )
+        headers = iter_headers(filename, None, count=1000)
 
         # If this is a FastqSanger-derived class, then check to see if the base qualities match
         if isinstance(self, FastqSanger) or isinstance(self, FastqSangerGz) or isinstance(self, FastqSangerBz2):
             if not self.sangerQualities(headers):
                 return False
 
-        bases_regexp = re.compile( "^[NGTAC]*" )
+        bases_regexp = re.compile("^[NGTAC]*")
         # check that first block looks like a fastq block
         try:
-            headers = get_headers( filename, None, count=4 )
-            if len( headers ) == 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
+            headers = get_headers(filename, None, count=4)
+            if len(headers) == 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
                 # Check the sequence line, make sure it contains only G/C/A/T/N
-                if not bases_regexp.match( headers[1][0] ):
+                if not bases_regexp.match(headers[1][0]):
                     return False
                 return True
             return False
@@ -639,17 +639,17 @@ class BaseFastq ( Sequence ):
         if preview:
             with compression_utils.get_fileobj(dataset.file_name) as fh:
                 max_peek_size = 1000000  # 1 MB
-                if os.stat( dataset.file_name ).st_size < max_peek_size:
+                if os.stat(dataset.file_name).st_size < max_peek_size:
                     mime = "text/plain"
-                    self._clean_and_set_mime_type( trans, mime )
+                    self._clean_and_set_mime_type(trans, mime)
                     return fh.read()
-                return trans.stream_template_mako( "/dataset/large_file.mako",
+                return trans.stream_template_mako("/dataset/large_file.mako",
                                                    truncated_data=fh.read(max_peek_size),
                                                    data=dataset)
         else:
             return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 
-    def split( cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets, subdir_generator_function, split_params):
         """
         FASTQ files are split on cluster boundaries, in increments of 4 lines
         """
@@ -698,7 +698,7 @@ class BaseFastq ( Sequence ):
     process_split_file = staticmethod(process_split_file)
 
     @staticmethod
-    def sangerQualities( lines ):
+    def sangerQualities(lines):
         """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
         for line in islice(lines, 3, None, 4):
             if not all(_ >= '!' and _ <= 'M' for _ in line[0]):
@@ -706,55 +706,55 @@ class BaseFastq ( Sequence ):
         return True
 
 
-class Fastq( BaseFastq ):
+class Fastq(BaseFastq):
     """Class representing a generic FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq"
 
 
-class FastqSanger( Fastq ):
+class FastqSanger(Fastq):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger"
 
 
-class FastqSolexa( Fastq ):
+class FastqSolexa(Fastq):
     """Class representing a FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa"
 
 
-class FastqIllumina( Fastq ):
+class FastqIllumina(Fastq):
     """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )"""
     edam_format = "format_1931"
     file_ext = "fastqillumina"
 
 
-class FastqCSSanger( Fastq ):
+class FastqCSSanger(Fastq):
     """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger"
 
 
-class FastqGz ( BaseFastq, Binary ):
+class FastqGz (BaseFastq, Binary):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.gz"
     compressed = True
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         """Determines whether the file is in gzip-compressed FASTQ format"""
         if not is_gzip(filename):
             return False
-        return BaseFastq.sniff( self, filename )
+        return BaseFastq.sniff(self, filename)
 
 
-class FastqSangerGz( FastqGz ):
+class FastqSangerGz(FastqGz):
     """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger.gz"
 
 
-class FastqSolexaGz( FastqGz ):
+class FastqSolexaGz(FastqGz):
     """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa.gz"
@@ -765,31 +765,31 @@ if SNIFF_COMPRESSED_FASTQS:
     Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
 
 
-class FastqIlluminaGz( FastqGz ):
+class FastqIlluminaGz(FastqGz):
     """Class representing a compressed FASTQ sequence ( the Illumina 1.3+ variant )"""
     edam_format = "format_1931"
     file_ext = "fastqillumina.gz"
 
 
-class FastqCSSangerGz( FastqGz ):
+class FastqCSSangerGz(FastqGz):
     """Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger.gz"
 
 
-class FastqBz2 ( BaseFastq, Binary ):
+class FastqBz2 (BaseFastq, Binary):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.bz2"
     compressed = True
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         """Determine whether the file is in bzip2-compressed FASTQ format"""
         if not is_bz2(filename):
             return False
-        return BaseFastq.sniff( self, filename )
+        return BaseFastq.sniff(self, filename)
 
 
-class FastqSangerBz2( FastqBz2 ):
+class FastqSangerBz2(FastqBz2):
     """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger.bz2"
@@ -800,44 +800,44 @@ if SNIFF_COMPRESSED_FASTQS:
     Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
 
 
-class FastqSolexaBz2( FastqBz2 ):
+class FastqSolexaBz2(FastqBz2):
     """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa.bz2"
 
 
-class FastqIlluminaBz2( FastqBz2 ):
+class FastqIlluminaBz2(FastqBz2):
     """Class representing a compressed FASTQ sequence ( the Illumina 1.3+ variant )"""
     edam_format = "format_1931"
     file_ext = "fastqillumina.bz2"
 
 
-class FastqCSSangerBz2( FastqBz2 ):
+class FastqCSSangerBz2(FastqBz2):
     """Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger.bz2"
 
 
-class Maf( Alignment ):
+class Maf(Alignment):
     """Class describing a Maf alignment"""
     edam_format = "format_3008"
     file_ext = "maf"
 
     # Readonly and optional, users can't unset it, but if it is not set, we are generally ok; if required use a metadata validator in the tool definition
-    MetadataElement( name="blocks", default=0, desc="Number of blocks", readonly=True, optional=True, visible=False, no_value=0 )
-    MetadataElement( name="species_chromosomes", desc="Species Chromosomes", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
-    MetadataElement( name="maf_index", desc="MAF Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
+    MetadataElement(name="blocks", default=0, desc="Number of blocks", readonly=True, optional=True, visible=False, no_value=0)
+    MetadataElement(name="species_chromosomes", desc="Species Chromosomes", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(name="maf_index", desc="MAF Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True)
 
-    def init_meta( self, dataset, copy_from=None ):
-        Alignment.init_meta( self, dataset, copy_from=copy_from )
+    def init_meta(self, dataset, copy_from=None):
+        Alignment.init_meta(self, dataset, copy_from=copy_from)
 
-    def set_meta( self, dataset, overwrite=True, **kwd ):
+    def set_meta(self, dataset, overwrite=True, **kwd):
         """
         Parses and sets species, chromosomes, index from MAF file.
         """
         # these metadata values are not accessable by users, always overwrite
         # Imported here to avoid circular dependency
         from galaxy.tools.util.maf_utilities import build_maf_index_species_chromosomes
-        indexes, species, species_chromosomes, blocks = build_maf_index_species_chromosomes( dataset.file_name )
+        indexes, species, species_chromosomes, blocks = build_maf_index_species_chromosomes(dataset.file_name)
         if indexes is None:
             return  # this is not a MAF file
         dataset.metadata.species = species
@@ -846,25 +846,25 @@ class Maf( Alignment ):
         # write species chromosomes to a file
         chrom_file = dataset.metadata.species_chromosomes
         if not chrom_file:
-            chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file( dataset=dataset )
-        chrom_out = open( chrom_file.file_name, 'wb' )
+            chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file(dataset=dataset)
+        chrom_out = open(chrom_file.file_name, 'wb')
         for spec, chroms in species_chromosomes.items():
-            chrom_out.write( "%s\t%s\n" % ( spec, "\t".join( chroms ) ) )
+            chrom_out.write("%s\t%s\n" % (spec, "\t".join(chroms)))
         chrom_out.close()
         dataset.metadata.species_chromosomes = chrom_file
 
         index_file = dataset.metadata.maf_index
         if not index_file:
-            index_file = dataset.metadata.spec['maf_index'].param.new_file( dataset=dataset )
-        indexes.write( open( index_file.file_name, 'wb' ) )
+            index_file = dataset.metadata.spec['maf_index'].param.new_file(dataset=dataset)
+        indexes.write(open(index_file.file_name, 'wb'))
         dataset.metadata.maf_index = index_file
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if dataset.metadata.blocks:
-                dataset.blurb = "%s blocks" % util.commaify( str( dataset.metadata.blocks ) )
+                dataset.blurb = "%s blocks" % util.commaify(str(dataset.metadata.blocks))
             else:
                 # Number of blocks is not known ( this should not happen ), and auto-detect is
                 # needed to set metadata
@@ -873,18 +873,18 @@ class Maf( Alignment ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def display_peek( self, dataset ):
+    def display_peek(self, dataset):
         """Returns formated html of peek"""
-        return self.make_html_table( dataset )
+        return self.make_html_table(dataset)
 
-    def make_html_table( self, dataset, skipchars=[] ):
+    def make_html_table(self, dataset, skipchars=[]):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
             out.append('<tr><th>Species:&nbsp;')
             for species in dataset.metadata.species:
-                out.append( '%s&nbsp;' % species )
-            out.append( '</th></tr>' )
+                out.append('%s&nbsp;' % species)
+            out.append('</th></tr>')
             if not dataset.peek:
                 dataset.set_peek()
             data = dataset.peek
@@ -893,14 +893,14 @@ class Maf( Alignment ):
                 line = line.strip()
                 if not line:
                     continue
-                out.append( '<tr><td>%s</td></tr>' % escape( line ) )
-            out.append( '</table>' )
-            out = "".join( out )
+                out.append('<tr><td>%s</td></tr>' % escape(line))
+            out.append('</table>')
+            out = "".join(out)
         except Exception as exc:
             out = "Can't create peek %s" % exc
         return out
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         """
         Determines wether the file is in maf format
 
@@ -923,7 +923,7 @@ class Maf( Alignment ):
         >>> Maf().sniff( fname )
         False
         """
-        headers = get_headers( filename, None )
+        headers = get_headers(filename, None)
         try:
             if len(headers) > 1 and headers[0][0] and headers[0][0] == "##maf":
                 return True
@@ -933,33 +933,33 @@ class Maf( Alignment ):
             return False
 
 
-class MafCustomTrack( data.Text ):
+class MafCustomTrack(data.Text):
     file_ext = "mafcustomtrack"
 
-    MetadataElement( name="vp_chromosome", default='chr1', desc="Viewport Chromosome", readonly=True, optional=True, visible=False, no_value='' )
-    MetadataElement( name="vp_start", default='1', desc="Viewport Start", readonly=True, optional=True, visible=False, no_value='' )
-    MetadataElement( name="vp_end", default='100', desc="Viewport End", readonly=True, optional=True, visible=False, no_value='' )
+    MetadataElement(name="vp_chromosome", default='chr1', desc="Viewport Chromosome", readonly=True, optional=True, visible=False, no_value='')
+    MetadataElement(name="vp_start", default='1', desc="Viewport Start", readonly=True, optional=True, visible=False, no_value='')
+    MetadataElement(name="vp_end", default='100', desc="Viewport End", readonly=True, optional=True, visible=False, no_value='')
 
-    def set_meta( self, dataset, overwrite=True, **kwd ):
+    def set_meta(self, dataset, overwrite=True, **kwd):
         """
         Parses and sets viewport metadata from MAF file.
         """
         max_block_check = 10
         chrom = None
-        forward_strand_start = float( 'inf' )
+        forward_strand_start = float('inf')
         forward_strand_end = 0
         try:
-            maf_file = open( dataset.file_name )
+            maf_file = open(dataset.file_name)
             maf_file.readline()  # move past track line
-            for i, block in enumerate( bx.align.maf.Reader( maf_file ) ):
-                ref_comp = block.get_component_by_src_start( dataset.metadata.dbkey )
+            for i, block in enumerate(bx.align.maf.Reader(maf_file)):
+                ref_comp = block.get_component_by_src_start(dataset.metadata.dbkey)
                 if ref_comp:
-                    ref_chrom = bx.align.maf.src_split( ref_comp.src )[-1]
+                    ref_chrom = bx.align.maf.src_split(ref_comp.src)[-1]
                     if chrom is None:
                         chrom = ref_chrom
                     if chrom == ref_chrom:
-                        forward_strand_start = min( forward_strand_start, ref_comp.forward_strand_start )
-                        forward_strand_end = max( forward_strand_end, ref_comp.forward_strand_end )
+                        forward_strand_start = min(forward_strand_start, ref_comp.forward_strand_start)
+                        forward_strand_end = max(forward_strand_end, ref_comp.forward_strand_end)
                 if i > max_block_check:
                     break
 
@@ -971,7 +971,7 @@ class MafCustomTrack( data.Text ):
             pass
 
 
-class Axt( data.Text ):
+class Axt(data.Text):
     """Class describing an axt alignment"""
     # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
     # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
@@ -981,7 +981,7 @@ class Axt( data.Text ):
     edam_format = "format_3013"
     file_ext = "axt"
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         """
         Determines whether the file is in axt format
 
@@ -1007,7 +1007,7 @@ class Axt( data.Text ):
         >>> Axt().sniff( fname )
         False
         """
-        headers = get_headers( filename, None )
+        headers = get_headers(filename, None)
         if len(headers) < 4:
             return False
         for hdr in headers:
@@ -1017,7 +1017,7 @@ class Axt( data.Text ):
                 if len(hdr) != 9:
                     return False
                 try:
-                    map( int, [hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]] )
+                    map(int, [hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]])
                 except:
                     return False
                 if hdr[7] not in data.valid_strand:
@@ -1026,7 +1026,7 @@ class Axt( data.Text ):
                     return True
 
 
-class Lav( data.Text ):
+class Lav(data.Text):
     """Class describing a LAV alignment"""
     # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
     # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
@@ -1036,7 +1036,7 @@ class Lav( data.Text ):
     edam_format = "format_3014"
     file_ext = "lav"
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         """
         Determines whether the file is in lav format
 
@@ -1053,7 +1053,7 @@ class Lav( data.Text ):
         >>> Lav().sniff( fname )
         False
         """
-        headers = get_headers( filename, None )
+        headers = get_headers(filename, None)
         try:
             if len(headers) > 1 and headers[0][0] and headers[0][0].startswith('#:lav'):
                 return True
@@ -1063,25 +1063,25 @@ class Lav( data.Text ):
             return False
 
 
-class RNADotPlotMatrix( data.Data ):
+class RNADotPlotMatrix(data.Data):
     edam_format = "format_3466"
     file_ext = "rna_eps"
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = 'RNA Dot Plot format (Postscript derivative)'
-            dataset.blurb = nice_size( dataset.get_size() )
+            dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
     def sniff(self, filename):
         """Determine if the file is in RNA dot plot format."""
-        if check_image_type( filename, ['EPS'] ):
+        if check_image_type(filename, ['EPS']):
             seq = False
             coor = False
             pairs = False
-            with open( filename ) as handle:
+            with open(filename) as handle:
                 for line in handle:
                     line = line.strip()
                     if line:
@@ -1096,15 +1096,15 @@ class RNADotPlotMatrix( data.Data ):
         return False
 
 
-class DotBracket ( Sequence ):
+class DotBracket (Sequence):
     edam_data = "data_0880"
     edam_format = "format_1457"
     file_ext = "dbn"
 
-    sequence_regexp = re.compile( "^[ACGTURYKMSWBDHVN]+$", re.I)
-    structure_regexp = re.compile( "^[\(\)\.\[\]{}]+$" )
+    sequence_regexp = re.compile("^[ACGTURYKMSWBDHVN]+$", re.I)
+    structure_regexp = re.compile("^[\(\)\.\[\]{}]+$")
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta(self, dataset, **kwd):
         """
         Set the number of sequences and the number of data lines
         in dataset.
@@ -1118,11 +1118,11 @@ class DotBracket ( Sequence ):
         data_lines = 0
         sequences = 0
 
-        for line in open( dataset.file_name ):
+        for line in open(dataset.file_name):
             line = line.strip()
             data_lines += 1
 
-            if line and line.startswith( '>' ):
+            if line and line.startswith('>'):
                 sequences += 1
 
         dataset.metadata.data_lines = data_lines
@@ -1160,7 +1160,7 @@ class DotBracket ( Sequence ):
 
         state = 0
 
-        with open( filename, "r" ) as handle:
+        with open(filename, "r") as handle:
             for line in handle:
                 line = line.strip()
 

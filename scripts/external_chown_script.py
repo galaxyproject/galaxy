@@ -18,18 +18,18 @@ def validate_parameters():
         sys.stderr.write("usage: %s path user_name gid\n" % sys.argv[0])
         exit(1)
 
-    path = os.path.abspath( sys.argv[1] )
+    path = os.path.abspath(sys.argv[1])
     if ALLOWED_PATHS is None:
         allowed = True
     else:
         allowed = False
         for p in ALLOWED_PATHS:
-            if path.startswith( p ):
+            if path.startswith(p):
                 allowed = True
                 break
     if not allowed:
-        sys.stderr.write( "owner and group modifications in %s are not allowed\n" % path )
-        sys.exit( 1 )
+        sys.stderr.write("owner and group modifications in %s are not allowed\n" % path)
+        sys.exit(1)
 
     galaxy_user_name = sys.argv[2]
     gid = sys.argv[3]
@@ -39,7 +39,7 @@ def validate_parameters():
 
 def main():
     path, galaxy_user_name, gid = validate_parameters()
-    for cmd in [[ 'chown', '-Rh', galaxy_user_name, path ], [ 'chgrp', '-Rh', gid, path ]]:
+    for cmd in [['chown', '-Rh', galaxy_user_name, path], ['chgrp', '-Rh', gid, path]]:
         p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdoutdata, stderrdata) = p.communicate()
         exitcode = p.returncode

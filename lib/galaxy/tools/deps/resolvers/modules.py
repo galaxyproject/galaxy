@@ -20,7 +20,7 @@ from ..resolvers import (
     NullDependency,
 )
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 DEFAULT_MODULECMD_PATH = "modulecmd"  # Just check path
 DEFAULT_MODULE_PATH = '/usr/share/modules/modulefiles'
@@ -90,12 +90,12 @@ class DirectoryModuleChecker(object):
         has_module = False
         for directory in self.directories:
             module_directory = join(directory, module)
-            has_module_directory = isdir( module_directory )
+            has_module_directory = isdir(module_directory)
             if not version:
                 has_module = has_module_directory or exists(module_directory)  # could be a bare modulefile
             else:
-                modulefile = join(  module_directory, version )
-                has_modulefile = exists( modulefile )
+                modulefile = join(module_directory, version)
+                has_modulefile = exists(modulefile)
                 has_module = has_module_directory and has_modulefile
             if has_module:
                 break
@@ -185,8 +185,8 @@ class ModuleDependency(Dependency):
         return command
 
 
-def _string_as_bool( value ):
-    return str( value ).lower() == "true"
+def _string_as_bool(value):
+    return str(value).lower() == "true"
 
 
 __all__ = ('ModuleDependencyResolver', )

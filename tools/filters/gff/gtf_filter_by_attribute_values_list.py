@@ -9,7 +9,7 @@ from __future__ import print_function
 import sys
 
 
-def parse_gff_attributes( attr_str ):
+def parse_gff_attributes(attr_str):
     """
     Parses a GFF/GTF attribute string and returns a dictionary of name-value
     pairs. The general format for a GFF3 attributes string is
@@ -25,9 +25,9 @@ def parse_gff_attributes( attr_str ):
     for name_value_pair in attributes_list:
         # Try splitting by space and, if necessary, by '=' sign.
         pair = name_value_pair.strip().split(" ")
-        if len( pair ) == 1:
+        if len(pair) == 1:
             pair = name_value_pair.strip().split("=")
-        if len( pair ) == 1:
+        if len(pair) == 1:
             # Could not split for some reason -- raise exception?
             continue
         if pair == '':
@@ -37,35 +37,35 @@ def parse_gff_attributes( attr_str ):
             continue
         # Need to strip double quote from values
         value = pair[1].strip(" \"")
-        attributes[ name ] = value
+        attributes[name] = value
 
-    if len( attributes ) == 0:
+    if len(attributes) == 0:
         # Could not split attributes string, so entire string must be
         # 'group' attribute. This is the case for strictly GFF files.
         attributes['group'] = attr_str
     return attributes
 
 
-def gff_filter( gff_file, attribute_name, ids_file, output_file ):
+def gff_filter(gff_file, attribute_name, ids_file, output_file):
     # Put ids in dict for quick lookup.
     ids_dict = {}
-    for line in open( ids_file ):
-        ids_dict[ line.split('\t')[0].strip() ] = True
+    for line in open(ids_file):
+        ids_dict[line.split('\t')[0].strip()] = True
 
     # Filter GFF file using ids.
-    output = open( output_file, 'w' )
-    for line in open( gff_file ):
-        fields = line.split( '\t' )
-        attributes = parse_gff_attributes( fields[8] )
-        if ( attribute_name in attributes ) and ( attributes[ attribute_name ] in ids_dict ):
-            output.write( line )
+    output = open(output_file, 'w')
+    for line in open(gff_file):
+        fields = line.split('\t')
+        attributes = parse_gff_attributes(fields[8])
+        if (attribute_name in attributes) and (attributes[attribute_name] in ids_dict):
+            output.write(line)
     output.close()
 
 
 if __name__ == "__main__":
     # Handle args.
-    if len( sys.argv ) != 5:
+    if len(sys.argv) != 5:
         print("usage: python %s <gff_file> <attribute_name> <ids_file> <output_file>" % sys.argv[0], file=sys.stderr)
-        sys.exit( -1 )
+        sys.exit(-1)
     gff_file, attribute_name, ids_file, output_file = sys.argv[1:]
-    gff_filter( gff_file, attribute_name, ids_file, output_file )
+    gff_filter(gff_file, attribute_name, ids_file, output_file)

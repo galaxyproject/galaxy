@@ -4,7 +4,7 @@ import time
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 def build_engine(url, engine_options, database_query_profiling_proxy=False, trace_logger=None, slow_query_log_threshold=0):
@@ -15,7 +15,7 @@ def build_engine(url, engine_options, database_query_profiling_proxy=False, trac
     # If metlog is enabled, do micrologging
     elif trace_logger:
         import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
-        proxy = logging_connection_proxy.TraceLoggerProxy( trace_logger )
+        proxy = logging_connection_proxy.TraceLoggerProxy(trace_logger)
     else:
         proxy = None
     if slow_query_log_threshold:
@@ -32,5 +32,5 @@ def build_engine(url, engine_options, database_query_profiling_proxy=False, trac
                 log.debug("Slow query: %f(s)\n%s\nParameters: %s" % (total, statement, parameters))
 
     # Create the database engine
-    engine = create_engine( url, proxy=proxy, **engine_options )
+    engine = create_engine(url, proxy=proxy, **engine_options)
     return engine

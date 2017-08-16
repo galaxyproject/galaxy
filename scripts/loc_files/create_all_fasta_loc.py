@@ -38,7 +38,7 @@ VARIANTS = 'chrM,chr21,full,canon,female,male,haps,nohaps'
 
 VARIANT_EXCLUSIONS = ':full'
 
-DBKEY_DESCRIPTION_MAP = { 'AaegL1': 'Mosquito (Aedes aegypti): AaegL1',
+DBKEY_DESCRIPTION_MAP = {'AaegL1': 'Mosquito (Aedes aegypti): AaegL1',
                           'AgamP3': 'Mosquito (Anopheles gambiae): AgamP3',
                           'anoCar1': 'Lizard (Anolis carolinensis): anoCar1',
                           'anoGam1': 'Mosquito (Anopheles gambiae): anoGam1',
@@ -139,16 +139,16 @@ DBKEY_DESCRIPTION_MAP = { 'AaegL1': 'Mosquito (Aedes aegypti): AaegL1',
                           'tetNig2': 'Tetraodon (Tetraodon nigroviridis): tetNig2',
                           'tupBel1': 'Tree Shrew (Tupaia belangeri): tupBel1',
                           'venter1': 'Human (J. Craig Venter): venter1',
-                          'xenTro2': 'Frog (Xenopus tropicalis): xenTro2' }
+                          'xenTro2': 'Frog (Xenopus tropicalis): xenTro2'}
 
-VARIANT_MAP = { 'canon': 'Canonical',
+VARIANT_MAP = {'canon': 'Canonical',
                'full': 'Full',
                'female': 'Female',
-               'male': 'Male' }
+               'male': 'Male'}
 
 
 # alphabetize ignoring case
-def caseless_compare( a, b ):
+def caseless_compare(a, b):
     au = a.upper()
     bu = b.upper()
     if au > bu:
@@ -162,31 +162,31 @@ def caseless_compare( a, b ):
 def __main__():
     # command line variables
     parser = optparse.OptionParser()
-    parser.add_option( '-d', '--data-table-xml', dest='data_table_xml', type='string', default=DEFAULT_TOOL_DATA_TABLE_CONF, help='The name of the data table configuration file to get format of loc file' )
-    parser.add_option( '-t', '--data-table', dest='data_table_name', type='string', default=DEFAULT_ALL_FASTA_LOC_BASE, help='The name of the data table listed in the data table XML file' )
-    parser.add_option( '-g', '--genome_dir', dest='genome_dir', type='string', default=DEFAULT_BASE_GENOME_DIR, help='Genome directory to look in' )
-    parser.add_option( '-e', '--exemptions', dest='exemptions', type='string', default=EXEMPTIONS, help='Comma-separated list of subdirectories in genome dir to not look in' )
-    parser.add_option( '-i', '--inspect-dir', dest='inspect_dir', type='string', default=INSPECT_DIR, help='Comma-separated list of subdirectories inside genome dirs to look in (default is all)' )
-    parser.add_option( '-x', '--fasta_exts', dest='fasta_exts', type='string', default=FASTA_EXTS, help='Comma-separated list of all fasta extensions to list' )
-    parser.add_option( '-s', '--loc-sample', dest='loc_sample_name', type='string', help='The name of the sample loc file (to copy text into top of output loc file)' )
-    parser.add_option( '-f', '--unmatching-fasta', dest='unmatching_fasta', type='string', default=None, help='Name of file to output non-matching fasta files to' )
-    parser.add_option( '-v', '--variants', dest='variants', type='string', default=VARIANTS, help='Comma-separated list of recognized variants of fasta file names' )
-    parser.add_option( '-n', '--variant-exclusions', dest='variant_exclusions', type='string', default=VARIANT_EXCLUSIONS, help="List of files to exclude because they're duplicated by a variants; of the format: '<variant_to_keep_1>:<variant_to_remove_1>[,<variant_to_remove_2>[,...]][;<variant_to_keep_2>:<variant_to_remove_1>[,<variant_to_remove_2>[,...]]]'; default ':(full)' (if non-variant version present (like 'hg19'), full version (like 'hg19full') will be thrown out)" )
-    parser.add_option( '-a', '--append', dest='append', action='store_true', default=False, help='Append to existing all_fasta.loc file rather than create new' )
-    parser.add_option( '-p', '--sample-text', dest='sample_text', action='store_true', default='True', help='Copy over text from all_fasta.loc.sample file (false if set to append)' )
+    parser.add_option('-d', '--data-table-xml', dest='data_table_xml', type='string', default=DEFAULT_TOOL_DATA_TABLE_CONF, help='The name of the data table configuration file to get format of loc file')
+    parser.add_option('-t', '--data-table', dest='data_table_name', type='string', default=DEFAULT_ALL_FASTA_LOC_BASE, help='The name of the data table listed in the data table XML file')
+    parser.add_option('-g', '--genome_dir', dest='genome_dir', type='string', default=DEFAULT_BASE_GENOME_DIR, help='Genome directory to look in')
+    parser.add_option('-e', '--exemptions', dest='exemptions', type='string', default=EXEMPTIONS, help='Comma-separated list of subdirectories in genome dir to not look in')
+    parser.add_option('-i', '--inspect-dir', dest='inspect_dir', type='string', default=INSPECT_DIR, help='Comma-separated list of subdirectories inside genome dirs to look in (default is all)')
+    parser.add_option('-x', '--fasta_exts', dest='fasta_exts', type='string', default=FASTA_EXTS, help='Comma-separated list of all fasta extensions to list')
+    parser.add_option('-s', '--loc-sample', dest='loc_sample_name', type='string', help='The name of the sample loc file (to copy text into top of output loc file)')
+    parser.add_option('-f', '--unmatching-fasta', dest='unmatching_fasta', type='string', default=None, help='Name of file to output non-matching fasta files to')
+    parser.add_option('-v', '--variants', dest='variants', type='string', default=VARIANTS, help='Comma-separated list of recognized variants of fasta file names')
+    parser.add_option('-n', '--variant-exclusions', dest='variant_exclusions', type='string', default=VARIANT_EXCLUSIONS, help="List of files to exclude because they're duplicated by a variants; of the format: '<variant_to_keep_1>:<variant_to_remove_1>[,<variant_to_remove_2>[,...]][;<variant_to_keep_2>:<variant_to_remove_1>[,<variant_to_remove_2>[,...]]]'; default ':(full)' (if non-variant version present (like 'hg19'), full version (like 'hg19full') will be thrown out)")
+    parser.add_option('-a', '--append', dest='append', action='store_true', default=False, help='Append to existing all_fasta.loc file rather than create new')
+    parser.add_option('-p', '--sample-text', dest='sample_text', action='store_true', default='True', help='Copy over text from all_fasta.loc.sample file (false if set to append)')
     (options, args) = parser.parse_args()
 
-    exemptions = [ e.strip() for e in options.exemptions.split( ',' ) ]
-    fasta_exts = [ x.strip() for x in options.fasta_exts.split( ',' ) ]
-    variants = [ v.strip() for v in options.variants.split( ',' ) ]
+    exemptions = [e.strip() for e in options.exemptions.split(',')]
+    fasta_exts = [x.strip() for x in options.fasta_exts.split(',')]
+    variants = [v.strip() for v in options.variants.split(',')]
     variant_exclusions = {}
     try:
-        for ve in options.variant_exclusions.split( ';' ):
-            v, e = ve.split( ':' )
-            variant_exclusions[ v ] = e.split( ',' )
+        for ve in options.variant_exclusions.split(';'):
+            v, e = ve.split(':')
+            variant_exclusions[v] = e.split(',')
     except:
-        sys.stderr.write( 'Problem parsing the variant exclusion parameter (-n/--variant-exclusion). Make sure it follows the expected format\n' )
-        sys.exit( 1 )
+        sys.stderr.write('Problem parsing the variant exclusion parameter (-n/--variant-exclusion). Make sure it follows the expected format\n')
+        sys.exit(1)
     if options.append:
         sample_text = False
     else:
@@ -194,107 +194,107 @@ def __main__():
 
     # all paths to look in
     if options.inspect_dir:
-        paths_to_look_in = [ os.path.join( options.genome_dir, '%s', id ) for id in options.inspect_dir.split( ',' ) ]
+        paths_to_look_in = [os.path.join(options.genome_dir, '%s', id) for id in options.inspect_dir.split(',')]
     else:
-        paths_to_look_in = [os.path.join( options.genome_dir, '%s' )]
+        paths_to_look_in = [os.path.join(options.genome_dir, '%s')]
 
     # say what we're looking in
-    print '\nLooking in:\n\t%s' % '\n\t'.join( [ p % '<build_name>' for p in paths_to_look_in ] )
-    poss_names = [ '<build_name>%s' % _ for _ in variants ]
-    print 'for files that are named %s' % ', '.join( poss_names[:-1] ),
-    if len( poss_names ) > 1:
+    print '\nLooking in:\n\t%s' % '\n\t'.join([p % '<build_name>' for p in paths_to_look_in])
+    poss_names = ['<build_name>%s' % _ for _ in variants]
+    print 'for files that are named %s' % ', '.join(poss_names[:-1]),
+    if len(poss_names) > 1:
         print 'or %s' % poss_names[-1],
-    if len( options.fasta_exts ) == 1:
-        print 'with the extension %s.' % ', '.join( fasta_exts[:-1] )
+    if len(options.fasta_exts) == 1:
+        print 'with the extension %s.' % ', '.join(fasta_exts[:-1])
     else:
-        print 'with the extension %s or %s.' % ( ', '.join( fasta_exts[:-1] ), fasta_exts[-1] )
-    print '\nSkipping the following:\n\t%s' % '\n\t'.join( exemptions )
+        print 'with the extension %s or %s.' % (', '.join(fasta_exts[:-1]), fasta_exts[-1])
+    print '\nSkipping the following:\n\t%s' % '\n\t'.join(exemptions)
 
     # get column names
     col_values = []
     loc_path = None
-    tree = parse( options.data_table_xml )
+    tree = parse(options.data_table_xml)
     tables = tree.getroot()
     for table in tables.getiterator():
-        name = table.attrib.get( 'name' )
+        name = table.attrib.get('name')
         if name == options.data_table_name:
             cols = None
             for node in table.getiterator():
                 if node.tag == 'columns':
                     cols = node.text
                 elif node.tag == 'file':
-                    loc_path = node.attrib.get( 'path' )
+                    loc_path = node.attrib.get('path')
             if cols:
-                col_values = [ col.strip() for col in cols.split( ',' ) ]
+                col_values = [col.strip() for col in cols.split(',')]
     if not col_values or not loc_path:
-        raise Exception( 'No columns can be found for this data table (%s) in %s' % ( options.data_table, options.data_table_xml ) )
+        raise Exception('No columns can be found for this data table (%s) in %s' % (options.data_table, options.data_table_xml))
 
     # get all fasta paths under genome directory
     fasta_locs = {}
     unmatching_fasta_paths = []
-    genome_subdirs = [ dr for dr in os.listdir( options.genome_dir ) if dr not in exemptions ]
+    genome_subdirs = [dr for dr in os.listdir(options.genome_dir) if dr not in exemptions]
     for genome_subdir in genome_subdirs:
-        possible_names = [ genome_subdir ]
-        possible_names.extend( [ '%s%s' % ( genome_subdir, _ ) for _ in variants ] )
+        possible_names = [genome_subdir]
+        possible_names.extend(['%s%s' % (genome_subdir, _) for _ in variants])
         # get paths to all fasta files
         for path_to_look_in in paths_to_look_in:
-            for dirpath, dirnames, filenames in os.walk( path_to_look_in % genome_subdir ):
+            for dirpath, dirnames, filenames in os.walk(path_to_look_in % genome_subdir):
                 for fn in filenames:
-                    ext = os.path.splitext( fn )[-1]
-                    fasta_base = os.path.splitext( fn )[0]
+                    ext = os.path.splitext(fn)[-1]
+                    fasta_base = os.path.splitext(fn)[0]
                     if ext in fasta_exts:
                         if fasta_base in possible_names:
                             if fasta_base == genome_subdir:
-                                name = DBKEY_DESCRIPTION_MAP[ genome_subdir ]
+                                name = DBKEY_DESCRIPTION_MAP[genome_subdir]
                             else:
                                 try:
-                                    name = '%s %s' % ( DBKEY_DESCRIPTION_MAP[ genome_subdir ], VARIANT_MAP[ fasta_base.replace( genome_subdir, '' ) ] )
+                                    name = '%s %s' % (DBKEY_DESCRIPTION_MAP[genome_subdir], VARIANT_MAP[fasta_base.replace(genome_subdir, '')])
                                 except KeyError:
-                                    name = '%s %s' % ( DBKEY_DESCRIPTION_MAP[ genome_subdir ], fasta_base.replace( genome_subdir, '' ) )
-                            fasta_locs[ fasta_base ] = { 'value': fasta_base, 'dbkey': genome_subdir, 'name': name, 'path': os.path.join( dirpath, fn ) }
+                                    name = '%s %s' % (DBKEY_DESCRIPTION_MAP[genome_subdir], fasta_base.replace(genome_subdir, ''))
+                            fasta_locs[fasta_base] = {'value': fasta_base, 'dbkey': genome_subdir, 'name': name, 'path': os.path.join(dirpath, fn)}
                         else:
-                            unmatching_fasta_paths.append( os.path.join( dirpath, fn ) )
+                            unmatching_fasta_paths.append(os.path.join(dirpath, fn))
         # remove redundant fasta files
         if variant_exclusions.keys():
             for k in variant_exclusions.keys():
-                leave_in = '%s%s' % ( genome_subdir, k )
+                leave_in = '%s%s' % (genome_subdir, k)
                 if leave_in in fasta_locs:
-                    to_remove = [ '%s%s' % ( genome_subdir, k ) for k in variant_exclusions[ k ] ]
+                    to_remove = ['%s%s' % (genome_subdir, k) for k in variant_exclusions[k]]
                     for tr in to_remove:
                         if tr in fasta_locs:
-                            del fasta_locs[ tr ]
+                            del fasta_locs[tr]
 
     # output results
-    print '\nThere were %s fasta files found that were not included because they did not have the expected file names.' % len( unmatching_fasta_paths )
-    print '%s fasta files were found and listed.\n' % len( fasta_locs.keys() )
+    print '\nThere were %s fasta files found that were not included because they did not have the expected file names.' % len(unmatching_fasta_paths)
+    print '%s fasta files were found and listed.\n' % len(fasta_locs.keys())
 
     # output unmatching fasta files
     if options.unmatching_fasta and unmatching_fasta_paths:
-        open( options.unmatching_fasta, 'wb' ).write( '%s\n' % '\n'.join( unmatching_fasta_paths ) )
+        open(options.unmatching_fasta, 'wb').write('%s\n' % '\n'.join(unmatching_fasta_paths))
 
     # output loc file
     if options.append:
-        all_fasta_loc = open( loc_path, 'ab' )
+        all_fasta_loc = open(loc_path, 'ab')
     else:
-        all_fasta_loc = open( loc_path, 'wb' )
+        all_fasta_loc = open(loc_path, 'wb')
     # put sample loc file text at top of file if appropriate
     if sample_text:
         if options.loc_sample_name:
-            all_fasta_loc.write( '%s\n' % open( options.loc_sample_name, 'rb' ).read().strip() )
+            all_fasta_loc.write('%s\n' % open(options.loc_sample_name, 'rb').read().strip())
         else:
-            all_fasta_loc.write( '%s\n' % open( '%s.sample' % loc_path, 'rb' ).read().strip() )
+            all_fasta_loc.write('%s\n' % open('%s.sample' % loc_path, 'rb').read().strip())
     # output list of fasta files in alphabetical order
     fasta_bases = fasta_locs.keys()
-    fasta_bases.sort( caseless_compare )
+    fasta_bases.sort(caseless_compare)
     for fb in fasta_bases:
         out_line = []
         for col in col_values:
             try:
-                out_line.append( fasta_locs[ fb ][ col ] )
+                out_line.append(fasta_locs[fb][col])
             except KeyError:
-                raise Exception( 'Unexpected column (%s) encountered' % col )
+                raise Exception('Unexpected column (%s) encountered' % col)
         if out_line:
-            all_fasta_loc.write( '%s\n' % '\t'.join( out_line ) )
+            all_fasta_loc.write('%s\n' % '\t'.join(out_line))
     # close up output loc file
     all_fasta_loc.close()
 

@@ -11,49 +11,49 @@ import six
 
 
 @six.add_metaclass(ABCMeta)
-class CollectlSubsystem( object ):
+class CollectlSubsystem(object):
     """ Class providing an abstraction of collectl subsytems.
     """
 
     @property
     @abstractmethod
-    def command_line_arg( self ):
+    def command_line_arg(self):
         """ Return single letter command-line argument used by collectl CLI.
         """
 
     @property
     @abstractmethod
-    def name( self, job_directory ):
+    def name(self, job_directory):
         """ High-level name for subsystem as consumed by this module.
         """
 
 
-class ProcessesSubsystem( CollectlSubsystem ):
+class ProcessesSubsystem(CollectlSubsystem):
     command_line_arg = "Z"
     name = "process"
 
 
-class CpuSubsystem( CollectlSubsystem ):
+class CpuSubsystem(CollectlSubsystem):
     command_line_arg = "C"
     name = "cpu"
 
 
-class DiskSubsystem( CollectlSubsystem ):
+class DiskSubsystem(CollectlSubsystem):
     command_line_arg = "D"
     name = "disk"
 
 
-class NetworkSubsystem( CollectlSubsystem ):
+class NetworkSubsystem(CollectlSubsystem):
     command_line_arg = "N"
     name = "network"
 
 
-class EnvironmentSubsystem( CollectlSubsystem ):
+class EnvironmentSubsystem(CollectlSubsystem):
     command_line_arg = "E"
     name = "environment"
 
 
-class MemorySubsystem( CollectlSubsystem ):
+class MemorySubsystem(CollectlSubsystem):
     command_line_arg = "M"
     name = "memory"
 
@@ -66,16 +66,16 @@ SUBSYSTEMS = [
     EnvironmentSubsystem(),
     MemorySubsystem(),
 ]
-SUBSYSTEM_DICT = dict( [ (s.name, s) for s in SUBSYSTEMS ] )
+SUBSYSTEM_DICT = dict([(s.name, s) for s in SUBSYSTEMS])
 
 
-def get_subsystem( name ):
+def get_subsystem(name):
     """
 
     >>> get_subsystem( "process" ).command_line_arg == "Z"
     True
     """
-    return SUBSYSTEM_DICT[ name ]
+    return SUBSYSTEM_DICT[name]
 
 
-__all__ = ( 'get_subsystem', )
+__all__ = ('get_subsystem', )

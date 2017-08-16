@@ -43,7 +43,7 @@ class Node(object):
         """Needs a special method to addChildren, such that the key does not appear in the Jsondict when the children is empty
         this requirement is due to the layout algorithm used by d3 layout for hiding subtree """
         if len(self.children) > 0:
-            children = [ node.toJson() for node in self.children]
+            children = [node.toJson() for node in self.children]
             jsonDict["children"] = children
         return jsonDict
 
