@@ -110,7 +110,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
             var self = this;
             var extensions = [];
             var input_terminal_names = [];
-            for ( key in datatypes  ) {
+            for (var key in datatypes  ) {
                 extensions.push( { 0 : datatypes[ key ], 1 : datatypes[ key ] } );
             }
             for ( key in this.node.input_terminals ){
@@ -131,6 +131,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                 0 : 'Leave unchanged',
                 1 : '__empty__'
             });
+            var output;
             var input_config = {
                 title   : 'Configure Output: \'' + output_id + '\'',
                 type    : 'section',

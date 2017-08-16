@@ -112,7 +112,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var wp_count = 0;
             this.wp_inputs = {};
             function _handleWorkflowParameter( value, callback ) {
-                var re = /\$\{(.+?)\}/g;
+                var re = /\$\{(.+?)\}/g, match;
                 while ( match = re.exec( String( value ) ) ) {
                     var wp_name = match[ 1 ];
                     callback( self.wp_inputs[ wp_name ] = self.wp_inputs[ wp_name ] || {
@@ -336,7 +336,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                 new_value = { values: [] };
                                 _.each( input.step_linked, function( source_step ) {
                                     if ( self._isDataStep( source_step ) ) {
-                                        value = self.forms[ source_step.index ].data.create().input;
+                                        var value = self.forms[ source_step.index ].data.create().input;
                                         value && _.each( value.values, function( v ) { new_value.values.push( v ) } );
                                     }
                                 });
@@ -345,7 +345,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                 }
                             } else if ( input.wp_linked ) {
                                 new_value = input.value;
-                                var re = /\$\{(.+?)\}/g;
+                                var re = /\$\{(.+?)\}/g, match;
                                 while ( match = re.exec( input.value ) ) {
                                     var wp_field = self.wp_form.field_list[ self.wp_form.data.match( match[ 1 ] ) ];
                                     var wp_value = wp_field && wp_field.value();
@@ -514,7 +514,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Is data input module/step */
         _isDataStep: function( steps ) {
-            lst = $.isArray( steps ) ? steps : [ steps ] ;
+            var lst = $.isArray( steps ) ? steps : [ steps ] ;
             for ( var i = 0; i < lst.length; i++ ) {
                 var step = lst[ i ];
                 if ( !step || !step.step_type || !step.step_type.startsWith( 'data' ) ) {

@@ -17,7 +17,7 @@ DEFAULT_EXTRA_NAME = "test1"
 class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools ):
 
     def setUp( self ):
-        self.setup_app( mock_model=False )
+        self.setup_app( )
         object_store = MockObjectStore()
         self.app.object_store = object_store
         self._init_tool( tools_support.SIMPLE_TOOL_CONTENTS )

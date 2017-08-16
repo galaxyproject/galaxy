@@ -32,7 +32,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                         var base_url = Galaxy.root + 'api/tool_shed/search';
                         var params = {term: request.term, tool_shed_url: shed_url};
                         $.post(base_url, params, function(data) {
-                            result_list = toolshed_util.shedParser(data);
+                            var result_list = toolshed_util.shedParser(data);
                             response(result_list);
                         });
                     },

@@ -315,7 +315,7 @@ var View = Backbone.View.extend({
         }
         if ( this.model.get( 'searchable' ) ) {
             if ( $.isArray( new_value ) ) {
-                val = [];
+                var val = [];
                 _.each( new_value, function( v ) {
                     var d = _.findWhere( self.data2, { id: v } );
                     d && val.push( d );

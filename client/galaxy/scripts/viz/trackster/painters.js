@@ -516,7 +516,7 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             thickness, y_start, thick_start = null, thick_end = null,
             // TODO: is there any reason why block, label color cannot be set at the Painter level?
             // For now, assume '.' === '+'
-            block_color = (!feature_strand || feature_strand === "+" || feature_strand === "." ? this.prefs.block_color : this.prefs.reverse_strand_color);
+            block_color = (!feature_strand || feature_strand === "+" || feature_strand === "." ? this.prefs.block_color : this.prefs.reverse_strand_color),
             label_color = this.prefs.label_color;
 
         // Set global alpha.
@@ -1223,7 +1223,7 @@ Color.prototype = {
     },
 
     mix: function (color2, weight) {
-        color1 = this;
+        var color1 = this;
 
         var p = weight; // .value / 100.0;
         var w = p * 2 - 1;
@@ -1543,8 +1543,8 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
                     // Draw allele fractions onto summary.
                     for (j = 0; j < alt.length; j++) {
                         ctx.fillStyle = ( alt[j].type === 'deletion' ? 'black' : this.base_color_fn(alt[j].value) );
-                        allele_frac = allele_counts / sample_gts.length;
-                        draw_height = Math.ceil(this.prefs.summary_height * allele_frac);
+                        var allele_frac = allele_counts / sample_gts.length;
+                        var draw_height = Math.ceil(this.prefs.summary_height * allele_frac);
                         ctx.fillRect(draw_x_start, draw_y_start - draw_height, base_px, draw_height);
                         draw_y_start -= draw_height;
                     }
