@@ -7,7 +7,7 @@ define( [ 'utils/utils' ], function( Utils ) {
             status = Utils.getQueryString( 'status' ),
             message = Utils.getQueryString( 'message' );
 
-        if( message && message !== null && message !== "" ) {
+        if( message && message !== "" ) {
             $el_message.addClass( status + 'message' );
             $el_message.html( '<p>' + _.escape( message ) + '</p>' );
         }

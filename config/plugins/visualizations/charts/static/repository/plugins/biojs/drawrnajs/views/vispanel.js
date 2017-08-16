@@ -89,7 +89,7 @@ var Vispanel = Backbone.View.extend({
     setResidueNodes: function(cy){
         //index nodes
         for(var i=1; i<this.struct.get("seq").length/5; i++){
-            pos = this.getPos(this.struct, (i*5)-1);
+            var pos = this.getPos(this.struct, (i*5)-1);
             this.cy.add({
                 group: "nodes",
                 data: {

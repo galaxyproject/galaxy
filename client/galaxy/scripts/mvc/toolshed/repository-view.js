@@ -19,7 +19,7 @@ define(['mvc/toolshed/toolshed-model',
             this.options = _.defaults(this.options || {}, this.defaults);
             this.model = new toolshed_model.RepositoryCollection();
             this.listenTo(this.model, 'sync', this.render);
-            shed = params.tool_shed.replace(/\//g, '%2f');
+            var shed = params.tool_shed.replace(/\//g, '%2f');
             this.model.url += '?tool_shed_url=' + shed + '&repository_id=' + params.repository_id;
             this.model.tool_shed_url = params.tool_shed.replace(/%2f/g, '/');
             this.model.tool_shed = shed;
@@ -81,7 +81,7 @@ define(['mvc/toolshed/toolshed-model',
                 params.tool_panel_section = JSON.stringify(that.panelSelect(params));
                 params.shed_tool_conf = $("select[name='shed_tool_conf']").find('option:selected').val()
                 params.changeset = $('#changeset').find("option:selected").val();
-                url = $('#repository_installation').attr('action');
+                var url = $('#repository_installation').attr('action');
                 that.prepareInstall(params, url);
             });
             $('#queue_install').on('click', function(ev) {
@@ -107,8 +107,8 @@ define(['mvc/toolshed/toolshed-model',
                 that.checkInstalled(repository_metadata);
             });
             $('.tool_panel_section_picker').on('change', function() {
-                new_value = $(this).find('option:selected').val();
-                default_tps = $('#tool_panel_section_select').find('option:selected').val();
+                var new_value = $(this).find('option:selected').val();
+                var default_tps = $('#tool_panel_section_select').find('option:selected').val();
                 if (new_value == default_tps) {
                     $(this).attr('default', 'active');
                 }
@@ -191,8 +191,8 @@ define(['mvc/toolshed/toolshed-model',
                 params.new_tool_panel_section = $("#new_tool_panel_section").val();
             }
             $('.tool_panel_section_picker').each(function() {
-                element_name = $(this).attr('name');
-                tool_guid = $(this).attr('data-toolguid');
+                var element_name = $(this).attr('name');
+                var tool_guid = $(this).attr('data-toolguid');
                 if (element_name === 'tool_panel_section_id') {
                     tool_panel_section[tool_guid] = { tool_panel_section: $(this).find("option:selected").val(), action: 'append' }
                 }
@@ -244,13 +244,13 @@ define(['mvc/toolshed/toolshed-model',
         prepareInstall: function(params, api_url) {
             var that = this;
             $.post(api_url, params, function(data) {
-                iri_parameters = JSON.parse(data);
+                var iri_parameters = JSON.parse(data);
                 that.doInstall(iri_parameters);
             });
         },
 
         doInstall: function(params) {
-            controller_url = Galaxy.root + 'admin_toolshed/manage_repositories';
+            var controller_url = Galaxy.root + 'admin_toolshed/manage_repositories';
             var repositories = params.repositories;
             var new_route = 'status/r/' + repositories.join('|');
             $.post(controller_url, params, function(data) {

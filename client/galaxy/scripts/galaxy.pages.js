@@ -99,7 +99,7 @@ function get_item_info( dialog_type )
 // Make an item importable.
 function make_item_importable( item_controller, item_id, item_type )
 {
-    ajax_url = set_accessible_url.replace( "ITEM_CONTROLLER", item_controller );
+    var ajax_url = set_accessible_url.replace( "ITEM_CONTROLLER", item_controller );
     $.ajax({
       type: "POST",
       url: ajax_url,
@@ -273,9 +273,9 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                               newCaption.innerHTML = sCaption;
 
                               //we create the rows and cells
-                              for(x=0; x<iRows; x++) {
+                              for(var x=0; x<iRows; x++) {
                                       newRow = table.insertRow(x);
-                                      for(y=0; y<iCols; y++) {newRow.insertCell(y);}
+                                      for(var y=0; y<iCols; y++) {newRow.insertCell(y);}
                               }
 
                       //set the summary attr
@@ -347,8 +347,8 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                                 make_item_importable(item_info.controller, item_id, item_info.singular);
 
                             // Insert link(s) to item(s). This is done by getting item info and then manipulating wym.
-                            url_template = get_name_and_link_url + item_id;
-                            ajax_url = url_template.replace( "ITEM_CONTROLLER", item_info.controller);
+                            var url_template = get_name_and_link_url + item_id;
+                            var ajax_url = url_template.replace( "ITEM_CONTROLLER", item_info.controller);
                             $.getJSON( ajax_url, function( returned_item_info ) {
                                 // Get link text.
                                 wym._exec(WYMeditor.CREATE_LINK, sStamp);

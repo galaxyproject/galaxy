@@ -726,7 +726,7 @@ var HeaderButtons = Backbone.View.extend({
     initRightHeaderBtns : function(){
         var self = this;
 
-        rightMenu = mod_icon_btn.create_icon_buttons_menu([
+        var rightMenu = mod_icon_btn.create_icon_buttons_menu([
             { icon_class: 'gear', title: 'PhyloViz Settings', on_click: function(){
                 $("#SettingsMenu").show();
                 self.settingsMenu.updateUI();

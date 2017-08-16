@@ -112,7 +112,7 @@ var FolderListView = Backbone.View.extend({
 
         // when dataset_id is present render its details too
         if ( this.options.dataset_id ){
-            row = _.findWhere( that.rowViews, { id: this.options.dataset_id } );
+            var row = _.findWhere( that.rowViews, { id: this.options.dataset_id } );
             if ( row ) {
               row.showDatasetDetails();
             } else {
@@ -277,7 +277,7 @@ var FolderListView = Backbone.View.extend({
          // Iterate each checkbox
          $(':checkbox', '#folder_list_body').each(function() {
             this.checked = selected;
-            $row = $(this.parentElement.parentElement);
+            var $row = $(this.parentElement.parentElement);
             // Change color of selected/unselected
             if (selected) {
               that.makeDarkRow($row);
