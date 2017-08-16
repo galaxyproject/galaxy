@@ -30,7 +30,7 @@
     "grunt-exec": "^0.4.6",
     "grunt-spritesmith": "^4.7.1",
     "gulp": "^3.9.1",
-    "gulp-babel": "^6.1.2",
+    "gulp-babel": "^7.0.0",
     "gulp-cached": "^1.1.1",
     "gulp-sourcemaps": "^2.5.1",
     "gulp-uglify": "^2.1.2",
