@@ -1638,10 +1638,10 @@ class Tool(object, Dictifiable):
         """
         return output_collect.collect_primary_datasets(self, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey=input_dbkey)
 
-    def collect_dynamic_collections(self, output, **kwds):
+    def collect_dynamic_collections(self, output, tool_provided_metadata, **kwds):
         """ Find files corresponding to dynamically structured collections.
         """
-        return output_collect.collect_dynamic_collections(self, output, **kwds)
+        return output_collect.collect_dynamic_collections(self, output, tool_provided_metadata, **kwds)
 
     def to_archive(self):
         tool = self

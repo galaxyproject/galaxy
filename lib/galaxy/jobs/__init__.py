@@ -1391,6 +1391,7 @@ class JobWrapper(object, HasResourceParameters):
         }
         self.tool.collect_dynamic_collections(
             out_collections,
+            self.get_tool_provided_job_metadata(),
             job_working_directory=tool_working_directory,
             inp_data=inp_data,
             job=job,
