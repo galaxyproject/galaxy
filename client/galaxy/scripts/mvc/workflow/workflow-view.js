@@ -664,19 +664,14 @@ define([
             }
             if ( content && $container.find( '#' + id ).length == 0 ) {
                 var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );
-                var form_wrapper = null;
                 content.node = node;
                 content.workflow = this.workflow;
                 content.datatypes = this.datatypes;
                 content.icon = WorkflowIcons[ node.type ];
                 content.cls = 'ui-portlet-narrow';
                 if ( node ) {
-                    if ( node.type == 'tool' ) {
-                        form_wrapper = new FormWrappers.Tool( content );
-                    } else {
-                        form_wrapper = new FormWrappers.Default( content );
-                    }
-                    $el.append( form_wrapper.form.$el );
+                    var form_wrapper = new FormWrappers[ node.type == 'tool' ? 'Tool' : 'Default' ];
+                    $el.append( form_wrapper( content ).$el );
                     $container.append( $el );
                 } else {
                     Galaxy.emit.debug('workflow-view::initialize()', 'Node not found in workflow.');
