@@ -670,13 +670,17 @@ define([
                 content.datatypes = this.datatypes;
                 content.icon = WorkflowIcons[ node.type ];
                 content.cls = 'ui-portlet-narrow';
-                if ( node.type == 'tool' ) {
-                    form_wrapper = new FormWrappers.Tool( content );
+                if ( node ) {
+                    if ( node.type == 'tool' ) {
+                        form_wrapper = new FormWrappers.Tool( content );
+                    } else {
+                        form_wrapper = new FormWrappers.Default( content );
+                    }
+                    $el.append( form_wrapper.form.$el );
+                    $container.append( $el );
                 } else {
-                    form_wrapper = new FormWrappers.Default( content );
+                    Galaxy.emit.debug('workflow-view::initialize()', 'Node not found in workflow.');
                 }
-                $el.append( form_wrapper.form.$el );
-                $container.append( $el );
             }
             $( '.' + cls ).hide();
             $container.find( '#' + id ).show();
