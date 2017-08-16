@@ -10,7 +10,7 @@ from galaxy.util import bunch
 class BaseParameterTestCase( TestCase, tools_support.UsesApp ):
 
     def setUp(self):
-        self.setup_app( mock_model=False )
+        self.setup_app( )
         self.mock_tool = bunch.Bunch(
             app=self.app,
             tool_type="default",

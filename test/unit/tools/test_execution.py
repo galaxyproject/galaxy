@@ -134,8 +134,9 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         hda.dataset = galaxy.model.Dataset()
         hda.dataset.state = 'ok'
 
-        self.trans.sa_session.model_objects[ galaxy.model.HistoryDatasetAssociation ][ id ] = hda
+        self.trans.sa_session.add( hda )
         self.history.datasets.append( hda )
+        self.trans.sa_session.flush()
         return hda
 
     def __add_collection_dataset( self, id, collection_type="paired", *hdas ):
@@ -199,7 +200,7 @@ class MockTrans( object ):
         self.app = app
         self.history = history
         self.user = None
-        self.history._active_datasets_and_roles = [hda for hda in self.app.model.context.model_objects[ galaxy.model.HistoryDatasetAssociation ] if hda.active and hda.history == history]
+        self.history._active_datasets_and_roles = [hda for hda in self.app.model.context.query( galaxy.model.HistoryDatasetAssociation ).all() if hda.active and hda.history == history]
         self.workflow_building_mode = False
         self.webapp = Bunch( name="galaxy" )
         self.sa_session = self.app.model.context
