@@ -286,7 +286,7 @@ class GroupListGrid( grids.Grid ):
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
+                                                cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -371,8 +371,7 @@ class QuotaListGrid( grids.Grid ):
         AmountColumn( "Amount",
                       key='amount',
                       model_class=model.Quota,
-                      attach_popup=False,
-                      filterable="advanced" ),
+                      attach_popup=False ),
         UsersColumn( "Users", attach_popup=False ),
         GroupsColumn( "Groups", attach_popup=False ),
         StatusColumn( "Status", attach_popup=False ),
@@ -380,7 +379,7 @@ class QuotaListGrid( grids.Grid ):
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
+                                                cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
