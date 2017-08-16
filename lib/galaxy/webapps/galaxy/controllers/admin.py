@@ -19,7 +19,6 @@ from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base import controller
 from galaxy.web.base.controller import UsesQuotaMixin
-from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
 from galaxy.tools import global_tool_errors
@@ -277,7 +276,7 @@ class GroupListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Manage users and roles", id=item.id, webapp="galaxy" ) ),
+                    link=( lambda item: dict( action="forms/manage_users_and_roles_for_group", id=item.id, webapp="galaxy" ) ),
                     model_class=model.Group,
                     attach_popup=True,
                     filterable="advanced" ),
@@ -293,24 +292,21 @@ class GroupListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Add new group", dict( controller='admin', action='groups', operation='create', webapp="galaxy" ) )
+        grids.GridAction( "Add new group", url_args=dict( action="forms/create_group" ) )
     ]
     operations = [ grids.GridOperation( "Rename",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="rename_group" ) ),
+                                        url_args=dict( action="forms/rename_group" ) ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="mark_group_deleted" ) ),
+                                        allow_multiple=True ),
                    grids.GridOperation( "Undelete",
                                         condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="undelete_group" ) ),
+                                        allow_multiple=True ),
                    grids.GridOperation( "Purge",
                                         condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="purge_group" ) ) ]
+                                        allow_multiple=True ) ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -529,13 +525,13 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             ids = util.listify( id )
             operation = kwd['operation'].lower()
             if operation == 'delete':
-                message, status = self.mark_user_deleted( trans, ids )
+                message, status = self._delete_user( trans, ids )
             elif operation == 'undelete':
-                message, status = self.undelete_user( trans, ids )
+                message, status = self._undelete_user( trans, ids )
             elif operation == 'purge':
-                message, status = self.purge_user( trans, ids )
+                message, status = self._purge_user( trans, ids )
             elif operation == 'recalculate disk usage':
-                message, status = self.recalculate_user_disk_usage( trans, id )
+                message, status = self._recalculate_user( trans, id )
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append( self.delete_operation )
@@ -990,11 +986,11 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             ids = util.listify( id )
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == 'delete':
-                message, status = self.mark_role_deleted( trans, ids )
+                message, status = self._delete_role( trans, ids )
             elif operation == 'undelete':
-                message, status = self.undelete_role( trans, ids )
+                message, status = self._undelete_role( trans, ids )
             elif operation == 'purge':
-                message, status = self.purge_role( trans, ids )
+                message, status = self._purge_role( trans, ids )
         kwargs[ 'dict_format' ] = True
         if message and status:
             kwargs[ 'message' ] = util.sanitize_text( message )
@@ -1033,7 +1029,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         else:
             name = util.restore_text( payload.get( 'name', '' ) )
             description = util.restore_text( payload.get( 'description', '' ) )
-            create_group_for_role_checked = payload.get( 'create_group_for_role' ) == 'true'
+            auto_create_checked = payload.get( 'auto_create' ) == 'true'
             in_users = util.listify( payload.get( 'users', [] ) )
             in_groups = util.listify( payload.get( 'groups', [] ) )
             if not name or not description:
@@ -1052,7 +1048,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 for group in [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in in_groups ]:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
-                if create_group_for_role_checked:
+                if auto_create_checked:
                     # Create the group
                     group = trans.app.model.Group( name=name )
                     trans.sa_session.add( group )
@@ -1064,7 +1060,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                     num_in_groups = len( in_groups )
                 trans.sa_session.flush()
                 message = 'Role \'%s\' has been created with %d associated users and %d associated groups.' % ( role.name, len( in_users ), num_in_groups )
-                if create_group_for_role_checked:
+                if auto_create_checked:
                     message += 'One of the groups associated with this role is the newly created group with the same name.'
                 return { 'message' : message }
 
@@ -1136,7 +1132,6 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                      'status' : 'info',
                      'inputs' : [ build_select_input( 'groups', 'Groups', all_groups, in_groups ),
                                   build_select_input( 'users', 'Users', all_users, in_users ) ] }
-            return { 'message' : 'Not showing associated datasets, there are too many.', 'info' : 'info' }
         else:
             in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'users' ) ) ]
             for ura in role.users:
@@ -1155,11 +1150,9 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'groups' ) ) ]
             trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( role )
-            return { 'message' : 'Role \'%s\' has been updated with %d associated users and %d associated groups' % ( role.name, len( in_users ), len( in_groups ) ) }
+            return { 'message' : 'Role \'%s\' has been updated with %d associated users and %d associated groups.' % ( role.name, len( in_users ), len( in_groups ) ) }
 
-    @web.expose
-    @web.require_admin
-    def mark_role_deleted( self, trans, ids ):
+    def _delete_role( self, trans, ids ):
         message = 'Deleted %d roles: ' % len( ids )
         for role_id in ids:
             role = get_role( trans, role_id )
@@ -1169,9 +1162,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             message += ' %s ' % role.name
         return ( message, 'done' )
 
-    @web.expose
-    @web.require_admin
-    def undelete_role( self, trans, ids ):
+    def _undelete_role( self, trans, ids ):
         count = 0
         undeleted_roles = ""
         for role_id in ids:
@@ -1185,9 +1176,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             undeleted_roles += " %s" % role.name
         return ( "Undeleted %d roles: %s" % ( count, undeleted_roles ), "done" )
 
-    @web.expose
-    @web.require_admin
-    def purge_role( self, trans, ids ):
+    def _purge_role( self, trans, ids ):
         # This method should only be called for a Role that has previously been deleted.
         # Purging a deleted Role deletes all of the following from the database:
         # - UserRoleAssociations where role_id == Role.id
@@ -1223,266 +1212,193 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             message += " %s " % role.name
         return ( message, "done" )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def groups( self, trans, **kwargs ):
+    def groups_list( self, trans, **kwargs ):
+        message = kwargs.get( 'message' )
+        status = kwargs.get( 'status' )
         if 'operation' in kwargs:
+            id = kwargs.get( 'id' )
+            if not id:
+                return message_exception( 'Invalid group id (%s) received.' % str( id ) )
+            ids = util.listify( id )
             operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
-            if operation == "groups":
-                return self.group( trans, **kwargs )
-            if operation == "create":
-                return self.create_group( trans, **kwargs )
-            if operation == "delete":
-                return self.mark_group_deleted( trans, **kwargs )
-            if operation == "undelete":
-                return self.undelete_group( trans, **kwargs )
-            if operation == "purge":
-                return self.purge_group( trans, **kwargs )
-            if operation == "manage users and roles":
-                return self.manage_users_and_roles_for_group( trans, **kwargs )
-            if operation == "rename":
-                return self.rename_group( trans, **kwargs )
-        # Render the list view
+            if operation == 'delete':
+                message, status = self._delete_group( trans, ids )
+            elif operation == 'undelete':
+                message, status = self._undelete_group( trans, ids )
+            elif operation == 'purge':
+                message, status = self._purge_group( trans, ids )
+        kwargs[ 'dict_format' ] = True
+        if message and status:
+            kwargs[ 'message' ] = util.sanitize_text( message )
+            kwargs[ 'status' ] = status
         return self.group_list_grid( trans, **kwargs )
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def rename_group( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
+    def rename_group( self, trans, payload=None, **kwd ):
+        id = kwd.get( 'id' )
         if not id:
-            message = "No group ids received for renaming"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='groups',
-                                                       message=message,
-                                                       status='error' ) )
+            return message_exception( trans, 'No group id received for renaming.' )
         group = get_group( trans, id )
-        if params.get( 'rename_group_button', False ):
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Change group name for \'%s\'' % util.sanitize_text( group.name ),
+                'inputs' : [{
+                    'name'  : 'name',
+                    'label' : 'Name',
+                    'value' : group.name
+                }]
+            }
+        else:
             old_name = group.name
-            new_name = util.restore_text( params.name )
+            new_name = util.restore_text( payload.get( 'name' ) )
             if not new_name:
-                message = 'Enter a valid name'
-                status = 'error'
+                return message_exception( trans, 'Enter a valid group name.' )
             else:
                 existing_group = trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == new_name ).first()
                 if existing_group and existing_group.id != group.id:
-                    message = 'A group with that name already exists'
-                    status = 'error'
+                    return message_exception( trans, 'A group with that name already exists.' )
                 else:
-                    if group.name != new_name:
+                    if not ( group.name == new_name ):
                         group.name = new_name
                         trans.sa_session.add( group )
                         trans.sa_session.flush()
-                        message = "Group '%s' has been renamed to '%s'" % ( old_name, new_name )
-                    return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                      action='groups',
-                                                                      message=util.sanitize_text( message ),
-                                                                      status='done' ) )
-        return trans.fill_template( '/admin/dataset_security/group/group_rename.mako',
-                                    group=group,
-                                    message=message,
-                                    status=status )
+            return { 'message': 'Group \'%s\' has been renamed to \'%s\'.' % ( old_name, new_name ) }
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def manage_users_and_roles_for_group( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        group = get_group( trans, params.id )
-        if params.get( 'group_roles_users_edit_button', False ):
-            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( params.in_roles ) ]
-            in_users = [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
-            trans.app.security_agent.set_entity_group_associations( groups=[ group ], roles=in_roles, users=in_users )
+    def manage_users_and_roles_for_group( self, trans, payload={}, **kwd ):
+        group_id = kwd.get( 'id' )
+        if not group_id:
+            return message_exception( trans, 'Invalid group id (%s) received' % str( group_id ) )
+        group = get_group( trans, group_id )
+        if trans.request.method == 'GET':
+            in_users = []
+            all_users = []
+            in_roles = []
+            all_roles = []
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                if user in [ x.user for x in group.users ]:
+                    in_users.append( trans.security.encode_id( user.id ) )
+                all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
+            for role in trans.sa_session.query( trans.app.model.Role ) \
+                                        .filter( trans.app.model.Role.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.Role.table.c.name ):
+                if role in [ x.role for x in group.roles ]:
+                    in_roles.append( trans.security.encode_id( role.id ) )
+                all_roles.append( ( role.name, trans.security.encode_id( role.id ) ) )
+            return { 'title'  : 'Group \'%s\'' % group.name,
+                     'message': 'Group \'%s\' is currently associated with %d user(s) and %d role(s).' %
+                                ( group.name, len( in_users ), len( in_roles ) ),
+                     'status' : 'info',
+                     'inputs' : [ build_select_input( 'roles', 'Roles', all_roles, in_roles ),
+                                  build_select_input( 'users', 'Users', all_users, in_users ) ] }
+            return { 'message' : 'Not showing associated datasets, there are too many.', 'info' : 'info' }
+        else:
+            in_users = [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'users' ) ) ]
+            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( payload.get( 'roles' ) ) ]
+            trans.app.security_agent.set_entity_group_associations( groups=[ group ], users=in_users, roles=in_roles )
             trans.sa_session.refresh( group )
-            message += "Group '%s' has been updated with %d associated roles and %d associated users" % ( group.name, len( in_roles ), len( in_users ) )
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='groups',
-                                                       message=util.sanitize_text( message ),
-                                                       status=status ) )
-        in_roles = []
-        out_roles = []
-        in_users = []
-        out_users = []
-        for role in trans.sa_session.query(trans.app.model.Role ) \
-                                    .filter( trans.app.model.Role.table.c.deleted == false() ) \
-                                    .order_by( trans.app.model.Role.table.c.name ):
-            if role in [ x.role for x in group.roles ]:
-                in_roles.append( ( role.id, role.name ) )
-            else:
-                out_roles.append( ( role.id, role.name ) )
-        for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted == false() ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
-            if user in [ x.user for x in group.users ]:
-                in_users.append( ( user.id, user.email ) )
-            else:
-                out_users.append( ( user.id, user.email ) )
-        message += 'Group %s is currently associated with %d roles and %d users' % ( group.name, len( in_roles ), len( in_users ) )
-        return trans.fill_template( '/admin/dataset_security/group/group.mako',
-                                    group=group,
-                                    in_roles=in_roles,
-                                    out_roles=out_roles,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    message=message,
-                                    status=status )
+            return { 'message' : 'Group \'%s\' has been updated with %d associated users and %d associated roles.' % ( group.name, len( in_users ), len( in_roles ) ) }
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def create_group( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        name = util.restore_text( params.get( 'name', '' ) )
-        in_users = util.listify( params.get( 'in_users', [] ) )
-        out_users = util.listify( params.get( 'out_users', [] ) )
-        in_roles = util.listify( params.get( 'in_roles', [] ) )
-        out_roles = util.listify( params.get( 'out_roles', [] ) )
-        create_role_for_group = params.get( 'create_role_for_group', '' )
-        create_role_for_group_checked = CheckboxField.is_checked( create_role_for_group )
-        ok = True
-        if params.get( 'create_group_button', False ):
+    def create_group( self, trans, payload={}, **kwd ):
+        if trans.request.method == 'GET':
+            all_users = []
+            all_roles = []
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                all_users.append( ( user.email, trans.security.encode_id( user.id ) ) )
+            for role in trans.sa_session.query( trans.app.model.Role ) \
+                                        .filter( trans.app.model.Role.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.Role.table.c.name ):
+                all_roles.append( ( role.name, trans.security.encode_id( role.id ) ) )
+            return {
+                'title'  : 'Create Group',
+                'inputs' : [{
+                    'name'  : 'name',
+                    'label' : 'Name'
+                },
+                    build_select_input( 'roles', 'Roles', all_roles, [] ),
+                    build_select_input( 'users', 'Users', all_users, [] ), {
+                    'name'  : 'auto_create',
+                    'label' : 'Create a new role of the same name for this group:',
+                    'type'  : 'boolean'
+                } ]
+            }
+        else:
+            name = util.restore_text( payload.get( 'name', '' ) )
+            auto_create_checked = payload.get( 'auto_create' ) == 'true'
+            in_users = util.listify( payload.get( 'users', [] ) )
+            in_roles = util.listify( payload.get( 'roles', [] ) )
             if not name:
-                message = "Enter a valid name."
-                status = 'error'
-                ok = False
+                return message_exception( trans, 'Enter a valid name.' )
             elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == name ).first():
-                message = "Group names must be unique and a group with that name already exists, so choose another name."
-                status = 'error'
-                ok = False
+                return message_exception( trans, 'Group names must be unique and a group with that name already exists, so choose another name.' )
             else:
-                # Create the group
+                # Create the role
                 group = trans.app.model.Group( name=name )
                 trans.sa_session.add( group )
-                trans.sa_session.flush()
                 # Create the UserRoleAssociations
-                for user in [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in in_users ]:
+                for user in [ trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( x ) ) for x in in_users ]:
                     uga = trans.app.model.UserGroupAssociation( user, group )
                     trans.sa_session.add( uga )
                 # Create the GroupRoleAssociations
-                for role in [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]:
+                for role in [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in in_roles ]:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
-                if create_role_for_group_checked:
+                if auto_create_checked:
                     # Create the role
                     role = trans.app.model.Role( name=name, description='Role for group %s' % name )
                     trans.sa_session.add( role )
-                    # Associate the role with the group
+                    # Associate the group with the role
                     gra = trans.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
                     num_in_roles = len( in_roles ) + 1
                 else:
                     num_in_roles = len( in_roles )
                 trans.sa_session.flush()
-                message = "Group '%s' has been created with %d associated users and %d associated roles.  " \
-                    % ( group.name, len( in_users ), num_in_roles )
-                if create_role_for_group_checked:
+                message = 'Group \'%s\' has been created with %d associated users and %d associated roles.' % ( group.name, len( in_users ), num_in_roles )
+                if auto_create_checked:
                     message += 'One of the roles associated with this group is the newly created role with the same name.'
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='groups',
-                                                           message=util.sanitize_text( message ),
-                                                           status='done' ) )
-        if ok:
-            for user in trans.sa_session.query( trans.app.model.User ) \
-                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
-                                        .order_by( trans.app.model.User.table.c.email ):
-                out_users.append( ( user.id, user.email ) )
-            for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( trans.app.model.Role.table.c.deleted == false() ) \
-                                        .order_by( trans.app.model.Role.table.c.name ):
-                out_roles.append( ( role.id, role.name ) )
-        return trans.fill_template( '/admin/dataset_security/group/group_create.mako',
-                                    name=name,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    in_roles=in_roles,
-                                    out_roles=out_roles,
-                                    create_role_for_group_checked=create_role_for_group_checked,
-                                    message=message,
-                                    status=status )
+                return { 'message' : message }
 
-    @web.expose
-    @web.require_admin
-    def mark_group_deleted( self, trans, **kwd ):
-        params = util.Params( kwd )
-        id = params.get( 'id', None )
-        if not id:
-            message = "No group ids received for marking deleted"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='groups',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
-        message = "Deleted %d groups: " % len( ids )
+    def _delete_group( self, trans, ids ):
+        message = 'Deleted %d groups: ' % len( ids )
         for group_id in ids:
             group = get_group( trans, group_id )
             group.deleted = True
             trans.sa_session.add( group )
             trans.sa_session.flush()
-            message += " %s " % group.name
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='groups',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+            message += ' %s ' % group.name
+        return ( message, 'done' )
 
-    @web.expose
-    @web.require_admin
-    def undelete_group( self, trans, **kwd ):
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No group ids received for undeleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='groups',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
+    def _undelete_group( self, trans, ids ):
         count = 0
         undeleted_groups = ""
         for group_id in ids:
             group = get_group( trans, group_id )
             if not group.deleted:
-                message = "Group '%s' has not been deleted, so it cannot be undeleted." % group.name
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='groups',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
+                return ( "Group '%s' has not been deleted, so it cannot be undeleted." % group.name, "error" )
             group.deleted = False
             trans.sa_session.add( group )
             trans.sa_session.flush()
             count += 1
             undeleted_groups += " %s" % group.name
-        message = "Undeleted %d groups: %s" % ( count, undeleted_groups )
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='groups',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+        return ( "Undeleted %d groups: %s" % ( count, undeleted_groups ), "done" )
 
-    @web.expose
-    @web.require_admin
-    def purge_group( self, trans, **kwd ):
-        # This method should only be called for a Group that has previously been deleted.
-        # Purging a deleted Group simply deletes all UserGroupAssociations and GroupRoleAssociations.
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No group ids received for purging"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='groups',
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        ids = util.listify( id )
+    def _purge_group( self, trans, ids ):
         message = "Purged %d groups: " % len( ids )
         for group_id in ids:
             group = get_group( trans, group_id )
             if not group.deleted:
-                # We should never reach here, but just in case there is a bug somewhere...
-                message = "Group '%s' has not been deleted, so it cannot be purged." % group.name
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='groups',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
+                return ( "Group '%s' has not been deleted, so it cannot be purged." % group.name, "error" )
             # Delete UserGroupAssociations
             for uga in group.users:
                 trans.sa_session.delete( uga )
@@ -1491,10 +1407,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
                 trans.sa_session.delete( gra )
             trans.sa_session.flush()
             message += " %s " % group.name
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='groups',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
+        return ( message, "done" )
 
     @web.expose
     @web.require_admin
@@ -1530,9 +1443,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         else:
             return message_exception( trans, 'Please specify user ids.' )
 
-    @web.expose
-    @web.require_admin
-    def mark_user_deleted( self, trans, ids ):
+    def _delete_user( self, trans, ids ):
         message = 'Deleted %d users: ' % len( ids )
         for user_id in ids:
             user = get_user( trans, user_id )
@@ -1542,9 +1453,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             message += ' %s ' % user.email
         return ( message, 'done' )
 
-    @web.expose
-    @web.require_admin
-    def undelete_user( self, trans, ids ):
+    def _undelete_user( self, trans, ids ):
         count = 0
         undeleted_users = ""
         for user_id in ids:
@@ -1560,9 +1469,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
         message = 'Undeleted %d users: %s' % ( count, undeleted_users )
         return ( message, 'done' )
 
-    @web.expose
-    @web.require_admin
-    def purge_user( self, trans, ids ):
+    def _purge_user( self, trans, ids ):
         # This method should only be called for a User that has previously been deleted.
         # We keep the User in the database ( marked as purged ), and stuff associated
         # with the user's private role in case we want the ability to unpurge the user
@@ -1612,9 +1519,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
             message += '%s ' % user.email
         return ( message, 'done' )
 
-    @web.expose
-    @web.require_admin
-    def recalculate_user_disk_usage( self, trans, user_id ):
+    def _recalculate_user( self, trans, user_id ):
         user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
         if not user:
             return ( 'User not found for id (%s)' % sanitize_text( str( user_id ) ), 'error' )
@@ -1684,8 +1589,7 @@ class AdminGalaxy( controller.JSAppLauncher, AdminActions, UsesQuotaMixin, Quota
 
             trans.app.security_agent.set_entity_user_associations( users=[ user ], roles=in_roles, groups=in_groups )
             trans.sa_session.refresh( user )
-            return { 'message' : 'User \'%s\' has been updated with %d associated roles and %d associated groups (private roles are not displayed).' %
-                     ( user.email, len( in_roles ) - 1, len( in_groups ) ) }
+            return { 'message' : 'User \'%s\' has been updated with %d associated roles and %d associated groups (private roles are not displayed).' % ( user.email, len( in_roles ) - 1, len( in_groups ) ) }
 
     @web.expose
     @web.require_admin

@@ -441,7 +441,7 @@ class Admin( object ):
                                                                       action='groups',
                                                                       message=util.sanitize_text( message ),
                                                                       status='done' ) )
-        return trans.fill_template( '/admin/dataset_security/group/group_rename.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/group/group_rename.mako',
                                     group=group,
                                     message=message,
                                     status=status )
@@ -482,7 +482,7 @@ class Admin( object ):
             else:
                 out_users.append( ( user.id, user.email ) )
         message += 'Group %s is currently associated with %d roles and %d users' % ( group.name, len( in_roles ), len( in_users ) )
-        return trans.fill_template( '/admin/dataset_security/group/group.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/group/group.mako',
                                     group=group,
                                     in_roles=in_roles,
                                     out_roles=out_roles,
@@ -555,7 +555,7 @@ class Admin( object ):
                                         .filter( trans.app.model.Role.table.c.deleted == false() ) \
                                         .order_by( trans.app.model.Role.table.c.name ):
                 out_roles.append( ( role.id, role.name ) )
-        return trans.fill_template( '/admin/dataset_security/group/group_create.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/dataset_security/group/group_create.mako',
                                     name=name,
                                     in_users=in_users,
                                     out_users=out_users,

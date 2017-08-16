@@ -1391,7 +1391,7 @@ class GalaxyRBACAgent( RBACAgent ):
             self.sa_session.refresh( user )
             for role in roles:
                 # Make sure we are not creating an additional association with a PRIVATE role
-                if role not in user.roles:
+                if role not in [ x.role for x in user.roles ]:
                     self.associate_components( user=user, role=role )
             for group in groups:
                 self.associate_components( user=user, group=group )

@@ -191,6 +191,24 @@ class ToolNotFoundException( Exception ):
     pass
 
 
+def create_tool_from_source( app, tool_source, config_file=None, **kwds ):
+    # Allow specifying a different tool subclass to instantiate
+    tool_module = tool_source.parse_tool_module()
+    if tool_module is not None:
+        module, cls = tool_module
+        mod = __import__( module, globals(), locals(), [cls] )
+        ToolClass = getattr( mod, cls )
+    elif tool_source.parse_tool_type():
+        tool_type = tool_source.parse_tool_type()
+        ToolClass = tool_types.get( tool_type )
+    else:
+        # Normal tool
+        root = getattr( tool_source, 'root', None )
+        ToolClass = Tool
+    tool = ToolClass( config_file, tool_source, app, **kwds )
+    return tool
+
+
 class ToolBox( BaseGalaxyToolBox ):
     """ A derivative of AbstractToolBox with knowledge about Tool internals -
     how to construct them, action types, dependency management, etc....
@@ -228,7 +246,7 @@ class ToolBox( BaseGalaxyToolBox ):
         # Deprecated method, TODO - eliminate calls to this in test/.
         return self._tools_by_id
 
-    def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
+    def create_tool( self, config_file, **kwds ):
         try:
             tool_source = get_tool_source(
                 config_file,
@@ -239,21 +257,10 @@ class ToolBox( BaseGalaxyToolBox ):
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
             raise e
-        # Allow specifying a different tool subclass to instantiate
-        tool_module = tool_source.parse_tool_module()
-        if tool_module is not None:
-            module, cls = tool_module
-            mod = __import__( module, globals(), locals(), [cls] )
-            ToolClass = getattr( mod, cls )
-        elif tool_source.parse_tool_type():
-            tool_type = tool_source.parse_tool_type()
-            ToolClass = tool_types.get( tool_type )
-        else:
-            # Normal tool
-            root = getattr( tool_source, 'root', None )
-            ToolClass = Tool
-        tool = ToolClass( config_file, tool_source, self.app, guid=guid, repository_id=repository_id, **kwds )
-        return tool
+        return self._create_tool_from_source( tool_source, config_file=config_file, **kwds )
+
+    def _create_tool_from_source( self, tool_source, **kwds ):
+        return create_tool_from_source( self.app, tool_source, **kwds)
 
     def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
         """

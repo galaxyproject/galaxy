@@ -7,18 +7,18 @@ import os.path
 import shutil
 import string
 import tempfile
+
 from collections import defaultdict
+
+from unittest_utils import galaxy_mock
 
 import galaxy.datatypes.registry
 import galaxy.model
-from galaxy.jobs import NoopQueue
-from galaxy.model import mapping
-from galaxy.tools import Tool
-from galaxy.tools.deps.containers import NullContainerFinder
+
+from galaxy.tools import create_tool_from_source
 from galaxy.tools.parser import get_tool_source
 from galaxy.util.bunch import Bunch
-from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.web.security import SecurityHelper
+
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
@@ -27,9 +27,11 @@ galaxy.model.set_datatypes_registry(datatypes_registry)
 
 class UsesApp( object ):
 
-    def setup_app( self, mock_model=True ):
+    def setup_app( self ):
         self.test_directory = tempfile.mkdtemp()
-        self.app = MockApp( self.test_directory, mock_model=mock_model )
+        self.app = galaxy_mock.MockApp( )
+        self.app.config.new_file_path = os.path.join(self.test_directory, "new_files")
+        self.app.config.admin_users = "mary@example.com"
 
     def tear_down_app( self ):
         shutil.rmtree( self.test_directory )
@@ -90,7 +92,7 @@ class UsesTools( object ):
     def __setup_tool( self ):
         tool_source = get_tool_source( self.tool_file )
         try:
-            self.tool = Tool( self.tool_file, tool_source, self.app )
+            self.tool = create_tool_from_source(self.app, tool_source, config_file=self.tool_file)
         except Exception:
             self.tool = None
         if getattr( self, "tool_action", None and self.tool):
@@ -99,79 +101,6 @@ class UsesTools( object ):
 
     def __write_tool( self, contents ):
         open( self.tool_file, "w" ).write( contents )
-
-
-class MockApp( object ):
-
-    def __init__( self, test_directory, mock_model=True ):
-        # The following line is needed in order to create
-        # HistoryDatasetAssociations - ideally the model classes would be
-        # usable without the ORM infrastructure in place.
-        in_memomry_model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True )
-
-        self.datatypes_registry = Bunch(
-            integrated_datatypes_configs='/galaxy/integrated_datatypes_configs.xml',
-            get_datatype_by_extension=lambda ext: Bunch(),
-        )
-
-        self.config = Bunch(
-            outputs_to_working_directory=False,
-            commands_in_new_shell=True,
-            new_file_path=os.path.join(test_directory, "new_files"),
-            tool_data_path=os.path.join(test_directory, "tools"),
-            root=os.path.join(test_directory, "galaxy"),
-            admin_users="mary@example.com",
-            len_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'chrom' ),
-            builds_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' ),
-            migrated_tools_config=os.path.join(test_directory, "migrated_tools_conf.xml"),
-            server_name="test_server",
-            preserve_python_environment="always",
-        )
-
-        # Setup some attributes for downstream extension by specific tests.
-        self.job_config = Bunch(
-            dynamic_params=None,
-        )
-
-        # Two ways to handle model layer, one is to stub out some objects that
-        # have an interface similar to real model (mock_model) and can keep
-        # track of 'persisted' objects in a map. The other is to use a real
-        # sqlalchemy layer but target an in memory database. Depending on what
-        # is being tested.
-        if mock_model:
-            # Create self.model to mimic app.model.
-            self.model = Bunch( context=MockContext() )
-            for module_member_name in dir( galaxy.model ):
-                module_member = getattr(galaxy.model, module_member_name)
-                if type( module_member ) == type:
-                    self.model[ module_member_name ] = module_member
-        else:
-            self.model = in_memomry_model
-        self.genome_builds = GenomeBuilds( self )
-        self.toolbox = None
-        self.object_store = None
-        self.security = SecurityHelper(id_secret="testing")
-        from galaxy.security import GalaxyRBACAgent
-        self.job_queue = NoopQueue()
-        self.security_agent = GalaxyRBACAgent( self.model )
-        self.tool_data_tables = {}
-        self.dataset_collections_service = None
-        self.container_finder = NullContainerFinder()
-        self.name = "galaxy"
-        self._toolbox_lock = MockLock()
-
-    def wait_for_toolbox_reload(self, toolbox):
-        # TODO: If the tpm test case passes, does the operation really
-        # need to wait.
-        return True
-
-
-class MockLock( object ):
-    def __enter__(self):
-        pass
-
-    def __exit__(self, type, value, traceback):
-        pass
 
 
 class MockContext(object):

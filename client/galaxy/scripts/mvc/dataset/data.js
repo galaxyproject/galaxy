@@ -291,7 +291,7 @@ var TopLevelTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
         TabularDatasetChunkedView.prototype.initialize.call(this, options);
 
         // Scrolling happens in top-level elements.
-        scroll_elt = _.find(this.$el.parents(), function(p) {
+        var scroll_elt = _.find(this.$el.parents(), function(p) {
             return $(p).css('overflow') === 'auto';
         });
 

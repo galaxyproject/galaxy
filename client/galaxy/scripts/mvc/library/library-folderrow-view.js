@@ -66,7 +66,7 @@ var FolderRowView = Backbone.View.extend({
    * the filling of the row template of a given folder.
    */
   prepareButtons: function(folder){
-    vis_config = this.options.visibility_config;
+    var vis_config = this.options.visibility_config;
     if (this.options.edit_mode === false){
       vis_config.save_folder_btn = false;
       vis_config.cancel_folder_btn = false;

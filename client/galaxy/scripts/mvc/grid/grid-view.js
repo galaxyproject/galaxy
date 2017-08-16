@@ -583,7 +583,7 @@ return Backbone.View.extend({
         this.grid.set('async', false);
 
         // get slide status
-        advanced_search = this.$el.find('#advanced-search').is(':visible');
+        var advanced_search = this.$el.find('#advanced-search').is(':visible');
         this.grid.set('advanced_search', advanced_search);
 
         // get default url

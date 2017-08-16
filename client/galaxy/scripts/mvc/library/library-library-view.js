@@ -212,7 +212,7 @@ var LibraryView = Backbone.View.extend({
   },
 
   _extractIds: function(roles_list){
-    ids_list = [];
+    var ids_list = [];
     for (var i = roles_list.length - 1; i >= 0; i--) {
       ids_list.push(roles_list[i].id);
     };
