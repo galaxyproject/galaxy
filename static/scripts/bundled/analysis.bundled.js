@@ -7754,11 +7754,12 @@ webpackJsonp([4,1],[
 	            if (!this.model.get('collapsible')) {
 	                this.$el.append($('<div/>').addClass('ui-margin-top-large').append(this._footer()));
 	            }
-	            this.message.update({
+	            this.show_message && this.message.update({
 	                status: 'success',
 	                message: 'Now you are using \'' + options.name + '\' version ' + options.version + ', id \'' + options.id + '\'.',
 	                persistent: false
 	            });
+	            this.show_message = true;
 	        },
 	
 	        /** Create tool operation menu */

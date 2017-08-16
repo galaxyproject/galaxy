@@ -65,11 +65,12 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             if ( !this.model.get( 'collapsible' ) ) {
                 this.$el.append( $( '<div/>' ).addClass( 'ui-margin-top-large' ).append( this._footer() ) );
             }
-            !hide_message && this.message.update({
+            this.show_message && this.message.update({
                 status      : 'success',
                 message     : 'Now you are using \'' + options.name + '\' version ' + options.version + ', id \'' + options.id + '\'.',
                 persistent  : false
             });
+            this.show_message = true;
         },
 
         /** Create tool operation menu */
