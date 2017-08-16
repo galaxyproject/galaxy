@@ -117,25 +117,25 @@ release-check-blocking-prs: ## Check github for release blocking PRs
 release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
-npm-deps: ## Install NodeJS dependencies.
-	cd client && npm install
+node-deps: ## Install NodeJS dependencies.
+	cd client && yarn
 
-webpack: npm-deps ## Run webpack, build production bundles.
-	cd client && npm run webpack
+webpack: node-deps ## Run webpack, build production bundles.
+	cd client && yarn run webpack
 
-gulp: npm-deps ## Calls out to Gulp to build client
-	cd client && npm run gulp
+gulp: node-deps ## Calls out to Gulp to build client
+	cd client && yarn run gulp
 
-style: npm-deps ## Calls the style task of Grunt
-	cd client && npm run build-style
+style: node-deps ## Calls the style task of Grunt
+	cd client && yarn run build-style
 
-client-install-libs: npm-deps ## Fetch updated client dependencies using bower.
+client-install-libs: node-deps ## Fetch updated client dependencies using bower.
 	cd client && $(GRUNT_EXEC) install-libs
 
-client: npm-deps ## Rebuild all client-side artifacts
-	cd client && npm run build
+client: node-deps ## Rebuild all client-side artifacts
+	cd client && yarn run build
 
-charts: npm-deps ## Rebuild charts
+charts: node-deps ## Rebuild charts
 	NODE_PATH=$(GXY_NODE_MODULES) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js
 
 grunt-docker-image: ## Build docker image for running grunt
@@ -147,14 +147,14 @@ grunt-docker: grunt-docker-image ## Run grunt inside docker
 clean-grunt-docker-image: ## Remove grunt docker image
 	docker rmi ${GRUNT_DOCKER_NAME}
 
-grunt-watch-style: npm-deps ## Execute watching style builder for dev purposes
+grunt-watch-style: node-deps ## Execute watching style builder for dev purposes
 	cd client && $(GRUNT_EXEC) watch-style
 
-grunt-watch-develop: npm-deps ## Execute watching grunt builder for dev purposes (unpacked, allows debugger statements)
+grunt-watch-develop: node-deps ## Execute watching grunt builder for dev purposes (unpacked, allows debugger statements)
 	cd client && $(GRUNT_EXEC) watch --develop
 
-webpack-watch: npm-deps ## Execute watching webpack for dev purposes
-	cd client && npm run webpack-dev-watch
+webpack-watch: node-deps ## Execute watching webpack for dev purposes
+	cd client && yarn run webpack-dev-watch
 
 client-develop: grunt-watch-style grunt-watch-develop webpack-watch  ## A useful target for parallel development building.
 	@echo "Remember to rerun `make client` before committing!"
