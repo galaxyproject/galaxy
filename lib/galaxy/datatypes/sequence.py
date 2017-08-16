@@ -8,7 +8,6 @@ import os
 import re
 import string
 import sys
-from __builtin__ import False
 from cgi import escape
 from itertools import islice
 
