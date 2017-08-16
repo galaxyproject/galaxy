@@ -8,41 +8,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
             this.form = new ToolFormBase( Utils.merge({
                 listen_to_history : true,
                 always_refresh    : false,
-                customize         : function( form ) {
-                    var options = form.model.attributes;
-                    // build execute button
-                    options.buttons = {
-                        execute: execute_btn = new Ui.Button({
-                            icon     : 'fa-check',
-                            tooltip  : 'Execute: ' + options.name + ' (' + options.version + ')',
-                            title    : 'Execute',
-                            cls      : 'btn btn-primary ui-clear-float',
-                            wait_cls : 'btn btn-info ui-clear-float',
-                            onclick  : function() {
-                                execute_btn.wait();
-                                form.portlet.disable();
-                                self.submit( options, function() {
-                                    execute_btn.unwait();
-                                    form.portlet.enable();
-                                } );
-                            }
-                        })
-                    }
-                    // remap feature
-                    if ( options.job_id && options.job_remap ) {
-                        options.inputs.push({
-                            label       : 'Resume dependencies from this job',
-                            name        : 'rerun_remap_job_id',
-                            type        : 'select',
-                            display     : 'radio',
-                            ignore      : '__ignore__',
-                            value       : '__ignore__',
-                            options     : [ [ 'Yes', options.job_id ], [ 'No', '__ignore__' ] ],
-                            help        : 'The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.'
-                        });
-                    }
-                },
-                buildmodel: function( process, form, hide_message ) {
+                buildmodel: function( process, form ) {
                     var options = form.model.attributes;
 
                     // build request url
@@ -67,12 +33,8 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                                 window.location = Galaxy.root;
                                 return;
                             }
-                            form.render( data );
-                            !hide_message && form.message.update({
-                                status      : 'success',
-                                message     : 'Now you are using \'' + options.name + '\' version ' + options.version + ', id \'' + options.id + '\'.',
-                                persistent  : false
-                            });
+                            form.model.set( data );
+                            self._customize( form );
                             Galaxy.emit.debug('tool-form-base::_buildModel()', 'Initial tool model ready.', data);
                             process.resolve();
                         },
@@ -131,6 +93,42 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
             this.deferred = this.form.deferred;
             this.setElement( '<div/>' );
             this.$el.append( this.form.$el );
+        },
+
+        _customize: function( form ) {
+            var self = this;
+            var options = form.model.attributes;
+            // build execute button
+            options.buttons = {
+                execute: execute_btn = new Ui.Button({
+                    icon     : 'fa-check',
+                    tooltip  : 'Execute: ' + options.name + ' (' + options.version + ')',
+                    title    : 'Execute',
+                    cls      : 'btn btn-primary ui-clear-float',
+                    wait_cls : 'btn btn-info ui-clear-float',
+                    onclick  : function() {
+                        execute_btn.wait();
+                        form.portlet.disable();
+                        self.submit( options, function() {
+                            execute_btn.unwait();
+                            form.portlet.enable();
+                        } );
+                    }
+                })
+            }
+            // remap feature
+            if ( options.job_id && options.job_remap ) {
+                options.inputs.push({
+                    label       : 'Resume dependencies from this job',
+                    name        : 'rerun_remap_job_id',
+                    type        : 'select',
+                    display     : 'radio',
+                    ignore      : '__ignore__',
+                    value       : '__ignore__',
+                    options     : [ [ 'Yes', options.job_id ], [ 'No', '__ignore__' ] ],
+                    help        : 'The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.'
+                });
+            }
         },
 
         /** Submit a regular job.

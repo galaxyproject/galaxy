@@ -10,7 +10,8 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
                 cls             : 'ui-portlet-limited',
                 icon            : null,
                 always_refresh  : true,
-                status          : 'warning'
+                status          : 'warning',
+                onchange        : function(){}
             }).set( options );
             this.setElement( '<div/>' );
             this.render();
@@ -111,7 +112,7 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
                     var new_check = self.data.checksum();
                     if ( new_check != current_check ) {
                         current_check = new_check;
-                        self.model.get( 'onchange' ) && self.model.get( 'onchange' )();
+                        self.model.get( 'onchange' )();
                     }
                 }
             });

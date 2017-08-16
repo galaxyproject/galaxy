@@ -8,13 +8,10 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var self = this;
             this.deferred = new Deferred();
             FormBase.prototype.initialize.call( this, options );
-            if ( this.model.get( 'inputs' ) ) {
-                this._buildForm( this.model.attributes );
-            } else {
-                this.deferred.execute( function( process ) {
-                    self.model.get( 'buildmodel' )( process, self, true );
-                });
-            }
+
+            // optional model update
+            this._update();
+
             // listen to history panel
             if ( this.model.get( 'listen_to_history' ) && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
                 this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
@@ -23,6 +20,21 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             }
             // destroy dom elements
             this.$el.on( 'remove', function() { self._destroy() } );
+        },
+
+        /** Allows tool form variation to update tool model */
+        _update: function() {
+            var self = this;
+            var buildmodel = this.model.get( 'buildmodel' );
+            if ( buildmodel ) {
+                this.deferred.reset();
+                this.deferred.execute( function( process ) {
+                    buildmodel( process, self );
+                    process.then( function() { self._render() } );
+                });
+            } else {
+                this._render();
+            }
         },
 
         /** Wait for deferred build processes before removal */
@@ -36,12 +48,12 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
         },
 
         /** Build form */
-        _buildForm: function( options ) {
+        _render: function() {
             var self = this;
-            this.model.set( options );
+            var options = this.model.attributes;
             this.model.set({
-                title       : options.title || '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
-                operations  : !this.model.get( 'hide_operations' ) && this._operations(),
+                title       : options.fixed_title || '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
+                operations  : !options.hide_operations && this._operations(),
                 onchange    : function() {
                     self.deferred.reset();
                     self.deferred.execute( function ( process ) {
@@ -49,11 +61,15 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     });
                 }
             });
-            this.model.get( 'customize' ) && this.model.get( 'customize' )( this );
             this.render();
             if ( !this.model.get( 'collapsible' ) ) {
                 this.$el.append( $( '<div/>' ).addClass( 'ui-margin-top-large' ).append( this._footer() ) );
             }
+            !hide_message && this.message.update({
+                status      : 'success',
+                message     : 'Now you are using \'' + options.name + '\' version ' + options.version + ', id \'' + options.id + '\'.',
+                persistent  : false
+            });
         },
 
         /** Create tool operation menu */
@@ -77,15 +93,9 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                             icon    : 'fa-cube',
                             onclick : function() {
                                 // here we update the tool version (some tools encode the version also in the id)
-                                var id = options.id.replace( options.version, this.version );
-                                var version = this.version;
-                                // queue model request
-                                self.deferred.reset();
-                                self.deferred.execute( function( process ) {
-                                    self.model.attributes.id = id;
-                                    self.model.attributes.version = version;
-                                    self.model.get( 'buildmodel' )( process, self );
-                                });
+                                self.model.set( 'id', options.id.replace( options.version, this.version ) );
+                                self.model.set( 'version', this.version );
+                                self._update();
                             }
                         });
                     }
