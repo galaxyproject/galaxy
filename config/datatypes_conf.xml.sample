@@ -692,7 +692,7 @@
     <sniffer type="galaxy.datatypes.triples:Jsonld"/>
     <sniffer type="galaxy.datatypes.sequence:Maf"/>
     <sniffer type="galaxy.datatypes.sequence:Lav"/>
-    <sniffer type="galaxy.datatypes.sequence:Psp"/>
+    <sniffer type="galaxy.datatypes.sequence:MemePsp"/>
     <sniffer type="galaxy.datatypes.sequence:csFasta"/>
     <sniffer type="galaxy.datatypes.qualityscore:QualityScoreSOLiD"/>
     <sniffer type="galaxy.datatypes.qualityscore:QualityScore454"/>
