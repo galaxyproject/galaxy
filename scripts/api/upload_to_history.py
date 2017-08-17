@@ -52,4 +52,3 @@ if __name__ == '__main__':
 
     response = upload_file( base_url, api_key, history_id, filepath, **kwargs )
     print(response, file=sys.stderr)
-    print(response.content)
