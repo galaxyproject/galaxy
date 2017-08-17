@@ -99,7 +99,8 @@ class MessageJobQueue(object):
 
     def put(self, job_id, tool_id):
         msg = JobHandlerMessage(task='setup', job_id=job_id)
-        self.app.application_stack.send_message(self.app.config.job_handler_pool_name, msg)
+        # TODO: send to a specific pool
+        self.app.application_stack.send_message(self.app.application_stack.purposes.JOB_HANDLER, msg)
 
     def put_stop(self, *args):
         pass

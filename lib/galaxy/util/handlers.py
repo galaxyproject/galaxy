@@ -101,10 +101,12 @@ class ConfiguresHandlers:
 
         :return: bool
         """
-        stack_handles_jobs = self.app.application_stack.process_in_pool(self.app.config.job_handler_pool_name)
-        if stack_handles_jobs is not None:
+        if self.app.application_stack.has_purpose(self.app.application_stack.purposes.JOB_HANDLER):
             # Handlers started as uWSGI mules do not require configuration in the job conf
-            return stack_handles_jobs
+            return True
+        #if stack_handles_jobs is not None:
+        #    # Handlers started as uWSGI mules do not require configuration in the job conf
+        #    return stack_handles_jobs
         for collection in self.handlers.values():
             if server_name in collection:
                 return True

@@ -163,6 +163,7 @@ def find_ini(supplied_ini, galaxy_root):
 
     return guess
 
+# FIXME: probably don't need this now that server names are fixed up in app. Do we really need fine grained control over mule names? Maybe for multihost mules? Do we support multihost mules? Could set the mule server name template in galaxy.ini...
 def set_server_name(server_name):
     default = None if not uwsgi else MULE_SERVER_NAME_DEFAULT
     if not server_name:
@@ -241,7 +242,7 @@ def main():
     args = arg_parser.parse_args()
     if args.log_file:
         os.environ["GALAXY_CONFIG_LOG_DESTINATION"] = os.path.abspath(args.log_file)
-    set_server_name(args.server_name)
+    #set_server_name(args.server_name)
     pid_file = args.pid_file
 
     log.setLevel(logging.DEBUG)

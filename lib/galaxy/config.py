@@ -540,8 +540,6 @@ class Configuration(object):
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',')]
         self.default_job_handlers = [x.strip() for x in kwargs.get('default_job_handlers', ','.join(self.job_handlers)).split(',')]
-        self.job_handler_count = int( kwargs.get( 'job_handler_count', 1 ) )
-        self.job_handler_pool_name = kwargs.get('job_handler_pool_name', 'job-handlers').strip()
         # Store per-tool runner configs
         self.tool_handlers = self.__read_tool_job_config(global_conf_parser, 'galaxy:tool_handlers', 'name')
         self.tool_runners = self.__read_tool_job_config(global_conf_parser, 'galaxy:tool_runners', 'url')

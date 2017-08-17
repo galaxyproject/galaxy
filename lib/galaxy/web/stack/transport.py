@@ -27,10 +27,11 @@ class ApplicationStackTransport(object):
         self.dispatcher_thread = threading.Thread(name=self.__class__.__name__ + ".dispatcher_thread", target=self._dispatch_messages)
         #self.dispatcher_thread.daemon = True
 
-    def __init__(self, app, dispatcher=None):
+    def __init__(self, app, stack, dispatcher=None):
         """ Pre-fork initialization.
         """
         self.app = app
+        self.stack = stack
         self.can_run = False
         self.running = False
         self.dispatcher = dispatcher
@@ -95,8 +96,8 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
         #    uwsgi.set_option('locks', len(self.lock_map))
         #    log.debug('Created %s uWSGI locks' % len(self.lock_map))
 
-    def __init__(self, app, dispatcher=None):
-        super(UWSGIFarmMessageTransport, self).__init__(app, dispatcher=dispatcher)
+    def __init__(self, app, stack, dispatcher=None):
+        super(UWSGIFarmMessageTransport, self).__init__(app, stack, dispatcher=dispatcher)
         self._farms_dict = None
         self._mules_list = None
         self._is_mule = False
@@ -135,6 +136,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
             uwsgi.unlock(self._locks.index(name_or_id))
 
     def _farm_recv_msg_lock_num(self):
+        # need one lock per farm... except mules can have multiple farms... ack
         return self._locks.index('RECV_MSG_FARM_' + self._farm_name)
 
     def _dispatch_messages(self):
@@ -167,20 +169,19 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
         self._is_mule = uwsgi.mule_id() > 0
         if self._is_mule:
             if not uwsgi.in_farm():
-                raise RuntimeError('Mule %s is not in a farm! Set `farm = %s:%s` in uWSGI configuration'
+                raise RuntimeError('Mule %s is not in a farm! Set `farm = <pool_name>:%s` in uWSGI configuration'
                                    % (uwsgi.mule_id(),
-                                      self.app.config.job_handler_pool_name,
                                       ','.join(map(str, range(1, len(filter(lambda x: x.endswith('galaxy/main.py'), self._mules)) + 1)))))
         super(UWSGIFarmMessageTransport, self).start()
-        log.info('######## Mule transport started, worker id: %s, mule id: %s, farm name: %s, server name: %s', uwsgi.worker_id(), uwsgi.mule_id(), self._farm_name, self.app.config.server_name)
-        self._send_all_messages()
+        log.info('######## Mule transport started, worker id: %s, mule id: %s, farm names: %s, server name: %s', uwsgi.worker_id(), uwsgi.mule_id(), self.stack.farm_names, self.app.config.server_name)
+        #self._send_all_messages()
 
-    @property
-    def _farm_name(self):
-        for name, mules in self._farms.items():
-            if uwsgi.mule_id() in mules:
-                return name
-        return None
+    #@property
+    #def _farm_name(self):
+    #    for name, mules in self._farms.items():
+    #        if uwsgi.mule_id() in mules:
+    #            return name
+    #    return None
 
     def _send_all_messages(self):
         # the sender doesn't have a running thread, all we are concerned with here is whether or not we've forked yet
@@ -196,6 +197,8 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
 
 
     def send_message(self, msg, dest):
-        log.debug('######## Queing message in mule %s to farm %s: %s', uwsgi.mule_id(), dest, msg)
-        self._msg_queue.put((msg, dest))
-        self._send_all_messages()
+        #log.debug('######## Queing message in mule %s to farm %s: %s', uwsgi.mule_id(), dest, msg)
+        #self._msg_queue.put((msg, dest))
+        #self._send_all_messages()
+        log.debug('######## Sending message to farm %s: %s', dest, msg)
+        uwsgi.farm_msg(dest, msg)

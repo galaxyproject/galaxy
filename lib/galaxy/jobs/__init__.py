@@ -170,6 +170,7 @@ class JobConfiguration(object, ConfiguresHandlers):
         """This is a stop-gap solution until the job conf loading is rewritten
         for YAML job conf support.
         """
+        # FIXME: this will not support the case where uWSGI is being used w/o handler mules
         if self.app.application_stack.handle_jobs:
             self.handlers[self.app.config.server_name] = (self.app.config.server_name,)
             self.default_handler_id = self.app.config.server_name
