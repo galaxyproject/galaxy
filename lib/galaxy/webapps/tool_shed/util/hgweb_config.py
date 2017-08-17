@@ -76,7 +76,8 @@ class HgWebConfigManager(object):
             # We used to raise an exception here...
             # raise Exception( "Required file %s does not exist - check config setting for hgweb_config_dir." % hgweb_config )
             # ...but now we just log the missing file and create a new empty one.
-            log.debug("Required file %s does not exist, so creating a new, empty file.  Check your config setting for hgweb_config_dir." % hgweb_config)
+            log.debug("Required file %s does not exist, so creating a new, empty file.  Check your config setting for hgweb_config_dir." %
+                      hgweb_config)
             hgweb_config_file = open(hgweb_config, 'wb')
             hgweb_config_file.write(new_hgweb_config_template)
             hgweb_config_file.close()

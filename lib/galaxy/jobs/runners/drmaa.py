@@ -14,10 +14,7 @@ import time
 from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState
-)
+from galaxy.jobs.runners import (AsynchronousJobRunner, AsynchronousJobState)
 from galaxy.util import asbool
 
 drmaa = None
@@ -40,10 +37,10 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """Start the job runner"""
         global drmaa
 
-        runner_param_specs = {
-            'drmaa_library_path': dict(map=str, default=os.environ.get('DRMAA_LIBRARY_PATH', None))}
+        runner_param_specs = {'drmaa_library_path': dict(map=str, default=os.environ.get('DRMAA_LIBRARY_PATH', None))}
         for retry_exception in RETRY_EXCEPTIONS_LOWER:
-            runner_param_specs[retry_exception + '_state'] = dict(map=str, valid=lambda x: x in (model.Job.states.OK, model.Job.states.ERROR), default=model.Job.states.OK)
+            runner_param_specs[retry_exception + '_state'] = dict(
+                map=str, valid=lambda x: x in (model.Job.states.OK, model.Job.states.ERROR), default=model.Job.states.OK)
             runner_param_specs[retry_exception + '_retries'] = dict(map=int, valid=lambda x: int >= 0, default=0)
 
         if 'runner_param_specs' not in kwargs:
@@ -64,8 +61,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         except (ImportError, RuntimeError) as exc:
             raise exc.__class__('The Python drmaa package is required to use this '
                                 'feature, please install it or correct the '
-                                'following error:\n%s: %s' %
-                                (exc.__class__.__name__, str(exc)))
+                                'following error:\n%s: %s' % (exc.__class__.__name__, str(exc)))
         from pulsar.managers.util.drmaa import DrmaaSessionFactory
 
         # Subclasses may need access to state constants
@@ -139,8 +135,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             jobName=ajs.job_name,
             workingDirectory=job_wrapper.working_directory,
             outputPath=":%s" % ajs.output_file,
-            errorPath=":%s" % ajs.error_file
-        )
+            errorPath=":%s" % ajs.error_file)
 
         # Avoid a jt.exitCodePath for now - it's only used when finishing.
         native_spec = job_destination.params.get('nativeSpecification', None)
@@ -261,7 +256,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                 retry_param = ecn.lower() + '_retries'
                 state_param = ecn.lower() + '_state'
                 retries = getattr(ajs, retry_param, 0)
-                log.warning("(%s/%s) unable to check job status because of %s exception for %d consecutive tries: %s", galaxy_id_tag, external_job_id, ecn, retries + 1, e)
+                log.warning("(%s/%s) unable to check job status because of %s exception for %d consecutive tries: %s", galaxy_id_tag,
+                            external_job_id, ecn, retries + 1, e)
                 if self.runner_params[retry_param] > 0:
                     if retries < self.runner_params[retry_param]:
                         # will retry check on next iteration
@@ -275,7 +271,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                     log.warning("(%s/%s) job will now be errored", galaxy_id_tag, external_job_id)
                     self.work_queue.put((self.fail_job, ajs))
                 else:
-                    raise Exception("%s is set to an invalid value (%s), this should not be possible. See galaxy.jobs.drmaa.__init__()", state_param, self.runner_params[state_param])
+                    raise Exception("%s is set to an invalid value (%s), this should not be possible. See galaxy.jobs.drmaa.__init__()",
+                                    state_param, self.runner_params[state_param])
                 continue
             except drmaa.DrmCommunicationException as e:
                 log.warning("(%s/%s) unable to communicate with DRM: %s", galaxy_id_tag, external_job_id, e)
@@ -365,8 +362,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         command = shlex.split(external_runjob_script)
         command.extend([str(username), jobtemplate_filename])
         log.info("Running command %s" % command)
-        p = subprocess.Popen(command,
-                             shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdoutdata, stderrdata) = p.communicate()
         exitcode = p.returncode
         # os.unlink(jobtemplate_filename)

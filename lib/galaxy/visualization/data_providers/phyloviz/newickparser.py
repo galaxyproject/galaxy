@@ -1,4 +1,3 @@
-
 from .baseparser import Base_Parser, PhyloTree
 import re
 
@@ -57,7 +56,7 @@ class Newick_Parser(Base_Parser):
                 length = nodeInfo[1]
                 # checking for bootstap values
                 name = nodeInfo[0]
-                try:    # Nexus may bootstrap in names position
+                try:  # Nexus may bootstrap in names position
                     name = float(name)
                     if 0 <= name <= 1:
                         bootstrap = name
@@ -67,7 +66,7 @@ class Newick_Parser(Base_Parser):
                 except ValueError:
                     name = nodeInfo[0]
             else:
-                name = nodeInfo[0]      # string only contains name
+                name = nodeInfo[0]  # string only contains name
             node = self.phyloTree.makeNode(name, length=length, depth=depth, bootstrap=bootstrap)
             childrenNodes += [node]
         return childrenNodes
@@ -90,11 +89,12 @@ class Newick_Parser(Base_Parser):
                     # i now refers to the starting position of the term to be replaced,
                     # we will next find j which is the ending pos of the term
                     for j in range(i + 1, len(newickString)):
-                        enclosingSymbol = newickString[j]   # the immediate symbol after a common or left bracket which denotes the end of a term
+                        enclosingSymbol = newickString[
+                            j]  # the immediate symbol after a common or left bracket which denotes the end of a term
                         if enclosingSymbol == ")" or enclosingSymbol == ":" or enclosingSymbol == ",":
                             termToReplace = newickString[end:j]
 
-                            newString += newickString[start : end] + nameMap[termToReplace]  # + "'"  "'" +
+                            newString += newickString[start:end] + nameMap[termToReplace]  # + "'"  "'" +
                             start = j
                             break
 
@@ -119,16 +119,16 @@ class Newick_Parser(Base_Parser):
         if string.find("(") == -1:
             return self._makeNodesFromString(string, depth)
 
-        nodes = []      # nodes refer to the nodes on this level
+        nodes = []  # nodes refer to the nodes on this level
         start = 0
         lenOfPreceedingInternalNodeString = 0
         bracketStack = []
 
         for j in range(len(string)):
-            if string[j] == "(":    # finding the positions of all the open brackets
+            if string[j] == "(":  # finding the positions of all the open brackets
                 bracketStack.append(j)
                 continue
-            if string[j] == ")":    # finding the positions of all the closed brackets to extract claude
+            if string[j] == ")":  # finding the positions of all the closed brackets to extract claude
                 i = bracketStack.pop()
 
                 if len(bracketStack) == 0:  # is child of current node
@@ -136,13 +136,13 @@ class Newick_Parser(Base_Parser):
                     InternalNode = None
 
                     # First flat call to make nodes of the same depth but from the preceeding string.
-                    startSubstring = string[start + lenOfPreceedingInternalNodeString: i]
+                    startSubstring = string[start + lenOfPreceedingInternalNodeString:i]
                     preceedingNodes = self._makeNodesFromString(startSubstring, depth)
                     nodes += preceedingNodes
 
                     # Then We will try to see if the substring has any internal nodes first, make it then make nodes preceeding it and succeeding it.
                     if j + 1 < len(string):
-                        stringRightOfBracket = string[j + 1:]      # Eg. '(b:0.4,a:0.3)c:0.3, stringRightOfBracket = c:0.3
+                        stringRightOfBracket = string[j + 1:]  # Eg. '(b:0.4,a:0.3)c:0.3, stringRightOfBracket = c:0.3
                         match = re.search(r"[\)\,\(]", stringRightOfBracket)
                         if match:
                             indexOfNextSymbol = match.start()
@@ -151,15 +151,15 @@ class Newick_Parser(Base_Parser):
                             if len(internalNodes) > 0:
                                 InternalNode = internalNodes[0]
                             lenOfPreceedingInternalNodeString = len(stringRepOfInternalNode)
-                        else:   # sometimes the node can be the last element of a string
+                        else:  # sometimes the node can be the last element of a string
                             InternalNode = self._makeNodesFromString(string[j + 1:], depth)[0]
                             lenOfPreceedingInternalNodeString = len(string) - j
-                    if InternalNode is None:       # creating a generic node if it is unnamed
+                    if InternalNode is None:  # creating a generic node if it is unnamed
                         InternalNode = self.phyloTree.makeNode("", depth=depth, isInternal=True)  # "internal-" + str(depth)
                         lenOfPreceedingInternalNodeString = 0
 
                     # recussive call to make the internal claude
-                    childSubString = string[i + 1 : j]
+                    childSubString = string[i + 1:j]
                     InternalNode.addChildNode(self.parseNode(childSubString, depth + 1))
 
                     nodes.append(InternalNode)  # we append the internal node later to preserve order
@@ -167,12 +167,14 @@ class Newick_Parser(Base_Parser):
                     start = j + 1
                 continue
 
-        if depth == 0:    # if it's the root node, we do nothing about it and return
+        if depth == 0:  # if it's the root node, we do nothing about it and return
             return nodes[0]
 
         # Adding last most set of children
         endString = string[start:]
-        if string[start - 1] == ")":  # if the symbol belongs to an internal node which is created previously, then we remove it from the string left to parse
+        if string[
+                start -
+                1] == ")":  # if the symbol belongs to an internal node which is created previously, then we remove it from the string left to parse
             match = re.search(r"[\)\,\(]", endString)
             if match:
                 endOfNodeName = start + match.start() + 1

@@ -6,8 +6,7 @@ from string import Template
 log = logging.getLogger(__name__)
 
 COMMAND_LINE_TEMPLATE = Template(
-    "$collectl_path $destination_arg $mode_arg $subsystems_arg $interval_arg $procfilt_arg $flush_arg $sep_arg"
-)
+    "$collectl_path $destination_arg $mode_arg $subsystems_arg $interval_arg $procfilt_arg $flush_arg $sep_arg")
 MODE_RECORD = "record"
 MODE_PLAYBACK = "playback"
 

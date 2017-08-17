@@ -25,6 +25,7 @@ if os.path.exists("/dev/urandom"):
             value += os.read(random_fd, nbytes - len(value))
         return value.encode("hex")
 else:
+
     def get_random_bytes(nbytes):
         nbits = nbytes * 8
         random_pool = RandomPool(1064)
@@ -35,7 +36,6 @@ else:
 
 
 class SecurityHelper(object):
-
     def __init__(self, **config):
         self.id_secret = config['id_secret']
         self.id_cipher = Blowfish.new(self.id_secret)
@@ -122,7 +122,6 @@ class SecurityHelper(object):
 
 
 class _cipher_cache(collections.defaultdict):
-
     def __init__(self, secret_base):
         self.secret_base = secret_base
 

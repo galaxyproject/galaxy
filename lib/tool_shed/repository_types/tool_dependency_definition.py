@@ -10,7 +10,6 @@ log = logging.getLogger(__name__)
 
 
 class ToolDependencyDefinition(TipOnly):
-
     def __init__(self):
         self.type = rt_util.TOOL_DEPENDENCY_DEFINITION
         self.label = 'Tool dependency definition'

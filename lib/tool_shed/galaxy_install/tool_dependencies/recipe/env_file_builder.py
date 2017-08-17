@@ -8,7 +8,6 @@ log = logging.getLogger(__name__)
 
 
 class EnvFileBuilder(object):
-
     def __init__(self, install_dir):
         self.install_dir = install_dir
         self.return_code = 0

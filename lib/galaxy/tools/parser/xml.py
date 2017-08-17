@@ -18,20 +18,13 @@ from .interface import (
     TestCollectionOutputDef,
     ToolSource,
     ToolStdioExitCode,
-    ToolStdioRegex,
-)
+    ToolStdioRegex, )
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_elem
-from .output_objects import (
-    ToolOutput,
-    ToolOutputCollection,
-    ToolOutputCollectionStructure
-)
+from .output_objects import (ToolOutput, ToolOutputCollection, ToolOutputCollectionStructure)
 from .util import (
     aggressive_error_checks,
-    error_on_exit_code,
-)
-
+    error_on_exit_code, )
 
 log = logging.getLogger(__name__)
 
@@ -122,9 +115,7 @@ class XmlToolSource(ToolSource):
                 "name": environment_variable_el.get("name"),
                 "template": environment_variable_el.text,
             }
-            environment_variables.append(
-                definition
-            )
+            environment_variables.append(definition)
         return environment_variables
 
     def parse_interpreter(self):
@@ -236,8 +227,7 @@ class XmlToolSource(ToolSource):
                 collection_type=collection_type,
                 collection_type_source=collection_type_source,
                 structured_like=structured_like,
-                dataset_collector_descriptions=dataset_collector_descriptions,
-            )
+                dataset_collector_descriptions=dataset_collector_descriptions, )
             output_collection = ToolOutputCollection(
                 name,
                 structure,
@@ -247,8 +237,7 @@ class XmlToolSource(ToolSource):
                 inherit_format=inherit_format,
                 inherit_metadata=inherit_metadata,
                 default_format_source=default_format_source,
-                default_metadata_source=default_metadata_source,
-            )
+                default_metadata_source=default_metadata_source, )
             outputs[output_collection.name] = output_collection
 
             for data_elem in collection_elem.findall("data"):
@@ -256,8 +245,7 @@ class XmlToolSource(ToolSource):
                     data_elem,
                     default_format=default_format,
                     default_format_source=default_format_source,
-                    default_metadata_source=default_metadata_source,
-                )
+                    default_metadata_source=default_metadata_source, )
 
             for data_elem in collection_elem.findall("data"):
                 output_name = data_elem.get("name")
@@ -272,13 +260,12 @@ class XmlToolSource(ToolSource):
         return outputs, output_collections
 
     def _parse_output(
-        self,
-        data_elem,
-        tool,
-        default_format="data",
-        default_format_source=None,
-        default_metadata_source="",
-    ):
+            self,
+            data_elem,
+            tool,
+            default_format="data",
+            default_format_source=None,
+            default_metadata_source="", ):
         output = ToolOutput(data_elem.get("name"))
         output_format = data_elem.get("format", default_format)
         auto_format = string_as_bool(data_elem.get("auto_format", "false"))
@@ -336,9 +323,7 @@ class XmlToolSource(ToolSource):
     def parse_tests_to_dict(self):
         tests_elem = self.root.find("tests")
         tests = []
-        rval = dict(
-            tests=tests
-        )
+        rval = dict(tests=tests)
 
         if tests_elem is not None:
             for i, test_elem in enumerate(tests_elem.findall("test")):
@@ -369,8 +354,7 @@ def _test_elem_to_dict(test_elem, i):
         stderr=__parse_assert_list_from_elem(test_elem.find("assert_stderr")),
         expect_exit_code=test_elem.get("expect_exit_code"),
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
-        maxseconds=test_elem.get("maxseconds", None),
-    )
+        maxseconds=test_elem.get("maxseconds", None), )
     _copy_to_dict_if_present(test_elem, rval, ["interactor", "num_outputs"])
     return rval
 
@@ -474,7 +458,9 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     has_checksum = md5sum or checksum
     has_nested_tests = extra_files or element_tests or primary_datasets
     if not (assert_list or file or metadata or has_checksum or has_nested_tests):
-        raise Exception("Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)")
+        raise Exception(
+            "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)"
+        )
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
@@ -501,6 +487,7 @@ def __parse_assert_list_from_elem(assert_elem):
         for child_elem in elem:
             converted_children.append(convert_elem(child_elem))
         return {"tag": tag, "attributes": attributes, "children": converted_children}
+
     if assert_elem is not None:
         assert_list = []
         for assert_child in list(assert_elem):
@@ -631,7 +618,6 @@ def __parse_param_elem(param_elem, i=0):
 
 
 class StdioParser(object):
-
     def __init__(self, root):
         try:
             self.stdio_exit_codes = list()
@@ -667,14 +653,12 @@ class StdioParser(object):
                 if exit_code.desc is None:
                     exit_code.desc = exit_code_elem.get("description")
                 # Parse the error level:
-                exit_code.error_level = (
-                    self.parse_error_level(exit_code_elem.get("level")))
+                exit_code.error_level = (self.parse_error_level(exit_code_elem.get("level")))
                 code_range = exit_code_elem.get("range", "")
                 if code_range is None:
                     code_range = exit_code_elem.get("value", "")
                 if code_range is None:
-                    log.warning("Tool stdio exit codes must have " +
-                                "a range or value")
+                    log.warning("Tool stdio exit codes must have " + "a range or value")
                     continue
                 # Parse the range. We look for:
                 #   :Y
@@ -697,8 +681,7 @@ class StdioParser(object):
                         exit_code.range_end = int(code_ranges[1])
                 # If we got more than one colon, then ignore the exit code.
                 elif (len(code_ranges) > 2):
-                    log.warning("Invalid tool exit_code range %s - ignored"
-                                % code_range)
+                    log.warning("Invalid tool exit_code range %s - ignored" % code_range)
                     continue
                 # Else we have a singular value. If it's not an integer, then
                 # we'll just write a log message and skip this exit_code.
@@ -715,14 +698,11 @@ class StdioParser(object):
                 # isn't bogus. If we have two infinite values, then
                 # the start must be -inf and the end must be +inf.
                 # So at least warn about this situation:
-                if (isinf(exit_code.range_start) and
-                        isinf(exit_code.range_end)):
-                    log.warning("Tool exit_code range %s will match on " +
-                                "all exit codes" % code_range)
+                if (isinf(exit_code.range_start) and isinf(exit_code.range_end)):
+                    log.warning("Tool exit_code range %s will match on " + "all exit codes" % code_range)
                 self.stdio_exit_codes.append(exit_code)
         except Exception:
-            log.error("Exception in parse_stdio_exit_codes! " +
-                      str(sys.exc_info()))
+            log.error("Exception in parse_stdio_exit_codes! " + str(sys.exc_info()))
             trace = sys.exc_info()[2]
             if trace is not None:
                 trace_msg = repr(traceback.format_tb(trace))
@@ -747,13 +727,11 @@ class StdioParser(object):
                 if regex.desc is None:
                     regex.desc = regex_elem.get("description")
                 # Parse the error level
-                regex.error_level = (
-                    self.parse_error_level(regex_elem.get("level")))
+                regex.error_level = (self.parse_error_level(regex_elem.get("level")))
                 regex.match = regex_elem.get("match", "")
                 if regex.match is None:
                     # TODO: Convert the offending XML element to a string
-                    log.warning("Ignoring tool's stdio regex element %s - "
-                                "the 'match' attribute must exist")
+                    log.warning("Ignoring tool's stdio regex element %s - " "the 'match' attribute must exist")
                     continue
                 # Parse the output sources. We look for the "src", "source",
                 # and "sources" attributes, in that order. If there is no
@@ -789,8 +767,7 @@ class StdioParser(object):
                         regex.stderr_match = True
                 self.stdio_regexes.append(regex)
         except Exception:
-            log.error("Exception in parse_stdio_exit_codes! " +
-                      str(sys.exc_info()))
+            log.error("Exception in parse_stdio_exit_codes! " + str(sys.exc_info()))
             trace = sys.exc_info()[2]
             if trace is not None:
                 trace_msg = repr(traceback.format_tb(trace))
@@ -813,11 +790,9 @@ class StdioParser(object):
                 elif (re.search("fatal", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.FATAL
                 else:
-                    log.debug("Tool %s: error level %s did not match log/warning/fatal" %
-                              (self.id, err_level))
+                    log.debug("Tool %s: error level %s did not match log/warning/fatal" % (self.id, err_level))
         except Exception:
-            log.error("Exception in parse_error_level " +
-                      str(sys.exc_info()))
+            log.error("Exception in parse_error_level " + str(sys.exc_info()))
             trace = sys.exc_info()[2]
             if trace is not None:
                 trace_msg = repr(traceback.format_tb(trace))
@@ -826,7 +801,6 @@ class StdioParser(object):
 
 
 class XmlPagesSource(PagesSource):
-
     def __init__(self, root):
         self.input_elem = root.find("inputs")
         page_sources = []
@@ -842,7 +816,6 @@ class XmlPagesSource(PagesSource):
 
 
 class XmlPageSource(PageSource):
-
     def __init__(self, parent_elem):
         self.parent_elem = parent_elem
 
@@ -859,7 +832,6 @@ class XmlPageSource(PageSource):
 
 
 class XmlInputSource(InputSource):
-
     def __init__(self, input_elem):
         self.input_elem = input_elem
         self.input_type = self.input_elem.tag

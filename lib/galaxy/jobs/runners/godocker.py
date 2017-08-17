@@ -6,11 +6,7 @@ from datetime import datetime
 import requests
 
 from galaxy import model
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState
-)
-
+from galaxy.jobs.runners import (AsynchronousJobRunner, AsynchronousJobState)
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +17,7 @@ class Godocker(object):
     """
     API parameters
     """
+
     def __init__(self, server, login, apikey, noCert):
         self.token = None
         self.server = server
@@ -157,7 +154,8 @@ class GodockerJobRunner(AsynchronousJobRunner):
         else:
             log.debug("Starting queue_job for job " + job_id)
             # Create an object of AsynchronousJobState and add it to the monitor queue.
-            ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_id=job_id, job_destination=job_destination)
+            ajs = AsynchronousJobState(
+                files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_id=job_id, job_destination=job_destination)
             self.monitor_queue.put(ajs)
         return None
 
@@ -372,7 +370,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
             dt = datetime.now()
             # Enable galaxy venv in the docker containers
             try:
-                if(job_destination.params["virtualenv"] == "true"):
+                if (job_destination.params["virtualenv"] == "true"):
                     GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
                     venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
                     command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + venv + "\n" + job_wrapper.runner_command_line
@@ -392,7 +390,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 'requirements': {
                     'cpu': docker_cpu,
                     'ram': docker_ram,
-                    'array': {'values': array},
+                    'array': {
+                        'values': array
+                    },
                     'label': labels,
                     'tasks': tasks_depends,
                     'tmpstorage': None
@@ -419,10 +419,12 @@ class GodockerJobRunner(AsynchronousJobRunner):
             if project is not None:
                 job['user'] = {"project": project}
 
-            result = self.auth.http_post_request(
-                "/api/1.0/task", json.dumps(job),
-                {'Authorization': 'Bearer ' + self.auth.token, 'Content-type': 'application/json', 'Accept': 'application/json'}
-            )
+            result = self.auth.http_post_request("/api/1.0/task",
+                                                 json.dumps(job), {
+                                                     'Authorization': 'Bearer ' + self.auth.token,
+                                                     'Content-type': 'application/json',
+                                                     'Accept': 'application/json'
+                                                 })
             # Return job_id
             return str(result.json()['id'])
 

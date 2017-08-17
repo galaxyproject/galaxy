@@ -10,7 +10,6 @@ log = logging.getLogger(__name__)
 
 
 class ToolVersionManager(object):
-
     def __init__(self, app):
         self.app = app
 
@@ -53,8 +52,7 @@ class ToolVersionManager(object):
                     current_child_guid = parent_guid
         # Get all descendant guids of the received guid.
         current_parent_guid = guid
-        for changeset in hg_util.reversed_lower_upper_bounded_changelog(repo,
-                                                                        repository_metadata.changeset_revision,
+        for changeset in hg_util.reversed_lower_upper_bounded_changelog(repo, repository_metadata.changeset_revision,
                                                                         repository.tip(self.app)):
             ctx = repo.changectx(changeset)
             rm = metadata_util.get_repository_metadata_by_changeset_revision(self.app, repository_id, str(ctx))

@@ -11,12 +11,8 @@ from galaxy import jobs
 from galaxy import util
 from galaxy.tools.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
-    INPUT_DBKEY_TOKEN,
-)
-from galaxy.util import (
-    ExecutionTimer,
-    odict
-)
+    INPUT_DBKEY_TOKEN, )
+from galaxy.util import (ExecutionTimer, odict)
 
 DATASET_ID_TOKEN = "DATASET_ID"
 
@@ -24,21 +20,19 @@ log = logging.getLogger(__name__)
 
 
 def collect_dynamic_collections(
-    tool,
-    output_collections,
-    job_working_directory,
-    inp_data={},
-    job=None,
-    input_dbkey="?",
-):
+        tool,
+        output_collections,
+        job_working_directory,
+        inp_data={},
+        job=None,
+        input_dbkey="?", ):
     collections_service = tool.app.dataset_collections_service
     job_context = JobContext(
         tool,
         job,
         job_working_directory,
         inp_data,
-        input_dbkey,
-    )
+        input_dbkey, )
 
     for name, has_collection in output_collections.items():
         if name not in tool.output_collections:
@@ -55,14 +49,11 @@ def collect_dynamic_collections(
             collection = has_collection
 
         try:
-            collection_builder = collections_service.collection_builder_for(
-                collection
-            )
+            collection_builder = collections_service.collection_builder_for(collection)
             job_context.populate_collection_elements(
                 collection,
                 collection_builder,
-                output_collection_def,
-            )
+                output_collection_def, )
             collection_builder.populate()
         except Exception:
             log.exception("Problem gathering output collection.")
@@ -70,7 +61,6 @@ def collect_dynamic_collections(
 
 
 class JobContext(object):
-
     def __init__(self, tool, job, job_working_directory, inp_data, input_dbkey):
         self.inp_data = inp_data
         self.input_dbkey = input_dbkey
@@ -129,16 +119,14 @@ class JobContext(object):
                 dbkey=dbkey,
                 name=name,
                 filename=filename,
-                metadata_source_name=output_collection_def.metadata_source,
-            )
+                metadata_source_name=output_collection_def.metadata_source, )
             log.debug(
                 "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s] %s",
                 self.job.id,
                 filename,
                 designation,
                 output_collection_def.name,
-                create_dataset_timer,
-            )
+                create_dataset_timer, )
             element_datasets.append((element_identifiers, dataset))
 
         app = self.app
@@ -152,8 +140,7 @@ class JobContext(object):
                 "(%s) Add dynamic collection datsets to history for output [%s] %s",
                 self.job.id,
                 output_collection_def.name,
-                add_datasets_timer,
-            )
+                add_datasets_timer, )
 
         for (element_identifiers, dataset) in element_datasets:
             current_builder = root_collection_builder
@@ -174,15 +161,14 @@ class JobContext(object):
         sa_session.flush()
 
     def create_dataset(
-        self,
-        ext,
-        designation,
-        visible,
-        dbkey,
-        name,
-        filename,
-        metadata_source_name,
-    ):
+            self,
+            ext,
+            designation,
+            visible,
+            dbkey,
+            name,
+            filename,
+            metadata_source_name, ):
         app = self.app
         sa_session = self.sa_session
 
@@ -237,7 +223,8 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
     new_outdata_name = None
     primary_datasets = {}
     for output_index, (name, outdata) in enumerate(output.items()):
-        dataset_collectors = map(dataset_collector, tool.outputs[name].dataset_collector_descriptions) if name in tool.outputs else [DEFAULT_DATASET_COLLECTOR]
+        dataset_collectors = map(
+            dataset_collector, tool.outputs[name].dataset_collector_descriptions) if name in tool.outputs else [DEFAULT_DATASET_COLLECTOR]
         filenames = odict.odict()
         if 'new_file_path' in app.config.collect_outputs_from:
             if DEFAULT_DATASET_COLLECTOR in dataset_collectors:
@@ -300,12 +287,14 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
                 dataset_att_by_name = dict(ext='extension')
                 for att_set in ['name', 'info', 'ext', 'dbkey']:
                     dataset_att_name = dataset_att_by_name.get(att_set, att_set)
-                    setattr(primary_data, dataset_att_name, new_primary_datasets_attributes.get(att_set, getattr(primary_data, dataset_att_name)))
+                    setattr(primary_data, dataset_att_name,
+                            new_primary_datasets_attributes.get(att_set, getattr(primary_data, dataset_att_name)))
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
                 if extra_files_path:
                     extra_files_path_joined = os.path.join(job_working_directory, extra_files_path)
                     for root, dirs, files in os.walk(extra_files_path_joined):
-                        extra_dir = os.path.join(primary_data.extra_files_path, root.replace(extra_files_path_joined, '', 1).lstrip(os.path.sep))
+                        extra_dir = os.path.join(primary_data.extra_files_path,
+                                                 root.replace(extra_files_path_joined, '', 1).lstrip(os.path.sep))
                         for f in files:
                             app.object_store.update_from_file(
                                 primary_data.dataset,
@@ -314,8 +303,7 @@ def collect_primary_datasets(tool, output, job_working_directory, input_ext, inp
                                 file_name=os.path.join(root, f),
                                 create=True,
                                 dir_only=True,
-                                preserve_symlinks=True
-                            )
+                                preserve_symlinks=True)
             metadata_dict = new_primary_datasets_attributes.get('metadata', None)
             if metadata_dict:
                 if "dbkey" in new_primary_datasets_attributes:
@@ -380,7 +368,6 @@ def dataset_collector(dataset_collection_description):
 
 
 class DatasetCollector(object):
-
     def __init__(self, dataset_collection_description):
         # dataset_collection_description is an abstract description
         # built from the tool parsing module - see galaxy.tools.parser.output_colleciton_def
@@ -426,7 +413,6 @@ def _compose(f, g):
 
 
 class CollectedDatasetMatch(object):
-
     def __init__(self, re_match, collector, filename, path=None):
         self.re_match = re_match
         self.collector = collector
@@ -503,24 +489,18 @@ UNSET = object()
 
 
 def _new_hda(
-    app,
-    sa_session,
-    ext,
-    designation,
-    visible,
-    dbkey,
-    permissions=UNSET,
-):
+        app,
+        sa_session,
+        ext,
+        designation,
+        visible,
+        dbkey,
+        permissions=UNSET, ):
     """Return a new unflushed HDA with dataset and permissions setup.
     """
     # Create new primary dataset
-    primary_data = app.model.HistoryDatasetAssociation(extension=ext,
-                                                       designation=designation,
-                                                       visible=visible,
-                                                       dbkey=dbkey,
-                                                       create_dataset=True,
-                                                       flush=False,
-                                                       sa_session=sa_session)
+    primary_data = app.model.HistoryDatasetAssociation(
+        extension=ext, designation=designation, visible=visible, dbkey=dbkey, create_dataset=True, flush=False, sa_session=sa_session)
     if permissions is not UNSET:
         app.security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
     sa_session.add(primary_data)

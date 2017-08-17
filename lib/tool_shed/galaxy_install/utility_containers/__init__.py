@@ -7,30 +7,41 @@ log = logging.getLogger(__name__)
 
 
 class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerManager):
-
     def __init__(self, app):
         self.app = app
 
-    def build_repository_containers(self, repository, datatypes, invalid_tools, missing_repository_dependencies,
-                                    missing_tool_dependencies, readme_files_dict, repository_dependencies,
-                                    tool_dependencies, valid_tools, workflows, valid_data_managers,
-                                    invalid_data_managers, data_managers_errors, new_install=False,
+    def build_repository_containers(self,
+                                    repository,
+                                    datatypes,
+                                    invalid_tools,
+                                    missing_repository_dependencies,
+                                    missing_tool_dependencies,
+                                    readme_files_dict,
+                                    repository_dependencies,
+                                    tool_dependencies,
+                                    valid_tools,
+                                    workflows,
+                                    valid_data_managers,
+                                    invalid_data_managers,
+                                    data_managers_errors,
+                                    new_install=False,
                                     reinstalling=False):
         """
         Return a dictionary of containers for the received repository's dependencies and readme files for
         display during installation to Galaxy.
         """
-        containers_dict = dict(datatypes=None,
-                               invalid_tools=None,
-                               missing_tool_dependencies=None,
-                               readme_files=None,
-                               repository_dependencies=None,
-                               missing_repository_dependencies=None,
-                               tool_dependencies=None,
-                               valid_tools=None,
-                               workflows=None,
-                               valid_data_managers=None,
-                               invalid_data_managers=None)
+        containers_dict = dict(
+            datatypes=None,
+            invalid_tools=None,
+            missing_tool_dependencies=None,
+            readme_files=None,
+            repository_dependencies=None,
+            missing_repository_dependencies=None,
+            tool_dependencies=None,
+            valid_tools=None,
+            workflows=None,
+            valid_data_managers=None,
+            invalid_data_managers=None)
         # Some of the tool dependency folders will include links to display tool dependency information, and
         # some of these links require the repository id.  However we need to be careful because sometimes the
         # repository object is None.
@@ -109,11 +120,8 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
                 containers_dict['missing_tool_dependencies'] = missing_tool_dependencies_root_folder
             # Valid tools container.
             if valid_tools:
-                folder_id, valid_tools_root_folder = self.build_tools_folder(folder_id,
-                                                                             valid_tools,
-                                                                             repository,
-                                                                             changeset_revision,
-                                                                             label='Valid tools')
+                folder_id, valid_tools_root_folder = self.build_tools_folder(
+                    folder_id, valid_tools, repository, changeset_revision, label='Valid tools')
                 containers_dict['valid_tools'] = valid_tools_root_folder
             # Workflows container.
             if workflows:

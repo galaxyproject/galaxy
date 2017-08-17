@@ -9,15 +9,14 @@ from .cwltool_deps import (
     ensure_cwltool_available,
     load_tool,
     schema_salad,
-    workflow,
-)
+    workflow, )
 
 RawProcessReference = namedtuple("RawProcessReference", ["process_object", "uri"])
-ProcessDefinition = namedtuple("ProcessDefinition", ["process_object", "metadata", "document_loader", "avsc_names", "raw_process_reference"])
+ProcessDefinition = namedtuple("ProcessDefinition",
+                               ["process_object", "metadata", "document_loader", "avsc_names", "raw_process_reference"])
 
 
 class SchemaLoader(object):
-
     def __init__(self, strict=True):
         self._strict = strict
         self._raw_document_loader = None
@@ -36,15 +35,13 @@ class SchemaLoader(object):
         document_loader, avsc_names, process_object, metadata, uri = load_tool.validate_document(
             self.raw_document_loader,
             raw_reference.process_object,
-            raw_reference.uri,
-        )
+            raw_reference.uri, )
         process_def = ProcessDefinition(
             process_object,
             metadata,
             document_loader,
             avsc_names,
-            raw_reference,
-        )
+            raw_reference, )
         return process_def
 
     def tool(self, **kwds):
@@ -62,8 +59,7 @@ class SchemaLoader(object):
             process_definition.metadata,
             process_definition.raw_process_reference.uri,
             make_tool,
-            {"strict": self._strict},
-        )
+            {"strict": self._strict}, )
         return tool
 
 

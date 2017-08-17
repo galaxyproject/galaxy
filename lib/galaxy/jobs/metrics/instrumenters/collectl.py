@@ -5,11 +5,7 @@ import shutil
 
 from galaxy import util
 
-from ..collectl import (
-    cli,
-    processes,
-    subsystems
-)
+from ..collectl import (cli, processes, subsystems)
 from ..instrumenters import InstrumentPlugin
 from ...metrics import formatting
 
@@ -32,7 +28,6 @@ EMPTY_COLLECTL_FILE_MESSAGE = "Skipping process summary due to empty file... job
 
 
 class CollectlFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         if key == "pid":
             return ("Process ID", int(value))
@@ -107,8 +102,7 @@ class CollectlPlugin(InstrumentPlugin):
             raise Exception(message)
 
         properties = dict(
-            pid=int(pid),
-        )
+            pid=int(pid), )
 
         if self.saved_logs_path:
             destination_rel_dir = os.path.join(*util.directory_hash_id(job_id))
@@ -162,17 +156,12 @@ class CollectlPlugin(InstrumentPlugin):
         explicit_args = dict(
             collectl_path=self.remote_collectl_path,
             procfilt=procfilt_argument(procfilt_on),
-            subsystems=self.subsystems,
-        )
+            subsystems=self.subsystems, )
         collectl_recorder_args.update(explicit_args)
         self.collectl_recorder_args = collectl_recorder_args
 
     def __summarize_process_data(self, pid, collectl_log_path):
-        playback_cli_args = dict(
-            collectl_path=self.local_collectl_path,
-            playback_path=collectl_log_path,
-            sep="9"
-        )
+        playback_cli_args = dict(collectl_path=self.local_collectl_path, playback_path=collectl_log_path, sep="9")
         if not os.stat(collectl_log_path).st_size:
             log.debug(EMPTY_COLLECTL_FILE_MESSAGE)
             return []
@@ -191,10 +180,7 @@ class CollectlPlugin(InstrumentPlugin):
             redirect_to = self._instrument_file_path(job_directory, "program_output")
         else:
             redirect_to = "/dev/null"
-        return "%s > %s 2>&1 &" % (
-            collectl_cli.build_command_line(),
-            redirect_to,
-        )
+        return "%s > %s 2>&1 &" % (collectl_cli.build_command_line(), redirect_to, )
 
     def __pid_file(self, job_directory):
         return self._instrument_file_path(job_directory, "pid")

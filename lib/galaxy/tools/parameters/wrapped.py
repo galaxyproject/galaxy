@@ -1,26 +1,12 @@
-from galaxy.tools.parameters.basic import (
-    DataCollectionToolParameter,
-    DataToolParameter,
-    SelectToolParameter
-)
-from galaxy.tools.parameters.grouping import (
-    Conditional,
-    Repeat,
-    Section
-)
-from galaxy.tools.wrappers import (
-    DatasetCollectionWrapper,
-    DatasetFilenameWrapper,
-    DatasetListWrapper,
-    InputValueWrapper,
-    SelectToolParameterWrapper
-)
+from galaxy.tools.parameters.basic import (DataCollectionToolParameter, DataToolParameter, SelectToolParameter)
+from galaxy.tools.parameters.grouping import (Conditional, Repeat, Section)
+from galaxy.tools.wrappers import (DatasetCollectionWrapper, DatasetFilenameWrapper, DatasetListWrapper, InputValueWrapper,
+                                   SelectToolParameterWrapper)
 
 PARAMS_UNWRAPPED = object()
 
 
 class WrappedParameters(object):
-
     def __init__(self, trans, tool, incoming):
         self.trans = trans
         self.tool = tool
@@ -77,8 +63,7 @@ class WrappedParameters(object):
                     value,
                     datatypes_registry=trans.app.datatypes_registry,
                     tool=tool,
-                    name=input.name,
-                )
+                    name=input.name, )
             else:
                 input_values[input.name] = InputValueWrapper(input, value, incoming)
 

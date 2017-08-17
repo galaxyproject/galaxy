@@ -40,9 +40,7 @@ class CollectionBuilder(object):
             message = message_template % (self._collection_type_description)
             raise AssertionError(message)
         if identifier not in self._current_elements:
-            subcollection_builder = CollectionBuilder(
-                self._subcollection_type_description
-            )
+            subcollection_builder = CollectionBuilder(self._subcollection_type_description)
             self._current_elements[identifier] = subcollection_builder
 
         return self._current_elements[identifier]

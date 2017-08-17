@@ -27,7 +27,7 @@ class Base:
             If second parameter is set to 'first' it will only
             capitalize the first character of the title.'''
 
-        if(uppercase == 'first'):
+        if (uppercase == 'first'):
             return self.humanize(self.underscore(word)).capitalize()
         else:
             return self.humanize(self.underscore(word)).title()
@@ -46,8 +46,7 @@ class Base:
         This can be really useful for creating friendly URLs.'''
 
         return re.sub('[^A-Z^a-z^0-9^\/]+', '_',
-                      re.sub('([a-z\d])([A-Z])', '\\1_\\2',
-                             re.sub('([A-Z]+)([A-Z][a-z])', '\\1_\\2', re.sub('::', '/', word)))).lower()
+                      re.sub('([a-z\d])([A-Z])', '\\1_\\2', re.sub('([A-Z]+)([A-Z][a-z])', '\\1_\\2', re.sub('::', '/', word)))).lower()
 
     def humanize(self, word, uppercase=''):
         '''Returns a human-readable string from word
@@ -57,7 +56,7 @@ class Base:
         If you need to uppercase all the words you just have to
         pass 'all' as a second parameter.'''
 
-        if(uppercase == 'first'):
+        if (uppercase == 'first'):
             return re.sub('_id$', '', word).replace('_', ' ').capitalize()
         else:
             return re.sub('_id$', '', word).replace('_', ' ').title()
@@ -132,7 +131,7 @@ class Base:
         return self.underscore(self.demodulize(class_name)) + tail
 
 
-class English (Base):
+class English(Base):
     """
     Inflector for pluralize and singularize English nouns.
 
@@ -142,36 +141,16 @@ class English (Base):
     def pluralize(self, word):
         '''Pluralizes English nouns.'''
 
-        rules = [
-            ['(?i)(quiz)$', '\\1zes'],
-            ['^(?i)(ox)$', '\\1en'],
-            ['(?i)([m|l])ouse$', '\\1ice'],
-            ['(?i)(matr|vert|ind)ix|ex$', '\\1ices'],
-            ['(?i)(x|ch|ss|sh)$', '\\1es'],
-            ['(?i)([^aeiouy]|qu)ies$', '\\1y'],
-            ['(?i)([^aeiouy]|qu)y$', '\\1ies'],
-            ['(?i)(hive)$', '\\1s'],
-            ['(?i)(?:([^f])fe|([lr])f)$', '\\1\\2ves'],
-            ['(?i)sis$', 'ses'],
-            ['(?i)([ti])um$', '\\1a'],
-            ['(?i)(buffal|tomat)o$', '\\1oes'],
-            ['(?i)(bu)s$', '\\1ses'],
-            ['(?i)(alias|status)', '\\1es'],
-            ['(?i)(octop|vir)us$', '\\1i'],
-            ['(?i)(ax|test)is$', '\\1es'],
-            ['(?i)s$', 's'],
-            ['(?i)$', 's']
-        ]
+        rules = [['(?i)(quiz)$', '\\1zes'], ['^(?i)(ox)$', '\\1en'], ['(?i)([m|l])ouse$', '\\1ice'], [
+            '(?i)(matr|vert|ind)ix|ex$', '\\1ices'
+        ], ['(?i)(x|ch|ss|sh)$', '\\1es'], ['(?i)([^aeiouy]|qu)ies$', '\\1y'], ['(?i)([^aeiouy]|qu)y$', '\\1ies'], ['(?i)(hive)$', '\\1s'],
+                 ['(?i)(?:([^f])fe|([lr])f)$', '\\1\\2ves'], ['(?i)sis$', 'ses'], ['(?i)([ti])um$', '\\1a'],
+                 ['(?i)(buffal|tomat)o$', '\\1oes'], ['(?i)(bu)s$', '\\1ses'], ['(?i)(alias|status)', '\\1es'],
+                 ['(?i)(octop|vir)us$', '\\1i'], ['(?i)(ax|test)is$', '\\1es'], ['(?i)s$', 's'], ['(?i)$', 's']]
 
         uncountable_words = ['equipment', 'information', 'rice', 'money', 'species', 'series', 'fish', 'sheep']
 
-        irregular_words = {
-            'person': 'people',
-            'man': 'men',
-            'child': 'children',
-            'sex': 'sexes',
-            'move': 'moves'
-        }
+        irregular_words = {'person': 'people', 'man': 'men', 'child': 'children', 'sex': 'sexes', 'move': 'moves'}
 
         lower_cased_word = word.lower()
 
@@ -228,13 +207,7 @@ class English (Base):
 
         uncountable_words = ['equipment', 'information', 'rice', 'money', 'species', 'series', 'fish', 'sheep', 'sms']
 
-        irregular_words = {
-            'people': 'person',
-            'men': 'man',
-            'children': 'child',
-            'sexes': 'sex',
-            'moves': 'move'
-        }
+        irregular_words = {'people': 'person', 'men': 'man', 'children': 'child', 'sexes': 'sex', 'moves': 'move'}
 
         lower_cased_word = word.lower()
         for uncountable_word in uncountable_words:

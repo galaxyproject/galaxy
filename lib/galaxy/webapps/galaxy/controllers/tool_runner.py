@@ -34,7 +34,8 @@ class ToolRunner(BaseUIController):
         return self.index(trans, tool_id=tool_id, **kwd)
 
     def __get_tool(self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False):
-        tool_version_select_field, tools, tool = self.get_toolbox().get_tool_components(tool_id, tool_version, get_loaded_tools_by_lineage, set_selected)
+        tool_version_select_field, tools, tool = self.get_toolbox().get_tool_components(tool_id, tool_version, get_loaded_tools_by_lineage,
+                                                                                        set_selected)
         return tool
 
     @web.expose
@@ -44,6 +45,7 @@ class ToolRunner(BaseUIController):
             trans.log_event('Tool id \'%s\' does not exist' % tool_id)
             trans.response.status = 404
             return trans.show_error_message('Tool \'%s\' does not exist.' % (escape(tool_id)))
+
         # tool id not available, redirect to main page
         if tool_id is None:
             return trans.response.send_redirect(url_for(controller='root', action='welcome'))
@@ -53,12 +55,14 @@ class ToolRunner(BaseUIController):
             return __tool_404__()
         if tool.require_login and not trans.user:
             redirect = url_for(controller='tool_runner', action='index', tool_id=tool_id, **kwd)
-            return trans.response.send_redirect(url_for(controller='user',
-                                                        action='login',
-                                                        cntrller='user',
-                                                        status='info',
-                                                        message='You must be logged in to use this tool.',
-                                                        redirect=redirect))
+            return trans.response.send_redirect(
+                url_for(
+                    controller='user',
+                    action='login',
+                    cntrller='user',
+                    status='info',
+                    message='You must be logged in to use this tool.',
+                    redirect=redirect))
         if not tool.allow_user_access(trans.user):
             return __tool_404__()
         if tool.tool_type == 'default':

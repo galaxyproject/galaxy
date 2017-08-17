@@ -8,13 +8,12 @@ DEFAULT_MAX_RETRIES = -1  # By default don't retry.
 DEFAULT_INTERVAL_START = 2.0
 DEFAULT_INTERVAL_MAX = 30.0
 DEFAULT_INTERVAL_STEP = 2.0
-DEFAULT_CATCH = (Exception,)
+DEFAULT_CATCH = (Exception, )
 
 DEFAULT_DESCRIPTION = "action"
 
 
 class RetryActionExecutor(object):
-
     def __init__(self, **kwds):
         # Use variables that match kombu to keep things consistent across
         # Pulsar.
@@ -46,25 +45,17 @@ class RetryActionExecutor(object):
             interval_start=self.interval_start,
             interval_step=self.interval_step,
             interval_max=self.interval_max,
-            errback=on_error,
-        )
+            errback=on_error, )
 
     def __default_errback(self, exc, interval, description=None):
         description = description or self.default_description
-        log.info(
-            "Failed to execute %s, retrying in %s seconds.",
-            description,
-            interval,
-            exc_info=True
-        )
+        log.info("Failed to execute %s, retrying in %s seconds.", description, interval, exc_info=True)
 
 
 # Following functions are derived from Kombu versions @
 # https://github.com/celery/kombu/blob/master/kombu/utils/__init__.py
 # BSD License (https://github.com/celery/kombu/blob/master/LICENSE)
-def _retry_over_time(fun, catch, args=[], kwargs={}, errback=None,
-                     max_retries=None, interval_start=2, interval_step=2,
-                     interval_max=30):
+def _retry_over_time(fun, catch, args=[], kwargs={}, errback=None, max_retries=None, interval_start=2, interval_step=2, interval_max=30):
     """Retry the function over and over until max retries is exceeded.
 
     For each retry we sleep a for a while before we try again, this interval
@@ -85,17 +76,14 @@ def _retry_over_time(fun, catch, args=[], kwargs={}, errback=None,
 
     """
     retries = 0
-    interval_range = __fxrange(interval_start,
-                               interval_max + interval_start,
-                               interval_step, repeatlast=True)
+    interval_range = __fxrange(interval_start, interval_max + interval_start, interval_step, repeatlast=True)
     for retries in count():
         try:
             return fun(*args, **kwargs)
         except catch as exc:
             if max_retries and retries >= max_retries:
                 raise
-            tts = float(errback(exc, interval_range, retries) if errback
-                        else next(interval_range))
+            tts = float(errback(exc, interval_range, retries) if errback else next(interval_range))
             if tts:
                 sleep(tts)
 

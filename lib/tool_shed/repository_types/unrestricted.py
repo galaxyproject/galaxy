@@ -7,7 +7,6 @@ log = logging.getLogger(__name__)
 
 
 class Unrestricted(Metadata):
-
     def __init__(self):
         self.type = rt_util.UNRESTRICTED
         self.label = 'Unrestricted'

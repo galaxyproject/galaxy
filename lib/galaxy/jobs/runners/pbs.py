@@ -15,15 +15,9 @@ except ImportError as exc:
                           'this feature, please install it or correct the '
                           'following error:\nImportError %s' % str(exc))
 
-from galaxy import (
-    model,
-    util
-)
+from galaxy import (model, util)
 from galaxy.jobs import JobDestination
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState
-)
+from galaxy.jobs.runners import (AsynchronousJobRunner, AsynchronousJobState)
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
@@ -45,26 +39,26 @@ mkdir -p %s
 """
 
 PBS_ARGMAP = {
-    'destination'           : '-q',
-    'Execution_Time'        : '-a',
-    'Account_Name'          : '-A',
-    'Checkpoint'            : '-c',
-    'Error_Path'            : '-e',
-    'Group_List'            : '-g',
-    'Hold_Types'            : '-h',
-    'Join_Paths'            : '-j',
-    'Keep_Files'            : '-k',
-    'Resource_List'         : '-l',
-    'Mail_Points'           : '-m',
-    'Mail_Users'            : '-M',
-    'Job_Name'              : '-N',
-    'Output_Path'           : '-o',
-    'Priority'              : '-p',
-    'Rerunable'             : '-r',
-    'Shell_Path_List'       : '-S',
-    'job_array_request'     : '-t',
-    'User_List'             : '-u',
-    'Variable_List'         : '-v',
+    'destination': '-q',
+    'Execution_Time': '-a',
+    'Account_Name': '-A',
+    'Checkpoint': '-c',
+    'Error_Path': '-e',
+    'Group_List': '-g',
+    'Hold_Types': '-h',
+    'Join_Paths': '-j',
+    'Keep_Files': '-k',
+    'Resource_List': '-l',
+    'Mail_Points': '-m',
+    'Mail_Users': '-M',
+    'Job_Name': '-N',
+    'Output_Path': '-o',
+    'Priority': '-p',
+    'Rerunable': '-r',
+    'Shell_Path_List': '-S',
+    'job_array_request': '-t',
+    'User_List': '-u',
+    'Variable_List': '-v',
 }
 
 # From pbs' pbs_job.h
@@ -100,7 +94,7 @@ class PBSJobRunner(AsynchronousJobRunner):
 
         # Set the default server during startup
         self.__default_pbs_server = None
-        self.default_pbs_server     # this is a method with a property decorator, so this causes the default server to be set
+        self.default_pbs_server  # this is a method with a property decorator, so this causes the default server to be set
 
         # Proceed with general initialization
         super(PBSJobRunner, self).__init__(app, nworkers)
@@ -199,7 +193,7 @@ class PBSJobRunner(AsynchronousJobRunner):
     def queue_job(self, job_wrapper):
         """Create PBS script for a job and submit it to the PBS queue"""
         # prepare the job
-        if not self.prepare_job(job_wrapper, include_metadata=not(self.app.config.pbs_stage_path)):
+        if not self.prepare_job(job_wrapper, include_metadata=not (self.app.config.pbs_stage_path)):
             return
 
         job_destination = job_wrapper.job_destination
@@ -279,11 +273,8 @@ class PBSJobRunner(AsynchronousJobRunner):
             with open(ecfile, 'a'):
                 os.utime(ecfile, None)
 
-            stage_commands = pbs_symlink_template % (
-                " ".join(job_wrapper.get_input_fnames() + output_files),
-                self.app.config.pbs_stage_path,
-                exec_dir,
-            )
+            stage_commands = pbs_symlink_template % (" ".join(job_wrapper.get_input_fnames() + output_files),
+                                                     self.app.config.pbs_stage_path, exec_dir, )
         else:
             stage_commands = ''
 
@@ -369,7 +360,8 @@ class PBSJobRunner(AsynchronousJobRunner):
                 try:
                     # Recheck to make sure it wasn't a communication problem
                     self.check_single_job(pbs_server_name, job_id)
-                    log.warning("(%s/%s) PBS job was not in state check list, but was found with individual state check" % (galaxy_job_id, job_id))
+                    log.warning("(%s/%s) PBS job was not in state check list, but was found with individual state check" % (galaxy_job_id,
+                                                                                                                            job_id))
                     new_watched.append(pbs_job_state)
                 except:
                     errno, text = pbs.error()
@@ -444,7 +436,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             jobs = pbs.pbs_statjob(c, None, stat_attrl, None)
             pbs.pbs_disconnect(c)
             statuses.update(self.convert_statjob_to_bunches(jobs))
-        return((failures, statuses))
+        return ((failures, statuses))
 
     def convert_statjob_to_bunches(self, statjob_out):
         statuses = {}
@@ -514,17 +506,14 @@ class PBSJobRunner(AsynchronousJobRunner):
         try:
             pbs_server_name = self.__get_pbs_server(job.destination_params)
             if pbs_server_name is None:
-                log.debug("(%s) Job queued but no destination stored in job params, cannot delete"
-                          % job_tag)
+                log.debug("(%s) Job queued but no destination stored in job params, cannot delete" % job_tag)
                 return
             c = pbs.pbs_connect(util.smart_str(pbs_server_name))
             if c <= 0:
-                log.debug("(%s) Connection to PBS server for job delete failed"
-                          % job_tag)
+                log.debug("(%s) Connection to PBS server for job delete failed" % job_tag)
                 return
             pbs.pbs_deljob(c, job_id, '')
-            log.debug("%s Removed from PBS queue before job completion"
-                      % job_tag)
+            log.debug("%s Removed from PBS queue before job completion" % job_tag)
         except:
             e = traceback.format_exc()
             log.debug("%s Unable to stop job: %s" % (job_tag, e))

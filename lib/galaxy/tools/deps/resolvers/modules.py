@@ -17,8 +17,7 @@ from ..resolvers import (
     Dependency,
     DependencyResolver,
     MappableDependencyResolver,
-    NullDependency,
-)
+    NullDependency, )
 
 log = logging.getLogger(__name__)
 
@@ -80,6 +79,7 @@ class DirectoryModuleChecker(object):
 
     Searches the paths listed in modulepath to for a file or directory matching the module name.
     If the version=True, searches for files named module/version."""
+
     def __init__(self, module_dependency_resolver, modulepath, prefetch):
         self.module_dependency_resolver = module_dependency_resolver
         self.directories = modulepath.split(pathsep)
@@ -109,6 +109,7 @@ class AvailModuleChecker(object):
     module names into module and version on '/' and discarding a postfix matching default_indicator
     (by default '(default)'. Matching is done using the module and
     (if version=True) the module version."""
+
     def __init__(self, module_dependency_resolver, modulepath, prefetch, default_indicator=DEFAULT_INDICATOR):
         self.module_dependency_resolver = module_dependency_resolver
         self.modulepath = modulepath
@@ -180,8 +181,7 @@ class ModuleDependency(Dependency):
         if self.module_version:
             module_to_load = '%s/%s' % (self.module_name, self.module_version)
         command = 'MODULEPATH=%s; export MODULEPATH; eval `%s sh load %s`' % (self.module_dependency_resolver.modulepath,
-                                                                              self.module_dependency_resolver.modulecmd,
-                                                                              module_to_load)
+                                                                              self.module_dependency_resolver.modulecmd, module_to_load)
         return command
 
 

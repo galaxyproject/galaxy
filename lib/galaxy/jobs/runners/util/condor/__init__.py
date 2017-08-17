@@ -1,21 +1,14 @@
 """
 Condor helper utilities.
 """
-from subprocess import (
-    CalledProcessError,
-    check_call,
-    PIPE,
-    Popen,
-    STDOUT
-)
+from subprocess import (CalledProcessError, check_call, PIPE, Popen, STDOUT)
 
 from ..external import parse_external_id
 
 DEFAULT_QUERY_CLASSAD = dict(
     universe='vanilla',
     getenv='true',
-    notification='NEVER',
-)
+    notification='NEVER', )
 
 PROBLEM_RUNNING_CONDOR_SUBMIT = \
     "Problem encountered while running condor_submit."

@@ -171,17 +171,77 @@ class Biom1(Json):
     """
     file_ext = "biom1"
 
-    MetadataElement(name="table_rows", default=[], desc="table_rows", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
-    MetadataElement(name="table_matrix_element_type", default="", desc="table_matrix_element_type", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="")
-    MetadataElement(name="table_format", default="", desc="table_format", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="")
-    MetadataElement(name="table_generated_by", default="", desc="table_generated_by", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="")
-    MetadataElement(name="table_matrix_type", default="", desc="table_matrix_type", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="")
-    MetadataElement(name="table_shape", default=[], desc="table_shape", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
-    MetadataElement(name="table_format_url", default="", desc="table_format_url", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="")
-    MetadataElement(name="table_date", default="", desc="table_date", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="")
-    MetadataElement(name="table_type", default="", desc="table_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="")
-    MetadataElement(name="table_id", default=None, desc="table_id", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=None)
-    MetadataElement(name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(
+        name="table_rows", default=[], desc="table_rows", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(
+        name="table_matrix_element_type",
+        default="",
+        desc="table_matrix_element_type",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value="")
+    MetadataElement(
+        name="table_format",
+        default="",
+        desc="table_format",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value="")
+    MetadataElement(
+        name="table_generated_by",
+        default="",
+        desc="table_generated_by",
+        param=MetadataParameter,
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value="")
+    MetadataElement(
+        name="table_matrix_type",
+        default="",
+        desc="table_matrix_type",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value="")
+    MetadataElement(
+        name="table_shape",
+        default=[],
+        desc="table_shape",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=[])
+    MetadataElement(
+        name="table_format_url",
+        default="",
+        desc="table_format_url",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value="")
+    MetadataElement(
+        name="table_date", default="", desc="table_date", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="")
+    MetadataElement(
+        name="table_type", default="", desc="table_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="")
+    MetadataElement(
+        name="table_id", default=None, desc="table_id", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=None)
+    MetadataElement(
+        name="table_columns",
+        default=[],
+        desc="table_columns",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=[])
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(Biom1, self).set_peek(dataset, is_multi_byte)
@@ -237,17 +297,11 @@ class Biom1(Json):
                     return []
 
                 b_transform = {'rows': _transform_dict_list_ids, 'columns': _transform_dict_list_ids}
-                for (m_name, b_name) in [('table_rows', 'rows'),
-                                         ('table_matrix_element_type', 'matrix_element_type'),
-                                         ('table_format', 'format'),
-                                         ('table_generated_by', 'generated_by'),
-                                         ('table_matrix_type', 'matrix_type'),
-                                         ('table_shape', 'shape'),
-                                         ('table_format_url', 'format_url'),
-                                         ('table_date', 'date'),
-                                         ('table_type', 'type'),
-                                         ('table_id', 'id'),
-                                         ('table_columns', 'columns')]:
+                for (m_name, b_name) in [('table_rows', 'rows'), ('table_matrix_element_type',
+                                                                  'matrix_element_type'), ('table_format', 'format'), ('table_generated_by',
+                                                                                                                       'generated_by'),
+                                         ('table_matrix_type', 'matrix_type'), ('table_shape', 'shape'), ('table_format_url', 'format_url'),
+                                         ('table_date', 'date'), ('table_type', 'type'), ('table_id', 'id'), ('table_columns', 'columns')]:
                     try:
                         metadata_value = json_dict.get(b_name, None)
                         if b_name in b_transform:
@@ -300,7 +354,6 @@ class Arff(Text):
     """
     edam_format = "format_3581"
     file_ext = "arff"
-
     """Add metadata elements"""
     MetadataElement(name="comment_lines", default=0, desc="Number of comment lines", readonly=True, optional=True, no_value=0)
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0)
@@ -469,7 +522,8 @@ class SnpEffDb(Text):
 
 class SnpSiftDbNSFP(Text):
     """Class describing a dbNSFP database prepared fpr use by SnpSift dbnsfp """
-    MetadataElement(name='reference_name', default='dbSNFP', desc='Reference Name', readonly=True, visible=True, set_in_upload=True, no_value='dbSNFP')
+    MetadataElement(
+        name='reference_name', default='dbSNFP', desc='Reference Name', readonly=True, visible=True, set_in_upload=True, no_value='dbSNFP')
     MetadataElement(name="bgzip", default=None, desc="dbNSFP bgzip", readonly=True, visible=True, no_value=None)
     MetadataElement(name="index", default=None, desc="Tabix Index File", readonly=True, visible=True, no_value=None)
     MetadataElement(name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[])
@@ -487,6 +541,7 @@ class SnpSiftDbNSFP(Text):
     ## Create tabix index
     tabix -s 1 -b 2 -e 2 dbNSFP2.3.txt.gz
     """
+
     def __init__(self, **kwd):
         Text.__init__(self, **kwd)
         self.add_composite_file('%s.gz', description='dbNSFP bgzip', substitute_name_with_metadata='reference_name', is_binary=True)

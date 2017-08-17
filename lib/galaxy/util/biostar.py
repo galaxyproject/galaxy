@@ -30,10 +30,25 @@ DEFAULT_PAYLOAD = {
 }
 
 BIOSTAR_ACTIONS = {
-    None: {'url': lambda x: '', 'uses_payload': False},
-    'new_post': {'url': lambda x: 'p/new/external/post/', 'uses_payload': True, 'hmac_values': {'content': 'digest'}},
-    'show_tags': {'url': lambda x: 't/%s/' % ("+".join((x.get('tag_val') or DEFAULT_GALAXY_TAG).split(','))), 'uses_payload': False},
-    'log_out': {'url': lambda x: 'site/logout/', 'uses_payload': False}
+    None: {
+        'url': lambda x: '',
+        'uses_payload': False
+    },
+    'new_post': {
+        'url': lambda x: 'p/new/external/post/',
+        'uses_payload': True,
+        'hmac_values': {
+            'content': 'digest'
+        }
+    },
+    'show_tags': {
+        'url': lambda x: 't/%s/' % ("+".join((x.get('tag_val') or DEFAULT_GALAXY_TAG).split(','))),
+        'uses_payload': False
+    },
+    'log_out': {
+        'url': lambda x: 'site/logout/',
+        'uses_payload': False
+    }
 }
 
 DEFAULT_BIOSTAR_COOKIE_AGE = 1
@@ -110,7 +125,8 @@ def populate_tool_payload(payload=None, tool=None):
             tool_url = '</br>ToolShed URL: <a href="%s">%s</a>' % (tool_url, tool_url)
     if not tool_url:
         tool_url = ''
-    payload['content'] = '<br /><hr /><p>Tool name: %s</br>Tool version: %s</br>Tool ID: %s%s</p></br>' % (tool.name, tool.version, tool.id, tool_url)
+    payload['content'] = '<br /><hr /><p>Tool name: %s</br>Tool version: %s</br>Tool ID: %s%s</p></br>' % (tool.name, tool.version, tool.id,
+                                                                                                           tool_url)
     return payload
 
 
@@ -165,7 +181,8 @@ def biostar_logout(trans):
 class BiostarErrorReporter(ErrorReporter):
     def _send_report(self, user, email=None, message=None, **kwd):
         assert biostar_enabled(self.app), ValueError("Biostar is not configured for this galaxy instance")
-        assert self.app.config.biostar_enable_bug_reports, ValueError("Biostar is not configured to allow bug reporting for this galaxy instance")
+        assert self.app.config.biostar_enable_bug_reports, ValueError(
+            "Biostar is not configured to allow bug reporting for this galaxy instance")
         assert self._can_access_dataset(user), Exception("You are not allowed to access this dataset.")
         tool_version_select_field, tools, tool = \
             self.app.toolbox.get_tool_components(self.tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=True)
@@ -178,11 +195,7 @@ class BiostarErrorReporter(ErrorReporter):
         # Must lstrip spaces or it isn't recognised as HTML
         report = report.lstrip()
 
-        payload = {
-            'title': 'Bug report on "%s" tool' % (tool.name),
-            'content': report,
-            'tag_val': slugify('bug report')
-        }
+        payload = {'title': 'Bug report on "%s" tool' % (tool.name), 'content': report, 'tag_val': slugify('bug report')}
         # Get footer for email from here
         payload2 = populate_tool_payload(tool=tool)
         if 'content' in payload2:

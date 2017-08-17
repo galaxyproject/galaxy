@@ -54,16 +54,24 @@ def pruneLD(plinktasks=[], cd='./', vclbase=[]):
     return alog
 
 
-def makeLDreduced(basename, infpath=None, outfpath=None, plinke='plink', forcerebuild=False, returnFname=False,
-                  winsize="60", winmove="40", r2thresh="0.1"):
+def makeLDreduced(basename,
+                  infpath=None,
+                  outfpath=None,
+                  plinke='plink',
+                  forcerebuild=False,
+                  returnFname=False,
+                  winsize="60",
+                  winmove="40",
+                  r2thresh="0.1"):
     """ not there so make and leave in output dir for post job hook to copy back into input extra files path for next time
     """
     outbase = os.path.join(outfpath, basename)
     inbase = os.path.join(infpath)
     plinktasks = []
     vclbase = [plinke, '--noweb']
-    plinktasks += [['--bfile', inbase, '--indep-pairwise %s %s %s' % (winsize, winmove, r2thresh), '--out %s' % outbase],
-                   ['--bfile', inbase, '--extract %s.prune.in --make-bed --out %s' % (outbase, outbase)]]
+    plinktasks += [['--bfile', inbase, '--indep-pairwise %s %s %s' % (winsize, winmove, r2thresh),
+                    '--out %s' % outbase], ['--bfile', inbase,
+                                            '--extract %s.prune.in --make-bed --out %s' % (outbase, outbase)]]
     vclbase = [plinke, '--noweb']
     pruneLD(plinktasks=plinktasks, cd=outfpath, vclbase=vclbase)
 
@@ -96,8 +104,16 @@ def main():
     except:
         pass
     plink = sys.argv[7]
-    makeLDreduced(base_name, infpath=inpedfilepath, outfpath=outfilepath, plinke=plink, forcerebuild=False, returnFname=False,
-                  winsize=winsize, winmove=winmove, r2thresh=r2thresh)
+    makeLDreduced(
+        base_name,
+        infpath=inpedfilepath,
+        outfpath=outfilepath,
+        plinke=plink,
+        forcerebuild=False,
+        returnFname=False,
+        winsize=winsize,
+        winmove=winmove,
+        r2thresh=r2thresh)
     flist = os.listdir(outfilepath)
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)

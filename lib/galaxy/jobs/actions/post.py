@@ -77,8 +77,7 @@ class ChangeDatatypeAction(DefaultJobAction):
 
     @classmethod
     def get_short_str(cls, pja):
-        return "Set the datatype of output '%s' to '%s'" % (escape(pja.output_name),
-                                                            escape(pja.action_arguments['newtype']))
+        return "Set the datatype of output '%s' to '%s'" % (escape(pja.output_name), escape(pja.action_arguments['newtype']))
 
 
 class RenameDatasetAction(DefaultJobAction):
@@ -182,8 +181,7 @@ class RenameDatasetAction(DefaultJobAction):
     def get_short_str(cls, pja):
         # Prevent renaming a dataset to the empty string.
         if pja.action_arguments and pja.action_arguments.get('newname', ''):
-            return "Rename output '%s' to '%s'." % (escape(pja.output_name),
-                                                    escape(pja.action_arguments['newname']))
+            return "Rename output '%s' to '%s'." % (escape(pja.output_name), escape(pja.action_arguments['newname']))
         else:
             return "Rename action used without a new name specified.  Output name will be unchanged."
 
@@ -195,7 +193,8 @@ class HideDatasetAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
-            if dataset_assoc.dataset.state != dataset_assoc.dataset.states.ERROR and (action.output_name == '' or dataset_assoc.name == action.output_name):
+            if dataset_assoc.dataset.state != dataset_assoc.dataset.states.ERROR and (action.output_name == ''
+                                                                                      or dataset_assoc.name == action.output_name):
                 dataset_assoc.dataset.visible = False
 
     @classmethod
@@ -238,7 +237,8 @@ class ColumnSetAction(DefaultJobAction):
 
     @classmethod
     def get_short_str(cls, pja):
-        return "Set the following metadata values:<br/>" + "<br/>".join('%s : %s' % (escape(k), escape(v)) for k, v in pja.action_arguments.items())
+        return "Set the following metadata values:<br/>" + "<br/>".join('%s : %s' % (escape(k), escape(v))
+                                                                        for k, v in pja.action_arguments.items())
 
 
 class SetMetadataAction(DefaultJobAction):
@@ -281,7 +281,9 @@ class DeleteIntermediatesAction(DefaultJobAction):
             return
         outputs_defined = wfi.workflow.has_outputs_defined()
         if outputs_defined:
-            wfi_steps = [wfistep for wfistep in wfi.steps if not wfistep.workflow_step.workflow_outputs and wfistep.workflow_step.type == "tool"]
+            wfi_steps = [
+                wfistep for wfistep in wfi.steps if not wfistep.workflow_step.workflow_outputs and wfistep.workflow_step.type == "tool"
+            ]
             jobs_to_check = []
             for wfi_step in wfi_steps:
                 sa_session.refresh(wfi_step)
@@ -294,21 +296,27 @@ class DeleteIntermediatesAction(DefaultJobAction):
                 creating_jobs = []
                 for input_dataset in j2c.input_datasets:
                     if not input_dataset.dataset:
-                        log.debug("PJA Async Issue: No dataset attached to input_dataset %s during handling of workflow invocation %s" % (input_dataset.id, wfi))
+                        log.debug("PJA Async Issue: No dataset attached to input_dataset %s during handling of workflow invocation %s" %
+                                  (input_dataset.id, wfi))
                     elif not input_dataset.dataset.creating_job:
-                        log.debug("PJA Async Issue: No creating job attached to dataset %s during handling of workflow invocation %s" % (input_dataset.dataset.id, wfi))
+                        log.debug("PJA Async Issue: No creating job attached to dataset %s during handling of workflow invocation %s" %
+                                  (input_dataset.dataset.id, wfi))
                     else:
                         creating_jobs.append((input_dataset, input_dataset.dataset.creating_job))
                 for (input_dataset, creating_job) in creating_jobs:
                     sa_session.refresh(creating_job)
                     sa_session.refresh(input_dataset)
-                for input_dataset in [x.dataset for (x, creating_job) in creating_jobs if creating_job.workflow_invocation_step and creating_job.workflow_invocation_step.workflow_invocation == wfi]:
+                for input_dataset in [
+                        x.dataset for (x, creating_job) in creating_jobs
+                        if creating_job.workflow_invocation_step and creating_job.workflow_invocation_step.workflow_invocation == wfi
+                ]:
                     # note that the above input_dataset is a reference to a
                     # job.input_dataset.dataset at this point
                     safe_to_delete = True
                     for job_to_check in [d_j.job for d_j in input_dataset.dependent_jobs]:
                         if job_to_check != job and job_to_check.state not in [job.states.OK, job.states.DELETED]:
-                            log.debug("Workflow Intermediates cleanup attempted, but non-terminal state '%s' detected for job %s" % (job_to_check.state, job_to_check.id))
+                            log.debug("Workflow Intermediates cleanup attempted, but non-terminal state '%s' detected for job %s" %
+                                      (job_to_check.state, job_to_check.id))
                             safe_to_delete = False
                     if safe_to_delete:
                         # Support purging here too.
@@ -332,7 +340,10 @@ class TagDatasetAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         if action.action_arguments:
-            tags = [t.replace('#', 'name:') if t.startswith('#') else t for t in [t.strip() for t in action.action_arguments.get('tags', '').split(',') if t.strip()]]
+            tags = [
+                t.replace('#', 'name:') if t.startswith('#') else t
+                for t in [t.strip() for t in action.action_arguments.get('tags', '').split(',') if t.strip()]
+            ]
             if tags:
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
@@ -346,10 +357,7 @@ class TagDatasetAction(DefaultJobAction):
     @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments and pja.action_arguments.get('tags', ''):
-            return "%s tag(s) '%s' %s '%s'." % (cls.action,
-                                                escape(pja.action_arguments['tags']),
-                                                cls.direction,
-                                                escape(pja.output_name))
+            return "%s tag(s) '%s' %s '%s'." % (cls.action, escape(pja.action_arguments['tags']), cls.direction, escape(pja.output_name))
         else:
             return "%s Tag action used without a tag specified.  No tag will be added." % cls.action
 
@@ -367,20 +375,21 @@ class RemoveTagDatasetAction(TagDatasetAction):
 
 class ActionBox(object):
 
-    actions = {"RenameDatasetAction": RenameDatasetAction,
-               "HideDatasetAction": HideDatasetAction,
-               "ChangeDatatypeAction": ChangeDatatypeAction,
-               "ColumnSetAction": ColumnSetAction,
-               "EmailAction": EmailAction,
-               "DeleteIntermediatesAction": DeleteIntermediatesAction,
-               "TagDatasetAction": TagDatasetAction,
-               "RemoveTagDatasetAction": RemoveTagDatasetAction}
-    public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction',
-                      'ColumnSetAction', 'EmailAction',
-                      'DeleteIntermediatesAction', 'TagDatasetAction',
-                      'RemoveTagDatasetAction']
-    immediate_actions = ['ChangeDatatypeAction', 'RenameDatasetAction',
-                         'TagDatasetAction', 'RemoveTagDatasetAction']
+    actions = {
+        "RenameDatasetAction": RenameDatasetAction,
+        "HideDatasetAction": HideDatasetAction,
+        "ChangeDatatypeAction": ChangeDatatypeAction,
+        "ColumnSetAction": ColumnSetAction,
+        "EmailAction": EmailAction,
+        "DeleteIntermediatesAction": DeleteIntermediatesAction,
+        "TagDatasetAction": TagDatasetAction,
+        "RemoveTagDatasetAction": RemoveTagDatasetAction
+    }
+    public_actions = [
+        'RenameDatasetAction', 'ChangeDatatypeAction', 'ColumnSetAction', 'EmailAction', 'DeleteIntermediatesAction', 'TagDatasetAction',
+        'RemoveTagDatasetAction'
+    ]
+    immediate_actions = ['ChangeDatatypeAction', 'RenameDatasetAction', 'TagDatasetAction', 'RemoveTagDatasetAction']
 
     @classmethod
     def get_short_str(cls, action):
@@ -398,9 +407,7 @@ class ActionBox(object):
                 ao_key = sp[2] + sp[1]
                 # flag / output_name / pjatype / desc
                 if ao_key not in npd:
-                    npd[ao_key] = {'action_type': sp[2],
-                                   'output_name': sp[1],
-                                   'action_arguments': {}}
+                    npd[ao_key] = {'action_type': sp[2], 'output_name': sp[1], 'action_arguments': {}}
                 if len(sp) > 3:
                     if sp[3] == 'output_name':
                         npd[ao_key]['output_name'] = val

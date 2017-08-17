@@ -4,7 +4,6 @@ from ...metrics import formatting
 
 
 class UnameFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         return "Operating System", value
 

@@ -7,31 +7,29 @@ import os
 import six
 
 from ..container_resolvers import (
-    ContainerResolver,
-)
+    ContainerResolver, )
 from ..docker_util import build_docker_images_command
 from ..mulled.mulled_build import (
     check_output,
     DEFAULT_CHANNELS,
     ensure_installed,
     InvolucroContext,
-    mull_targets,
-)
+    mull_targets, )
 from ..mulled.mulled_build_tool import requirements_to_mulled_targets
 from ..mulled.util import (
     mulled_tags_for,
     split_tag,
     v1_image_name,
-    v2_image_name,
-)
+    v2_image_name, )
 from ..requirements import ContainerDescription
 
 log = logging.getLogger(__name__)
 
-
-CachedMulledImageSingleTarget = collections.namedtuple("CachedMulledImageSingleTarget", ["package_name", "version", "build", "image_identifier"])
+CachedMulledImageSingleTarget = collections.namedtuple("CachedMulledImageSingleTarget",
+                                                       ["package_name", "version", "build", "image_identifier"])
 CachedV1MulledImageMultiTarget = collections.namedtuple("CachedV1MulledImageMultiTarget", ["hash", "build", "image_identifier"])
-CachedV2MulledImageMultiTarget = collections.namedtuple("CachedV2MulledImageMultiTarget", ["image_name", "version_hash", "build", "image_identifier"])
+CachedV2MulledImageMultiTarget = collections.namedtuple("CachedV2MulledImageMultiTarget",
+                                                        ["image_name", "version_hash", "build", "image_identifier"])
 
 CachedMulledImageSingleTarget.multi_target = False
 CachedV1MulledImageMultiTarget.multi_target = "v1"
@@ -187,8 +185,7 @@ def docker_cached_container_description(targets, namespace, hash_func="v2"):
     if image:
         container = ContainerDescription(
             image.image_identifier,
-            type="docker",
-        )
+            type="docker", )
 
     return container
 
@@ -207,8 +204,7 @@ def singularity_cached_container_description(targets, cache_directory, hash_func
     if image:
         container = ContainerDescription(
             os.path.abspath(os.path.join(cache_directory, image.image_identifier)),
-            type="singularity",
-        )
+            type="singularity", )
 
     return container
 
@@ -297,6 +293,7 @@ class MulledDockerContainerResolver(ContainerResolver):
                 version, build = split_tag(tags[0])
                 name = "%s:%s--%s" % (target.package_name, version, build)
         else:
+
             def tags_if_available(image_name):
                 if ":" in image_name:
                     repo_name, tag_prefix = image_name.split(":", 2)
@@ -327,8 +324,7 @@ class MulledDockerContainerResolver(ContainerResolver):
         if name:
             return ContainerDescription(
                 "quay.io/%s/%s" % (self.namespace, name),
-                type=self.container_type,
-            )
+                type=self.container_type, )
 
     def __str__(self):
         return "MulledDockerContainerResolver[namespace=%s]" % self.namespace
@@ -343,9 +339,7 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
 
     def __init__(self, app_info=None, namespace="local", hash_func="v2", **kwds):
         super(BuildMulledDockerContainerResolver, self).__init__(app_info)
-        self._involucro_context_kwds = {
-            'involucro_bin': self._get_config_option("involucro_path", None)
-        }
+        self._involucro_context_kwds = {'involucro_bin': self._get_config_option("involucro_path", None)}
         self.namespace = namespace
         self.hash_func = hash_func
         self._mulled_kwds = {
@@ -364,11 +358,7 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
         if len(targets) == 0:
             return None
 
-        mull_targets(
-            targets,
-            involucro_context=self._get_involucro_context(),
-            **self._mulled_kwds
-        )
+        mull_targets(targets, involucro_context=self._get_involucro_context(), **self._mulled_kwds)
         return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func)
 
     def _get_involucro_context(self):
@@ -389,9 +379,7 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
 
     def __init__(self, app_info=None, hash_func="v2", **kwds):
         super(BuildMulledSingularityContainerResolver, self).__init__(app_info)
-        self._involucro_context_kwds = {
-            'involucro_bin': self._get_config_option("involucro_path", None)
-        }
+        self._involucro_context_kwds = {'involucro_bin': self._get_config_option("involucro_path", None)}
         self.cache_directory = os.path.join(app_info.container_image_cache_path, "singularity", "mulled")
         self.hash_func = hash_func
         self._mulled_kwds = {
@@ -411,11 +399,7 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
         if len(targets) == 0:
             return None
 
-        mull_targets(
-            targets,
-            involucro_context=self._get_involucro_context(),
-            **self._mulled_kwds
-        )
+        mull_targets(targets, involucro_context=self._get_involucro_context(), **self._mulled_kwds)
         return singularity_cached_container_description(targets, self.cache_directory, hash_func=self.hash_func)
 
     def _get_involucro_context(self):
@@ -431,10 +415,5 @@ def mulled_targets(tool_info):
     return requirements_to_mulled_targets(tool_info.requirements)
 
 
-__all__ = (
-    "CachedMulledDockerContainerResolver",
-    "CachedMulledSingularityContainerResolver",
-    "MulledDockerContainerResolver",
-    "BuildMulledDockerContainerResolver",
-    "BuildMulledSingularityContainerResolver",
-)
+__all__ = ("CachedMulledDockerContainerResolver", "CachedMulledSingularityContainerResolver", "MulledDockerContainerResolver",
+           "BuildMulledDockerContainerResolver", "BuildMulledSingularityContainerResolver", )

@@ -72,7 +72,6 @@ def get_tool_watcher(toolbox, config):
 
 
 class ToolConfWatcher(object):
-
     def __init__(self, reload_callback, tool_cache=None):
         self.paths = {}
         self.cache = tool_cache
@@ -139,7 +138,6 @@ class ToolConfWatcher(object):
 
 
 class NullToolConfWatcher(object):
-
     def start(self):
         pass
 
@@ -154,7 +152,6 @@ class NullToolConfWatcher(object):
 
 
 class ToolWatcher(object):
-
     def __init__(self, toolbox, observer_class):
         self.toolbox = toolbox
         self.tool_file_ids = {}
@@ -191,7 +188,6 @@ class ToolWatcher(object):
 
 
 class ToolDataWatcher(object):
-
     def __init__(self, observer_class, tool_data_tables):
         self.tool_data_tables = tool_data_tables
         self.monitored_dirs = {}
@@ -218,7 +214,6 @@ class ToolDataWatcher(object):
 
 
 class LocFileEventHandler(FileSystemEventHandler):
-
     def __init__(self, loc_watcher):
         self.loc_watcher = loc_watcher
 
@@ -241,7 +236,6 @@ class LocFileEventHandler(FileSystemEventHandler):
 
 
 class ToolFileEventHandler(FileSystemEventHandler):
-
     def __init__(self, tool_watcher):
         self.tool_watcher = tool_watcher
 
@@ -271,7 +265,6 @@ class ToolFileEventHandler(FileSystemEventHandler):
 
 
 class NullWatcher(object):
-
     def start(self):
         pass
 

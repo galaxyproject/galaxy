@@ -9,15 +9,9 @@ import shutil
 
 from collections import OrderedDict
 
-from galaxy.util import (
-    hash_util,
-    plugin_config
-)
+from galaxy.util import (hash_util, plugin_config)
 
-from .requirements import (
-    ToolRequirement,
-    ToolRequirements
-)
+from .requirements import (ToolRequirement, ToolRequirements)
 from .resolvers import NullDependency
 from .resolvers.conda import CondaDependencyResolver
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
@@ -69,6 +63,7 @@ class DependencyManager(object):
     and should each contain a file 'env.sh' which can be sourced to make the
     dependency available in the current shell environment.
     """
+
     def __init__(self, default_base_path, conf_file=None, app_config={}):
         """
         Create a new dependency manager looking for packages under the paths listed

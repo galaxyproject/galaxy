@@ -9,6 +9,7 @@ class UCSCLimitException(Exception):
 
 class UCSCOutWrapper(object):
     """File-like object that throws an exception if it encounters the UCSC limit error lines"""
+
     def __init__(self, other):
         self.other = iter(other)
         # Need one line of lookahead to be sure we are hitting the limit message

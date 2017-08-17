@@ -28,8 +28,7 @@ Repository_table = Table("repository", metadata,
                          Column("name", TrimmedString(255), index=True),
                          Column("description", TEXT),
                          Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                         Column("private", Boolean, default=False),
-                         Column("deleted", Boolean, index=True, default=False))
+                         Column("private", Boolean, default=False), Column("deleted", Boolean, index=True, default=False))
 
 RepositoryRatingAssociation_table = Table("repository_rating_association", metadata,
                                           Column("id", Integer, primary_key=True),
@@ -37,8 +36,7 @@ RepositoryRatingAssociation_table = Table("repository_rating_association", metad
                                           Column("update_time", DateTime, default=now, onupdate=now),
                                           Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
                                           Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                                          Column("rating", Integer, index=True),
-                                          Column("comment", TEXT))
+                                          Column("rating", Integer, index=True), Column("comment", TEXT))
 
 RepositoryCategoryAssociation_table = Table("repository_category_association", metadata,
                                             Column("id", Integer, primary_key=True),

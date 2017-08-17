@@ -7,7 +7,6 @@ from galaxy.util import submodules
 
 from .parser import get_tool_source
 
-
 LEVEL_ALL = "all"
 LEVEL_WARN = "warn"
 LEVEL_ERROR = "error"
@@ -63,7 +62,6 @@ def lint_xml_with(lint_context, tool_xml, extra_modules=[]):
 # it is reused for repositories in planemo. Therefore, it should probably
 # be moved to galaxy.util.lint.
 class LintContext(object):
-
     def __init__(self, level, skip_types=[]):
         self.skip_types = skip_types
         self.level = level

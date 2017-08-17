@@ -2,11 +2,7 @@ import copy
 import itertools
 import logging
 
-from galaxy import (
-    exceptions,
-    model,
-    util
-)
+from galaxy import (exceptions, model, util)
 from galaxy.util import permutations
 
 log = logging.getLogger(__name__)
@@ -38,7 +34,8 @@ def expand_workflow_inputs(inputs):
     product_keys = []
     for step_id, step in sorted(inputs.items()):
         for key, value in sorted(step.items()):
-            if isinstance(value, dict) and 'batch' in value and value['batch'] is True and 'values' in value and isinstance(value['values'], list):
+            if isinstance(value, dict) and 'batch' in value and value['batch'] is True and 'values' in value and isinstance(
+                    value['values'], list):
                 nval = len(value['values'])
                 if 'product' in value and value['product'] is True:
                     product.append(value['values'])
@@ -47,7 +44,8 @@ def expand_workflow_inputs(inputs):
                     if linked_n is None:
                         linked_n = nval
                     elif linked_n != nval or nval is 0:
-                        raise exceptions.RequestParameterInvalidException('Failed to match linked batch selections. Please select equal number of data files.')
+                        raise exceptions.RequestParameterInvalidException(
+                            'Failed to match linked batch selections. Please select equal number of data files.')
                     linked.append(value['values'])
                     linked_keys.append((step_id, key))
     params = []

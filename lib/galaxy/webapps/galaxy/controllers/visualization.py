@@ -32,7 +32,6 @@ log = logging.getLogger(__name__)
 # -- Grids --
 #
 class HistoryDatasetsSelectionGrid(grids.Grid):
-
     class DbKeyColumn(grids.GridColumn):
         def filter(self, trans, user, query, dbkey):
             """ Filter by dbkey through a raw SQL b/c metadata is a BLOB. """
@@ -62,9 +61,12 @@ class HistoryDatasetsSelectionGrid(grids.Grid):
         DbKeyColumn("Build", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=True, sortable=False)
     ]
     columns.append(
-        grids.MulticolFilterColumn("Search name and filetype", cols_to_filter=[columns[1], columns[2]],
-                                   key="free-text-search", visible=False, filterable="standard")
-    )
+        grids.MulticolFilterColumn(
+            "Search name and filetype",
+            cols_to_filter=[columns[1], columns[2]],
+            key="free-text-search",
+            visible=False,
+            filterable="standard"))
 
     def build_initial_query(self, trans, **kwargs):
         return trans.sa_session.query(self.model_class).join(model.History.table).join(model.Dataset.table)
@@ -90,9 +92,12 @@ class LibraryDatasetsSelectionGrid(grids.Grid):
         grids.TextColumn("Type", key="extension", model_class=model.LibraryDatasetDatasetAssociation),
     ]
     columns.append(
-        grids.MulticolFilterColumn("Search name and filetype", cols_to_filter=[columns[1], columns[2]],
-                                   key="free-text-search", visible=False, filterable="standard")
-    )
+        grids.MulticolFilterColumn(
+            "Search name and filetype",
+            cols_to_filter=[columns[1], columns[2]],
+            key="free-text-search",
+            visible=False,
+            filterable="standard"))
 
     def build_initial_query(self, trans, **kwargs):
         return trans.sa_session.query(self.model_class).join(model.Dataset.table)
@@ -159,27 +164,30 @@ class VisualizationListGrid(grids.Grid):
         grids.TextColumn("Title", key="title", attach_popup=True, link=get_url_args),
         grids.TextColumn("Type", method='get_display_name'),
         grids.TextColumn("Build", key="dbkey"),
-        grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid"),
+        grids.IndividualTagsColumn(
+            "Tags",
+            key="tags",
+            model_tag_association_class=model.VisualizationTagAssociation,
+            filterable="advanced",
+            grid_name="VisualizationListGrid"),
         grids.SharingStatusColumn("Sharing", key="sharing", filterable="advanced", sortable=False),
         grids.GridColumn("Created", key="create_time", format=time_ago),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
     ]
     columns.append(
         grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[2]],
-            key="free-text-search", visible=False, filterable="standard")
-    )
-    global_actions = [
-        grids.GridAction("Create new visualization", dict(action='create'), target="inbound")
-    ]
+            "Search", cols_to_filter=[columns[0], columns[2]], key="free-text-search", visible=False, filterable="standard"))
+    global_actions = [grids.GridAction("Create new visualization", dict(action='create'), target="inbound")]
     operations = [
         grids.GridOperation("Open", allow_multiple=False, url_args=get_url_args),
-        grids.GridOperation("Open in Circster", allow_multiple=False, condition=(lambda item: item.type == 'trackster'), url_args=dict(action='circster')),
+        grids.GridOperation(
+            "Open in Circster", allow_multiple=False, condition=(lambda item: item.type == 'trackster'), url_args=dict(action='circster')),
         grids.GridOperation("Edit Attributes", allow_multiple=False, url_args=dict(action='edit'), target="inbound"),
         grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted)),
-        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
-        grids.GridOperation("Delete", condition=(lambda item: not item.deleted), confirm="Are you sure you want to delete this visualization?"),
+        grids.GridOperation(
+            "Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
+        grids.GridOperation(
+            "Delete", condition=(lambda item: not item.deleted), confirm="Are you sure you want to delete this visualization?"),
     ]
 
     def apply_query_filter(self, trans, query, **kwargs):
@@ -196,18 +204,28 @@ class VisualizationAllPublishedGrid(grids.Grid):
     default_filter = dict(title="All", username="All")
     columns = [
         grids.PublicURLColumn("Title", key="title", filterable="advanced"),
-        grids.OwnerAnnotationColumn("Annotation", key="annotation", model_annotation_association_class=model.VisualizationAnnotationAssociation, filterable="advanced"),
+        grids.OwnerAnnotationColumn(
+            "Annotation",
+            key="annotation",
+            model_annotation_association_class=model.VisualizationAnnotationAssociation,
+            filterable="advanced"),
         grids.OwnerColumn("Owner", key="username", model_class=model.User, filterable="advanced"),
         grids.CommunityRatingColumn("Community Rating", key="rating"),
-        grids.CommunityTagsColumn("Community Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationAllPublishedGrid"),
+        grids.CommunityTagsColumn(
+            "Community Tags",
+            key="tags",
+            model_tag_association_class=model.VisualizationTagAssociation,
+            filterable="advanced",
+            grid_name="VisualizationAllPublishedGrid"),
         grids.ReverseSortColumn("Last Updated", key="update_time", format=time_ago)
     ]
     columns.append(
         grids.MulticolFilterColumn(
             "Search title, annotation, owner, and tags",
             cols_to_filter=[columns[0], columns[1], columns[2], columns[4]],
-            key="free-text-search", visible=False, filterable="standard")
-    )
+            key="free-text-search",
+            visible=False,
+            filterable="standard"))
 
     def build_initial_query(self, trans, **kwargs):
         # Join so that searching history.user makes sense.
@@ -217,8 +235,7 @@ class VisualizationAllPublishedGrid(grids.Grid):
         return query.filter(self.model_class.deleted == false()).filter(self.model_class.published == true())
 
 
-class VisualizationController(BaseUIController, SharableMixin, UsesVisualizationMixin,
-                              UsesAnnotations, UsesItemRatings):
+class VisualizationController(BaseUIController, SharableMixin, UsesVisualizationMixin, UsesAnnotations, UsesItemRatings):
     _visualization_list_grid = VisualizationListGrid()
     _published_list_grid = VisualizationAllPublishedGrid()
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
@@ -307,9 +324,11 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             .filter(model.Visualization.deleted == false()) \
             .order_by(desc(model.Visualization.update_time)) \
             .all()
-        return [{'username' : v.visualization.user.username,
-                 'slug'     : v.visualization.slug,
-                 'title'    : v.visualization.title} for v in shared_by_others]
+        return [{
+            'username': v.visualization.user.username,
+            'slug': v.visualization.slug,
+            'title': v.visualization.title
+        } for v in shared_by_others]
 
     #
     # -- Functions for operating on visualizations. --
@@ -389,9 +408,11 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         session = trans.sa_session
         visualization = self.get_visualization(trans, id, check_ownership=False)
         if visualization.importable is False:
-            return trans.show_error_message("The owner of this visualization has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True)
+            return trans.show_error_message(
+                "The owner of this visualization has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True)
         elif visualization.deleted:
-            return trans.show_error_message("You can't import this visualization because it has been deleted.<br>You can %s" % referer_message, use_panels=True)
+            return trans.show_error_message(
+                "You can't import this visualization because it has been deleted.<br>You can %s" % referer_message, use_panels=True)
         else:
             # Create imported visualization via copy.
             #   TODO: need to handle custom db keys.
@@ -405,8 +426,9 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
 
             # Redirect to load galaxy frames.
             return trans.show_ok_message(
-                message="""Visualization "%s" has been imported. <br>You can <a href="%s">start using this visualization</a> or %s."""
-                % (visualization.title, web.url_for(controller='visualization'), referer_message), use_panels=True)
+                message="""Visualization "%s" has been imported. <br>You can <a href="%s">start using this visualization</a> or %s.""" %
+                (visualization.title, web.url_for(controller='visualization'), referer_message),
+                use_panels=True)
 
     @web.expose
     @web.require_login("share Galaxy visualizations")
@@ -476,12 +498,8 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 other_email = escape(other.email)
                 trans.set_message("Visualization '%s' shared with user '%s'" % (viz_title, other_email))
                 return trans.response.send_redirect(web.url_for(controller='visualization', action='sharing', id=id))
-        return trans.fill_template("/ind_share_base.mako",
-                                   message=msg,
-                                   messagetype=mtype,
-                                   item=visualization,
-                                   email=email,
-                                   use_panels=use_panels)
+        return trans.fill_template(
+            "/ind_share_base.mako", message=msg, messagetype=mtype, item=visualization, email=email, use_panels=use_panels)
 
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug):
@@ -508,21 +526,30 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, visualization)
 
         # Fork to template based on visualization.type (registry or builtin).
-        if((trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins) and
-                (visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS)):
+        if ((trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins)
+                and (visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS)):
             # if a registry visualization, load a version of display.mako that will load the vis into an iframe :(
             # TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
             # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
             encoded_visualization_id = trans.security.encode_id(visualization.id)
-            return trans.stream_template_mako('visualization/display_in_frame.mako',
-                                              item=visualization, encoded_visualization_id=encoded_visualization_id,
-                                              user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
-                                              content_only=True)
+            return trans.stream_template_mako(
+                'visualization/display_in_frame.mako',
+                item=visualization,
+                encoded_visualization_id=encoded_visualization_id,
+                user_item_rating=user_item_rating,
+                ave_item_rating=ave_item_rating,
+                num_ratings=num_ratings,
+                content_only=True)
 
         visualization_config = self.get_visualization_config(trans, visualization)
-        return trans.stream_template_mako("visualization/display.mako", item=visualization, item_data=visualization_config,
-                                          user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
-                                          content_only=True)
+        return trans.stream_template_mako(
+            "visualization/display.mako",
+            item=visualization,
+            item_data=visualization_config,
+            user_item_rating=user_item_rating,
+            ave_item_rating=ave_item_rating,
+            num_ratings=num_ratings,
+            content_only=True)
 
     @web.expose
     @web.json
@@ -533,8 +560,16 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
 
         if self.create_item_slug(trans.sa_session, visualization):
             trans.sa_session.flush()
-        return_dict = {"name": visualization.title,
-                       "link": web.url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug)}
+        return_dict = {
+            "name":
+            visualization.title,
+            "link":
+            web.url_for(
+                controller='visualization',
+                action="display_by_username_and_slug",
+                username=visualization.user.username,
+                slug=visualization.slug)
+        }
         return return_dict
 
     @web.expose
@@ -548,23 +583,34 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
 
         # Return content.
         visualization_config = self.get_visualization_config(trans, visualization)
-        return trans.fill_template_mako("visualization/item_content.mako", encoded_id=trans.security.encode_id(visualization.id),
-                                        item=visualization, item_data=visualization_config, content_only=True)
+        return trans.fill_template_mako(
+            "visualization/item_content.mako",
+            encoded_id=trans.security.encode_id(visualization.id),
+            item=visualization,
+            item_data=visualization_config,
+            content_only=True)
 
     @web.expose
     @web.require_login("create visualizations")
-    def create(self, trans, visualization_title="", visualization_slug="", visualization_annotation="", visualization_dbkey="",
+    def create(self,
+               trans,
+               visualization_title="",
+               visualization_slug="",
+               visualization_annotation="",
+               visualization_dbkey="",
                visualization_type=""):
         """
         Creates a new visualization or returns a form for creating visualization.
         """
         visualization_title_err = visualization_slug_err = visualization_annotation_err = ""
         if trans.request.method == "POST":
-            rval = self.create_visualization(trans, title=visualization_title,
-                                             slug=visualization_slug,
-                                             annotation=visualization_annotation,
-                                             dbkey=visualization_dbkey,
-                                             type=visualization_type)
+            rval = self.create_visualization(
+                trans,
+                title=visualization_title,
+                slug=visualization_slug,
+                annotation=visualization_annotation,
+                dbkey=visualization_dbkey,
+                type=visualization_type)
             if isinstance(rval, dict):
                 # Found error creating viz.
                 visualization_title_err = rval['title_err']
@@ -576,19 +622,28 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         viz_type_options = [(t, t) for t in self.viz_types]
         return trans.show_form(
             web.FormBuilder(web.url_for(controller='visualization', action='create'), "Create new visualization", submit_text="Submit")
-            .add_text("visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err)
-            .add_select("visualization_type", "Type", options=viz_type_options, error=None)
-            .add_text("visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
-                      help="""A unique identifier that will be used for
+            .add_text("visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err).add_select(
+                "visualization_type", "Type", options=viz_type_options, error=None).add_text(
+                    "visualization_slug",
+                    "Visualization identifier",
+                    value=visualization_slug,
+                    error=visualization_slug_err,
+                    help="""A unique identifier that will be used for
                             public links to this visualization. A default is generated
                             from the visualization title, but can be edited. This field
                             must contain only lowercase letters, numbers, and
-                            the '-' character.""")
-            .add_select("visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys(trans, chrom_info=True), error=None)
-            .add_text("visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
-                      help="A description of the visualization; annotation is shown alongside published visualizations."),
-            template="visualization/create.mako"
-        )
+                            the '-' character.""").add_select(
+                        "visualization_dbkey",
+                        "Visualization DbKey/Build",
+                        value=visualization_dbkey,
+                        options=trans.app.genomes.get_dbkeys(trans, chrom_info=True),
+                        error=None).add_text(
+                            "visualization_annotation",
+                            "Visualization annotation",
+                            value=visualization_annotation,
+                            error=visualization_annotation_err,
+                            help="A description of the visualization; annotation is shown alongside published visualizations."),
+            template="visualization/create.mako")
 
     @web.json
     def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None):
@@ -622,7 +677,8 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 visualization_slug_err = "Visualization id is required"
             elif not self._is_valid_slug(visualization_slug):
                 visualization_slug_err = "Visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-            elif visualization_slug != visualization.slug and trans.sa_session.query(model.Visualization).filter_by(user=visualization.user, slug=visualization_slug, deleted=False).first():
+            elif visualization_slug != visualization.slug and trans.sa_session.query(model.Visualization).filter_by(
+                    user=visualization.user, slug=visualization_slug, deleted=False).first():
                 visualization_slug_err = "Visualization id must be unique"
             else:
                 visualization.title = visualization_title
@@ -643,16 +699,23 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             if not visualization_annotation:
                 visualization_annotation = ""
         return trans.show_form(
-            web.FormBuilder(web.url_for(controller='visualization', action='edit', id=id), "Edit visualization attributes", submit_text="Submit")
-            .add_text("visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err)
-            .add_text("visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
-                      help="""A unique identifier that will be used for
+            web.FormBuilder(
+                web.url_for(controller='visualization', action='edit', id=id), "Edit visualization attributes", submit_text="Submit")
+            .add_text("visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err).add_text(
+                "visualization_slug",
+                "Visualization identifier",
+                value=visualization_slug,
+                error=visualization_slug_err,
+                help="""A unique identifier that will be used for
                             public links to this visualization. A default is generated
                             from the visualization title, but can be edited. This field
                             must contain only lowercase letters, numbers, and
-                            the '-' character.""")
-            .add_text("visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
-                      help="A description of the visualization; annotation is shown alongside published visualizations."),
+                            the '-' character.""").add_text(
+                    "visualization_annotation",
+                    "Visualization annotation",
+                    value=visualization_annotation,
+                    error=visualization_annotation_err,
+                    help="A description of the visualization; annotation is shown alongside published visualizations."),
             template="visualization/create.mako")
 
     # ------------------------- registry.
@@ -690,9 +753,9 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         if trans.debug:
             raise
         return trans.show_error_message(
-            "There was an error rendering the visualization. " +
-            "Contact your Galaxy administrator if the problem persists." +
-            "<br/>Details: " + unicodify(exception), use_panels=False)
+            "There was an error rendering the visualization. " + "Contact your Galaxy administrator if the problem persists." +
+            "<br/>Details: " + unicodify(exception),
+            use_panels=False)
 
     @web.expose
     @web.require_login("use Galaxy visualizations", use_panels=True)
@@ -758,7 +821,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         """
 
         # define app configuration
-        app = {'jscript' : "viz/trackster"}
+        app = {'jscript': "viz/trackster"}
 
         # get dataset to add
         id = kwargs.get("id", None)
@@ -795,11 +858,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
 
         # update gene region of saved visualization if user parses a new gene region in the url
         if gene_region.chrom is not None:
-            app['gene_region'] = {
-                'chrom' : gene_region.chrom,
-                'start' : gene_region.start,
-                'end'   : gene_region.end
-            }
+            app['gene_region'] = {'chrom': gene_region.chrom, 'start': gene_region.start, 'end': gene_region.end}
 
         # fill template
         return trans.fill_template('galaxy.panels.mako', config={'right_panel': True, 'app': app})
@@ -827,9 +886,11 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 dbkey = dataset.dbkey
                 if not dbkey or dbkey == '?':
                     # Circster requires a valid dbkey.
-                    return trans.show_error_message("You must set the dataset's dbkey to view it. You can set "
-                                                    "a dataset's dbkey by clicking on the pencil icon and editing "
-                                                    "its attributes.", use_panels=True)
+                    return trans.show_error_message(
+                        "You must set the dataset's dbkey to view it. You can set "
+                        "a dataset's dbkey by clicking on the pencil icon and editing "
+                        "its attributes.",
+                        use_panels=True)
 
             vis = self.create_visualization(trans, type="genome", dbkey=dbkey, save=False)
 
@@ -857,14 +918,10 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 track['preloaded_data'] = genome_data
 
         # define app configuration for generic mako template
-        app = {
-            'jscript'       : "viz/circster",
-            'viz_config'    : viz_config,
-            'genome'        : genome
-        }
+        app = {'jscript': "viz/circster", 'viz_config': viz_config, 'genome': genome}
 
         # fill template
-        return trans.fill_template('galaxy.panels.mako', config={'app' : app})
+        return trans.fill_template('galaxy.panels.mako', config={'app': app})
 
     @web.expose
     def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None):
@@ -887,11 +944,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             # Loading new visualization.
             dataset = self.get_hda_or_ldda(trans, hda_ldda, dataset_id)
             job = self.hda_manager.creating_job(dataset)
-            viz_config = {
-                'dataset_id': dataset_id,
-                'tool_id': job.tool_id,
-                'regions': loads(regions)
-            }
+            viz_config = {'dataset_id': dataset_id, 'tool_id': job.tool_id, 'regions': loads(regions)}
 
         # Add tool, dataset attributes to config based on id.
         tool = trans.app.toolbox.get_tool(viz_config['tool_id'])
@@ -929,10 +982,10 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         if not config:
             config = {
                 'dataset_id': dataset_id,
-                'title'     : hda.display_name(),
-                'ext'       : hda.datatype.file_ext,
-                'treeIndex' : tree_index,
-                'saved_visualization' : False
+                'title': hda.display_name(),
+                'ext': hda.datatype.file_ext,
+                'treeIndex': tree_index,
+                'saved_visualization': False
             }
         return trans.fill_template_mako("visualization/phyloviz.mako", data=data, config=config)
 
@@ -966,8 +1019,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         return trans.fill_template_mako(
             "visualization/gie.mako",
             gie_image_map=self.gie_image_map,
-            history=trans.get_history(),
-        )
+            history=trans.get_history(), )
 
     def _gie_config_dir(self, gie_path, *args):
         nargs = [gie_path, 'config']

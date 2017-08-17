@@ -34,7 +34,9 @@ def _parse_ldap_options(ldap, options_unparsed):
         try:
             key, value = opt.split("=")
         except ValueError:
-            log.warning("LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2" % opt)
+            log.warning(
+                "LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2" %
+                opt)
             continue
 
         try:
@@ -62,7 +64,6 @@ def _parse_ldap_options(ldap, options_unparsed):
 
 
 class LDAP(AuthProvider):
-
     """
     Attempts to authenticate users against an LDAP server.
 
@@ -125,18 +126,19 @@ class LDAP(AuthProvider):
                 l.protocol_version = 3
 
                 if 'search-user' in options:
-                    l.simple_bind_s(_get_subs(options, 'search-user', params),
-                                    _get_subs(options, 'search-password', params))
+                    l.simple_bind_s(_get_subs(options, 'search-user', params), _get_subs(options, 'search-password', params))
                 else:
                     l.simple_bind_s()
 
                 # setup search
-                attributes = [_.strip().format(**params)
-                              for _ in options['search-fields'].split(',')]
-                suser = l.search_ext_s(_get_subs(options, 'search-base', params),
+                attributes = [_.strip().format(**params) for _ in options['search-fields'].split(',')]
+                suser = l.search_ext_s(
+                    _get_subs(options, 'search-base', params),
                     ldap.SCOPE_SUBTREE,
-                    _get_subs(options, 'search-filter', params), attributes,
-                    timeout=60, sizelimit=1)
+                    _get_subs(options, 'search-filter', params),
+                    attributes,
+                    timeout=60,
+                    sizelimit=1)
 
                 # parse results
                 if suser is None or len(suser) == 0:
@@ -162,8 +164,7 @@ class LDAP(AuthProvider):
             l = ldap.initialize(_get_subs(options, 'server', params))
             l.protocol_version = 3
             bind_password = _get_subs(options, 'bind-password', params)
-            l.simple_bind_s(_get_subs(
-                options, 'bind-user', params), bind_password)
+            l.simple_bind_s(_get_subs(options, 'bind-user', params), bind_password)
             try:
                 whoami = l.whoami_s()
             except ldap.PROTOCOL_ERROR:
@@ -178,9 +179,7 @@ class LDAP(AuthProvider):
             return (failure_mode, '', '')
 
         log.debug('LDAP authentication successful')
-        return (True,
-                _get_subs(options, 'auto-register-email', params),
-                _get_subs(options, 'auto-register-username', params))
+        return (True, _get_subs(options, 'auto-register-email', params), _get_subs(options, 'auto-register-username', params))
 
     def authenticate_user(self, user, password, options):
         """

@@ -11,7 +11,6 @@ log = logging.getLogger(__name__)
 
 
 class SearchController(BaseAPIController, SharableItemSecurityMixin):
-
     @web.expose_api
     def create(self, trans, payload, **kwd):
         """
@@ -38,7 +37,10 @@ class SearchController(BaseAPIController, SharableItemSecurityMixin):
                     if trans.user_is_admin():
                         append = True
                     if not append:
-                        if type(item) in [trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset]:
+                        if type(item) in [
+                                trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation,
+                                trans.app.model.LibraryDataset
+                        ]:
                             if (trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), item, trans.user)):
                                 append = True
                         elif type(item) in [trans.app.model.Job]:

@@ -33,13 +33,14 @@ from .version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
 
-
 PATH_DEFAULTS = dict(
     auth_config_file=['config/auth_conf.xml', 'config/auth_conf.xml.sample'],
     data_manager_config_file=['config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample'],
     datatypes_config_file=['config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample'],
     build_sites_config_file=['config/build_sites.yml', 'config/build_sites.yml.sample'],
-    external_service_type_config_file=['config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample'],
+    external_service_type_config_file=[
+        'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample'
+    ],
     job_config_file=['config/job_conf.xml', 'job_conf.xml'],
     tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
     job_metrics_config_file=['config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample'],
@@ -56,8 +57,7 @@ PATH_DEFAULTS = dict(
     modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
     local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
     user_preferences_extra_config_file=['config/user_preferences_extra_conf.yml'],
-    containers_config_file=['config/containers_conf.yml'],
-)
+    containers_config_file=['config/containers_conf.yml'], )
 
 PATH_LIST_DEFAULTS = dict(
     tool_data_table_config_path=['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample'],
@@ -71,11 +71,10 @@ PATH_LIST_DEFAULTS = dict(
     #      [0], probably moved their shed_tool_conf.xml as well
     # [2]: user has done nothing, use the old files
     # [3]: fresh install
-    tool_config_file=['config/tool_conf.xml,shed_tool_conf.xml',
-                      'config/tool_conf.xml,config/shed_tool_conf.xml',
-                      'tool_conf.xml,shed_tool_conf.xml',
-                      'config/tool_conf.xml.sample,config/shed_tool_conf.xml']
-)
+    tool_config_file=[
+        'config/tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml,config/shed_tool_conf.xml', 'tool_conf.xml,shed_tool_conf.xml',
+        'config/tool_conf.xml.sample,config/shed_tool_conf.xml'
+    ])
 
 
 def resolve_path(path, root):
@@ -145,7 +144,8 @@ class Configuration(object):
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
-        self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
+        self.openid_consumer_cache_path = resolve_path(
+            kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
         self.cookie_path = kwargs.get("cookie_path", "/")
         # Galaxy OpenID settings
         self.enable_openid = string_as_bool(kwargs.get('enable_openid', False))
@@ -153,8 +153,10 @@ class Configuration(object):
         self.enable_unique_workflow_defaults = string_as_bool(kwargs.get('enable_unique_workflow_defaults', False))
         self.tool_path = resolve_path(kwargs.get("tool_path", "tools"), self.root)
         self.tool_data_path = resolve_path(kwargs.get("tool_data_path", "tool-data"), os.getcwd())
-        self.builds_file_path = resolve_path(kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')), self.root)
-        self.len_file_path = resolve_path(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
+        self.builds_file_path = resolve_path(
+            kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')), self.root)
+        self.len_file_path = resolve_path(
+            kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
         self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.root)
@@ -163,7 +165,8 @@ class Configuration(object):
             self.integrated_tool_panel_tracking_directory = resolve_path(integrated_tool_panel_tracking_directory, self.root)
         else:
             self.integrated_tool_panel_tracking_directory = None
-        self.toolbox_filter_base_modules = listify(kwargs.get("toolbox_filter_base_modules", "galaxy.tools.filters,galaxy.tools.toolbox.filters"))
+        self.toolbox_filter_base_modules = listify(
+            kwargs.get("toolbox_filter_base_modules", "galaxy.tools.filters,galaxy.tools.toolbox.filters"))
         self.tool_filters = listify(kwargs.get("tool_filters", []), do_strip=True)
         self.tool_label_filters = listify(kwargs.get("tool_label_filters", []), do_strip=True)
         self.tool_section_filters = listify(kwargs.get("tool_section_filters", []), do_strip=True)
@@ -230,8 +233,11 @@ class Configuration(object):
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.allow_user_dataset_purge = string_as_bool(kwargs.get("allow_user_dataset_purge", "True"))
         self.allow_user_impersonation = string_as_bool(kwargs.get("allow_user_impersonation", "False"))
-        self.new_user_dataset_access_role_default_private = string_as_bool(kwargs.get("new_user_dataset_access_role_default_private", "False"))
-        self.collect_outputs_from = [x.strip() for x in kwargs.get('collect_outputs_from', 'new_file_path,job_working_directory').lower().split(',')]
+        self.new_user_dataset_access_role_default_private = string_as_bool(
+            kwargs.get("new_user_dataset_access_role_default_private", "False"))
+        self.collect_outputs_from = [
+            x.strip() for x in kwargs.get('collect_outputs_from', 'new_file_path,job_working_directory').lower().split(',')
+        ]
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
         self.template_cache = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates"), self.root)
         self.local_job_queue_workers = int(kwargs.get("local_job_queue_workers", "5"))
@@ -272,8 +278,9 @@ class Configuration(object):
         self.email_from = kwargs.get('email_from', activation_email)
         self.user_activation_on = string_as_bool(kwargs.get('user_activation_on', False))
         self.activation_grace_period = int(kwargs.get('activation_grace_period', 3))
-        default_inactivity_box_content = ("Your account has not been activated yet. Feel free to browse around and see what's available, but"
-                                          " you won't be able to upload data or run jobs until you have verified your email address.")
+        default_inactivity_box_content = (
+            "Your account has not been activated yet. Feel free to browse around and see what's available, but"
+            " you won't be able to upload data or run jobs until you have verified your email address.")
         self.inactivity_box_content = kwargs.get('inactivity_box_content', default_inactivity_box_content)
         self.terms_url = kwargs.get('terms_url', None)
         self.instance_resource_url = kwargs.get('instance_resource_url', None)
@@ -334,10 +341,12 @@ class Configuration(object):
         # behavior in under conditions - namely for workflows that have a minimum
         # number of steps or that consume collections.
         self.force_beta_workflow_scheduled_min_steps = int(kwargs.get('force_beta_workflow_scheduled_min_steps', '250'))
-        self.force_beta_workflow_scheduled_for_collections = string_as_bool(kwargs.get('force_beta_workflow_scheduled_for_collections', 'False'))
+        self.force_beta_workflow_scheduled_for_collections = string_as_bool(
+            kwargs.get('force_beta_workflow_scheduled_for_collections', 'False'))
 
         self.history_local_serial_workflow_scheduling = string_as_bool(kwargs.get('history_local_serial_workflow_scheduling', 'False'))
-        self.parallelize_workflow_scheduling_within_histories = string_as_bool(kwargs.get('parallelize_workflow_scheduling_within_histories', 'False'))
+        self.parallelize_workflow_scheduling_within_histories = string_as_bool(
+            kwargs.get('parallelize_workflow_scheduling_within_histories', 'False'))
         self.maximum_workflow_invocation_duration = int(kwargs.get("maximum_workflow_invocation_duration", 2678400))
 
         # Per-user Job concurrency limitations
@@ -390,7 +399,8 @@ class Configuration(object):
         self.whoosh_index_dir = resolve_path(kwargs.get("whoosh_index_dir", "database/whoosh_indexes"), self.root)
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.ftp_upload_dir_identifier = kwargs.get('ftp_upload_dir_identifier', 'email')  # attribute on user - email, username, id, etc...
-        self.ftp_upload_dir_template = kwargs.get('ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep)
+        self.ftp_upload_dir_template = kwargs.get('ftp_upload_dir_template',
+                                                  '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep)
         self.ftp_upload_purge = string_as_bool(kwargs.get('ftp_upload_purge', 'True'))
         self.ftp_upload_site = kwargs.get('ftp_upload_site', None)
         self.allow_path_paste = string_as_bool(kwargs.get('allow_path_paste', False))
@@ -529,7 +539,8 @@ class Configuration(object):
             galaxy_infrastructure_url_set = False
         if "HOST_IP" in galaxy_infrastructure_url:
             galaxy_infrastructure_url = string.Template(galaxy_infrastructure_url).safe_substitute({
-                'HOST_IP': socket.gethostbyname(socket.gethostname())
+                'HOST_IP':
+                socket.gethostbyname(socket.gethostname())
             })
         self.galaxy_infrastructure_url = galaxy_infrastructure_url
         self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
@@ -559,7 +570,8 @@ class Configuration(object):
         elif 'database_connection' in kwargs:
             self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
         else:
-            self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("database/control.sqlite", self.root)
+            self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path(
+                "database/control.sqlite", self.root)
         self.biostar_url = kwargs.get('biostar_url', None)
         self.biostar_key_name = kwargs.get('biostar_key_name', None)
         self.biostar_key = kwargs.get('biostar_key', None)
@@ -591,8 +603,7 @@ class Configuration(object):
         self.fluent_host = kwargs.get('fluent_host', 'localhost')
         self.fluent_port = int(kwargs.get('fluent_port', 24224))
         # directory where the visualization registry searches for plugins
-        self.visualization_plugins_directory = kwargs.get(
-            'visualization_plugins_directory', 'config/plugins/visualizations')
+        self.visualization_plugins_directory = kwargs.get('visualization_plugins_directory', 'config/plugins/visualizations')
         ie_dirs = kwargs.get('interactive_environment_plugins_directory', None)
         self.gie_dirs = [d.strip() for d in (ie_dirs.split(",") if ie_dirs else [])]
         if ie_dirs and not self.visualization_plugins_directory:
@@ -645,7 +656,8 @@ class Configuration(object):
                         self.sanitize_whitelist.append(line.strip())
         except IOError:
             if explicit:
-                log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools whitelisted.", self.sanitize_whitelist_file)
+                log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools whitelisted.",
+                            self.sanitize_whitelist_file)
 
     def __parse_config_file_options(self, kwargs):
         """
@@ -739,10 +751,8 @@ class Configuration(object):
                 except Exception as e:
                     raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
         # Create the directories that it makes sense to create
-        for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
-                     self.library_import_dir, self.user_library_import_dir,
-                     self.nginx_upload_store, self.whoosh_index_dir,
-                     self.object_store_cache_path):
+        for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir, self.library_import_dir, self.user_library_import_dir,
+                     self.nginx_upload_store, self.whoosh_index_dir, self.object_store_cache_path):
             self._ensure_directory(path)
         # Check that required files exist
         tool_configs = self.tool_configs
@@ -757,7 +767,9 @@ class Configuration(object):
         # Check for deprecated options.
         for key in self.config_dict.keys():
             if key in self.deprecated_options:
-                log.warning("Config option '%s' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file." % key)
+                log.warning(
+                    "Config option '%s' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file."
+                    % key)
 
     def is_admin_user(self, user):
         """
@@ -953,8 +965,7 @@ class ConfiguresGalaxyMixin:
             enable_beta_mulled_containers=self.config.enable_beta_mulled_containers,
             containers_resolvers_config_file=self.config.containers_resolvers_config_file,
             involucro_path=self.config.involucro_path,
-            involucro_auto_init=self.config.involucro_auto_init,
-        )
+            involucro_auto_init=self.config.involucro_auto_init, )
         self.container_finder = containers.ContainerFinder(app_info)
         index_help = getattr(self.config, "index_tool_help", True)
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch(self.toolbox, index_help)
@@ -969,12 +980,13 @@ class ConfiguresGalaxyMixin:
         from galaxy.tools.data import ToolDataTableManager
 
         # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
-        self.tool_data_tables = ToolDataTableManager(tool_data_path=self.config.tool_data_path,
-                                                     config_filename=self.config.tool_data_table_config_path)
+        self.tool_data_tables = ToolDataTableManager(
+            tool_data_path=self.config.tool_data_path, config_filename=self.config.tool_data_table_config_path)
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
-        self.tool_data_tables.load_from_config_file(config_filename=self.config.shed_tool_data_table_config,
-                                                    tool_data_path=self.tool_data_tables.tool_data_path,
-                                                    from_shed_config=from_shed_config)
+        self.tool_data_tables.load_from_config_file(
+            config_filename=self.config.shed_tool_data_table_config,
+            tool_data_path=self.tool_data_tables.tool_data_path,
+            from_shed_config=from_shed_config)
 
     def _configure_datatypes_registry(self, installed_repository_manager=None):
         from galaxy.datatypes import registry
@@ -1024,7 +1036,7 @@ class ConfiguresGalaxyMixin:
         install_db_url = self.config.install_database_connection
         # TODO: Consider more aggressive check here that this is not the same
         # database file under the hood.
-        combined_install_database = not(install_db_url and install_db_url != db_url)
+        combined_install_database = not (install_db_url and install_db_url != db_url)
         install_db_url = install_db_url or db_url
 
         if check_migrate_databases:
@@ -1046,15 +1058,16 @@ class ConfiguresGalaxyMixin:
             verify_tools(self, install_db_url, config_file, install_database_options)
 
         from galaxy.model import mapping
-        self.model = mapping.init(self.config.file_path,
-                                  db_url,
-                                  self.config.database_engine_options,
-                                  map_install_models=combined_install_database,
-                                  database_query_profiling_proxy=self.config.database_query_profiling_proxy,
-                                  object_store=self.object_store,
-                                  trace_logger=getattr(self, "trace_logger", None),
-                                  use_pbkdf2=self.config.get_bool('use_pbkdf2', True),
-                                  slow_query_log_threshold=self.config.slow_query_log_threshold)
+        self.model = mapping.init(
+            self.config.file_path,
+            db_url,
+            self.config.database_engine_options,
+            map_install_models=combined_install_database,
+            database_query_profiling_proxy=self.config.database_query_profiling_proxy,
+            object_store=self.object_store,
+            trace_logger=getattr(self, "trace_logger", None),
+            use_pbkdf2=self.config.get_bool('use_pbkdf2', True),
+            slow_query_log_threshold=self.config.slow_query_log_threshold)
 
         if combined_install_database:
             log.info("Install database targetting Galaxy's database configuration.")
@@ -1064,8 +1077,7 @@ class ConfiguresGalaxyMixin:
             install_db_url = self.config.install_database_connection
             log.info("Install database using its own connection %s" % install_db_url)
             install_db_engine_options = self.config.install_database_engine_options
-            self.install_model = install_mapping.init(install_db_url,
-                                                      install_db_engine_options)
+            self.install_model = install_mapping.init(install_db_url, install_db_engine_options)
 
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():

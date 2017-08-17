@@ -209,15 +209,5 @@ def v2_image_name(targets, image_build=None, name_override=None):
 
 image_name = v1_image_name  # deprecated
 
-__all__ = (
-    "build_target",
-    "conda_build_target_str",
-    "image_name",
-    "mulled_tags_for",
-    "quay_versions",
-    "split_tag",
-    "Target",
-    "v1_image_name",
-    "v2_image_name",
-    "version_sorted",
-)
+__all__ = ("build_target", "conda_build_target_str", "image_name", "mulled_tags_for", "quay_versions", "split_tag", "Target",
+           "v1_image_name", "v2_image_name", "version_sorted", )

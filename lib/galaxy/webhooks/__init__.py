@@ -72,8 +72,7 @@ class WebhooksRegistry(object):
                     config['name'],
                     config['type'],
                     config['activate'],
-                    path,
-                )
+                    path, )
 
                 # Read styles into a string, assuming all styles are in a
                 # single file

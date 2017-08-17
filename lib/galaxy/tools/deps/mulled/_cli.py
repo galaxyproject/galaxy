@@ -10,11 +10,8 @@ def arg_parser(argv, globals):
     parser = argparse.ArgumentParser(
         description=description,
         epilog=epilog,
-        formatter_class=argparse.RawTextHelpFormatter,
-    )
+        formatter_class=argparse.RawTextHelpFormatter, )
     return parser
 
 
-__all__ = (
-    "arg_parser",
-)
+__all__ = ("arg_parser", )

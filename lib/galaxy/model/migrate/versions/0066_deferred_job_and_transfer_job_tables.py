@@ -21,17 +21,13 @@ DeferredJob_table = Table("deferred_job", metadata,
                           Column("id", Integer, primary_key=True),
                           Column("create_time", DateTime, default=now),
                           Column("update_time", DateTime, default=now, onupdate=now),
-                          Column("state", String(64), index=True),
-                          Column("plugin", String(128), index=True),
-                          Column("params", JSONType))
+                          Column("state", String(64), index=True), Column("plugin", String(128), index=True), Column("params", JSONType))
 
 TransferJob_table = Table("transfer_job", metadata,
                           Column("id", Integer, primary_key=True),
                           Column("create_time", DateTime, default=now),
                           Column("update_time", DateTime, default=now, onupdate=now),
-                          Column("state", String(64), index=True),
-                          Column("path", String(1024)),
-                          Column("params", JSONType))
+                          Column("state", String(64), index=True), Column("path", String(1024)), Column("params", JSONType))
 
 
 def upgrade(migrate_engine):

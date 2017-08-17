@@ -14,7 +14,6 @@ from galaxy.webapps.galaxy.controllers.user import User as BaseUser
 
 
 class User(BaseUser):
-
     @web.expose
     def index(self, trans, cntrller='user', **kwd):
         return trans.fill_template('/webapps/tool_shed/user/index.mako', cntrller=cntrller)
@@ -36,13 +35,14 @@ class User(BaseUser):
             username = user.username
         message = escape(util.restore_text(params.get('message', '')))
         status = params.get('status', 'done')
-        return trans.fill_template('/webapps/tool_shed/user/manage_info.mako',
-                                   cntrller=cntrller,
-                                   user=user,
-                                   email=email,
-                                   username=username,
-                                   message=message,
-                                   status=status)
+        return trans.fill_template(
+            '/webapps/tool_shed/user/manage_info.mako',
+            cntrller=cntrller,
+            user=user,
+            email=email,
+            username=username,
+            message=message,
+            status=status)
 
     @web.expose
     @web.require_login()
@@ -54,11 +54,8 @@ class User(BaseUser):
             self.create_api_key(trans, trans.user)
             message = "Generated a new web API key"
             status = "done"
-        return trans.fill_template('/webapps/tool_shed/user/api_keys.mako',
-                                   cntrller=cntrller,
-                                   user=trans.user,
-                                   message=message,
-                                   status=status)
+        return trans.fill_template(
+            '/webapps/tool_shed/user/api_keys.mako', cntrller=cntrller, user=trans.user, message=message, status=status)
 
     # For REMOTE_USER, we need the ability to just edit the username
     @web.expose
@@ -84,12 +81,8 @@ class User(BaseUser):
                 trans.sa_session.add(user)
                 trans.sa_session.flush()
                 message = 'The username has been updated with the changes.'
-        return trans.fill_template('/webapps/tool_shed/user/username.mako',
-                                   cntrller=cntrller,
-                                   user=user,
-                                   username=user.username,
-                                   message=message,
-                                   status=status)
+        return trans.fill_template(
+            '/webapps/tool_shed/user/username.mako', cntrller=cntrller, user=user, username=user.username, message=message, status=status)
 
     @web.expose
     def edit_info(self, trans, cntrller, **kwd):
@@ -150,7 +143,8 @@ class User(BaseUser):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get('user_type_fd_id', 'none')
             if user_type_fd_id not in ['none']:
-                user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_type_fd_id))
+                user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(
+                    trans.security.decode_id(user_type_fd_id))
             elif user.values:
                 user_type_form_definition = user.values.form_definition
             else:
@@ -182,10 +176,7 @@ class User(BaseUser):
             kwd['message'] = util.sanitize_text(message)
         if status:
             kwd['status'] = status
-        return trans.response.send_redirect(web.url_for(controller='user',
-                                                        action='manage_user_info',
-                                                        cntrller=cntrller,
-                                                        **kwd))
+        return trans.response.send_redirect(web.url_for(controller='user', action='manage_user_info', cntrller=cntrller, **kwd))
 
     @web.expose
     def change_password(self, trans, token=None, **kwd):
@@ -241,9 +232,12 @@ class User(BaseUser):
                     if kwd.get('display_top', False) == 'True':
                         return trans.response.send_redirect(url_for('/', message='Password has been changed'))
                     else:
-                        return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
-        return trans.fill_template('/webapps/tool_shed/user/change_password.mako',
-                                   token=token,
-                                   status=status,
-                                   message=message,
-                                   display_top=kwd.get('redirect_home', False))
+                        return trans.show_ok_message(
+                            'The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).'
+                        )
+        return trans.fill_template(
+            '/webapps/tool_shed/user/change_password.mako',
+            token=token,
+            status=status,
+            message=message,
+            display_top=kwd.get('redirect_home', False))

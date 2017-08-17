@@ -33,6 +33,7 @@ class Heartbeat(threading.Thread):
     """
     Thread that periodically dumps the state of all threads to a file
     """
+
     def __init__(self, config, name="Heartbeat Thread", period=20, fname="heartbeat.log"):
         threading.Thread.__init__(self, name=name)
         self.config = config
@@ -49,10 +50,7 @@ class Heartbeat(threading.Thread):
 
     def run(self):
         self.pid = os.getpid()
-        self.fname = self.fname.format(
-            server_name=self.config.server_name,
-            pid=self.pid
-        )
+        self.fname = self.fname.format(server_name=self.config.server_name, pid=self.pid)
         fname, ext = os.path.splitext(self.fname)
         self.fname_nonsleeping = fname + '.nonsleeping' + ext
         wait = self.period
@@ -180,7 +178,8 @@ class Heartbeat(threading.Thread):
 
             good_frame = self.get_interesting_stack_frame(tb)
             self.file_nonsleeping.write("Thread %s\t%s\tnon-sleeping for %d heartbeat(s)\n  File %s:%d\n    Function \"%s\"\n      %s\n" %
-                (thread_id, object, self.nonsleeping_heartbeats[thread_id], good_frame[0], good_frame[1], good_frame[2], good_frame[3]))
+                                        (thread_id, object, self.nonsleeping_heartbeats[thread_id], good_frame[0], good_frame[1],
+                                         good_frame[2], good_frame[3]))
             all_threads_are_sleeping = False
 
         if all_threads_are_sleeping:

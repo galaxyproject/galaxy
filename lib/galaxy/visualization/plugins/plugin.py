@@ -73,8 +73,7 @@ class ServesTemplatesPluginMixin(object):
         self.serves_templates = False
         if self._is_template_plugin():
             self.template_path = self._build_template_path()
-            self.template_lookup = self._build_template_lookup(template_cache_dir,
-                                                               additional_template_paths=additional_template_paths)
+            self.template_lookup = self._build_template_lookup(template_cache_dir, additional_template_paths=additional_template_paths)
             self.serves_templates = True
         return self.serves_templates
 
@@ -84,8 +83,11 @@ class ServesTemplatesPluginMixin(object):
     def _build_template_path(self):
         return os.path.join(self.path, 'templates')
 
-    def _build_template_lookup(self, template_cache_dir, additional_template_paths=None,
-                               collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING):
+    def _build_template_lookup(self,
+                               template_cache_dir,
+                               additional_template_paths=None,
+                               collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE,
+                               output_encoding=DEFAULT_TEMPLATE_ENCODING):
         """
         Build a mako template filename lookup for the plugin.
         """
@@ -105,9 +107,10 @@ class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin, Serve
     A plugin that instantiates resources, serves static files, and uses mako
     templates to render web pages.
     """
+
     # AKA: MakoVisualizationPlugin
     # config[ 'entry_point' ][ 'type' ] == 'mako'
-# TODO: concept/name collision between plugin config and visualization config
+    # TODO: concept/name collision between plugin config and visualization config
 
     def __init__(self, app, path, name, config, context=None, **kwargs):
         super(VisualizationPlugin, self).__init__(app, path, name, config, context=None, **kwargs)
@@ -143,11 +146,11 @@ class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin, Serve
         # pass the saved visualization config for parsing into render vars
         render_vars = self._build_render_vars(config, trans=trans, **kwargs)
         # update any values that were loaded from the saved Visualization
-        render_vars.update(dict(
-            title=visualization.latest_revision.title,
-            saved_visualization=visualization,
-            visualization_id=trans.security.encode_id(visualization.id),
-        ))
+        render_vars.update(
+            dict(
+                title=visualization.latest_revision.title,
+                saved_visualization=visualization,
+                visualization_id=trans.security.encode_id(visualization.id), ))
         return self._render(render_vars, trans=trans, embedded=embedded)
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
@@ -173,8 +176,7 @@ class VisualizationPlugin(pluginframework.Plugin, ServesStaticPluginMixin, Serve
             saved_visualization=None,
             visualization_id=None,
             # NOTE: passing *unparsed* kwargs as query
-            query=kwargs,
-        )
+            query=kwargs, )
         # config based on existing or kwargs
         config = self._build_config(config, trans=trans, **kwargs)
         render_vars['config'] = config
@@ -266,8 +268,10 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
         # as an external visualization plugin is deprecated in favor of core interactive
         # environment plugin.
         if 'get_api_key' not in render_vars:
+
             def get_api_key():
                 return api_keys.ApiKeyManager(trans.app).get_or_create_api_key(trans.user)
+
             render_vars['get_api_key'] = get_api_key
 
         if 'plugin_path' not in render_vars:
@@ -278,11 +282,11 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
                 request = self.INTENV_REQUEST_FACTORY(trans, self)
             except:
                 log.exception("IE plugin request handling failed")
-                return trans.fill_template('message.mako',
+                return trans.fill_template(
+                    'message.mako',
                     message='Loading the interactive environment failed, please contact the {admin_tag} for assistance'.format(
                         admin_tag='<a href="mailto:{admin_mail}">Galaxy administrator</a>'.format(
-                            admin_mail=trans.app.config.error_email_to)
-                        if trans.app.config.error_email_to else 'Galaxy administrator'),
+                            admin_mail=trans.app.config.error_email_to) if trans.app.config.error_email_to else 'Galaxy administrator'),
                     status='error')
             render_vars["ie_request"] = request
 
@@ -314,9 +318,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         """
         render_vars['embedded'] = self._parse_embedded(embedded)
         render_vars.update(vars={})
-        render_vars.update({
-            "script_tag_attributes" : self.config['entry_point']['attr']
-        })
+        render_vars.update({"script_tag_attributes": self.config['entry_point']['attr']})
         template_filename = os.path.join(self.MAKO_TEMPLATE)
         return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
 
@@ -327,6 +329,7 @@ class StaticFileVisualizationPlugin(VisualizationPlugin):
     A visualiztion plugin that starts by loading a static html file defined
     in the visualization's config file.
     """
+
     # TODO: these are not embeddable by their nature - update config
     # TODO: should do render/render_saved here since most of the calc done there is unneeded in this case
     def _render(self, render_vars, trans=None, embedded=None, **kwargs):

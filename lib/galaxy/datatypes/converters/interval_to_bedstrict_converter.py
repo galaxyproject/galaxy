@@ -42,15 +42,18 @@ def __main__():
     try:
         chromCol = int(sys.argv[3]) - 1
     except:
-        stop_err("'%s' is an invalid chrom column, correct the column settings before attempting to convert the data format." % str(sys.argv[3]))
+        stop_err(
+            "'%s' is an invalid chrom column, correct the column settings before attempting to convert the data format." % str(sys.argv[3]))
     try:
         startCol = int(sys.argv[4]) - 1
     except:
-        stop_err("'%s' is an invalid start column, correct the column settings before attempting to convert the data format." % str(sys.argv[4]))
+        stop_err(
+            "'%s' is an invalid start column, correct the column settings before attempting to convert the data format." % str(sys.argv[4]))
     try:
         endCol = int(sys.argv[5]) - 1
     except:
-        stop_err("'%s' is an invalid end column, correct the column settings before attempting to convert the data format." % str(sys.argv[5]))
+        stop_err(
+            "'%s' is an invalid end column, correct the column settings before attempting to convert the data format." % str(sys.argv[5]))
     try:
         strandCol = int(sys.argv[6]) - 1
     except:
@@ -75,7 +78,9 @@ def __main__():
     # does file already conform to bed strict?
     # if so, we want to keep extended columns, otherwise we'll create a generic 6 column bed file
     strict_bed = True
-    if extension in ['bed', 'bedstrict', 'bed6', 'bed12'] and (chromCol, startCol, endCol) == (0, 1, 2) and (nameCol < 0 or nameCol == 3) and (strandCol < 0 or strandCol == 5):
+    if extension in [
+            'bed', 'bedstrict', 'bed6', 'bed12'
+    ] and (chromCol, startCol, endCol) == (0, 1, 2) and (nameCol < 0 or nameCol == 3) and (strandCol < 0 or strandCol == 5):
         for count, line in enumerate(open(input_name)):
             line = line.rstrip('\n\r')
             if line == "" or line.startswith("#"):
@@ -91,13 +96,19 @@ def __main__():
                     break
                 # name (fields[3]) can be anything, no verification needed
                 if len(fields) > 4:
-                    float(fields[4])  # score - A score between 0 and 1000. If the track line useScore attribute is set to 1 for this annotation data set, the score value will determine the level of gray in which this feature is displayed (higher numbers = darker gray).
+                    float(
+                        fields[4]
+                    )  # score - A score between 0 and 1000. If the track line useScore attribute is set to 1 for this annotation data set, the score value will determine the level of gray in which this feature is displayed (higher numbers = darker gray).
                     if len(fields) > 5:
                         assert fields[5] in ['+', '-'], 'Invalid strand'  # strand - Defines the strand - either '+' or '-'.
                         if len(fields) > 6:
-                            int(fields[6])  # thickStart - The starting position at which the feature is drawn thickly (for example, the start codon in gene displays).
+                            int(
+                                fields[6]
+                            )  # thickStart - The starting position at which the feature is drawn thickly (for example, the start codon in gene displays).
                             if len(fields) > 7:
-                                int(fields[7])  # thickEnd - The ending position at which the feature is drawn thickly (for example, the stop codon in gene displays).
+                                int(
+                                    fields[7]
+                                )  # thickEnd - The ending position at which the feature is drawn thickly (for example, the stop codon in gene displays).
                                 if len(fields) > 8:
                                     if fields[8] != '0':  # itemRgb - An RGB value of the form R,G,B (e.g. 255,0,0). If the track line itemRgb attribute is set to "On", this RBG value will determine the display color of the data contained in this BED line. NOTE: It is recommended that a simple color scheme (eight colors or less) be used with this attribute to avoid overwhelming the color resources of the Genome Browser and your Internet browser.
                                         fields2 = fields[8].split(',')
@@ -131,7 +142,16 @@ def __main__():
         first_skipped_line = None
         out = open(output_name, 'w')
         count = 0
-        for count, region in enumerate(bx.intervals.io.NiceReaderWrapper(open(input_name, 'r'), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False)):
+        for count, region in enumerate(
+                bx.intervals.io.NiceReaderWrapper(
+                    open(input_name, 'r'),
+                    chrom_col=chromCol,
+                    start_col=startCol,
+                    end_col=endCol,
+                    strand_col=strandCol,
+                    fix_strand=True,
+                    return_header=False,
+                    return_comments=False)):
             try:
                 if nameCol >= 0:
                     name = region.fields[nameCol]

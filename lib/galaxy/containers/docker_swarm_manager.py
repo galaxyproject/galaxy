@@ -20,24 +20,18 @@ except ImportError:
     daemon = None
 
 try:
-    import galaxy   # noqa: F401 this is a test import
+    import galaxy  # noqa: F401 this is a test import
 except ImportError:
-    sys.path.insert(0, os.path.abspath(os.path.join(
-        os.path.dirname(__file__),
-        os.pardir,
-        os.pardir)))
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
 from galaxy.containers import (
     build_container_interfaces,
     ContainerInterfaceConfig,
-    parse_containers_config,
-)
+    parse_containers_config, )
 from galaxy.containers.docker_model import (
     CPUS_CONSTRAINT,
     DockerServiceConstraints,
-    IMAGE_CONSTRAINT,
-)
-
+    IMAGE_CONSTRAINT, )
 
 DESCRIPTION = "Daemon to manage a Docker Swarm (running in Docker Swarm mode)."
 SWARM_MANAGER_CONF_DEFAULTS = {
@@ -62,7 +56,6 @@ log = logging.getLogger(__name__)
 
 
 class SwarmManager(object):
-
     def __init__(self, conf, docker_interface):
         self._conf = conf
         self._cpus = docker_interface._conf.cpus
@@ -85,7 +78,7 @@ class SwarmManager(object):
         attempt = 0
         if not command_retries:
             command_retries = self._conf.command_retries
-        allowed_returncodes = (0,)
+        allowed_returncodes = (0, )
         if returncodes:
             allowed_returncodes = returncodes
         raw_cmd = command.format(**kwargs)
@@ -140,8 +133,10 @@ class SwarmManager(object):
             node = (filter(lambda x: x.name == name, nodes) + [None])[0]
             if not node:
                 if elapsed > self._conf.spawn_wait_time:
-                    log.warning("spawning node '%s' not found in `docker node ls` and spawn_wait_time exceeded! %d seconds have elapsed", name, elapsed)
-                    self._run_command(self._conf.command_failure_command.format(failed_command='wait_for_spawning_node %s' % name), command_retries=0)
+                    log.warning("spawning node '%s' not found in `docker node ls` and spawn_wait_time exceeded! %d seconds have elapsed",
+                                name, elapsed)
+                    self._run_command(
+                        self._conf.command_failure_command.format(failed_command='wait_for_spawning_node %s' % name), command_retries=0)
                     self.mark_spawning_node_timeout(name)
             elif node.is_ok():
                 node.set_labels_for_constraints(constraints)
@@ -185,9 +180,7 @@ class SwarmManager(object):
                 return  # services are waiting
             if needed < 0:
                 extra_slots = max(
-                    self._state.get_limit(constraints, 'slots_min_limit'),
-                    self._state.get_limit(constraints, 'slots_min_spare')
-                )
+                    self._state.get_limit(constraints, 'slots_min_limit'), self._state.get_limit(constraints, 'slots_min_spare'))
                 if total + needed != extra_slots:
                     return  # otherwise, nodes remaining are for configured minimums
         # FIXME: there's a race condition here
@@ -211,18 +204,16 @@ class SwarmManager(object):
     def _spawn_nodes(self, constraints, services, slots_needed):
         service_ids = [x.id for x in services]
         if service_ids:
-            log.info("requesting node(s) for services needing %s slots with constraints [%s]: %s",
-                     slots_needed, constraints, ', '.join(service_ids))
+            log.info("requesting node(s) for services needing %s slots with constraints [%s]: %s", slots_needed, constraints,
+                     ', '.join(service_ids))
         else:
-            log.info("requesting node(s) for %s slots (due to minimum limits with constraints [%s]",
-                     slots_needed, constraints)
+            log.info("requesting node(s) for %s slots (due to minimum limits with constraints [%s]", slots_needed, constraints)
         command = self._conf.spawn_command.format(
             service_ids=','.join(service_ids),
             service_count=len(services),
             image=self._get_spawn_property(constraints, IMAGE_CONSTRAINT, services) or '',
             cpus=self._get_spawn_property(constraints, CPUS_CONSTRAINT, services) or '',
-            slots=slots_needed,
-        )
+            slots=slots_needed, )
         rc, output = self._run_command(command, returncodes=(0, 2))
         if rc == 2:
             log.info('spawn_command indicated that spawning should be retried: %s', output)
@@ -245,8 +236,7 @@ class SwarmManager(object):
                 destroy_nodes.append(node)
                 destroyed_slots += node_slots
         if destroy_nodes:
-            command = self._conf.destroy_command.format(
-                nodes=' '.join([x.name for x in destroy_nodes]))
+            command = self._conf.destroy_command.format(nodes=' '.join([x.name for x in destroy_nodes]))
             destroyed_nodes = self._run_command(command)
             if not destroyed_nodes:
                 log.warning('destroy_command returned no destroyed nodes')
@@ -265,10 +255,9 @@ class SwarmManager(object):
 
 
 class SwarmState(object):
-
     def __init__(self, conf, interface_conf):
         self._conf = conf
-        self._cpus = interface_conf.cpus   # this is effectively the slot size
+        self._cpus = interface_conf.cpus  # this is effectively the slot size
         self._service_create_image_constraint = interface_conf.service_create_image_constraint
         self._service_create_cpus_constraint = interface_conf.service_create_cpus_constraint
         self._handled_services = set()
@@ -301,10 +290,10 @@ class SwarmState(object):
         if not all_constraints and (self._conf.slots_min_spare or self._conf.slots_min_limit):
             if self._service_create_image_constraint or self._service_create_cpus_constraint:
                 raise Exception("Global 'slots_min_limit' and/or 'slots_min_spare' are set and "
-                    "'service_create_image_constraint' and/or 'service_create_cpus_constraint' are set but "
-                    "constraint-specific limits are unset, minimum nodes cannot be started since the constraints are not "
-                    "known until service creation time. Either disable 'service_create_*_constraint' or create "
-                    "constraint-specific limits in the 'limits' section of 'manager_conf' in containers_conf.yml")
+                                "'service_create_image_constraint' and/or 'service_create_cpus_constraint' are set but "
+                                "constraint-specific limits are unset, minimum nodes cannot be started since the constraints are not "
+                                "known until service creation time. Either disable 'service_create_*_constraint' or create "
+                                "constraint-specific limits in the 'limits' section of 'manager_conf' in containers_conf.yml")
             all_constraints.add(DockerServiceConstraints.from_constraint_string_list([]))
         for constraints in all_constraints:
             services = waiting_services.get(constraints, [])
@@ -333,8 +322,8 @@ class SwarmState(object):
             total += node.cpus / self._cpus
         # need at least this many slots
         needed = used + self.get_limit(constraints, 'slots_min_spare')
-        if (len(services) > self._conf.service_wait_count_limit and
-                time.time() - self._waiting_since.get(constraints, time.time()) > self._conf.service_wait_time_limit):
+        if (len(services) > self._conf.service_wait_count_limit
+                and time.time() - self._waiting_since.get(constraints, time.time()) > self._conf.service_wait_time_limit):
             # add slots for waiting services that have exceeded limits
             needed += sum([s.cpus for s in services]) / self._cpus
         # subtract slots for spawning nodes
@@ -436,8 +425,7 @@ def _arg_parser():
     parser.add_argument("-c", "--containers-config-file", default=None)
     parser.add_argument("-f", "--foreground", action="store_true", default=False)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
-    parser.add_argument("-s", "--swarm", default="_default_",
-                        help='Swarm name in containers config to manage')
+    parser.add_argument("-s", "--swarm", default="_default_", help='Swarm name in containers config to manage')
     return parser
 
 
@@ -516,8 +504,7 @@ def _configure_logging(args, conf):
 
 def _load_xdg_environment():
     return dict(
-        data_home=os.path.expanduser(os.environ.get('XDG_DATA_HOME', '~/.local/share')),
-    )
+        data_home=os.path.expanduser(os.environ.get('XDG_DATA_HOME', '~/.local/share')), )
 
 
 def _swarm_manager_pidfile(conf):
@@ -534,10 +521,9 @@ def _swarm_manager_daemon(pidfile, logfile, swarm_manager_conf, docker_interface
     with open(logfile, 'a') as logfh:
         try:
             with daemon.DaemonContext(
-                pidfile=pidfile,
-                stdout=logfh,
-                stderr=logfh,
-            ):
+                    pidfile=pidfile,
+                    stdout=logfh,
+                    stderr=logfh, ):
                 _swarm_manager(swarm_manager_conf, docker_interface)
         except lockfile.AlreadyLocked:
             log.debug("attempt to daemonize with swarm manager already running ignored")

@@ -41,6 +41,7 @@ def upgrade(migrate_engine):
             return str(lst[index]).replace("'", "''")
         except IndexError:
             return ''
+
     # Go through the entire table and add a 'name' attribute for each field
     # in the list of fields for each form definition
     cmd = "SELECT f.id, f.fields FROM form_definition AS f"

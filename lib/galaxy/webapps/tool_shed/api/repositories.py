@@ -194,31 +194,24 @@ class RepositoriesController(BaseAPIController):
                 log.debug('Cannot locate repository %s owned by %s' % (str(name), str(owner)))
                 return {}, {}, {}
             encoded_repository_id = trans.security.encode_id(repository.id)
-            repository_dict = repository.to_dict(view='element',
-                                                 value_mapper=self.__get_value_mapper(trans))
-            repository_dict['url'] = web.url_for(controller='repositories',
-                                                 action='show',
-                                                 id=encoded_repository_id)
+            repository_dict = repository.to_dict(view='element', value_mapper=self.__get_value_mapper(trans))
+            repository_dict['url'] = web.url_for(controller='repositories', action='show', id=encoded_repository_id)
             # Get the repository_metadata information.
-            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
-                                                                                              encoded_repository_id,
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app, encoded_repository_id,
                                                                                               changeset_revision)
             if repository_metadata is None:
                 # The changeset_revision column in the repository_metadata table has been updated with a new
                 # value value, so find the changeset_revision to which we need to update.
                 repo = hg_util.get_repo_for_repository(self.app, repository=repository, repo_path=None, create=False)
                 new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
-                repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
-                                                                                                  encoded_repository_id,
+                repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app, encoded_repository_id,
                                                                                                   new_changeset_revision)
                 changeset_revision = new_changeset_revision
             if repository_metadata is not None:
                 encoded_repository_metadata_id = trans.security.encode_id(repository_metadata.id)
-                repository_metadata_dict = repository_metadata.to_dict(view='collection',
-                                                                       value_mapper=self.__get_value_mapper(trans))
-                repository_metadata_dict['url'] = web.url_for(controller='repository_revisions',
-                                                              action='show',
-                                                              id=encoded_repository_metadata_id)
+                repository_metadata_dict = repository_metadata.to_dict(view='collection', value_mapper=self.__get_value_mapper(trans))
+                repository_metadata_dict['url'] = web.url_for(
+                    controller='repository_revisions', action='show', id=encoded_repository_metadata_id)
                 if 'tools' in repository_metadata.metadata:
                     repository_metadata_dict['valid_tools'] = repository_metadata.metadata['tools']
                 # Get the repo_info_dict for installing the repository.
@@ -265,9 +258,7 @@ class RepositoriesController(BaseAPIController):
         return repository.installable_revisions(self.app)
 
     def __get_value_mapper(self, trans):
-        value_mapper = {'id': trans.security.encode_id,
-                        'repository_id': trans.security.encode_id,
-                        'user_id': trans.security.encode_id}
+        value_mapper = {'id': trans.security.encode_id, 'repository_id': trans.security.encode_id, 'user_id': trans.security.encode_id}
         return value_mapper
 
     @web.expose_api
@@ -290,12 +281,8 @@ class RepositoriesController(BaseAPIController):
         if not capsule_file_name:
             raise HTTPBadRequest(detail="Missing required parameter 'capsule_file_name'.")
         capsule_file_path = os.path.abspath(capsule_file_name)
-        capsule_dict = dict(error_message='',
-                            encoded_file_path=None,
-                            status='ok',
-                            tar_archive=None,
-                            uploaded_file=None,
-                            capsule_file_name=None)
+        capsule_dict = dict(
+            error_message='', encoded_file_path=None, status='ok', tar_archive=None, uploaded_file=None, capsule_file_name=None)
         if os.path.getsize(os.path.abspath(capsule_file_name)) == 0:
             log.debug('Your capsule file %s is empty.' % str(capsule_file_name))
             return {}
@@ -305,18 +292,14 @@ class RepositoriesController(BaseAPIController):
         except tarfile.ReadError as e:
             log.debug('Error opening capsule file %s: %s' % (str(capsule_file_name), str(e)))
             return {}
-        irm = capsule_manager.ImportRepositoryManager(self.app,
-                                                      trans.request.host,
-                                                      trans.user,
-                                                      trans.user_is_admin())
+        irm = capsule_manager.ImportRepositoryManager(self.app, trans.request.host, trans.user, trans.user_is_admin())
         capsule_dict['tar_archive'] = tar_archive
         capsule_dict['capsule_file_name'] = capsule_file_name
         capsule_dict = irm.extract_capsule_files(**capsule_dict)
         capsule_dict = irm.validate_capsule(**capsule_dict)
         status = capsule_dict.get('status', 'error')
         if status == 'error':
-            log.debug('The capsule contents are invalid and cannot be imported:<br/>%s' %
-                      str(capsule_dict.get('error_message', '')))
+            log.debug('The capsule contents are invalid and cannot be imported:<br/>%s' % str(capsule_dict.get('error_message', '')))
             return {}
         encoded_file_path = capsule_dict.get('encoded_file_path', None)
         if encoded_file_path is None:
@@ -336,8 +319,7 @@ class RepositoriesController(BaseAPIController):
             # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
             repository_status_info_dict['capsule_file_name'] = capsule_file_name
             repository_status_info_dict['encoded_file_path'] = encoded_file_path
-            import_results_tups = irm.create_repository_and_import_archive(repository_status_info_dict,
-                                                                           import_results_tups)
+            import_results_tups = irm.create_repository_and_import_archive(repository_status_info_dict, import_results_tups)
         irm.check_status_and_reset_downloadable(import_results_tups)
         basic_util.remove_dir(file_path)
         # NOTE: the order of installation is defined in import_results_tups, but order will be lost
@@ -418,11 +400,11 @@ class RepositoriesController(BaseAPIController):
             for tool_id in tool_ids:
                 # A valid GUID looks like toolshed.g2.bx.psu.edu/repos/bgruening/deeptools/deeptools_computeMatrix/1.1.0
                 shed, _, owner, name, tool, version = tool_id.split('/')
-                clause_list = [and_(self.app.model.Repository.table.c.deprecated == false(),
-                                    self.app.model.Repository.table.c.deleted == false(),
-                                    self.app.model.Repository.table.c.name == name,
-                                    self.app.model.User.table.c.username == owner,
-                                    self.app.model.Repository.table.c.user_id == self.app.model.User.table.c.id)]
+                clause_list = [
+                    and_(self.app.model.Repository.table.c.deprecated == false(), self.app.model.Repository.table.c.deleted == false(),
+                         self.app.model.Repository.table.c.name == name, self.app.model.User.table.c.username == owner,
+                         self.app.model.Repository.table.c.user_id == self.app.model.User.table.c.id)
+                ]
                 repository = trans.sa_session.query(self.app.model.Repository).filter(*clause_list).first()
                 for changeset, changehash in repository.installable_revisions(self.app):
                     metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(self.app, repository, changehash)
@@ -433,10 +415,13 @@ class RepositoriesController(BaseAPIController):
                     metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(self.app, repository, changehash)
                     if metadata is None:
                         continue
-                    metadata_dict = metadata.to_dict(value_mapper={'id': self.app.security.encode_id, 'repository_id': self.app.security.encode_id})
+                    metadata_dict = metadata.to_dict(
+                        value_mapper={'id': self.app.security.encode_id,
+                                      'repository_id': self.app.security.encode_id})
                     metadata_dict['repository'] = repository.to_dict(value_mapper={'id': self.app.security.encode_id})
                     if metadata.has_repository_dependencies:
-                        metadata_dict['repository_dependencies'] = metadata_util.get_all_dependencies(self.app, metadata, processed_dependency_links=[])
+                        metadata_dict['repository_dependencies'] = metadata_util.get_all_dependencies(
+                            self.app, metadata, processed_dependency_links=[])
                     else:
                         metadata_dict['repository_dependencies'] = []
                     if metadata.includes_tool_dependencies:
@@ -452,18 +437,17 @@ class RepositoriesController(BaseAPIController):
                 return json.dumps(all_metadata)
             return '{}'
 
-        clause_list = [and_(self.app.model.Repository.table.c.deprecated == false(),
-                            self.app.model.Repository.table.c.deleted == deleted)]
+        clause_list = [and_(self.app.model.Repository.table.c.deprecated == false(), self.app.model.Repository.table.c.deleted == deleted)]
         if owner is not None:
-            clause_list.append(and_(self.app.model.User.table.c.username == owner,
-                                    self.app.model.Repository.table.c.user_id == self.app.model.User.table.c.id))
+            clause_list.append(
+                and_(self.app.model.User.table.c.username == owner, self.app.model.Repository.table.c.user_id ==
+                     self.app.model.User.table.c.id))
         if name is not None:
             clause_list.append(self.app.model.Repository.table.c.name == name)
         for repository in trans.sa_session.query(self.app.model.Repository) \
                                           .filter(*clause_list) \
                                           .order_by(self.app.model.Repository.table.c.name):
-            repository_dict = repository.to_dict(view='collection',
-                                                 value_mapper=self.__get_value_mapper(trans))
+            repository_dict = repository.to_dict(view='collection', value_mapper=self.__get_value_mapper(trans))
             repository_dict['category_ids'] = \
                 [trans.security.encode_id(x.category.id) for x in repository.categories]
             repository_dicts.append(repository_dict)
@@ -488,24 +472,18 @@ class RepositoriesController(BaseAPIController):
 
         repo_search = RepoSearch()
 
-        Boosts = namedtuple('Boosts', ['repo_name_boost',
-                                       'repo_description_boost',
-                                       'repo_long_description_boost',
-                                       'repo_homepage_url_boost',
-                                       'repo_remote_repository_url_boost',
-                                       'repo_owner_username_boost'])
-        boosts = Boosts(float(conf.get('repo_name_boost', 0.9)),
-                        float(conf.get('repo_description_boost', 0.6)),
-                        float(conf.get('repo_long_description_boost', 0.5)),
-                        float(conf.get('repo_homepage_url_boost', 0.3)),
-                        float(conf.get('repo_remote_repository_url_boost', 0.2)),
-                        float(conf.get('repo_owner_username_boost', 0.3)))
+        Boosts = namedtuple('Boosts', [
+            'repo_name_boost', 'repo_description_boost', 'repo_long_description_boost', 'repo_homepage_url_boost',
+            'repo_remote_repository_url_boost', 'repo_owner_username_boost'
+        ])
+        boosts = Boosts(
+            float(conf.get('repo_name_boost', 0.9)),
+            float(conf.get('repo_description_boost', 0.6)),
+            float(conf.get('repo_long_description_boost', 0.5)),
+            float(conf.get('repo_homepage_url_boost', 0.3)),
+            float(conf.get('repo_remote_repository_url_boost', 0.2)), float(conf.get('repo_owner_username_boost', 0.3)))
 
-        results = repo_search.search(trans,
-                                     search_term,
-                                     page,
-                                     page_size,
-                                     boosts)
+        results = repo_search.search(trans, search_term, page, page_size, boosts)
         results['hostname'] = web.url_for('/', qualified=True)
         return results
 
@@ -612,11 +590,7 @@ class RepositoriesController(BaseAPIController):
                 rmm.reset_all_metadata_on_repository_in_tool_shed()
                 rmm_invalid_file_tups = rmm.get_invalid_file_tups()
                 if rmm_invalid_file_tups:
-                    message = tool_util.generate_message_for_invalid_tools(self.app,
-                                                                           rmm_invalid_file_tups,
-                                                                           repository,
-                                                                           None,
-                                                                           as_html=False)
+                    message = tool_util.generate_message_for_invalid_tools(self.app, rmm_invalid_file_tups, repository, None, as_html=False)
                     results['unsuccessful_count'] += 1
                 else:
                     message = "Successfully reset metadata on repository %s owned by %s" % \
@@ -629,16 +603,11 @@ class RepositoriesController(BaseAPIController):
             status = '%s : %s' % (str(repository.name), message)
             results['repository_status'].append(status)
             return results
-        rmm = repository_metadata_manager.RepositoryMetadataManager(app=self.app,
-                                                                    user=trans.user,
-                                                                    resetting_all_metadata_on_repository=True,
-                                                                    updating_installed_repository=False,
-                                                                    persist=False)
+
+        rmm = repository_metadata_manager.RepositoryMetadataManager(
+            app=self.app, user=trans.user, resetting_all_metadata_on_repository=True, updating_installed_repository=False, persist=False)
         start_time = strftime("%Y-%m-%d %H:%M:%S")
-        results = dict(start_time=start_time,
-                       repository_status=[],
-                       successful_count=0,
-                       unsuccessful_count=0)
+        results = dict(start_time=start_time, repository_status=[], successful_count=0, unsuccessful_count=0)
         handled_repository_ids = []
         encoded_ids_to_skip = payload.get('encoded_ids_to_skip', [])
         skip_file = payload.get('skip_file', None)
@@ -660,16 +629,16 @@ class RepositoriesController(BaseAPIController):
         for repository in query:
             encoded_id = trans.security.encode_id(repository.id)
             if encoded_id in encoded_ids_to_skip:
-                log.debug("Skipping repository with id %s because it is in encoded_ids_to_skip %s" %
-                          (str(repository.id), str(encoded_ids_to_skip)))
+                log.debug("Skipping repository with id %s because it is in encoded_ids_to_skip %s" % (str(repository.id),
+                                                                                                      str(encoded_ids_to_skip)))
             elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                 results = handle_repository(trans, rmm, repository, results)
         # Now reset metadata on all remaining repositories.
         for repository in query:
             encoded_id = trans.security.encode_id(repository.id)
             if encoded_id in encoded_ids_to_skip:
-                log.debug("Skipping repository with id %s because it is in encoded_ids_to_skip %s" %
-                          (str(repository.id), str(encoded_ids_to_skip)))
+                log.debug("Skipping repository with id %s because it is in encoded_ids_to_skip %s" % (str(repository.id),
+                                                                                                      str(encoded_ids_to_skip)))
             elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                 results = handle_repository(trans, rmm, repository, results)
         stop_time = strftime("%Y-%m-%d %H:%M:%S")
@@ -690,23 +659,19 @@ class RepositoriesController(BaseAPIController):
         """
 
         def handle_repository(trans, start_time, repository):
-            results = dict(start_time=start_time,
-                           repository_status=[])
+            results = dict(start_time=start_time, repository_status=[])
             try:
-                rmm = repository_metadata_manager.RepositoryMetadataManager(app=self.app,
-                                                                            user=trans.user,
-                                                                            repository=repository,
-                                                                            resetting_all_metadata_on_repository=True,
-                                                                            updating_installed_repository=False,
-                                                                            persist=False)
+                rmm = repository_metadata_manager.RepositoryMetadataManager(
+                    app=self.app,
+                    user=trans.user,
+                    repository=repository,
+                    resetting_all_metadata_on_repository=True,
+                    updating_installed_repository=False,
+                    persist=False)
                 rmm.reset_all_metadata_on_repository_in_tool_shed()
                 rmm_invalid_file_tups = rmm.get_invalid_file_tups()
                 if rmm_invalid_file_tups:
-                    message = tool_util.generate_message_for_invalid_tools(self.app,
-                                                                           rmm_invalid_file_tups,
-                                                                           repository,
-                                                                           None,
-                                                                           as_html=False)
+                    message = tool_util.generate_message_for_invalid_tools(self.app, rmm_invalid_file_tups, repository, None, as_html=False)
                     results['status'] = 'warning'
                 else:
                     message = "Successfully reset metadata on repository %s owned by %s" % \
@@ -754,8 +719,7 @@ class RepositoriesController(BaseAPIController):
         repository = repository_util.get_repository_in_tool_shed(self.app, id)
         if repository is None:
             raise ObjectNotFound('Unable to locate repository for the given id.')
-        repository_dict = repository.to_dict(view='element',
-                                             value_mapper=self.__get_value_mapper(trans))
+        repository_dict = repository.to_dict(view='element', value_mapper=self.__get_value_mapper(trans))
         # TODO the following property would be better suited in the to_dict method
         repository_dict['category_ids'] = \
             [trans.security.encode_id(x.category.id) for x in repository.categories]
@@ -835,16 +799,12 @@ class RepositoriesController(BaseAPIController):
 
     @expose_api_anonymous_and_sessionless
     def show_tools(self, trans, id, changeset, **kwd):
-        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
-                                                                                          id,
-                                                                                          changeset)
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app, id, changeset)
         if repository_metadata is not None:
             encoded_repository_metadata_id = trans.security.encode_id(repository_metadata.id)
-            repository_metadata_dict = repository_metadata.to_dict(view='collection',
-                                                                   value_mapper=self.__get_value_mapper(trans))
-            repository_metadata_dict['url'] = web.url_for(controller='repository_revisions',
-                                                          action='show',
-                                                          id=encoded_repository_metadata_id)
+            repository_metadata_dict = repository_metadata.to_dict(view='collection', value_mapper=self.__get_value_mapper(trans))
+            repository_metadata_dict['url'] = web.url_for(
+                controller='repository_revisions', action='show', id=encoded_repository_metadata_id)
             if 'tools' in repository_metadata.metadata:
                 repository_metadata_dict['valid_tools'] = repository_metadata.metadata['tools']
             # Get the repo_info_dict for installing the repository.
@@ -860,8 +820,8 @@ class RepositoriesController(BaseAPIController):
                                                    changeset)
             return repository_metadata_dict
         else:
-            log.debug("Unable to locate repository_metadata record for repository id %s and changeset_revision %s" %
-                      (str(id), str(changeset)))
+            log.debug("Unable to locate repository_metadata record for repository id %s and changeset_revision %s" % (str(id),
+                                                                                                                      str(changeset)))
             return {}
 
     @expose_api_anonymous_and_sessionless
@@ -893,7 +853,8 @@ class RepositoriesController(BaseAPIController):
             metadata_dict = metadata.to_dict(value_mapper={'id': self.app.security.encode_id, 'repository_id': self.app.security.encode_id})
             metadata_dict['repository'] = repository.to_dict(value_mapper={'id': self.app.security.encode_id})
             if metadata.has_repository_dependencies and recursive:
-                metadata_dict['repository_dependencies'] = metadata_util.get_all_dependencies(self.app, metadata, processed_dependency_links=[])
+                metadata_dict['repository_dependencies'] = metadata_util.get_all_dependencies(
+                    self.app, metadata, processed_dependency_links=[])
             else:
                 metadata_dict['repository_dependencies'] = []
             if metadata.includes_tool_dependencies and recursive:
@@ -948,8 +909,7 @@ class RepositoriesController(BaseAPIController):
             long_description=description,
             remote_repository_url=remote_repository_url,
             homepage_url=homepage_url,
-            category_ids=category_ids,
-        )
+            category_ids=category_ids, )
 
         repo, message = repository_util.update_repository(app=self.app, trans=trans, id=id, **update_kwds)
         if repo is None:
@@ -1011,15 +971,16 @@ class RepositoriesController(BaseAPIController):
         if invalid_message:
             raise RequestParameterInvalidException(invalid_message)
 
-        repo, message = repository_util.create_repository(app=self.app,
-                                                          name=name,
-                                                          type=repo_type,
-                                                          description=synopsis,
-                                                          long_description=description,
-                                                          user_id=trans.user.id,
-                                                          category_ids=category_ids,
-                                                          remote_repository_url=remote_repository_url,
-                                                          homepage_url=homepage_url)
+        repo, message = repository_util.create_repository(
+            app=self.app,
+            name=name,
+            type=repo_type,
+            description=synopsis,
+            long_description=description,
+            user_id=trans.user.id,
+            category_ids=category_ids,
+            remote_repository_url=remote_repository_url,
+            homepage_url=homepage_url)
 
         repository_dict = repo.to_dict(view='element', value_mapper=self.__get_value_mapper(trans))
         repository_dict['category_ids'] = \
@@ -1048,9 +1009,8 @@ class RepositoriesController(BaseAPIController):
 
         repository = repository_util.get_repository_in_tool_shed(self.app, id)
 
-        if not (trans.user_is_admin() or
-                self.app.security_agent.user_can_administer_repository(trans.user, repository) or
-                self.app.security_agent.can_push(self.app, trans.user, repository)):
+        if not (trans.user_is_admin() or self.app.security_agent.user_can_administer_repository(trans.user, repository)
+                or self.app.security_agent.can_push(self.app, trans.user, repository)):
             trans.response.status = 400
             return {
                 "err_msg": "You do not have permission to update this repository.",
@@ -1069,8 +1029,7 @@ class RepositoriesController(BaseAPIController):
             assert file_data.file.name != '<fdopen>'
             local_filename = util.mkstemp_ln(file_data.file.name, 'upload_file_data_')
             file_data.file.close()
-            file_data = dict(filename=file_data.filename,
-                             local_filename=local_filename)
+            file_data = dict(filename=file_data.filename, local_filename=local_filename)
         elif type(file_data) == dict and 'local_filename' not in file_data:
             raise Exception('Uploaded file was encoded in a way not understood.')
 
@@ -1115,9 +1074,7 @@ class RepositoriesController(BaseAPIController):
                 message = 'No changes to repository.'
                 ok = False
             else:
-                rmm = repository_metadata_manager.RepositoryMetadataManager(app=self.app,
-                                                                            user=trans.user,
-                                                                            repository=repository)
+                rmm = repository_metadata_manager.RepositoryMetadataManager(app=self.app, user=trans.user, repository=repository)
                 status, error_message = \
                     rmm.set_repository_metadata_due_to_new_tip(trans.request.host,
                                                                content_alert_str=content_alert_str,
@@ -1131,10 +1088,6 @@ class RepositoriesController(BaseAPIController):
         if os.path.exists(uploaded_file_name):
             os.remove(uploaded_file_name)
         if not ok:
-            return {
-                "err_msg": message
-            }
+            return {"err_msg": message}
         else:
-            return {
-                "message": message
-            }
+            return {"message": message}

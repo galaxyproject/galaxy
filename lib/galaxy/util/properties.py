@@ -43,14 +43,7 @@ def find_config_file(default, old_defaults, explicit, cwd=None):
     return config_file
 
 
-def load_app_properties(
-    kwds={},
-    ini_file=None,
-    ini_section=None,
-    config_file=None,
-    config_section=None,
-    config_prefix="GALAXY_CONFIG_"
-):
+def load_app_properties(kwds={}, ini_file=None, ini_section=None, config_file=None, config_section=None, config_prefix="GALAXY_CONFIG_"):
     properties = kwds.copy() if kwds else {}
     if config_file is None:
         config_file = ini_file
@@ -84,10 +77,7 @@ def load_app_properties(
 
 
 def nice_config_parser(path):
-    defaults = {
-        'here': os.path.dirname(os.path.abspath(path)),
-        '__file__': os.path.abspath(path)
-    }
+    defaults = {'here': os.path.dirname(os.path.abspath(path)), '__file__': os.path.abspath(path)}
     parser = NicerConfigParser(path, defaults=defaults)
     parser.optionxform = str  # Don't lower-case keys
     with open(path) as f:
@@ -96,7 +86,6 @@ def nice_config_parser(path):
 
 
 class NicerConfigParser(ConfigParser):
-
     def __init__(self, filename, *args, **kw):
         ConfigParser.__init__(self, *args, **kw)
         self.filename = filename
@@ -119,8 +108,7 @@ class NicerConfigParser(ConfigParser):
     def _interpolate(self, section, option, rawval, vars):
         # Python < 3.2
         try:
-            return ConfigParser._interpolate(
-                self, section, option, rawval, vars)
+            return ConfigParser._interpolate(self, section, option, rawval, vars)
         except Exception:
             e = sys.exc_info()[1]
             args = list(e.args)
@@ -139,8 +127,7 @@ class NicerConfigParser(ConfigParser):
 
         def before_get(self, parser, section, option, value, defaults):
             try:
-                return self._original.before_get(parser, section, option,
-                                                 value, defaults)
+                return self._original.before_get(parser, section, option, value, defaults)
             except Exception:
                 e = sys.exc_info()[1]
                 args = list(e.args)

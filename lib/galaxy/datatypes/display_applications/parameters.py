@@ -26,13 +26,17 @@ class DisplayApplicationParameter(object):
         self.name = elem.get('name', None)
         assert self.name, 'DisplayApplicationParameter requires a name'
         self.link = link
-        self.url = elem.get('url', self.name)  # name used in url for display purposes defaults to name; e.g. want the form of file.ext, where a '.' is not allowed as python variable name/keyword
+        self.url = elem.get(
+            'url', self.name
+        )  # name used in url for display purposes defaults to name; e.g. want the form of file.ext, where a '.' is not allowed as python variable name/keyword
         self.mime_type = elem.get('mimetype', None)
         self.guess_mime_type = string_as_bool(elem.get('guess_mimetype', 'False'))
-        self.viewable = string_as_bool(elem.get('viewable', 'False'))  # only allow these to be viewed via direct url when explicitly set to viewable
+        self.viewable = string_as_bool(elem.get('viewable',
+                                                'False'))  # only allow these to be viewed via direct url when explicitly set to viewable
         self.strip = string_as_bool(elem.get('strip', 'False'))
         self.strip_https = string_as_bool(elem.get('strip_https', 'False'))
-        self.allow_override = string_as_bool(elem.get('allow_override', 'False'))  # Passing query param app_<name>=<value> to dataset controller allows override if this is true.
+        self.allow_override = string_as_bool(elem.get(
+            'allow_override', 'False'))  # Passing query param app_<name>=<value> to dataset controller allows override if this is true.
 
     def get_value(self, other_values, dataset_hash, user_hash, trans):
         raise Exception('get_value() is unimplemented for DisplayApplicationDataParameter')
@@ -63,8 +67,10 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
         self.metadata = elem.get('metadata', None)
         self.allow_extra_files_access = string_as_bool(elem.get('allow_extra_files_access', 'False'))
         self.dataset = elem.get('dataset', DEFAULT_DATASET_NAME)  # 'dataset' is default name assigned to dataset to be displayed
-        assert not (self.extensions and self.metadata), 'A format or a metadata can be defined for a DisplayApplicationParameter, but not both.'
-        assert not (self.allow_extra_files_access and self.metadata), 'allow_extra_files_access or metadata can be defined for a DisplayApplicationParameter, but not both.'
+        assert not (self.extensions
+                    and self.metadata), 'A format or a metadata can be defined for a DisplayApplicationParameter, but not both.'
+        assert not (self.allow_extra_files_access and
+                    self.metadata), 'allow_extra_files_access or metadata can be defined for a DisplayApplicationParameter, but not both.'
         self.viewable = string_as_bool(elem.get('viewable', 'True'))  # data params should be viewable
         self.force_url_param = string_as_bool(elem.get('force_url_param', 'False'))
         self.force_conversion = string_as_bool(elem.get('force_conversion', 'False'))
@@ -116,7 +122,8 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
                 new_data.hid = data.hid
                 new_data.name = data.name
                 trans.sa_session.add(new_data)
-                assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(parent=data, file_type=target_ext, dataset=new_data, metadata_safe=False)
+                assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(
+                    parent=data, file_type=target_ext, dataset=new_data, metadata_safe=False)
                 trans.sa_session.add(assoc)
                 trans.sa_session.flush()
             elif converted_dataset and converted_dataset.state == converted_dataset.states.ERROR:
@@ -155,8 +162,10 @@ class DisplayApplicationTemplateParameter(DisplayApplicationParameter):
         return DisplayParameterValueWrapper(value, self, other_values, dataset_hash, user_hash, trans)
 
 
-parameter_type_to_class = {DisplayApplicationDataParameter.type: DisplayApplicationDataParameter,
-                           DisplayApplicationTemplateParameter.type: DisplayApplicationTemplateParameter}
+parameter_type_to_class = {
+    DisplayApplicationDataParameter.type: DisplayApplicationDataParameter,
+    DisplayApplicationTemplateParameter.type: DisplayApplicationTemplateParameter
+}
 
 
 class DisplayParameterValueWrapper(object):
@@ -188,17 +197,17 @@ class DisplayParameterValueWrapper(object):
     @property
     def url(self):
         base_url = self.trans.request.base
-        if self.parameter.strip_https and base_url[: 5].lower() == 'https':
+        if self.parameter.strip_https and base_url[:5].lower() == 'https':
             base_url = "http%s" % base_url[5:]
-        return "%s%s" % (base_url,
-                         url_for(controller='dataset',
-                                 action="display_application",
-                                 dataset_id=self._dataset_hash,
-                                 user_id=self._user_hash,
-                                 app_name=quote_plus(self.parameter.link.display_application.id),
-                                 link_name=quote_plus(self.parameter.link.id),
-                                 app_action=self.action_name,
-                                 action_param=self._url))
+        return "%s%s" % (base_url, url_for(
+            controller='dataset',
+            action="display_application",
+            dataset_id=self._dataset_hash,
+            user_id=self._user_hash,
+            app_name=quote_plus(self.parameter.link.display_application.id),
+            link_name=quote_plus(self.parameter.link.id),
+            app_action=self.action_name,
+            action_param=self._url))
 
     @property
     def action_name(self):

@@ -8,12 +8,10 @@ log = logging.getLogger(__name__)
 
 
 class CustomDatatypeLoader(object):
-
     def __init__(self, app):
         self.app = app
 
-    def alter_config_and_load_prorietary_datatypes(self, datatypes_config, relative_install_dir,
-                                                   deactivate=False, override=True):
+    def alter_config_and_load_prorietary_datatypes(self, datatypes_config, relative_install_dir, deactivate=False, override=True):
         """
         Parse a custom datatypes config (a datatypes_conf.xml file included in an installed
         tool shed repository) and add information to appropriate element attributes that will
@@ -31,8 +29,7 @@ class CustomDatatypeLoader(object):
         if registration is None:
             # We have valid XML, but not a valid custom datatypes definition.
             return None, None
-        converter_path, display_path = self.get_converter_and_display_paths(registration,
-                                                                            relative_install_dir)
+        converter_path, display_path = self.get_converter_and_display_paths(registration, relative_install_dir)
         if converter_path:
             # Path to datatype converters
             registration.attrib['proprietary_converter_path'] = converter_path
@@ -79,21 +76,26 @@ class CustomDatatypeLoader(object):
                             elem.attrib['proprietary_path'] = os.path.abspath(datatype_file_name_path)
                             elem.attrib['proprietary_datatype_module'] = proprietary_datatype_module
         # Load custom datatypes
-        self.app.datatypes_registry.load_datatypes(root_dir=self.app.config.root,
-                                                   config=datatypes_config_root,
-                                                   deactivate=deactivate,
-                                                   override=override)
+        self.app.datatypes_registry.load_datatypes(
+            root_dir=self.app.config.root, config=datatypes_config_root, deactivate=deactivate, override=override)
         return converter_path, display_path
 
-    def create_repository_dict_for_proprietary_datatypes(self, tool_shed, name, owner, installed_changeset_revision,
-                                                         tool_dicts, converter_path=None, display_path=None):
-        return dict(tool_shed=tool_shed,
-                    repository_name=name,
-                    repository_owner=owner,
-                    installed_changeset_revision=installed_changeset_revision,
-                    tool_dicts=tool_dicts,
-                    converter_path=converter_path,
-                    display_path=display_path)
+    def create_repository_dict_for_proprietary_datatypes(self,
+                                                         tool_shed,
+                                                         name,
+                                                         owner,
+                                                         installed_changeset_revision,
+                                                         tool_dicts,
+                                                         converter_path=None,
+                                                         display_path=None):
+        return dict(
+            tool_shed=tool_shed,
+            repository_name=name,
+            repository_owner=owner,
+            installed_changeset_revision=installed_changeset_revision,
+            tool_dicts=tool_dicts,
+            converter_path=converter_path,
+            display_path=display_path)
 
     def get_converter_and_display_paths(self, registration_elem, relative_install_dir):
         """
@@ -143,9 +145,8 @@ class CustomDatatypeLoader(object):
 
     def load_installed_datatype_converters(self, installed_repository_dict, deactivate=False):
         """Load or deactivate proprietary datatype converters."""
-        self.app.datatypes_registry.load_datatype_converters(self.app.toolbox,
-                                                             installed_repository_dict=installed_repository_dict,
-                                                             deactivate=deactivate)
+        self.app.datatypes_registry.load_datatype_converters(
+            self.app.toolbox, installed_repository_dict=installed_repository_dict, deactivate=deactivate)
 
     def load_installed_datatypes(self, repository, relative_install_dir, deactivate=False):
         """
@@ -174,5 +175,5 @@ class CustomDatatypeLoader(object):
 
     def load_installed_display_applications(self, installed_repository_dict, deactivate=False):
         """Load or deactivate custom datatype display applications."""
-        self.app.datatypes_registry.load_display_applications(self.app, installed_repository_dict=installed_repository_dict,
-                                                              deactivate=deactivate)
+        self.app.datatypes_registry.load_display_applications(
+            self.app, installed_repository_dict=installed_repository_dict, deactivate=deactivate)

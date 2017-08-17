@@ -30,8 +30,7 @@ GenomeIndexToolData_table = Table("genome_index_tool_data", metadata,
                                   Column("fasta_path", String(255)),
                                   Column("created_time", DateTime, default=now),
                                   Column("modified_time", DateTime, default=now, onupdate=now),
-                                  Column("indexer", String(64)),
-                                  Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
+                                  Column("indexer", String(64)), Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
 
 def upgrade(migrate_engine):

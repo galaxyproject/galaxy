@@ -40,9 +40,14 @@ errorpage = """
 
 
 class RemoteUser(object):
-
-    def __init__(self, app, maildomain=None, display_servers=None, admin_users=None,
-                 single_user=None, remote_user_header=None, remote_user_secret_header=None,
+    def __init__(self,
+                 app,
+                 maildomain=None,
+                 display_servers=None,
+                 admin_users=None,
+                 single_user=None,
+                 remote_user_header=None,
+                 remote_user_secret_header=None,
                  normalize_remote_user_email=False):
         self.app = app
         self.maildomain = maildomain
@@ -58,7 +63,7 @@ class RemoteUser(object):
         if self.display_servers and 'REMOTE_ADDR' in environ:
             try:
                 host = socket.gethostbyaddr(environ['REMOTE_ADDR'])[0]
-            except(socket.error, socket.herror, socket.gaierror, socket.timeout):
+            except (socket.error, socket.herror, socket.gaierror, socket.timeout):
                 # in the event of a lookup failure, deny access
                 host = None
             if host in self.display_servers:
@@ -147,25 +152,11 @@ class RemoteUser(object):
                         before you may access Galaxy.
                     """
                     return self.error(start_response, title, message)
-            user_accessible_paths = (
-                '/users',
-                '/user/api_key',
-                '/user/edit_username',
-                '/user/dbkeys',
-                '/user/logout',
-                '/user/toolbox_filters',
-                '/user/set_default_permissions',
-                '/user/change_communication',
-            )
+            user_accessible_paths = ('/users', '/user/api_key', '/user/edit_username', '/user/dbkeys', '/user/logout',
+                                     '/user/toolbox_filters', '/user/set_default_permissions', '/user/change_communication', )
 
-            admin_accessible_paths = (
-                '/user/create',
-                '/user/logout',
-                '/user/manage_user_info',
-                '/user/edit_info',
-                '/userskeys/all_users',
-                '/userskeys/admin_api_keys',
-            )
+            admin_accessible_paths = ('/user/create', '/user/logout', '/user/manage_user_info', '/user/edit_info', '/userskeys/all_users',
+                                      '/userskeys/admin_api_keys', )
 
             if not path_info.startswith('/user'):
                 # shortcut the following whitelist for non-user-controller

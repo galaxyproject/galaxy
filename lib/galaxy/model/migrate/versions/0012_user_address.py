@@ -40,8 +40,7 @@ UserAddress_table = Table("user_address", metadata,
                           Column("postal_code", TrimmedString(255), nullable=False),
                           Column("country", TrimmedString(255), nullable=False),
                           Column("phone", TrimmedString(255)),
-                          Column("deleted", Boolean, index=True, default=False),
-                          Column("purged", Boolean, index=True, default=False))
+                          Column("deleted", Boolean, index=True, default=False), Column("purged", Boolean, index=True, default=False))
 
 
 def upgrade(migrate_engine):

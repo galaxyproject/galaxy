@@ -32,28 +32,10 @@ import parsley
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
-from galaxy.model import (
-    ExtendedMetadata,
-    ExtendedMetadataIndex,
-    History,
-    HistoryAnnotationAssociation,
-    HistoryDatasetAssociation,
-    HistoryDatasetAssociationTagAssociation,
-    HistoryTagAssociation,
-    Job,
-    JobParameter,
-    JobToInputDatasetAssociation,
-    JobToInputLibraryDatasetAssociation,
-    JobToOutputDatasetAssociation,
-    Library,
-    LibraryDataset,
-    LibraryDatasetDatasetAssociation,
-    LibraryFolder,
-    Page,
-    PageRevision,
-    StoredWorkflow,
-    StoredWorkflowTagAssociation
-)
+from galaxy.model import (ExtendedMetadata, ExtendedMetadataIndex, History, HistoryAnnotationAssociation, HistoryDatasetAssociation,
+                          HistoryDatasetAssociationTagAssociation, HistoryTagAssociation, Job, JobParameter, JobToInputDatasetAssociation,
+                          JobToInputLibraryDatasetAssociation, JobToOutputDatasetAssociation, Library, LibraryDataset,
+                          LibraryDatasetDatasetAssociation, LibraryFolder, Page, PageRevision, StoredWorkflow, StoredWorkflowTagAssociation)
 from galaxy.model.tool_shed_install import ToolVersion
 
 log = logging.getLogger(__name__)
@@ -79,6 +61,7 @@ class ViewField(object):
         its chain of parents to find out which library it belongs to
 
     """
+
     def __init__(self, name, sqlalchemy_field=None, handler=None, post_filter=None, id_decode=False):
         self.name = name
         self.sqlalchemy_field = sqlalchemy_field
@@ -166,13 +149,7 @@ def library_extended_metadata_filter(view, left, operator, right):
     alias = aliased(ExtendedMetadataIndex)
     field = "/%s" % ("/".join(left.split(".")[1:]))
     # print "FIELD", field
-    view.query = view.query.filter(
-        and_(
-            ExtendedMetadata.id == alias.extended_metadata_id,
-            alias.path == field,
-            alias.value == str(right)
-        )
-    )
+    view.query = view.query.filter(and_(ExtendedMetadata.id == alias.extended_metadata_id, alias.path == field, alias.value == str(right)))
 
 
 def ldda_parent_library_filter(item, left, operator, right):
@@ -201,6 +178,7 @@ class LibraryDatasetDatasetView(ViewQueryBaseClass):
 ##################
 # Library Searching
 ##################
+
 
 class LibraryView(ViewQueryBaseClass):
     VIEW_NAME = "library"
@@ -294,9 +272,7 @@ def history_dataset_handle_tag(view, left, operator, right):
         # aliasing the tag association table, so multiple links to different tags can be formed during a single query
         tag_table = aliased(HistoryDatasetAssociationTagAssociation)
 
-        view.query = view.query.filter(
-            HistoryDatasetAssociation.id == tag_table.history_dataset_association_id
-        )
+        view.query = view.query.filter(HistoryDatasetAssociation.id == tag_table.history_dataset_association_id)
         tmp = right.split(":")
         view.query = view.query.filter(tag_table.user_tname == tmp[0])
         if len(tmp) > 1:
@@ -313,30 +289,34 @@ def history_dataset_extended_metadata_filter(view, left, operator, right):
     alias = aliased(ExtendedMetadataIndex)
     field = "/%s" % ("/".join(left.split(".")[1:]))
     # print "FIELD", field
-    view.query = view.query.filter(
-        and_(
-            ExtendedMetadata.id == alias.extended_metadata_id,
-            alias.path == field,
-            alias.value == str(right)
-        )
-    )
+    view.query = view.query.filter(and_(ExtendedMetadata.id == alias.extended_metadata_id, alias.path == field, alias.value == str(right)))
 
 
 class HistoryDatasetView(ViewQueryBaseClass):
     DOMAIN = "history_dataset"
     FIELDS = {
-        'name': ViewField('name', sqlalchemy_field=(HistoryDatasetAssociation, "name")),
-        'id': ViewField('id', sqlalchemy_field=(HistoryDatasetAssociation, "id"), id_decode=True),
-        'history_id': ViewField('history_id', sqlalchemy_field=(HistoryDatasetAssociation, "history_id"), id_decode=True),
-        'tag': ViewField("tag", handler=history_dataset_handle_tag),
-        'copied_from_ldda_id': ViewField("copied_from_ldda_id",
-                                         sqlalchemy_field=(HistoryDatasetAssociation, "copied_from_library_dataset_dataset_association_id"),
-                                         id_decode=True),
-        'copied_from_hda_id': ViewField("copied_from_hda_id",
-                                        sqlalchemy_field=(HistoryDatasetAssociation, "copied_from_history_dataset_association_id"),
-                                        id_decode=True),
-        'deleted': ViewField('deleted', sqlalchemy_field=(HistoryDatasetAssociation, "deleted")),
-        'extended_metadata': ViewField('extended_metadata', handler=history_dataset_extended_metadata_filter)
+        'name':
+        ViewField('name', sqlalchemy_field=(HistoryDatasetAssociation, "name")),
+        'id':
+        ViewField('id', sqlalchemy_field=(HistoryDatasetAssociation, "id"), id_decode=True),
+        'history_id':
+        ViewField('history_id', sqlalchemy_field=(HistoryDatasetAssociation, "history_id"), id_decode=True),
+        'tag':
+        ViewField("tag", handler=history_dataset_handle_tag),
+        'copied_from_ldda_id':
+        ViewField(
+            "copied_from_ldda_id",
+            sqlalchemy_field=(HistoryDatasetAssociation, "copied_from_library_dataset_dataset_association_id"),
+            id_decode=True),
+        'copied_from_hda_id':
+        ViewField(
+            "copied_from_hda_id",
+            sqlalchemy_field=(HistoryDatasetAssociation, "copied_from_history_dataset_association_id"),
+            id_decode=True),
+        'deleted':
+        ViewField('deleted', sqlalchemy_field=(HistoryDatasetAssociation, "deleted")),
+        'extended_metadata':
+        ViewField('extended_metadata', handler=history_dataset_extended_metadata_filter)
     }
 
     def search(self, trans):
@@ -352,9 +332,7 @@ def history_handle_tag(view, left, operator, right):
     if operator == "=":
         view.do_query = True
         tag_table = aliased(HistoryTagAssociation)
-        view.query = view.query.filter(
-            History.id == tag_table.history_id
-        )
+        view.query = view.query.filter(History.id == tag_table.history_id)
         tmp = right.split(":")
         view.query = view.query.filter(tag_table.user_tname == tmp[0])
         if len(tmp) > 1:
@@ -366,16 +344,12 @@ def history_handle_tag(view, left, operator, right):
 def history_handle_annotation(view, left, operator, right):
     if operator == "=":
         view.do_query = True
-        view.query = view.query.filter(and_(
-            HistoryAnnotationAssociation.history_id == History.id,
-            HistoryAnnotationAssociation.annotation == right
-        ))
+        view.query = view.query.filter(
+            and_(HistoryAnnotationAssociation.history_id == History.id, HistoryAnnotationAssociation.annotation == right))
     elif operator == "like":
         view.do_query = True
-        view.query = view.query.filter(and_(
-            HistoryAnnotationAssociation.history_id == History.id,
-            HistoryAnnotationAssociation.annotation.like(right)
-        ))
+        view.query = view.query.filter(
+            and_(HistoryAnnotationAssociation.history_id == History.id, HistoryAnnotationAssociation.annotation.like(right)))
     else:
         raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
@@ -402,9 +376,7 @@ class HistoryView(ViewQueryBaseClass):
 def workflow_tag_handler(view, left, operator, right):
     if operator == "=":
         view.do_query = True
-        view.query = view.query.filter(
-            StoredWorkflow.id == StoredWorkflowTagAssociation.stored_workflow_id
-        )
+        view.query = view.query.filter(StoredWorkflow.id == StoredWorkflowTagAssociation.stored_workflow_id)
         tmp = right.split(":")
         view.query = view.query.filter(StoredWorkflowTagAssociation.user_tname == tmp[0])
         if len(tmp) > 1:
@@ -435,52 +407,28 @@ def job_param_filter(view, left, operator, right):
     view.do_query = True
     alias = aliased(JobParameter)
     param_name = re.sub(r'^param.', '', left)
-    view.query = view.query.filter(
-        and_(
-            Job.id == alias.job_id,
-            alias.name == param_name,
-            alias.value == dumps(right)
-        )
-    )
+    view.query = view.query.filter(and_(Job.id == alias.job_id, alias.name == param_name, alias.value == dumps(right)))
 
 
 def job_input_hda_filter(view, left, operator, right):
     view.do_query = True
     alias = aliased(JobToInputDatasetAssociation)
     param_name = re.sub(r'^input_hda.', '', left)
-    view.query = view.query.filter(
-        and_(
-            Job.id == alias.job_id,
-            alias.name == param_name,
-            alias.dataset_id == right
-        )
-    )
+    view.query = view.query.filter(and_(Job.id == alias.job_id, alias.name == param_name, alias.dataset_id == right))
 
 
 def job_input_ldda_filter(view, left, operator, right):
     view.do_query = True
     alias = aliased(JobToInputLibraryDatasetAssociation)
     param_name = re.sub(r'^input_ldda.', '', left)
-    view.query = view.query.filter(
-        and_(
-            Job.id == alias.job_id,
-            alias.name == param_name,
-            alias.ldda_id == right
-        )
-    )
+    view.query = view.query.filter(and_(Job.id == alias.job_id, alias.name == param_name, alias.ldda_id == right))
 
 
 def job_output_hda_filter(view, left, operator, right):
     view.do_query = True
     alias = aliased(JobToOutputDatasetAssociation)
     param_name = re.sub(r'^output_hda.', '', left)
-    view.query = view.query.filter(
-        and_(
-            Job.id == alias.job_id,
-            alias.name == param_name,
-            alias.dataset_id == right
-        )
-    )
+    view.query = view.query.filter(and_(Job.id == alias.job_id, alias.name == param_name, alias.dataset_id == right))
 
 
 class JobView(ViewQueryBaseClass):
@@ -603,6 +551,7 @@ class GalaxyQuery(object):
     """
     This class represents a data structure of a compiled GQL query
     """
+
     def __init__(self, field_list, table_name, conditional):
         self.field_list = field_list
         self.table_name = table_name
@@ -614,6 +563,7 @@ class GalaxyQueryComparison(object):
     This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
     """
+
     def __init__(self, left, operator, right):
         self.left = left
         self.operator = operator
@@ -625,6 +575,7 @@ class GalaxyQueryAnd(object):
     This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
     """
+
     def __init__(self, left, right):
         self.left = left
         self.operator = 'and'
@@ -647,11 +598,7 @@ class SearchQuery(object):
     def process(self, trans):
         self.view.search(trans)
         if self.query.conditional is not None:
-            self.view.filter(
-                self.query.conditional.left,
-                self.query.conditional.operator,
-                self.query.conditional.right
-            )
+            self.view.filter(self.query.conditional.left, self.query.conditional.operator, self.query.conditional.right)
         return self.view.get_results(True)
 
     def item_to_api_value(self, item):
@@ -669,6 +616,7 @@ class GalaxySearchEngine(object):
     """
     Primary class for searching. Parses GQL (Galaxy Query Language) queries and returns a 'SearchQuery' class
     """
+
     def __init__(self):
         self.parser = parsley.makeGrammar(gqlGrammar, {
             're': re,

@@ -204,12 +204,21 @@ class Gmaj(data.Data):
         if not dataset.dataset.purged:
             if hasattr(dataset, 'history_id'):
                 params = {
-                    "bundle": "display?id=%s&tofile=yes&toext=.zip" % dataset.id,
-                    "buttonlabel": "Launch GMAJ",
-                    "nobutton": "false",
-                    "urlpause": "100",
-                    "debug": "false",
-                    "posturl": "history_add_to?%s" % "&".join("%s=%s" % (x[0], quote_plus(str(x[1]))) for x in [('copy_access_from', dataset.id), ('history_id', dataset.history_id), ('ext', 'maf'), ('name', 'GMAJ Output on data %s' % dataset.hid), ('info', 'Added by GMAJ'), ('dbkey', dataset.dbkey)])
+                    "bundle":
+                    "display?id=%s&tofile=yes&toext=.zip" % dataset.id,
+                    "buttonlabel":
+                    "Launch GMAJ",
+                    "nobutton":
+                    "false",
+                    "urlpause":
+                    "100",
+                    "debug":
+                    "false",
+                    "posturl":
+                    "history_add_to?%s" % "&".join("%s=%s" % (x[0], quote_plus(str(x[1])))
+                                                   for x in [('copy_access_from', dataset.id), ('history_id', dataset.history_id), (
+                                                       'ext', 'maf'), ('name', 'GMAJ Output on data %s' % dataset.hid), (
+                                                           'info', 'Added by GMAJ'), ('dbkey', dataset.dbkey)])
                 }
                 class_name = "edu.psu.bx.gmaj.MajApplet.class"
                 archive = "/static/gmaj/gmaj.jar"
@@ -266,11 +275,24 @@ class Laj(data.Text):
         if not dataset.dataset.purged:
             if hasattr(dataset, 'history_id'):
                 params = {
-                    "alignfile1": "display?id=%s" % dataset.id,
-                    "buttonlabel": "Launch LAJ",
-                    "title": "LAJ in Galaxy",
-                    "posturl": quote_plus("history_add_to?%s" % "&".join("%s=%s" % (key, value) for key, value in {'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id}.items())),
-                    "noseq": "true"
+                    "alignfile1":
+                    "display?id=%s" % dataset.id,
+                    "buttonlabel":
+                    "Launch LAJ",
+                    "title":
+                    "LAJ in Galaxy",
+                    "posturl":
+                    quote_plus("history_add_to?%s" % "&".join("%s=%s" % (key, value)
+                                                              for key, value in {
+                                                                  'history_id': dataset.history_id,
+                                                                  'ext': 'lav',
+                                                                  'name': 'LAJ Output',
+                                                                  'info': 'Added by LAJ',
+                                                                  'dbkey': dataset.dbkey,
+                                                                  'copy_access_from': dataset.id
+                                                              }.items())),
+                    "noseq":
+                    "true"
                 }
                 class_name = "edu.psu.cse.bio.laj.LajApplet.class"
                 archive = "/static/laj/laj.jar"

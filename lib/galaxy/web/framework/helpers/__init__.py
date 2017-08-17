@@ -47,6 +47,7 @@ def truncate(content, length=100, suffix='...'):
     else:
         return content[:length].rsplit(' ', 1)[0] + suffix
 
+
 # Quick helpers for static content
 
 
@@ -84,6 +85,7 @@ def templates(*args):
     string of script tags.
     """
     return js_helper('static/scripts/templates/compiled/', *args)
+
 
 # Hashes
 

@@ -10,7 +10,6 @@ log = logging.getLogger(__name__)
 
 
 class Registry(object):
-
     def __init__(self):
         self.repository_types_by_label = odict()
         self.repository_types_by_label['unrestricted'] = unrestricted.Unrestricted()

@@ -33,12 +33,11 @@ from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.util import docstring_trim, listify, hash_util
 from galaxy.util.odict import odict
 
-
 log = logging.getLogger(__name__)
 
 
-class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
-
+class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, BaseUIController,
+                        UsesFormDefinitionsMixin):
     def __init__(self, app):
         super(UserAPIController, self).__init__(app)
         self.user_manager = users.UserManager(app)
@@ -83,16 +82,12 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
 
         if f_any:
             if trans.user_is_admin():
-                query = query.filter(or_(
-                    trans.app.model.User.email.like("%%%s%%" % f_any),
-                    trans.app.model.User.username.like("%%%s%%" % f_any)
-                ))
+                query = query.filter(
+                    or_(trans.app.model.User.email.like("%%%s%%" % f_any), trans.app.model.User.username.like("%%%s%%" % f_any)))
             else:
                 if trans.app.config.expose_user_email and trans.app.config.expose_user_name:
-                    query = query.filter(or_(
-                        trans.app.model.User.email.like("%%%s%%" % f_any),
-                        trans.app.model.User.username.like("%%%s%%" % f_any)
-                    ))
+                    query = query.filter(
+                        or_(trans.app.model.User.email.like("%%%s%%" % f_any), trans.app.model.User.username.like("%%%s%%" % f_any)))
                 elif trans.app.config.expose_user_email:
                     query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_any))
                 elif trans.app.config.expose_user_name:
@@ -175,17 +170,17 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             username = payload['username']
             email = payload['email']
             password = payload['password']
-            message = "\n".join([validate_email(trans, email),
-                                 validate_password(trans, password, password),
-                                 validate_publicname(trans, username)]).rstrip()
+            message = "\n".join(
+                [validate_email(trans, email),
+                 validate_password(trans, password, password),
+                 validate_publicname(trans, username)]).rstrip()
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             else:
                 user = self.create_user(trans=trans, email=email, username=username, password=password)
         else:
             raise exceptions.NotImplemented()
-        item = user.to_dict(view='element', value_mapper={'id': trans.security.encode_id,
-                                                          'total_disk_usage': float})
+        item = user.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'total_disk_usage': float})
         return item
 
     @expose_api
@@ -248,9 +243,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
         usage = trans.app.quota_agent.get_usage(trans)
         percent = trans.app.quota_agent.get_percent(trans=trans, usage=usage)
-        return {'total_disk_usage': int(usage),
-                'nice_total_disk_usage': util.nice_size(usage),
-                'quota_percent': percent}
+        return {'total_disk_usage': int(usage), 'nice_total_disk_usage': util.nice_size(usage), 'quota_percent': percent}
 
     def _get_extra_user_preferences(self, trans):
         """
@@ -289,7 +282,13 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
                     for data_item in data:
                         if field in data_item:
                             input['value'] = data[data_item]
-                extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
+                extra_pref_inputs.append({
+                    'type': 'section',
+                    'title': value['description'],
+                    'name': item,
+                    'expanded': True,
+                    'inputs': value['inputs']
+                })
         return extra_pref_inputs
 
     @expose_api
@@ -306,21 +305,36 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         username = user.username
         inputs = list()
         inputs.append({
-            'id': 'email_input',
-            'name': 'email',
-            'type': 'text',
-            'label': 'Email address',
-            'value': email,
-            'help': 'If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.'})
+            'id':
+            'email_input',
+            'name':
+            'email',
+            'type':
+            'text',
+            'label':
+            'Email address',
+            'value':
+            email,
+            'help':
+            'If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.'
+        })
         if trans.webapp.name == 'galaxy':
             inputs.append({
-                'id': 'name_input',
-                'name': 'username',
-                'type': 'text',
-                'label': 'Public name',
-                'value': username,
-                'help': 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.'})
-            info_form_models = self.get_all_forms(trans, filter=dict(deleted=False), form_type=trans.app.model.FormDefinition.types.USER_INFO)
+                'id':
+                'name_input',
+                'name':
+                'username',
+                'type':
+                'text',
+                'label':
+                'Public name',
+                'value':
+                username,
+                'help':
+                'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.'
+            })
+            info_form_models = self.get_all_forms(
+                trans, filter=dict(deleted=False), form_type=trans.app.model.FormDefinition.types.USER_INFO)
             if info_form_models:
                 info_form_id = trans.security.encode_id(user.values.form_definition.id) if user.values else None
                 info_field = {
@@ -365,9 +379,25 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
                 inputs.append(item)
         else:
             if user.active_repositories:
-                inputs.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
+                inputs.append(
+                    dict(
+                        id='name_input',
+                        name='username',
+                        label='Public name:',
+                        type='hidden',
+                        value=username,
+                        help='You cannot change your public name after you have created a repository in this tool shed.'))
             else:
-                inputs.append(dict(id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'))
+                inputs.append(
+                    dict(
+                        id='name_input',
+                        name='username',
+                        label='Public name:',
+                        type='text',
+                        value=username,
+                        help=
+                        'Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'
+                    ))
         return {
             'email': email,
             'username': username,
@@ -496,18 +526,15 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         host = trans.request.host.split(':')[0]
         if host in ['localhost', '127.0.0.1', '0.0.0.0']:
             host = socket.getfqdn()
-        body = ("Hello %s,\n\n"
-                "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
-                "%s \n\n"
-                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
-                "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
-                "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-                "Your Galaxy Team" % (escape(username), escape(email),
-                                      datetime.utcnow().strftime("%D"),
-                                      trans.request.host, activation_link,
-                                      trans.app.config.terms_url,
-                                      trans.app.config.error_email_to,
-                                      trans.app.config.instance_resource_url))
+        body = (
+            "Hello %s,\n\n"
+            "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
+            "%s \n\n"
+            "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
+            "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
+            "More about the Galaxy Project can be found at galaxyproject.org\n\n"
+            "Your Galaxy Team" % (escape(username), escape(email), datetime.utcnow().strftime("%D"), trans.request.host, activation_link,
+                                  trans.app.config.terms_url, trans.app.config.error_email_to, trans.app.config.instance_resource_url))
         to = email
         frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
         subject = 'Galaxy Account Activation'
@@ -545,7 +572,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             return 'Please provide your email address.'
         if not re.match('^[a-z0-9\-]{3,255}$', username):
             return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
-        if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
+        if not re.match(
+                '^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$',
+                email):
             return 'Please provide your valid email address.'
         if len(email) > 255:
             return 'Email cannot be more than 255 characters in length.'
@@ -555,10 +584,26 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         """
         Return available password inputs.
         """
-        return {'inputs': [{'name': 'current', 'type': 'password', 'label': 'Current password'},
-                           {'name': 'password', 'type': 'password', 'label': 'New password'},
-                           {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'},
-                           {'name': 'token', 'type': 'hidden', 'hidden': True, 'ignore': None}]}
+        return {
+            'inputs': [{
+                'name': 'current',
+                'type': 'password',
+                'label': 'Current password'
+            }, {
+                'name': 'password',
+                'type': 'password',
+                'label': 'New password'
+            }, {
+                'name': 'confirm',
+                'type': 'password',
+                'label': 'Confirm password'
+            }, {
+                'name': 'token',
+                'type': 'hidden',
+                'hidden': True,
+                'ignore': None
+            }]
+        }
 
     @expose_api
     def set_password(self, trans, id, payload={}, **kwd):
@@ -618,14 +663,16 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         permitted_actions = trans.app.model.Dataset.permitted_actions.items()
         inputs = []
         for index, action in permitted_actions:
-            inputs.append({'type': 'select',
-                           'multiple': True,
-                           'optional': True,
-                           'name': index,
-                           'label': action.action,
-                           'help': action.description,
-                           'options': list(set((r.name, r.id) for r in roles)),
-                           'value': [a.role.id for a in user.default_permissions if a.action == action.action]})
+            inputs.append({
+                'type': 'select',
+                'multiple': True,
+                'optional': True,
+                'name': index,
+                'label': action.action,
+                'help': action.description,
+                'options': list(set((r.name, r.id) for r in roles)),
+                'value': [a.role.id for a in user.default_permissions if a.action == action.action]
+            })
         return {'inputs': inputs}
 
     @expose_api
@@ -697,9 +744,16 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
 
     def _get_filter_types(self, trans):
-        return odict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
-                      ('toolbox_tool_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
-                      ('toolbox_tool_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
+        return odict([('toolbox_tool_filters', {
+            'title': 'Tools',
+            'config': trans.app.config.user_tool_filters
+        }), ('toolbox_tool_section_filters', {
+            'title': 'Sections',
+            'config': trans.app.config.user_tool_section_filters
+        }), ('toolbox_tool_label_filters', {
+            'title': 'Labels',
+            'config': trans.app.config.user_tool_label_filters
+        })])
 
     @expose_api
     def api_key(self, trans, id, payload={}, **kwd):
@@ -730,12 +784,20 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         """
         Build API key inputs.
         """
-        inputs = [{'name': 'api-key',
-                   'type': 'text',
-                   'label': 'Current API key:',
-                   'value': user.api_keys[0].key if user.api_keys else 'Not available.',
-                   'readonly': True,
-                   'help': ' An API key will allow you to access via web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.'}]
+        inputs = [{
+            'name':
+            'api-key',
+            'type':
+            'text',
+            'label':
+            'Current API key:',
+            'value':
+            user.api_keys[0].key if user.api_keys else 'Not available.',
+            'readonly':
+            True,
+            'help':
+            ' An API key will allow you to access via web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.'
+        }]
         return {'message': message, 'inputs': inputs}
 
     @expose_api
@@ -744,10 +806,14 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         Build communication server inputs.
         """
         user = self._get_user(trans, id)
-        return {'inputs': [{'name': 'enable',
-                            'type': 'boolean',
-                            'label': 'Enable communication',
-                            'value': user.preferences.get('communication_server', 'false')}]}
+        return {
+            'inputs': [{
+                'name': 'enable',
+                'type': 'boolean',
+                'label': 'Enable communication',
+                'value': user.preferences.get('communication_server', 'false')
+            }]
+        }
 
     @expose_api
     def set_communication(self, trans, id, payload={}, **kwd):

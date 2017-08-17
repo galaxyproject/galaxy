@@ -2,8 +2,7 @@
 from abc import (
     ABCMeta,
     abstractmethod,
-    abstractproperty,
-)
+    abstractproperty, )
 
 import six
 import yaml
@@ -113,7 +112,6 @@ FROM_UNVERSIONED = object()
 
 
 class RequirementMapping(object):
-
     def __init__(self, from_name, from_version, to_name, to_version):
         self.from_name = from_name
         self.from_version = from_version

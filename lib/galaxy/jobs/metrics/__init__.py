@@ -21,7 +21,6 @@ from ..metrics import formatting
 
 log = logging.getLogger(__name__)
 
-
 DEFAULT_FORMATTER = formatting.JobMetricFormatter()
 
 
@@ -65,7 +64,6 @@ class JobMetrics(object):
 
 
 class NullJobInstrumenter(object):
-
     def pre_execute_commands(self, job_directory):
         return None
 
@@ -80,7 +78,6 @@ NULL_JOB_INSTRUMENTER = NullJobInstrumenter()
 
 
 class JobInstrumenter(object):
-
     def __init__(self, plugin_classes, plugins_source, **kwargs):
         self.extra_kwargs = kwargs
         self.plugin_classes = plugin_classes

@@ -25,8 +25,8 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secured.AccessibleManagerMixin,
-        taggable.TaggableManagerMixin, annotatable.AnnotatableManagerMixin, ratable.RatableManagerMixin):
+class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secured.AccessibleManagerMixin, taggable.TaggableManagerMixin,
+                           annotatable.AnnotatableManagerMixin, ratable.RatableManagerMixin):
     # e.g. histories, pages, stored workflows, visualizations
     # base.DeleteableModelMixin? (all four are deletable)
 
@@ -207,13 +207,11 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         orm_filters, fn_filters = self._split_filters(filters)
         if not fn_filters:
             # if no fn_filtering required, we can use the 'all orm' version with limit offset
-            query = self._query_shared_with(user, filters=orm_filters,
-                order_by=order_by, limit=limit, offset=offset, **kwargs)
+            query = self._query_shared_with(user, filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs)
             return self._orm_list(query=query, **kwargs)
 
         # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
-        query = self._query_shared_with(user, filters=orm_filters,
-            order_by=order_by, limit=None, offset=None, **kwargs)
+        query = self._query_shared_with(user, filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs)
         # apply limit and offset afterwards
         items = self._apply_fn_filters_gen(query.all(), fn_filters)
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
@@ -246,13 +244,11 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         return VALID_SLUG_RE.match(slug)
 
     def _existing_set_of_slugs(self, user):
-        query = (self.session().query(self.model_class.slug)
-                 .filter_by(user=user))
+        query = (self.session().query(self.model_class.slug).filter_by(user=user))
         return list(set(query.all()))
 
     def _slug_exists(self, user, slug):
-        query = (self.session().query(self.model_class.slug)
-                 .filter_by(user=user, slug=slug))
+        query = (self.session().query(self.model_class.slug).filter_by(user=user, slug=slug))
         return query.count() != 0
 
     def _slugify(self, start_with):
@@ -288,9 +284,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         # add integer to end.
         new_slug = slug_base
         count = 1
-        while (self.session().query(item.__class__)
-               .filter_by(user=item.user, slug=new_slug, importable=True)
-               .count() != 0):
+        while (self.session().query(item.__class__).filter_by(user=item.user, slug=new_slug, importable=True).count() != 0):
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
             new_slug = '%s-%i' % (slug_base, count)
@@ -311,8 +305,8 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
     # TODO: def by_slug( self, user, **kwargs ):
 
 
-class SharableModelSerializer(base.ModelSerializer,
-       taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin):
+class SharableModelSerializer(base.ModelSerializer, taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin,
+                              ratable.RatableSerializerMixin):
     # TODO: stub
     SINGLE_CHAR_ABBR = None
 
@@ -323,14 +317,12 @@ class SharableModelSerializer(base.ModelSerializer,
         ratable.RatableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'user_id'           : self.serialize_id,
-            'username_and_slug' : self.serialize_username_and_slug,
-            'users_shared_with' : self.serialize_users_shared_with
+            'user_id': self.serialize_id,
+            'username_and_slug': self.serialize_username_and_slug,
+            'users_shared_with': self.serialize_users_shared_with
         })
         # these use the default serializer but must still be white-listed
-        self.serializable_keyset.update([
-            'importable', 'published', 'slug'
-        ])
+        self.serializable_keyset.update(['importable', 'published', 'slug'])
 
     def serialize_username_and_slug(self, item, key, **context):
         if not (item.user and item.slug and self.SINGLE_CHAR_ABBR):
@@ -356,9 +348,8 @@ class SharableModelSerializer(base.ModelSerializer,
         return [self.serialize_id(share, 'user_id') for share in share_assocs]
 
 
-class SharableModelDeserializer(base.ModelDeserializer,
-        taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin, ratable.RatableDeserializerMixin):
-
+class SharableModelDeserializer(base.ModelDeserializer, taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin,
+                                ratable.RatableDeserializerMixin):
     def add_deserializers(self):
         super(SharableModelDeserializer, self).add_deserializers()
         taggable.TaggableDeserializerMixin.add_deserializers(self)
@@ -366,9 +357,9 @@ class SharableModelDeserializer(base.ModelDeserializer,
         ratable.RatableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update({
-            'published'         : self.deserialize_published,
-            'importable'        : self.deserialize_importable,
-            'users_shared_with' : self.deserialize_users_shared_with,
+            'published': self.deserialize_published,
+            'importable': self.deserialize_importable,
+            'users_shared_with': self.deserialize_users_shared_with,
         })
 
     def deserialize_published(self, item, key, val, **context):
@@ -423,9 +414,8 @@ class SharableModelDeserializer(base.ModelDeserializer,
         return current_shares
 
 
-class SharableModelFilters(base.ModelFilterParser,
-        taggable.TaggableFilterMixin, annotatable.AnnotatableFilterMixin, ratable.RatableFilterMixin):
-
+class SharableModelFilters(base.ModelFilterParser, taggable.TaggableFilterMixin, annotatable.AnnotatableFilterMixin,
+                           ratable.RatableFilterMixin):
     def _add_parsers(self):
         super(SharableModelFilters, self)._add_parsers()
         taggable.TaggableFilterMixin._add_parsers(self)
@@ -433,9 +423,17 @@ class SharableModelFilters(base.ModelFilterParser,
         ratable.RatableFilterMixin._add_parsers(self)
 
         self.orm_filter_parsers.update({
-            'importable'    : {'op': ('eq'), 'val': self.parse_bool},
-            'published'     : {'op': ('eq'), 'val': self.parse_bool},
-            'slug'          : {'op': ('eq', 'contains', 'like')},
+            'importable': {
+                'op': ('eq'),
+                'val': self.parse_bool
+            },
+            'published': {
+                'op': ('eq'),
+                'val': self.parse_bool
+            },
+            'slug': {
+                'op': ('eq', 'contains', 'like')
+            },
             # chose by user should prob. only be available for admin? (most often we'll only need trans.user)
             # 'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
         })

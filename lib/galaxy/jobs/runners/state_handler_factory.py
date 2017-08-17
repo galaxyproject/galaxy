@@ -4,7 +4,6 @@ from galaxy.util.submodules import submodules
 
 import galaxy.jobs.runners.state_handlers
 
-
 log = logging.getLogger(__name__)
 
 

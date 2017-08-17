@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 
 
 class DatatypesController(BaseAPIController):
-
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
         """
@@ -72,6 +71,7 @@ class DatatypesController(BaseAPIController):
                     if issubclass(base, Data):
                         types.add(base.__module__ + "." + base.__name__)
                     visit_bases(types, base)
+
             for c in classes:
                 n = c.__module__ + "." + c.__name__
                 types = set([n])

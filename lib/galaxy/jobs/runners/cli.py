@@ -6,10 +6,7 @@ import logging
 
 from galaxy import model
 from galaxy.jobs import JobDestination
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState
-)
+from galaxy.jobs.runners import (AsynchronousJobRunner, AsynchronousJobState)
 from galaxy.util import asbool
 
 from .util.cli import CliInterface, split_params
@@ -72,11 +69,7 @@ class ShellJobRunner(AsynchronousJobRunner):
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
 
         job_file_kwargs = job_interface.job_script_kwargs(ajs.output_file, ajs.error_file, ajs.job_name)
-        script = self.get_job_file(
-            job_wrapper,
-            exit_code_path=ajs.exit_code_file,
-            **job_file_kwargs
-        )
+        script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file, **job_file_kwargs)
 
         try:
             self.write_executable_script(ajs.job_file, script)
@@ -139,7 +132,8 @@ class ShellJobRunner(AsynchronousJobRunner):
                 if ajs.job_wrapper.get_state() == model.Job.states.DELETED:
                     continue
 
-                external_metadata = not asbool(ajs.job_wrapper.job_destination.params.get("embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB))
+                external_metadata = not asbool(
+                    ajs.job_wrapper.job_destination.params.get("embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB))
                 if external_metadata:
                     self._handle_metadata_externally(ajs.job_wrapper, resolve_requirements=True)
 
@@ -149,7 +143,8 @@ class ShellJobRunner(AsynchronousJobRunner):
                 cmd_out = shell.execute(job_interface.get_single_status(external_job_id))
                 state = job_interface.parse_single_status(cmd_out.stdout, external_job_id)
                 if not state == model.Job.states.OK:
-                    log.warning('(%s/%s) job not found in batch state check, but found in individual state check' % (id_tag, external_job_id))
+                    log.warning('(%s/%s) job not found in batch state check, but found in individual state check' % (id_tag,
+                                                                                                                     external_job_id))
             if state != old_state:
                 log.debug("(%s/%s) state change: from %s to %s" % (id_tag, external_job_id, old_state, state))
                 if not state == model.Job.states.OK:
@@ -195,7 +190,8 @@ class ShellJobRunner(AsynchronousJobRunner):
             assert cmd_out.returncode == 0, cmd_out.stderr
             log.debug("(%s/%s) Terminated at user's request" % (job.id, job.job_runner_external_id))
         except Exception as e:
-            log.debug("(%s/%s) User killed running job, but error encountered during termination: %s" % (job.id, job.job_runner_external_id, e))
+            log.debug("(%s/%s) User killed running job, but error encountered during termination: %s" % (job.id, job.job_runner_external_id,
+                                                                                                         e))
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""

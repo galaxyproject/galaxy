@@ -20,8 +20,7 @@ ToolTagAssociation_table = Table("tool_tag_association", metadata,
                                  Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
                                  Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                                  Column("user_tname", TrimmedString(255), index=True),
-                                 Column("value", TrimmedString(255), index=True),
-                                 Column("user_value", TrimmedString(255), index=True))
+                                 Column("value", TrimmedString(255), index=True), Column("user_value", TrimmedString(255), index=True))
 
 
 def upgrade(migrate_engine):

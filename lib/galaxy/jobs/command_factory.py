@@ -1,16 +1,12 @@
 from logging import getLogger
 from os import getcwd
-from os.path import (
-    abspath,
-    join
-)
+from os.path import (abspath, join)
 
 from galaxy import util
 from galaxy.jobs.runners.util.job_script import (
     check_script_integrity,
     INTEGRITY_INJECTION,
-    write_script,
-)
+    write_script, )
 
 log = getLogger(__name__)
 
@@ -34,16 +30,15 @@ GALAXY_PYTHON=`command -v python`
 
 
 def build_command(
-    runner,
-    job_wrapper,
-    container=None,
-    modify_command_for_container=True,
-    include_metadata=False,
-    include_work_dir_outputs=True,
-    create_tool_working_directory=True,
-    remote_command_params={},
-    metadata_directory=None,
-):
+        runner,
+        job_wrapper,
+        container=None,
+        modify_command_for_container=True,
+        include_metadata=False,
+        include_work_dir_outputs=True,
+        create_tool_working_directory=True,
+        remote_command_params={},
+        metadata_directory=None, ):
     """
     Compose the sequence of commands necessary to execute a job. This will
     currently include:
@@ -96,9 +91,7 @@ def build_command(
             # metadata and means no need for Galaxy to be available to container
             # and not copying workdir outputs back means on can be more restrictive
             # of where container can write to in some circumstances.
-            run_in_container_command = container.containerize_command(
-                externalized_commands
-            )
+            run_in_container_command = container.containerize_command(externalized_commands)
             commands_builder = CommandsBuilder(run_in_container_command)
         else:
             commands_builder = CommandsBuilder(externalized_commands)
@@ -141,12 +134,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     set_e = ""
     if job_wrapper.strict_shell:
         set_e = "set -e\n"
-    script_contents = u"#!%s\n%s%s%s" % (
-        shell,
-        integrity_injection,
-        set_e,
-        tool_commands
-    )
+    script_contents = u"#!%s\n%s%s%s" % (shell, integrity_injection, set_e, tool_commands)
     write_script(local_container_script, script_contents, config)
     commands = local_container_script
     if 'working_directory' in remote_command_params:
@@ -212,8 +200,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
         resolve_metadata_dependencies=resolve_metadata_dependencies,
-        kwds={'overwrite': False}
-    ) or ''
+        kwds={'overwrite': False}) or ''
     metadata_command = metadata_command.strip()
     if metadata_command:
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
@@ -228,7 +215,6 @@ def __copy_if_exists_command(work_dir_output):
 
 
 class CommandsBuilder(object):
-
     def __init__(self, initial_command=u''):
         # Remove trailing semi-colon so we can start hacking up this command.
         # TODO: Refactor to compose a list and join with ';', would be more clean.
@@ -243,8 +229,7 @@ class CommandsBuilder(object):
 
     def prepend_command(self, command):
         if command:
-            self.commands = u"%s; %s" % (command,
-                                         self.commands)
+            self.commands = u"%s; %s" % (command, self.commands)
         return self
 
     def prepend_commands(self, commands):
@@ -252,8 +237,7 @@ class CommandsBuilder(object):
 
     def append_command(self, command):
         if command:
-            self.commands = u"%s; %s" % (self.commands,
-                                         command)
+            self.commands = u"%s; %s" % (self.commands, command)
         return self
 
     def append_commands(self, commands):

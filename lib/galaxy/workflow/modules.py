@@ -3,40 +3,18 @@ Modules used in building workflows
 """
 import logging
 from json import loads
-from xml.etree.ElementTree import (
-    Element,
-    XML
-)
+from xml.etree.ElementTree import (Element, XML)
 
-from galaxy import (
-    exceptions,
-    model,
-    web
-)
+from galaxy import (exceptions, model, web)
 from galaxy.dataset_collections import matching
 from galaxy.exceptions import ToolMissingException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
-from galaxy.tools import (
-    DefaultToolState,
-    ToolInputsNotReadyException
-)
+from galaxy.tools import (DefaultToolState, ToolInputsNotReadyException)
 from galaxy.tools.execute import execute
-from galaxy.tools.parameters import (
-    check_param,
-    params_to_incoming,
-    visit_input_values
-)
-from galaxy.tools.parameters.basic import (
-    BooleanToolParameter,
-    DataCollectionToolParameter,
-    DataToolParameter,
-    parameter_types,
-    RuntimeValue,
-    SelectToolParameter,
-    TextToolParameter,
-    workflow_building_modes
-)
+from galaxy.tools.parameters import (check_param, params_to_incoming, visit_input_values)
+from galaxy.tools.parameters.basic import (BooleanToolParameter, DataCollectionToolParameter, DataToolParameter, parameter_types,
+                                           RuntimeValue, SelectToolParameter, TextToolParameter, workflow_building_modes)
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
@@ -55,7 +33,6 @@ NO_REPLACEMENT = object()
 
 
 class WorkflowModule(object):
-
     def __init__(self, trans, content_id=None, **kwds):
         self.trans = trans
         self.content_id = content_id
@@ -160,10 +137,7 @@ class WorkflowModule(object):
 
     def get_config_form(self):
         """ Serializes input parameters of a module into input dictionaries. """
-        return {
-            'title' : self.name,
-            'inputs': [param.to_dict(self.trans) for param in self.get_inputs().values()]
-        }
+        return {'title': self.name, 'inputs': [param.to_dict(self.trans) for param in self.get_inputs().values()]}
 
     # ---- Run time ---------------------------------------------------------
 
@@ -228,7 +202,8 @@ class WorkflowModule(object):
         be attached to the WorkflowInvocationStep and be available the next
         time the workflow scheduler visits the workflow.
         """
-        raise exceptions.RequestParameterInvalidException("Attempting to perform invocation step action on module that does not support actions.")
+        raise exceptions.RequestParameterInvalidException(
+            "Attempting to perform invocation step action on module that does not support actions.")
 
     def recover_mapping(self, step, step_invocations, progress):
         """ Re-populate progress object with information about connections
@@ -293,8 +268,7 @@ class SubWorkflowModule(WorkflowModule):
                     label=name,
                     multiple=False,
                     extensions="input",
-                    input_type=step_to_input_type[step_type],
-                )
+                    input_type=step_to_input_type[step_type], )
                 inputs.append(input)
         return inputs
 
@@ -344,7 +318,6 @@ class SubWorkflowModule(WorkflowModule):
 
 
 class InputModule(WorkflowModule):
-
     def get_runtime_state(self):
         state = DefaultToolState()
         state.inputs = dict(input=None)
@@ -404,7 +377,14 @@ class InputDataModule(InputModule):
         return ', '.join(filter_set)
 
     def get_runtime_inputs(self, connections=None):
-        return dict(input=DataToolParameter(None, Element("param", name="input", label=self.label, multiple=False, type="data", format=self.get_filter_set(connections)), self.trans))
+        return dict(input=DataToolParameter(None,
+                                            Element(
+                                                "param",
+                                                name="input",
+                                                label=self.label,
+                                                multiple=False,
+                                                type="data",
+                                                format=self.get_filter_set(connections)), self.trans))
 
 
 class InputDataCollectionModule(InputModule):
@@ -415,8 +395,8 @@ class InputDataCollectionModule(InputModule):
 
     def get_inputs(self):
         collection_type = self.state.inputs.get("collection_type", self.default_collection_type)
-        input_collection_type = TextToolParameter(None, XML(
-            '''
+        input_collection_type = TextToolParameter(None,
+                                                  XML('''
             <param name="collection_type" label="Collection type" type="text" value="%s">
                 <option value="list">List of Datasets</option>
                 <option value="paired">Dataset Pair</option>
@@ -436,8 +416,7 @@ class InputDataCollectionModule(InputModule):
                 name='output',
                 extensions=['input_collection'],
                 collection=True,
-                collection_type=self.state.inputs.get('collection_type', self.default_collection_type)
-            )
+                collection_type=self.state.inputs.get('collection_type', self.default_collection_type))
         ]
 
 
@@ -453,8 +432,8 @@ class InputParameterModule(WorkflowModule):
         # TODO: Use an external xml or yaml file to load the parameter definition
         parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
         optional = self.state.inputs.get("optional", self.default_optional)
-        input_parameter_type = SelectToolParameter(None, XML(
-            '''
+        input_parameter_type = SelectToolParameter(None,
+                                                   XML('''
             <param name="parameter_type" label="Parameter type" type="select" value="%s">
                 <option value="text">Text</option>
                 <option value="integer">Integer</option>
@@ -463,8 +442,13 @@ class InputParameterModule(WorkflowModule):
                 <option value="color">Color</option>
             </param>
             ''' % parameter_type))
-        return odict([("parameter_type", input_parameter_type),
-                      ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional)))])
+        return odict([("parameter_type", input_parameter_type), ("optional", BooleanToolParameter(None,
+                                                                                                  Element(
+                                                                                                      "param",
+                                                                                                      name="optional",
+                                                                                                      label="Optional",
+                                                                                                      type="boolean",
+                                                                                                      value=optional)))])
 
     def get_runtime_inputs(self, **kwds):
         parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
@@ -508,8 +492,7 @@ class PauseModule(WorkflowModule):
             label="Dataset for Review",
             multiple=False,
             extensions='input',
-            input_type="dataset",
-        )
+            input_type="dataset", )
         return [input]
 
     def get_data_outputs(self):
@@ -559,7 +542,8 @@ class ToolModule(WorkflowModule):
         self.tool_version = tool_version
         self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools)
         if self.tool and tool_version and exact_tools and str(self.tool.version) != str(tool_version):
-            log.info("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version))
+            log.info("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." %
+                     (tool_id, tool_version))
             self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
@@ -582,9 +566,11 @@ class ToolModule(WorkflowModule):
         if module.tool:
             message = ""
             if tool_id != module.tool_id:
-                message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (tool_id, module.tool_id)
+                message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (
+                    tool_id, module.tool_id)
             if d.get('tool_version', 'Unspecified') != module.get_version():
-                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % (tool_id, module.get_version(), d.get('tool_version', 'Unspecified'))
+                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % (
+                    tool_id, module.get_version(), d.get('tool_version', 'Unspecified'))
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
@@ -608,12 +594,16 @@ class ToolModule(WorkflowModule):
                     if not old_tool_shed_url:  # a tool from a different tool_shed has been found, but the original tool shed has been deactivated
                         old_tool_shed_url = "http://" + old_tool_shed  # let's just assume it's either http, or a http is forwarded to https.
                     old_url = old_tool_shed_url + "/view/%s/%s/" % (module.tool.repository_owner, module.tool.repository_name)
-                    new_url = module.tool.tool_shed_repository.get_sharable_url(module.tool.app) + '/%s/' % module.tool.tool_shed_repository.changeset_revision
+                    new_url = module.tool.tool_shed_repository.get_sharable_url(
+                        module.tool.app) + '/%s/' % module.tool.tool_shed_repository.changeset_revision
                     new_tool_shed_url = new_url.split("/view")[0]
-                    message += "The tool \'%s\', version %s by the owner %s installed from <a href=\"%s\" target=\"_blank\">%s</a> is not available. " % (module.tool.name, tool_version, module.tool.repository_owner, old_url, old_tool_shed_url)
-                    message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (new_url, new_tool_shed_url)
+                    message += "The tool \'%s\', version %s by the owner %s installed from <a href=\"%s\" target=\"_blank\">%s</a> is not available. " % (
+                        module.tool.name, tool_version, module.tool.repository_owner, old_url, old_tool_shed_url)
+                    message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (
+                        new_url, new_tool_shed_url)
             if step.tool_version and (step.tool_version != module.tool.version):
-                message += "<span title=\"tool id '%s'\">Using version '%s' instead of version '%s' specified in this workflow. " % (tool_id, module.tool.version, step.tool_version)
+                message += "<span title=\"tool id '%s'\">Using version '%s' instead of version '%s' specified in this workflow. " % (
+                    tool_id, module.tool.version, step.tool_version)
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
@@ -659,21 +649,22 @@ class ToolModule(WorkflowModule):
             def callback(input, prefixed_name, prefixed_label, **kwargs):
                 if not hasattr(input, 'hidden') or not input.hidden:
                     if isinstance(input, DataToolParameter):
-                        data_inputs.append(dict(
-                            name=prefixed_name,
-                            label=prefixed_label,
-                            multiple=input.multiple,
-                            extensions=input.extensions,
-                            input_type="dataset", ))
+                        data_inputs.append(
+                            dict(
+                                name=prefixed_name,
+                                label=prefixed_label,
+                                multiple=input.multiple,
+                                extensions=input.extensions,
+                                input_type="dataset", ))
                     elif isinstance(input, DataCollectionToolParameter):
-                        data_inputs.append(dict(
-                            name=prefixed_name,
-                            label=prefixed_label,
-                            multiple=input.multiple,
-                            input_type="dataset_collection",
-                            collection_types=input.collection_types,
-                            extensions=input.extensions,
-                        ))
+                        data_inputs.append(
+                            dict(
+                                name=prefixed_name,
+                                label=prefixed_label,
+                                multiple=input.multiple,
+                                input_type="dataset_collection",
+                                collection_types=input.collection_types,
+                                extensions=input.extensions, ))
 
             visit_input_values(self.tool.inputs, self.state.inputs, callback)
         return data_inputs
@@ -696,13 +687,7 @@ class ToolModule(WorkflowModule):
                         format = when_elem.get('format', None)
                         if format and format not in formats:
                             formats.append(format)
-                data_outputs.append(
-                    dict(
-                        name=name,
-                        extensions=formats,
-                        **extra_kwds
-                    )
-                )
+                data_outputs.append(dict(name=name, extensions=formats, **extra_kwds))
         return data_outputs
 
     def get_config_form(self):
@@ -734,7 +719,8 @@ class ToolModule(WorkflowModule):
                             if output_step.type.startswith('data'):
                                 output_inputs = output_step.module.get_runtime_inputs(connections=connections)
                                 output_value = output_inputs['input'].get_initial_value(self.trans, context)
-                                if isinstance(input, DataToolParameter) and isinstance(output_value, self.trans.app.model.HistoryDatasetCollectionAssociation):
+                                if isinstance(input, DataToolParameter) and isinstance(
+                                        output_value, self.trans.app.model.HistoryDatasetCollectionAssociation):
                                     return output_value.to_hda_representative()
                                 return output_value
                             return RuntimeValue()
@@ -742,6 +728,7 @@ class ToolModule(WorkflowModule):
                             return input.get_initial_value(self.trans, context)
                     elif connections is None or prefixed_name in input_connections_by_name:
                         return RuntimeValue()
+
             visit_input_values(self.tool.inputs, self.state.inputs, callback)
         else:
             raise ToolMissingException("Tool %s missing. Cannot add dummy datasets." % self.tool_id)
@@ -820,7 +807,8 @@ class ToolModule(WorkflowModule):
                         if isinstance(input, DataToolParameter):
                             # Pull out dataset instance from element.
                             replacement = iteration_elements[prefixed_name].dataset_instance
-                            if hasattr(iteration_elements[prefixed_name], u'element_identifier') and iteration_elements[prefixed_name].element_identifier:
+                            if hasattr(iteration_elements[prefixed_name],
+                                       u'element_identifier') and iteration_elements[prefixed_name].element_identifier:
                                 replacement.element_identifier = iteration_elements[prefixed_name].element_identifier
                         else:
                             # If collection - just use element model object.
@@ -847,8 +835,7 @@ class ToolModule(WorkflowModule):
                 param_combinations=param_combinations,
                 history=invocation.history,
                 collection_info=collection_info,
-                workflow_invocation_uuid=invocation.uuid.hex
-            )
+                workflow_invocation_uuid=invocation.uuid.hex)
         except ToolInputsNotReadyException:
             delayed_why = "tool [%s] inputs are not ready, this special tool requires inputs to be ready" % tool.id
             raise DelayedWorkflowEvaluation(why=delayed_why)
@@ -958,7 +945,6 @@ class ToolModule(WorkflowModule):
 
 
 class WorkflowModuleFactory(object):
-
     def __init__(self, module_types):
         self.module_types = module_types
 
@@ -988,8 +974,7 @@ module_types = dict(
     parameter_input=InputParameterModule,
     pause=PauseModule,
     tool=ToolModule,
-    subworkflow=SubWorkflowModule,
-)
+    subworkflow=SubWorkflowModule, )
 module_factory = WorkflowModuleFactory(module_types)
 
 
@@ -999,8 +984,10 @@ def load_module_sections(trans):
     """
     module_sections = {}
     module_sections['inputs'] = {
-        "name": "inputs",
-        "title": "Inputs",
+        "name":
+        "inputs",
+        "title":
+        "Inputs",
         "modules": [
             {
                 "name": "data_input",
@@ -1017,8 +1004,10 @@ def load_module_sections(trans):
 
     if trans.app.config.enable_beta_workflow_modules:
         module_sections['experimental'] = {
-            "name": "experimental",
-            "title": "Experimental",
+            "name":
+            "experimental",
+            "title":
+            "Experimental",
             "modules": [
                 {
                     "name": "pause",
@@ -1037,7 +1026,6 @@ def load_module_sections(trans):
 
 
 class DelayedWorkflowEvaluation(Exception):
-
     def __init__(self, why=None):
         self.why = why
 
@@ -1085,7 +1073,10 @@ class WorkflowModuleInjector(object):
         step.state = state
         if step.type == "subworkflow":
             subworkflow = step.subworkflow
-            populate_module_and_state(self.trans, subworkflow, param_map={}, )
+            populate_module_and_state(
+                self.trans,
+                subworkflow,
+                param_map={}, )
         return step_errors
 
 

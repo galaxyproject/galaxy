@@ -12,8 +12,7 @@ from galaxy.util.bunch import Bunch
 input_classification = Bunch(
     SINGLE="single",
     MATCHED="matched",
-    MULTIPLIED="multiplied",
-)
+    MULTIPLIED="multiplied", )
 
 
 class InputMatchedException(MessageException):
@@ -24,11 +23,7 @@ class InputMatchedException(MessageException):
 def expand_multi_inputs(inputs, classifier, key_filter=None):
     key_filter = key_filter or (lambda x: True)
 
-    single_inputs, matched_multi_inputs, multiplied_multi_inputs = __split_inputs(
-        inputs,
-        classifier,
-        key_filter
-    )
+    single_inputs, matched_multi_inputs, multiplied_multi_inputs = __split_inputs(inputs, classifier, key_filter)
 
     # Build up every combination of inputs to be run together.
     input_combos = __extend_with_matched_combos(single_inputs, matched_multi_inputs)

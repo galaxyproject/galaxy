@@ -23,10 +23,7 @@ import galaxy.jobs
 import tool_shed.util.repository_util as repository_util
 import tool_shed.util.shed_util_common
 
-from galaxy import (
-    exceptions,
-    model
-)
+from galaxy import (exceptions, model)
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.managers import histories
 from galaxy.queue_worker import send_control_task
@@ -34,45 +31,21 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.deps import (
-    CachedDependencyManager,
-    views
-)
+from galaxy.tools.deps import (CachedDependencyManager, views)
 from galaxy.tools.fetcher import ToolLocationFetcher
-from galaxy.tools.parameters import (
-    check_param,
-    params_from_strings,
-    params_to_incoming,
-    params_to_strings,
-    populate_state,
-    visit_input_values
-)
+from galaxy.tools.parameters import (check_param, params_from_strings, params_to_incoming, params_to_strings, populate_state,
+                                     visit_input_values)
 from galaxy.tools.parameters import output_collect
-from galaxy.tools.parameters.basic import (
-    BaseURLToolParameter,
-    DataCollectionToolParameter,
-    DataToolParameter,
-    HiddenToolParameter,
-    SelectToolParameter,
-    ToolParameter
-)
+from galaxy.tools.parameters.basic import (BaseURLToolParameter, DataCollectionToolParameter, DataToolParameter, HiddenToolParameter,
+                                           SelectToolParameter, ToolParameter)
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
-from galaxy.tools.parser import (
-    get_tool_source,
-    ToolOutputCollectionPart
-)
+from galaxy.tools.parser import (get_tool_source, ToolOutputCollectionPart)
 from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.test import parse_tests
 from galaxy.tools.toolbox import BaseGalaxyToolBox
-from galaxy.util import (
-    ExecutionTimer,
-    listify,
-    rst_to_html,
-    string_as_bool,
-    unicodify
-)
+from galaxy.util import (ExecutionTimer, listify, rst_to_html, string_as_bool, unicodify)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
@@ -87,11 +60,7 @@ from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
 
 from .execute import execute as execute_job
-from .loader import (
-    imported_macro_paths,
-    raw_tool_xml_tree,
-    template_macro_params
-)
+from .loader import (imported_macro_paths, raw_tool_xml_tree, template_macro_params)
 
 log = logging.getLogger(__name__)
 
@@ -170,12 +139,7 @@ class ToolErrorLog:
         self.max_errors = 100
 
     def add_error(self, file, phase, exception):
-        self.error_stack.insert(0, {
-            "file": file,
-            "time": str(datetime.now()),
-            "phase": phase,
-            "error": str(exception)
-        })
+        self.error_stack.insert(0, {"file": file, "time": str(datetime.now()), "phase": phase, "error": str(exception)})
         if len(self.error_stack) > self.max_errors:
             self.error_stack.pop()
 
@@ -220,8 +184,7 @@ class ToolBox(BaseGalaxyToolBox):
         super(ToolBox, self).__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
-            app=app,
-        )
+            app=app, )
 
     def handle_panel_update(self, section_dict):
         """
@@ -251,8 +214,7 @@ class ToolBox(BaseGalaxyToolBox):
             tool_source = get_tool_source(
                 config_file,
                 enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
-                tool_location_fetcher=self.tool_location_fetcher,
-            )
+                tool_location_fetcher=self.tool_location_fetcher, )
         except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
@@ -296,12 +258,7 @@ class ToolBox(BaseGalaxyToolBox):
         # override _get_tool_shed_repository here to provide this information.
 
         return repository_util.get_installed_repository(
-            self.app,
-            tool_shed=tool_shed,
-            name=name,
-            owner=owner,
-            installed_changeset_revision=installed_changeset_revision
-        )
+            self.app, tool_shed=tool_shed, name=name, owner=owner, installed_changeset_revision=installed_changeset_revision)
 
     def __build_tool_version_select_field(self, tools, tool_id, set_selected):
         """Build a SelectField whose options are the ids for the received list of tools."""
@@ -325,6 +282,7 @@ class DefaultToolState(object):
     Keeps track of the state of a users interaction with a tool between
     requests.
     """
+
     def __init__(self):
         self.page = 0
         self.rerun_remap_job_id = None
@@ -462,16 +420,16 @@ class Tool(object, Dictifiable):
     def tool_shed_repository(self):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return repository_util.get_installed_repository(self.app,
-                                                            tool_shed=self.tool_shed,
-                                                            name=self.repository_name,
-                                                            owner=self.repository_owner,
-                                                            installed_changeset_revision=self.installed_changeset_revision)
+            return repository_util.get_installed_repository(
+                self.app,
+                tool_shed=self.tool_shed,
+                name=self.repository_name,
+                owner=self.repository_owner,
+                installed_changeset_revision=self.installed_changeset_revision)
         return None
 
     @property
     def produces_collections_of_unknown_type(self):
-
         def output_is_dynamic_collection(output):
             if not output.collection:
                 return False
@@ -483,7 +441,6 @@ class Tool(object, Dictifiable):
 
     @property
     def produces_collections_with_unknown_structure(self):
-
         def output_is_dynamic(output):
             if not output.collection:
                 return False
@@ -544,7 +501,8 @@ class Tool(object, Dictifiable):
                         break
                 else:
                     rval = job_tool_config
-        assert rval is not None, 'Could not get a job tool configuration for Tool %s with job_params %s, this is a bug' % (self.id, job_params)
+        assert rval is not None, 'Could not get a job tool configuration for Tool %s with job_params %s, this is a bug' % (self.id,
+                                                                                                                           job_params)
         return rval
 
     def get_job_handler(self, job_params=None):
@@ -682,9 +640,8 @@ class Tool(object, Dictifiable):
         # Load any tool specific options (optional)
         self.options = dict(
             sanitize=tool_source.parse_sanitize(),
-            refresh=tool_source.parse_refresh(),
-        )
-        self.options = Bunch(** self.options)
+            refresh=tool_source.parse_refresh(), )
+        self.options = Bunch(**self.options)
 
         # Parse tool inputs (if there are any required)
         self.parse_inputs(tool_source)
@@ -845,8 +802,7 @@ class Tool(object, Dictifiable):
                         raise Exception('URL parameters in a non-default tool action can not be used '
                                         'in conjunction with nginx upload.  Please convert them to '
                                         'hidden POST parameters')
-                    self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
-                                   unquote_plus(self.action))
+                    self.action = (self.app.config.nginx_upload_path + '?nginx_redir=', unquote_plus(self.action))
                 self.target = input_elem.get("target", self.target)
                 self.method = input_elem.get("method", self.method)
                 # Parse the actual parameters
@@ -986,7 +942,9 @@ class Tool(object, Dictifiable):
                     test_param_input_source = input_source.parse_test_input_source()
                     group.test_param = self.parse_param_elem(test_param_input_source, enctypes, context)
                     if group.test_param.optional:
-                        log.warning("Tool with id %s declares a conditional test parameter as optional, this is invalid and will be ignored." % self.id)
+                        log.warning(
+                            "Tool with id %s declares a conditional test parameter as optional, this is invalid and will be ignored." %
+                            self.id)
                         group.test_param.optional = False
                     possible_cases = list(group.test_param.legal_values)  # store possible cases, undefined whens will have no inputs
                     # Must refresh when test_param changes
@@ -1115,9 +1073,12 @@ class Tool(object, Dictifiable):
                 except Exception:
                     log.exception("Exception in parse_help, so images may not be properly displayed")
             try:
-                self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
-                                       output_encoding='utf-8', default_filters=['decode.utf8'],
-                                       encoding_errors='replace')
+                self.__help = Template(
+                    rst_to_html(help_text),
+                    input_encoding='utf-8',
+                    output_encoding='utf-8',
+                    default_filters=['decode.utf8'],
+                    encoding_errors='replace')
             except:
                 log.exception("error in help for tool %s", self.name)
 
@@ -1133,11 +1094,14 @@ class Tool(object, Dictifiable):
                         help_footer = help_footer + help_page.tail
                 # Each page has to rendered all-together because of backreferences allowed by rst
                 try:
-                    self.__help_by_page = [Template(rst_to_html(help_header + x + help_footer),
-                                                    input_encoding='utf-8', output_encoding='utf-8',
-                                                    default_filters=['decode.utf8'],
-                                                    encoding_errors='replace')
-                                           for x in self.__help_by_page]
+                    self.__help_by_page = [
+                        Template(
+                            rst_to_html(help_header + x + help_footer),
+                            input_encoding='utf-8',
+                            output_encoding='utf-8',
+                            default_filters=['decode.utf8'],
+                            encoding_errors='replace') for x in self.__help_by_page
+                    ]
                 except:
                     log.exception("error in multi-page help for tool %s", self.name)
         # Pad out help pages to match npages ... could this be done better?
@@ -1283,14 +1247,21 @@ class Tool(object, Dictifiable):
             err_data = {key: value for d in all_errors for (key, value) in d.items()}
             raise exceptions.MessageException(', '.join(msg for msg in err_data.values()), err_data=err_data)
         else:
-            execution_tracker = execute_job(trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info)
+            execution_tracker = execute_job(
+                trans,
+                self,
+                all_params,
+                history=request_context.history,
+                rerun_remap_job_id=rerun_remap_job_id,
+                collection_info=collection_info)
             if execution_tracker.successful_jobs:
-                return dict(out_data=execution_tracker.output_datasets,
-                            num_jobs=len(execution_tracker.successful_jobs),
-                            job_errors=execution_tracker.execution_errors,
-                            jobs=execution_tracker.successful_jobs,
-                            output_collections=execution_tracker.output_collections,
-                            implicit_collections=execution_tracker.implicit_collections)
+                return dict(
+                    out_data=execution_tracker.output_datasets,
+                    num_jobs=len(execution_tracker.successful_jobs),
+                    job_errors=execution_tracker.execution_errors,
+                    jobs=execution_tracker.successful_jobs,
+                    output_collections=execution_tracker.output_collections,
+                    implicit_collections=execution_tracker.implicit_collections)
             else:
                 raise exceptions.MessageException(execution_tracker.execution_errors[0])
 
@@ -1300,7 +1271,13 @@ class Tool(object, Dictifiable):
         resulting output data or an error message indicating the problem.
         """
         try:
-            job, out_data = self.execute(trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache)
+            job, out_data = self.execute(
+                trans,
+                incoming=params,
+                history=history,
+                rerun_remap_job_id=rerun_remap_job_id,
+                mapping_over_collection=mapping_over_collection,
+                execution_cache=execution_cache)
         except httpexceptions.HTTPFound as e:
             # if it's a paste redirect exception, pass it up the stack
             raise e
@@ -1395,7 +1372,8 @@ class Tool(object, Dictifiable):
         from a database in case new parameters have been added.
         """
         messages = {}
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history, workflow_building_mode=workflow_building_mode)
+        request_context = WorkRequestContext(
+            app=trans.app, user=trans.user, history=trans.history, workflow_building_mode=workflow_building_mode)
 
         def validate_inputs(input, value, error, parent, context, prefixed_name, prefixed_label, **kwargs):
             if not error:
@@ -1425,8 +1403,7 @@ class Tool(object, Dictifiable):
                 job_directory=None,
                 metadata=False,
                 tool_instance=self,
-                **kwds
-            )
+                **kwds)
 
     def build_dependency_shell_commands(self, job_directory=None, metadata=False):
         """
@@ -1439,8 +1416,7 @@ class Tool(object, Dictifiable):
             job_directory=job_directory,
             preserve_python_environment=self.requires_galaxy_python_environment,
             metadata=metadata,
-            tool_instance=self
-        )
+            tool_instance=self)
 
     @property
     def installed_tool_dependencies(self):
@@ -1569,13 +1545,14 @@ class Tool(object, Dictifiable):
                 else:
                     visible = False
                 ext = fields[4].lower()
-                child_dataset = self.app.model.HistoryDatasetAssociation(extension=ext,
-                                                                         parent_id=outdata.id,
-                                                                         designation=designation,
-                                                                         visible=visible,
-                                                                         dbkey=outdata.dbkey,
-                                                                         create_dataset=True,
-                                                                         sa_session=self.sa_session)
+                child_dataset = self.app.model.HistoryDatasetAssociation(
+                    extension=ext,
+                    parent_id=outdata.id,
+                    designation=designation,
+                    visible=visible,
+                    dbkey=outdata.dbkey,
+                    create_dataset=True,
+                    sa_session=self.sa_session)
                 self.app.security_agent.copy_dataset_permissions(outdata.dataset, child_dataset.dataset)
                 # Move data from temp location to dataset location
                 self.app.object_store.update_from_file(child_dataset.dataset, file_name=filename, create=True)
@@ -1697,8 +1674,7 @@ class Tool(object, Dictifiable):
                             # FIXME: from_shed_config seems to always be False.
                             if not data_table.filenames[data_table_filename]['from_shed_config']:
                                 tar_file = data_table.filenames[data_table_filename]['filename'] + '.sample'
-                                sample_file = os.path.join(data_table.filenames[data_table_filename]['tool_data_path'],
-                                                           tar_file)
+                                sample_file = os.path.join(data_table.filenames[data_table_filename]['tool_data_path'], tar_file)
                                 # Use the .sample file, if one exists. If not, skip this data table.
                                 if os.path.exists(sample_file):
                                     tarfile_path, tarfile_name = os.path.split(tar_file)
@@ -1758,9 +1734,7 @@ class Tool(object, Dictifiable):
                 link = url_for(controller='tool_runner', action='data_source_redirect', tool_id=self.id)
 
             # Basic information
-            tool_dict.update({'link': link,
-                              'min_width': self.uihints.get('minwidth', -1),
-                              'target': self.target})
+            tool_dict.update({'link': link, 'min_width': self.uihints.get('minwidth', -1), 'target': self.target})
 
         # Add input and output details.
         if io_details:
@@ -1843,24 +1817,27 @@ class Tool(object, Dictifiable):
 
         # update tool model
         tool_model.update({
-            'id'            : self.id,
-            'help'          : tool_help,
-            'citations'     : bool(self.citations),
-            'biostar_url'   : self.app.config.biostar_url,
-            'sharable_url'  : self.tool_shed_repository.get_sharable_url(self.app) if self.tool_shed_repository else None,
-            'message'       : tool_message,
-            'warnings'      : tool_warnings,
-            'versions'      : tool_versions,
-            'requirements'  : [{'name' : r.name, 'version' : r.version} for r in self.requirements],
-            'errors'        : state_errors,
-            'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app),
-            'job_id'        : trans.security.encode_id(job.id) if job else None,
-            'job_remap'     : self._get_job_remap(job),
-            'history_id'    : trans.security.encode_id(history.id),
-            'display'       : self.display_interface,
-            'action'        : url_for(self.action),
-            'method'        : self.method,
-            'enctype'       : self.enctype
+            'id': self.id,
+            'help': tool_help,
+            'citations': bool(self.citations),
+            'biostar_url': self.app.config.biostar_url,
+            'sharable_url': self.tool_shed_repository.get_sharable_url(self.app) if self.tool_shed_repository else None,
+            'message': tool_message,
+            'warnings': tool_warnings,
+            'versions': tool_versions,
+            'requirements': [{
+                'name': r.name,
+                'version': r.version
+            } for r in self.requirements],
+            'errors': state_errors,
+            'state_inputs': params_to_strings(self.inputs, state_inputs, self.app),
+            'job_id': trans.security.encode_id(job.id) if job else None,
+            'job_remap': self._get_job_remap(job),
+            'history_id': trans.security.encode_id(history.id),
+            'display': self.display_interface,
+            'action': url_for(self.action),
+            'method': self.method,
+            'enctype': self.enctype
         })
         return tool_model
 
@@ -1882,13 +1859,15 @@ class Tool(object, Dictifiable):
                 tool_dict = input.to_dict(request_context)
                 if 'test_param' in tool_dict:
                     test_param = tool_dict['test_param']
-                    test_param['value'] = input.test_param.value_to_basic(group_state.get(test_param['name'], input.test_param.get_initial_value(request_context, other_values)), self.app)
+                    test_param['value'] = input.test_param.value_to_basic(
+                        group_state.get(test_param['name'], input.test_param.get_initial_value(request_context, other_values)), self.app)
                     test_param['text_value'] = input.test_param.value_to_display_text(test_param['value'])
                     for i in range(len(tool_dict['cases'])):
                         current_state = {}
                         if i == group_state.get('__current_case__'):
                             current_state = group_state
-                        self.populate_model(request_context, input.cases[i].inputs, current_state, tool_dict['cases'][i]['inputs'], other_values)
+                        self.populate_model(request_context, input.cases[i].inputs, current_state, tool_dict['cases'][i]['inputs'],
+                                            other_values)
             elif input.type == 'section':
                 tool_dict = input.to_dict(request_context)
                 self.populate_model(request_context, input.inputs, group_state, tool_dict['inputs'], other_values)
@@ -1972,6 +1951,7 @@ class Tool(object, Dictifiable):
                     return map_to_history(value)
             elif isinstance(input, DataCollectionToolParameter):
                 return map_to_history(value)
+
         visit_input_values(tool_inputs, params, mapping_callback)
 
     def _compare_tool_version(self, job):
@@ -1982,7 +1962,8 @@ class Tool(object, Dictifiable):
         tool_version = job.tool_version
         message = ''
         try:
-            select_field, tools, tool = self.app.toolbox.get_tool_components(tool_id, tool_version=tool_version, get_loaded_tools_by_lineage=False, set_selected=True)
+            select_field, tools, tool = self.app.toolbox.get_tool_components(
+                tool_id, tool_version=tool_version, get_loaded_tools_by_lineage=False, set_selected=True)
             if tool is None:
                 raise exceptions.MessageException('This dataset was created by an obsolete tool (%s). Can\'t re-run.' % tool_id)
             if (self.id != tool_id and self.old_id != tool_id) or self.version != tool_version:
@@ -1997,14 +1978,18 @@ class Tool(object, Dictifiable):
                         else:
                             message += 'You can re-run the job with this tool version, which is a different version of the original tool.'
                 else:
-                    new_tool_shed_url = '%s/%s/' % (tool.tool_shed_repository.get_sharable_url(tool.app), tool.tool_shed_repository.changeset_revision)
+                    new_tool_shed_url = '%s/%s/' % (tool.tool_shed_repository.get_sharable_url(tool.app),
+                                                    tool.tool_shed_repository.changeset_revision)
                     old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_id.split('/repos/')[0])
                     old_tool_shed_url = '%s/view/%s/%s/' % (old_tool_shed_url, tool.repository_owner, tool.repository_name)
-                    message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available.  ' % (old_tool_shed_url, tool_id, tool_version)
+                    message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available.  ' % (
+                        old_tool_shed_url, tool_id, tool_version)
                     if len(tools) > 1:
-                        message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool.' % (new_tool_shed_url, self.id)
+                        message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool.' % (
+                            new_tool_shed_url, self.id)
                     else:
-                        message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool.' % (new_tool_shed_url, self.id)
+                        message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool.' % (
+                            new_tool_shed_url, self.id)
         except Exception as e:
             raise exceptions.MessageException(str(e))
         return message
@@ -2063,9 +2048,13 @@ class OutputParameterJSONTool(Tool):
         if param_dict is None:
             param_dict = {}
         json_params = {}
-        json_params['param_dict'] = self._prepare_json_param_dict(param_dict)  # it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
+        json_params['param_dict'] = self._prepare_json_param_dict(
+            param_dict)  # it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
         json_params['output_data'] = []
-        json_params['job_config'] = dict(GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'), GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'), TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+        json_params['job_config'] = dict(
+            GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'),
+            GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'),
+            TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
         json_filename = None
         for i, (out_name, data) in enumerate(out_data.items()):
             # use wrapped dataset to access certain values
@@ -2073,12 +2062,13 @@ class OutputParameterJSONTool(Tool):
             # allow multiple files to be created
             file_name = str(wrapped_data)
             extra_files_path = str(wrapped_data.files_path)
-            data_dict = dict(out_data_name=out_name,
-                             ext=data.ext,
-                             dataset_id=data.dataset.id,
-                             hda_id=data.id,
-                             file_name=file_name,
-                             extra_files_path=extra_files_path)
+            data_dict = dict(
+                out_data_name=out_name,
+                ext=data.ext,
+                dataset_id=data.dataset.id,
+                hda_id=data.id,
+                file_name=file_name,
+                extra_files_path=extra_files_path)
             json_params['output_data'].append(data_dict)
             if json_filename is None:
                 json_filename = file_name
@@ -2096,7 +2086,8 @@ class DataSourceTool(OutputParameterJSONTool):
     default_tool_action = DataSourceToolAction
 
     def _build_GALAXY_URL_parameter(self):
-        return ToolParameter.build(self, ElementTree.XML('<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id))
+        return ToolParameter.build(self,
+                                   ElementTree.XML('<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id))
 
     def parse_inputs(self, tool_source):
         super(DataSourceTool, self).parse_inputs(tool_source)
@@ -2115,9 +2106,13 @@ class DataSourceTool(OutputParameterJSONTool):
         name = param_dict.get('name')
 
         json_params = {}
-        json_params['param_dict'] = self._prepare_json_param_dict(param_dict)  # it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
+        json_params['param_dict'] = self._prepare_json_param_dict(
+            param_dict)  # it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
         json_params['output_data'] = []
-        json_params['job_config'] = dict(GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'), GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'), TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+        json_params['job_config'] = dict(
+            GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'),
+            GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'),
+            TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
         json_filename = None
         for i, (out_name, data) in enumerate(out_data.items()):
             # use wrapped dataset to access certain values
@@ -2138,12 +2133,13 @@ class DataSourceTool(OutputParameterJSONTool):
                 data.extension = cur_data_type
             file_name = str(wrapped_data)
             extra_files_path = str(wrapped_data.files_path)
-            data_dict = dict(out_data_name=out_name,
-                             ext=data.ext,
-                             dataset_id=data.dataset.id,
-                             hda_id=data.id,
-                             file_name=file_name,
-                             extra_files_path=extra_files_path)
+            data_dict = dict(
+                out_data_name=out_name,
+                ext=data.ext,
+                dataset_id=data.dataset.id,
+                hda_id=data.id,
+                file_name=file_name,
+                extra_files_path=extra_files_path)
             json_params['output_data'].append(data_dict)
             if json_filename is None:
                 json_filename = file_name
@@ -2235,7 +2231,8 @@ class DataManagerTool(OutputParameterJSONTool):
                 return
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = self.app.data_managers.get_manager(data_manager_id, None)
-        assert data_manager is not None, "Invalid data manager (%s) requested. It may have been removed before the job completed." % (data_manager_id)
+        assert data_manager is not None, "Invalid data manager (%s) requested. It may have been removed before the job completed." % (
+            data_manager_id)
         data_manager.process_result(out_data)
 
     def get_default_history_by_trans(self, trans, create=False):
@@ -2245,6 +2242,7 @@ class DataManagerTool(OutputParameterJSONTool):
             trans.sa_session.add_all((history, data_manager_association))
             trans.sa_session.flush()
             return history
+
         user = trans.user
         assert user, 'You must be logged in to use this tool.'
         assert self.allow_user_access(user), "You must be an admin to access this tool."
@@ -2297,7 +2295,7 @@ class DatabaseOperationTool(Tool):
     @property
     def valid_input_states(self):
         if self.require_dataset_ok:
-            return (model.Dataset.states.OK,)
+            return (model.Dataset.states.OK, )
         else:
             return model.Dataset.terminal_states
 
@@ -2367,9 +2365,7 @@ class ZipCollectionTool(DatabaseOperationTool):
         history.add_dataset(forward, set_hid=False)
         history.add_dataset(reverse, set_hid=False)
 
-        output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements
-        )
+        output_collections.create_collection(next(iter(self.outputs.values())), "output", elements=new_elements)
 
 
 class MergeCollectionTool(DatabaseOperationTool):
@@ -2396,12 +2392,12 @@ class MergeCollectionTool(DatabaseOperationTool):
         identifiers_map = {}
         for input_num, input_list in enumerate(input_lists):
             for dce in input_list.collection.elements:
-                    element_identifier = dce.element_identifier
-                    if element_identifier not in identifiers_map:
-                        identifiers_map[element_identifier] = []
-                    elif dupl_actions == "fail":
-                        raise Exception("Duplicate collection element identifiers found for [%s]" % element_identifier)
-                    identifiers_map[element_identifier].append(input_num)
+                element_identifier = dce.element_identifier
+                if element_identifier not in identifiers_map:
+                    identifiers_map[element_identifier] = []
+                elif dupl_actions == "fail":
+                    raise Exception("Duplicate collection element identifiers found for [%s]" % element_identifier)
+                identifiers_map[element_identifier].append(input_num)
 
         for copy, input_list in enumerate(input_lists):
             for dce in input_list.collection.elements:
@@ -2449,9 +2445,7 @@ class MergeCollectionTool(DatabaseOperationTool):
                 history.add_dataset(copied_value, set_hid=False)
             new_elements[key] = copied_value
 
-        output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements
-        )
+        output_collections.create_collection(next(iter(self.outputs.values())), "output", elements=new_elements)
 
 
 class FilterFailedDatasetsTool(DatabaseOperationTool):
@@ -2487,9 +2481,7 @@ class FilterFailedDatasetsTool(DatabaseOperationTool):
                     history.add_dataset(copied_value, set_hid=False)
                 new_elements[element_identifier] = copied_value
 
-        output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements
-        )
+        output_collections.create_collection(next(iter(self.outputs.values())), "output", elements=new_elements)
 
 
 class FlattenTool(DatabaseOperationTool):
@@ -2511,10 +2503,9 @@ class FlattenTool(DatabaseOperationTool):
                     copied_dataset = dce_object.copy()
                     history.add_dataset(copied_dataset, set_hid=False)
                     new_elements[identifier] = copied_dataset
+
         add_elements(hdca.collection)
-        output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements
-        )
+        output_collections.create_collection(next(iter(self.outputs.values())), "output", elements=new_elements)
 
 
 class SortTool(DatabaseOperationTool):
@@ -2536,9 +2527,7 @@ class SortTool(DatabaseOperationTool):
             copied_dataset = dce_object.copy()
             history.add_dataset(copied_dataset, set_hid=False)
             new_elements[dce.element_identifier] = copied_dataset
-        output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements
-        )
+        output_collections.create_collection(next(iter(self.outputs.values())), "output", elements=new_elements)
 
 
 class RelabelFromFileTool(DatabaseOperationTool):
@@ -2585,9 +2574,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
         for key in new_elements.keys():
             if not re.match("^[\w\-_]+$", key):
                 raise Exception("Invalid new colleciton identifier [%s]" % key)
-        output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements
-        )
+        output_collections.create_collection(next(iter(self.outputs.values())), "output", elements=new_elements)
 
 
 class FilterFromFileTool(DatabaseOperationTool):
@@ -2620,20 +2607,16 @@ class FilterFromFileTool(DatabaseOperationTool):
             else:
                 discarded_elements[element_identifier] = copied_value
 
-        output_collections.create_collection(
-            self.outputs["output_filtered"], "output_filtered", elements=filtered_elements
-        )
-        output_collections.create_collection(
-            self.outputs["output_discarded"], "output_discarded", elements=discarded_elements
-        )
+        output_collections.create_collection(self.outputs["output_filtered"], "output_filtered", elements=filtered_elements)
+        output_collections.create_collection(self.outputs["output_discarded"], "output_discarded", elements=discarded_elements)
 
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool,
-                   DataManagerTool, DataSourceTool, AsyncDataSourceTool,
-                   UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
-                   DataDestinationTool]:
+for tool_class in [
+        Tool, SetMetadataTool, OutputParameterJSONTool, DataManagerTool, DataSourceTool, AsyncDataSourceTool, UnzipCollectionTool,
+        ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool, DataDestinationTool
+]:
     tool_types[tool_class.tool_type] = tool_class
 
 

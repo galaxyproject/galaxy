@@ -26,8 +26,7 @@ RepositoryMetadata_table = Table("repository_metadata", metadata,
                                  Column("create_time", DateTime, default=now),
                                  Column("update_time", DateTime, default=now, onupdate=now),
                                  Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
-                                 Column("changeset_revision", TrimmedString(255), index=True),
-                                 Column("metadata", JSONType, nullable=True))
+                                 Column("changeset_revision", TrimmedString(255), index=True), Column("metadata", JSONType, nullable=True))
 
 
 def upgrade(migrate_engine):

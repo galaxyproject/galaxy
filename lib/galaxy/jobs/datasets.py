@@ -2,10 +2,7 @@
 Utility classes allowing Job interface to reason about datasets.
 """
 import os.path
-from abc import (
-    ABCMeta,
-    abstractmethod
-)
+from abc import (ABCMeta, abstractmethod)
 
 import six
 
@@ -16,15 +13,7 @@ def dataset_path_rewrites(dataset_paths):
 
 
 class DatasetPath(object):
-
-    def __init__(
-        self,
-        dataset_id,
-        real_path,
-        false_path=None,
-        false_extra_files_path=None,
-        mutable=True
-    ):
+    def __init__(self, dataset_id, real_path, false_path=None, false_extra_files_path=None, mutable=True):
         self.dataset_id = dataset_id
         self.real_path = real_path
         self.false_path = false_path
@@ -48,8 +37,7 @@ class DatasetPath(object):
                 real_path=self.real_path,
                 false_path=false_path,
                 false_extra_files_path=false_extra_files_path,
-                mutable=self.mutable,
-            )
+                mutable=self.mutable, )
         return dataset_path
 
 

@@ -7,10 +7,7 @@ import sys
 
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import (
-    get_headers,
-    iter_headers
-)
+from galaxy.datatypes.sniff import (get_headers, iter_headers)
 from galaxy.datatypes.tabular import Tabular
 
 log = logging.getLogger(__name__)
@@ -289,10 +286,11 @@ class AlignReport(Tabular):
     def __init__(self, **kwd):
         """Initialize AlignCheck datatype"""
         super(AlignReport, self).__init__(**kwd)
-        self.column_names = ['QueryName', 'QueryLength', 'TemplateName', 'TemplateLength', 'SearchMethod', 'SearchScore',
-                             'AlignmentMethod', 'QueryStart', 'QueryEnd', 'TemplateStart', 'TemplateEnd',
-                             'PairwiseAlignmentLength', 'GapsInQuery', 'GapsInTemplate', 'LongestInsert', 'SimBtwnQuery&Template'
-                             ]
+        self.column_names = [
+            'QueryName', 'QueryLength', 'TemplateName', 'TemplateLength', 'SearchMethod', 'SearchScore', 'AlignmentMethod', 'QueryStart',
+            'QueryEnd', 'TemplateStart', 'TemplateEnd', 'PairwiseAlignmentLength', 'GapsInQuery', 'GapsInTemplate', 'LongestInsert',
+            'SimBtwnQuery&Template'
+        ]
 
 
 class DistanceMatrix(Text):
@@ -633,7 +631,8 @@ class Frequency(Tabular):
 class Quantile(Tabular):
     file_ext = 'mothur.quan'
     MetadataElement(name="filtered", default=False, no_value=False, optional=True, desc="Quantiles calculated using a mask", readonly=True)
-    MetadataElement(name="masked", default=False, no_value=False, optional=True, desc="Quantiles calculated using a frequency filter", readonly=True)
+    MetadataElement(
+        name="masked", default=False, no_value=False, optional=True, desc="Quantiles calculated using a frequency filter", readonly=True)
 
     def __init__(self, **kwd):
         """Quantiles for chimera analysis"""
@@ -904,6 +903,7 @@ class SffFlow(Tabular):
           GQY1XT001CQIRF 84 1.02 0.06 0.98 0.06 0.09 1.05 0.07 ...
           GQY1XT001CF5YW 88 1.02 0.02 1.01 0.04 0.06 1.02 0.03 ...
     """
+
     def __init__(self, **kwd):
         super(SffFlow, self).__init__(**kwd)
 

@@ -2,10 +2,7 @@
 
 Subsystems are essentially monitoring plugins available within collectl.
 """
-from abc import (
-    ABCMeta,
-    abstractmethod
-)
+from abc import (ABCMeta, abstractmethod)
 
 import six
 

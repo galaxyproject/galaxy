@@ -27,13 +27,12 @@ class ResourceParser(object):
     new keys (e.g. dataset_id="NNN" -> hda=<HistoryDatasetAssociation>).
     """
     primitive_parsers = {
-        'str'   : lambda param: galaxy.util.sanitize_html.sanitize_html(param, 'utf-8'),
-        'bool'  : lambda param: galaxy.util.string_as_bool(param),
-        'int'   : int,
-        'float' : float,
+        'str': lambda param: galaxy.util.sanitize_html.sanitize_html(param, 'utf-8'),
+        'bool': lambda param: galaxy.util.string_as_bool(param),
+        'int': int,
+        'float': float,
         # 'date'  : lambda param: ,
-        'json'  : (lambda param: json.loads(
-            galaxy.util.sanitize_html.sanitize_html(param))),
+        'json': (lambda param: json.loads(galaxy.util.sanitize_html.sanitize_html(param))),
     }
 
     def __init__(self, app, *args, **kwargs):
@@ -41,10 +40,7 @@ class ResourceParser(object):
         self.managers = self._init_managers(app)
 
     def _init_managers(self, app):
-        return bunch.Bunch(
-            visualization=visualization_manager.VisualizationManager(app),
-            hda=hda_manager.HDAManager(app)
-        )
+        return bunch.Bunch(visualization=visualization_manager.VisualizationManager(app), hda=hda_manager.HDAManager(app))
 
     def parse_parameter_dictionary(self, trans, param_config_dict, query_params, param_modifiers=None):
         """
@@ -56,8 +52,7 @@ class ResourceParser(object):
 
         # parse the modifiers first since they modify the params coming next
         # TODO: this is all really for hda_ldda - which we could replace with model polymorphism
-        params_that_modify_other_params = self.parse_parameter_modifiers(
-            trans, param_modifiers, query_params)
+        params_that_modify_other_params = self.parse_parameter_modifiers(trans, param_modifiers, query_params)
 
         resources = {}
         for param_name, param_config in param_config_dict.items():
@@ -71,15 +66,14 @@ class ResourceParser(object):
             if query_val is not None:
                 try:
                     target_param_modifiers = params_that_modify_other_params.get(param_name, None)
-                    resource = self.parse_parameter(trans, param_config,
-                                                    query_val, param_modifiers=target_param_modifiers)
+                    resource = self.parse_parameter(trans, param_config, query_val, param_modifiers=target_param_modifiers)
 
                 except Exception as exception:
                     if trans.debug:
                         raise
                     else:
-                        log.warning('Exception parsing visualization param from query: %s, %s, (%s) %s',
-                                  param_name, query_val, str(type(exception)), str(exception))
+                        log.warning('Exception parsing visualization param from query: %s, %s, (%s) %s', param_name, query_val,
+                                    str(type(exception)), str(exception))
                     resource = None
 
             # here - we've either had no value in the query_params or there was a failure to parse
@@ -109,8 +103,8 @@ class ResourceParser(object):
                     config_val = self.parse_parameter(trans, param_config, config_val)
 
                 except Exception as exception:
-                    log.warning('Exception parsing visualization param from query: ' +
-                              '%s, %s, (%s) %s' % (param_name, config_val, str(type(exception)), str(exception)))
+                    log.warning('Exception parsing visualization param from query: ' + '%s, %s, (%s) %s' %
+                                (param_name, config_val, str(type(exception)), str(exception)))
                     config_val = None
 
             # here - we've either had no value in the query_params or there was a failure to parse
@@ -166,8 +160,7 @@ class ResourceParser(object):
         #   (and adding this code to the xml parser)
         return self.parse_parameter(trans, param_config, default)
 
-    def parse_parameter(self, trans, expected_param_data, query_param,
-                        recurse=True, param_modifiers=None):
+    def parse_parameter(self, trans, expected_param_data, query_param, recurse=True, param_modifiers=None):
         """
         Use data in `expected_param_data` to parse `query_param` from a string into
         a resource usable directly by a template.
@@ -223,7 +216,4 @@ class ResourceParser(object):
         try:
             return self.app().security.decode_id(str(id))
         except (ValueError, TypeError):
-            raise galaxy.exceptions.MalformedId(
-                "Malformed id ( %s ) specified, unable to decode" % (str(id)),
-                id=str(id)
-            )
+            raise galaxy.exceptions.MalformedId("Malformed id ( %s ) specified, unable to decode" % (str(id)), id=str(id))

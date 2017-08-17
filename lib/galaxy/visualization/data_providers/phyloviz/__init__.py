@@ -1,4 +1,3 @@
-
 """ Data providers code for PhyloViz """
 
 from galaxy.visualization.data_providers.basic import BaseDataProvider

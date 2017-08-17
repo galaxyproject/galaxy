@@ -150,7 +150,9 @@ class ItemIsInstanceExternalServiceActionsGroupWhen(ExternalServiceActionsGroupW
 
 
 when_type_to_class = {}
-for class_type in [ValueExternalServiceActionsGroupWhen, BooleanExternalServiceActionsGroupWhen, ItemIsInstanceExternalServiceActionsGroupWhen]:
+for class_type in [
+        ValueExternalServiceActionsGroupWhen, BooleanExternalServiceActionsGroupWhen, ItemIsInstanceExternalServiceActionsGroupWhen
+]:
     when_type_to_class[class_type.type] = class_type
 
 

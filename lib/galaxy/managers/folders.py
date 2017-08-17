@@ -38,7 +38,8 @@ class FolderManager(object):
         :raises: InconsistentDatabase, RequestParameterInvalidException, InternalServerError
         """
         try:
-            folder = trans.sa_session.query(trans.app.model.LibraryFolder).filter(trans.app.model.LibraryFolder.table.c.id == decoded_folder_id).one()
+            folder = trans.sa_session.query(trans.app.model.LibraryFolder).filter(
+                trans.app.model.LibraryFolder.table.c.id == decoded_folder_id).one()
         except MultipleResultsFound:
             raise InconsistentDatabase('Multiple folders found with the same id.')
         except NoResultFound:
@@ -222,9 +223,10 @@ class FolderManager(object):
         modify_folder_role_list = [(modify_role.name, trans.security.encode_id(modify_role.id)) for modify_role in modify_roles]
         manage_folder_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in manage_roles]
         add_library_item_role_list = [(add_role.name, trans.security.encode_id(add_role.id)) for add_role in add_roles]
-        return dict(modify_folder_role_list=modify_folder_role_list,
-                    manage_folder_role_list=manage_folder_role_list,
-                    add_library_item_role_list=add_library_item_role_list)
+        return dict(
+            modify_folder_role_list=modify_folder_role_list,
+            manage_folder_role_list=manage_folder_role_list,
+            add_library_item_role_list=add_library_item_role_list)
 
     def can_add_item(self, trans, folder):
         """

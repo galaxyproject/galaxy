@@ -56,7 +56,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
     head = ' '.join(rsl)  # list of rs numbers
     # TODO add anno to rs but fbat will prolly barf?
     pedf = open(inped, 'r')
-    o = open(outfpath, 'w', 2 ** 20)
+    o = open(outfpath, 'w', 2**20)
     o.write(head)
     o.write('\n')
     for i, row in enumerate(pedf):

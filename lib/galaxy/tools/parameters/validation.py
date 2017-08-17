@@ -6,10 +6,7 @@ import re
 
 from six import string_types
 
-from galaxy import (
-    model,
-    util
-)
+from galaxy import (model, util)
 
 log = logging.getLogger(__name__)
 
@@ -94,7 +91,7 @@ class ExpressionValidator(Validator):
         self.expression = compile(expression, '<string>', 'eval')
 
     def validate(self, value, trans=None):
-        if not(eval(self.expression, dict(value=value))):
+        if not (eval(self.expression, dict(value=value))):
             message = self.message
             if self.substitute_value_in_message:
                 message = message % value
@@ -126,9 +123,8 @@ class InRangeValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None), elem.get('min'),
-                   elem.get('max'), elem.get('exclude_min', 'false'),
-                   elem.get('exclude_max', 'false'))
+        return cls(
+            elem.get('message', None), elem.get('min'), elem.get('max'), elem.get('exclude_min', 'false'), elem.get('exclude_max', 'false'))
 
     def __init__(self, message, range_min, range_max, exclude_min=False, exclude_max=False):
         """
@@ -233,6 +229,7 @@ class DatasetOkValidator(Validator):
 
 class DatasetEmptyValidator(Validator):
     """Validator that checks if a dataset has a positive file size."""
+
     def __init__(self, message=None):
         self.message = message
 
@@ -250,6 +247,7 @@ class DatasetEmptyValidator(Validator):
 
 class DatasetExtraFilesPathEmptyValidator(Validator):
     """Validator that checks if a dataset's extra_files_path exists and is not empty."""
+
     def __init__(self, message=None):
         self.message = message
 
@@ -439,26 +437,28 @@ class MetadataInDataTableColumnValidator(Validator):
             return
         if hasattr(value, "metadata"):
             if not self._tool_data_table.is_current_version(self._data_table_content_version):
-                log.debug('MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
+                log.debug('MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.',
+                          self._tool_data_table.name)
                 self._load_values()
             if value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values:
                 return
         raise ValueError(self.message)
 
 
-validator_types = dict(expression=ExpressionValidator,
-                       regex=RegexValidator,
-                       in_range=InRangeValidator,
-                       length=LengthValidator,
-                       metadata=MetadataValidator,
-                       unspecified_build=UnspecifiedBuildValidator,
-                       no_options=NoOptionsValidator,
-                       empty_field=EmptyTextfieldValidator,
-                       empty_dataset=DatasetEmptyValidator,
-                       empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
-                       dataset_metadata_in_file=MetadataInFileColumnValidator,
-                       dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
-                       dataset_ok_validator=DatasetOkValidator, )
+validator_types = dict(
+    expression=ExpressionValidator,
+    regex=RegexValidator,
+    in_range=InRangeValidator,
+    length=LengthValidator,
+    metadata=MetadataValidator,
+    unspecified_build=UnspecifiedBuildValidator,
+    no_options=NoOptionsValidator,
+    empty_field=EmptyTextfieldValidator,
+    empty_dataset=DatasetEmptyValidator,
+    empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
+    dataset_metadata_in_file=MetadataInFileColumnValidator,
+    dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
+    dataset_ok_validator=DatasetOkValidator, )
 
 
 def get_suite():

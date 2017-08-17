@@ -11,6 +11,7 @@ log = logging.getLogger(__name__)
 
 class UniverseApplication(object):
     """Encapsulates the state of a Universe application"""
+
     def __init__(self, **kwargs):
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "reports"
@@ -25,10 +26,7 @@ class UniverseApplication(object):
         else:
             db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
         # Setup the database engine and ORM
-        self.model = galaxy.model.mapping.init(self.config.file_path,
-                                               db_url,
-                                               self.config.database_engine_options,
-                                               create_tables=True)
+        self.model = galaxy.model.mapping.init(self.config.file_path, db_url, self.config.database_engine_options, create_tables=True)
         if not self.config.database_connection:
             self.targets_mysql = False
         else:

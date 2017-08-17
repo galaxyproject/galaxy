@@ -34,24 +34,24 @@ class PageListGrid(grids.Grid):
     columns = [
         grids.TextColumn("Title", key="title", attach_popup=True, filterable="advanced"),
         URLColumn("Public URL"),
-        grids.OwnerAnnotationColumn("Annotation", key="annotation", model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced"),
-        grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageListGrid"),
+        grids.OwnerAnnotationColumn(
+            "Annotation", key="annotation", model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced"),
+        grids.IndividualTagsColumn(
+            "Tags", key="tags", model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageListGrid"),
         grids.SharingStatusColumn("Sharing", key="sharing", filterable="advanced", sortable=False),
         grids.GridColumn("Created", key="create_time", format=time_ago),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
     ]
-    columns.append(grids.MulticolFilterColumn(
-        "Search",
-        cols_to_filter=[columns[0], columns[2]],
-        key="free-text-search", visible=False, filterable="standard"))
-    global_actions = [
-        grids.GridAction("Add new page", dict(action='create'), target="inbound")
-    ]
+    columns.append(
+        grids.MulticolFilterColumn(
+            "Search", cols_to_filter=[columns[0], columns[2]], key="free-text-search", visible=False, filterable="standard"))
+    global_actions = [grids.GridAction("Add new page", dict(action='create'), target="inbound")]
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation("View", allow_multiple=False),
         grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(action='edit_content')),
         grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(action='edit')),
-        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
+        grids.GridOperation(
+            "Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
         grids.GridOperation("Delete", confirm="Are you sure you want to delete this page?"),
     ]
 
@@ -69,18 +69,25 @@ class PageAllPublishedGrid(grids.Grid):
     default_filter = dict(title="All", username="All")
     columns = [
         grids.PublicURLColumn("Title", key="title", filterable="advanced"),
-        grids.OwnerAnnotationColumn("Annotation", key="annotation", model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced"),
+        grids.OwnerAnnotationColumn(
+            "Annotation", key="annotation", model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced"),
         grids.OwnerColumn("Owner", key="username", model_class=model.User, filterable="advanced"),
         grids.CommunityRatingColumn("Community Rating", key="rating"),
-        grids.CommunityTagsColumn("Community Tags", key="tags", model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageAllPublishedGrid"),
+        grids.CommunityTagsColumn(
+            "Community Tags",
+            key="tags",
+            model_tag_association_class=model.PageTagAssociation,
+            filterable="advanced",
+            grid_name="PageAllPublishedGrid"),
         grids.ReverseSortColumn("Last Updated", key="update_time", format=time_ago)
     ]
     columns.append(
         grids.MulticolFilterColumn(
             "Search title, annotation, owner, and tags",
             cols_to_filter=[columns[0], columns[1], columns[2], columns[4]],
-            key="free-text-search", visible=False, filterable="standard")
-    )
+            key="free-text-search",
+            visible=False,
+            filterable="standard"))
 
     def build_initial_query(self, trans, **kwargs):
         # Join so that searching history.user makes sense.
@@ -92,6 +99,7 @@ class PageAllPublishedGrid(grids.Grid):
 
 class ItemSelectionGrid(grids.Grid):
     """ Base class for pages' item selection grids. """
+
     # Custom columns.
     class NameColumn(grids.TextColumn):
         def get_value(self, trans, grid, item):
@@ -127,10 +135,7 @@ class HistorySelectionGrid(ItemSelectionGrid):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[1]],
-            key="free-text-search", visible=False, filterable="standard")
-    )
+            "Search", cols_to_filter=[columns[0], columns[1]], key="free-text-search", visible=False, filterable="standard"))
 
     def apply_query_filter(self, trans, query, **kwargs):
         return query.filter_by(user=trans.user, purged=False)
@@ -143,7 +148,8 @@ class HistoryDatasetAssociationSelectionGrid(ItemSelectionGrid):
     model_class = model.HistoryDatasetAssociation
     columns = [
         ItemSelectionGrid.NameColumn("Name", key="name", filterable="advanced"),
-        grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced"),
+        grids.IndividualTagsColumn(
+            "Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced"),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
@@ -151,10 +157,7 @@ class HistoryDatasetAssociationSelectionGrid(ItemSelectionGrid):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[1]],
-            key="free-text-search", visible=False, filterable="standard")
-    )
+            "Search", cols_to_filter=[columns[0], columns[1]], key="free-text-search", visible=False, filterable="standard"))
 
     def apply_query_filter(self, trans, query, **kwargs):
         # To filter HDAs by user, need to join HDA and History table and then filter histories by user. This is necessary because HDAs do not have
@@ -169,7 +172,8 @@ class WorkflowSelectionGrid(ItemSelectionGrid):
     model_class = model.StoredWorkflow
     columns = [
         ItemSelectionGrid.NameColumn("Name", key="name", filterable="advanced"),
-        grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.StoredWorkflowTagAssociation, filterable="advanced"),
+        grids.IndividualTagsColumn(
+            "Tags", key="tags", model_tag_association_class=model.StoredWorkflowTagAssociation, filterable="advanced"),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
@@ -177,10 +181,7 @@ class WorkflowSelectionGrid(ItemSelectionGrid):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[1]],
-            key="free-text-search", visible=False, filterable="standard")
-    )
+            "Search", cols_to_filter=[columns[0], columns[1]], key="free-text-search", visible=False, filterable="standard"))
 
 
 class PageSelectionGrid(ItemSelectionGrid):
@@ -198,10 +199,7 @@ class PageSelectionGrid(ItemSelectionGrid):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[1]],
-            key="free-text-search", visible=False, filterable="standard")
-    )
+            "Search", cols_to_filter=[columns[0], columns[1]], key="free-text-search", visible=False, filterable="standard"))
 
 
 class VisualizationSelectionGrid(ItemSelectionGrid):
@@ -212,16 +210,18 @@ class VisualizationSelectionGrid(ItemSelectionGrid):
     columns = [
         grids.TextColumn("Title", key="title", filterable="advanced"),
         grids.TextColumn("Type", key="type"),
-        grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid"),
+        grids.IndividualTagsColumn(
+            "Tags",
+            key="tags",
+            model_tag_association_class=model.VisualizationTagAssociation,
+            filterable="advanced",
+            grid_name="VisualizationListGrid"),
         grids.SharingStatusColumn("Sharing", key="sharing", filterable="advanced", sortable=False),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
     ]
     columns.append(
         grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[2]],
-            key="free-text-search", visible=False, filterable="standard")
-    )
+            "Search", cols_to_filter=[columns[0], columns[2]], key="free-text-search", visible=False, filterable="standard"))
 
 
 class _PageContentProcessor(_BaseHTMLProcessor):
@@ -288,8 +288,7 @@ class _PageContentProcessor(_BaseHTMLProcessor):
         _BaseHTMLProcessor.unknown_endtag(self, tag)
 
 
-class PageController(BaseUIController, SharableMixin,
-                     UsesStoredWorkflowMixin, UsesVisualizationMixin, UsesItemRatings):
+class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin, UsesItemRatings):
 
     _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()
@@ -344,9 +343,7 @@ class PageController(BaseUIController, SharableMixin,
             .filter(model.Page.deleted == false()) \
             .order_by(desc(model.Page.update_time)) \
             .all()
-        return [{'username' : p.page.user.username,
-                 'slug'     : p.page.slug,
-                 'title'    : p.page.title} for p in shared_by_others]
+        return [{'username': p.page.user.username, 'slug': p.page.slug, 'title': p.page.title} for p in shared_by_others]
 
     @web.expose
     @web.require_login("create pages")
@@ -387,16 +384,22 @@ class PageController(BaseUIController, SharableMixin,
                 # trans.set_message( "Page '%s' created" % page.title )
                 return trans.response.send_redirect(web.url_for(controller='pages', action='list'))
         return trans.show_form(
-            web.FormBuilder(web.url_for(controller='page', action='create'), "Create new page", submit_text="Submit")
-            .add_text("page_title", "Page title", value=page_title, error=page_title_err)
-            .add_text("page_slug", "Page identifier", value=page_slug, error=page_slug_err,
-                      help="""A unique identifier that will be used for
+            web.FormBuilder(web.url_for(controller='page', action='create'), "Create new page", submit_text="Submit").add_text(
+                "page_title", "Page title", value=page_title, error=page_title_err).add_text(
+                    "page_slug",
+                    "Page identifier",
+                    value=page_slug,
+                    error=page_slug_err,
+                    help="""A unique identifier that will be used for
                             public links to this page. A default is generated
                             from the page title, but can be edited. This field
                             must contain only lowercase letters, numbers, and
-                            the '-' character.""")
-            .add_text("page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                      help="A description of the page; annotation is shown alongside published pages."),
+                            the '-' character.""").add_text(
+                        "page_annotation",
+                        "Page annotation",
+                        value=page_annotation,
+                        error=page_annotation_err,
+                        help="A description of the page; annotation is shown alongside published pages."),
             template="page/create.mako")
 
     @web.expose
@@ -439,15 +442,21 @@ class PageController(BaseUIController, SharableMixin,
                 page_annotation = ""
         return trans.show_form(
             web.FormBuilder(web.url_for(controller='page', action='edit', id=encoded_id), "Edit page attributes", submit_text="Submit")
-            .add_text("page_title", "Page title", value=page_title, error=page_title_err)
-            .add_text("page_slug", "Page identifier", value=page_slug, error=page_slug_err,
-                      help="""A unique identifier that will be used for
+            .add_text("page_title", "Page title", value=page_title, error=page_title_err).add_text(
+                "page_slug",
+                "Page identifier",
+                value=page_slug,
+                error=page_slug_err,
+                help="""A unique identifier that will be used for
                        public links to this page. A default is generated
                        from the page title, but can be edited. This field
                        must contain only lowercase letters, numbers, and
-                       the '-' character.""")
-            .add_text("page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                      help="A description of the page; annotation is shown alongside published pages."),
+                       the '-' character.""").add_text(
+                    "page_annotation",
+                    "Page annotation",
+                    value=page_annotation,
+                    error=page_annotation_err,
+                    help="A description of the page; annotation is shown alongside published pages."),
             template="page/create.mako")
 
     @web.expose
@@ -494,8 +503,7 @@ class PageController(BaseUIController, SharableMixin,
 
         session.flush()
 
-        return trans.fill_template("/sharing_base.mako",
-                                   item=page, controller_list='pages', use_panels=True)
+        return trans.fill_template("/sharing_base.mako", item=page, controller_list='pages', use_panels=True)
 
     @web.expose
     @web.require_login("use Galaxy pages")
@@ -530,12 +538,7 @@ class PageController(BaseUIController, SharableMixin,
                 other_email = escape(other.email)
                 trans.set_message("Page '%s' shared with user '%s'" % (page_title, other_email))
                 return trans.response.send_redirect(url_for(controller='page', action='sharing', id=id))
-        return trans.fill_template("/ind_share_base.mako",
-                                   message=msg,
-                                   messagetype=mtype,
-                                   item=page,
-                                   email=email,
-                                   use_panels=use_panels)
+        return trans.fill_template("/ind_share_base.mako", message=msg, messagetype=mtype, item=page, email=email, use_panels=use_panels)
 
     @web.expose
     @web.require_login()
@@ -625,12 +628,14 @@ class PageController(BaseUIController, SharableMixin,
 
         # Output is string, so convert to unicode for display.
         page_content = unicodify(processor.output(), 'utf-8')
-        return trans.fill_template_mako("page/display.mako", item=page,
-                                        item_data=page_content,
-                                        user_item_rating=user_item_rating,
-                                        ave_item_rating=ave_item_rating,
-                                        num_ratings=num_ratings,
-                                        content_only=True)
+        return trans.fill_template_mako(
+            "page/display.mako",
+            item=page,
+            item_data=page_content,
+            user_item_rating=user_item_rating,
+            ave_item_rating=ave_item_rating,
+            num_ratings=num_ratings,
+            content_only=True)
 
     @web.expose
     @web.require_login("use Galaxy pages")
@@ -681,10 +686,10 @@ class PageController(BaseUIController, SharableMixin,
 
         if self.create_item_slug(trans.sa_session, page):
             trans.sa_session.flush()
-        return_dict = {"name": page.title, "link": url_for(controller='page',
-                                                           action="display_by_username_and_slug",
-                                                           username=page.user.username,
-                                                           slug=page.slug)}
+        return_dict = {
+            "name": page.title,
+            "link": url_for(controller='page', action="display_by_username_and_slug", username=page.user.username, slug=page.slug)
+        }
         return return_dict
 
     @web.expose
@@ -760,17 +765,12 @@ class PageController(BaseUIController, SharableMixin,
         history.annotation = self.get_item_annotation_str(trans.sa_session, history.user, history)
 
         # include all datasets: hidden, deleted, and purged
-        history_dictionary = self.history_serializer.serialize_to_view(
-            history, view='detailed', user=trans.user, trans=trans
-        )
+        history_dictionary = self.history_serializer.serialize_to_view(history, view='detailed', user=trans.user, trans=trans)
         contents = self.history_serializer.serialize_contents(history, 'contents', trans=trans, user=trans.user)
         history_dictionary['annotation'] = history.annotation
 
-        filled = trans.fill_template("history/embed.mako",
-                                     item=history,
-                                     user_is_owner=user_is_owner,
-                                     history_dict=history_dictionary,
-                                     content_dicts=contents)
+        filled = trans.fill_template(
+            "history/embed.mako", item=history, user_is_owner=user_is_owner, history_dict=history_dictionary, content_dicts=contents)
         return filled
 
     def _get_embedded_visualization_html(self, trans, id):
@@ -783,16 +783,17 @@ class PageController(BaseUIController, SharableMixin,
             return None
 
         # Fork to template based on visualization.type (registry or builtin).
-        if((trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins) and
-                (visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS)):
+        if ((trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins)
+                and (visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS)):
             # if a registry visualization, load a version into an iframe :(
             # TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
             # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
             encoded_visualization_id = trans.security.encode_id(visualization.id)
-            return trans.fill_template('visualization/embed_in_frame.mako',
-                                       item=visualization,
-                                       encoded_visualization_id=encoded_visualization_id,
-                                       content_only=True)
+            return trans.fill_template(
+                'visualization/embed_in_frame.mako',
+                item=visualization,
+                encoded_visualization_id=encoded_visualization_id,
+                content_only=True)
 
         return trans.fill_template("visualization/embed.mako", item=visualization, item_data=None)
 

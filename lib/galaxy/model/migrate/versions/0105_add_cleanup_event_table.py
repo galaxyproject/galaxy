@@ -25,8 +25,7 @@ metadata = MetaData()
 # New table to log cleanup events
 CleanupEvent_table = Table("cleanup_event", metadata,
                            Column("id", Integer, primary_key=True),
-                           Column("create_time", DateTime, default=now),
-                           Column("message", TrimmedString(1024)))
+                           Column("create_time", DateTime, default=now), Column("message", TrimmedString(1024)))
 
 CleanupEventDatasetAssociation_table = Table("cleanup_event_dataset_association", metadata,
                                              Column("id", Integer, primary_key=True),
@@ -37,7 +36,12 @@ CleanupEventDatasetAssociation_table = Table("cleanup_event_dataset_association"
 CleanupEventMetadataFileAssociation_table = Table("cleanup_event_metadata_file_association", metadata,
                                                   Column("id", Integer, primary_key=True),
                                                   Column("create_time", DateTime, default=now),
-                                                  Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                  Column(
+                                                      "cleanup_event_id",
+                                                      Integer,
+                                                      ForeignKey("cleanup_event.id"),
+                                                      index=True,
+                                                      nullable=True),
                                                   Column("metadata_file_id", Integer, ForeignKey("metadata_file.id"), index=True))
 
 CleanupEventHistoryAssociation_table = Table("cleanup_event_history_association", metadata,
@@ -49,8 +53,17 @@ CleanupEventHistoryAssociation_table = Table("cleanup_event_history_association"
 CleanupEventHistoryDatasetAssociationAssociation_table = Table("cleanup_event_hda_association", metadata,
                                                                Column("id", Integer, primary_key=True),
                                                                Column("create_time", DateTime, default=now),
-                                                               Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
-                                                               Column("hda_id", Integer, ForeignKey("history_dataset_association.id"), index=True))
+                                                               Column(
+                                                                   "cleanup_event_id",
+                                                                   Integer,
+                                                                   ForeignKey("cleanup_event.id"),
+                                                                   index=True,
+                                                                   nullable=True),
+                                                               Column(
+                                                                   "hda_id",
+                                                                   Integer,
+                                                                   ForeignKey("history_dataset_association.id"),
+                                                                   index=True))
 
 CleanupEventLibraryAssociation_table = Table("cleanup_event_library_association", metadata,
                                              Column("id", Integer, primary_key=True),
@@ -61,26 +74,54 @@ CleanupEventLibraryAssociation_table = Table("cleanup_event_library_association"
 CleanupEventLibraryFolderAssociation_table = Table("cleanup_event_library_folder_association", metadata,
                                                    Column("id", Integer, primary_key=True),
                                                    Column("create_time", DateTime, default=now),
-                                                   Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                   Column(
+                                                       "cleanup_event_id",
+                                                       Integer,
+                                                       ForeignKey("cleanup_event.id"),
+                                                       index=True,
+                                                       nullable=True),
                                                    Column("library_folder_id", Integer, ForeignKey("library_folder.id"), index=True))
 
 CleanupEventLibraryDatasetAssociation_table = Table("cleanup_event_library_dataset_association", metadata,
                                                     Column("id", Integer, primary_key=True),
                                                     Column("create_time", DateTime, default=now),
-                                                    Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                    Column(
+                                                        "cleanup_event_id",
+                                                        Integer,
+                                                        ForeignKey("cleanup_event.id"),
+                                                        index=True,
+                                                        nullable=True),
                                                     Column("library_dataset_id", Integer, ForeignKey("library_dataset.id"), index=True))
 
 CleanupEventLibraryDatasetDatasetAssociationAssociation_table = Table("cleanup_event_ldda_association", metadata,
                                                                       Column("id", Integer, primary_key=True),
                                                                       Column("create_time", DateTime, default=now),
-                                                                      Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
-                                                                      Column("ldda_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True))
+                                                                      Column(
+                                                                          "cleanup_event_id",
+                                                                          Integer,
+                                                                          ForeignKey("cleanup_event.id"),
+                                                                          index=True,
+                                                                          nullable=True),
+                                                                      Column(
+                                                                          "ldda_id",
+                                                                          Integer,
+                                                                          ForeignKey("library_dataset_dataset_association.id"),
+                                                                          index=True))
 
 CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table("cleanup_event_icda_association", metadata,
                                                                            Column("id", Integer, primary_key=True),
                                                                            Column("create_time", DateTime, default=now),
-                                                                           Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
-                                                                           Column("icda_id", Integer, ForeignKey("implicitly_converted_dataset_association.id"), index=True))
+                                                                           Column(
+                                                                               "cleanup_event_id",
+                                                                               Integer,
+                                                                               ForeignKey("cleanup_event.id"),
+                                                                               index=True,
+                                                                               nullable=True),
+                                                                           Column(
+                                                                               "icda_id",
+                                                                               Integer,
+                                                                               ForeignKey("implicitly_converted_dataset_association.id"),
+                                                                               index=True))
 
 
 def upgrade(migrate_engine):

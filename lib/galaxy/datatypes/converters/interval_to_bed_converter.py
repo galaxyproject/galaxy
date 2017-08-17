@@ -20,15 +20,18 @@ def __main__():
     try:
         chromCol = int(sys.argv[3]) - 1
     except:
-        stop_err("'%s' is an invalid chrom column, correct the column settings before attempting to convert the data format." % str(sys.argv[3]))
+        stop_err(
+            "'%s' is an invalid chrom column, correct the column settings before attempting to convert the data format." % str(sys.argv[3]))
     try:
         startCol = int(sys.argv[4]) - 1
     except:
-        stop_err("'%s' is an invalid start column, correct the column settings before attempting to convert the data format." % str(sys.argv[4]))
+        stop_err(
+            "'%s' is an invalid start column, correct the column settings before attempting to convert the data format." % str(sys.argv[4]))
     try:
         endCol = int(sys.argv[5]) - 1
     except:
-        stop_err("'%s' is an invalid end column, correct the column settings before attempting to convert the data format." % str(sys.argv[5]))
+        stop_err(
+            "'%s' is an invalid end column, correct the column settings before attempting to convert the data format." % str(sys.argv[5]))
     try:
         strandCol = int(sys.argv[6]) - 1
     except:
@@ -41,7 +44,16 @@ def __main__():
     first_skipped_line = 0
     out = open(output_name, 'w')
     count = 0
-    for count, region in enumerate(bx.intervals.io.NiceReaderWrapper(open(input_name, 'r'), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False)):
+    for count, region in enumerate(
+            bx.intervals.io.NiceReaderWrapper(
+                open(input_name, 'r'),
+                chrom_col=chromCol,
+                start_col=startCol,
+                end_col=endCol,
+                strand_col=strandCol,
+                fix_strand=True,
+                return_header=False,
+                return_comments=False)):
         try:
             if nameCol >= 0:
                 name = region.fields[nameCol]

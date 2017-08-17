@@ -9,22 +9,16 @@ from string import Template
 
 from galaxy.util import asbool
 
-UPDATE_TEMPLATE = Template(
-    "git --work-tree $dir --git-dir $dir/.git fetch && "
-    "git --work-tree $dir --git-dir $dir/.git merge origin/master"
-)
+UPDATE_TEMPLATE = Template("git --work-tree $dir --git-dir $dir/.git fetch && "
+                           "git --work-tree $dir --git-dir $dir/.git merge origin/master")
 
-UPDATE_FAILED_TEMPLATE = Template(
-    "Warning failed to update test repository $dir - "
-    "update stdout was [$stdout] and stderr was [$stderr]."
-)
-
+UPDATE_FAILED_TEMPLATE = Template("Warning failed to update test repository $dir - "
+                                  "update stdout was [$stdout] and stderr was [$stderr].")
 
 LIST_SEP = re.compile("\s*,\s*")
 
 
 class TestDataResolver(object):
-
     def __init__(self, env_var='GALAXY_TEST_FILE_DIR', environ=os.environ):
         file_dirs = environ.get(env_var, None)
         if file_dirs:
@@ -61,7 +55,6 @@ def build_resolver(uri, environ):
 
 
 class FileDataResolver(object):
-
     def __init__(self, file_dir):
         self.file_dir = file_dir
 
@@ -73,7 +66,6 @@ class FileDataResolver(object):
 
 
 class GitDataResolver(FileDataResolver):
-
     def __init__(self, repository, environ):
         self.repository = repository
         self.updated = False
@@ -107,8 +99,7 @@ class GitDataResolver(FileDataResolver):
         subprocess_kwds = dict(
             shell=True,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
+            stderr=subprocess.PIPE, )
         print("Executing %s" % cmd)
         p = subprocess.Popen(cmd, **subprocess_kwds)
         stdout, stderr = p.communicate()

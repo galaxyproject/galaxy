@@ -46,7 +46,12 @@ LibraryFolderInfoAssociation_table = Table('library_folder_info_association', me
 
 LibraryDatasetDatasetInfoAssociation_table = Table('library_dataset_dataset_info_association', metadata,
                                                    Column("id", Integer, primary_key=True),
-                                                   Column("library_dataset_dataset_association_id", Integer, ForeignKey("library_dataset_dataset_association.id"), nullable=True, index=True),
+                                                   Column(
+                                                       "library_dataset_dataset_association_id",
+                                                       Integer,
+                                                       ForeignKey("library_dataset_dataset_association.id"),
+                                                       nullable=True,
+                                                       index=True),
                                                    Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
                                                    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True))
 
@@ -129,7 +134,8 @@ def upgrade(migrate_engine):
         log.exception("Dropping library_dataset_info_template_association table failed.")
 
     try:
-        LibraryDatasetDatasetInfoTemplateAssociation_table = Table("library_dataset_dataset_info_template_association", metadata, autoload=True)
+        LibraryDatasetDatasetInfoTemplateAssociation_table = Table(
+            "library_dataset_dataset_info_template_association", metadata, autoload=True)
     except NoSuchTableError:
         LibraryDatasetDatasetInfoTemplateAssociation_table = None
         log.debug("Failed loading table library_dataset_dataset_info_template_association")

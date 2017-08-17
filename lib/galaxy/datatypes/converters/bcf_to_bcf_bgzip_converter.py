@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Uses bcftools to compress a bcf into a bcf.gz
 

@@ -20,6 +20,7 @@ class GeneTrack(binary.Binary):
     def __init__(self, **kwargs):
         super(GeneTrack, self).__init__(**kwargs)
         # self.add_display_app( 'genetrack', 'View in', '', 'genetrack_link' )
+
     # def get_display_links( self, dataset, type, app, base_url, target_frame='galaxy_main', **kwd ): #Force target_frame to be 'galaxy_main'
     #     return binary.Binary.get_display_links( self, dataset, type, app, base_url, target_frame=target_frame, **kwd )
     # def genetrack_link( self, hda, type, app, base_url ):
@@ -58,8 +59,8 @@ class UCSCTrackHub(Html):
         """
         rval = [
             '<html><head><title>Files for Composite Dataset (%s)</title></head><p/>\
-            This composite dataset is composed of the following files:<p/><ul>' % (
-                self.file_ext)]
+            This composite dataset is composed of the following files:<p/><ul>' % (self.file_ext)
+        ]
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             opt_text = ''
             if composite_file.optional:

@@ -7,7 +7,6 @@ import logging
 
 from galaxy.containers import Container, ContainerPort
 
-
 CPUS_LABEL = '_galaxy_cpus'
 IMAGE_LABEL = '_galaxy_image'
 CPUS_CONSTRAINT = 'node.labels.' + CPUS_LABEL
@@ -17,7 +16,6 @@ log = logging.getLogger(__name__)
 
 
 class DockerAttributeContainer(object):
-
     def __init__(self, members=None):
         if members is None:
             members = set()
@@ -63,7 +61,6 @@ class DockerAttributeContainer(object):
 
 
 class DockerContainer(Container):
-
     def __init__(self, interface, id, name=None, inspect=None):
         super(DockerContainer, self).__init__(interface, id, name=name)
         self._inspect = inspect
@@ -92,8 +89,7 @@ class DockerContainer(Container):
                     int(port_name.split('/')[0]),
                     port_name.split('/')[1],
                     self.address,
-                    int(binding['HostPort']),
-                ))
+                    int(binding['HostPort']), ))
         return rval
 
     @property
@@ -123,7 +119,6 @@ class DockerContainer(Container):
 
 
 class DockerService(Container):
-
     def __init__(self, interface, id, name=None, image=None, inspect=None):
         self._interface = interface
         self._id = id
@@ -140,7 +135,7 @@ class DockerService(Container):
         service = cls(docker_interface, s['ID'], name=s['NAME'], image=s['IMAGE'])
         for task_dict in task_list:
             if task_dict['NAME'].strip().startswith('\_'):
-                continue    # historical task
+                continue  # historical task
             service.task_add(DockerTask.from_cli(docker_interface, task_dict, service=service))
         return service
 
@@ -167,12 +162,12 @@ class DockerService(Container):
         rval = []
         port_mappings = self.inspect[0]['Endpoint']['Ports']
         for binding in port_mappings:
-            rval.append(ContainerPort(
-                binding['TargetPort'],
-                binding['Protocol'],
-                self.address,               # use the routing mesh
-                binding['PublishedPort']
-            ))
+            rval.append(
+                ContainerPort(
+                    binding['TargetPort'],
+                    binding['Protocol'],
+                    self.address,  # use the routing mesh
+                    binding['PublishedPort']))
         return rval
 
     @property
@@ -251,7 +246,6 @@ class DockerService(Container):
 
 
 class DockerServiceConstraint(object):
-
     def __init__(self, name=None, op=None, value=None):
         self._name = name
         self._op = op
@@ -304,10 +298,7 @@ class DockerServiceConstraint(object):
 
     @property
     def label(self):
-        return DockerNodeLabel(
-            name=self.name.replace('node.labels.', ''),
-            value=self.value
-        )
+        return DockerNodeLabel(name=self.name.replace('node.labels.', ''), value=self.value)
 
 
 class DockerServiceConstraints(DockerAttributeContainer):
@@ -327,9 +318,7 @@ class DockerServiceConstraints(DockerAttributeContainer):
 
 
 class DockerNode(object):
-
-    def __init__(self, interface, id=None, name=None, status=None,
-                 availability=None, manager=False):
+    def __init__(self, interface, id=None, name=None, status=None, availability=None, manager=False):
         self._interface = interface
         self._id = id
         self._name = name
@@ -341,8 +330,13 @@ class DockerNode(object):
 
     @classmethod
     def from_cli(cls, docker_interface, n, task_list):
-        node = cls(docker_interface, id=n['ID'], name=n['HOSTNAME'], status=n['STATUS'],
-                   availability=n['AVAILABILITY'], manager=True if n['MANAGER STATUS'] else False)
+        node = cls(
+            docker_interface,
+            id=n['ID'],
+            name=n['HOSTNAME'],
+            status=n['STATUS'],
+            availability=n['AVAILABILITY'],
+            manager=True if n['MANAGER STATUS'] else False)
         for task_dict in task_list:
             node.task_add(DockerTask.from_cli(docker_interface, task_dict, node=node))
         return node
@@ -421,7 +415,6 @@ class DockerNode(object):
 
 
 class DockerNodeLabel(object):
-
     def __init__(self, name=None, value=None):
         self._name = name
         self._value = value
@@ -456,11 +449,7 @@ class DockerNodeLabel(object):
 
     @property
     def constraint(self):
-        return DockerServiceConstraint(
-            name='node.labels.{name}'.format(name=self.name),
-            op='==',
-            value=self.value
-        )
+        return DockerServiceConstraint(name='node.labels.{name}'.format(name=self.name), op='==', value=self.value)
 
 
 class DockerNodeLabels(DockerAttributeContainer):
@@ -480,9 +469,17 @@ class DockerNodeLabels(DockerAttributeContainer):
 
 
 class DockerTask(object):
-
-    def __init__(self, interface, id=None, name=None, image=None, desired_state=None,
-                 state=None, error=None, ports=None, service=None, node=None):
+    def __init__(self,
+                 interface,
+                 id=None,
+                 name=None,
+                 image=None,
+                 desired_state=None,
+                 state=None,
+                 error=None,
+                 ports=None,
+                 service=None,
+                 node=None):
         self._interface = interface
         self._id = id
         self._name = name
@@ -498,9 +495,17 @@ class DockerTask(object):
     @classmethod
     def from_cli(cls, docker_interface, t, service=None, node=None):
         state = t['CURRENT STATE'].split()[0]
-        return cls(docker_interface, id=t['ID'], name=t['NAME'], image=t['IMAGE'],
-                   desired_state=t['DESIRED STATE'], state=state, error=t['ERROR'],
-                   ports=t['PORTS'], service=service, node=node)
+        return cls(
+            docker_interface,
+            id=t['ID'],
+            name=t['NAME'],
+            image=t['IMAGE'],
+            desired_state=t['DESIRED STATE'],
+            state=state,
+            error=t['ERROR'],
+            ports=t['PORTS'],
+            service=service,
+            node=node)
 
     @property
     def id(self):

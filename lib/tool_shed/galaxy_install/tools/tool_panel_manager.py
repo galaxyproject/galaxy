@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 
 
 class ToolPanelManager(object):
-
     def __init__(self, app):
         self.app = app
 
@@ -43,19 +42,23 @@ class ToolPanelManager(object):
             self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
             self.app.wait_for_toolbox_reload(old_toolbox)
 
-    def add_to_tool_panel(self, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, owner,
-                          shed_tool_conf, tool_panel_dict, new_install=True, tool_panel_section_mapping={}):
+    def add_to_tool_panel(self,
+                          repository_name,
+                          repository_clone_url,
+                          changeset_revision,
+                          repository_tools_tups,
+                          owner,
+                          shed_tool_conf,
+                          tool_panel_dict,
+                          new_install=True,
+                          tool_panel_section_mapping={}):
         """A tool shed repository is being installed or updated so handle tool panel alterations accordingly."""
         # We need to change the in-memory version and the file system version of the shed_tool_conf file.
         shed_tool_conf_dict = self.get_shed_tool_conf_dict(shed_tool_conf)
         tool_panel_dict = self.update_tool_panel_dict(tool_panel_dict, tool_panel_section_mapping, repository_tools_tups)
         # Generate the list of ElementTree Element objects for each section or tool.
-        elem_list = self.generate_tool_panel_elem_list(repository_name,
-                                                       repository_clone_url,
-                                                       changeset_revision,
-                                                       tool_panel_dict,
-                                                       repository_tools_tups,
-                                                       owner=owner)
+        elem_list = self.generate_tool_panel_elem_list(
+            repository_name, repository_clone_url, changeset_revision, tool_panel_dict, repository_tools_tups, owner=owner)
         if new_install:
             tool_path = shed_tool_conf_dict['tool_path']
             # Add the new elements to the shed_tool_conf file on disk.
@@ -68,8 +71,7 @@ class ToolPanelManager(object):
                     config_elem,
                     tool_path=tool_path,
                     load_panel_dict=True,
-                    guid=config_elem.get('guid'),
-                )
+                    guid=config_elem.get('guid'), )
             # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
             shed_tool_conf_dict['config_elems'] = config_elems
             self.app.toolbox.update_shed_config(shed_tool_conf_dict)
@@ -94,8 +96,7 @@ class ToolPanelManager(object):
         finally:
             lock.release()
 
-    def generate_tool_elem(self, tool_shed, repository_name, changeset_revision, owner, tool_file_path,
-                           tool, tool_section):
+    def generate_tool_elem(self, tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section):
         """Create and return an ElementTree tool Element."""
         if tool_section is not None:
             tool_elem = XmlET.SubElement(tool_section, 'tool')
@@ -159,8 +160,7 @@ class ToolPanelManager(object):
         """
         tool_panel_dict = {}
         file_name = basic_util.strip_path(tool_config)
-        tool_section_dicts = self. generate_tool_section_dicts(tool_config=file_name,
-                                                               tool_sections=tool_sections)
+        tool_section_dicts = self.generate_tool_section_dicts(tool_config=file_name, tool_sections=tool_sections)
         tool_panel_dict[guid] = tool_section_dicts
         return tool_panel_dict
 
@@ -209,18 +209,21 @@ class ToolPanelManager(object):
                         guid = section_elem.get('guid')
                         if guid in guids_and_configs:
                             # The tool is displayed in the tool panel inside the current tool section.
-                            tool_section_dict = dict(tool_config=guids_and_configs[guid],
-                                                     id=section_id,
-                                                     name=section_name,
-                                                     version=section_version)
+                            tool_section_dict = dict(
+                                tool_config=guids_and_configs[guid], id=section_id, name=section_name, version=section_version)
                             if guid in tool_panel_dict:
                                 tool_panel_dict[guid].append(tool_section_dict)
                             else:
                                 tool_panel_dict[guid] = [tool_section_dict]
         return tool_panel_dict
 
-    def generate_tool_panel_elem_list(self, repository_name, repository_clone_url, changeset_revision,
-                                      tool_panel_dict, repository_tools_tups, owner=''):
+    def generate_tool_panel_elem_list(self,
+                                      repository_name,
+                                      repository_clone_url,
+                                      changeset_revision,
+                                      tool_panel_dict,
+                                      repository_tools_tups,
+                                      owner=''):
         """Generate a list of ElementTree Element objects for each section or tool."""
         elem_list = []
         tool_elem = None
@@ -250,12 +253,7 @@ class ToolPanelManager(object):
                     tool_file_path, tup_guid, tool = repository_tool_tup
                     if tup_guid == guid:
                         break
-                tool_elem = self.generate_tool_elem(tool_shed,
-                                                    repository_name,
-                                                    changeset_revision,
-                                                    owner,
-                                                    tool_file_path,
-                                                    tool,
+                tool_elem = self.generate_tool_elem(tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool,
                                                     tool_section if inside_section else None)
                 if inside_section:
                     if section_in_elem_list:
@@ -282,10 +280,7 @@ class ToolPanelManager(object):
                     section_id = ''
                     section_version = ''
                     section_name = ''
-                tool_section_dicts.append(dict(tool_config=tool_config,
-                                               id=section_id,
-                                               version=section_version,
-                                               name=section_name))
+                tool_section_dicts.append(dict(tool_config=tool_config, id=section_id, version=section_version, name=section_name))
         else:
             tool_section_dicts.append(dict(tool_config=tool_config, id='', version='', name=''))
         return tool_section_dicts
@@ -337,8 +332,7 @@ class ToolPanelManager(object):
             return None, None
         return tool_panel_section_key, tool_section
 
-    def handle_tool_panel_selection(self, toolbox, metadata, no_changes_checked, tool_panel_section_id,
-                                    new_tool_panel_section_label):
+    def handle_tool_panel_selection(self, toolbox, metadata, no_changes_checked, tool_panel_section_id, new_tool_panel_section_label):
         """
         Handle the selected tool panel location for loading tools included in
         tool shed repositories when installing or reinstalling them.

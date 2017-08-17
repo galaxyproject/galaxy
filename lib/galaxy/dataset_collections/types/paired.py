@@ -24,23 +24,19 @@ class PairedDatasetCollectionType(BaseDatasetCollectionType):
             self._validation_failed(INVALID_IDENTIFIERS_MESSAGE)
         left_association = DatasetCollectionElement(
             element=forward_dataset,
-            element_identifier=FORWARD_IDENTIFIER,
-        )
+            element_identifier=FORWARD_IDENTIFIER, )
         right_association = DatasetCollectionElement(
             element=reverse_dataset,
-            element_identifier=REVERSE_IDENTIFIER,
-        )
+            element_identifier=REVERSE_IDENTIFIER, )
         yield left_association
         yield right_association
 
     def prototype_elements(self):
         left_association = DatasetCollectionElement(
             element=HistoryDatasetAssociation(),
-            element_identifier=FORWARD_IDENTIFIER,
-        )
+            element_identifier=FORWARD_IDENTIFIER, )
         right_association = DatasetCollectionElement(
             element=HistoryDatasetAssociation(),
-            element_identifier=REVERSE_IDENTIFIER,
-        )
+            element_identifier=REVERSE_IDENTIFIER, )
         yield left_association
         yield right_association

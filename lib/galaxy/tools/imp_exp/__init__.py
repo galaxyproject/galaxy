@@ -22,6 +22,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
         Class provides support for performing jobs that import a history from
         an archive.
     """
+
     def __init__(self, app, job_id):
         self.app = app
         self.job_id = job_id
@@ -86,8 +87,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 history_attrs = loads(history_attr_str)
 
                 # Create history.
-                new_history = model.History(name='imported from archive: %s' % history_attrs['name'].encode('utf-8'),
-                                            user=user)
+                new_history = model.History(name='imported from archive: %s' % history_attrs['name'].encode('utf-8'), user=user)
                 new_history.importing = True
                 new_history.hid_counter = history_attrs['hid_counter']
                 new_history.genome_build = history_attrs['genome_build']
@@ -131,18 +131,19 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                     metadata = dataset_attrs['metadata']
 
                     # Create dataset and HDA.
-                    hda = model.HistoryDatasetAssociation(name=dataset_attrs['name'].encode('utf-8'),
-                                                          extension=dataset_attrs['extension'],
-                                                          info=dataset_attrs['info'].encode('utf-8'),
-                                                          blurb=dataset_attrs['blurb'],
-                                                          peek=dataset_attrs['peek'],
-                                                          designation=dataset_attrs['designation'],
-                                                          visible=dataset_attrs['visible'],
-                                                          dbkey=metadata['dbkey'],
-                                                          metadata=metadata,
-                                                          history=new_history,
-                                                          create_dataset=True,
-                                                          sa_session=self.sa_session)
+                    hda = model.HistoryDatasetAssociation(
+                        name=dataset_attrs['name'].encode('utf-8'),
+                        extension=dataset_attrs['extension'],
+                        info=dataset_attrs['info'].encode('utf-8'),
+                        blurb=dataset_attrs['blurb'],
+                        peek=dataset_attrs['peek'],
+                        designation=dataset_attrs['designation'],
+                        visible=dataset_attrs['visible'],
+                        dbkey=metadata['dbkey'],
+                        metadata=metadata,
+                        history=new_history,
+                        create_dataset=True,
+                        sa_session=self.sa_session)
                     if 'uuid' in dataset_attrs:
                         hda.dataset.uuid = dataset_attrs["uuid"]
                     if dataset_attrs.get('exported', True) is False:
@@ -179,8 +180,10 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                                 if file_list:
                                     for extra_file in file_list:
                                         self.app.object_store.update_from_file(
-                                            hda.dataset, extra_dir='dataset_%s_files' % hda.dataset.id,
-                                            alt_name=extra_file, file_name=os.path.join(archive_dir, dataset_extra_files_path, extra_file),
+                                            hda.dataset,
+                                            extra_dir='dataset_%s_files' % hda.dataset.id,
+                                            alt_name=extra_file,
+                                            file_name=os.path.join(archive_dir, dataset_extra_files_path, extra_file),
                                             create=True)
                         else:
                             datasets_usage_counts[temp_dataset_file_name] -= 1
@@ -200,9 +203,13 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                     # Although metadata is set above, need to set metadata to recover BAI for BAMs.
                     if hda.extension == 'bam':
                         self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute_via_app(
-                            self.app.datatypes_registry.set_external_metadata_tool, self.app, jiha.job.session_id,
-                            new_history.id, jiha.job.user, incoming={'input1': hda}, overwrite=False
-                        )
+                            self.app.datatypes_registry.set_external_metadata_tool,
+                            self.app,
+                            jiha.job.session_id,
+                            new_history.id,
+                            jiha.job.user,
+                            incoming={'input1': hda},
+                            overwrite=False)
 
                 #
                 # Create jobs.
@@ -217,9 +224,10 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                     """ Hook to 'decode' an HDA; method uses history and HID to get the HDA represented by
                         the encoded object. This only works because HDAs are created above. """
                     if obj_dct.get('__HistoryDatasetAssociation__', False):
-                            return self.sa_session.query(model.HistoryDatasetAssociation) \
-                                .filter_by(history=new_history, hid=obj_dct['hid']).first()
+                        return self.sa_session.query(model.HistoryDatasetAssociation) \
+                            .filter_by(history=new_history, hid=obj_dct['hid']).first()
                     return obj_dct
+
                 jobs_attrs = loads(jobs_attr_str, object_hook=as_hda)
 
                 # Create each job.
@@ -249,6 +257,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
 
                     class HistoryDatasetAssociationIDEncoder(json.JSONEncoder):
                         """ Custom JSONEncoder for a HistoryDatasetAssociation that encodes an HDA as its ID. """
+
                         def default(self, obj):
                             """ Encode an HDA, default encoding for everything else. """
                             if isinstance(obj, model.HistoryDatasetAssociation):
@@ -309,6 +318,7 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
     Class provides support for performing jobs that export a history to an
     archive.
     """
+
     def __init__(self, job_id):
         self.job_id = job_id
 
@@ -317,13 +327,10 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
         Returns history's datasets.
         """
         query = (trans.sa_session.query(trans.model.HistoryDatasetAssociation)
-                 .filter(trans.model.HistoryDatasetAssociation.history == history)
-                 .options(eagerload("children"))
-                 .join("dataset")
-                 .options(eagerload_all("dataset.actions"))
-                 .order_by(trans.model.HistoryDatasetAssociation.hid)
-                 .filter(trans.model.HistoryDatasetAssociation.deleted == expression.false())
-                 .filter(trans.model.Dataset.purged == expression.false()))
+                 .filter(trans.model.HistoryDatasetAssociation.history == history).options(eagerload("children")).join("dataset")
+                 .options(eagerload_all("dataset.actions")).order_by(trans.model.HistoryDatasetAssociation.hid).filter(
+                     trans.model.HistoryDatasetAssociation.deleted == expression.false()).filter(
+                         trans.model.Dataset.purged == expression.false()))
         return query.all()
 
     # TODO: should use db_session rather than trans in this method.
@@ -358,6 +365,7 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
 
         class HistoryDatasetAssociationEncoder(json.JSONEncoder):
             """ Custom JSONEncoder for a HistoryDatasetAssociation. """
+
             def default(self, obj):
                 """ Encode an HDA, default encoding for everything else. """
                 if isinstance(obj, trans.app.model.HistoryDatasetAssociation):
@@ -520,9 +528,7 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
         options = ""
         if jeha.compressed:
             options = "-G"
-        return "%s %s %s %s" % (options, history_attrs_filename,
-                                datasets_attrs_filename,
-                                jobs_attrs_filename)
+        return "%s %s %s %s" % (options, history_attrs_filename, datasets_attrs_filename, jobs_attrs_filename)
 
     def cleanup_after_job(self, db_session):
         """ Remove temporary directory and attribute files generated during setup for this job. """

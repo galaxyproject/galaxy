@@ -32,7 +32,9 @@ PREFERRED_OWNERS = MANUAL + ",iuc,devteam"
 
 
 class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver):
-    dict_collection_visible_keys = BaseGalaxyPackageDependencyResolver.dict_collection_visible_keys + ['preferred_owners', 'select_by_owner']
+    dict_collection_visible_keys = BaseGalaxyPackageDependencyResolver.dict_collection_visible_keys + [
+        'preferred_owners', 'select_by_owner'
+    ]
     resolver_type = "unlinked_tool_shed_packages"
 
     def __init__(self, dependency_manager, **kwds):
@@ -153,7 +155,6 @@ class CandidateDependency(Dependency):
 
 
 __all__ = ('UnlinkedToolShedPackageDependencyResolver', )
-
 """
 At the time of writing July 3 2015 this resolver has to be plugged in.
 

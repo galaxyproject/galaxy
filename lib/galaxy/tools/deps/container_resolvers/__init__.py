@@ -2,8 +2,7 @@
 from abc import (
     ABCMeta,
     abstractmethod,
-    abstractproperty,
-)
+    abstractproperty, )
 
 import six
 

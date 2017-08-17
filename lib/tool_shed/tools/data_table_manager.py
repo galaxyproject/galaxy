@@ -10,12 +10,10 @@ log = logging.getLogger(__name__)
 
 
 class ToolDataTableManager(object):
-
     def __init__(self, app):
         self.app = app
 
-    def generate_repository_info_elem(self, tool_shed, repository_name, changeset_revision, owner,
-                                      parent_elem=None, **kwd):
+    def generate_repository_info_elem(self, tool_shed, repository_name, changeset_revision, owner, parent_elem=None, **kwd):
         """Create and return an ElementTree repository info Element."""
         if parent_elem is None:
             elem = XmlET.Element('tool_shed_repository')
@@ -37,12 +35,13 @@ class ToolDataTableManager(object):
         return elem
 
     def generate_repository_info_elem_from_repository(self, tool_shed_repository, parent_elem=None, **kwd):
-        return self.generate_repository_info_elem(tool_shed_repository.tool_shed,
-                                                  tool_shed_repository.name,
-                                                  tool_shed_repository.installed_changeset_revision,
-                                                  tool_shed_repository.owner,
-                                                  parent_elem=parent_elem,
-                                                  **kwd)
+        return self.generate_repository_info_elem(
+            tool_shed_repository.tool_shed,
+            tool_shed_repository.name,
+            tool_shed_repository.installed_changeset_revision,
+            tool_shed_repository.owner,
+            parent_elem=parent_elem,
+            **kwd)
 
     def get_tool_index_sample_files(self, sample_files):
         """
@@ -73,12 +72,10 @@ class ToolDataTableManager(object):
         if missing_data_table_entry:
             # The repository must contain a tool_data_table_conf.xml.sample file that includes
             # all required entries for all tools in the repository.
-            sample_tool_data_table_conf = hg_util.get_config_from_disk('tool_data_table_conf.xml.sample',
-                                                                       relative_install_dir)
+            sample_tool_data_table_conf = hg_util.get_config_from_disk('tool_data_table_conf.xml.sample', relative_install_dir)
             if sample_tool_data_table_conf:
                 # Add entries to the ToolDataTableManager's in-memory data_tables dictionary.
-                error, message = self.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf,
-                                                                              persist=True)
+                error, message = self.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf, persist=True)
                 if error:
                     # TODO: Do more here than logging an exception.
                     log.debug(message)
@@ -130,7 +127,7 @@ class ToolDataTableManager(object):
             path, filename = os.path.split(sample_file)
             target_filename = filename
             if target_filename.endswith(SAMPLE_SUFFIX):
-                target_filename = target_filename[: SAMPLE_SUFFIX_OFFSET]
+                target_filename = target_filename[:SAMPLE_SUFFIX_OFFSET]
             source_file = os.path.join(tool_path, sample_file)
             # We're not currently uninstalling index files, do not overwrite existing files.
             target_path_filename = os.path.join(target_dir, target_filename)

@@ -22,8 +22,7 @@ from ..conda_util import (
     install_conda_targets,
     installed_conda_targets,
     is_conda_target_installed,
-    USE_PATH_EXEC_DEFAULT,
-)
+    USE_PATH_EXEC_DEFAULT, )
 from ..resolvers import (
     Dependency,
     DependencyException,
@@ -33,9 +32,7 @@ from ..resolvers import (
     MappableDependencyResolver,
     MultipleDependencyResolver,
     NullDependency,
-    SpecificationPatternDependencyResolver,
-)
-
+    SpecificationPatternDependencyResolver, )
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
@@ -62,12 +59,14 @@ while [ $COUNT -lt $MAX_TRIES ]; do
     fi
 done """
 
-
 log = logging.getLogger(__name__)
 
 
-class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, ListableDependencyResolver, InstallableDependencyResolver, SpecificationPatternDependencyResolver, MappableDependencyResolver):
-    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['conda_prefix', 'versionless', 'ensure_channels', 'auto_install']
+class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, ListableDependencyResolver, InstallableDependencyResolver,
+                              SpecificationPatternDependencyResolver, MappableDependencyResolver):
+    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + [
+        'conda_prefix', 'versionless', 'ensure_channels', 'auto_install'
+    ]
     resolver_type = "conda"
     config_options = {
         'prefix': None,
@@ -93,18 +92,14 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         # Conda context options (these define the environment)
         conda_prefix = get_option("prefix")
         if conda_prefix is None:
-            conda_prefix = os.path.join(
-                dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY
-            )
+            conda_prefix = os.path.join(dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY)
         conda_prefix = os.path.abspath(conda_prefix)
 
         self.conda_prefix_parent = os.path.dirname(conda_prefix)
 
         condarc_override = get_option("condarc_override")
         if condarc_override is None:
-            condarc_override = os.path.join(
-                dependency_manager.default_base_path, DEFAULT_CONDARC_OVERRIDE
-            )
+            condarc_override = os.path.join(dependency_manager.default_base_path, DEFAULT_CONDARC_OVERRIDE)
 
         copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
         use_local = _string_as_bool(get_option("use_local"))
@@ -127,8 +122,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             condarc_override=condarc_override,
             use_path_exec=use_path_exec,
             copy_dependencies=copy_dependencies,
-            use_local=use_local,
-        )
+            use_local=use_local, )
         self.ensure_channels = ensure_channels
 
         # Conda operations options (these define how resolution will occur)
@@ -239,8 +233,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
                     exact=not self.versionless or requirement.version is None,
                     name=requirement.name,
                     version=requirement.version,
-                    preserve_python_environment=preserve_python_environment,
-                )
+                    preserve_python_environment=preserve_python_environment, )
                 dependencies.append(dependency)
 
         return dependencies
@@ -270,9 +263,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             version = None
 
         conda_target = CondaTarget(name, version=version)
-        is_installed = is_conda_target_installed(
-            conda_target, conda_context=self.conda_context
-        )
+        is_installed = is_conda_target_installed(conda_target, conda_context=self.conda_context)
 
         preserve_python_environment = kwds.get("preserve_python_environment", False)
 
@@ -306,8 +297,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             exact,
             name,
             version,
-            preserve_python_environment=preserve_python_environment,
-        )
+            preserve_python_environment=preserve_python_environment, )
 
     def _expand_requirement(self, requirement):
         return self._expand_specs(self._expand_mappings(requirement))
@@ -346,9 +336,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
 
         conda_target = CondaTarget(name, version=version)
 
-        is_installed = is_conda_target_installed(
-            conda_target, conda_context=self.conda_context
-        )
+        is_installed = is_conda_target_installed(conda_target, conda_context=self.conda_context)
 
         if is_installed:
             return is_installed
@@ -358,9 +346,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             is_installed = False
         else:
             # Recheck if installed
-            is_installed = is_conda_target_installed(
-                conda_target, conda_context=self.conda_context
-            )
+            is_installed = is_conda_target_installed(conda_target, conda_context=self.conda_context)
         if not is_installed:
             log.debug("Removing failed conda install of {}, version '{}'".format(name, version))
             cleanup_failed_install(conda_target, conda_context=self.conda_context)
@@ -403,15 +389,9 @@ class MergedCondaDependency(Dependency):
             # On explicit testing the only such requirement I am aware of is samtools - and it seems to work
             # fine with just appending the PATH as done below. Other tools may require additional
             # variables in the future.
-            return """export PATH=$PATH:'%s/bin' """ % (
-                self.environment_path,
-            )
+            return """export PATH=$PATH:'%s/bin' """ % (self.environment_path, )
         else:
-            return CONDA_SOURCE_CMD % (
-                self.environment_path,
-                self.activate,
-                self.environment_path
-            )
+            return CONDA_SOURCE_CMD % (self.environment_path, self.activate, self.environment_path)
 
 
 class CondaDependency(Dependency):
@@ -454,8 +434,7 @@ class CondaDependency(Dependency):
             CondaTarget(self.name, self.version),
             conda_context=self.conda_context,
             path=self.environment_path,
-            copy=self.conda_context.copy_dependencies,
-        )
+            copy=self.conda_context.copy_dependencies, )
         if exit_code:
             if len(os.path.abspath(self.environment_path)) > 79:
                 # TODO: remove this once conda_build version 2 is released and packages have been rebuilt.
@@ -472,15 +451,9 @@ class CondaDependency(Dependency):
             # On explicit testing the only such requirement I am aware of is samtools - and it seems to work
             # fine with just appending the PATH as done below. Other tools may require additional
             # variables in the future.
-            return """export PATH=$PATH:'%s/bin' """ % (
-                self.environment_path,
-            )
+            return """export PATH=$PATH:'%s/bin' """ % (self.environment_path, )
         else:
-            return CONDA_SOURCE_CMD % (
-                self.environment_path,
-                self.activate,
-                self.environment_path
-            )
+            return CONDA_SOURCE_CMD % (self.environment_path, self.activate, self.environment_path)
 
 
 def _string_as_bool(value):

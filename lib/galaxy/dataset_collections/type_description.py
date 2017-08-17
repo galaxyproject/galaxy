@@ -1,7 +1,4 @@
-
-
 class CollectionTypeDescriptionFactory(object):
-
     def __init__(self, type_registry):
         # taking in type_registry though not using it, because we will someday
         # I think.

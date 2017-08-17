@@ -8,13 +8,7 @@ class Phyloxml_Parser(Base_Parser):
     def __init__(self):
         super(Phyloxml_Parser, self).__init__()
         self.phyloTree = PhyloTree()
-        self.tagsOfInterest = {
-            "clade": "",
-            "name" : "name",
-            "branch_length" : "length",
-            "confidence"    : "bootstrap",
-            "events"        : "events"
-        }
+        self.tagsOfInterest = {"clade": "", "name": "name", "branch_length": "length", "confidence": "bootstrap", "events": "events"}
 
     def parseFile(self, filePath):
         """passes a file and extracts its Phylogeny Tree content."""
@@ -52,14 +46,14 @@ class Phyloxml_Parser(Base_Parser):
                 hasInnerClade = True
                 break
 
-        if hasInnerClade:       # this node is an internal node
+        if hasInnerClade:  # this node is an internal node
             currentNode = self._makeInternalNode(node, depth=depth)
             for child in node:
                 child = self.parseNode(child, depth + 1)
                 if isinstance(child, Node):
                     currentNode.addChildNode(child)
 
-        else:                   # this node is a leaf node
+        else:  # this node is a leaf node
             currentNode = self._makeLeafNode(node, depth=depth + 1)
 
         return currentNode
@@ -70,7 +64,7 @@ class Phyloxml_Parser(Base_Parser):
         for child in leafNode:
             childTag = self.cleanTag(child.tag)
             if childTag in self.tagsOfInterest:
-                key = self.tagsOfInterest[childTag]    # need to map phyloxml terms to ours
+                key = self.tagsOfInterest[childTag]  # need to map phyloxml terms to ours
                 node[key] = child.text
 
         node["depth"] = depth
@@ -82,11 +76,7 @@ class Phyloxml_Parser(Base_Parser):
         def getTagFromTaxonomyNode(node):
             """Returns the name of a taxonomy node. A taxonomy node have to be treated differently as the name
             is embedded one level deeper"""
-            phyloxmlTaxoNames = {
-                "common_name" : "",
-                "scientific_name" : "",
-                "code"  : ""
-            }
+            phyloxmlTaxoNames = {"common_name": "", "scientific_name": "", "code": ""}
             for child in node:
                 childTag = self.cleanTag(child.tag)
                 if childTag in phyloxmlTaxoNames:
@@ -96,7 +86,7 @@ class Phyloxml_Parser(Base_Parser):
         nodeName = ""
         for child in node:
             childTag = self.cleanTag(child.tag)
-            if childTag == "name" :
+            if childTag == "name":
                 nodeName = child.text
                 break
             elif childTag == "taxonomy":
@@ -115,7 +105,7 @@ class Phyloxml_Parser(Base_Parser):
             if childTag == "clade":
                 continue
             elif childTag in self.tagsOfInterest:
-                if childTag == "events":    # events is nested 1 more level deeper than others
+                if childTag == "events":  # events is nested 1 more level deeper than others
                     key, text = "events", self.cleanTag(child[0].tag)
                 else:
                     key = self.tagsOfInterest[childTag]

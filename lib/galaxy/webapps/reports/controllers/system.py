@@ -37,16 +37,17 @@ class System(BaseUIController):
                 deleted_histories_days, message = self.deleted_histories(trans, **kwd)
             elif kwd['action'] == "deleted_datasets":
                 deleted_datasets_days, message = self.deleted_datasets(trans, **kwd)
-        return trans.fill_template('/webapps/reports/system.mako',
-                                   file_path=file_path,
-                                   disk_usage=disk_usage,
-                                   datasets=datasets,
-                                   file_size_str=file_size_str,
-                                   userless_histories_days=userless_histories_days,
-                                   deleted_histories_days=deleted_histories_days,
-                                   deleted_datasets_days=deleted_datasets_days,
-                                   message=message,
-                                   nice_size=nice_size)
+        return trans.fill_template(
+            '/webapps/reports/system.mako',
+            file_path=file_path,
+            disk_usage=disk_usage,
+            datasets=datasets,
+            file_size_str=file_size_str,
+            userless_histories_days=userless_histories_days,
+            deleted_histories_days=deleted_histories_days,
+            deleted_datasets_days=deleted_datasets_days,
+            message=message,
+            nice_size=nice_size)
 
     def userless_histories(self, trans, **kwd):
         """The number of userless histories and associated datasets that have not been updated for the specified number of days."""
@@ -65,7 +66,8 @@ class System(BaseUIController):
                     if not dataset.deleted:
                         dataset_count += 1
                 history_count += 1
-            message = "%d userless histories ( including a total of %d datasets ) have not been updated for at least %d days." % (history_count, dataset_count, userless_histories_days)
+            message = "%d userless histories ( including a total of %d datasets ) have not been updated for at least %d days." % (
+                history_count, dataset_count, userless_histories_days)
         else:
             message = "Enter the number of days."
         return str(userless_histories_days), message
@@ -141,11 +143,12 @@ class System(BaseUIController):
             .filter(and_(trans.model.LibraryDatasetDatasetAssociation.deleted == false(),
             trans.model.LibraryDatasetDatasetAssociation.dataset_id == dataset.id)) \
             .all()
-        return trans.fill_template('/webapps/reports/dataset_info.mako',
-                                   dataset=dataset,
-                                   associated_hdas=associated_hdas,
-                                   associated_lddas=associated_lddas,
-                                   message=message)
+        return trans.fill_template(
+            '/webapps/reports/dataset_info.mako',
+            dataset=dataset,
+            associated_hdas=associated_hdas,
+            associated_lddas=associated_lddas,
+            message=message)
 
     def get_disk_usage(self, file_path):
         df_cmd = 'df -h ' + file_path
@@ -183,7 +186,7 @@ class System(BaseUIController):
     def disk_usage(self, trans, **kwd):
         file_path = trans.app.config.file_path
         disk_usage = self.get_disk_usage(file_path)
-        min_file_size = 2 ** 32  # 4 Gb
+        min_file_size = 2**32  # 4 Gb
         file_size_str = nice_size(min_file_size)
         datasets = trans.sa_session.query(model.Dataset) \
                                    .filter(and_(model.Dataset.table.c.purged == false(),

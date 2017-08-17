@@ -18,8 +18,7 @@ from six.moves import cPickle
 from sqlalchemy.orm import object_session
 
 import galaxy.model
-from galaxy.util import (in_directory, listify, string_as_bool,
-                         stringify_dictionary_keys)
+from galaxy.util import (in_directory, listify, string_as_bool, stringify_dictionary_keys)
 from galaxy.util.json import safe_dumps
 from galaxy.util.object_wrapper import sanitize_lists_to_string
 from galaxy.util.odict import odict
@@ -37,6 +36,7 @@ class Statement(object):
     statements.  This is how we shove the metadata element spec into
     the class.
     """
+
     def __init__(self, target):
         self.target = target
 
@@ -61,6 +61,7 @@ class MetadataCollection(object):
     handles processing the metadata elements when they are set and
     retrieved, returning default values in cases when metadata is not set.
     """
+
     def __init__(self, parent):
         self.parent = parent
         # initialize dict if needed
@@ -77,6 +78,7 @@ class MetadataCollection(object):
         # collection: hda/lda (parent) <--> MetadataCollection (self) ; needs to be
         # hashable, so cannot use proxy.
         self.__dict__["_parent"] = weakref.ref(parent)
+
     parent = property(get_parent, set_parent)
 
     @property
@@ -100,6 +102,7 @@ class MetadataCollection(object):
 
     def __bool__(self):
         return bool(self.parent._metadata)
+
     __nonzero__ = __bool__
 
     def __getattr__(self, name):
@@ -205,6 +208,7 @@ class MetadataSpecCollection(odict):
     list.  append() is also implemented for simplicity and does not
     "append".
     """
+
     def __init__(self, dict=None):
         odict.__init__(self, dict=None)
 
@@ -309,9 +313,17 @@ class MetadataElementSpec(object):
     Defines a metadata element and adds it to the metadata_spec (which
     is a MetadataSpecCollection) of datatype.
     """
-    def __init__(self, datatype, name=None, desc=None,
-                 param=MetadataParameter, default=None, no_value=None,
-                 visible=True, set_in_upload=False, **kwargs):
+
+    def __init__(self,
+                 datatype,
+                 name=None,
+                 desc=None,
+                 param=MetadataParameter,
+                 default=None,
+                 no_value=None,
+                 visible=True,
+                 set_in_upload=False,
+                 **kwargs):
         self.name = name
         self.desc = desc or name
         self.default = default
@@ -350,8 +362,6 @@ class MetadataElementSpec(object):
 # create a statement class that, when called,
 #   will add a new MetadataElementSpec to a class's metadata_spec
 MetadataElement = Statement(MetadataElementSpec)
-
-
 """
 MetadataParameter sub-classes.
 """
@@ -426,7 +436,6 @@ class SelectParameter(MetadataParameter):
 
 
 class DBKeyParameter(SelectParameter):
-
     def get_html_field(self, value=None, context=None, other_values=None, values=None, **kwd):
         context = context or {}
         other_values = other_values or {}
@@ -447,7 +456,6 @@ class DBKeyParameter(SelectParameter):
 
 
 class RangeParameter(SelectParameter):
-
     def __init__(self, spec):
         SelectParameter.__init__(self, spec)
         # The spec must be set with min and max values
@@ -479,7 +487,6 @@ class RangeParameter(SelectParameter):
 
 
 class ColumnParameter(RangeParameter):
-
     def get_html_field(self, value=None, context=None, other_values=None, values=None, **kwd):
         context = context or {}
         other_values = other_values or {}
@@ -500,19 +507,16 @@ class ColumnParameter(RangeParameter):
 
 
 class ColumnTypesParameter(MetadataParameter):
-
     def to_string(self, value):
         return ",".join(map(str, value))
 
 
 class ListParameter(MetadataParameter):
-
     def to_string(self, value):
         return ",".join([str(x) for x in value])
 
 
 class DictParameter(MetadataParameter):
-
     def to_string(self, value):
         return json.dumps(value)
 
@@ -522,7 +526,6 @@ class DictParameter(MetadataParameter):
 
 
 class PythonObjectParameter(MetadataParameter):
-
     def to_string(self, value):
         if not value:
             return self.spec._to_string(self.spec.no_value)
@@ -544,7 +547,6 @@ class PythonObjectParameter(MetadataParameter):
 
 
 class FileParameter(MetadataParameter):
-
     def to_string(self, value):
         if not value:
             return str(self.spec.no_value)
@@ -604,11 +606,8 @@ class FileParameter(MetadataParameter):
                 # Job may have run with a different (non-local) tmp/working
                 # directory. Correct.
                 file_name = path_rewriter(file_name)
-            parent.dataset.object_store.update_from_file(mf,
-                                                         file_name=file_name,
-                                                         extra_dir='_metadata_files',
-                                                         extra_dir_at_root=True,
-                                                         alt_name=os.path.basename(mf.file_name))
+            parent.dataset.object_store.update_from_file(
+                mf, file_name=file_name, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=os.path.basename(mf.file_name))
             os.unlink(file_name)
             value = mf.id
         return value
@@ -653,9 +652,7 @@ class MetadataTempFile(object):
         return self._filename
 
     def to_JSON(self):
-        return {'__class__': self.__class__.__name__,
-                'filename': self.file_name,
-                'kwds': self.kwds}
+        return {'__class__': self.__class__.__name__, 'filename': self.file_name, 'kwds': self.kwds}
 
     @classmethod
     def from_JSON(cls, json_dict):
@@ -725,12 +722,20 @@ class JobExternalOutputMetadataWrapper(object):
                 sa_session.flush()
                 jeom = self.get_output_filenames_by_dataset(dataset, sa_session)
 
-    def setup_external_metadata(self, datasets, sa_session, exec_dir=None,
-                                tmp_dir=None, dataset_files_path=None,
-                                output_fnames=None, config_root=None,
-                                config_file=None, datatypes_config=None,
-                                job_metadata=None, compute_tmp_dir=None,
-                                include_command=True, max_metadata_value_size=0,
+    def setup_external_metadata(self,
+                                datasets,
+                                sa_session,
+                                exec_dir=None,
+                                tmp_dir=None,
+                                dataset_files_path=None,
+                                output_fnames=None,
+                                config_root=None,
+                                config_file=None,
+                                datatypes_config=None,
+                                job_metadata=None,
+                                compute_tmp_dir=None,
+                                include_command=True,
+                                max_metadata_value_size=0,
                                 kwds=None):
         kwds = kwds or {}
         if tmp_dir is None:
@@ -758,15 +763,14 @@ class JobExternalOutputMetadataWrapper(object):
                         if dataset_path.real_path == metadata_files.dataset.file_name:
                             return dataset_path.false_path or dataset_path.real_path
                 return ""
-            line = '"%s,%s,%s,%s,%s,%s"' % (
-                metadata_path_on_compute(metadata_files.filename_in),
-                metadata_path_on_compute(metadata_files.filename_kwds),
-                metadata_path_on_compute(metadata_files.filename_out),
-                metadata_path_on_compute(metadata_files.filename_results_code),
-                __get_filename_override(),
-                metadata_path_on_compute(metadata_files.filename_override_metadata),
-            )
+
+            line = '"%s,%s,%s,%s,%s,%s"' % (metadata_path_on_compute(metadata_files.filename_in),
+                                            metadata_path_on_compute(metadata_files.filename_kwds),
+                                            metadata_path_on_compute(metadata_files.filename_out),
+                                            metadata_path_on_compute(metadata_files.filename_results_code), __get_filename_override(),
+                                            metadata_path_on_compute(metadata_files.filename_override_metadata), )
             return line
+
         if not isinstance(datasets, list):
             datasets = [datasets]
         if exec_dir is None:
@@ -810,18 +814,22 @@ class JobExternalOutputMetadataWrapper(object):
                 cPickle.dump(dataset, open(metadata_files.filename_in, 'wb+'))
                 # file to store metadata results of set_meta()
                 metadata_files.filename_out = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_out_%s_" % key).name)
-                open(metadata_files.filename_out, 'wb+')  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+                open(metadata_files.filename_out,
+                     'wb+')  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
                 # file to store a 'return code' indicating the results of the set_meta() call
                 # results code is like (True/False - if setting metadata was successful/failed , exception or string of reason of success/failure )
-                metadata_files.filename_results_code = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_results_%s_" % key).name)
+                metadata_files.filename_results_code = abspath(
+                    tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_results_%s_" % key).name)
                 # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
                 json.dump((False, 'External set_meta() not called'), open(metadata_files.filename_results_code, 'wb+'))
                 # file to store kwds passed to set_meta()
                 metadata_files.filename_kwds = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_kwds_%s_" % key).name)
                 json.dump(kwds, open(metadata_files.filename_kwds, 'wb+'), ensure_ascii=True)
                 # existing metadata file parameters need to be overridden with cluster-writable file locations
-                metadata_files.filename_override_metadata = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_override_%s_" % key).name)
-                open(metadata_files.filename_override_metadata, 'wb+')  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+                metadata_files.filename_override_metadata = abspath(
+                    tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_override_%s_" % key).name)
+                open(metadata_files.filename_override_metadata,
+                     'wb+')  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
                 override_metadata = []
                 for meta_key, spec_value in dataset.metadata.spec.items():
                     if isinstance(spec_value.param, FileParameter) and dataset.metadata.get(meta_key, None) is not None:
@@ -833,9 +841,7 @@ class JobExternalOutputMetadataWrapper(object):
                 sa_session.add(metadata_files)
                 sa_session.flush()
             metadata_files_list.append(metadata_files)
-        args = '"%s" "%s" %s %s' % (datatypes_config,
-                                    job_metadata,
-                                    " ".join(map(__metadata_files_list_to_cmd_line, metadata_files_list)),
+        args = '"%s" "%s" %s %s' % (datatypes_config, job_metadata, " ".join(map(__metadata_files_list_to_cmd_line, metadata_files_list)),
                                     max_metadata_value_size)
         if include_command:
             # return command required to build
@@ -863,11 +869,10 @@ class JobExternalOutputMetadataWrapper(object):
             # can occur if the job was stopped before completion, but a MetadataTempFile is used in the set_meta
             MetadataTempFile.cleanup_from_JSON_dict_filename(metadata_files.filename_out)
             dataset_key = self.get_dataset_metadata_key(metadata_files.dataset)
-            for key, fname in [('filename_in', metadata_files.filename_in),
-                               ('filename_out', metadata_files.filename_out),
+            for key, fname in [('filename_in', metadata_files.filename_in), ('filename_out', metadata_files.filename_out),
                                ('filename_results_code', metadata_files.filename_results_code),
-                               ('filename_kwds', metadata_files.filename_kwds),
-                               ('filename_override_metadata', metadata_files.filename_override_metadata)]:
+                               ('filename_kwds', metadata_files.filename_kwds), ('filename_override_metadata',
+                                                                                 metadata_files.filename_override_metadata)]:
                 try:
                     os.remove(fname)
                 except Exception as e:
@@ -880,22 +885,6 @@ class JobExternalOutputMetadataWrapper(object):
             sa_session.flush()
 
 
-__all__ = (
-    "Statement",
-    "MetadataElement",
-    "MetadataCollection",
-    "MetadataSpecCollection",
-    "MetadataParameter",
-    "MetadataElementSpec",
-    "SelectParameter",
-    "DBKeyParameter",
-    "RangeParameter",
-    "ColumnParameter",
-    "ColumnTypesParameter",
-    "ListParameter",
-    "DictParameter",
-    "PythonObjectParameter",
-    "FileParameter",
-    "MetadataTempFile",
-    "JobExternalOutputMetadataWrapper",
-)
+__all__ = ("Statement", "MetadataElement", "MetadataCollection", "MetadataSpecCollection", "MetadataParameter", "MetadataElementSpec",
+           "SelectParameter", "DBKeyParameter", "RangeParameter", "ColumnParameter", "ColumnTypesParameter", "ListParameter",
+           "DictParameter", "PythonObjectParameter", "FileParameter", "MetadataTempFile", "JobExternalOutputMetadataWrapper", )

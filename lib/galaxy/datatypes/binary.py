@@ -21,7 +21,6 @@ from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElem
 from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
 from . import data, dataproviders
 
-
 log = logging.getLogger(__name__)
 
 # Currently these supported binary data types must be manually set on upload
@@ -80,7 +79,8 @@ class Binary(data.Data):
         trans.response.headers['Content-Length'] = int(os.stat(dataset.file_name).st_size)
         to_ext = dataset.extension
         fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
-        trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
+        trans.response.set_content_type(
+            "application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
         return open(dataset.file_name)
 
@@ -129,7 +129,6 @@ Binary.register_sniffable_binary_format("idat", "idat", Idat)
 
 
 class Cel(Binary):
-
     """Binary data in CEL format."""
     file_ext = "cel"
     edam_format = "format_1638"
@@ -230,16 +229,86 @@ class Bam(Binary):
     track_type = "ReadTrack"
     data_sources = {"data": "bai", "index": "bigwig"}
 
-    MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
-    MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
-    MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
-    MetadataElement(name="read_groups", default=[], desc="Read Groups", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
-    MetadataElement(name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
-    MetadataElement(name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
-    MetadataElement(name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={})
+    MetadataElement(
+        name="bam_index",
+        desc="BAM Index File",
+        param=metadata.FileParameter,
+        file_ext="bai",
+        readonly=True,
+        no_value=None,
+        visible=False,
+        optional=True)
+    MetadataElement(
+        name="bam_version",
+        default=None,
+        desc="BAM Version",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=None)
+    MetadataElement(
+        name="sort_order",
+        default=None,
+        desc="Sort Order",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=None)
+    MetadataElement(
+        name="read_groups",
+        default=[],
+        desc="Read Groups",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=[])
+    MetadataElement(
+        name="reference_names",
+        default=[],
+        desc="Chromosome Names",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=[])
+    MetadataElement(
+        name="reference_lengths",
+        default=[],
+        desc="Chromosome Lengths",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=[])
+    MetadataElement(
+        name="bam_header",
+        default={},
+        desc="Dictionary of BAM Headers",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value={})
     MetadataElement(name="columns", default=12, desc="Number of columns", readonly=True, visible=False, no_value=0)
-    MetadataElement(name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
-    MetadataElement(name="column_names", default=['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'], desc="Column names", readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(
+        name="column_types",
+        default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'],
+        desc="Column types",
+        param=metadata.ColumnTypesParameter,
+        readonly=True,
+        visible=False,
+        no_value=[])
+    MetadataElement(
+        name="column_names",
+        default=['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'],
+        desc="Column names",
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=[])
 
     def _get_samtools_version(self):
         version = '0.0.0'
@@ -249,9 +318,7 @@ class Bam(Binary):
             raise Exception(message)
 
         # Get the version of samtools via --version-only, if available
-        p = subprocess.Popen(['samtools', '--version-only'],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        p = subprocess.Popen(['samtools', '--version-only'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = p.communicate()
 
         # --version-only is available
@@ -397,8 +464,8 @@ class Bam(Binary):
         # Did index succeed?
         if exit_code == -6:
             # SIGABRT, most likely samtools 1.0+ which does not accept the index name parameter.
-            dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
-                                           '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
+            dataset_symlink = os.path.join(
+                os.path.dirname(index_file.file_name), '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
             os.symlink(dataset.file_name, dataset_symlink)
             try:
                 command = ['samtools', 'index', dataset_symlink]
@@ -425,7 +492,9 @@ class Bam(Binary):
             dataset.metadata.reference_names = list(bam_file.references)
             dataset.metadata.reference_lengths = list(bam_file.lengths)
             dataset.metadata.bam_header = bam_file.header
-            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
+            dataset.metadata.read_groups = [
+                read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group
+            ]
             dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
             dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
         except:
@@ -478,7 +547,7 @@ class Bam(Binary):
                 header_line_count = bamfile.text.count('\n')
             else:
                 bamfile.seek(offset)
-            for line_number, alignment in enumerate(bamfile) :
+            for line_number, alignment in enumerate(bamfile):
                 # return only Header lines if 'header_line_count' exceeds 'ck_size'
                 # FIXME: Can be problematic if bam has million lines of header
                 offset = bamfile.tell()
@@ -490,8 +559,7 @@ class Bam(Binary):
                     # Below code will remove spaces between each tag.
                     bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
                     ck_data = "%s\n%s" % (ck_data, bamline_modified)
-        return dumps({'ck_data': util.unicodify(ck_data),
-                      'offset': offset})
+        return dumps({'ck_data': util.unicodify(ck_data), 'offset': offset})
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         preview = util.string_as_bool(preview)
@@ -509,12 +577,13 @@ class Bam(Binary):
             column_number = dataset.metadata.columns
             if column_number is None:
                 column_number = 1
-            return trans.fill_template("/dataset/tabular_chunked.mako",
-                                       dataset=dataset,
-                                       chunk=self.get_chunk(trans, dataset, 0),
-                                       column_number=column_number,
-                                       column_names=column_names,
-                                       column_types=column_types)
+            return trans.fill_template(
+                "/dataset/tabular_chunked.mako",
+                dataset=dataset,
+                chunk=self.get_chunk(trans, dataset, 0),
+                column_number=column_number,
+                column_names=column_names,
+                column_types=column_types)
 
     # ------------- Dataproviders
     # pipe through samtools view
@@ -607,8 +676,24 @@ class CRAM(Binary):
     edam_format = "format_3462"
     edam_data = "format_0863"
 
-    MetadataElement(name="cram_version", default=None, desc="CRAM Version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
-    MetadataElement(name="cram_index", desc="CRAM Index File", param=metadata.FileParameter, file_ext="crai", readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(
+        name="cram_version",
+        default=None,
+        desc="CRAM Version",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=False,
+        no_value=None)
+    MetadataElement(
+        name="cram_index",
+        desc="CRAM Index File",
+        param=metadata.FileParameter,
+        file_ext="crai",
+        readonly=True,
+        no_value=None,
+        visible=False,
+        optional=True)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         major_version, minor_version = self.get_cram_version(dataset.file_name)
@@ -637,7 +722,8 @@ class CRAM(Binary):
             # fixed in the dev branch:
             # xref: https://github.com/samtools/samtools/issues/199
 
-            dataset_symlink = os.path.join(os.path.dirname(index_file.file_name), '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
+            dataset_symlink = os.path.join(
+                os.path.dirname(index_file.file_name), '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
             os.symlink(dataset.file_name, dataset_symlink)
             pysam.index(dataset_symlink)
 
@@ -680,7 +766,15 @@ class Bcf(Binary):
     edam_data = "data_3498"
     file_ext = "bcf"
 
-    MetadataElement(name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(
+        name="bcf_index",
+        desc="BCF Index File",
+        param=metadata.FileParameter,
+        file_ext="csi",
+        readonly=True,
+        no_value=None,
+        visible=False,
+        optional=True)
 
     def sniff(self, filename):
         # BCF is compressed in the BGZF format, and must not be uncompressed in Galaxy.
@@ -703,15 +797,17 @@ class Bcf(Binary):
         # $ bcftools index
         # Usage: bcftools index <in.bcf>
 
-        dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
-                                       '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
+        dataset_symlink = os.path.join(
+            os.path.dirname(index_file.file_name), '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
         os.symlink(dataset.file_name, dataset_symlink)
 
         stderr_name = tempfile.NamedTemporaryFile(prefix="bcf_index_stderr").name
         command = ['bcftools', 'index', dataset_symlink]
         try:
             subprocess.check_call(args=command, stderr=open(stderr_name, 'wb'))
-            shutil.move(dataset_symlink + '.csi', index_file.file_name)  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
+            shutil.move(
+                dataset_symlink + '.csi',
+                index_file.file_name)  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
         except Exception as e:
             stderr = open(stderr_name).read().strip()
             raise Exception('Error setting BCF metadata: %s' % (stderr or str(e)))
@@ -890,7 +986,7 @@ class BigBed(BigWig):
 Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 
 
-class TwoBit (Binary):
+class TwoBit(Binary):
     """Class describing a TwoBit format nucleotide file"""
     edam_format = "format_3009"
     edam_data = "data_0848"
@@ -926,11 +1022,13 @@ Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)
 
 
 @dataproviders.decorators.has_dataproviders
-class SQlite (Binary):
+class SQlite(Binary):
     """Class describing a Sqlite database """
     MetadataElement(name="tables", default=[], param=ListParameter, desc="Database Tables", readonly=True, visible=True, no_value=[])
-    MetadataElement(name="table_columns", default={}, param=DictParameter, desc="Database Table Columns", readonly=True, visible=True, no_value={})
-    MetadataElement(name="table_row_count", default={}, param=DictParameter, desc="Database Table Row Count", readonly=True, visible=True, no_value={})
+    MetadataElement(
+        name="table_columns", default={}, param=DictParameter, desc="Database Table Columns", readonly=True, visible=True, no_value={})
+    MetadataElement(
+        name="table_row_count", default={}, param=DictParameter, desc="Database Table Row Count", readonly=True, visible=True, no_value={})
     file_ext = "sqlite"
     edam_format = "format_3621"
 
@@ -1021,8 +1119,14 @@ class SQlite (Binary):
 
 class GeminiSQLite(SQlite):
     """Class describing a Gemini Sqlite database """
-    MetadataElement(name="gemini_version", default='0.10.0', param=MetadataParameter, desc="Gemini Version",
-                    readonly=True, visible=True, no_value='0.10.0')
+    MetadataElement(
+        name="gemini_version",
+        default='0.10.0',
+        param=MetadataParameter,
+        desc="Gemini Version",
+        readonly=True,
+        visible=True,
+        no_value='0.10.0')
     file_ext = "gemini.sqlite"
     edam_format = "format_3622"
     edam_data = "data_3498"
@@ -1042,8 +1146,10 @@ class GeminiSQLite(SQlite):
 
     def sniff(self, filename):
         if super(GeminiSQLite, self).sniff(filename):
-            gemini_table_names = ["gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
-                                  "variant_impacts", "variants", "version"]
+            gemini_table_names = [
+                "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples", "variant_impacts",
+                "variants", "version"
+            ]
             try:
                 conn = sqlite.connect(filename)
                 c = conn.cursor()
@@ -1082,7 +1188,10 @@ class MzSQlite(SQlite):
 
     def sniff(self, filename):
         if super(MzSQlite, self).sniff(filename):
-            mz_table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
+            mz_table_names = [
+                "DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData",
+                "Spectrum", "SpectrumIdentification"
+            ]
             try:
                 conn = sqlite.connect(filename)
                 c = conn.cursor()
@@ -1164,7 +1273,8 @@ class Xlsx(Binary):
         try:
             if zipfile.is_zipfile(filename):
                 tempzip = zipfile.ZipFile(filename)
-                if "[Content_Types].xml" in tempzip.namelist() and tempzip.read("[Content_Types].xml").find(b'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml') != -1:
+                if "[Content_Types].xml" in tempzip.namelist() and tempzip.read("[Content_Types].xml").find(
+                        b'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml') != -1:
                     return True
             return False
         except:
@@ -1265,7 +1375,6 @@ Binary.register_sniffable_binary_format('RData', 'RData', RData)
 
 
 class OxliBinary(Binary):
-
     @staticmethod
     def _sniff(filename, oxlitype):
         try:
@@ -1305,8 +1414,7 @@ class OxliCountGraph(OxliBinary):
         return OxliBinary._sniff(filename, b"01")
 
 
-Binary.register_sniffable_binary_format("oxli.countgraph", "oxlicg",
-                                        OxliCountGraph)
+Binary.register_sniffable_binary_format("oxli.countgraph", "oxlicg", OxliCountGraph)
 
 
 class OxliNodeGraph(OxliBinary):
@@ -1333,8 +1441,7 @@ class OxliNodeGraph(OxliBinary):
         return OxliBinary._sniff(filename, b"02")
 
 
-Binary.register_sniffable_binary_format("oxli.nodegraph", "oxling",
-                                        OxliNodeGraph)
+Binary.register_sniffable_binary_format("oxli.nodegraph", "oxling", OxliNodeGraph)
 
 
 class OxliTagSet(OxliBinary):
@@ -1385,8 +1492,7 @@ class OxliStopTags(OxliBinary):
         return OxliBinary._sniff(filename, b"04")
 
 
-Binary.register_sniffable_binary_format("oxli.stoptags", "oxlist",
-                                        OxliStopTags)
+Binary.register_sniffable_binary_format("oxli.stoptags", "oxlist", OxliStopTags)
 
 
 class OxliSubset(OxliBinary):
@@ -1443,16 +1549,27 @@ class OxliGraphLabels(OxliBinary):
         return OxliBinary._sniff(filename, b"06")
 
 
-Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
-                                        OxliGraphLabels)
+Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl", OxliGraphLabels)
 
 
-class SearchGuiArchive (CompressedArchive):
+class SearchGuiArchive(CompressedArchive):
     """Class describing a SearchGUI archive """
-    MetadataElement(name="searchgui_version", default='1.28.0', param=MetadataParameter, desc="SearchGui Version",
-                    readonly=True, visible=True, no_value=None)
-    MetadataElement(name="searchgui_major_version", default='1', param=MetadataParameter, desc="SearchGui Major Version",
-                    readonly=True, visible=True, no_value=None)
+    MetadataElement(
+        name="searchgui_version",
+        default='1.28.0',
+        param=MetadataParameter,
+        desc="SearchGui Version",
+        readonly=True,
+        visible=True,
+        no_value=None)
+    MetadataElement(
+        name="searchgui_major_version",
+        default='1',
+        param=MetadataParameter,
+        desc="SearchGui Major Version",
+        readonly=True,
+        visible=True,
+        no_value=None)
     file_ext = "searchgui_archive"
 
     def set_meta(self, dataset, overwrite=True, **kwd):

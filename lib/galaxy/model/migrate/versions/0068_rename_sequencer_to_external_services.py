@@ -50,9 +50,8 @@ def upgrade(migrate_engine):
         # Add a foreign key to the external_service table in the sample_dataset table
         try:
             Sequencer_table = Table("sequencer", metadata, autoload=True)
-            cons = ForeignKeyConstraint([SampleDataset_table.c.external_service_id],
-                                        [Sequencer_table.c.id],
-                                        name='sample_dataset_external_services_id_fk')
+            cons = ForeignKeyConstraint(
+                [SampleDataset_table.c.external_service_id], [Sequencer_table.c.id], name='sample_dataset_external_services_id_fk')
             # Create the constraint
             cons.create()
         except Exception:
@@ -99,7 +98,8 @@ def upgrade(migrate_engine):
     RequestTypeExternalServiceAssociation_table = Table("request_type_external_service_association", metadata,
                                                         Column("id", Integer, primary_key=True),
                                                         Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True),
-                                                        Column("external_service_id", Integer, ForeignKey("external_service.id"), index=True))
+                                                        Column(
+                                                            "external_service_id", Integer, ForeignKey("external_service.id"), index=True))
     try:
         RequestTypeExternalServiceAssociation_table.create()
     except Exception:
@@ -123,9 +123,7 @@ def upgrade(migrate_engine):
             if not sequencer_id:
                 sequencer_id = 'null'
             cmd = "INSERT INTO request_type_external_service_association VALUES ( %s, %s, %s )"
-            cmd = cmd % (nextval(migrate_engine, 'request_type_external_service_association'),
-                         request_type_id,
-                         sequencer_id)
+            cmd = cmd % (nextval(migrate_engine, 'request_type_external_service_association'), request_type_id, sequencer_id)
             migrate_engine.execute(cmd)
     # drop the 'sequencer_id' column in the 'request_type' table
     try:

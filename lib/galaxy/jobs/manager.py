@@ -16,6 +16,7 @@ class JobManager(object):
     TODO: Currently the app accesses "job_queue" and "job_stop_queue" directly.
           This should be decoupled.
     """
+
     def __init__(self, app):
         self.app = app
         if self.app.is_job_handler():

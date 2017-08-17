@@ -27,13 +27,16 @@ class BiostarsPlugin(ErrorPlugin):
         """
         try:
             assert biostar.biostar_enabled(self.app), ValueError("Biostar is not configured for this galaxy instance")
-            assert self.app.config.biostar_enable_bug_reports, ValueError("Biostar is not configured to allow bug reporting for this galaxy instance")
+            assert self.app.config.biostar_enable_bug_reports, ValueError(
+                "Biostar is not configured to allow bug reporting for this galaxy instance")
             print(kwargs)
 
-            url = url_for(controller='biostar',
-                          action='biostar_tool_bug_report',
-                          hda=self.app.security.encode_id(dataset.id),
-                          email=kwargs['email'], message=kwargs['message'])
+            url = url_for(
+                controller='biostar',
+                action='biostar_tool_bug_report',
+                hda=self.app.security.encode_id(dataset.id),
+                email=kwargs['email'],
+                message=kwargs['message'])
             return ('Click <a href="%s">here</a> to submit to BioStars' % url, 'success')
         except Exception as e:
             return ("An error occurred submitting the report to biostars: %s" % str(e), "danger")

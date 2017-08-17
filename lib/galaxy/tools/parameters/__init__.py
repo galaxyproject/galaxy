@@ -17,7 +17,14 @@ REPLACE_ON_TRUTHY = object()
 __all__ = ('DataCollectionToolParameter', 'DataToolParameter', 'SelectToolParameter')
 
 
-def visit_input_values(inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY):
+def visit_input_values(inputs,
+                       input_values,
+                       callback,
+                       name_prefix='',
+                       label_prefix='',
+                       parent_prefix='',
+                       context=None,
+                       no_replacement_value=REPLACE_ON_TRUTHY):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
     parameter `values`, call `callback` for each non-grouping parameter,
@@ -61,16 +68,17 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     >>> params_from_strings( inputs, params_to_strings( inputs, nested, None ), None )[ 'b' ][ 0 ][ 'd' ][ 0 ][ 'f' ][ 'g' ] is True
     True
     """
+
     def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
         args = {
-            'input'             : input,
-            'parent'            : input_values,
-            'value'             : input_values.get(input.name),
-            'prefixed_name'     : '%s%s' % (name_prefix, input.name),
-            'prefixed_label'    : '%s%s' % (label_prefix, input.label or input.name),
-            'prefix'            : parent_prefix,
-            'context'           : context,
-            'error'             : error
+            'input': input,
+            'parent': input_values,
+            'value': input_values.get(input.name),
+            'prefixed_name': '%s%s' % (name_prefix, input.name),
+            'prefixed_label': '%s%s' % (label_prefix, input.label or input.name),
+            'prefix': parent_prefix,
+            'context': context,
+            'error': error
         }
         if input.name not in input_values:
             args['error'] = 'No value found for \'%s\'.' % args.get('prefixed_label')
@@ -101,9 +109,17 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
             except:
                 case_error = 'The selected case is unavailable/invalid.'
                 pass
-            callback_helper(input.test_param, values, new_name_prefix, label_prefix, parent_prefix=name_prefix, context=context, error=case_error)
+            callback_helper(
+                input.test_param, values, new_name_prefix, label_prefix, parent_prefix=name_prefix, context=context, error=case_error)
             values['__current_case__'] = input.get_current_case(values[input.test_param.name])
-            visit_input_values(input.cases[values['__current_case__']].inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=name_prefix, **payload)
+            visit_input_values(
+                input.cases[values['__current_case__']].inputs,
+                values,
+                callback,
+                new_name_prefix,
+                label_prefix,
+                parent_prefix=name_prefix,
+                **payload)
         elif isinstance(input, Section):
             values = input_values[input.name] = input_values.get(input.name, {})
             new_name_prefix = name_prefix + input.name + '|'
@@ -125,7 +141,7 @@ def check_param(trans, param, incoming_value, param_values):
     try:
         if trans.workflow_building_mode:
             if isinstance(value, RuntimeValue):
-                return [{'__class__' : 'RuntimeValue'}, None]
+                return [{'__class__': 'RuntimeValue'}, None]
             if isinstance(value, dict):
                 if value.get('__class__') == 'RuntimeValue':
                     return [value, None]
@@ -272,9 +288,10 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
                 if not any(incoming_key.startswith(rep_prefix) for incoming_key in incoming.keys()) and rep_index >= input.min:
                     break
                 if rep_index < input.max:
-                    new_state = {'__index__' : rep_index}
+                    new_state = {'__index__': rep_index}
                     group_state.append(new_state)
-                    populate_state(request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context, check=check)
+                    populate_state(
+                        request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context, check=check)
                 rep_index += 1
         elif input.type == 'conditional':
             if input.value_ref and not input.value_ref_in_group:
@@ -289,7 +306,15 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
                 try:
                     current_case = input.get_current_case(value)
                     group_state = state[input.name] = {}
-                    populate_state(request_context, input.cases[current_case].inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check)
+                    populate_state(
+                        request_context,
+                        input.cases[current_case].inputs,
+                        incoming,
+                        group_state,
+                        errors,
+                        prefix=group_prefix,
+                        context=context,
+                        check=check)
                     group_state['__current_case__'] = current_case
                 except Exception:
                     errors[test_param_key] = 'The selected case is unavailable/invalid.'
@@ -303,7 +328,7 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
             while len(group_state) > len(writable_files):
                 del group_state[-1]
             while len(writable_files) > len(group_state):
-                new_state = {'__index__' : len(group_state)}
+                new_state = {'__index__': len(group_state)}
                 for upload_item in input.inputs.values():
                     new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)
                 group_state.append(new_state)

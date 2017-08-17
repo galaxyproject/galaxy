@@ -64,7 +64,8 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             pass
         else:
             if trans.user:
-                log.warning("SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % (trans.user.id, decoded_folder_id))
+                log.warning("SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" %
+                            (trans.user.id, decoded_folder_id))
             else:
                 log.warning("SECURITY: Anonymous user is trying to load restricted folder with ID of %s" % (decoded_folder_id))
             raise exceptions.ObjectNotFound('Folder with the id provided ( %s ) was not found' % str(folder_id))
@@ -98,28 +99,33 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                     is_private = False
 
                 # Can user manage the permissions on the dataset?
-                can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_dataset(current_user_roles, content_item.library_dataset_dataset_association.dataset))
+                can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_dataset(
+                    current_user_roles, content_item.library_dataset_dataset_association.dataset))
 
                 nice_size = util.nice_size(int(content_item.library_dataset_dataset_association.get_size()))
 
                 library_dataset_dict = content_item.to_dict()
 
-                return_item.update(dict(file_ext=library_dataset_dict['file_ext'],
-                                        date_uploaded=library_dataset_dict['date_uploaded'],
-                                        is_unrestricted=is_unrestricted,
-                                        is_private=is_private,
-                                        can_manage=can_manage,
-                                        file_size=nice_size))
+                return_item.update(
+                    dict(
+                        file_ext=library_dataset_dict['file_ext'],
+                        date_uploaded=library_dataset_dict['date_uploaded'],
+                        is_unrestricted=is_unrestricted,
+                        is_private=is_private,
+                        can_manage=can_manage,
+                        file_size=nice_size))
                 if content_item.library_dataset_dataset_association.message:
                     return_item.update(dict(message=content_item.library_dataset_dataset_association.message))
 
             # For every item include the default metadata
-            return_item.update(dict(id=encoded_id,
-                                    type=content_item.api_type,
-                                    name=content_item.name,
-                                    update_time=update_time,
-                                    create_time=create_time,
-                                    deleted=content_item.deleted))
+            return_item.update(
+                dict(
+                    id=encoded_id,
+                    type=content_item.api_type,
+                    name=content_item.name,
+                    update_time=update_time,
+                    create_time=create_time,
+                    deleted=content_item.deleted))
             folder_contents.append(return_item)
 
         # Return the reversed path so it starts with the library node.
@@ -135,12 +141,13 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         if folder.parent_library is not None:
             parent_library_id = trans.security.encode_id(folder.parent_library.id)
 
-        metadata = dict(full_path=full_path,
-                        can_add_library_item=can_add_library_item,
-                        can_modify_folder=can_modify_folder,
-                        folder_name=folder.name,
-                        folder_description=folder.description,
-                        parent_library_id=parent_library_id)
+        metadata = dict(
+            full_path=full_path,
+            can_add_library_item=can_add_library_item,
+            can_modify_folder=can_modify_folder,
+            folder_name=folder.name,
+            folder_description=folder.description,
+            parent_library_id=parent_library_id)
         folder_container = dict(metadata=metadata, folder_contents=folder_contents)
         return folder_container
 
@@ -230,7 +237,8 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                     dataset.api_type = 'file'
                     content_items.append(dataset)
                 else:
-                    can_access = trans.app.security_agent.can_access_dataset(current_user_roles, dataset.library_dataset_dataset_association.dataset)
+                    can_access = trans.app.security_agent.can_access_dataset(current_user_roles,
+                                                                             dataset.library_dataset_dataset_association.dataset)
                     if can_access:
                         dataset.api_type = 'file'
                         content_items.append(dataset)

@@ -4,7 +4,6 @@ memory.
 
 
 class StatisticsTracker(object):
-
     def __init__(self):
         self.min = None
         self.max = None

@@ -1,15 +1,11 @@
 from galaxy import model
 
-from .types import (
-    list,
-    paired
-)
+from .types import (list, paired)
 
 PLUGIN_CLASSES = [list.ListDatasetCollectionType, paired.PairedDatasetCollectionType]
 
 
 class DatasetCollectionTypesRegistry(object):
-
     def __init__(self, app):
         self.__plugins = dict([(p.collection_type, p()) for p in PLUGIN_CLASSES])
 

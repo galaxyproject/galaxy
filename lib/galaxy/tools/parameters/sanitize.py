@@ -119,6 +119,7 @@ class ToolParameterSanitizer(object):
             else:
                 log.debug('Invalid preset name specified: %s' % split_name)
         return rval
+
     # end class methods
 
     def __init__(self):

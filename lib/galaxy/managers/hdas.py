@@ -21,9 +21,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class HDAManager(datasets.DatasetAssociationManager,
-                 secured.OwnableManagerMixin,
-                 taggable.TaggableManagerMixin,
+class HDAManager(datasets.DatasetAssociationManager, secured.OwnableManagerMixin, taggable.TaggableManagerMixin,
                  annotatable.AnnotatableManagerMixin):
     """
     Interface/service object for interacting with HDAs.
@@ -82,8 +80,7 @@ class HDAManager(datasets.DatasetAssociationManager,
         """
         if not dataset:
             kwargs['create_dataset'] = True
-        hda = model.HistoryDatasetAssociation(history=history, dataset=dataset,
-                                              sa_session=self.app.model.context, **kwargs)
+        hda = model.HistoryDatasetAssociation(history=history, dataset=dataset, sa_session=self.app.model.context, **kwargs)
 
         if history:
             history.add_dataset(hda, set_hid=('hid' not in kwargs))
@@ -111,8 +108,7 @@ class HDAManager(datasets.DatasetAssociationManager,
             dataset=hda.dataset,
             visible=hda.visible,
             deleted=hda.deleted,
-            parent_id=kwargs.get('parent_id', None),
-        )
+            parent_id=kwargs.get('parent_id', None), )
         # add_dataset will update the hid to the next avail. in history
         if history:
             history.add_dataset(copy)
@@ -178,8 +174,7 @@ class HDAManager(datasets.DatasetAssociationManager,
         Return True if the hda's job was resubmitted at any point.
         """
         job_states = model.Job.states
-        query = (self._job_state_history_query(hda)
-                 .filter(model.JobStateHistory.state == job_states.RESUBMITTED))
+        query = (self._job_state_history_query(hda).filter(model.JobStateHistory.state == job_states.RESUBMITTED))
         return self.app.model.context.query(query.exists()).scalar()
 
     def _job_state_history_query(self, hda):
@@ -193,10 +188,8 @@ class HDAManager(datasets.DatasetAssociationManager,
         # TODO: this does not play well with copied hdas
         # NOTE: don't eagerload (JODA will load the hda were using!)
         hda_id = hda.id
-        query = (session.query(JobToOutputDatasetAssociation, JobStateHistory)
-                 .filter(JobToOutputDatasetAssociation.dataset_id == hda_id)
-                 .filter(JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id)
-                 .enable_eagerloads(False))
+        query = (session.query(JobToOutputDatasetAssociation, JobStateHistory).filter(JobToOutputDatasetAssociation.dataset_id == hda_id)
+                 .filter(JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id).enable_eagerloads(False))
         return query
 
     def data_conversion_status(self, hda):
@@ -240,9 +233,7 @@ class HDAManager(datasets.DatasetAssociationManager,
 
 
 class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,
-        datasets.DatasetAssociationSerializer,
-        taggable.TaggableSerializerMixin,
-        annotatable.AnnotatableSerializerMixin):
+        datasets.DatasetAssociationSerializer, taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin):
     model_manager_class = HDAManager
 
     def __init__(self, app):
@@ -260,58 +251,63 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'dataset_id',
             'state',
             'extension',
-            'deleted', 'purged', 'visible',
+            'deleted',
+            'purged',
+            'visible',
             'tags',
             'type',
             'url',
             'create_time',
             'update_time',
         ])
-        self.add_view('detailed', [
-            'model_class',
-            'history_id', 'hid',
-            # why include if model_class is there?
-            'hda_ldda',
-            # TODO: accessible needs to go away
-            'accessible',
+        self.add_view(
+            'detailed',
+            [
+                'model_class',
+                'history_id',
+                'hid',
+                # why include if model_class is there?
+                'hda_ldda',
+                # TODO: accessible needs to go away
+                'accessible',
 
-            # remapped
-            'genome_build', 'misc_info', 'misc_blurb',
-            'file_ext', 'file_size',
+                # remapped
+                'genome_build',
+                'misc_info',
+                'misc_blurb',
+                'file_ext',
+                'file_size',
+                'resubmitted',
+                'metadata',
+                'meta_files',
+                'data_type',
+                'peek',
+                'creating_job',
+                'rerunnable',
+                'uuid',
+                'permissions',
+                'file_name',
+                'display_apps',
+                'display_types',
+                'visualizations',
 
-            'resubmitted',
-            'metadata', 'meta_files', 'data_type',
-            'peek',
+                # 'url',
+                'download_url',
+                'annotation',
+                'api_type'
+            ],
+            include_keys_from='summary')
 
-            'creating_job',
-            'rerunnable',
-
-            'uuid',
-            'permissions',
-            'file_name',
-
-            'display_apps',
-            'display_types',
-            'visualizations',
-
-            # 'url',
-            'download_url',
-
-            'annotation',
-
-            'api_type'
-        ], include_keys_from='summary')
-
-        self.add_view('extended', [
-            'tool_version', 'parent_id', 'designation',
-        ], include_keys_from='detailed')
+        self.add_view(
+            'extended', [
+                'tool_version',
+                'parent_id',
+                'designation',
+            ], include_keys_from='detailed')
 
         # keyset returned to create show a dataset where the owner has no access
-        self.add_view('inaccessible', [
-            'accessible',
-            'id', 'name', 'history_id', 'hid', 'history_content_type',
-            'state', 'deleted', 'visible'
-        ])
+        self.add_view('inaccessible',
+                      ['accessible', 'id', 'name', 'history_id', 'hid', 'history_content_type', 'state', 'deleted', 'visible'])
 
     def add_serializers(self):
         super(HDASerializer, self).add_serializers()
@@ -401,11 +397,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
                 app_links = []
                 for display_name, display_link in display_links:
-                    app_links.append({
-                        'target': target_frame,
-                        'href': display_link,
-                        'text': gettext.gettext(display_name)
-                    })
+                    app_links.append({'target': target_frame, 'href': display_link, 'text': gettext.gettext(display_name)})
                 if app_links:
                     display_apps.append(dict(label=display_label, links=app_links))
 
@@ -428,24 +420,20 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         url_for = self.url_for
         encoded_id = self.app.security.encode_id(hda.id)
         urls = {
-            'purge'         : url_for(controller='dataset', action='purge_async', dataset_id=encoded_id),
-            'display'       : url_for(controller='dataset', action='display', dataset_id=encoded_id, preview=True),
-            'edit'          : url_for(controller='dataset', action='edit', dataset_id=encoded_id),
-            'download'      : url_for(controller='dataset', action='display',
-                                      dataset_id=encoded_id, to_ext=hda.extension),
-            'report_error'  : url_for(controller='dataset', action='errors', id=encoded_id),
-            'rerun'         : url_for(controller='tool_runner', action='rerun', id=encoded_id),
-            'show_params'   : url_for(controller='dataset', action='show_params', dataset_id=encoded_id),
-            'visualization' : url_for(controller='visualization', action='index',
-                                      id=encoded_id, model='HistoryDatasetAssociation'),
-            'meta_download' : url_for(controller='dataset', action='get_metadata_file',
-                                      hda_id=encoded_id, metadata_name=''),
+            'purge': url_for(controller='dataset', action='purge_async', dataset_id=encoded_id),
+            'display': url_for(controller='dataset', action='display', dataset_id=encoded_id, preview=True),
+            'edit': url_for(controller='dataset', action='edit', dataset_id=encoded_id),
+            'download': url_for(controller='dataset', action='display', dataset_id=encoded_id, to_ext=hda.extension),
+            'report_error': url_for(controller='dataset', action='errors', id=encoded_id),
+            'rerun': url_for(controller='tool_runner', action='rerun', id=encoded_id),
+            'show_params': url_for(controller='dataset', action='show_params', dataset_id=encoded_id),
+            'visualization': url_for(controller='visualization', action='index', id=encoded_id, model='HistoryDatasetAssociation'),
+            'meta_download': url_for(controller='dataset', action='get_metadata_file', hda_id=encoded_id, metadata_name=''),
         }
         return urls
 
 
-class HDADeserializer(datasets.DatasetAssociationDeserializer,
-                      taggable.TaggableDeserializerMixin,
+class HDADeserializer(datasets.DatasetAssociationDeserializer, taggable.TaggableDeserializerMixin,
                       annotatable.AnnotatableDeserializerMixin):
     """
     Interface/service object for validating and deserializing dictionaries into histories.
@@ -462,18 +450,15 @@ class HDADeserializer(datasets.DatasetAssociationDeserializer,
         annotatable.AnnotatableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update({
-            'visible'       : self.deserialize_bool,
+            'visible': self.deserialize_bool,
             # remapped
-            'genome_build'  : lambda i, k, v, **c: self.deserialize_genome_build(i, 'dbkey', v),
-            'misc_info'     : lambda i, k, v, **c: self.deserialize_basestring(i, 'info', v,
-                                                                               convert_none_to_empty=True),
+            'genome_build': lambda i, k, v, **c: self.deserialize_genome_build(i, 'dbkey', v),
+            'misc_info': lambda i, k, v, **c: self.deserialize_basestring(i, 'info', v, convert_none_to_empty=True),
         })
         self.deserializable_keyset.update(self.deserializers.keys())
 
 
-class HDAFilterParser(datasets.DatasetAssociationFilterParser,
-                      taggable.TaggableFilterMixin,
-                      annotatable.AnnotatableFilterMixin):
+class HDAFilterParser(datasets.DatasetAssociationFilterParser, taggable.TaggableFilterMixin, annotatable.AnnotatableFilterMixin):
     model_manager_class = HDAManager
     model_class = model.HistoryDatasetAssociation
 

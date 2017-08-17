@@ -79,9 +79,9 @@ def fitness_and_quality_parsed(mime_type, parsed_ranges):
     for (type, subtype, params) in parsed_ranges:
         if (type == target_type or type == '*' or target_type == '*') and \
                 (subtype == target_subtype or subtype == '*' or target_subtype == '*'):
-            param_matches = reduce(lambda x, y: x + y, [1 for (key, value) in
-                                   target_params.iteritems() if key != 'q' and
-                                   key in params and value == params[key]], 0)
+            param_matches = reduce(lambda x, y: x + y, [
+                1 for (key, value) in target_params.iteritems() if key != 'q' and key in params and value == params[key]
+            ], 0)
             fitness = (type == target_type) and 100 or 0
             fitness += (subtype == target_subtype) and 10 or 0
             fitness += param_matches
@@ -126,8 +126,7 @@ def best_match(supported, header):
     'text/xml'
     """
     parsed_header = [parse_media_range(r) for r in header.split(",")]
-    weighted_matches = [(fitness_and_quality_parsed(mime_type, parsed_header), mime_type)
-                        for mime_type in supported]
+    weighted_matches = [(fitness_and_quality_parsed(mime_type, parsed_header), mime_type) for mime_type in supported]
     weighted_matches.sort()
     return weighted_matches[-1][0][1] and weighted_matches[-1][1] or ''
 
@@ -136,7 +135,6 @@ if __name__ == "__main__":
     import unittest
 
     class TestMimeParsing(unittest.TestCase):
-
         def test_parse_media_range(self):
             self.assert_(('application', 'xml', {'q': '1'}) == parse_media_range('application/xml;q=1'))
             self.assertEqual(('application', 'xml', {'q': '1'}), parse_media_range('application/xml'))

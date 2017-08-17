@@ -22,7 +22,8 @@ def upgrade(migrate_engine):
         cmd = "UPDATE migrate_tools set repository_path='lib/galaxy/tool_shed/migrate';"
         migrate_engine.execute(cmd)
     except Exception:
-        log.exception("Updating migrate_tools.repository_path column to point to the new location lib/tool_shed/galaxy_install/migrate failed.")
+        log.exception(
+            "Updating migrate_tools.repository_path column to point to the new location lib/tool_shed/galaxy_install/migrate failed.")
 
 
 def downgrade(migrate_engine):

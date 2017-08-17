@@ -14,7 +14,6 @@ RUNTIME_SECONDS_KEY = "runtime_seconds"
 
 
 class CorePluginFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         value = int(value)
         if key == GALAXY_SLOTS_KEY:

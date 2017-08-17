@@ -31,7 +31,7 @@ def validate_email(trans, email, user=None, check_dup=True):
     message = ''
     if user and user.email == email:
         return message
-    if not(VALID_EMAIL_RE.match(email)):
+    if not (VALID_EMAIL_RE.match(email)):
         message = "The format of the email address is not correct."
     elif len(email) > EMAIL_MAX_LEN:
         message = "Email address cannot be more than %d characters in length." % EMAIL_MAX_LEN
@@ -56,7 +56,7 @@ def validate_publicname(trans, publicname, user=None):
         return "Public name must be at least %d characters in length." % (PUBLICNAME_MIN_LEN)
     if len(publicname) > PUBLICNAME_MAX_LEN:
         return "Public name cannot be more than %d characters in length." % (PUBLICNAME_MAX_LEN)
-    if not(VALID_PUBLICNAME_RE.match(publicname)):
+    if not (VALID_PUBLICNAME_RE.match(publicname)):
         return "Public name must contain only lower-case letters, numbers, '.', '_' and '-'."
     if trans.sa_session.query(trans.app.model.User).filter_by(username=publicname).first():
         return "Public name is taken; please choose another."

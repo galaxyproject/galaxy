@@ -52,11 +52,13 @@ def upgrade(migrate_engine):
     except Exception:
         log.exception("Setting default data for galaxy_user.purged column failed.")
     # Add 1 index to the history_dataset_association table
-    i = Index('ix_hda_copied_from_library_dataset_dataset_association_id', HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id)
+    i = Index('ix_hda_copied_from_library_dataset_dataset_association_id',
+              HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id)
     try:
         i.create()
     except Exception:
-        log.exception("Adding index 'ix_hda_copied_from_library_dataset_dataset_association_id' to history_dataset_association table failed.")
+        log.exception(
+            "Adding index 'ix_hda_copied_from_library_dataset_dataset_association_id' to history_dataset_association table failed.")
 
 
 def downgrade(migrate_engine):

@@ -26,12 +26,7 @@ context = scoped_session(sessionmaker(autoflush=False, autocommit=True))
 
 
 class DeferredJob(object):
-    states = Bunch(NEW='new',
-                   WAITING='waiting',
-                   QUEUED='queued',
-                   RUNNING='running',
-                   OK='ok',
-                   ERROR='error')
+    states = Bunch(NEW='new', WAITING='waiting', QUEUED='queued', RUNNING='running', OK='ok', ERROR='error')
 
     def __init__(self, state=None, plugin=None, params=None):
         self.state = state
@@ -43,9 +38,7 @@ DeferredJob.table = Table("deferred_job", metadata,
                           Column("id", Integer, primary_key=True),
                           Column("create_time", DateTime, default=now),
                           Column("update_time", DateTime, default=now, onupdate=now),
-                          Column("state", String(64), index=True),
-                          Column("plugin", String(128), index=True),
-                          Column("params", JSONType))
+                          Column("state", String(64), index=True), Column("plugin", String(128), index=True), Column("params", JSONType))
 
 mapper(DeferredJob, DeferredJob.table, properties={})
 

@@ -15,10 +15,7 @@ import sys
 import mako.lookup
 
 from galaxy import util
-from galaxy.util import (
-    bunch,
-    odict
-)
+from galaxy.util import (bunch, odict)
 
 log = logging.getLogger(__name__)
 
@@ -154,8 +151,7 @@ class PluginManager(object):
             #   pro: filesystem name ensures uniqueness
             #   con: rel. inflexible
             name=os.path.split(plugin_path)[1],
-            path=plugin_path
-        )
+            path=plugin_path)
         return plugin
 
 
@@ -419,7 +415,7 @@ class PageServingPluginManager(PluginManager):
             return False
         # reject only if we don't have either
         listdir = os.listdir(plugin_path)
-        if(('templates' not in listdir) and ('static' not in listdir)):
+        if (('templates' not in listdir) and ('static' not in listdir)):
             return False
         return True
 
@@ -531,8 +527,11 @@ class PageServingPluginManager(PluginManager):
         template_lookup = self._create_mako_template_lookup(self.template_cache_dir, template_lookup_paths)
         return template_lookup
 
-    def _create_mako_template_lookup(self, cache_dir, paths,
-                                     collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING):
+    def _create_mako_template_lookup(self,
+                                     cache_dir,
+                                     paths,
+                                     collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE,
+                                     output_encoding=DEFAULT_TEMPLATE_ENCODING):
         """
         Create a ``TemplateLookup`` with defaults.
 
@@ -541,10 +540,7 @@ class PageServingPluginManager(PluginManager):
         """
         # TODO: possible to add galaxy/templates into the lookup here?
         return mako.lookup.TemplateLookup(
-            directories=paths,
-            module_directory=cache_dir,
-            collection_size=collection_size,
-            output_encoding=output_encoding)
+            directories=paths, module_directory=cache_dir, collection_size=collection_size, output_encoding=output_encoding)
 
     def fill_template(self, trans, plugin, template_filename, **kwargs):
         """
@@ -567,7 +563,7 @@ class PageServingPluginManager(PluginManager):
     # TODO: some sort of url_for for these plugins
 
 
-# =============================================================================
+    # =============================================================================
 class Plugin(object):
     """
     Plugin as object/class.

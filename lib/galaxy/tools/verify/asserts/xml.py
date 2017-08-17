@@ -72,7 +72,9 @@ def assert_attribute_matches(output, path, attribute, expression):
     xml = xml_find(output, path)
     attribute_value = xml.attrib[attribute]
     if re.match(expression, attribute_value) is None:
-        errmsg = "Expected attribute '%s' on element with path '%s' to match '%s', instead attribute value was '%s'." % (attribute, path, expression, attribute_value)
+        errmsg = "Expected attribute '%s' on element with path '%s' to match '%s', instead attribute value was '%s'." % (attribute, path,
+                                                                                                                         expression,
+                                                                                                                         attribute_value)
         raise AssertionError(errmsg)
 
 

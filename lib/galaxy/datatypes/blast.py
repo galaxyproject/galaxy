@@ -34,11 +34,7 @@ import logging
 import os
 from time import sleep
 
-from .data import (
-    Data,
-    get_file_peek,
-    Text
-)
+from .data import (Data, get_file_peek, Text)
 from .xml import GenericXml
 
 log = logging.getLogger(__name__)
@@ -80,8 +76,10 @@ class BlastXml(GenericXml):
             handle.close()
             return False
         line = handle.readline()
-        if line.strip() not in ['<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "http://www.ncbi.nlm.nih.gov/dtd/NCBI_BlastOutput.dtd">',
-                                '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "NCBI_BlastOutput.dtd">']:
+        if line.strip() not in [
+                '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "http://www.ncbi.nlm.nih.gov/dtd/NCBI_BlastOutput.dtd">',
+                '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "NCBI_BlastOutput.dtd">'
+        ]:
             handle.close()
             return False
         line = handle.readline()
@@ -97,8 +95,7 @@ class BlastXml(GenericXml):
             # For one file only, use base class method (move/copy)
             return Text.merge(split_files, output_file)
         if not split_files:
-            raise ValueError("Given no BLAST XML files, %r, to merge into %s"
-                             % (split_files, output_file))
+            raise ValueError("Given no BLAST XML files, %r, to merge into %s" % (split_files, output_file))
         out = open(output_file, "w")
         h = None
         for f in split_files:
@@ -128,8 +125,10 @@ class BlastXml(GenericXml):
                 raise ValueError("%s is not an XML file!" % f)
             line = h.readline()
             header += line
-            if line.strip() not in ['<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "http://www.ncbi.nlm.nih.gov/dtd/NCBI_BlastOutput.dtd">',
-                                    '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "NCBI_BlastOutput.dtd">']:
+            if line.strip() not in [
+                    '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "http://www.ncbi.nlm.nih.gov/dtd/NCBI_BlastOutput.dtd">',
+                    '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "NCBI_BlastOutput.dtd">'
+            ]:
                 out.write(header)  # for diagnosis
                 out.close()
                 h.close()
@@ -162,8 +161,8 @@ class BlastXml(GenericXml):
                 # Enough to check <BlastOutput_program> and <BlastOutput_version> match
                 out.close()
                 h.close()
-                raise ValueError("BLAST XML headers don't match for %s and %s - have:\n%s\n...\n\nAnd:\n%s\n...\n"
-                                 % (split_files[0], f, old_header[:300], header[:300]))
+                raise ValueError("BLAST XML headers don't match for %s and %s - have:\n%s\n...\n\nAnd:\n%s\n...\n" %
+                                 (split_files[0], f, old_header[:300], header[:300]))
             else:
                 out.write("    <Iteration>\n")
             for line in h:
@@ -176,6 +175,7 @@ class BlastXml(GenericXml):
         out.write("  </BlastOutput_iterations>\n")
         out.write("</BlastOutput>\n")
         out.close()
+
     merge = staticmethod(merge)
 
 
@@ -198,16 +198,14 @@ class _BlastDb(object):
         except Exception:
             return "BLAST database (multiple files)"
 
-    def display_data(self, trans, data, preview=False, filename=None,
-                     to_ext=None, size=None, offset=None, **kwd):
+    def display_data(self, trans, data, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
         """Documented as an old display method, but still gets called via tests etc
 
         This allows us to format the data shown in the central pane via the "eye" icon.
         """
         if filename is not None and filename != "index":
             # Change nothing - important for the unit tests to access child files:
-            return Data.display_data(self, trans, data, preview, filename,
-                                     to_ext, size, offset, **kwd)
+            return Data.display_data(self, trans, data, preview, filename, to_ext, size, offset, **kwd)
         if self.file_ext == "blastdbn":
             title = "This is a nucleotide BLAST database"
         elif self.file_ext == "blastdbp":
@@ -253,16 +251,30 @@ class BlastNucDb(_BlastDb, Data):
         self.add_composite_file('blastdb.nin', is_binary=True)  # index file
         self.add_composite_file('blastdb.nsq', is_binary=True)  # nucleotide sequences
         self.add_composite_file('blastdb.nal', is_binary=False, optional=True)  # alias ( -gi_mask option of makeblastdb)
-        self.add_composite_file('blastdb.nhd', is_binary=True, optional=True)  # sorted sequence hash values ( -hash_index option of makeblastdb)
-        self.add_composite_file('blastdb.nhi', is_binary=True, optional=True)  # index of sequence hash values ( -hash_index option of makeblastdb)
-        self.add_composite_file('blastdb.nnd', is_binary=True, optional=True)  # sorted GI values ( -parse_seqids option of makeblastdb and gi present in the description lines)
-        self.add_composite_file('blastdb.nni', is_binary=True, optional=True)  # index of GI values ( -parse_seqids option of makeblastdb and gi present in the description lines)
-        self.add_composite_file('blastdb.nog', is_binary=True, optional=True)  # OID->GI lookup file ( -hash_index or -parse_seqids option of makeblastdb)
-        self.add_composite_file('blastdb.nsd', is_binary=True, optional=True)  # sorted sequence accession values ( -hash_index or -parse_seqids option of makeblastdb)
-        self.add_composite_file('blastdb.nsi', is_binary=True, optional=True)  # index of sequence accession values ( -hash_index or -parse_seqids option of makeblastdb)
-#        self.add_composite_file('blastdb.00.idx', is_binary=True, optional=True)  # first volume of the MegaBLAST index generated by makembindex
-# The previous line should be repeated for each index volume, with filename extensions like '.01.idx', '.02.idx', etc.
-        self.add_composite_file('blastdb.shd', is_binary=True, optional=True)  # MegaBLAST index superheader (-old_style_index false option of makembindex)
+        self.add_composite_file(
+            'blastdb.nhd', is_binary=True, optional=True)  # sorted sequence hash values ( -hash_index option of makeblastdb)
+        self.add_composite_file(
+            'blastdb.nhi', is_binary=True, optional=True)  # index of sequence hash values ( -hash_index option of makeblastdb)
+        self.add_composite_file(
+            'blastdb.nnd', is_binary=True,
+            optional=True)  # sorted GI values ( -parse_seqids option of makeblastdb and gi present in the description lines)
+        self.add_composite_file(
+            'blastdb.nni', is_binary=True,
+            optional=True)  # index of GI values ( -parse_seqids option of makeblastdb and gi present in the description lines)
+        self.add_composite_file(
+            'blastdb.nog', is_binary=True, optional=True)  # OID->GI lookup file ( -hash_index or -parse_seqids option of makeblastdb)
+        self.add_composite_file(
+            'blastdb.nsd', is_binary=True,
+            optional=True)  # sorted sequence accession values ( -hash_index or -parse_seqids option of makeblastdb)
+        self.add_composite_file(
+            'blastdb.nsi', is_binary=True,
+            optional=True)  # index of sequence accession values ( -hash_index or -parse_seqids option of makeblastdb)
+        #        self.add_composite_file('blastdb.00.idx', is_binary=True, optional=True)  # first volume of the MegaBLAST index generated by makembindex
+        # The previous line should be repeated for each index volume, with filename extensions like '.01.idx', '.02.idx', etc.
+        self.add_composite_file(
+            'blastdb.shd', is_binary=True, optional=True)  # MegaBLAST index superheader (-old_style_index false option of makembindex)
+
+
 #        self.add_composite_file('blastdb.naa', is_binary=True, optional=True)  # index of a WriteDB column for e.g. mask data
 #        self.add_composite_file('blastdb.nab', is_binary=True, optional=True)  # data of a WriteDB column
 #        self.add_composite_file('blastdb.nac', is_binary=True, optional=True)  # multiple byte order for a WriteDB column
@@ -277,7 +289,7 @@ class BlastProtDb(_BlastDb, Data):
 
     def __init__(self, **kwd):
         Data.__init__(self, **kwd)
-# Component file comments are as in BlastNucDb except where noted
+        # Component file comments are as in BlastNucDb except where noted
         self.add_composite_file('blastdb.phr', is_binary=True)
         self.add_composite_file('blastdb.pin', is_binary=True)
         self.add_composite_file('blastdb.psq', is_binary=True)  # protein sequences
@@ -288,6 +300,8 @@ class BlastProtDb(_BlastDb, Data):
         self.add_composite_file('blastdb.pog', is_binary=True, optional=True)
         self.add_composite_file('blastdb.psd', is_binary=True, optional=True)
         self.add_composite_file('blastdb.psi', is_binary=True, optional=True)
+
+
 #        self.add_composite_file('blastdb.paa', is_binary=True, optional=True)
 #        self.add_composite_file('blastdb.pab', is_binary=True, optional=True)
 #        self.add_composite_file('blastdb.pac', is_binary=True, optional=True)

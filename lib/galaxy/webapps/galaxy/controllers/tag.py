@@ -14,8 +14,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class TagsController (BaseUIController, UsesTagsMixin):
-
+class TagsController(BaseUIController, UsesTagsMixin):
     @web.expose
     @web.require_login("edit item tags")
     def get_tagging_elt_async(self, trans, item_id, item_class, elt_context=""):
@@ -25,15 +24,16 @@ class TagsController (BaseUIController, UsesTagsMixin):
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         if not item:
             return trans.show_error_message("No item of class %s with id %s " % (item_class, item_id))
-        return trans.fill_template("/tagging_common.mako",
-                                   tag_type="individual",
-                                   user=trans.user,
-                                   tagged_item=item,
-                                   elt_context=elt_context,
-                                   in_form=False,
-                                   input_size="22",
-                                   tag_click_fn="default_tag_click_fn",
-                                   use_toggle_link=False)
+        return trans.fill_template(
+            "/tagging_common.mako",
+            tag_type="individual",
+            user=trans.user,
+            tagged_item=item,
+            elt_context=elt_context,
+            in_form=False,
+            input_size="22",
+            tag_click_fn="default_tag_click_fn",
+            use_toggle_link=False)
 
     @web.expose
     @web.require_login("add tag to an item")
@@ -113,17 +113,12 @@ class TagsController (BaseUIController, UsesTagsMixin):
         # Build select statement.
         cols_to_select = [item_tag_assoc_class.table.c.tag_id, func.count('*')]
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(trans.app.model.Tag.table)
-        where_clause = and_(trans.app.model.Tag.table.c.name.like(q + "%"),
-                            item_tag_assoc_class.table.c.user_id == user.id)
+        where_clause = and_(trans.app.model.Tag.table.c.name.like(q + "%"), item_tag_assoc_class.table.c.user_id == user.id)
         order_by = [func.count("*").desc()]
         group_by = item_tag_assoc_class.table.c.tag_id
         # Do query and get result set.
-        query = select(columns=cols_to_select,
-                       from_obj=from_obj,
-                       whereclause=where_clause,
-                       group_by=group_by,
-                       order_by=order_by,
-                       limit=limit)
+        query = select(
+            columns=cols_to_select, from_obj=from_obj, whereclause=where_clause, group_by=group_by, order_by=order_by, limit=limit)
         result_set = trans.sa_session.execute(query)
         # Create and return autocomplete data.
         ac_data = "#Header|Your Tags\n"
@@ -159,18 +154,13 @@ class TagsController (BaseUIController, UsesTagsMixin):
         # Build select statement.
         cols_to_select = [item_tag_assoc_class.table.c.value, func.count('*')]
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(trans.app.model.Tag.table)
-        where_clause = and_(item_tag_assoc_class.table.c.user_id == user.id,
-                            trans.app.model.Tag.table.c.id == tag.id,
+        where_clause = and_(item_tag_assoc_class.table.c.user_id == user.id, trans.app.model.Tag.table.c.id == tag.id,
                             item_tag_assoc_class.table.c.value.like(tag_value + "%"))
         order_by = [func.count("*").desc(), item_tag_assoc_class.table.c.value]
         group_by = item_tag_assoc_class.table.c.value
         # Do query and get result set.
-        query = select(columns=cols_to_select,
-                       from_obj=from_obj,
-                       whereclause=where_clause,
-                       group_by=group_by,
-                       order_by=order_by,
-                       limit=limit)
+        query = select(
+            columns=cols_to_select, from_obj=from_obj, whereclause=where_clause, group_by=group_by, order_by=order_by, limit=limit)
         result_set = trans.sa_session.execute(query)
         # Create and return autocomplete data.
         ac_data = "#Header|Your Values for '%s'\n" % (tag_name)
@@ -186,15 +176,11 @@ class TagsController (BaseUIController, UsesTagsMixin):
         """
         # Build select stmt.
         cols_to_select = [item_tag_assoc_class.table.c.user_tname, func.count('*')]
-        where_clause = and_(item_tag_assoc_class.table.c.user_id == user.id,
-                            item_tag_assoc_class.table.c.tag_id == tag.id)
+        where_clause = and_(item_tag_assoc_class.table.c.user_id == user.id, item_tag_assoc_class.table.c.tag_id == tag.id)
         group_by = item_tag_assoc_class.table.c.user_tname
         order_by = [func.count("*").desc()]
         # Do query and get result set.
-        query = select(columns=cols_to_select,
-                       whereclause=where_clause,
-                       group_by=group_by,
-                       order_by=order_by)
+        query = select(columns=cols_to_select, whereclause=where_clause, group_by=group_by, order_by=order_by)
         result_set = trans.sa_session.execute(query)
         user_tag_names = list()
         for row in result_set:

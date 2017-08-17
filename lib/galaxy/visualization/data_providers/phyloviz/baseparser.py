@@ -3,6 +3,7 @@ import json
 
 class Node(object):
     """Node class of PhyloTree, which represents a CLAUDE in a phylogenetic tree"""
+
     def __init__(self, nodeName, **kwargs):
         """Creates a node and adds in the typical annotations"""
         self.name, self.id = nodeName, kwargs.get("id", 0)
@@ -29,12 +30,7 @@ class Node(object):
 
     def toJson(self):
         """Converts the data in the node to a dict representation of json"""
-        thisJson = {
-            "name"      : self.name,
-            "id"        : self.id,
-            "depth"     : self.depth,
-            "dist"      : self.length
-        }
+        thisJson = {"name": self.name, "id": self.id, "depth": self.depth, "dist": self.length}
         thisJson = self.addChildrenToJson(thisJson)
         thisJson = self.addMiscToJson(thisJson)
         return thisJson

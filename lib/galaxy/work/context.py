@@ -1,8 +1,4 @@
-from galaxy.managers.context import (
-    ProvidesAppContext,
-    ProvidesHistoryContext,
-    ProvidesUserContext
-)
+from galaxy.managers.context import (ProvidesAppContext, ProvidesHistoryContext, ProvidesUserContext)
 
 
 class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistoryContext):

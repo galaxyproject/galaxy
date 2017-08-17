@@ -9,12 +9,7 @@ from sys import getsizeof
 
 import sqlalchemy
 from sqlalchemy.ext.mutable import Mutable
-from sqlalchemy.types import (
-    CHAR,
-    LargeBinary,
-    String,
-    TypeDecorator
-)
+from sqlalchemy.types import (CHAR, LargeBinary, String, TypeDecorator)
 
 from galaxy import app
 from galaxy.util.aliaspickler import AliasPickleModule
@@ -87,6 +82,7 @@ class MutationObj(Mutable):
 
     And other minor changes to make it work for us.
     """
+
     @classmethod
     def coerce(cls, key, value):
         if isinstance(value, dict) and not isinstance(value, MutationDict):
@@ -219,9 +215,7 @@ class MutationList(MutationObj, list):
 
 MutationObj.associate_with(JSONType)
 
-metadata_pickler = AliasPickleModule({
-    ("cookbook.patterns", "Bunch"): ("galaxy.util.bunch", "Bunch")
-})
+metadata_pickler = AliasPickleModule({("cookbook.patterns", "Bunch"): ("galaxy.util.bunch", "Bunch")})
 
 
 def total_size(o, handlers={}, verbose=False):
@@ -236,21 +230,17 @@ def total_size(o, handlers={}, verbose=False):
 
     Recipe from:  https://code.activestate.com/recipes/577504-compute-memory-footprint-of-an-object-and-its-cont/
     """
+
     def dict_handler(d):
         return chain.from_iterable(d.items())
 
-    all_handlers = {tuple: iter,
-                    list: iter,
-                    deque: iter,
-                    dict: dict_handler,
-                    set: iter,
-                    frozenset: iter}
-    all_handlers.update(handlers)     # user handlers take precedence
-    seen = set()                      # track which object id's have already been seen
-    default_size = getsizeof(0)       # estimate sizeof object without __sizeof__
+    all_handlers = {tuple: iter, list: iter, deque: iter, dict: dict_handler, set: iter, frozenset: iter}
+    all_handlers.update(handlers)  # user handlers take precedence
+    seen = set()  # track which object id's have already been seen
+    default_size = getsizeof(0)  # estimate sizeof object without __sizeof__
 
     def sizeof(o):
-        if id(o) in seen:       # do not double count the same object
+        if id(o) in seen:  # do not double count the same object
             return 0
         seen.add(id(o))
         s = getsizeof(o, default_size)

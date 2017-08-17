@@ -43,16 +43,16 @@ YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ")
 RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ")
 UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
 
-App = namedtuple(
-    "App",
-    ["config_paths", "default_port", "expected_app_factories", "destination", "schema_path", "uwsgi_module"]
-)
+App = namedtuple("App", ["config_paths", "default_port", "expected_app_factories", "destination", "schema_path", "uwsgi_module"])
 
 UWSGI_OPTIONS = OrderedDict([
     ('http', {
-        'desc': """The address and port on which to listen.  By default, only listen to localhost ($app_name will not be accessible over the network).  Use '0.0.0.0' to listen on all available network interfaces.""",
-        'default': '127.0.0.1:$default_port',
-        'type': 'str',
+        'desc':
+        """The address and port on which to listen.  By default, only listen to localhost ($app_name will not be accessible over the network).  Use '0.0.0.0' to listen on all available network interfaces.""",
+        'default':
+        '127.0.0.1:$default_port',
+        'type':
+        'str',
     }),
     ('threads', {
         'default': 8,
@@ -89,7 +89,6 @@ DROP_OPTION_VALUE = object()
 
 
 class _OptionAction(object):
-
     def converted(self, args, app_desc, key, value):
         pass
 
@@ -98,7 +97,6 @@ class _OptionAction(object):
 
 
 class _DeprecatedAndDroppedAction(_OptionAction):
-
     def converted(self, args, app_desc, key, value):
         print("Option [%s] has been deprecated and dropped. It is not included in converted configuration." % key)
         return DROP_OPTION_VALUE
@@ -108,7 +106,6 @@ class _DeprecatedAndDroppedAction(_OptionAction):
 
 
 class _PasteAppFactoryAction(_OptionAction):
-
     def converted(self, args, app_desc, key, value):
         if value not in app_desc.expected_app_factories:
             raise Exception("Ending convert process - unknown paste factory encountered [%s]" % value)
@@ -120,7 +117,6 @@ class _PasteAppFactoryAction(_OptionAction):
 
 
 class _ProductionNotReady(_OptionAction):
-
     def __init__(self, unsafe_value):
         self.unsafe_value = unsafe_value
 
@@ -132,7 +128,6 @@ class _ProductionNotReady(_OptionAction):
 
 
 class _HandleFilterWithAction(_OptionAction):
-
     def converted(self, args, app_desc, key, value):
         print("filter-with converted to prefixed module load of uwsgi module, dropping from converted configuration")
         return DROP_OPTION_VALUE
@@ -173,7 +168,6 @@ App.schema = property(_schema)
 
 OptionValue = namedtuple("OptionValue", ["name", "value", "option"])
 
-
 UNKNOWN_OPTION = {
     "type": "str",
     "required": False,
@@ -190,7 +184,6 @@ OPTION_DEFAULTS = {
 
 
 class Schema(object):
-
     def __init__(self, mapping):
         self.app_schema = mapping
 
@@ -205,7 +198,6 @@ class Schema(object):
 
 
 class AppSchema(Schema):
-
     def __init__(self, app_desc):
         schema_path = app_desc.schema_path
         app_name = app_desc.app_name
@@ -231,24 +223,21 @@ GALAXY_APP = App(
     ["galaxy.web.buildapp:app_factory"],  # TODO: Galaxy could call factory a few different things and they'd all be fine.
     "config/galaxy.yml",
     "lib/galaxy/webapps/galaxy/config_schema.yml",
-    'galaxy.webapps.galaxy.buildapp:uwsgi_app()',
-)
+    'galaxy.webapps.galaxy.buildapp:uwsgi_app()', )
 SHED_APP = App(
     ["tool_shed_wsgi.ini", "config/tool_shed.ini"],
     "9009",
     ["galaxy.webapps.tool_shed.buildapp:app_factory"],
     "config/tool_shed.yml",
     "lib/galaxy/webapps/tool_shed/config_schema.yml",
-    'galaxy.webapps.tool_shed.buildapp:uwsgi_app()',
-)
+    'galaxy.webapps.tool_shed.buildapp:uwsgi_app()', )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
     "9001",
     ["galaxy.webapps.reports.buildapp:app_factory"],
     "config/reports.yml",
     "lib/galaxy/webapps/reports/config_schema.yml",
-    'galaxy.webapps.reports.buildapp:uwsgi_app()',
-)
+    'galaxy.webapps.reports.buildapp:uwsgi_app()', )
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
 
@@ -266,14 +255,10 @@ def main(argv=None):
 
 def _arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('action', metavar='ACTION', type=str,
-                        choices=ACTIONS.keys(),
-                        help='action to perform')
-    parser.add_argument('app', metavar='APP', type=str, nargs="?",
-                        help=APP_DESCRIPTION)
+    parser.add_argument('action', metavar='ACTION', type=str, choices=ACTIONS.keys(), help='action to perform')
+    parser.add_argument('app', metavar='APP', type=str, nargs="?", help=APP_DESCRIPTION)
     parser.add_argument('--add-comments', default=False, action="store_true")
-    parser.add_argument('--dry-run', default=False, action="store_true",
-                        help=DRY_RUN_DESCRIPTION)
+    parser.add_argument('--dry-run', default=False, action="store_true", help=DRY_RUN_DESCRIPTION)
     parser.add_argument('--galaxy_root', default=".", type=str)
     return parser
 
@@ -334,11 +319,7 @@ def _build_uwsgi_schema(args, app_desc):
             option["desc"] = line.split(":", 1)[1]
 
         last_line = line
-    schema = {
-        "type": "map",
-        "desc": "uwsgi definition, see http://uwsgi-docs.readthedocs.io/en/latest/Options.html",
-        "mapping": options
-    }
+    schema = {"type": "map", "desc": "uwsgi definition, see http://uwsgi-docs.readthedocs.io/en/latest/Options.html", "mapping": options}
     path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)
     contents = _ordered_dump(schema)
     _write_to_file(args, contents, path)
@@ -416,20 +397,17 @@ def _validate(args, app_desc):
         raise Exception("Cannot validate file, pykwalify is not installed.")
     c = Core(
         source_file=path,
-        schema_files=[name],
-    )
+        schema_files=[name], )
     c.validate()
 
 
 class PrefixFilter(object):
-
     def __init__(self, name, prefix):
         self.name = name
         self.prefix = prefix
 
 
 class GzipFilter(object):
-
     def __init__(self, name):
         self.name = name
 
@@ -660,9 +638,7 @@ def _warn(message):
 
 
 def _ordered_load(stream):
-
     class OrderedLoader(yaml.Loader):
-
         def __init__(self, stream):
             self._root = os.path.split(stream.name)[0]
             super(OrderedLoader, self).__init__(stream)
@@ -676,9 +652,7 @@ def _ordered_load(stream):
         loader.flatten_mapping(node)
         return OrderedDict(loader.construct_pairs(node))
 
-    OrderedLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        construct_mapping)
+    OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
     OrderedLoader.add_constructor('!include', OrderedLoader.include)
 
     return yaml.load(stream, OrderedLoader)
@@ -689,9 +663,8 @@ def _ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
         pass
 
     def _dict_representer(dumper, data):
-        return dumper.represent_mapping(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            data.items())
+        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)
 
@@ -704,7 +677,6 @@ ACTIONS = {
     "build_uwsgi_yaml": _build_uwsgi_schema,
     "build_rst": _to_rst,
 }
-
 
 if __name__ == '__main__':
     main()

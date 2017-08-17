@@ -14,19 +14,7 @@ import yaml
 
 import galaxy.util
 
-from . import (
-    binary,
-    coverage,
-    data,
-    images,
-    interval,
-    qualityscore,
-    sequence,
-    tabular,
-    text,
-    tracks,
-    xml
-)
+from . import (binary, coverage, data, images, interval, qualityscore, sequence, tabular, text, tracks, xml)
 from .display_applications.application import DisplayApplication
 
 
@@ -35,7 +23,6 @@ class ConfigurationError(Exception):
 
 
 class Registry(object):
-
     def __init__(self, config=None):
         self.log = logging.getLogger(__name__)
         self.log.addHandler(logging.NullHandler())
@@ -201,8 +188,7 @@ class Registry(object):
                                     # TODO: previously comments suggested this needs to be locked because it modifys
                                     # the sys.path, probably true but the previous lock wasn't doing that.
                                     try:
-                                        imported_module = __import_module(proprietary_path,
-                                                                          proprietary_datatype_module,
+                                        imported_module = __import_module(proprietary_path, proprietary_datatype_module,
                                                                           datatype_class_name)
                                         if imported_module not in self.imported_modules:
                                             self.imported_modules.append(imported_module)
@@ -221,7 +207,8 @@ class Registry(object):
                                         for mod in fields:
                                             module = getattr(module, mod)
                                         datatype_class = getattr(module, datatype_class_name)
-                                        self.log.debug('Retrieved datatype module %s:%s from the datatype registry.' % (str(datatype_module), datatype_class_name))
+                                        self.log.debug('Retrieved datatype module %s:%s from the datatype registry.' %
+                                                       (str(datatype_module), datatype_class_name))
                                     except Exception as e:
                                         self.log.exception('Error importing datatype module %s', str(datatype_module))
                                         ok = False
@@ -257,7 +244,8 @@ class Registry(object):
                                 if display_in_upload and extension not in self.upload_file_formats:
                                     self.upload_file_formats.append(extension)
                                 # Max file size cut off for setting optional metadata.
-                                self.datatypes_by_extension[extension].max_optional_metadata_filesize = elem.get('max_optional_metadata_filesize', None)
+                                self.datatypes_by_extension[extension].max_optional_metadata_filesize = elem.get(
+                                    'max_optional_metadata_filesize', None)
                                 for converter in elem.findall('converter'):
                                     # Build the list of datatype converters which will later be loaded into the calling app's toolbox.
                                     converter_config = converter.get('file', None)
@@ -300,10 +288,8 @@ class Registry(object):
                                         self.log.debug("Ignoring conflicting datatype with extension '%s' from %s." % (extension, config))
             # Load datatype sniffers from the config - we'll do this even if one or more datatypes were not properly processed in the config
             # since sniffers are not tightly coupled with datatypes.
-            self.load_datatype_sniffers(root,
-                                        deactivate=deactivate,
-                                        handling_proprietary_datatypes=handling_proprietary_datatypes,
-                                        override=override)
+            self.load_datatype_sniffers(
+                root, deactivate=deactivate, handling_proprietary_datatypes=handling_proprietary_datatypes, override=override)
             self.upload_file_formats.sort()
             # Load build sites
             self._load_build_sites(root)
@@ -319,10 +305,10 @@ class Registry(object):
                         break
                 if not included:
                     self.sniff_order.append(datatype)
+
         append_to_sniff_order()
 
     def _load_build_sites(self, root):
-
         def load_build_site(build_site_config):
             # Take in either an XML element or simple dictionary from YAML and add build site for this.
             if not (build_site_config.get('type') and build_site_config.get('file')):
@@ -622,15 +608,18 @@ class Registry(object):
                             if extension in self.datatypes_by_extension:
                                 if display_app.id in self.datatypes_by_extension[extension].display_applications:
                                     del self.datatypes_by_extension[extension].display_applications[display_app.id]
-                            if inherit and (self.datatypes_by_extension[extension], display_app) in self.inherit_display_application_by_class:
+                            if inherit and (self.datatypes_by_extension[extension],
+                                            display_app) in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.remove((self.datatypes_by_extension[extension], display_app))
                             self.log.debug("Deactivated display application '%s' for datatype '%s'." % (display_app.id, extension))
                         else:
                             self.display_applications[display_app.id] = display_app
                             self.datatypes_by_extension[extension].add_display_application(display_app)
-                            if inherit and (self.datatypes_by_extension[extension], display_app) not in self.inherit_display_application_by_class:
+                            if inherit and (self.datatypes_by_extension[extension],
+                                            display_app) not in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.append((self.datatypes_by_extension[extension], display_app))
-                            self.log.debug("Loaded display application '%s' for datatype '%s', inherit=%s." % (display_app.id, extension, inherit))
+                            self.log.debug("Loaded display application '%s' for datatype '%s', inherit=%s." % (display_app.id, extension,
+                                                                                                               inherit))
                 except Exception:
                     if deactivate:
                         self.log.exception("Error deactivating display application (%s)" % config_path)
@@ -678,81 +667,81 @@ class Registry(object):
         # Default values.
         if not self.datatypes_by_extension:
             self.datatypes_by_extension = {
-                'ab1'           : binary.Ab1(),
-                'axt'           : sequence.Axt(),
-                'bam'           : binary.Bam(),
-                'bed'           : interval.Bed(),
-                'coverage'      : coverage.LastzCoverage(),
-                'customtrack'   : interval.CustomTrack(),
-                'csfasta'       : sequence.csFasta(),
-                'db3'           : binary.SQlite(),
-                'fasta'         : sequence.Fasta(),
-                'eland'         : tabular.Eland(),
-                'fastq'         : sequence.Fastq(),
-                'fastqsanger'   : sequence.FastqSanger(),
-                'gemini.sqlite' : binary.GeminiSQLite(),
-                'gtf'           : interval.Gtf(),
-                'gff'           : interval.Gff(),
-                'gff3'          : interval.Gff3(),
-                'genetrack'     : tracks.GeneTrack(),
-                'h5'            : binary.H5(),
-                'idpdb'         : binary.IdpDB(),
-                'interval'      : interval.Interval(),
-                'laj'           : images.Laj(),
-                'lav'           : sequence.Lav(),
-                'maf'           : sequence.Maf(),
-                'mz.sqlite'     : binary.MzSQlite(),
-                'pileup'        : tabular.Pileup(),
-                'qualsolid'     : qualityscore.QualityScoreSOLiD(),
-                'qualsolexa'    : qualityscore.QualityScoreSolexa(),
-                'qual454'       : qualityscore.QualityScore454(),
-                'sam'           : tabular.Sam(),
-                'scf'           : binary.Scf(),
-                'sff'           : binary.Sff(),
-                'tabular'       : tabular.Tabular(),
-                'csv'           : tabular.CSV(),
-                'taxonomy'      : tabular.Taxonomy(),
-                'txt'           : data.Text(),
-                'wig'           : interval.Wiggle(),
-                'xml'           : xml.GenericXml(),
+                'ab1': binary.Ab1(),
+                'axt': sequence.Axt(),
+                'bam': binary.Bam(),
+                'bed': interval.Bed(),
+                'coverage': coverage.LastzCoverage(),
+                'customtrack': interval.CustomTrack(),
+                'csfasta': sequence.csFasta(),
+                'db3': binary.SQlite(),
+                'fasta': sequence.Fasta(),
+                'eland': tabular.Eland(),
+                'fastq': sequence.Fastq(),
+                'fastqsanger': sequence.FastqSanger(),
+                'gemini.sqlite': binary.GeminiSQLite(),
+                'gtf': interval.Gtf(),
+                'gff': interval.Gff(),
+                'gff3': interval.Gff3(),
+                'genetrack': tracks.GeneTrack(),
+                'h5': binary.H5(),
+                'idpdb': binary.IdpDB(),
+                'interval': interval.Interval(),
+                'laj': images.Laj(),
+                'lav': sequence.Lav(),
+                'maf': sequence.Maf(),
+                'mz.sqlite': binary.MzSQlite(),
+                'pileup': tabular.Pileup(),
+                'qualsolid': qualityscore.QualityScoreSOLiD(),
+                'qualsolexa': qualityscore.QualityScoreSolexa(),
+                'qual454': qualityscore.QualityScore454(),
+                'sam': tabular.Sam(),
+                'scf': binary.Scf(),
+                'sff': binary.Sff(),
+                'tabular': tabular.Tabular(),
+                'csv': tabular.CSV(),
+                'taxonomy': tabular.Taxonomy(),
+                'txt': data.Text(),
+                'wig': interval.Wiggle(),
+                'xml': xml.GenericXml(),
             }
             self.mimetypes_by_extension = {
-                'ab1'           : 'application/octet-stream',
-                'axt'           : 'text/plain',
-                'bam'           : 'application/octet-stream',
-                'bed'           : 'text/plain',
-                'customtrack'   : 'text/plain',
-                'csfasta'       : 'text/plain',
-                'db3'           : 'application/octet-stream',
-                'eland'         : 'application/octet-stream',
-                'fasta'         : 'text/plain',
-                'fastq'         : 'text/plain',
-                'fastqsanger'   : 'text/plain',
-                'gemini.sqlite' : 'application/octet-stream',
-                'gtf'           : 'text/plain',
-                'gff'           : 'text/plain',
-                'gff3'          : 'text/plain',
-                'h5'            : 'application/octet-stream',
-                'idpdb'         : 'application/octet-stream',
-                'interval'      : 'text/plain',
-                'laj'           : 'text/plain',
-                'lav'           : 'text/plain',
-                'maf'           : 'text/plain',
-                'memexml'       : 'application/xml',
-                'mz.sqlite'     : 'application/octet-stream',
-                'pileup'        : 'text/plain',
-                'qualsolid'     : 'text/plain',
-                'qualsolexa'    : 'text/plain',
-                'qual454'       : 'text/plain',
-                'sam'           : 'text/plain',
-                'scf'           : 'application/octet-stream',
-                'sff'           : 'application/octet-stream',
-                'tabular'       : 'text/plain',
-                'csv'           : 'text/plain',
-                'taxonomy'      : 'text/plain',
-                'txt'           : 'text/plain',
-                'wig'           : 'text/plain',
-                'xml'           : 'application/xml',
+                'ab1': 'application/octet-stream',
+                'axt': 'text/plain',
+                'bam': 'application/octet-stream',
+                'bed': 'text/plain',
+                'customtrack': 'text/plain',
+                'csfasta': 'text/plain',
+                'db3': 'application/octet-stream',
+                'eland': 'application/octet-stream',
+                'fasta': 'text/plain',
+                'fastq': 'text/plain',
+                'fastqsanger': 'text/plain',
+                'gemini.sqlite': 'application/octet-stream',
+                'gtf': 'text/plain',
+                'gff': 'text/plain',
+                'gff3': 'text/plain',
+                'h5': 'application/octet-stream',
+                'idpdb': 'application/octet-stream',
+                'interval': 'text/plain',
+                'laj': 'text/plain',
+                'lav': 'text/plain',
+                'maf': 'text/plain',
+                'memexml': 'application/xml',
+                'mz.sqlite': 'application/octet-stream',
+                'pileup': 'text/plain',
+                'qualsolid': 'text/plain',
+                'qualsolexa': 'text/plain',
+                'qual454': 'text/plain',
+                'sam': 'text/plain',
+                'scf': 'application/octet-stream',
+                'sff': 'application/octet-stream',
+                'tabular': 'text/plain',
+                'csv': 'text/plain',
+                'taxonomy': 'text/plain',
+                'txt': 'text/plain',
+                'wig': 'text/plain',
+                'xml': 'application/xml',
             }
         # super supertype fix for input steps in workflows.
         if 'data' not in self.datatypes_by_extension:
@@ -818,7 +807,8 @@ class Registry(object):
         for convert_ext in self.get_converters_by_datatype(dataset.ext):
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
-                self.log.warning("Datatype class not found for extension '%s', which is used as target for conversion from datatype '%s'" % (convert_ext, dataset.ext))
+                self.log.warning("Datatype class not found for extension '%s', which is used as target for conversion from datatype '%s'" %
+                                 (convert_ext, dataset.ext))
             elif convert_ext_datatype.matches_any(accepted_formats):
                 converted_dataset = dataset.get_converted_files_by_type(convert_ext)
                 if converted_dataset:
@@ -843,7 +833,8 @@ class Registry(object):
                     help_txt = meta_spec.desc
                     if not help_txt or help_txt == meta_name:
                         help_txt = ""
-                    inputs.append('<param type="text" name="%s" label="Set metadata value for &quot;%s&quot;" value="%s" help="%s"/>' % (meta_name, meta_name, meta_spec.default, help_txt))
+                    inputs.append('<param type="text" name="%s" label="Set metadata value for &quot;%s&quot;" value="%s" help="%s"/>' %
+                                  (meta_name, meta_name, meta_spec.default, help_txt))
             rval[ext] = "\n".join(inputs)
         if 'auto' not in rval and 'txt' in rval:  # need to manually add 'auto' datatype
             rval['auto'] = rval['txt']

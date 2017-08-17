@@ -4,60 +4,21 @@ Contains functionality needed in every web interface
 import logging
 import re
 
-from paste.httpexceptions import (
-    HTTPBadRequest,
-    HTTPInternalServerError,
-    HTTPNotImplemented,
-    HTTPRequestRangeNotSatisfiable
-)
-from six import (
-    string_types,
-    text_type
-)
+from paste.httpexceptions import (HTTPBadRequest, HTTPInternalServerError, HTTPNotImplemented, HTTPRequestRangeNotSatisfiable)
+from six import (string_types, text_type)
 from sqlalchemy import true
 
-from galaxy import (
-    exceptions,
-    model,
-    security,
-    util,
-    web
-)
+from galaxy import (exceptions, model, security, util, web)
 from galaxy.datatypes.interval import ChromatinInteractions
-from galaxy.managers import (
-    api_keys,
-    base as managers_base,
-    configuration,
-    tags,
-    users,
-    workflows
-)
-from galaxy.model import (
-    ExtendedMetadata,
-    ExtendedMetadataIndex,
-    HistoryDatasetAssociation,
-    LibraryDatasetDatasetAssociation
-)
+from galaxy.managers import (api_keys, base as managers_base, configuration, tags, users, workflows)
+from galaxy.model import (ExtendedMetadata, ExtendedMetadataIndex, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web import (
-    error,
-    url_for
-)
-from galaxy.web.form_builder import (
-    AddressField,
-    build_select_field,
-    CheckboxField,
-    HistoryField,
-    PasswordField,
-    SelectField,
-    TextArea,
-    TextField,
-    WorkflowField,
-    WorkflowMappingField
-)
+from galaxy.web import (error, url_for)
+from galaxy.web.form_builder import (AddressField, build_select_field, CheckboxField, HistoryField, PasswordField, SelectField, TextArea,
+                                     TextField, WorkflowField, WorkflowMappingField)
 from galaxy.workflow.modules import WorkflowModuleInjector
 
 log = logging.getLogger(__name__)
@@ -96,7 +57,8 @@ class BaseController(object):
         """
         Convenience method to get a model object with the specified checks.
         """
-        return managers_base.get_object(trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
+        return managers_base.get_object(
+            trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
     # this should be here - but catching errors from sharable item controllers that *should* have SharableItemMixin
     #   but *don't* then becomes difficult
@@ -160,6 +122,7 @@ class BaseController(object):
     def parse_limit_offset(self, qdict):
         """
         """
+
         def _parse_pos_int(i):
             try:
                 new_val = int(i)
@@ -178,25 +141,23 @@ Root = BaseController
 
 
 class BaseUIController(BaseController):
-
     def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
         try:
-            return BaseController.get_object(self, trans, id, class_name,
-                                             check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
+            return BaseController.get_object(
+                self, trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.MessageException:
-            raise       # handled in the caller
+            raise  # handled in the caller
         except:
             log.exception("Exception in get_object check for %s %s:", class_name, str(id))
             raise Exception('Server error retrieving %s id ( %s ).' % (class_name, str(id)))
 
 
 class BaseAPIController(BaseController):
-
     def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
         try:
-            return BaseController.get_object(self, trans, id, class_name,
-                                             check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
+            return BaseController.get_object(
+                self, trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.ItemDeletionException as e:
             raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), str(e)))
@@ -210,6 +171,7 @@ class BaseAPIController(BaseController):
         """
         For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
         """
+
         def get_id(item, model_class, column):
             try:
                 return trans.security.decode_id(item)
@@ -217,6 +179,7 @@ class BaseAPIController(BaseController):
                 pass  # maybe an email/group name
             # this will raise if the item is invalid
             return trans.sa_session.query(model_class).filter(column == item).first().id
+
         new_in_users = []
         new_in_groups = []
         invalid = []
@@ -258,8 +221,8 @@ class JSAppLauncher(BaseUIController):
     #: window-scoped js function to call to start the app (will be passed options, bootstrapped)
     DEFAULT_ENTRY_FN = "app"
     #: keys used when serializing current user for bootstrapped data
-    USER_BOOTSTRAP_KEYS = ('id', 'email', 'username', 'is_admin', 'tags_used', 'requests',
-                           'total_disk_usage', 'nice_total_disk_usage', 'quota_percent', 'preferences')
+    USER_BOOTSTRAP_KEYS = ('id', 'email', 'username', 'is_admin', 'tags_used', 'requests', 'total_disk_usage', 'nice_total_disk_usage',
+                           'quota_percent', 'preferences')
 
     def __init__(self, app):
         super(JSAppLauncher, self).__init__(app)
@@ -287,11 +250,11 @@ class JSAppLauncher(BaseUIController):
         """
         root = root or web.url_for('/')
         js_options = {
-            'root'               : root,
-            'user'               : self.user_serializer.serialize(trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans),
-            'config'             : self._get_site_configuration(trans),
-            'params'             : dict(trans.request.params),
-            'session_csrf_token' : trans.session_csrf_token,
+            'root': root,
+            'user': self.user_serializer.serialize(trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans),
+            'config': self._get_site_configuration(trans),
+            'params': dict(trans.request.params),
+            'session_csrf_token': trans.session_csrf_token,
         }
         return js_options
 
@@ -329,8 +292,7 @@ class JSAppLauncher(BaseUIController):
             js_app_entry_fn=(entry_fn or self.DEFAULT_ENTRY_FN),
             options=options,
             bootstrapped=(bootstrapped_data or {}),
-            masthead=masthead
-        )
+            masthead=masthead)
 
 
 class Datatype(object):
@@ -342,6 +304,7 @@ class Datatype(object):
         self.type_extension = type_extension
         self.mimetype = mimetype
         self.display_in_upload = display_in_upload
+
 
 #
 # -- Mixins for working with Galaxy objects. --
@@ -369,8 +332,8 @@ class CreatesUsersMixin:
         trans.app.security_agent.create_private_user_role(user)
         if trans.webapp.name == 'galaxy':
             # We set default user permissions, before we log in and set the default history permissions
-            trans.app.security_agent.user_set_default_permissions(user,
-                                                                  default_access_private=trans.app.config.new_user_dataset_access_role_default_private)
+            trans.app.security_agent.user_set_default_permissions(
+                user, default_access_private=trans.app.config.new_user_dataset_access_role_default_private)
         return user
 
 
@@ -394,7 +357,6 @@ class SharableItemSecurityMixin:
 
 
 class ExportsHistoryMixin:
-
     def serve_ready_history_export(self, trans, jeha):
         assert jeha.ready
         if jeha.compressed:
@@ -416,50 +378,40 @@ class ExportsHistoryMixin:
 
         # Run job to do export.
         history_exp_tool = trans.app.toolbox.get_tool('__EXPORT_HISTORY__')
-        params = {
-            'history_to_export': history,
-            'compress': gzip,
-            'include_hidden': include_hidden,
-            'include_deleted': include_deleted
-        }
+        params = {'history_to_export': history, 'compress': gzip, 'include_hidden': include_hidden, 'include_deleted': include_deleted}
 
         history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
 
 
 class ImportsHistoryMixin:
-
     def queue_history_import(self, trans, archive_type, archive_source):
         # Run job to do import.
         history_imp_tool = trans.app.toolbox.get_tool('__IMPORT_HISTORY__')
-        incoming = {'__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type}
+        incoming = {'__ARCHIVE_SOURCE__': archive_source, '__ARCHIVE_TYPE__': archive_type}
         history_imp_tool.execute(trans, incoming=incoming)
 
 
 class UsesLibraryMixin:
-
     def get_library(self, trans, id, check_ownership=False, check_accessible=True):
         l = self.get_object(trans, id, 'Library')
-        if check_accessible and not (trans.user_is_admin() or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), l)):
+        if check_accessible and not (trans.user_is_admin()
+                                     or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), l)):
             error("LibraryFolder is not accessible to the current user")
         return l
 
 
 class UsesLibraryMixinItems(SharableItemSecurityMixin):
-
     def get_library_folder(self, trans, id, check_ownership=False, check_accessible=True):
-        return self.get_object(trans, id, 'LibraryFolder',
-                               check_ownership=False, check_accessible=check_accessible)
+        return self.get_object(trans, id, 'LibraryFolder', check_ownership=False, check_accessible=check_accessible)
 
     def get_library_dataset_dataset_association(self, trans, id, check_ownership=False, check_accessible=True):
         # Deprecated in lieu to galaxy.managers.lddas.LDDAManager.get() but not
         # reusing that exactly because of subtle differences in exception handling
         # logic (API controller override get_object to be slightly different).
-        return self.get_object(trans, id, 'LibraryDatasetDatasetAssociation',
-                               check_ownership=False, check_accessible=check_accessible)
+        return self.get_object(trans, id, 'LibraryDatasetDatasetAssociation', check_ownership=False, check_accessible=check_accessible)
 
     def get_library_dataset(self, trans, id, check_ownership=False, check_accessible=True):
-        return self.get_object(trans, id, 'LibraryDataset',
-                               check_ownership=False, check_accessible=check_accessible)
+        return self.get_object(trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible)
 
     # TODO: it makes no sense that I can get roles from a user but not user.is_admin()
     # def can_user_add_to_library_item( self, trans, user, item ):
@@ -470,8 +422,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
     def can_current_user_add_to_library_item(self, trans, item):
         if not trans.user:
             return False
-        return ((trans.user_is_admin()) or
-                (trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item)))
+        return ((trans.user_is_admin()) or (trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item)))
 
     def check_user_can_add_to_library_item(self, trans, item, check_accessible=True):
         """
@@ -505,12 +456,15 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         hdas = []
         for element in hdca.collection.elements:
             hdas.append((element.element_identifier, element.dataset_instance.id))
-        return [self._copy_hda_to_library_folder(trans,
-                                                 hda_manager=hda_manager,
-                                                 from_hda_id=hda_id,
-                                                 folder_id=folder_id,
-                                                 ldda_message=ldda_message,
-                                                 element_identifier=element_identifier) for (element_identifier, hda_id) in hdas]
+        return [
+            self._copy_hda_to_library_folder(
+                trans,
+                hda_manager=hda_manager,
+                from_hda_id=hda_id,
+                folder_id=folder_id,
+                ldda_message=ldda_message,
+                element_identifier=element_identifier) for (element_identifier, hda_id) in hdas
+        ]
 
     def _copy_hda_to_library_folder(self, trans, hda_manager, from_hda_id, folder_id, ldda_message='', element_identifier=None):
         """
@@ -558,8 +512,8 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         # TODO: refactor library_common.add_history_datasets_to_library to use this for each hda to copy
 
         # create the new ldda and apply the folder perms to it
-        ldda = hda.to_library_dataset_dataset_association(trans, target_folder=library_folder,
-                                                          roles=roles, ldda_message=ldda_message, element_identifier=element_identifier)
+        ldda = hda.to_library_dataset_dataset_association(
+            trans, target_folder=library_folder, roles=roles, ldda_message=ldda_message, element_identifier=element_identifier)
         self._apply_library_folder_permissions_to_ldda(trans, library_folder, ldda)
         self._apply_hda_permissions_to_ldda(trans, hda, ldda)
         # TODO:?? not really clear on how permissions are being traded here
@@ -731,10 +685,10 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         # TODO: deleted
         # TODO: importable
         return {
-            'id'        : visualization.id,
-            'title'     : visualization.title,
-            'type'      : visualization.type,
-            'dbkey'     : visualization.dbkey,
+            'id': visualization.id,
+            'title': visualization.title,
+            'type': visualization.type,
+            'dbkey': visualization.dbkey,
         }
 
     def get_visualization_dict(self, visualization):
@@ -745,15 +699,15 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         return {
             'model_class': 'Visualization',
-            'id'         : visualization.id,
-            'title'      : visualization.title,
-            'type'       : visualization.type,
-            'user_id'    : visualization.user.id,
-            'dbkey'      : visualization.dbkey,
-            'slug'       : visualization.slug,
+            'id': visualization.id,
+            'title': visualization.title,
+            'type': visualization.type,
+            'user_id': visualization.user.id,
+            'dbkey': visualization.dbkey,
+            'slug': visualization.slug,
             # to_dict only the latest revision (allow older to be fetched elsewhere)
-            'latest_revision' : self.get_visualization_revision_dict(visualization.latest_revision),
-            'revisions' : [r.id for r in visualization.revisions],
+            'latest_revision': self.get_visualization_revision_dict(visualization.latest_revision),
+            'revisions': [r.id for r in visualization.revisions],
         }
 
     def get_visualization_revision_dict(self, revision):
@@ -762,12 +716,12 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         NOTE: that encoding ids isn't done here should happen at the caller level.
         """
         return {
-            'model_class'      : 'VisualizationRevision',
-            'id'               : revision.id,
-            'visualization_id' : revision.visualization.id,
-            'title'            : revision.title,
-            'dbkey'            : revision.dbkey,
-            'config'           : revision.config,
+            'model_class': 'VisualizationRevision',
+            'id': revision.id,
+            'visualization_id': revision.visualization.id,
+            'title': revision.title,
+            'dbkey': revision.dbkey,
+            'config': revision.config,
         }
 
     def import_visualization(self, trans, id, user=None):
@@ -799,8 +753,15 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         trans.sa_session.flush()
         return imported_visualization
 
-    def create_visualization(self, trans, type, title="Untitled Visualization", slug=None,
-                             dbkey=None, annotation=None, config={}, save=True):
+    def create_visualization(self,
+                             trans,
+                             type,
+                             title="Untitled Visualization",
+                             slug=None,
+                             dbkey=None,
+                             annotation=None,
+                             config={},
+                             save=True):
         """
         Create visualiation and first revision.
         """
@@ -811,8 +772,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             raise ValueError(err_dict['title_err'] or err_dict['slug_err'])
 
         # Create and save first visualization revision
-        revision = trans.model.VisualizationRevision(visualization=visualization, title=title,
-                                                     config=config, dbkey=dbkey)
+        revision = trans.model.VisualizationRevision(visualization=visualization, title=title, config=config, dbkey=dbkey)
         visualization.latest_revision = revision
 
         if save:
@@ -860,6 +820,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         # -- Validate config. --
 
         if vis.type == 'trackster':
+
             def unpack_track(track_dict):
                 """ Unpack a track from its json. """
                 dataset_dict = track_dict['dataset']
@@ -975,15 +936,13 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 except KeyError:
                     prefs = {}
 
-                track_data_provider = trans.app.data_provider_registry.get_data_provider(trans,
-                                                                                         original_dataset=dataset,
-                                                                                         source='data')
+                track_data_provider = trans.app.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source='data')
                 return {
                     "track_type": dataset.datatype.track_type,
                     "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
                     "prefs": prefs,
                     "mode": track_dict.get('mode', 'Auto'),
-                    "filters": track_dict.get('filters', {'filters' : track_data_provider.get_filters()}),
+                    "filters": track_dict.get('filters', {'filters': track_data_provider.get_filters()}),
                     "tool": self.get_tool_def(trans, dataset),
                     "tool_state": track_dict.get('tool_state', {})
                 }
@@ -1026,12 +985,14 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                     else:
                         tracks.append(pack_collection(drawable_dict))
 
-            config = {"title": visualization.title,
-                      "vis_id": trans.security.encode_id(visualization.id),
-                      "tracks": tracks,
-                      "bookmarks": bookmarks,
-                      "chrom": "",
-                      "dbkey": encode_dbkey(visualization.dbkey)}
+            config = {
+                "title": visualization.title,
+                "vis_id": trans.security.encode_id(visualization.id),
+                "tracks": tracks,
+                "bookmarks": bookmarks,
+                "chrom": "",
+                "dbkey": encode_dbkey(visualization.dbkey)
+            }
 
             if 'viewport' in latest_revision.config:
                 config['viewport'] = latest_revision.config['viewport']
@@ -1055,7 +1016,9 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             "name": dataset.name,
             "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
             "prefs": {},
-            "filters": {'filters' : track_data_provider.get_filters()},
+            "filters": {
+                'filters': track_data_provider.get_filters()
+            },
             "tool": self.get_tool_def(trans, dataset),
             "tool_state": {}
         }
@@ -1101,8 +1064,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 error("You are not allowed to access this dataset")
 
             if check_state and data.state == trans.model.Dataset.states.UPLOAD:
-                return trans.show_error_message("Please wait until this dataset finishes uploading " +
-                                                "before attempting to view it.")
+                return trans.show_error_message("Please wait until this dataset finishes uploading " + "before attempting to view it.")
         return data
 
     # -- Helper functions --
@@ -1166,16 +1128,12 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             if isinstance(dataset.datatype, ChromatinInteractions):
                 source = 'data'
 
-            data_provider = trans.app.data_provider_registry.get_data_provider(trans,
-                                                                               original_dataset=dataset,
-                                                                               source=source)
+            data_provider = trans.app.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source=source)
             # HACK: pass in additional params which are used for only some
             # types of data providers; level, cutoffs used for summary tree,
             # num_samples for BBI, and interchromosomal used for chromatin interactions.
-            rval = data_provider.get_genome_data(chroms_info,
-                                                 level=4, detail_cutoff=0, draw_cutoff=0,
-                                                 num_samples=150,
-                                                 interchromosomal=True)
+            rval = data_provider.get_genome_data(
+                chroms_info, level=4, detail_cutoff=0, draw_cutoff=0, num_samples=150, interchromosomal=True)
 
         return rval
 
@@ -1248,8 +1206,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         # Copy annotations.
         self.copy_item_annotation(session, stored.user, stored, imported_stored.user, imported_stored)
         for order_index, step in enumerate(stored.latest_workflow.steps):
-            self.copy_item_annotation(session, stored.user, step,
-                                      imported_stored.user, imported_stored.latest_workflow.steps[order_index])
+            self.copy_item_annotation(session, stored.user, step, imported_stored.user, imported_stored.latest_workflow.steps[order_index])
         session.flush()
         return imported_stored
 
@@ -1265,8 +1222,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             source=source,
             add_to_menu=add_to_menu,
             publish=publish,
-            exact_tools=exact_tools,
-        )
+            exact_tools=exact_tools, )
         return created_workflow.stored_workflow, created_workflow.missing_tools
 
     def _workflow_to_dict(self, trans, stored):
@@ -1276,8 +1232,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         workflow_contents_manager = workflows.WorkflowContentsManager(self.app)
         return workflow_contents_manager.workflow_to_dict(
             trans,
-            stored,
-        )
+            stored, )
 
 
 class UsesFormDefinitionsMixin:
@@ -1301,17 +1256,17 @@ class UsesFormDefinitionsMixin:
             return [fdc.latest_form for fdc in fdc_list if fdc.latest_form.type == form_type]
 
     def get_all_forms_by_type(self, trans, cntrller, form_type):
-        forms = self.get_all_forms(trans,
-                                   filter=dict(deleted=False),
-                                   form_type=form_type)
+        forms = self.get_all_forms(trans, filter=dict(deleted=False), form_type=form_type)
         if not forms:
             message = "There are no forms on which to base the template, so create a form and then add the template."
-            return trans.response.send_redirect(web.url_for(controller='forms',
-                                                            action='create_form_definition',
-                                                            cntrller=cntrller,
-                                                            message=message,
-                                                            status='done',
-                                                            form_type=form_type))
+            return trans.response.send_redirect(
+                web.url_for(
+                    controller='forms',
+                    action='create_form_definition',
+                    cntrller=cntrller,
+                    message=message,
+                    status='done',
+                    form_type=form_type))
         return forms
 
     @web.expose
@@ -1338,33 +1293,31 @@ class UsesFormDefinitionsMixin:
             sample_id = params.get('sample_id', None)
         try:
             if in_sample_tracking:
-                item, item_desc, action, id = self.get_item_and_stuff(trans,
-                                                                      item_type=item_type,
-                                                                      request_type_id=request_type_id,
-                                                                      sample_id=sample_id)
+                item, item_desc, action, id = self.get_item_and_stuff(
+                    trans, item_type=item_type, request_type_id=request_type_id, sample_id=sample_id)
             elif in_library:
-                item, item_desc, action, id = self.get_item_and_stuff(trans,
-                                                                      item_type=item_type,
-                                                                      library_id=library_id,
-                                                                      folder_id=folder_id,
-                                                                      ldda_id=ldda_id,
-                                                                      is_admin=is_admin)
+                item, item_desc, action, id = self.get_item_and_stuff(
+                    trans, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, is_admin=is_admin)
             if not item:
                 message = "Invalid %s id ( %s ) specified." % (item_desc, str(id))
                 if in_sample_tracking:
-                    return trans.response.send_redirect(web.url_for(controller='request_type',
-                                                                    action='browse_request_types',
-                                                                    id=request_type_id,
-                                                                    message=util.sanitize_text(message),
-                                                                    status='error'))
+                    return trans.response.send_redirect(
+                        web.url_for(
+                            controller='request_type',
+                            action='browse_request_types',
+                            id=request_type_id,
+                            message=util.sanitize_text(message),
+                            status='error'))
                 if in_library:
-                    return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                    action='browse_library',
-                                                                    cntrller=cntrller,
-                                                                    id=library_id,
-                                                                    show_deleted=show_deleted,
-                                                                    message=util.sanitize_text(message),
-                                                                    status='error'))
+                    return trans.response.send_redirect(
+                        web.url_for(
+                            controller='library_common',
+                            action='browse_library',
+                            cntrller=cntrller,
+                            id=library_id,
+                            show_deleted=show_deleted,
+                            message=util.sanitize_text(message),
+                            status='error'))
         except ValueError:
             # At this point, the client has already redirected, so this is just here to prevent the unnecessary traceback
             return None
@@ -1379,13 +1332,15 @@ class UsesFormDefinitionsMixin:
                 unauthorized = 'access'
             if not authorized:
                 message = "You are not authorized to %s %s '%s'." % (unauthorized, item_desc, item.name)
-                return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                action='browse_library',
-                                                                cntrller=cntrller,
-                                                                id=library_id,
-                                                                show_deleted=show_deleted,
-                                                                message=util.sanitize_text(message),
-                                                                status='error'))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='library_common',
+                        action='browse_library',
+                        cntrller=cntrller,
+                        id=library_id,
+                        show_deleted=show_deleted,
+                        message=util.sanitize_text(message),
+                        status='error'))
             # If the inheritable checkbox is checked, the param will be in the request
             inheritable = CheckboxField.is_checked(params.get('inheritable', ''))
         if params.get('add_template_button', False):
@@ -1418,23 +1373,19 @@ class UsesFormDefinitionsMixin:
                 trans.sa_session.add(assoc)
                 trans.sa_session.flush()
                 message = 'A template based on the form "%s" has been added to this %s.' % (form.name, item_desc)
-                new_kwd = dict(action=action,
-                               cntrller=cntrller,
-                               message=util.sanitize_text(message),
-                               status='done')
+                new_kwd = dict(action=action, cntrller=cntrller, message=util.sanitize_text(message), status='done')
                 if in_sample_tracking:
-                    new_kwd.update(dict(controller='request_type',
-                                        request_type_id=request_type_id,
-                                        sample_id=sample_id,
-                                        id=id))
+                    new_kwd.update(dict(controller='request_type', request_type_id=request_type_id, sample_id=sample_id, id=id))
                     return trans.response.send_redirect(web.url_for(**new_kwd))
                 elif in_library:
-                    new_kwd.update(dict(controller='library_common',
-                                        use_panels=use_panels,
-                                        library_id=library_id,
-                                        folder_id=folder_id,
-                                        id=id,
-                                        show_deleted=show_deleted))
+                    new_kwd.update(
+                        dict(
+                            controller='library_common',
+                            use_panels=use_panels,
+                            library_id=library_id,
+                            folder_id=folder_id,
+                            id=id,
+                            show_deleted=show_deleted))
                     return trans.response.send_redirect(web.url_for(**new_kwd))
             else:
                 message = "Select a form on which to base the template."
@@ -1451,27 +1402,28 @@ class UsesFormDefinitionsMixin:
                     break
         else:
             widgets = []
-        new_kwd = dict(cntrller=cntrller,
-                       item_name=item.name,
-                       item_desc=item_desc,
-                       item_type=item_type,
-                       form_type=form_type,
-                       widgets=widgets,
-                       form_id_select_field=form_id_select_field,
-                       message=message,
-                       status=status)
+        new_kwd = dict(
+            cntrller=cntrller,
+            item_name=item.name,
+            item_desc=item_desc,
+            item_type=item_type,
+            form_type=form_type,
+            widgets=widgets,
+            form_id_select_field=form_id_select_field,
+            message=message,
+            status=status)
         if in_sample_tracking:
-            new_kwd.update(dict(request_type_id=request_type_id,
-                                sample_id=sample_id))
+            new_kwd.update(dict(request_type_id=request_type_id, sample_id=sample_id))
         elif in_library:
-            new_kwd.update(dict(use_panels=use_panels,
-                                library_id=library_id,
-                                folder_id=folder_id,
-                                ldda_id=ldda_id,
-                                inheritable_checked=inheritable,
-                                show_deleted=show_deleted))
-        return trans.fill_template('/common/select_template.mako',
-                                   **new_kwd)
+            new_kwd.update(
+                dict(
+                    use_panels=use_panels,
+                    library_id=library_id,
+                    folder_id=folder_id,
+                    ldda_id=ldda_id,
+                    inheritable_checked=inheritable,
+                    show_deleted=show_deleted))
+        return trans.fill_template('/common/select_template.mako', **new_kwd)
 
     @web.expose
     def edit_template(self, trans, cntrller, item_type, form_type, **kwd):
@@ -1496,29 +1448,25 @@ class UsesFormDefinitionsMixin:
             sample_id = params.get('sample_id', None)
         try:
             if in_library:
-                item, item_desc, action, id = self.get_item_and_stuff(trans,
-                                                                      item_type=item_type,
-                                                                      library_id=library_id,
-                                                                      folder_id=folder_id,
-                                                                      ldda_id=ldda_id,
-                                                                      is_admin=is_admin)
+                item, item_desc, action, id = self.get_item_and_stuff(
+                    trans, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, is_admin=is_admin)
             elif in_sample_tracking:
-                item, item_desc, action, id = self.get_item_and_stuff(trans,
-                                                                      item_type=item_type,
-                                                                      request_type_id=request_type_id,
-                                                                      sample_id=sample_id)
+                item, item_desc, action, id = self.get_item_and_stuff(
+                    trans, item_type=item_type, request_type_id=request_type_id, sample_id=sample_id)
         except ValueError:
             return None
         if in_library:
             if not (is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, item)):
                 message = "You are not authorized to modify %s '%s'." % (item_desc, item.name)
-                return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                action='browse_library',
-                                                                cntrller=cntrller,
-                                                                id=library_id,
-                                                                show_deleted=show_deleted,
-                                                                message=util.sanitize_text(message),
-                                                                status='error'))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='library_common',
+                        action='browse_library',
+                        cntrller=cntrller,
+                        id=library_id,
+                        show_deleted=show_deleted,
+                        message=util.sanitize_text(message),
+                        status='error'))
         # An info_association must exist at this point
         if in_library:
             info_association, inherited = item.get_info_association(restrict=True)
@@ -1535,32 +1483,30 @@ class UsesFormDefinitionsMixin:
             trans.sa_session.add(info_association)
             trans.sa_session.flush()
             message = "The template for this %s has been updated with your changes." % item_desc
-            new_kwd = dict(action=action,
-                           cntrller=cntrller,
-                           id=id,
-                           message=util.sanitize_text(message),
-                           status='done')
+            new_kwd = dict(action=action, cntrller=cntrller, id=id, message=util.sanitize_text(message), status='done')
             if in_library:
-                new_kwd.update(dict(controller='library_common',
-                                    use_panels=use_panels,
-                                    library_id=library_id,
-                                    folder_id=folder_id,
-                                    show_deleted=show_deleted))
+                new_kwd.update(
+                    dict(
+                        controller='library_common',
+                        use_panels=use_panels,
+                        library_id=library_id,
+                        folder_id=folder_id,
+                        show_deleted=show_deleted))
                 return trans.response.send_redirect(web.url_for(**new_kwd))
             elif in_sample_tracking:
-                new_kwd.update(dict(controller='request_type',
-                                    request_type_id=request_type_id,
-                                    sample_id=sample_id))
+                new_kwd.update(dict(controller='request_type', request_type_id=request_type_id, sample_id=sample_id))
                 return trans.response.send_redirect(web.url_for(**new_kwd))
         # "template" is a FormDefinition, so since we're changing it, we need to use the latest version of it.
-        vars = dict(id=trans.security.encode_id(template.form_definition_current_id),
-                    response_redirect=web.url_for(controller='request_type',
-                                                  action='edit_template',
-                                                  cntrller=cntrller,
-                                                  item_type=item_type,
-                                                  form_type=form_type,
-                                                  edited=True,
-                                                  **kwd))
+        vars = dict(
+            id=trans.security.encode_id(template.form_definition_current_id),
+            response_redirect=web.url_for(
+                controller='request_type',
+                action='edit_template',
+                cntrller=cntrller,
+                item_type=item_type,
+                form_type=form_type,
+                edited=True,
+                **kwd))
         return trans.response.send_redirect(web.url_for(controller='forms', action='edit_form_definition', **vars))
 
     @web.expose
@@ -1585,17 +1531,11 @@ class UsesFormDefinitionsMixin:
         message = util.restore_text(params.get('message', ''))
         try:
             if in_library:
-                item, item_desc, action, id = self.get_item_and_stuff(trans,
-                                                                      item_type=item_type,
-                                                                      library_id=library_id,
-                                                                      folder_id=folder_id,
-                                                                      ldda_id=ldda_id,
-                                                                      is_admin=is_admin)
+                item, item_desc, action, id = self.get_item_and_stuff(
+                    trans, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, is_admin=is_admin)
             elif in_sample_tracking:
-                item, item_desc, action, id = self.get_item_and_stuff(trans,
-                                                                      item_type=item_type,
-                                                                      request_type_id=request_type_id,
-                                                                      sample_id=sample_id)
+                item, item_desc, action, id = self.get_item_and_stuff(
+                    trans, item_type=item_type, request_type_id=request_type_id, sample_id=sample_id)
         except ValueError:
             if cntrller == 'api':
                 trans.response.status = 400
@@ -1607,13 +1547,15 @@ class UsesFormDefinitionsMixin:
                 if cntrller == 'api':
                     trans.response.status = 400
                     return message
-                return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                action='browse_library',
-                                                                cntrller=cntrller,
-                                                                id=library_id,
-                                                                show_deleted=show_deleted,
-                                                                message=util.sanitize_text(message),
-                                                                status='error'))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='library_common',
+                        action='browse_library',
+                        cntrller=cntrller,
+                        id=library_id,
+                        show_deleted=show_deleted,
+                        message=util.sanitize_text(message),
+                        status='error'))
         # We need the type of each template field widget
         widgets = item.get_template_widgets(trans)
         # The list of widgets may include an AddressField which we need to save if it is new
@@ -1633,22 +1575,19 @@ class UsesFormDefinitionsMixin:
                             if cntrller == 'api':
                                 trans.response.status = 400
                                 return message
-                            new_kwd = dict(action=action,
-                                           id=id,
-                                           message=util.sanitize_text(message),
-                                           status='error')
+                            new_kwd = dict(action=action, id=id, message=util.sanitize_text(message), status='error')
                             if in_library:
-                                new_kwd.update(dict(controller='library_common',
-                                                    cntrller=cntrller,
-                                                    use_panels=use_panels,
-                                                    library_id=library_id,
-                                                    folder_id=folder_id,
-                                                    show_deleted=show_deleted))
+                                new_kwd.update(
+                                    dict(
+                                        controller='library_common',
+                                        cntrller=cntrller,
+                                        use_panels=use_panels,
+                                        library_id=library_id,
+                                        folder_id=folder_id,
+                                        show_deleted=show_deleted))
                                 return trans.response.send_redirect(web.url_for(**new_kwd))
                             if in_sample_tracking:
-                                new_kwd.update(dict(controller='request_type',
-                                                    request_type_id=request_type_id,
-                                                    sample_id=sample_id))
+                                new_kwd.update(dict(controller='request_type', request_type_id=request_type_id, sample_id=sample_id))
                                 return trans.response.send_redirect(web.url_for(**new_kwd))
                     else:
                         # Form was submitted via refresh_on_change
@@ -1744,22 +1683,18 @@ class UsesFormDefinitionsMixin:
         message = 'The information has been updated.'
         if cntrller == 'api':
             return 200, message
-        new_kwd = dict(action=action,
-                       cntrller=cntrller,
-                       id=id,
-                       message=util.sanitize_text(message),
-                       status='done')
+        new_kwd = dict(action=action, cntrller=cntrller, id=id, message=util.sanitize_text(message), status='done')
         if in_library:
-            new_kwd.update(dict(controller='library_common',
-                                use_panels=use_panels,
-                                library_id=library_id,
-                                folder_id=folder_id,
-                                show_deleted=show_deleted))
+            new_kwd.update(
+                dict(
+                    controller='library_common',
+                    use_panels=use_panels,
+                    library_id=library_id,
+                    folder_id=folder_id,
+                    show_deleted=show_deleted))
         if in_sample_tracking:
-            new_kwd.update(dict(controller='requests_common',
-                                cntrller='requests_admin',
-                                id=trans.security.encode_id(sample.id),
-                                sample_id=sample_id))
+            new_kwd.update(
+                dict(controller='requests_common', cntrller='requests_admin', id=trans.security.encode_id(sample.id), sample_id=sample_id))
         return trans.response.send_redirect(web.url_for(**new_kwd))
 
     @web.expose
@@ -1782,29 +1717,25 @@ class UsesFormDefinitionsMixin:
         message = util.restore_text(params.get('message', ''))
         try:
             if in_library:
-                item, item_desc, action, id = self.get_item_and_stuff(trans,
-                                                                      item_type=item_type,
-                                                                      library_id=library_id,
-                                                                      folder_id=folder_id,
-                                                                      ldda_id=ldda_id,
-                                                                      is_admin=is_admin)
+                item, item_desc, action, id = self.get_item_and_stuff(
+                    trans, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, is_admin=is_admin)
             elif in_sample_tracking:
-                item, item_desc, action, id = self.get_item_and_stuff(trans,
-                                                                      item_type=item_type,
-                                                                      request_type_id=request_type_id,
-                                                                      sample_id=sample_id)
+                item, item_desc, action, id = self.get_item_and_stuff(
+                    trans, item_type=item_type, request_type_id=request_type_id, sample_id=sample_id)
         except ValueError:
             return None
         if in_library:
             if not (is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, item)):
                 message = "You are not authorized to modify %s '%s'." % (item_desc, item.name)
-                return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                action='browse_library',
-                                                                cntrller=cntrller,
-                                                                id=library_id,
-                                                                show_deleted=show_deleted,
-                                                                message=util.sanitize_text(message),
-                                                                status='error'))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='library_common',
+                        action='browse_library',
+                        cntrller=cntrller,
+                        id=library_id,
+                        show_deleted=show_deleted,
+                        message=util.sanitize_text(message),
+                        status='error'))
         if in_library:
             info_association, inherited = item.get_info_association()
         elif in_sample_tracking:
@@ -1820,22 +1751,18 @@ class UsesFormDefinitionsMixin:
                 trans.sa_session.delete(info_association)
                 trans.sa_session.flush()
             message = 'The template for this %s has been deleted.' % item_type
-        new_kwd = dict(action=action,
-                       cntrller=cntrller,
-                       id=id,
-                       message=util.sanitize_text(message),
-                       status='done')
+        new_kwd = dict(action=action, cntrller=cntrller, id=id, message=util.sanitize_text(message), status='done')
         if in_library:
-            new_kwd.update(dict(controller='library_common',
-                                use_panels=use_panels,
-                                library_id=library_id,
-                                folder_id=folder_id,
-                                show_deleted=show_deleted))
+            new_kwd.update(
+                dict(
+                    controller='library_common',
+                    use_panels=use_panels,
+                    library_id=library_id,
+                    folder_id=folder_id,
+                    show_deleted=show_deleted))
             return trans.response.send_redirect(web.url_for(**new_kwd))
         if in_sample_tracking:
-            new_kwd.update(dict(controller='request_type',
-                                request_type_id=request_type_id,
-                                sample_id=sample_id))
+            new_kwd.update(dict(controller='request_type', request_type_id=request_type_id, sample_id=sample_id))
             return trans.response.send_redirect(web.url_for(**new_kwd))
 
     def widget_fields_have_contents(self, widgets):
@@ -2037,12 +1964,8 @@ class UsesFormDefinitionsMixin:
         return item, item_desc, action, id
 
     def build_form_id_select_field(self, trans, forms, selected_value='none'):
-        return build_select_field(trans,
-                                  objs=forms,
-                                  label_attr='name',
-                                  select_field_name='form_id',
-                                  selected_value=selected_value,
-                                  refresh_on_change=True)
+        return build_select_field(
+            trans, objs=forms, label_attr='name', select_field_name='form_id', selected_value=selected_value, refresh_on_change=True)
 
 
 class SharableMixin:
@@ -2111,7 +2034,8 @@ class SharableMixin:
         count = 1
         # Ensure unique across model class and user and don't include this item
         # in the check in case it has previously been assigned a valid slug.
-        while sa_session.query(item.__class__).filter(item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id).count() != 0:
+        while sa_session.query(item.__class__).filter(item.__class__.user == item.user, item.__class__.slug == new_slug,
+                                                      item.__class__.id != item.id).count() != 0:
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
             new_slug = '%s-%i' % (slug_base, count)
@@ -2158,13 +2082,11 @@ class SharableMixin:
 
 
 class UsesQuotaMixin(object):
-
     def get_quota(self, trans, id, check_ownership=False, check_accessible=False, deleted=None):
         return self.get_object(trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted)
 
 
 class UsesTagsMixin(SharableItemSecurityMixin):
-
     def get_tag_handler(self, trans):
         return trans.app.tag_handler
 
@@ -2220,8 +2142,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         # create a union of subqueries for each for this user - getting only the tname and user_value
         all_tags_query = None
         for tag_model in tag_models:
-            subq = (trans.sa_session.query(tag_model.user_tname, tag_model.user_value)
-                    .filter(tag_model.user == trans.user))
+            subq = (trans.sa_session.query(tag_model.user_tname, tag_model.user_value).filter(tag_model.user == trans.user))
             all_tags_query = subq if all_tags_query is None else all_tags_query.union(subq)
 
         # if nothing init'd the query, bail
@@ -2328,6 +2249,7 @@ class ControllerUnavailable(Exception):
     Deprecated: `BaseController` used to be available under the name `Root`
     """
     pass
+
 
 # ---- Utility methods -------------------------------------------------------
 

@@ -51,9 +51,7 @@ def upgrade(migrate_engine):
         # Add 1 foreign key constraint to the library_folder table
         if migrate_engine.name != 'sqlite' and Request_table is not None and LibraryFolder_table is not None:
             try:
-                cons = ForeignKeyConstraint([Request_table.c.folder_id],
-                                            [LibraryFolder_table.c.id],
-                                            name='request_folder_id_fk')
+                cons = ForeignKeyConstraint([Request_table.c.folder_id], [LibraryFolder_table.c.id], name='request_folder_id_fk')
                 # Create the constraint
                 cons.create()
             except Exception:

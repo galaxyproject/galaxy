@@ -10,16 +10,9 @@ import tempfile
 from time import sleep
 
 from galaxy import model
-from galaxy.util import (
-    asbool,
-    DATABASE_MAX_STRING_SIZE,
-    shrink_stream_by_size
-)
+from galaxy.util import (asbool, DATABASE_MAX_STRING_SIZE, shrink_stream_by_size)
 
-from ..runners import (
-    BaseJobRunner,
-    JobState
-)
+from ..runners import (BaseJobRunner, JobState)
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +52,8 @@ class LocalJobRunner(BaseJobRunner):
         # is going to work with other job runners.
         slots = job_wrapper.job_destination.params.get("local_slots", None) or os.environ.get("GALAXY_SLOTS", None)
         if slots:
-            slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % (int(slots))
+            slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % (
+                int(slots))
         else:
             slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
 
@@ -91,13 +85,14 @@ class LocalJobRunner(BaseJobRunner):
             stdout_file = tempfile.NamedTemporaryFile(suffix='_stdout', dir=job_wrapper.working_directory)
             stderr_file = tempfile.NamedTemporaryFile(suffix='_stderr', dir=job_wrapper.working_directory)
             log.debug('(%s) executing job script: %s' % (job_id, command_line))
-            proc = subprocess.Popen(args=command_line,
-                                    shell=True,
-                                    cwd=job_wrapper.working_directory,
-                                    stdout=stdout_file,
-                                    stderr=stderr_file,
-                                    env=self._environ,
-                                    preexec_fn=os.setpgrp)
+            proc = subprocess.Popen(
+                args=command_line,
+                shell=True,
+                cwd=job_wrapper.working_directory,
+                stdout=stdout_file,
+                stderr=stderr_file,
+                env=self._environ,
+                preexec_fn=os.setpgrp)
             job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
             job_wrapper.change_state(model.Job.states.RUNNING)
 
@@ -114,8 +109,10 @@ class LocalJobRunner(BaseJobRunner):
                 pass
             stdout_file.seek(0)
             stderr_file.seek(0)
-            stdout = shrink_stream_by_size(stdout_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-            stderr = shrink_stream_by_size(stderr_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+            stdout = shrink_stream_by_size(
+                stdout_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+            stderr = shrink_stream_by_size(
+                stderr_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
             stdout_file.close()
             stderr_file.close()
             log.debug('execution finished: %s' % command_line)
@@ -136,7 +133,8 @@ class LocalJobRunner(BaseJobRunner):
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         job_ext_output_metadata = job.get_external_output_metadata()
         try:
-            pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
+            pid = job_ext_output_metadata[
+                0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             assert pid not in [None, '']
         except Exception:
             # metadata internal or job not complete yet
@@ -152,7 +150,8 @@ class LocalJobRunner(BaseJobRunner):
             try:
                 os.killpg(pid, sig)
             except OSError as e:
-                log.warning("stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % (job.get_id(), errno.errorcode[e.errno], sig, pid, e.strerror))
+                log.warning("stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" %
+                            (job.get_id(), errno.errorcode[e.errno], sig, pid, e.strerror))
                 return  # give up
             sleep(2)
             if not self._check_pid(pid):

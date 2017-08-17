@@ -64,5 +64,8 @@ class ExternalServiceActionJQueryGridResultHandler(ExternalServiceActionResultHa
 
 
 result_type_to_class = {}
-for handler_class in [ExternalServiceActionResultHandler, ExternalServiceActionURLRedirectResultHandler, ExternalServiceActionJQueryGridResultHandler, ExternalServiceActionJSONResultHandler]:
+for handler_class in [
+        ExternalServiceActionResultHandler, ExternalServiceActionURLRedirectResultHandler, ExternalServiceActionJQueryGridResultHandler,
+        ExternalServiceActionJSONResultHandler
+]:
     result_type_to_class[handler_class.type] = handler_class

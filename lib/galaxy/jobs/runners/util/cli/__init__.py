@@ -2,10 +2,7 @@
 """
 from glob import glob
 from os import getcwd
-from os.path import (
-    basename,
-    join
-)
+from os.path import (basename, join)
 
 DEFAULT_SHELL_PLUGIN = 'LocalShell'
 
@@ -22,6 +19,7 @@ class CliInterface(object):
     def __init__(self, code_dir='lib'):
         """
         """
+
         def __load(module_path, d):
             module_pattern = join(join(getcwd(), code_dir, *module_path.split('.')), '*.py')
             for file in glob(module_pattern):

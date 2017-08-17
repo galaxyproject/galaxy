@@ -13,12 +13,7 @@ from galaxy.exceptions import MessageException, ObjectNotFound
 # BaseGalaxyToolBox.
 from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.loader_directory import looks_like_a_tool
-from galaxy.util import (
-    ExecutionTimer,
-    listify,
-    parse_xml,
-    string_as_bool
-)
+from galaxy.util import (ExecutionTimer, listify, parse_xml, string_as_bool)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
@@ -26,12 +21,7 @@ from galaxy.util.odict import odict
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
-from .panel import (
-    panel_item_types,
-    ToolPanelElements,
-    ToolSection,
-    ToolSectionLabel
-)
+from .panel import (panel_item_types, ToolPanelElements, ToolSection, ToolSectionLabel)
 from .parser import ensure_tool_conf_item, get_toolbox_parser
 from .tags import tool_tag_manager
 
@@ -157,22 +147,21 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
             self._index += 1
             if parsing_shed_tool_conf:
                 config_elems.append(item.elem)
-            self.load_item(
-                item,
-                tool_path=tool_path,
-                load_panel_dict=load_panel_dict,
-                guid=item.get('guid'),
-                index=index,
-                internal=True
-            )
+            self.load_item(item, tool_path=tool_path, load_panel_dict=load_panel_dict, guid=item.get('guid'), index=index, internal=True)
 
         if parsing_shed_tool_conf:
-            shed_tool_conf_dict = dict(config_filename=config_filename,
-                                       tool_path=tool_path,
-                                       config_elems=config_elems)
+            shed_tool_conf_dict = dict(config_filename=config_filename, tool_path=tool_path, config_elems=config_elems)
             self._dynamic_tool_confs.append(shed_tool_conf_dict)
 
-    def load_item(self, item, tool_path, panel_dict=None, integrated_panel_dict=None, load_panel_dict=True, guid=None, index=None, internal=False):
+    def load_item(self,
+                  item,
+                  tool_path,
+                  panel_dict=None,
+                  integrated_panel_dict=None,
+                  load_panel_dict=True,
+                  guid=None,
+                  index=None,
+                  internal=False):
         with self.app._toolbox_lock:
             item = ensure_tool_conf_item(item)
             item_type = item.type
@@ -186,13 +175,23 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
             if integrated_panel_dict is None:
                 integrated_panel_dict = self._integrated_tool_panel
             if item_type == 'tool':
-                self._load_tool_tag_set(item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, tool_path=tool_path, load_panel_dict=load_panel_dict, guid=guid, index=index, internal=internal)
+                self._load_tool_tag_set(
+                    item,
+                    panel_dict=panel_dict,
+                    integrated_panel_dict=integrated_panel_dict,
+                    tool_path=tool_path,
+                    load_panel_dict=load_panel_dict,
+                    guid=guid,
+                    index=index,
+                    internal=internal)
             elif item_type == 'workflow':
-                self._load_workflow_tag_set(item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index)
+                self._load_workflow_tag_set(
+                    item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index)
             elif item_type == 'section':
                 self._load_section_tag_set(item, tool_path=tool_path, load_panel_dict=load_panel_dict, index=index, internal=internal)
             elif item_type == 'label':
-                self._load_label_tag_set(item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index)
+                self._load_label_tag_set(
+                    item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index)
             elif item_type == 'tool_dir':
                 self._load_tooldir_tag_set(item, panel_dict, tool_path, integrated_panel_dict, load_panel_dict=load_panel_dict)
 
@@ -278,8 +277,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
                 panel_dict.replace_tool(
                     previous_tool_id=related_tool.id,
                     new_tool_id=tool_id,
-                    tool=tool,
-                )
+                    tool=tool, )
                 log_msg = "Loaded tool id: %s, version: %s into tool panel." % (tool.id, tool.version)
         else:
             inserted = False
@@ -300,13 +298,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
                 else:
                     log.warning("Could not find lineage for tool '%s'", tool.id)
                 if not inserted:
-                    if (
-                        tool.guid is None or
-                        tool.tool_shed is None or
-                        tool.repository_name is None or
-                        tool.repository_owner is None or
-                        tool.installed_changeset_revision is None
-                    ):
+                    if (tool.guid is None or tool.tool_shed is None or tool.repository_name is None or tool.repository_owner is None
+                            or tool.installed_changeset_revision is None):
                         # We have a tool that was not installed from the Tool
                         # Shed, but is also not yet defined in
                         # integrated_tool_panel.xml, so append it to the tool
@@ -531,7 +524,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
     def _path_template_kwds(self):
         return {}
 
-    def _load_tool_tag_set(self, item, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None, internal=False):
+    def _load_tool_tag_set(self, item, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None,
+                           internal=False):
         try:
             path_template = item.get("file")
             template_kwds = self._path_template_kwds()
@@ -605,18 +599,17 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
                     # This can happen if the Tool Shed repository has been
                     # updated to a new revision and the installed_changeset_revision
                     # element in shed_tool_conf.xml file has been updated too
-                    log.debug("The installed_changeset_revision for tool %s is %s, using %s instead", path,
-                              installed_changeset_revision, splitted_path[2])
+                    log.debug("The installed_changeset_revision for tool %s is %s, using %s instead", path, installed_changeset_revision,
+                              splitted_path[2])
                     installed_changeset_revision = splitted_path[2]
             except AssertionError:
                 log.debug("Error while loading tool %s", path)
                 pass
-        repository = self._get_tool_shed_repository(tool_shed=tool_shed,
-                                                    name=repository_name,
-                                                    owner=repository_owner,
-                                                    installed_changeset_revision=installed_changeset_revision)
+        repository = self._get_tool_shed_repository(
+            tool_shed=tool_shed, name=repository_name, owner=repository_owner, installed_changeset_revision=installed_changeset_revision)
         if not repository:
-            msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found in database" % (repository_name, repository_owner)
+            msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found in database" % (
+                repository_name, repository_owner)
             raise Exception(msg)
         return repository
 
@@ -683,8 +676,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
                 load_panel_dict=load_panel_dict,
                 guid=sub_item.get('guid'),
                 index=sub_index,
-                internal=internal,
-            )
+                internal=internal, )
 
         # Ensure each tool's section is stored
         for section_key, section_item_type, section_item in integrated_elems.panel_items_iter():
@@ -704,7 +696,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
         self.__watch_directory(directory, elems, integrated_elems, load_panel_dict, recursive, force_watch=True)
 
     def __watch_directory(self, directory, elems, integrated_elems, load_panel_dict, recursive, force_watch=False):
-
         def quick_load(tool_file, async=True):
             try:
                 tool = self.load_tool(tool_file)
@@ -926,10 +917,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
             panel_elts = list(self.tool_panel_contents(trans, **kwds))
             # Produce panel.
             rval = []
-            kwargs = dict(
-                trans=trans,
-                link_details=True
-            )
+            kwargs = dict(trans=trans, link_details=True)
             for elt in panel_elts:
                 rval.append(elt.to_dict(**kwargs))
         else:
@@ -986,6 +974,7 @@ def _filter_for_panel(item, item_type, filters, context):
     Filters tool panel elements so that only those that are compatible
     with provided filters are kept.
     """
+
     def _apply_filter(filter_item, filter_list):
         for filter_method in filter_list:
             try:
@@ -994,6 +983,7 @@ def _filter_for_panel(item, item_type, filters, context):
             except Exception as e:
                 raise MessageException("Toolbox filter exception from '%s': %s." % (filter_method.__name__, e))
         return True
+
     if item_type == panel_item_types.TOOL:
         if _apply_filter(item, filters['tool']):
             return item

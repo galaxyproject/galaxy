@@ -7,7 +7,6 @@ import logging
 from galaxy.util import parse_xml, string_as_bool
 from galaxy.util.odict import odict
 
-
 log = logging.getLogger(__name__)
 
 NO_PROVIDER_ID = 'None'
@@ -16,6 +15,7 @@ RESERVED_PROVIDER_IDS = [NO_PROVIDER_ID]
 
 class OpenIDProvider(object):
     '''An OpenID Provider object.'''
+
     @classmethod
     def from_file(cls, filename):
         return cls.from_elem(parse_xml(filename).getroot())
@@ -53,9 +53,25 @@ class OpenIDProvider(object):
             sreg_required = None
             sreg_optional = None
             use_for = None
-        return cls(provider_id, provider_name, op_endpoint_url, sreg_required=sreg_required, sreg_optional=sreg_optional, use_for=use_for, store_user_preference=store_user_preference, never_associate_with_user=never_associate_with_user)
+        return cls(
+            provider_id,
+            provider_name,
+            op_endpoint_url,
+            sreg_required=sreg_required,
+            sreg_optional=sreg_optional,
+            use_for=use_for,
+            store_user_preference=store_user_preference,
+            never_associate_with_user=never_associate_with_user)
 
-    def __init__(self, id, name, op_endpoint_url, sreg_required=None, sreg_optional=None, use_for=None, store_user_preference=None, never_associate_with_user=None):
+    def __init__(self,
+                 id,
+                 name,
+                 op_endpoint_url,
+                 sreg_required=None,
+                 sreg_optional=None,
+                 use_for=None,
+                 store_user_preference=None,
+                 never_associate_with_user=None):
         '''When sreg options are not specified, defaults are used.'''
         self.id = id
         self.name = name
@@ -129,7 +145,9 @@ class OpenIDProviders(object):
             self.providers = providers
         else:
             self.providers = odict()
-        self._banned_identifiers = [provider.op_endpoint_url for provider in self.providers.itervalues() if provider.never_associate_with_user]
+        self._banned_identifiers = [
+            provider.op_endpoint_url for provider in self.providers.itervalues() if provider.never_associate_with_user
+        ]
 
     def __iter__(self):
         for provider in self.providers.itervalues():

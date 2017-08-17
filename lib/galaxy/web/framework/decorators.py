@@ -43,6 +43,7 @@ def json(func, pretty=False):
     Format the response as JSON and set the response content type to
     JSON_CONTENT_TYPE.
     """
+
     @wraps(func)
     def call_and_format(self, trans, *args, **kwargs):
         # pull out any callback argument to the api endpoint and set the content type to json or javascript
@@ -74,9 +75,12 @@ def require_login(verb="perform this action", use_panels=False, webapp='galaxy')
                 return func(self, trans, *args, **kwargs)
             else:
                 return trans.show_error_message(
-                    'You must be <a target="galaxy_main" href="%s">logged in</a> to %s.'
-                    % (url_for(controller='user', action='login', webapp=webapp), verb), use_panels=use_panels)
+                    'You must be <a target="galaxy_main" href="%s">logged in</a> to %s.' %
+                    (url_for(controller='user', action='login', webapp=webapp), verb),
+                    use_panels=use_panels)
+
         return decorator
+
     return argcatcher
 
 
@@ -96,6 +100,7 @@ def require_admin(func):
             else:
                 return trans.show_error_message(msg)
         return func(self, trans, *args, **kwargs)
+
     return decorator
 
 
@@ -104,11 +109,13 @@ def expose_api(func, to_json=True, user_required=True):
     """
     Expose this function via the API.
     """
+
     @wraps(func)
     def decorator(self, trans, *args, **kwargs):
         def error(environ, start_response):
             start_response(error_status, [('Content-type', 'text/plain')])
             return error_message
+
         error_status = '403 Forbidden'
         if trans.error_message:
             return trans.error_message
@@ -160,6 +167,7 @@ def expose_api(func, to_json=True, user_required=True):
         except:
             log.exception('Uncaught exception in exposed API method:')
             raise paste.httpexceptions.HTTPServerError()
+
     return expose(_save_orig_fn(decorator, func))
 
 
@@ -224,21 +232,21 @@ def _future_expose_api(func, to_json=True, user_required=True, user_or_session_r
     """
     Expose this function via the API.
     """
+
     @wraps(func)
     def decorator(self, trans, *args, **kwargs):
         # errors passed in from trans._authenicate_api
         if trans.error_message:
-            return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
-                                        err_msg=trans.error_message)
+            return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY, err_msg=trans.error_message)
         if trans.anonymous:
             # error if anon and user required
             if user_required:
-                return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
-                                            err_msg="API authentication required for this request")
+                return __api_error_response(
+                    trans, status_code=403, err_code=error_codes.USER_NO_API_KEY, err_msg="API authentication required for this request")
             # error if anon and no session
             if not trans.galaxy_session and user_or_session_required:
-                return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
-                                            err_msg="API authentication required for this request")
+                return __api_error_response(
+                    trans, status_code=403, err_code=error_codes.USER_NO_API_KEY, err_msg="API authentication required for this request")
 
         if trans.request.body:
             try:
@@ -293,13 +301,8 @@ def _future_expose_api(func, to_json=True, user_required=True, user_or_session_r
             error_message = 'Uncaught exception in exposed API method:'
             log.exception(error_message)
             return __api_error_response(
-                trans,
-                status_code=500,
-                exception=e,
-                traceback=traceback_string,
-                err_msg=error_message,
-                err_code=error_codes.UNKNOWN
-            )
+                trans, status_code=500, exception=e, traceback=traceback_string, err_msg=error_message, err_code=error_codes.UNKNOWN)
+
     if not hasattr(func, '_orig'):
         decorator._orig = func
     decorator.exposed = True
@@ -394,10 +397,4 @@ def _future_expose_api_raw_anonymous(func):
 
 def _future_expose_api_raw_anonymous_and_sessionless(func):
     # TODO: tool_shed api implemented JSONP first on a method-by-method basis, don't overwrite that for now
-    return _future_expose_api(
-        func,
-        to_json=False,
-        user_required=False,
-        user_or_session_required=False,
-        handle_jsonp=False
-    )
+    return _future_expose_api(func, to_json=False, user_required=False, user_or_session_required=False, handle_jsonp=False)

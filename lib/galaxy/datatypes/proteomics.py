@@ -11,7 +11,6 @@ from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
 
-
 log = logging.getLogger(__name__)
 
 
@@ -27,14 +26,13 @@ class Wiff(Binary):
         Binary.__init__(self, **kwd)
 
         self.add_composite_file(
-            'wiff',
-            description='AB SCIEX files in .wiff format. This can contain all needed information or only metadata.',
-            is_binary=True)
+            'wiff', description='AB SCIEX files in .wiff format. This can contain all needed information or only metadata.', is_binary=True)
 
         self.add_composite_file(
             'wiff_scan',
             description='AB SCIEX spectra file (wiff.scan), if the corresponding .wiff file only contains metadata.',
-            optional='True', is_binary=True)
+            optional='True',
+            is_binary=True)
 
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>Wiff Composite Dataset </title></head><p/>']
@@ -62,7 +60,10 @@ class PepXmlReport(Tabular):
 
     def __init__(self, **kwd):
         super(PepXmlReport, self).__init__(**kwd)
-        self.column_names = ['Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan', 'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probabaility']
+        self.column_names = [
+            'Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan',
+            'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probabaility'
+        ]
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
@@ -78,16 +79,12 @@ class ProtXmlReport(Tabular):
     def __init__(self, **kwd):
         super(ProtXmlReport, self).__init__(**kwd)
         self.column_names = [
-            "Entry Number", "Group Probability",
-            "Protein", "Protein Link", "Protein Probability",
-            "Percent Coverage", "Number of Unique Peptides",
-            "Total Independent Spectra", "Percent Share of Spectrum ID's",
-            "Description", "Protein Molecular Weight", "Protein Length",
-            "Is Nondegenerate Evidence", "Weight", "Precursor Ion Charge",
-            "Peptide sequence", "Peptide Link", "NSP Adjusted Probability",
-            "Initial Probability", "Number of Total Termini",
-            "Number of Sibling Peptides Bin", "Number of Instances",
-            "Peptide Group Designator", "Is Evidence?"]
+            "Entry Number", "Group Probability", "Protein", "Protein Link", "Protein Probability", "Percent Coverage",
+            "Number of Unique Peptides", "Total Independent Spectra", "Percent Share of Spectrum ID's", "Description",
+            "Protein Molecular Weight", "Protein Length", "Is Nondegenerate Evidence", "Weight", "Precursor Ion Charge", "Peptide sequence",
+            "Peptide Link", "NSP Adjusted Probability", "Initial Probability", "Number of Total Termini", "Number of Sibling Peptides Bin",
+            "Number of Instances", "Peptide Group Designator", "Is Evidence?"
+        ]
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
@@ -348,13 +345,9 @@ class SPLib(Msp):
 
     def __init__(self, **kwd):
         Msp.__init__(self, **kwd)
-        self.add_composite_file('library.splib',
-                                description='Spectral Library. Contains actual library spectra',
-                                is_binary=False)
-        self.add_composite_file('library.spidx',
-                                description='Spectrum index', is_binary=False)
-        self.add_composite_file('library.pepidx',
-                                description='Peptide index', is_binary=False)
+        self.add_composite_file('library.splib', description='Spectral Library. Contains actual library spectra', is_binary=False)
+        self.add_composite_file('library.spidx', description='Spectrum index', is_binary=False)
+        self.add_composite_file('library.pepidx', description='Peptide index', is_binary=False)
 
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>Spectral Library Composite Dataset </title></head><p/>']
@@ -439,18 +432,10 @@ class ImzML(Binary):
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
-
         """The metadata"""
-        self.add_composite_file(
-            'imzml',
-            description='The imzML metadata component.',
-            is_binary=False)
-
+        self.add_composite_file('imzml', description='The imzML metadata component.', is_binary=False)
         """The mass spectral data"""
-        self.add_composite_file(
-            'ibd',
-            description='The mass spectral data component.',
-            is_binary=True)
+        self.add_composite_file('ibd', description='The mass spectral data component.', is_binary=True)
 
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>imzML Composite Dataset </title></head><p/>']

@@ -18,9 +18,7 @@ UserAction_table = Table("user_action", metadata,
                          Column("create_time", DateTime, default=now),
                          Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                          Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True),
-                         Column("action", Unicode(255)),
-                         Column("context", Unicode(512)),
-                         Column("params", Unicode(1024)))
+                         Column("action", Unicode(255)), Column("context", Unicode(512)), Column("params", Unicode(1024)))
 
 
 def upgrade(migrate_engine):

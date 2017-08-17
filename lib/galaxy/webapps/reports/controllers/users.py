@@ -17,7 +17,6 @@ log = logging.getLogger(__name__)
 
 
 class Users(BaseUIController, ReportQueryBuilder):
-
     @web.expose
     def registered_users(self, trans, **kwd):
         message = escape(util.restore_text(kwd.get('message', '')))
@@ -33,23 +32,17 @@ class Users(BaseUIController, ReportQueryBuilder):
         arrow = specs.arrow
         _order = specs.exc_order
 
-        q = sa.select((self.select_month(galaxy.model.User.table.c.create_time).label('date'),
-                       sa.func.count(galaxy.model.User.table.c.id).label('num_users')),
-                      from_obj=[galaxy.model.User.table],
-                      group_by=self.group_by_month(galaxy.model.User.table.c.create_time),
-                      order_by=[_order])
+        q = sa.select(
+            (self.select_month(galaxy.model.User.table.c.create_time).label('date'),
+             sa.func.count(galaxy.model.User.table.c.id).label('num_users')),
+            from_obj=[galaxy.model.User.table],
+            group_by=self.group_by_month(galaxy.model.User.table.c.create_time),
+            order_by=[_order])
         users = []
         for row in q.execute():
-            users.append((row.date.strftime("%Y-%m"),
-                          row.num_users,
-                          row.date.strftime("%B"),
-                          row.date.strftime("%Y")))
-        return trans.fill_template('/webapps/reports/registered_users_per_month.mako',
-                                   order=order,
-                                   arrow=arrow,
-                                   sort_id=sort_id,
-                                   users=users,
-                                   message=message)
+            users.append((row.date.strftime("%Y-%m"), row.num_users, row.date.strftime("%B"), row.date.strftime("%Y")))
+        return trans.fill_template(
+            '/webapps/reports/registered_users_per_month.mako', order=order, arrow=arrow, sort_id=sort_id, users=users, message=message)
 
     @web.expose
     def specified_month(self, trans, **kwd):
@@ -62,25 +55,23 @@ class Users(BaseUIController, ReportQueryBuilder):
         end_date = start_date + timedelta(days=calendar.monthrange(year, month)[1])
         month_label = start_date.strftime("%B")
         year_label = start_date.strftime("%Y")
-        q = sa.select((self.select_day(galaxy.model.User.table.c.create_time).label('date'),
-                       sa.func.count(galaxy.model.User.table.c.id).label('num_users')),
-                      whereclause=sa.and_(galaxy.model.User.table.c.create_time >= start_date,
-                                          galaxy.model.User.table.c.create_time < end_date),
-                      from_obj=[galaxy.model.User.table],
-                      group_by=self.group_by_day(galaxy.model.User.table.c.create_time),
-                      order_by=[sa.desc('date')])
+        q = sa.select(
+            (self.select_day(galaxy.model.User.table.c.create_time).label('date'),
+             sa.func.count(galaxy.model.User.table.c.id).label('num_users')),
+            whereclause=sa.and_(galaxy.model.User.table.c.create_time >= start_date, galaxy.model.User.table.c.create_time < end_date),
+            from_obj=[galaxy.model.User.table],
+            group_by=self.group_by_day(galaxy.model.User.table.c.create_time),
+            order_by=[sa.desc('date')])
         users = []
         for row in q.execute():
-            users.append((row.date.strftime("%Y-%m-%d"),
-                          row.date.strftime("%d"),
-                          row.num_users,
-                          row.date.strftime("%A")))
-        return trans.fill_template('/webapps/reports/registered_users_specified_month.mako',
-                                   month_label=month_label,
-                                   year_label=year_label,
-                                   month=month,
-                                   users=users,
-                                   message=message)
+            users.append((row.date.strftime("%Y-%m-%d"), row.date.strftime("%d"), row.num_users, row.date.strftime("%A")))
+        return trans.fill_template(
+            '/webapps/reports/registered_users_specified_month.mako',
+            month_label=month_label,
+            year_label=year_label,
+            month=month,
+            users=users,
+            message=message)
 
     @web.expose
     def specified_date(self, trans, **kwd):
@@ -94,23 +85,23 @@ class Users(BaseUIController, ReportQueryBuilder):
         day_label = start_date.strftime("%A")
         month_label = start_date.strftime("%B")
         year_label = start_date.strftime("%Y")
-        q = sa.select((self.select_day(galaxy.model.User.table.c.create_time).label('date'),
-                       galaxy.model.User.table.c.email),
-                      whereclause=sa.and_(galaxy.model.User.table.c.create_time >= start_date,
-                                          galaxy.model.User.table.c.create_time < end_date),
-                      from_obj=[galaxy.model.User.table],
-                      order_by=[galaxy.model.User.table.c.email])
+        q = sa.select(
+            (self.select_day(galaxy.model.User.table.c.create_time).label('date'), galaxy.model.User.table.c.email),
+            whereclause=sa.and_(galaxy.model.User.table.c.create_time >= start_date, galaxy.model.User.table.c.create_time < end_date),
+            from_obj=[galaxy.model.User.table],
+            order_by=[galaxy.model.User.table.c.email])
         users = []
         for row in q.execute():
             users.append((row.email))
-        return trans.fill_template('/webapps/reports/registered_users_specified_date.mako',
-                                   specified_date=start_date,
-                                   day_label=day_label,
-                                   month_label=month_label,
-                                   year_label=year_label,
-                                   day_of_month=day_of_month,
-                                   users=users,
-                                   message=message)
+        return trans.fill_template(
+            '/webapps/reports/registered_users_specified_date.mako',
+            specified_date=start_date,
+            day_label=day_label,
+            month_label=month_label,
+            year_label=year_label,
+            day_of_month=day_of_month,
+            users=users,
+            message=message)
 
     @web.expose
     def last_access_date(self, trans, **kwd):
@@ -151,13 +142,14 @@ class Users(BaseUIController, ReportQueryBuilder):
                 # The user has never logged in
                 users.append((user.email, "never logged in"))
         users = sorted(users, key=operator.itemgetter(name_to_num(sort_id)), reverse=_order)
-        return trans.fill_template('/webapps/reports/users_last_access_date.mako',
-                                   order=order,
-                                   arrow=arrow,
-                                   sort_id=sort_id,
-                                   days_not_logged_in=days_not_logged_in,
-                                   users=users,
-                                   message=message)
+        return trans.fill_template(
+            '/webapps/reports/users_last_access_date.mako',
+            order=order,
+            arrow=arrow,
+            sort_id=sort_id,
+            days_not_logged_in=days_not_logged_in,
+            users=users,
+            message=message)
 
     @web.expose
     def user_disk_usage(self, trans, **kwd):
@@ -177,13 +169,14 @@ class Users(BaseUIController, ReportQueryBuilder):
         users = sorted(trans.sa_session.query(galaxy.model.User).all(), key=operator.attrgetter(str(sort_id)), reverse=_order)
         if user_cutoff:
             users = users[:user_cutoff]
-        return trans.fill_template('/webapps/reports/users_user_disk_usage.mako',
-                                   order=order,
-                                   arrow=arrow,
-                                   sort_id=sort_id,
-                                   users=users,
-                                   user_cutoff=user_cutoff,
-                                   message=message)
+        return trans.fill_template(
+            '/webapps/reports/users_user_disk_usage.mako',
+            order=order,
+            arrow=arrow,
+            sort_id=sort_id,
+            users=users,
+            user_cutoff=user_cutoff,
+            message=message)
 
     @web.expose
     def history_per_user(self, trans, **kwd):
@@ -193,11 +186,11 @@ class Users(BaseUIController, ReportQueryBuilder):
         descending = 1 if kwd.get('descending', 'desc') == 'desc' else -1
         sorting_functions = [
             lambda first, second: descending if first[0].lower() > second[0].lower() else -descending,
-            lambda first, second: descending if first[1] < second[1] else -descending]
+            lambda first, second: descending if first[1] < second[1] else -descending
+        ]
 
         req = sa.select(
-            (sa.func.count(galaxy.model.History.table.c.id).label('history'),
-             galaxy.model.User.table.c.username.label('username')),
+            (sa.func.count(galaxy.model.History.table.c.id).label('history'), galaxy.model.User.table.c.username.label('username')),
             from_obj=[sa.outerjoin(galaxy.model.History.table, galaxy.model.User.table)],
             whereclause=galaxy.model.History.table.c.user_id == galaxy.model.User.table.c.id,
             group_by=['username'],
@@ -208,9 +201,10 @@ class Users(BaseUIController, ReportQueryBuilder):
         if user_cutoff != 0:
             histories = histories[:user_cutoff]
 
-        return trans.fill_template('/webapps/reports/history_per_user.mako',
-                                   histories=histories,
-                                   user_cutoff=user_cutoff,
-                                   sorting=sorting,
-                                   descending=descending,
-                                   message=message)
+        return trans.fill_template(
+            '/webapps/reports/history_per_user.mako',
+            histories=histories,
+            user_cutoff=user_cutoff,
+            sorting=sorting,
+            descending=descending,
+            message=message)

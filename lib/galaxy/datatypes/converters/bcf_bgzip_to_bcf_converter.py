@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Uses bcftools to extract a bcf from a bcf.gz
 

@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 
 
 class AuthManager(object):
-
     def __init__(self, app):
         self.__app = app
         import galaxy.auth.providers
@@ -45,8 +44,7 @@ class AuthManager(object):
             authenticator = Authenticator(
                 plugin=plugin,
                 filter_template=filter_template,
-                options=options,
-            )
+                options=options, )
             authenticators.append(authenticator)
         self.authenticators = authenticators
 

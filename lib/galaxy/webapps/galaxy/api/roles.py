@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 
 
 class RoleAPIController(BaseAPIController):
-
     @web.expose_api
     def index(self, trans, **kwd):
         """

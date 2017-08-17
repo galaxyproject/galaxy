@@ -167,9 +167,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Return this most recent APIKey for this user or None if none have been created.
         """
-        query = (self.session().query(model.APIKeys)
-                 .filter_by(user=user)
-                 .order_by(sqlalchemy.desc(model.APIKeys.create_time)))
+        query = (self.session().query(model.APIKeys).filter_by(user=user).order_by(sqlalchemy.desc(model.APIKeys.create_time)))
         all = query.all()
         if len(all):
             return all[0]
@@ -220,8 +218,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # create a union of subqueries for each for this user - getting only the tname and user_value
         all_tags_query = None
         for tag_model in tag_models:
-            subq = (self.session().query(tag_model.user_tname, tag_model.user_value)
-                    .filter(tag_model.user == user))
+            subq = (self.session().query(tag_model.user_tname, tag_model.user_value).filter(tag_model.user == user))
             all_tags_query = subq if all_tags_query is None else all_tags_query.union(subq)
 
         # if nothing init'd the query, bail
@@ -253,46 +250,43 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
         self.user_manager = self.manager
 
         self.default_view = 'summary'
-        self.add_view('summary', [
-            'id', 'email', 'username'
-        ])
-        self.add_view('detailed', [
-            # 'update_time',
-            # 'create_time',
-            'is_admin',
-            'total_disk_usage',
-            'nice_total_disk_usage',
-            'quota_percent',
-            'quota',
-            'deleted',
-            'purged',
-            # 'active',
-
-            'preferences',
-            #  all tags
-            'tags_used',
-            # all annotations
-            # 'annotations'
-        ], include_keys_from='summary')
+        self.add_view('summary', ['id', 'email', 'username'])
+        self.add_view(
+            'detailed',
+            [
+                # 'update_time',
+                # 'create_time',
+                'is_admin',
+                'total_disk_usage',
+                'nice_total_disk_usage',
+                'quota_percent',
+                'quota',
+                'deleted',
+                'purged',
+                # 'active',
+                'preferences',
+                #  all tags
+                'tags_used',
+                # all annotations
+                # 'annotations'
+            ],
+            include_keys_from='summary')
 
     def add_serializers(self):
         super(UserSerializer, self).add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
-            'is_admin'      : lambda i, k, **c: self.user_manager.is_admin(i),
-
-            'preferences'   : lambda i, k, **c: self.user_manager.preferences(i),
-
-            'total_disk_usage' : lambda i, k, **c: float(i.total_disk_usage),
-            'quota_percent' : lambda i, k, **c: self.user_manager.quota(i),
-            'quota'         : lambda i, k, **c: self.user_manager.quota(i, total=True),
-
-            'tags_used'     : lambda i, k, **c: self.user_manager.tags_used(i),
-            'has_requests'  : lambda i, k, trans=None, **c: self.user_manager.has_requests(i, trans)
+            'id': self.serialize_id,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
+            'is_admin': lambda i, k, **c: self.user_manager.is_admin(i),
+            'preferences': lambda i, k, **c: self.user_manager.preferences(i),
+            'total_disk_usage': lambda i, k, **c: float(i.total_disk_usage),
+            'quota_percent': lambda i, k, **c: self.user_manager.quota(i),
+            'quota': lambda i, k, **c: self.user_manager.quota(i, total=True),
+            'tags_used': lambda i, k, **c: self.user_manager.tags_used(i),
+            'has_requests': lambda i, k, trans=None, **c: self.user_manager.has_requests(i, trans)
         })
 
 
@@ -306,7 +300,7 @@ class UserDeserializer(base.ModelDeserializer):
     def add_deserializers(self):
         super(UserDeserializer, self).add_deserializers()
         self.deserializers.update({
-            'username'  : self.deserialize_username,
+            'username': self.deserialize_username,
         })
 
     def deserialize_username(self, item, key, username, trans=None, **context):
@@ -343,10 +337,10 @@ class CurrentUserSerializer(UserSerializer):
 
         # a very small subset of keys available
         values = {
-            'id'                    : None,
-            'total_disk_usage'      : float(usage),
-            'nice_total_disk_usage' : util.nice_size(usage),
-            'quota_percent'         : percent,
+            'id': None,
+            'total_disk_usage': float(usage),
+            'nice_total_disk_usage': util.nice_size(usage),
+            'quota_percent': percent,
         }
         serialized = {}
         for key in keys:
@@ -365,11 +359,18 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
 
         # PRECONDITION: user making the query has been verified as an admin
         self.orm_filter_parsers.update({
-            'email'         : {'op': ('eq', 'contains', 'like')},
-            'username'      : {'op': ('eq', 'contains', 'like')},
-            'active'        : {'op': ('eq')},
-            'disk_usage'    : {'op': ('le', 'ge')}
+            'email': {
+                'op': ('eq', 'contains', 'like')
+            },
+            'username': {
+                'op': ('eq', 'contains', 'like')
+            },
+            'active': {
+                'op': ('eq')
+            },
+            'disk_usage': {
+                'op': ('le', 'ge')
+            }
         })
 
-        self.fn_filter_parsers.update({
-        })
+        self.fn_filter_parsers.update({})

@@ -22,7 +22,7 @@ class GroupsController(BaseAPIController):
         self.group_manager = groups.GroupManager()
 
     def __get_value_mapper(self, trans):
-        value_mapper = {'id' : trans.security.encode_id}
+        value_mapper = {'id': trans.security.encode_id}
         return value_mapper
 
     @expose_api_anonymous_and_sessionless
@@ -66,7 +66,9 @@ class GroupsController(BaseAPIController):
                 description = ''
             else:
                 # TODO add description field to the model
-                group_dict = self.group_manager.create(trans, name=name).to_dict(view='element', value_mapper=self.__get_value_mapper(trans))
+                group_dict = self.group_manager.create(
+                    trans, name=name).to_dict(
+                        view='element', value_mapper=self.__get_value_mapper(trans))
         else:
             raise RequestParameterMissingException('Missing required parameter "name".')
         return group_dict
@@ -124,22 +126,31 @@ class GroupsController(BaseAPIController):
                 # TODO add user ratings
                 ratings_mean = str(float(sum(ratings)) / len(ratings)) if len(ratings) > 0 else ''
                 total_downloads += repo.times_downloaded
-                group_repos.append({'name': repo.name,
-                                    'times_downloaded': repo.times_downloaded,
-                                    'owner': repo.user.username,
-                                    'time_created_full': time_repo_created_full,
-                                    'time_created': time_repo_created,
-                                    'time_updated_full': time_repo_updated_full,
-                                    'time_updated': time_repo_updated,
-                                    'description': repo.description,
-                                    'approved': approved,
-                                    'ratings_mean': ratings_mean,
-                                    'categories' : categories})
+                group_repos.append({
+                    'name': repo.name,
+                    'times_downloaded': repo.times_downloaded,
+                    'owner': repo.user.username,
+                    'time_created_full': time_repo_created_full,
+                    'time_created': time_repo_created,
+                    'time_updated_full': time_repo_updated_full,
+                    'time_updated': time_repo_updated,
+                    'description': repo.description,
+                    'approved': approved,
+                    'ratings_mean': ratings_mean,
+                    'categories': categories
+                })
                 user_repos_count += 1
             encoded_user_id = trans.app.security.encode_id(repo.user.id)
             user_repos_url = web.url_for(controller='repository', action='browse_repositories_by_user', user_id=encoded_user_id)
             time_created = pretty_print_time_interval(user.create_time, True)
-            member_dict = {'id': encoded_user_id, 'username': user.username, 'user_repos_url': user_repos_url, 'user_repos_count': user_repos_count, 'user_tools_count': 'unknown', 'time_created': time_created}
+            member_dict = {
+                'id': encoded_user_id,
+                'username': user.username,
+                'user_repos_url': user_repos_url,
+                'user_repos_count': user_repos_count,
+                'user_tools_count': 'unknown',
+                'time_created': time_created
+            }
             group_members.append(member_dict)
         group_dict['members'] = group_members
         group_dict['total_members'] = len(group_members)

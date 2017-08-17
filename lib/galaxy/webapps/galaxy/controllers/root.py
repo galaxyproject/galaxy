@@ -24,6 +24,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
+
     def __init__(self, app):
         super(RootController, self).__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
@@ -40,15 +41,15 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         app = trans.app
         user_requests = bool(trans.user and (trans.user.requests or app.security_agent.get_accessible_request_types(trans, trans.user)))
         config = {
-            'active_view'                   : 'analysis',
-            'enable_cloud_launch'           : app.config.get_bool('enable_cloud_launch', False),
+            'active_view': 'analysis',
+            'enable_cloud_launch': app.config.get_bool('enable_cloud_launch', False),
             # TODO: next two should be redundant - why can't we build one from the other?
-            'toolbox'                       : app.toolbox.to_dict(trans, in_panel=False),
-            'toolbox_in_panel'              : app.toolbox.to_dict(trans),
-            'message_box_visible'           : app.config.message_box_visible,
-            'show_inactivity_warning'       : app.config.user_activation_on and trans.user and not trans.user.active,
+            'toolbox': app.toolbox.to_dict(trans, in_panel=False),
+            'toolbox_in_panel': app.toolbox.to_dict(trans),
+            'message_box_visible': app.config.message_box_visible,
+            'show_inactivity_warning': app.config.user_activation_on and trans.user and not trans.user.active,
             # TODO: move to user
-            'user_requests'                 : user_requests
+            'user_requests': user_requests
         }
 
         # TODO: move to user
@@ -107,13 +108,15 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         User login path for client-side.
         """
-        return self.template(trans, 'login',
-                             redirect=redirect,
-                             # TODO: move into config
-                             openid_providers=[p.name for p in trans.app.openid_providers],
-                             # an installation may have it's own welcome_url - show it here if they've set that
-                             welcome_url=web.url_for(controller='root', action='welcome'),
-                             show_welcome_with_login=trans.app.config.show_welcome_with_login)
+        return self.template(
+            trans,
+            'login',
+            redirect=redirect,
+            # TODO: move into config
+            openid_providers=[p.name for p in trans.app.openid_providers],
+            # an installation may have it's own welcome_url - show it here if they've set that
+            welcome_url=web.url_for(controller='root', action='welcome'),
+            show_welcome_with_login=trans.app.config.show_welcome_with_login)
 
     # ---- Tool related -----------------------------------------------------
 
@@ -207,7 +210,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                         toext = "." + toext
                     fname = data.name
                     fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
-                    trans.response.headers["Content-Disposition"] = 'attachment; filename="GalaxyHistoryItem-%s-[%s]%s"' % (data.hid, fname, toext)
+                    trans.response.headers["Content-Disposition"] = 'attachment; filename="GalaxyHistoryItem-%s-[%s]%s"' % (data.hid, fname,
+                                                                                                                            toext)
                 trans.log_event("Display dataset id: %s" % str(id))
                 try:
                     return open(data.file_name)
@@ -252,9 +256,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 trans.response.set_content_type(data.get_mime())
                 trans.log_event("Formatted dataset id %s for display at %s" % (str(id), display_app))
                 return data.as_display_type(display_app, **kwd)
-            elif authz_method == 'display_at' and trans.app.host_security_agent.allow_action(trans.request.remote_addr,
-                                                                                             data.permitted_actions.DATASET_ACCESS,
-                                                                                             dataset=data):
+            elif authz_method == 'display_at' and trans.app.host_security_agent.allow_action(
+                    trans.request.remote_addr, data.permitted_actions.DATASET_ACCESS, dataset=data):
                 trans.response.set_content_type(data.get_mime())
                 return data.as_display_type(display_app, **kwd)
             else:
@@ -364,19 +367,23 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         return trans.show_message("New history created", refresh_frames=['history'])
 
     @web.expose
-    def history_add_to(self, trans, history_id=None, file_data=None,
-                       name="Data Added to History", info=None, ext="txt", dbkey="?", copy_access_from=None, **kwd):
+    def history_add_to(self,
+                       trans,
+                       history_id=None,
+                       file_data=None,
+                       name="Data Added to History",
+                       info=None,
+                       ext="txt",
+                       dbkey="?",
+                       copy_access_from=None,
+                       **kwd):
         """Adds a POSTed file to a History.
         """
         # TODO: unencoded id
         try:
             history = trans.sa_session.query(trans.app.model.History).get(history_id)
-            data = trans.app.model.HistoryDatasetAssociation(name=name,
-                                                             info=info,
-                                                             extension=ext,
-                                                             dbkey=dbkey,
-                                                             create_dataset=True,
-                                                             sa_session=trans.sa_session)
+            data = trans.app.model.HistoryDatasetAssociation(
+                name=name, info=info, extension=ext, dbkey=dbkey, create_dataset=True, sa_session=trans.sa_session)
             if copy_access_from:
                 copy_access_from = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(copy_access_from)
                 trans.app.security_agent.copy_dataset_permissions(copy_access_from.dataset, data.dataset)
@@ -434,8 +441,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                     permissions[trans.app.security_agent.get_action(v.action)] = in_roles
                 dataset = 'dataset' in kwd
                 bypass_manage_permission = 'bypass_manage_permission' in kwd
-                trans.app.security_agent.history_set_default_permissions(history, permissions,
-                                                                         dataset=dataset, bypass_manage_permission=bypass_manage_permission)
+                trans.app.security_agent.history_set_default_permissions(
+                    history, permissions, dataset=dataset, bypass_manage_permission=bypass_manage_permission)
                 return trans.show_ok_message('Default history permissions have been changed.')
             return trans.fill_template('history/permissions.mako')
         else:

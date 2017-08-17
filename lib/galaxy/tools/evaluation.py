@@ -10,18 +10,12 @@ from galaxy.jobs.datasets import dataset_path_rewrites
 from galaxy.tools import global_tool_errors
 from galaxy.tools.parameters import (
     visit_input_values,
-    wrapped_json,
-)
+    wrapped_json, )
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
-    SelectToolParameter,
-)
-from galaxy.tools.parameters.grouping import (
-    Conditional,
-    Repeat,
-    Section
-)
+    SelectToolParameter, )
+from galaxy.tools.parameters.grouping import (Conditional, Repeat, Section)
 from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
     DatasetFilenameWrapper,
@@ -29,8 +23,7 @@ from galaxy.tools.wrappers import (
     InputValueWrapper,
     RawObjectWrapper,
     SelectToolParameterWrapper,
-    ToolParameterValueWrapper,
-)
+    ToolParameterValueWrapper, )
 from galaxy.util.bunch import Bunch
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
@@ -69,6 +62,7 @@ class ToolEvaluator(object):
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
             input.validate(value, request_context)
+
         visit_input_values(self.tool.inputs, incoming, validate_inputs)
 
         # Restore input / output data lists
@@ -86,7 +80,7 @@ class ToolEvaluator(object):
             # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
             # fake dataset association that provides the needed attributes for
             # preparing a job.
-            class FakeDatasetAssociation (object):
+            class FakeDatasetAssociation(object):
                 def __init__(self, dataset=None):
                     self.dataset = dataset
                     self.file_name = dataset.file_name
@@ -108,19 +102,24 @@ class ToolEvaluator(object):
             output_collections=out_collections,
             output_paths=compute_environment.output_paths(),
             job_working_directory=compute_environment.working_directory(),
-            input_paths=compute_environment.input_paths()
-        )
+            input_paths=compute_environment.input_paths())
 
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         self.tool.exec_before_job(self.app, inp_data, out_data, param_dict)
         # Run the before queue ("exec_before_job") hook
-        self.tool.call_hook('exec_before_job', self.app, inp_data=inp_data,
-                            out_data=out_data, tool=self.tool, param_dict=incoming)
+        self.tool.call_hook('exec_before_job', self.app, inp_data=inp_data, out_data=out_data, tool=self.tool, param_dict=incoming)
 
         self.param_dict = param_dict
 
-    def build_param_dict(self, incoming, input_datasets, output_datasets, output_collections, output_paths, job_working_directory, input_paths=[]):
+    def build_param_dict(self,
+                         incoming,
+                         input_datasets,
+                         output_datasets,
+                         output_collections,
+                         output_paths,
+                         job_working_directory,
+                         input_paths=[]):
         """
         Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
@@ -154,7 +153,6 @@ class ToolEvaluator(object):
         return param_dict
 
     def __walk_inputs(self, inputs, input_values, func):
-
         def do_walk(inputs, input_values):
             """
             Wraps parameters as neccesary.
@@ -177,7 +175,6 @@ class ToolEvaluator(object):
         do_walk(inputs, input_values)
 
     def __populate_wrappers(self, param_dict, input_datasets, input_dataset_paths, job_working_directory):
-
         def wrap_input(input_values, input):
             value = input_values[input.name]
             if isinstance(input, DataToolParameter) and input.multiple:
@@ -211,8 +208,8 @@ class ToolEvaluator(object):
                     if input_values[input.name] and not converted_dataset:
                         # Input that converter is based from has a value,
                         # but converted dataset does not exist
-                        raise Exception('A path for explicit datatype conversion has not been found: %s --/--> %s'
-                                        % (input_values[input.name].extension, conversion_extensions))
+                        raise Exception('A path for explicit datatype conversion has not been found: %s --/--> %s' %
+                                        (input_values[input.name].extension, conversion_extensions))
                     else:
                         # Trick wrapper into using target conv ext (when
                         # None) without actually being a tool parameter
@@ -223,11 +220,7 @@ class ToolEvaluator(object):
                                                    name=conversion_name)
                 # Wrap actual input dataset
                 dataset = input_values[input.name]
-                wrapper_kwds = dict(
-                    datatypes_registry=self.app.datatypes_registry,
-                    tool=self,
-                    name=input.name
-                )
+                wrapper_kwds = dict(datatypes_registry=self.app.datatypes_registry, tool=self, name=input.name)
                 if dataset:
                     # A None dataset does not have a filename
                     real_path = dataset.file_name
@@ -243,29 +236,21 @@ class ToolEvaluator(object):
             elif isinstance(input, DataCollectionToolParameter):
                 dataset_collection = value
                 wrapper_kwds = dict(
-                    datatypes_registry=self.app.datatypes_registry,
-                    dataset_paths=input_dataset_paths,
-                    tool=self,
-                    name=input.name
-                )
-                wrapper = DatasetCollectionWrapper(
-                    job_working_directory,
-                    dataset_collection,
-                    **wrapper_kwds
-                )
+                    datatypes_registry=self.app.datatypes_registry, dataset_paths=input_dataset_paths, tool=self, name=input.name)
+                wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection, **wrapper_kwds)
                 input_values[input.name] = wrapper
             elif isinstance(input, SelectToolParameter):
                 input_values[input.name] = SelectToolParameterWrapper(
                     input, value, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter)
             else:
-                input_values[input.name] = InputValueWrapper(
-                    input, value, param_dict)
+                input_values[input.name] = InputValueWrapper(input, value, param_dict)
 
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.tool.check_values:
-            identifier_key_dict = dict((v, "%s|__identifier__" % k) for k, v in input_datasets.items())  # allows lookup of identifier through HDA.
+            identifier_key_dict = dict((v, "%s|__identifier__" % k)
+                                       for k, v in input_datasets.items())  # allows lookup of identifier through HDA.
             self.__walk_inputs(self.tool.inputs, param_dict, wrap_input)
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets, input_dataset_paths):
@@ -294,8 +279,7 @@ class ToolEvaluator(object):
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
                     tool=self,
-                    name=name,
-                )
+                    name=name, )
                 if data:
                     real_path = data.file_name
                     if real_path in input_dataset_paths:
@@ -316,17 +300,8 @@ class ToolEvaluator(object):
                 # message = message_template % ( name, tool.output_collections )
                 # raise AssertionError( message )
 
-            wrapper_kwds = dict(
-                datatypes_registry=self.app.datatypes_registry,
-                dataset_paths=output_dataset_paths,
-                tool=tool,
-                name=name
-            )
-            wrapper = DatasetCollectionWrapper(
-                job_working_directory,
-                out_collection,
-                **wrapper_kwds
-            )
+            wrapper_kwds = dict(datatypes_registry=self.app.datatypes_registry, dataset_paths=output_dataset_paths, tool=tool, name=name)
+            wrapper = DatasetCollectionWrapper(job_working_directory, out_collection, **wrapper_kwds)
             param_dict[name] = wrapper
             # TODO: Handle nested collections...
             output_def = tool.output_collections[name]
@@ -391,12 +366,12 @@ class ToolEvaluator(object):
         # For the upload tool, we need to know the root directory and the
         # datatypes conf path, so we can load the datatypes registry
         param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath(self.app.config.root)
-        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
+        param_dict['__datatypes_config__'] = param_dict[
+            'GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
         param_dict['__admin_users__'] = self.app.config.admin_users
         param_dict['__user__'] = RawObjectWrapper(param_dict.get('__user__', None))
 
     def __populate_unstructured_path_rewrites(self, param_dict):
-
         def rewrite_unstructured_paths(input_values, input):
             if isinstance(input, SelectToolParameter):
                 input_values[input.name] = SelectToolParameterWrapper(
@@ -423,7 +398,8 @@ class ToolEvaluator(object):
                     # Remove key so that new wrapped object will occupy key slot
                     del param_dict[key]
                     # And replace with new wrapped key
-                    param_dict[wrap_with_safe_string(key, no_wrap_classes=ToolParameterValueWrapper)] = wrap_with_safe_string(value, no_wrap_classes=ToolParameterValueWrapper)
+                    param_dict[wrap_with_safe_string(key, no_wrap_classes=ToolParameterValueWrapper)] = wrap_with_safe_string(
+                        value, no_wrap_classes=ToolParameterValueWrapper)
 
     def build(self):
         """

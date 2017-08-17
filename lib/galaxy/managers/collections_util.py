@@ -27,8 +27,7 @@ def api_payload_to_create_params(payload):
         collection_type=payload.get("collection_type"),
         element_identifiers=payload.get("element_identifiers"),
         name=payload.get("name", None),
-        hide_source_items=string_as_bool(payload.get("hide_source_items", False))
-    )
+        hide_source_items=string_as_bool(payload.get("hide_source_items", False)))
     return params
 
 

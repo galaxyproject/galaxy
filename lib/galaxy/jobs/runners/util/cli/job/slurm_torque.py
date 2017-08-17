@@ -2,7 +2,7 @@ import re
 
 from .torque import Torque
 
-__all__ = ('SlurmTorque',)
+__all__ = ('SlurmTorque', )
 
 
 class SlurmTorque(Torque):

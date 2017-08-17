@@ -52,12 +52,7 @@ def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, c
     if hasattr(tool_action, "check_inputs_ready"):
         for params in execution_tracker.param_combinations:
             # This will throw an exception if the tool is not ready.
-            tool_action.check_inputs_ready(
-                tool,
-                trans,
-                params,
-                history
-            )
+            tool_action.check_inputs_ready(tool, trans, params, history)
 
     job_count = len(execution_tracker.param_combinations)
     if job_count < burst_at or burst_threads < 2:
@@ -97,7 +92,6 @@ def execute(trans, tool, param_combinations, history, rerun_remap_job_id=None, c
 
 
 class ToolExecutionTracker(object):
-
     def __init__(self, tool, param_combinations, collection_info):
         self.tool = tool
         self.param_combinations = param_combinations
@@ -165,19 +159,17 @@ class ToolExecutionTracker(object):
 
                 source_collection = self.collection_info.collections.get(output.default_identifier_source)
                 if source_collection:
-                    collection_type_description = collection_type_descriptions.for_collection_type(source_collection.collection.collection_type)
-                    _structure = structure.for_dataset_collection(source_collection.collection, collection_type_description=collection_type_description)
+                    collection_type_description = collection_type_descriptions.for_collection_type(
+                        source_collection.collection.collection_type)
+                    _structure = structure.for_dataset_collection(
+                        source_collection.collection, collection_type_description=collection_type_description)
                     if structure.can_match(_structure):
                         element_identifiers = _structure.element_identifiers_for_outputs(trans, outputs)
 
             if not element_identifiers:
                 element_identifiers = structure.element_identifiers_for_outputs(trans, outputs)
 
-            implicit_collection_info = dict(
-                implicit_inputs=implicit_inputs,
-                implicit_output_name=output_name,
-                outputs=outputs
-            )
+            implicit_collection_info = dict(implicit_inputs=implicit_inputs, implicit_output_name=output_name, outputs=outputs)
             try:
                 output_collection_name = self.tool.tool_action.get_output_name(
                     output,
@@ -188,8 +180,7 @@ class ToolExecutionTracker(object):
                     history=history,
                     params=params,
                     incoming=None,
-                    job_params=None,
-                )
+                    job_params=None, )
             except Exception:
                 output_collection_name = "%s across %s" % (self.tool.name, on_text)
 
@@ -201,8 +192,7 @@ class ToolExecutionTracker(object):
                 name=output_collection_name,
                 element_identifiers=child_element_identifiers,
                 collection_type=collection_type,
-                implicit_collection_info=implicit_collection_info,
-            )
+                implicit_collection_info=implicit_collection_info, )
             for job in self.successful_jobs:
                 # TODO: Think through this, may only want this for output
                 # collections - or we may be already recording data in some

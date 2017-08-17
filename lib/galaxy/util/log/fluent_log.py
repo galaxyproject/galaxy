@@ -11,9 +11,7 @@ try:
 except ImportError:
     FluentSender = None
 
-
-FLUENT_IMPORT_MESSAGE = ('The Python fluent package is required to use this '
-                         'feature, please install it')
+FLUENT_IMPORT_MESSAGE = ('The Python fluent package is required to use this ' 'feature, please install it')
 
 
 class FluentTraceLogger(object):

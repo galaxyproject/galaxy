@@ -105,8 +105,7 @@ def downgrade(migrate_engine):
                         Column("id", Integer, primary_key=True),
                         Column("create_time", DateTime, default=now),
                         Column("update_time", DateTime, default=now, onupdate=now),
-                        Column("state", TrimmedString(255), index=True),
-                        Column("comment", TEXT))
+                        Column("state", TrimmedString(255), index=True), Column("comment", TEXT))
 
     Tool_table = Table("tool", metadata,
                        Column("id", Integer, primary_key=True),
@@ -121,8 +120,7 @@ def downgrade(migrate_engine):
                        Column("version", TrimmedString(255)),
                        Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                        Column("external_filename", TEXT),
-                       Column("deleted", Boolean, index=True, default=False),
-                       Column("suite", Boolean, default=False, index=True))
+                       Column("deleted", Boolean, index=True, default=False), Column("suite", Boolean, default=False, index=True))
 
     ToolCategoryAssociation_table = Table("tool_category_association", metadata,
                                           Column("id", Integer, primary_key=True),
@@ -140,8 +138,7 @@ def downgrade(migrate_engine):
                                         Column("update_time", DateTime, default=now, onupdate=now),
                                         Column("tool_id", Integer, ForeignKey("tool.id"), index=True),
                                         Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                                        Column("rating", Integer, index=True),
-                                        Column("comment", TEXT))
+                                        Column("rating", Integer, index=True), Column("comment", TEXT))
 
     ToolTagAssociation_table = Table("tool_tag_association", metadata,
                                      Column("id", Integer, primary_key=True),
@@ -149,8 +146,7 @@ def downgrade(migrate_engine):
                                      Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
                                      Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                                      Column("user_tname", TrimmedString(255), index=True),
-                                     Column("value", TrimmedString(255), index=True),
-                                     Column("user_value", TrimmedString(255), index=True))
+                                     Column("value", TrimmedString(255), index=True), Column("user_value", TrimmedString(255), index=True))
 
     ToolAnnotationAssociation_table = Table("tool_annotation_association", metadata,
                                             Column("id", Integer, primary_key=True),

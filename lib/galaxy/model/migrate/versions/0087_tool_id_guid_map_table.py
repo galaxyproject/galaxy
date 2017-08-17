@@ -31,8 +31,7 @@ ToolIdGuidMap_table = Table("tool_id_guid_map", metadata,
                             Column("tool_version", TEXT),
                             Column("tool_shed", TrimmedString(255)),
                             Column("repository_owner", TrimmedString(255)),
-                            Column("repository_name", TrimmedString(255)),
-                            Column("guid", TEXT, index=True, unique=True))
+                            Column("repository_name", TrimmedString(255)), Column("guid", TEXT, index=True, unique=True))
 
 
 def upgrade(migrate_engine):

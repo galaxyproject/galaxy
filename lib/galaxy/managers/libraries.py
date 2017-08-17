@@ -125,20 +125,21 @@ class LibraryManager(object):
             #  Nonadmins can't see deleted libraries
             current_user_role_ids = [role.id for role in trans.get_current_user_roles()]
             library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
-            restricted_library_ids = [lp.library_id for lp in (
-                trans.sa_session.query(trans.model.LibraryPermissions).filter(
-                    trans.model.LibraryPermissions.table.c.action == library_access_action
-                ).distinct())]
-            accessible_restricted_library_ids = [lp.library_id for lp in (
-                trans.sa_session.query(trans.model.LibraryPermissions).filter(
-                    and_(
-                        trans.model.LibraryPermissions.table.c.action == library_access_action,
-                        trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids)
-                    )))]
-            query = query.filter(or_(
-                not_(trans.model.Library.table.c.id.in_(restricted_library_ids)),
-                trans.model.Library.table.c.id.in_(accessible_restricted_library_ids)
-            ))
+            restricted_library_ids = [
+                lp.library_id
+                for lp in (trans.sa_session.query(trans.model.LibraryPermissions).filter(trans.model.LibraryPermissions.table.c.action ==
+                                                                                         library_access_action).distinct())
+            ]
+            accessible_restricted_library_ids = [
+                lp.library_id
+                for lp in (trans.sa_session.query(trans.model.LibraryPermissions).filter(
+                    and_(trans.model.LibraryPermissions.table.c.action == library_access_action,
+                         trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids))))
+            ]
+            query = query.filter(
+                or_(
+                    not_(trans.model.Library.table.c.id.in_(restricted_library_ids)),
+                    trans.model.Library.table.c.id.in_(accessible_restricted_library_ids)))
         return query
 
     def secure(self, trans, library, check_accessible=True):
@@ -181,7 +182,9 @@ class LibraryManager(object):
         :returns:   dict with data about the library
         :rtype:     dictionary
         """
-        library_dict = library.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id})
+        library_dict = library.to_dict(
+            view='element', value_mapper={'id': trans.security.encode_id,
+                                          'root_folder_id': trans.security.encode_id})
         if trans.app.security_agent.library_is_public(library, contents=False):
             library_dict['public'] = True
         library_dict['create_time_pretty'] = pretty_print_time_interval(library.create_time, precise=True)
@@ -206,14 +209,19 @@ class LibraryManager(object):
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        access_library_role_list = [(access_role.name, trans.security.encode_id(access_role.id)) for access_role in self.get_access_roles(trans, library)]
-        modify_library_role_list = [(modify_role.name, trans.security.encode_id(modify_role.id)) for modify_role in self.get_modify_roles(trans, library)]
-        manage_library_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in self.get_manage_roles(trans, library)]
-        add_library_item_role_list = [(add_role.name, trans.security.encode_id(add_role.id)) for add_role in self.get_add_roles(trans, library)]
-        return dict(access_library_role_list=access_library_role_list,
-                    modify_library_role_list=modify_library_role_list,
-                    manage_library_role_list=manage_library_role_list,
-                    add_library_item_role_list=add_library_item_role_list)
+        access_library_role_list = [(access_role.name, trans.security.encode_id(access_role.id))
+                                    for access_role in self.get_access_roles(trans, library)]
+        modify_library_role_list = [(modify_role.name, trans.security.encode_id(modify_role.id))
+                                    for modify_role in self.get_modify_roles(trans, library)]
+        manage_library_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id))
+                                    for manage_role in self.get_manage_roles(trans, library)]
+        add_library_item_role_list = [(add_role.name, trans.security.encode_id(add_role.id))
+                                      for add_role in self.get_add_roles(trans, library)]
+        return dict(
+            access_library_role_list=access_library_role_list,
+            modify_library_role_list=modify_library_role_list,
+            manage_library_role_list=manage_library_role_list,
+            add_library_item_role_list=add_library_item_role_list)
 
     def get_access_roles(self, trans, library):
         """

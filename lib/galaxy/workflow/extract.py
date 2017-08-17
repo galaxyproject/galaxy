@@ -4,30 +4,35 @@ histories.
 import logging
 
 from galaxy import exceptions, model
-from galaxy.tools.parameters.basic import (
-    DataCollectionToolParameter,
-    DataToolParameter
-)
-from galaxy.tools.parameters.grouping import (
-    Conditional,
-    Repeat,
-    Section
-)
+from galaxy.tools.parameters.basic import (DataCollectionToolParameter, DataToolParameter)
+from galaxy.tools.parameters.grouping import (Conditional, Repeat, Section)
 from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util.odict import odict
 
-from .steps import (
-    attach_ordered_steps,
-    order_workflow_steps_with_levels
-)
+from .steps import (attach_ordered_steps, order_workflow_steps_with_levels)
 
 log = logging.getLogger(__name__)
 
 WARNING_SOME_DATASETS_NOT_READY = "Some datasets still queued or running were ignored"
 
 
-def extract_workflow(trans, user, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None):
-    steps = extract_steps(trans, history=history, job_ids=job_ids, dataset_ids=dataset_ids, dataset_collection_ids=dataset_collection_ids, dataset_names=dataset_names, dataset_collection_names=None)
+def extract_workflow(trans,
+                     user,
+                     history=None,
+                     job_ids=None,
+                     dataset_ids=None,
+                     dataset_collection_ids=None,
+                     workflow_name=None,
+                     dataset_names=None,
+                     dataset_collection_names=None):
+    steps = extract_steps(
+        trans,
+        history=history,
+        job_ids=job_ids,
+        dataset_ids=dataset_ids,
+        dataset_collection_ids=dataset_collection_ids,
+        dataset_names=dataset_names,
+        dataset_collection_names=None)
     # Workflow to populate
     workflow = model.Workflow()
     workflow.name = workflow_name
@@ -40,8 +45,7 @@ def extract_workflow(trans, user, history=None, job_ids=None, dataset_ids=None, 
     for i, steps_at_level in enumerate(levorder):
         for j, index in enumerate(steps_at_level):
             step = steps[index]
-            step.position = dict(top=(base_pos + 120 * j),
-                                 left=(base_pos + 220 * i))
+            step.position = dict(top=(base_pos + 120 * j), left=(base_pos + 220 * i))
     # Store it
     stored = model.StoredWorkflow()
     stored.user = user
@@ -53,7 +57,13 @@ def extract_workflow(trans, user, history=None, job_ids=None, dataset_ids=None, 
     return stored
 
 
-def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, dataset_names=None, dataset_collection_names=None):
+def extract_steps(trans,
+                  history=None,
+                  job_ids=None,
+                  dataset_ids=None,
+                  dataset_collection_ids=None,
+                  dataset_names=None,
+                  dataset_collection_names=None):
     # Ensure job_ids and dataset_ids are lists (possibly empty)
     if job_ids is None:
         job_ids = []
@@ -163,13 +173,13 @@ class FakeJob(object):
     Fake job object for datasets that have no creating_job_associations,
     they will be treated as "input" datasets.
     """
+
     def __init__(self, dataset):
         self.is_fake = True
         self.id = "fake_%s" % dataset.id
 
 
 class DatasetCollectionCreationJob(object):
-
     def __init__(self, dataset_collection):
         self.is_fake = True
         self.id = "fake_%s" % dataset_collection.id
@@ -193,7 +203,6 @@ def summarize(trans, history=None):
 
 
 class WorkflowSummary(object):
-
     def __init__(self, trans, history):
         if not history:
             history = trans.get_history()
@@ -306,7 +315,9 @@ class WorkflowSummary(object):
 
 def step_inputs(trans, job):
     tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
-    param_values = job.get_param_values(trans.app, ignore_errors=True)  # If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
+    param_values = job.get_param_values(
+        trans.app,
+        ignore_errors=True)  # If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
     associations = __cleanup_param_values(tool.inputs, param_values)
     tool_inputs = tool.params_to_strings(param_values, trans.app)
     return tool_inputs, associations
@@ -368,6 +379,7 @@ def __cleanup_param_values(inputs, values):
             elif isinstance(input, Section):
                 if input.name in values:
                     cleanup("%s%s|" % (prefix, key), input.inputs, values[input.name])
+
     cleanup("", inputs, values)
     return associations
 

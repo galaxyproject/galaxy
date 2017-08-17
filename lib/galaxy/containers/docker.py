@@ -13,7 +13,6 @@ from galaxy.containers.docker_decorators import docker_columns, docker_json
 from galaxy.containers.docker_model import DockerContainer
 from galaxy.exceptions import ContainerCLIError, ContainerImageNotFound, ContainerNotFound
 
-
 log = logging.getLogger(__name__)
 
 
@@ -29,14 +28,38 @@ class DockerInterface(ContainerInterface):
     }
     option_map = {
         # `run` options
-        'environment': {'flag': '--env', 'type': 'list_of_kvpairs'},
-        'volumes': {'flag': '--volume', 'type': 'docker_volumes'},
-        'name': {'flag': '--name', 'type': 'string'},
-        'detach': {'flag': '--detach', 'type': 'boolean'},
-        'publish_all_ports': {'flag': '--publish-all', 'type': 'boolean'},
-        'publish_port_random': {'flag': '--publish', 'type': 'string'},
-        'cpus': {'flag': '--cpus', 'type': 'string'},
-        'memory': {'flag': '--memory', 'type': 'string'},
+        'environment': {
+            'flag': '--env',
+            'type': 'list_of_kvpairs'
+        },
+        'volumes': {
+            'flag': '--volume',
+            'type': 'docker_volumes'
+        },
+        'name': {
+            'flag': '--name',
+            'type': 'string'
+        },
+        'detach': {
+            'flag': '--detach',
+            'type': 'boolean'
+        },
+        'publish_all_ports': {
+            'flag': '--publish-all',
+            'type': 'boolean'
+        },
+        'publish_port_random': {
+            'flag': '--publish',
+            'type': 'string'
+        },
+        'cpus': {
+            'flag': '--cpus',
+            'type': 'string'
+        },
+        'memory': {
+            'flag': '--memory',
+            'type': 'string'
+        },
     }
 
     def run_in_container(self, command, image=None, **kwopts):
@@ -84,11 +107,7 @@ class DockerCLIInterface(DockerInterface):
         if self._conf.force_tlsverify:
             global_kwopts.append('--tlsverify')
         self._docker_command = self._conf['command_template'].format(
-            executable=self._conf['executable'],
-            global_kwopts=' '.join(global_kwopts),
-            subcommand='{subcommand}',
-            args='{args}'
-        )
+            executable=self._conf['executable'], global_kwopts=' '.join(global_kwopts), subcommand='{subcommand}', args='{args}')
 
     def _stringify_kwopt_docker_volumes(self, flag, val):
         """The docker API will take a volumes argument in many formats, try to
@@ -107,11 +126,7 @@ class DockerCLIInterface(DockerInterface):
                     # {'/host/vol': {'bind': '/container/vol'}}
                     # {'/host/vol': {'bind': '/container/vol', 'mode': 'rw'}}
                     mode = guestopts.get('mode', '')
-                    l.append('{vol}:{bind}{mode}'.format(
-                        vol=hostvol,
-                        bind=guestopts['bind'],
-                        mode=':' + mode if mode else ''
-                    ))
+                    l.append('{vol}:{bind}{mode}'.format(vol=hostvol, bind=guestopts['bind'], mode=':' + mode if mode else ''))
         return self._stringify_kwopt_list(flag, l)
 
     @property
@@ -133,10 +148,7 @@ class DockerCLIInterface(DockerInterface):
 
     def run(self, command, image=None, **kwopts):
         args = '{kwopts} {image} {command}'.format(
-            kwopts=self._stringify_kwopts(kwopts),
-            image=image or self._default_image,
-            command=command if command else ''
-        ).strip()
+            kwopts=self._stringify_kwopts(kwopts), image=image or self._default_image, command=command if command else '').strip()
         container_id = self._run_docker(subcommand='run', args=args, verbose=True)
         return DockerContainer.from_id(self, container_id)
 

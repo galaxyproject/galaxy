@@ -52,19 +52,18 @@ class RepositoryRevisionsController(BaseAPIController):
             error_message = 'Cannot locate repository with name %s and owner %s,' % (str(name), str(owner))
             log.debug(error_message)
             return None, error_message
-        erm = capsule_manager.ExportRepositoryManager(app=trans.app,
-                                                      user=trans.user,
-                                                      tool_shed_url=tool_shed_url,
-                                                      repository=repository,
-                                                      changeset_revision=changeset_revision,
-                                                      export_repository_dependencies=export_repository_dependencies,
-                                                      using_api=True)
+        erm = capsule_manager.ExportRepositoryManager(
+            app=trans.app,
+            user=trans.user,
+            tool_shed_url=tool_shed_url,
+            repository=repository,
+            changeset_revision=changeset_revision,
+            export_repository_dependencies=export_repository_dependencies,
+            using_api=True)
         return erm.export_repository()
 
     def __get_value_mapper(self, trans):
-        value_mapper = {'id' : trans.security.encode_id,
-                        'repository_id' : trans.security.encode_id,
-                        'user_id' : trans.security.encode_id}
+        value_mapper = {'id': trans.security.encode_id, 'repository_id': trans.security.encode_id, 'user_id': trans.security.encode_id}
         return value_mapper
 
     @web.expose_api_anonymous
@@ -96,11 +95,9 @@ class RepositoryRevisionsController(BaseAPIController):
         for repository_metadata in trans.sa_session.query(trans.app.model.RepositoryMetadata) \
                                                    .filter(and_(*clause_list)) \
                                                    .order_by(trans.app.model.RepositoryMetadata.table.c.repository_id.desc()):
-            repository_metadata_dict = repository_metadata.to_dict(view='collection',
-                                                                   value_mapper=self.__get_value_mapper(trans))
-            repository_metadata_dict['url'] = web.url_for(controller='repository_revisions',
-                                                          action='show',
-                                                          id=trans.security.encode_id(repository_metadata.id))
+            repository_metadata_dict = repository_metadata.to_dict(view='collection', value_mapper=self.__get_value_mapper(trans))
+            repository_metadata_dict['url'] = web.url_for(
+                controller='repository_revisions', action='show', id=trans.security.encode_id(repository_metadata.id))
             repository_metadata_dicts.append(repository_metadata_dict)
         return repository_metadata_dicts
 
@@ -141,13 +138,9 @@ class RepositoryRevisionsController(BaseAPIController):
                 if repository_dependency_repository_metadata is None:
                     # The changeset_revision column in the repository_metadata table has been updated with a new
                     # value value, so find the changeset_revision to which we need to update.
-                    repo = hg_util.get_repo_for_repository(trans.app,
-                                                           repository=repository_dependency,
-                                                           repo_path=None,
-                                                           create=False)
-                    new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository_dependency,
-                                                                                                    repo,
-                                                                                                    changeset_revision)
+                    repo = hg_util.get_repo_for_repository(trans.app, repository=repository_dependency, repo_path=None, create=False)
+                    new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(
+                        repository_dependency, repo, changeset_revision)
                     if new_changeset_revision != changeset_revision:
                         repository_dependency_repository_metadata = \
                             metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
@@ -165,8 +158,7 @@ class RepositoryRevisionsController(BaseAPIController):
                 repository_dependency_metadata_dict = \
                     repository_dependency_repository_metadata.to_dict(view='element',
                                                                       value_mapper=self.__get_value_mapper(trans))
-                repository_dependency_dict = repository_dependency.to_dict(view='element',
-                                                                           value_mapper=self.__get_value_mapper(trans))
+                repository_dependency_dict = repository_dependency.to_dict(view='element', value_mapper=self.__get_value_mapper(trans))
                 # We need to be careful with the entries in our repository_dependency_dict here since this Tool Shed API
                 # controller is working with repository_metadata records.  The above to_dict() method returns a dictionary
                 # with an id entry for the repository record.  However, all of the other methods in this controller have
@@ -176,9 +168,8 @@ class RepositoryRevisionsController(BaseAPIController):
                 for k, v in repository_dependency_dict.items():
                     if k not in repository_dependency_metadata_dict:
                         repository_dependency_metadata_dict[k] = v
-                repository_dependency_metadata_dict['url'] = web.url_for(controller='repositories',
-                                                                         action='show',
-                                                                         id=repository_dependency_id)
+                repository_dependency_metadata_dict['url'] = web.url_for(
+                    controller='repositories', action='show', id=repository_dependency_id)
                 repository_dependencies_dicts.append(repository_dependency_metadata_dict)
         return repository_dependencies_dicts
 
@@ -196,11 +187,8 @@ class RepositoryRevisionsController(BaseAPIController):
             log.debug('Cannot locate repository_metadata with id %s' % str(id))
             return {}
         encoded_repository_id = trans.security.encode_id(repository_metadata.repository_id)
-        repository_metadata_dict = repository_metadata.to_dict(view='element',
-                                                               value_mapper=self.__get_value_mapper(trans))
-        repository_metadata_dict['url'] = web.url_for(controller='repositories',
-                                                      action='show',
-                                                      id=encoded_repository_id)
+        repository_metadata_dict = repository_metadata.to_dict(view='element', value_mapper=self.__get_value_mapper(trans))
+        repository_metadata_dict['url'] = web.url_for(controller='repositories', action='show', id=encoded_repository_id)
         return repository_metadata_dict
 
     @web.expose_api
@@ -236,9 +224,6 @@ class RepositoryRevisionsController(BaseAPIController):
             trans.sa_session.add(repository_metadata)
             trans.sa_session.flush()
             trans.sa_session.refresh(repository_metadata)
-        repository_metadata_dict = repository_metadata.to_dict(view='element',
-                                                               value_mapper=self.__get_value_mapper(trans))
-        repository_metadata_dict['url'] = web.url_for(controller='repository_revisions',
-                                                      action='show',
-                                                      id=repository_metadata_id)
+        repository_metadata_dict = repository_metadata.to_dict(view='element', value_mapper=self.__get_value_mapper(trans))
+        repository_metadata_dict['url'] = web.url_for(controller='repository_revisions', action='show', id=repository_metadata_id)
         return repository_metadata_dict

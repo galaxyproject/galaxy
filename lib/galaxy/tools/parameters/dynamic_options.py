@@ -8,11 +8,7 @@ import os
 from six import StringIO
 
 import galaxy.tools
-from galaxy.model import (
-    HistoryDatasetAssociation,
-    HistoryDatasetCollectionAssociation,
-    User
-)
+from galaxy.model import (HistoryDatasetAssociation, HistoryDatasetCollectionAssociation, User)
 from galaxy.util import string_as_bool
 
 from . import validation
@@ -24,6 +20,7 @@ class Filter(object):
     """
     A filter takes the current options list and modifies it.
     """
+
     @classmethod
     def from_element(cls, d_option, elem):
         """Loads the proper filter by the type attribute of elem"""
@@ -57,6 +54,7 @@ class StaticValueFilter(Filter):
         keep: Keep columns matching value (True)
               Discard columns matching value (False)
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.value = elem.get("value", None)
@@ -100,6 +98,7 @@ class DataMetaFilter(Filter):
         - separator: When multiple split by this (,)
 
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.ref_name = elem.get("ref", None)
@@ -131,6 +130,7 @@ class DataMetaFilter(Filter):
             if self.multiple:
                 return dataset_value in file_value.split(self.separator)
             return file_value == dataset_value
+
         ref = other_values.get(self.ref_name, None)
         if isinstance(ref, HistoryDatasetCollectionAssociation):
             ref = ref.to_hda_representative(self.multiple)
@@ -165,11 +165,7 @@ class DataMetaFilter(Filter):
             return rval
         else:
             if not self.dynamic_option.columns:
-                self.dynamic_option.columns = {
-                    "name" : 0,
-                    "value" : 1,
-                    "selected" : 2
-                }
+                self.dynamic_option.columns = {"name": 0, "value": 1, "selected": 2}
                 self.dynamic_option.largest_index = 2
             if not isinstance(meta_value, list):
                 meta_value = [meta_value]
@@ -196,6 +192,7 @@ class ParamValueFilter(Filter):
         - ref_attribute: Period (.) separated attribute chain of input (ref) to use as value for filter
 
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.ref_name = elem.get("ref", None)
@@ -238,6 +235,7 @@ class UniqueValueFilter(Filter):
     Required Attributes:
         column: column in options to compare with
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         column = elem.get("column", None)
@@ -268,6 +266,7 @@ class MultipleSplitterFilter(Filter):
     Optional Attributes:
         separator: Split column by this (,)
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.separator = elem.get("separator", ",")
@@ -296,6 +295,7 @@ class AttributeValueSplitterFilter(Filter):
         pair_separator: Split column by this (,)
         name_val_separator: Split name-value pair by this ( whitespace )
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.pair_separator = elem.get("pair_separator", ",")
@@ -331,6 +331,7 @@ class AdditionalValueFilter(Filter):
         name: Display name to appear in select list (value)
         index: Index of option list to add value (APPEND)
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.value = elem.get("value", None)
@@ -375,13 +376,16 @@ class RemoveValueFilter(Filter):
         key: metadata key to compare to
 
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.value = elem.get("value", None)
         self.ref_name = elem.get("ref", None)
         self.meta_ref = elem.get("meta_ref", None)
         self.metadata_key = elem.get("key", None)
-        assert self.value is not None or ((self.ref_name is not None or self.meta_ref is not None)and self.metadata_key is not None), ValueError("Required 'value' or 'ref' and 'key' attributes missing from filter")
+        assert self.value is not None or (
+            (self.ref_name is not None or self.meta_ref is not None)
+            and self.metadata_key is not None), ValueError("Required 'value' or 'ref' and 'key' attributes missing from filter")
         self.multiple = string_as_bool(elem.get("multiple", "False"))
         self.separator = elem.get("separator", ",")
 
@@ -401,6 +405,7 @@ class RemoveValueFilter(Filter):
             if self.multiple:
                 return filter_value in option_value.split(self.separator)
             return option_value == filter_value
+
         value = self.value
         if value is None:
             if self.ref_name is not None:
@@ -409,7 +414,8 @@ class RemoveValueFilter(Filter):
                 data_ref = other_values.get(self.meta_ref)
                 if isinstance(data_ref, HistoryDatasetCollectionAssociation):
                     data_ref = data_ref.to_hda_representative()
-                if not isinstance(data_ref, HistoryDatasetAssociation) and not isinstance(data_ref, galaxy.tools.wrappers.DatasetFilenameWrapper):
+                if not isinstance(data_ref, HistoryDatasetAssociation) and not isinstance(data_ref,
+                                                                                          galaxy.tools.wrappers.DatasetFilenameWrapper):
                     return options  # cannot modify options
                 value = data_ref.metadata.get(self.metadata_key, None)
         return [(disp_name, optval, selected) for disp_name, optval, selected in options if not compare_value(optval, value)]
@@ -424,6 +430,7 @@ class SortByColumnFilter(Filter):
     Required Attributes:
         column: column to sort by
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         column = elem.get("column", None)
@@ -442,19 +449,21 @@ class SortByColumnFilter(Filter):
         return rval
 
 
-filter_types = dict(data_meta=DataMetaFilter,
-                    param_value=ParamValueFilter,
-                    static_value=StaticValueFilter,
-                    unique_value=UniqueValueFilter,
-                    multiple_splitter=MultipleSplitterFilter,
-                    attribute_value_splitter=AttributeValueSplitterFilter,
-                    add_value=AdditionalValueFilter,
-                    remove_value=RemoveValueFilter,
-                    sort_by=SortByColumnFilter)
+filter_types = dict(
+    data_meta=DataMetaFilter,
+    param_value=ParamValueFilter,
+    static_value=StaticValueFilter,
+    unique_value=UniqueValueFilter,
+    multiple_splitter=MultipleSplitterFilter,
+    attribute_value_splitter=AttributeValueSplitterFilter,
+    add_value=AdditionalValueFilter,
+    remove_value=RemoveValueFilter,
+    sort_by=SortByColumnFilter)
 
 
 class DynamicOptions(object):
     """Handles dynamically generated SelectToolParameter options"""
+
     def __init__(self, elem, tool_param):
         def load_from_parameter(from_parameter, transform_lines=None):
             obj = self.tool_param
@@ -463,6 +472,7 @@ class DynamicOptions(object):
             if transform_lines:
                 obj = eval(transform_lines)
             return self.parse_file_fields(obj)
+
         self.tool_param = tool_param
         self.columns = {}
         self.filters = []
@@ -568,7 +578,7 @@ class DynamicOptions(object):
                             name = "a configuration file"
                         # Perhaps this should be an error, but even a warning is useful.
                         log.warning("Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r" %
-                                  (field_count, len(fields), name, self.separator, line))
+                                    (field_count, len(fields), name, self.separator, line))
                     rval.append(fields)
         return rval
 

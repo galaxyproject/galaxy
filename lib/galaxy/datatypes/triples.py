@@ -4,12 +4,7 @@ Triple format classes
 import logging
 import re
 
-from . import (
-    binary,
-    data,
-    text,
-    xml
-)
+from . import (binary, data, text, xml)
 
 log = logging.getLogger(__name__)
 

@@ -15,7 +15,6 @@ log = logging.getLogger(__name__)
 
 
 class MetricsController(BaseAPIController):
-
     def __init__(self, app):
         super(MetricsController, self).__init__(app)
         #: set to true to send additional debugging info to the log
@@ -70,12 +69,7 @@ class MetricsController(BaseAPIController):
         for metric in metrics:
             label = metric['namespace']
             time = self._deserialize_isoformat_date(metric['time'])
-            kwargs = {
-                'level'   : metric['level'],
-                'args'    : metric['args'],
-                'user'    : user_id,
-                'session' : session_id
-            }
+            kwargs = {'level': metric['level'], 'args': metric['args'], 'user': user_id, 'session': session_id}
             yield (label, time, kwargs)
 
     def _send_metrics(self, trans, metrics):

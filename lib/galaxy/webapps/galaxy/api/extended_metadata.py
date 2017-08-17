@@ -11,7 +11,6 @@ log = logging.getLogger(__name__)
 
 
 class BaseExtendedMetadataController(BaseAPIController, UsesExtendedMetadataMixin, UsesLibraryMixinItems, UsesStoredWorkflowMixin):
-
     @web.expose_api
     def index(self, trans, **kwd):
         idnum = kwd[self.exmeta_item_id]

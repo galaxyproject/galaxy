@@ -2,8 +2,7 @@
 import logging
 
 from ..container_resolvers import (
-    ContainerResolver,
-)
+    ContainerResolver, )
 
 log = logging.getLogger(__name__)
 

@@ -22,9 +22,7 @@ try:
 except ImportError:
     irods = None
 
-
-IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this '
-                        'feature, please install it')
+IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this ' 'feature, please install it')
 
 log = logging.getLogger(__name__)
 
@@ -33,6 +31,7 @@ class IRODSObjectStore(DiskObjectStore):
     """
     Galaxy object store based on iRODS
     """
+
     def __init__(self, config, file_path=None, extra_dirs=None):
         super(IRODSObjectStore, self).__init__(config, file_path=file_path, extra_dirs=extra_dirs)
         assert irods is not None, IRODS_IMPORT_MESSAGE
@@ -43,7 +42,8 @@ class IRODSObjectStore(DiskObjectStore):
         self.rods_env, self.rods_conn = rods_connect()
 
         # if the root collection path in the config is unset or relative, try to use a sensible default
-        if config.irods_root_collection_path is None or (config.irods_root_collection_path is not None and not config.irods_root_collection_path.startswith('/')):
+        if config.irods_root_collection_path is None or (config.irods_root_collection_path is not None
+                                                         and not config.irods_root_collection_path.startswith('/')):
             rods_home = self.rods_env.rodsHome
             assert rods_home != '', "Unable to initialize iRODS Object Store: rodsHome cannot be determined and irods_root_collection_path in Galaxy config is unset or not absolute."
             if config.irods_root_collection_path is None:
@@ -59,16 +59,26 @@ class IRODSObjectStore(DiskObjectStore):
         if self.root_collection.getId() == -1:
             log.warning("iRODS root collection does not exist, will attempt to create: %s", self.root_collection_path)
             self.root_collection.upCollection()
-            assert self.root_collection.createCollection(os.path.basename(self.root_collection_path)) == 0, "iRODS root collection creation failed: %s" % self.root_collection_path
+            assert self.root_collection.createCollection(
+                os.path.basename(self.root_collection_path)) == 0, "iRODS root collection creation failed: %s" % self.root_collection_path
             self.root_collection = irods.irodsCollection(self.rods_conn, self.root_collection_path)
             assert self.root_collection.getId() != -1, "iRODS root collection creation claimed success but still does not exist"
 
         if self.default_resource is None:
             self.default_resource = self.rods_env.rodsDefResource
 
-        log.info("iRODS data for this instance will be stored in collection: %s, resource: %s", self.root_collection_path, self.default_resource)
+        log.info("iRODS data for this instance will be stored in collection: %s, resource: %s", self.root_collection_path,
+                 self.default_resource)
 
-    def __get_rods_path(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, strip_dat=True, **kwargs):
+    def __get_rods_path(self,
+                        obj,
+                        base_dir=None,
+                        dir_only=False,
+                        extra_dir=None,
+                        extra_dir_at_root=False,
+                        alt_name=None,
+                        strip_dat=True,
+                        **kwargs):
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
@@ -127,11 +137,14 @@ class IRODSObjectStore(DiskObjectStore):
         """
         An os.makedirs() for iRODS collections.  `rods_path` is the desired collection to create.
         """
-        assert rods_path.startswith(self.root_collection_path + '/'), '__mkcolls(): Creating collections outside the root collection is not allowed (requested path was: %s)' % rods_path
+        assert rods_path.startswith(
+            self.root_collection_path +
+            '/'), '__mkcolls(): Creating collections outside the root collection is not allowed (requested path was: %s)' % rods_path
         mkcolls = []
         c = irods.irodsCollection(self.rods_conn, rods_path)
         while c.getId() == -1:
-            assert c.getCollName().startswith(self.root_collection_path + '/'), '__mkcolls(): Attempted to move above the root collection: %s' % c.getCollName()
+            assert c.getCollName().startswith(self.root_collection_path +
+                                              '/'), '__mkcolls(): Attempted to move above the root collection: %s' % c.getCollName()
             mkcolls.append(c.getCollName())
             c.upCollection()
         for collname in reversed(mkcolls):
@@ -195,7 +208,8 @@ class IRODSObjectStore(DiskObjectStore):
         rods_path = self.__get_rods_path(obj, **kwargs)
         # __get_rods_path prepends self.root_collection_path but we are going
         # to ensure that it's valid anyway for safety's sake
-        assert rods_path.startswith(self.root_collection_path + '/'), 'ERROR: attempt to delete object outside root collection (path was: %s)' % rods_path
+        assert rods_path.startswith(self.root_collection_path +
+                                    '/'), 'ERROR: attempt to delete object outside root collection (path was: %s)' % rods_path
         if entire_dir:
             # TODO
             raise NotImplementedError()
@@ -233,7 +247,8 @@ class IRODSObjectStore(DiskObjectStore):
 
     @local_extra_dirs
     def get_filename(self, obj, **kwargs):
-        log.debug("get_filename(): called on %s %s. For better performance, avoid this method and use get_data() instead.", obj.__class__.__name__, obj.id)
+        log.debug("get_filename(): called on %s %s. For better performance, avoid this method and use get_data() instead.",
+                  obj.__class__.__name__, obj.id)
         cached_path = self.__get_cache_path(obj, **kwargs)
 
         if not self.exists(obj, **kwargs):
@@ -337,10 +352,7 @@ def rods_connect():
     """
     status, env = irods.getRodsEnv()
     assert status == 0, 'connect(): getRodsEnv() failed (%s): %s' % (status, irods.strerror(status))
-    conn, err = irods.rcConnect(env.rodsHost,
-                                env.rodsPort,
-                                env.rodsUserName,
-                                env.rodsZone)
+    conn, err = irods.rcConnect(env.rodsHost, env.rodsPort, env.rodsUserName, env.rodsZone)
     assert err.status == 0, 'connect(): rcConnect() failed (%s): %s' % (err.status, err.msg)
     status, pw = irods.obfGetPw()
     assert status == 0, 'connect(): getting password with obfGetPw() failed (%s): %s' % (status, irods.strerror(status))

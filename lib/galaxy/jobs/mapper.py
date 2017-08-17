@@ -18,13 +18,11 @@ ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND = "Galaxy misconfigured - no rule function
 
 
 class JobMappingException(Exception):
-
     def __init__(self, failure_message):
         self.failure_message = failure_message
 
 
 class JobNotReadyException(Exception):
-
     def __init__(self, job_state=None, message=None):
         self.job_state = job_state
         self.message = message
@@ -34,8 +32,7 @@ STOCK_RULES = dict(
     choose_one=stock_rules.choose_one,
     burst=stock_rules.burst,
     docker_dispatch=stock_rules.docker_dispatch,
-    dtd=map_tool_to_destination,
-)
+    dtd=map_tool_to_destination, )
 
 
 class JobRunnerMapper(object):
@@ -79,7 +76,7 @@ class JobRunnerMapper(object):
         rules_dir = self.rules_module.__path__[0]
         names = []
         for fname in os.listdir(rules_dir):
-            if not(fname.startswith("_")) and fname.endswith(".py"):
+            if not (fname.startswith("_")) and fname.endswith(".py"):
                 base_name = self.rules_module.__name__
                 rule_module_name = "%s.%s" % (base_name, fname[:-len(".py")])
                 names.append(rule_module_name)

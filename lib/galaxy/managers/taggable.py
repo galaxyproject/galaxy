@@ -64,7 +64,6 @@ class TaggableManagerMixin(object):
 
 
 class TaggableSerializerMixin(object):
-
     def add_serializers(self):
         self.serializers['tags'] = self.serialize_tags
 
@@ -76,7 +75,6 @@ class TaggableSerializerMixin(object):
 
 
 class TaggableDeserializerMixin(object):
-
     def add_deserializers(self):
         self.deserializers['tags'] = self.deserialize_tags
 
@@ -92,7 +90,6 @@ class TaggableDeserializerMixin(object):
 
 
 class TaggableFilterMixin(object):
-
     def filter_has_partial_tag(self, item, val):
         """
         Return True if any tag partially contains `val`.
@@ -115,8 +112,8 @@ class TaggableFilterMixin(object):
         self.fn_filter_parsers.update({
             'tag': {
                 'op': {
-                    'eq'    : self.filter_has_tag,
-                    'has'   : self.filter_has_partial_tag,
+                    'eq': self.filter_has_tag,
+                    'has': self.filter_has_partial_tag,
                 }
             }
         })

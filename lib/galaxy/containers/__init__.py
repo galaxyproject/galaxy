@@ -10,11 +10,7 @@ import shlex
 import subprocess
 import sys
 import uuid
-from abc import (
-    ABCMeta,
-    abstractmethod,
-    abstractproperty
-)
+from abc import (ABCMeta, abstractmethod, abstractproperty)
 from collections import namedtuple
 
 import yaml
@@ -23,7 +19,6 @@ from six.moves import shlex_quote
 
 from galaxy.exceptions import ContainerCLIError
 from galaxy.util.submodules import submodules
-
 
 DEFAULT_CONTAINER_TYPE = 'docker'
 DEFAULT_CONF = {'_default_': {'type': DEFAULT_CONTAINER_TYPE}}
@@ -46,7 +41,6 @@ class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr',
 
 
 class Container(with_metaclass(ABCMeta, object)):
-
     def __init__(self, interface, id, name=None, **kwargs):
         """:param   interface:  Container interface for the given container type
         :type       interface:  :class:`ContainerInterface` subclass instance
@@ -161,8 +155,8 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
                     'flag': self._guess_kwopt_flag(opt),
                     'type': self._guess_kwopt_type(val),
                 }
-                log.warning("option '%s' not in %s.option_map, guessing flag '%s' type '%s'",
-                            opt, self.__class__.__name__, optdef['flag'], optdef['type'])
+                log.warning("option '%s' not in %s.option_map, guessing flag '%s' type '%s'", opt, self.__class__.__name__, optdef['flag'],
+                            optdef['type'])
             opts.append(getattr(self, '_stringify_kwopt_' + optdef['type'])(optdef['flag'], val))
         return ' '.join(opts)
 
@@ -238,10 +232,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
 
     def set_kwopts_name(self, kwopts):
         if self._name_prefix is not None:
-            name = '{prefix}{name}'.format(
-                prefix=self._name_prefix,
-                name=kwopts.get('name', uuid.uuid4().hex)
-            )
+            name = '{prefix}{name}'.format(prefix=self._name_prefix, name=kwopts.get('name', uuid.uuid4().hex))
             kwopts['name'] = name
 
     def validate_config(self):
@@ -256,7 +247,6 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
 
 
 class ContainerInterfaceConfig(dict):
-
     def __setattr__(self, name, value):
         self[name] = value
 
@@ -321,9 +311,8 @@ def _get_interface_modules():
     modules = submodules(sys.modules[__name__])
     for module in modules:
         classes = filter(
-            lambda x: inspect.isclass(x)
-                      and not x == ContainerInterface           # noqa: E131
-                      and issubclass(x, ContainerInterface),    # noqa: E131
+            lambda x: inspect.isclass(x) and not x == ContainerInterface  # noqa: E131
+            and issubclass(x, ContainerInterface),  # noqa: E131
             [getattr(module, x) for x in dir(module)])
         interfaces.extend(classes)
     return dict([(x.container_type, x) for x in interfaces])

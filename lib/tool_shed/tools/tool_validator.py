@@ -3,10 +3,7 @@ import logging
 import os
 import tempfile
 
-from galaxy.tools import (
-    parameters,
-    Tool
-)
+from galaxy.tools import (parameters, Tool)
 from galaxy.tools.parameters import dynamic_options
 
 from tool_shed.tools import data_table_manager
@@ -21,7 +18,6 @@ log = logging.getLogger(__name__)
 
 
 class ToolValidator(object):
-
     def __init__(self, app):
         self.app = app
         self.tdtm = data_table_manager.ToolDataTableManager(self.app)
@@ -207,14 +203,12 @@ class ToolValidator(object):
             if 'tool_data_table_conf.xml.sample' in sample_files:
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
-                error, message = self.tdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
-                                                                                   persist=False)
+                error, message = self.tdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config, persist=False)
         tool, valid, message2 = self.load_tool_from_config(repository_id, tool_config_filepath)
         message = self.concat_messages(message, message2)
         return tool, valid, message, sample_files
 
-    def handle_sample_files_and_load_tool_from_tmp_config(self, repo, repository_id, changeset_revision,
-                                                          tool_config_filename, work_dir):
+    def handle_sample_files_and_load_tool_from_tmp_config(self, repo, repository_id, changeset_revision, tool_config_filename, work_dir):
         tool = None
         message = ''
         ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
@@ -227,8 +221,7 @@ class ToolValidator(object):
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
                 if tool_data_table_config:
-                    error, message = self.tdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
-                                                                                       persist=False)
+                    error, message = self.tdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config, persist=False)
                     if error:
                         log.debug(message)
         manifest_ctx, ctx_file = hg_util.get_ctx_file_path_from_manifest(tool_config_filename, repo, changeset_revision)
@@ -254,10 +247,7 @@ class ToolValidator(object):
         can_use_disk_file = False
         tool_config_filepath = repository_util.get_absolute_path_to_file_in_repository(repo_files_dir, tool_config_filename)
         work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-ltfcr")
-        can_use_disk_file = self.can_use_tool_config_disk_file(repository,
-                                                               repo,
-                                                               tool_config_filepath,
-                                                               changeset_revision)
+        can_use_disk_file = self.can_use_tool_config_disk_file(repository, repo, tool_config_filepath, changeset_revision)
         if can_use_disk_file:
             self.app.config.tool_data_path = work_dir
             tool, valid, message, sample_files = \
@@ -272,12 +262,8 @@ class ToolValidator(object):
                                                  tool,
                                                  sample_files)
                 if invalid_files_and_errors_tups:
-                    message2 = tool_util.generate_message_for_invalid_tools(self.app,
-                                                                            invalid_files_and_errors_tups,
-                                                                            repository,
-                                                                            metadata_dict=None,
-                                                                            as_html=True,
-                                                                            displaying_invalid_tool=True)
+                    message2 = tool_util.generate_message_for_invalid_tools(
+                        self.app, invalid_files_and_errors_tups, repository, metadata_dict=None, as_html=True, displaying_invalid_tool=True)
                     message = self.concat_messages(message, message2)
         else:
             tool, message, sample_files = \

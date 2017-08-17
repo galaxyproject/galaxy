@@ -27,14 +27,13 @@ class DataProviderRegistry(object):
                 ENCODEPeak: genome.ENCODEPeakTabixDataProvider,
                 Interval: genome.IntervalTabixDataProvider,
                 ChromatinInteractions: genome.ChromatinInteractionsTabixDataProvider,
-                "default" : genome.TabixDataProvider
+                "default": genome.TabixDataProvider
             },
             "interval_index": genome.IntervalIndexDataProvider,
             "bai": genome.BamDataProvider,
             "bam": genome.SamDataProvider,
             "bigwig": genome.BigWigDataProvider,
             "bigbed": genome.BigBedDataProvider,
-
             "column_with_stats": ColumnDataProvider
         }
 
@@ -80,9 +79,8 @@ class DataProviderRegistry(object):
                 else:
                     converted_dataset = original_dataset.get_converted_dataset(trans, name)
                     deps = original_dataset.get_converted_dataset_deps(trans, name)
-                    data_provider = data_provider_class(original_dataset=original_dataset,
-                                                        converted_dataset=converted_dataset,
-                                                        dependencies=deps)
+                    data_provider = data_provider_class(
+                        original_dataset=original_dataset, converted_dataset=converted_dataset, dependencies=deps)
 
             elif original_dataset:
                 # No name, so look up a provider name from datatype's information.
@@ -94,9 +92,8 @@ class DataProviderRegistry(object):
                 # Get data provider mapping and data provider.
                 data_provider_mapping = original_dataset.datatype.data_sources
                 if 'data_standalone' in data_provider_mapping:
-                    data_provider = self.get_data_provider(trans,
-                                                           name=data_provider_mapping['data_standalone'],
-                                                           original_dataset=original_dataset)
+                    data_provider = self.get_data_provider(
+                        trans, name=data_provider_mapping['data_standalone'], original_dataset=original_dataset)
                 else:
                     source_list = data_provider_mapping[source]
                     if isinstance(source_list, string_types):

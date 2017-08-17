@@ -17,10 +17,7 @@ def error_on_exit_code():
 def aggressive_error_checks():
     exit_codes, _ = error_on_exit_code()
     # these regexes are processed as case insensitive by default
-    regexes = [
-        _error_regex("exception:"),
-        _error_regex("error:")
-    ]
+    regexes = [_error_regex("exception:"), _error_regex("error:")]
     return exit_codes, regexes
 
 

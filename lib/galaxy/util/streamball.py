@@ -34,6 +34,7 @@ class StreamBall(object):
         class tarfileobj:
             def write(self, *args, **kwargs):
                 response_write(*args, **kwargs)
+
         tf = tarfile.open(mode=self.mode, fileobj=tarfileobj())
         for (file, rel) in self.members:
             tf.add(file, arcname=rel)

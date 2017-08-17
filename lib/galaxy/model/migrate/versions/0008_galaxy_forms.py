@@ -35,8 +35,7 @@ FormDefinitionCurrent_table = Table('form_definition_current', metadata,
                                     Column("id", Integer, primary_key=True),
                                     Column("create_time", DateTime, default=now),
                                     Column("update_time", DateTime, default=now, onupdate=now),
-                                    Column("latest_form_id", Integer, index=True),
-                                    Column("deleted", Boolean, index=True, default=False))
+                                    Column("latest_form_id", Integer, index=True), Column("deleted", Boolean, index=True, default=False))
 
 FormDefinition_table = Table('form_definition', metadata,
                              Column("id", Integer, primary_key=True),
@@ -44,15 +43,18 @@ FormDefinition_table = Table('form_definition', metadata,
                              Column("update_time", DateTime, default=now, onupdate=now),
                              Column("name", TrimmedString(255), nullable=False),
                              Column("desc", TEXT),
-                             Column("form_definition_current_id", Integer, ForeignKey("form_definition_current.id"), index=True, nullable=False),
-                             Column("fields", JSONType()))
+                             Column(
+                                 "form_definition_current_id",
+                                 Integer,
+                                 ForeignKey("form_definition_current.id"),
+                                 index=True,
+                                 nullable=False), Column("fields", JSONType()))
 
 FormValues_table = Table('form_values', metadata,
                          Column("id", Integer, primary_key=True),
                          Column("create_time", DateTime, default=now),
                          Column("update_time", DateTime, default=now, onupdate=now),
-                         Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-                         Column("content", JSONType()))
+                         Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True), Column("content", JSONType()))
 
 RequestType_table = Table('request_type', metadata,
                           Column("id", Integer, primary_key=True),
@@ -90,16 +92,14 @@ SampleState_table = Table('sample_state', metadata,
                           Column("create_time", DateTime, default=now),
                           Column("update_time", DateTime, default=now, onupdate=now),
                           Column("name", TrimmedString(255), nullable=False),
-                          Column("desc", TEXT),
-                          Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True))
+                          Column("desc", TEXT), Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True))
 
 SampleEvent_table = Table('sample_event', metadata,
                           Column("id", Integer, primary_key=True),
                           Column("create_time", DateTime, default=now),
                           Column("update_time", DateTime, default=now, onupdate=now),
                           Column("sample_id", Integer, ForeignKey("sample.id"), index=True),
-                          Column("sample_state_id", Integer, ForeignKey("sample_state.id"), index=True),
-                          Column("comment", TEXT))
+                          Column("sample_state_id", Integer, ForeignKey("sample_state.id"), index=True), Column("comment", TEXT))
 
 
 def upgrade(migrate_engine):
@@ -108,7 +108,7 @@ def upgrade(migrate_engine):
     # Load existing tables
     metadata.reflect()
     # Add all of the new tables above
-#    metadata.create_all()
+    #    metadata.create_all()
     try:
         FormDefinitionCurrent_table.create()
     except Exception:
@@ -120,13 +120,14 @@ def upgrade(migrate_engine):
     # Add 1 foreign key constraint to the form_definition_current table
     if FormDefinitionCurrent_table is not None and FormDefinition_table is not None:
         try:
-            cons = ForeignKeyConstraint([FormDefinitionCurrent_table.c.latest_form_id],
-                                        [FormDefinition_table.c.id],
-                                        name='form_definition_current_latest_form_id_fk')
+            cons = ForeignKeyConstraint(
+                [FormDefinitionCurrent_table.c.latest_form_id], [FormDefinition_table.c.id],
+                name='form_definition_current_latest_form_id_fk')
             # Create the constraint
             cons.create()
         except Exception:
-            log.exception("Adding foreign key constraint 'form_definition_current_latest_form_id_fk' to table 'form_definition_current' failed.")
+            log.exception(
+                "Adding foreign key constraint 'form_definition_current_latest_form_id_fk' to table 'form_definition_current' failed.")
     try:
         FormValues_table.create()
     except Exception:

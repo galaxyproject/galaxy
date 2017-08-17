@@ -62,13 +62,14 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                             finally:
                                 lock.release()
                         if readme_file_name.endswith('.rst'):
-                            text_of_reasonable_length = Template(rst_to_html(text_of_reasonable_length),
-                                                                 input_encoding='utf-8',
-                                                                 output_encoding='utf-8',
-                                                                 default_filters=['decode.utf8'],
-                                                                 encoding_errors='replace')
-                            text_of_reasonable_length = text_of_reasonable_length.render(static_path=web.url_for('/static'),
-                                                                                         host_url=web.url_for('/', qualified=True))
+                            text_of_reasonable_length = Template(
+                                rst_to_html(text_of_reasonable_length),
+                                input_encoding='utf-8',
+                                output_encoding='utf-8',
+                                default_filters=['decode.utf8'],
+                                encoding_errors='replace')
+                            text_of_reasonable_length = text_of_reasonable_length.render(
+                                static_path=web.url_for('/static'), host_url=web.url_for('/', qualified=True))
                             text_of_reasonable_length = unicodify(text_of_reasonable_length)
                         else:
                             text_of_reasonable_length = basic_util.to_html_string(text_of_reasonable_length)

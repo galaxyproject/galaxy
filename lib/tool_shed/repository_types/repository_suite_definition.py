@@ -10,7 +10,6 @@ log = logging.getLogger(__name__)
 
 
 class RepositorySuiteDefinition(TipOnly):
-
     def __init__(self):
         self.type = rt_util.REPOSITORY_SUITE_DEFINITION
         self.label = 'Repository suite definition'

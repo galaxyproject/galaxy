@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 
 
 class Registry(object):
-
     def __init__(self, root_dir=None, config=None):
         self.tool_sheds = odict()
         self.tool_sheds_auth = odict()

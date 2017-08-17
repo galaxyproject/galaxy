@@ -22,21 +22,14 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
-from galaxy.tools.cache import (
-    ToolCache,
-    ToolShedRepositoryCache
-)
+from galaxy.tools.cache import (ToolCache, ToolShedRepositoryCache)
 from galaxy.jobs import metrics as job_metrics
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
 from galaxy.queue_worker import GalaxyQueueWorker
-from galaxy.util import (
-    ExecutionTimer,
-    heartbeat
-)
+from galaxy.util import (ExecutionTimer, heartbeat)
 from tool_shed.galaxy_install import update_repository_manager
-
 
 log = logging.getLogger(__name__)
 app = None
@@ -44,6 +37,7 @@ app = None
 
 class UniverseApplication(object, config.ConfiguresGalaxyMixin):
     """Encapsulates the state of a Universe application"""
+
     def __init__(self, **kwargs):
         if not log.handlers:
             # Paste didn't handle it, so we need a temporary basic log
@@ -132,9 +126,7 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         load_lib_tools(self.toolbox)
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = VisualizationsRegistry(
-            self,
-            directories_setting=self.config.visualization_plugins_directory,
-            template_cache_dir=self.config.template_cache)
+            self, directories_setting=self.config.visualization_plugins_directory, template_cache_dir=self.config.template_cache)
         # Tours registry
         self.tour_registry = ToursRegistry(self.config.tour_config_dir)
         # Webhooks registry
@@ -142,8 +134,7 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent(
-            model=self.security_agent.model,
-            permitted_actions=self.security_agent.permitted_actions)
+            model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions)
         # Load quota management.
         if self.config.enable_quotas:
             self.quota_agent = galaxy.quota.QuotaAgent(self.model)
@@ -164,11 +155,7 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         # postfork if using uWSGI)
         if self.config.use_heartbeat:
             if heartbeat.Heartbeat:
-                self.heartbeat = heartbeat.Heartbeat(
-                    self.config,
-                    period=self.config.heartbeat_interval,
-                    fname=self.config.heartbeat_log
-                )
+                self.heartbeat = heartbeat.Heartbeat(self.config, period=self.config.heartbeat_interval, fname=self.config.heartbeat_log)
                 self.heartbeat.daemon = True
                 self.application_stack.register_postfork_function(self.heartbeat.start)
         self.sentry_client = None
@@ -193,9 +180,8 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         self.job_stop_queue = self.job_manager.job_stop_queue
         self.proxy_manager = ProxyManager(self.config)
         # Initialize the external service types
-        self.external_service_types = external_service_types.ExternalServiceTypesCollection(
-            self.config.external_service_type_config_file,
-            self.config.external_service_type_path, self)
+        self.external_service_types = external_service_types.ExternalServiceTypesCollection(self.config.external_service_type_config_file,
+                                                                                            self.config.external_service_type_path, self)
 
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
@@ -239,4 +225,5 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
             self.trace_logger = None
 
     def is_job_handler(self):
-        return (self.config.track_jobs_in_database and self.job_config.is_handler(self.config.server_name)) or not self.config.track_jobs_in_database
+        return (self.config.track_jobs_in_database
+                and self.job_config.is_handler(self.config.server_name)) or not self.config.track_jobs_in_database

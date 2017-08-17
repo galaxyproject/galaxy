@@ -17,7 +17,6 @@ log = logging.getLogger(__name__)
 
 
 class BaseAnnotationsController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations):
-
     @expose_api
     def index(self, trans, **kwd):
         idnum = kwd[self.tagged_item_id]

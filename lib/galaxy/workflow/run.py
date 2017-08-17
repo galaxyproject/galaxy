@@ -5,8 +5,7 @@ from galaxy import model, util
 from galaxy.util import ExecutionTimer
 from galaxy.util.odict import odict
 from galaxy.workflow import modules
-from galaxy.workflow.run_request import (workflow_run_config_to_request,
-    WorkflowRunConfig)
+from galaxy.workflow.run_request import (workflow_run_config_to_request, WorkflowRunConfig)
 
 log = logging.getLogger(__name__)
 
@@ -68,14 +67,14 @@ def __invoke(trans, workflow, workflow_run_config, workflow_invocation=None, pop
     """ Run the supplied workflow in the supplied target_history.
     """
     if populate_state:
-        modules.populate_module_and_state(trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections)
+        modules.populate_module_and_state(
+            trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections)
 
     invoker = WorkflowInvoker(
         trans,
         workflow,
         workflow_run_config,
-        workflow_invocation=workflow_invocation,
-    )
+        workflow_invocation=workflow_invocation, )
     try:
         outputs = invoker.invoke()
     except modules.CancelWorkflowEvaluation:
@@ -105,14 +104,14 @@ def __invoke(trans, workflow, workflow_run_config, workflow_invocation=None, pop
 
 def queue_invoke(trans, workflow, workflow_run_config, request_params={}, populate_state=True):
     if populate_state:
-        modules.populate_module_and_state(trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections)
+        modules.populate_module_and_state(
+            trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections)
     workflow_invocation = workflow_run_config_to_request(trans, workflow_run_config, workflow)
     workflow_invocation.workflow = workflow
     return trans.app.workflow_scheduling_manager.queue(workflow_invocation, request_params)
 
 
 class WorkflowInvoker(object):
-
     def __init__(self, trans, workflow, workflow_run_config, workflow_invocation=None, progress=None):
         self.trans = trans
         self.workflow = workflow
@@ -147,7 +146,8 @@ class WorkflowInvoker(object):
         workflow_invocation = self.workflow_invocation
         maximum_duration = getattr(self.trans.app.config, "maximum_workflow_invocation_duration", -1)
         if maximum_duration > 0 and workflow_invocation.seconds_since_created > maximum_duration:
-            log.debug("Workflow invocation [%s] exceeded maximum number of seconds allowed for scheduling [%s], failing." % (workflow_invocation.id, maximum_duration))
+            log.debug("Workflow invocation [%s] exceeded maximum number of seconds allowed for scheduling [%s], failing." %
+                      (workflow_invocation.id, maximum_duration))
             workflow_invocation.state = model.WorkflowInvocation.states.FAILED
             # All jobs ran successfully, so we can save now
             self.trans.sa_session.add(workflow_invocation)
@@ -183,8 +183,7 @@ class WorkflowInvoker(object):
                 log.exception(
                     "Failed to schedule %s, problem occurred on %s.",
                     self.workflow_invocation.workflow.log_str(),
-                    step.log_str(),
-                )
+                    step.log_str(), )
                 raise
 
             if not step_delayed:
@@ -246,7 +245,6 @@ STEP_OUTPUT_DELAYED = object()
 
 
 class WorkflowProgress(object):
-
     def __init__(self, workflow_invocation, inputs_by_step_id, module_injector):
         self.outputs = odict()
         self.module_injector = module_injector
@@ -374,14 +372,12 @@ class WorkflowProgress(object):
             replacement_dict={},
             inputs={},
             param_map={},
-            copy_inputs_to_history=False,
-        )
+            copy_inputs_to_history=False, )
         return WorkflowInvoker(
             trans,
             workflow=subworkflow_invocation.workflow,
             workflow_run_config=workflow_run_config,
-            progress=subworkflow_progress,
-        )
+            progress=subworkflow_progress, )
 
     def subworkflow_progress(self, step):
         subworkflow_invocation = self._subworkflow_invocation(step)
@@ -395,8 +391,7 @@ class WorkflowProgress(object):
                     is_data = input_connection.output_step.type != "parameter_input"
                     replacement = self.replacement_for_connection(
                         input_connection,
-                        is_data=is_data,
-                    )
+                        is_data=is_data, )
                     subworkflow_inputs[subworkflow_step_id] = replacement
                     connection_found = True
                     break
@@ -407,8 +402,7 @@ class WorkflowProgress(object):
         return WorkflowProgress(
             subworkflow_invocation,
             subworkflow_inputs,
-            self.module_injector,
-        )
+            self.module_injector, )
 
     def _recover_mapping(self, step, step_invocations):
         try:

@@ -60,7 +60,6 @@ class RatableManagerMixin(object):
 
 
 class RatableSerializerMixin(object):
-
     def add_serializers(self):
         self.serializers['user_rating'] = self.serialize_user_rating
         self.serializers['community_rating'] = self.serialize_community_rating
@@ -68,8 +67,8 @@ class RatableSerializerMixin(object):
     def serialize_user_rating(self, item, key, user=None, **context):
         """Returns the integer rating given to this item by the user."""
         if not user:
-            raise base.ModelSerializingError('user_rating requires a user',
-                model_class=self.manager.model_class, id=self.serialize_id(item, 'id'))
+            raise base.ModelSerializingError(
+                'user_rating requires a user', model_class=self.manager.model_class, id=self.serialize_id(item, 'id'))
         return self.manager.rating(item, user)
 
     def serialize_community_rating(self, item, key, **context):
@@ -82,26 +81,24 @@ class RatableSerializerMixin(object):
         # than getting the rows and calc'ing both here with one query
         manager = self.manager
         return {
-            'average' : manager.ratings_avg(item),
-            'count'   : manager.ratings_count(item),
+            'average': manager.ratings_avg(item),
+            'count': manager.ratings_count(item),
         }
 
 
 class RatableDeserializerMixin(object):
-
     def add_deserializers(self):
         self.deserializers['user_rating'] = self.deserialize_rating
 
     def deserialize_rating(self, item, key, val, user=None, **context):
         if not user:
-            raise base.ModelDeserializingError('user_rating requires a user',
-                model_class=self.manager.model_class, id=self.serialize_id(item, 'id'))
+            raise base.ModelDeserializingError(
+                'user_rating requires a user', model_class=self.manager.model_class, id=self.serialize_id(item, 'id'))
         val = self.validate.int_range(key, val, 0, 5)
         return self.manager.rate(item, user, val, flush=False)
 
 
 class RatableFilterMixin(object):
-
     def _ratings_avg_accessor(self, item):
         return self.manager.ratings_avg(item)
 
@@ -113,11 +110,11 @@ class RatableFilterMixin(object):
         self.fn_filter_parsers.update({
             'community_rating': {
                 'op': {
-                    'eq' : lambda i, v: self._ratings_avg_accessor(i) == v,
+                    'eq': lambda i, v: self._ratings_avg_accessor(i) == v,
                     # TODO: default to greater than (currently 'eq' due to base/controller.py)
-                    'ge' : lambda i, v: self._ratings_avg_accessor(i) >= v,
-                    'le' : lambda i, v: self._ratings_avg_accessor(i) <= v,
+                    'ge': lambda i, v: self._ratings_avg_accessor(i) >= v,
+                    'le': lambda i, v: self._ratings_avg_accessor(i) <= v,
                 },
-                'val' : float
+                'val': float
             }
         })

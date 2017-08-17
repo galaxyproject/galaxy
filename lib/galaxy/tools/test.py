@@ -11,8 +11,10 @@ from galaxy.util import string_as_bool
 try:
     from nose.tools import nottest
 except ImportError:
+
     def nottest(x):
         return x
+
 
 log = logging.getLogger(__name__)
 
@@ -251,6 +253,7 @@ def _process_simple_value(param, param_value):
             else:
                 processed_value = param_value
             return processed_value
+
         # Do replacement described above for lists or singleton
         # values.
         if isinstance(param_value, list):
@@ -289,8 +292,7 @@ def test_data_iter(required_files):
             metadata=extra.get('metadata', []),
             composite_data=extra.get('composite_data', []),
             ftype=extra.get('ftype', DEFAULT_FTYPE),
-            dbkey=extra.get('dbkey', DEFAULT_DBKEY),
-        )
+            dbkey=extra.get('dbkey', DEFAULT_DBKEY), )
         edit_attributes = extra.get('edit_attributes', [])
 
         # currently only renaming is supported
@@ -322,7 +324,6 @@ def require_file(name, value, extra, required_files):
 
 
 class ParamContext(object):
-
     def __init__(self, name, index=None, parent_context=None):
         self.parent_context = parent_context
         self.name = name
@@ -371,7 +372,6 @@ class ParamContext(object):
 
 
 class RootParamContext(object):
-
     def __init__(self):
         pass
 

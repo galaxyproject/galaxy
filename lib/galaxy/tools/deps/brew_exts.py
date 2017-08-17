@@ -48,7 +48,6 @@ BREW_ARGS = []
 
 
 class BrewContext(object):
-
     def __init__(self, args=None):
         ensure_brew_on_path(args)
         raw_config = brew_execute(["config"])
@@ -62,7 +61,6 @@ class BrewContext(object):
 
 
 class RecipeContext(object):
-
     @staticmethod
     def from_args(args, brew_context=None):
         return RecipeContext(args.recipe, args.version, brew_context)
@@ -115,7 +113,8 @@ def main():
         parser.add_argument('action', metavar='action', help="Versioned action to perform.", choices=actions)
     parser.add_argument('recipe', metavar='recipe', help="Recipe for action - should be absolute (e.g. homebrew/science/samtools).")
     parser.add_argument('version', metavar='version', help="Version for action (e.g. 0.1.19).")
-    parser.add_argument('--relaxed', action='store_true', help="Relaxed processing - for instance allow use of env on non-vinstall-ed recipes.")
+    parser.add_argument(
+        '--relaxed', action='store_true', help="Relaxed processing - for instance allow use of env on non-vinstall-ed recipes.")
     parser.add_argument('--verbose', action='store_true', help="Verbose output")
     parser.add_argument('restargs', nargs=argparse.REMAINDER)
     args = parser.parse_args()
@@ -146,7 +145,6 @@ def main():
 
 
 class CommandLineException(Exception):
-
     def __init__(self, command, stdout, stderr):
         self.command = command
         self.stdout = stdout
@@ -157,8 +155,7 @@ class CommandLineException(Exception):
                         "-------->>end stderr<<--------\n"
                         "-------->>begin stdout<<--------\n"
                         "%s\n"
-                        "-------->>end stdout<<--------\n"
-                        ) % (command, stderr, stdout)
+                        "-------->>end stdout<<--------\n") % (command, stderr, stdout)
 
     def __str__(self):
         return self.message
@@ -201,11 +198,7 @@ def versioned_install(recipe_context, package=None, version=None, installed_deps
                 # dep_version obtained from brew versions doesn't
                 # include revision. This linked_keg attribute does.
                 keg_verion = brew_info(dep)["linked_keg"]
-                dep_metadata = {
-                    'name': dep,
-                    'version': keg_verion,
-                    'versioned': versioned
-                }
+                dep_metadata = {'name': dep, 'version': keg_verion, 'versioned': versioned}
                 deps_metadata.append(dep_metadata)
 
             cellar_root = recipe_context.brew_context.homebrew_cellar
@@ -220,9 +213,7 @@ def versioned_install(recipe_context, package=None, version=None, installed_deps
             brew_execute(args, env=env)
             deps = brew_execute(["deps", package])
             deps = [d.strip() for d in deps.split("\n") if d]
-            metadata = {
-                'deps': deps_metadata
-            }
+            metadata = {'deps': deps_metadata}
             cellar_root = recipe_context.brew_context.homebrew_cellar
             cellar_path = recipe_cellar_path(cellar_root, package, version)
             v_metadata_path = os.path.join(cellar_path, "INSTALL_RECEIPT_VERSIONED.json")
@@ -336,8 +327,10 @@ def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=
             with open(env_path, "r") as f:
                 env_metadata = json.load(f)
                 if "actions" in env_metadata:
+
                     def to_action(desc):
                         return EnvAction(cellar_path, desc)
+
                     actions.extend(map(to_action, env_metadata["actions"]))
 
     for dep in deps:
@@ -356,7 +349,6 @@ def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=
 
 
 class EnvAction(object):
-
     def __init__(self, keg_root, action_description):
         self.variable = action_description["variable"]
         self.action = action_description["action"]
@@ -381,8 +373,7 @@ class EnvAction(object):
     def __eval(self, template):
         return string.Template(template).safe_substitute(
             variable=self.variable,
-            value=self.value,
-        )
+            value=self.value, )
 
     def to_statements(self):
         if self.action == "set":
@@ -391,10 +382,7 @@ class EnvAction(object):
             template = '''${variable}="${value}:$$${variable}"'''
         else:
             template = '''${variable}="$$${variable}:${value}"'''
-        return [
-            self.__eval(template),
-            "export %s" % self.variable
-        ]
+        return [self.__eval(template), "export %s" % self.variable]
 
 
 @contextlib.contextmanager
@@ -430,8 +418,7 @@ def execute(cmds, env=None):
     subprocess_kwds = dict(
         shell=False,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
+        stderr=subprocess.PIPE, )
     if env:
         subprocess_kwds["env"] = env
     p = subprocess.Popen(cmds, **subprocess_kwds)
@@ -469,8 +456,7 @@ def extended_brew_info(recipe):
         build_dependencies=[],
         required_dependencies=[],
         recommended_dependencies=[],
-        optional_dependencies=[],
-    )
+        optional_dependencies=[], )
 
     for line in raw_info.split("\n"):
         if line.startswith("From: "):
@@ -484,7 +470,6 @@ def extended_brew_info(recipe):
 
 
 def brew_versions_info(package, tap_path):
-
     def versioned(recipe_path):
         if not os.path.isabs(recipe_path):
             recipe_path = os.path.join(os.getcwd(), recipe_path)
@@ -547,7 +532,7 @@ def which(file):
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
         if os.path.exists(path + "/" + file):
-                return path + "/" + file
+            return path + "/" + file
 
     return None
 

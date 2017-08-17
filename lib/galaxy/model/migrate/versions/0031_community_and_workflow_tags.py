@@ -17,8 +17,7 @@ StoredWorkflowTagAssociation_table = Table("stored_workflow_tag_association", me
                                            Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
                                            Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                                            Column("user_tname", Unicode(255), index=True),
-                                           Column("value", Unicode(255), index=True),
-                                           Column("user_value", Unicode(255), index=True))
+                                           Column("value", Unicode(255), index=True), Column("user_value", Unicode(255), index=True))
 
 WorkflowTagAssociation_table = Table("workflow_tag_association", metadata,
                                      Column("id", Integer, primary_key=True),
@@ -26,8 +25,7 @@ WorkflowTagAssociation_table = Table("workflow_tag_association", metadata,
                                      Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
                                      Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                                      Column("user_tname", Unicode(255), index=True),
-                                     Column("value", Unicode(255), index=True),
-                                     Column("user_value", Unicode(255), index=True))
+                                     Column("value", Unicode(255), index=True), Column("user_value", Unicode(255), index=True))
 
 
 def upgrade(migrate_engine):
@@ -55,7 +53,8 @@ def upgrade(migrate_engine):
     # Populate column so that user_id is the id of the user who owns the history (and, up to now, was the only person able to tag the history).
     if c is HistoryTagAssociation_table.c.user_id:
         migrate_engine.execute(
-            "UPDATE history_tag_association SET user_id=( SELECT user_id FROM history WHERE history_tag_association.history_id = history.id )")
+            "UPDATE history_tag_association SET user_id=( SELECT user_id FROM history WHERE history_tag_association.history_id = history.id )"
+        )
 
     if migrate_engine.name != 'sqlite':
         # Create user_id column in history_dataset_association_tag_association table.
@@ -80,7 +79,8 @@ def upgrade(migrate_engine):
     # Populate column so that user_id is the id of the user who owns the history_dataset_association (and, up to now, was the only person able to tag the page).
     if c is HistoryDatasetAssociationTagAssociation_table.c.user_id:
         migrate_engine.execute(
-            "UPDATE history_dataset_association_tag_association SET user_id=( SELECT history.user_id FROM history, history_dataset_association WHERE history_dataset_association.history_id = history.id AND history_dataset_association.id = history_dataset_association_tag_association.history_dataset_association_id)")
+            "UPDATE history_dataset_association_tag_association SET user_id=( SELECT history.user_id FROM history, history_dataset_association WHERE history_dataset_association.history_id = history.id AND history_dataset_association.id = history_dataset_association_tag_association.history_dataset_association_id)"
+        )
     if migrate_engine.name != 'sqlite':
         # Create user_id column in page_tag_association table.
         PageTagAssociation_table = Table("page_tag_association", metadata, autoload=True)

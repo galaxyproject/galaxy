@@ -11,10 +11,8 @@ log = getLogger(__name__)
 
 
 class DatasetCollectionsController(
-    BaseAPIController,
-    UsesLibraryMixinItems,
-):
-
+        BaseAPIController,
+        UsesLibraryMixinItems, ):
     def __init__(self, app):
         super(DatasetCollectionsController, self).__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
@@ -56,16 +54,14 @@ class DatasetCollectionsController(
             trans.status = 501
             return
         dataset_collection_instance = self.__service(trans).create(trans=trans, **create_params)
-        return dictify_dataset_collection_instance(dataset_collection_instance,
-                                                   security=trans.security, parent=create_params["parent"])
+        return dictify_dataset_collection_instance(dataset_collection_instance, security=trans.security, parent=create_params["parent"])
 
     @expose_api
     def show(self, trans, instance_type, id, **kwds):
         dataset_collection_instance = self.__service(trans).get_dataset_collection_instance(
             trans,
             id=id,
-            instance_type=instance_type,
-        )
+            instance_type=instance_type, )
         if instance_type == 'history':
             parent = dataset_collection_instance.history
         elif instance_type == 'library':
@@ -73,12 +69,7 @@ class DatasetCollectionsController(
         else:
             trans.status = 501
             return
-        return dictify_dataset_collection_instance(
-            dataset_collection_instance,
-            security=trans.security,
-            parent=parent,
-            view='element'
-        )
+        return dictify_dataset_collection_instance(dataset_collection_instance, security=trans.security, parent=parent, view='element')
 
     def __service(self, trans):
         service = trans.app.dataset_collections_service

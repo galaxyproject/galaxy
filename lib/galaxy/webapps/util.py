@@ -4,7 +4,6 @@ import logging
 
 import mako.exceptions
 
-
 log = logging.getLogger(__name__)
 
 
@@ -19,6 +18,7 @@ def build_template_error_formatters():
     one returns a value, which will be displayed on the error page.
     """
     formatters = []
+
     # Formatter for mako
 
     def mako_html_data(exc_value):
@@ -26,6 +26,7 @@ def build_template_error_formatters():
             return mako.exceptions.html_error_template().render(full=False, css=False)
         if isinstance(exc_value, AttributeError) and exc_value.args[0].startswith("'Undefined' object has no attribute"):
             return mako.exceptions.html_error_template().render(full=False, css=False)
+
     formatters.append(mako_html_data)
     return formatters
 
@@ -40,9 +41,8 @@ def wrap_if_allowed_or_fail(app, stack, wrap, name=None, args=None, kwargs=None)
     """
     name = name or wrap.__name__
     if not stack.allowed_middleware(wrap):
-        raise MiddlewareWrapUnsupported(
-            "'%s' is enabled in your configuration but the %s application stack does not support it, this "
-            "middleware has been disabled" % (name, stack.name))
+        raise MiddlewareWrapUnsupported("'%s' is enabled in your configuration but the %s application stack does not support it, this "
+                                        "middleware has been disabled" % (name, stack.name))
     args = args or []
     kwargs = kwargs or {}
     log.debug("Enabling '%s' middleware", name)

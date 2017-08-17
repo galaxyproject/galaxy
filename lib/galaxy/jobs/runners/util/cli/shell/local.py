@@ -1,16 +1,10 @@
 from logging import getLogger
-from subprocess import (
-    PIPE,
-    Popen
-)
+from subprocess import (PIPE, Popen)
 from tempfile import TemporaryFile
 from time import sleep
 
 from ..shell import BaseShellExec
-from ....util import (
-    Bunch,
-    kill_pid
-)
+from ....util import (Bunch, kill_pid)
 
 log = getLogger(__name__)
 
@@ -65,4 +59,4 @@ def _read_str(stream):
     return contents.decode('UTF-8') if isinstance(contents, bytes) else contents
 
 
-__all__ = ('LocalShell',)
+__all__ = ('LocalShell', )

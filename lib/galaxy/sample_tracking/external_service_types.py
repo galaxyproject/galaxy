@@ -13,7 +13,6 @@ class ExternalServiceTypeNotFoundException(Exception):
 
 
 class ExternalServiceTypesCollection(object):
-
     def __init__(self, config_filename, root_dir, app):
         self.all_external_service_types = odict()
         self.root_dir = root_dir

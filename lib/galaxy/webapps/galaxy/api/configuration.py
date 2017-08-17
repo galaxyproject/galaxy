@@ -19,7 +19,6 @@ log = logging.getLogger(__name__)
 
 
 class ConfigurationController(BaseAPIController):
-
     def __init__(self, app):
         super(ConfigurationController, self).__init__(app)
         self.config_serializer = configuration.ConfigSerializer(app)
@@ -100,10 +99,7 @@ class ConfigurationController(BaseAPIController):
             else:
                 lineage_dict = None
 
-            entry = dict(
-                id=id,
-                lineage=lineage_dict
-            )
+            entry = dict(id=id, lineage=lineage_dict)
             rval.append(entry)
         return rval
 
@@ -120,5 +116,4 @@ class ConfigurationController(BaseAPIController):
 def _tool_conf_to_dict(conf):
     return dict(
         config_filename=conf['config_filename'],
-        tool_path=conf['tool_path'],
-    )
+        tool_path=conf['tool_path'], )

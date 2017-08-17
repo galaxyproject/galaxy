@@ -25,8 +25,7 @@ VisualizationTagAssociation_table = Table("visualization_tag_association", metad
                                           Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
                                           Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                                           Column("user_tname", Unicode(255), index=True),
-                                          Column("value", Unicode(255), index=True),
-                                          Column("user_value", Unicode(255), index=True))
+                                          Column("value", Unicode(255), index=True), Column("user_value", Unicode(255), index=True))
 
 # Annotating visualizations.
 

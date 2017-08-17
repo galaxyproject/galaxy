@@ -114,14 +114,12 @@ class ExportHistoryToolAction(ToolAction):
         #
 
         # Add association for keeping track of job, history, archive relationship.
-        jeha = trans.app.model.JobExportHistoryArchive(job=job, history=history,
-                                                       dataset=archive_dataset,
-                                                       compressed=incoming['compress'])
+        jeha = trans.app.model.JobExportHistoryArchive(job=job, history=history, dataset=archive_dataset, compressed=incoming['compress'])
         trans.sa_session.add(jeha)
 
         job_wrapper = JobExportHistoryArchiveWrapper(job)
-        cmd_line = job_wrapper.setup_job(trans, jeha, include_hidden=incoming['include_hidden'],
-                                         include_deleted=incoming['include_deleted'])
+        cmd_line = job_wrapper.setup_job(
+            trans, jeha, include_hidden=incoming['include_hidden'], include_deleted=incoming['include_deleted'])
 
         #
         # Add parameters to job_parameter table.

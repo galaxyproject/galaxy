@@ -25,12 +25,11 @@ log.addHandler(handler)
 metadata = MetaData()
 
 RequestEvent_table = Table('request_event', metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("request_id", Integer, ForeignKey("request.id"), index=True),
-    Column("state", TrimmedString(255), index=True),
-    Column("comment", TEXT))
+                           Column("id", Integer, primary_key=True),
+                           Column("create_time", DateTime, default=now),
+                           Column("update_time", DateTime, default=now, onupdate=now),
+                           Column("request_id", Integer, ForeignKey("request.id"), index=True),
+                           Column("state", TrimmedString(255), index=True), Column("comment", TEXT))
 
 
 def upgrade(migrate_engine):
@@ -52,6 +51,7 @@ def upgrade(migrate_engine):
             return "null"
         else:
             raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+
     # Load existing tables
     metadata.reflect()
     # Add new request_event table

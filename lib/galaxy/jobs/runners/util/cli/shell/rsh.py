@@ -12,7 +12,6 @@ __all__ = ('RemoteShell', 'SecureShell', 'GlobusSecureShell', 'ParamikoShell')
 
 
 class RemoteShell(LocalShell):
-
     def __init__(self, rsh='rsh', rcp='rcp', hostname='localhost', username=None, **kwargs):
         super(RemoteShell, self).__init__(**kwargs)
         self.rsh = rsh
@@ -47,7 +46,6 @@ class SecureShell(RemoteShell):
 
 
 class ParamikoShell(object):
-
     def __init__(self, username, hostname, password=None, private_key=None, port=22, timeout=60, **kwargs):
         self.username = username
         self.hostname = hostname
@@ -57,12 +55,13 @@ class ParamikoShell(object):
         self.timeout = int(timeout) if timeout else timeout
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.ssh.connect(hostname=self.hostname,
-                         port=self.port,
-                         username=self.username,
-                         password=self.password,
-                         key_filename=self.private_key,
-                         timeout=self.timeout)
+        self.ssh.connect(
+            hostname=self.hostname,
+            port=self.port,
+            username=self.username,
+            password=self.password,
+            key_filename=self.private_key,
+            timeout=self.timeout)
 
     def execute(self, cmd, timeout=60):
         _, stdout, stderr = self.ssh.exec_command(cmd, timeout=timeout)
@@ -71,6 +70,5 @@ class ParamikoShell(object):
 
 
 class GlobusSecureShell(SecureShell):
-
     def __init__(self, rsh='gsissh', rcp='gsiscp', **kwargs):
         super(GlobusSecureShell, self).__init__(rsh=rsh, rcp=rcp, **kwargs)

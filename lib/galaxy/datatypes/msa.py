@@ -100,7 +100,8 @@ class Stockholm_1_0(Text):
     edam_format = "format_1961"
     file_ext = "stockholm"
 
-    MetadataElement(name="number_of_models", default=0, desc="Number of multiple alignments", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="number_of_models", default=0, desc="Number of multiple alignments", readonly=True, visible=True, optional=True, no_value=0)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -177,13 +178,15 @@ class Stockholm_1_0(Text):
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
+
     split = classmethod(split)
 
 
 class MauveXmfa(Text):
     file_ext = "xmfa"
 
-    MetadataElement(name="number_of_models", default=0, desc="Number of alignmened sequences", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="number_of_models", default=0, desc="Number of alignmened sequences", readonly=True, visible=True, optional=True, no_value=0)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:

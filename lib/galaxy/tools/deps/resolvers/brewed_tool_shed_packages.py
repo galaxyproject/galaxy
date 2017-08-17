@@ -10,19 +10,17 @@ from xml.etree import ElementTree as ET
 from .resolver_mixins import (
     UsesHomebrewMixin,
     UsesInstalledRepositoriesMixin,
-    UsesToolDependencyDirMixin,
-)
+    UsesToolDependencyDirMixin, )
 from ..resolvers import DependencyResolver, NullDependency
 
 log = logging.getLogger(__name__)
 
 
 class HomebrewToolShedDependencyResolver(
-    DependencyResolver,
-    UsesHomebrewMixin,
-    UsesToolDependencyDirMixin,
-    UsesInstalledRepositoriesMixin,
-):
+        DependencyResolver,
+        UsesHomebrewMixin,
+        UsesToolDependencyDirMixin,
+        UsesInstalledRepositoriesMixin, ):
     resolver_type = "tool_shed_tap"
 
     def __init__(self, dependency_manager, **kwds):
@@ -57,8 +55,7 @@ class HomebrewToolShedDependencyResolver(
             package_name=name,
             package_version=version,
             repository_owner=tool_shed_repository.owner,
-            repository_name=tool_shed_repository.name,
-        )
+            repository_name=tool_shed_repository.name, )
         return self._find_dep_default(recipe_name, None)
 
     def _resolve_from_tool_dependencies_path(self, name, version, tool_dependencies_path):
@@ -76,14 +73,12 @@ class HomebrewToolShedDependencyResolver(
             package_name=name,
             package_version=version,
             repository_owner=raw_dependency.repository_owner,
-            repository_name=raw_dependency.repository_name
-        )
+            repository_name=raw_dependency.repository_name)
         dep = self._find_dep_default(recipe_name, None)
         return dep
 
 
 class RawDependencies(object):
-
     def __init__(self, dependencies_file):
         self.root = ET.parse(dependencies_file).getroot()
         dependencies = []
@@ -107,7 +102,6 @@ class RawDependencies(object):
 
 
 class RawDependency(object):
-
     def __init__(self, dependencies, package_el, repository_el):
         self.dependencies = dependencies
         self.package_el = package_el
@@ -115,11 +109,7 @@ class RawDependency(object):
 
     def __repr__(self):
         temp = "Dependency[package_name=%s,version=%s,dependent_package=%s]"
-        return temp % (
-            self.package_el.attrib["name"],
-            self.package_el.attrib["version"],
-            self.repository_el.attrib["name"]
-        )
+        return temp % (self.package_el.attrib["name"], self.package_el.attrib["version"], self.repository_el.attrib["name"])
 
     @property
     def repository_owner(self):

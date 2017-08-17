@@ -5,17 +5,8 @@ import logging
 import os
 
 from galaxy import model
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState
-)
-from galaxy.jobs.runners.util.condor import (
-    build_submit_description,
-    condor_stop,
-    condor_submit,
-    submission_params,
-    summarize_condor_log
-)
+from galaxy.jobs.runners import (AsynchronousJobRunner, AsynchronousJobState)
+from galaxy.jobs.runners.util.condor import (build_submit_description, condor_stop, condor_submit, submission_params, summarize_condor_log)
 from galaxy.util import asbool
 
 log = logging.getLogger(__name__)
@@ -78,10 +69,7 @@ class CondorJobRunner(AsynchronousJobRunner):
             galaxy_slots_statement = 'GALAXY_SLOTS="1"'
 
         # define job attributes
-        cjs = CondorJobState(
-            files_dir=self.app.config.cluster_files_directory,
-            job_wrapper=job_wrapper
-        )
+        cjs = CondorJobState(files_dir=self.app.config.cluster_files_directory, job_wrapper=job_wrapper)
 
         cluster_directory = self.app.config.cluster_files_directory
         cjs.user_log = os.path.join(cluster_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
@@ -94,15 +82,13 @@ class CondorJobRunner(AsynchronousJobRunner):
             output=cjs.output_file,
             error=cjs.error_file,
             user_log=cjs.user_log,
-            query_params=query_params,
-        )
+            query_params=query_params, )
 
         submit_file_contents = build_submit_description(**build_submit_params)
         script = self.get_job_file(
             job_wrapper,
             exit_code_path=cjs.exit_code_file,
-            slots_statement=galaxy_slots_statement,
-        )
+            slots_statement=galaxy_slots_statement, )
         try:
             self.write_executable_script(executable, script)
         except:

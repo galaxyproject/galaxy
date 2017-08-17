@@ -42,11 +42,8 @@ def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_scrip
                 all_tool_dependencies = []
                 repository_name = elem.get('name')
                 changeset_revision = elem.get('changeset_revision')
-                tool_shed_accessible, repository_dependencies_dict = get_repository_dependencies(app,
-                                                                                                 tool_shed_url,
-                                                                                                 repository_name,
-                                                                                                 REPOSITORY_OWNER,
-                                                                                                 changeset_revision)
+                tool_shed_accessible, repository_dependencies_dict = get_repository_dependencies(app, tool_shed_url, repository_name,
+                                                                                                 REPOSITORY_OWNER, changeset_revision)
                 if tool_shed_accessible:
                     # Accumulate all tool dependencies defined for repository dependencies for display to the user.
                     for rd_key, rd_tups in repository_dependencies_dict.items():
@@ -55,16 +52,9 @@ def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_scrip
                         for rd_tup in rd_tups:
                             tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                                 parse_repository_dependency_tuple(rd_tup)
-                        tool_shed_accessible, tool_dependencies = get_tool_dependencies(app,
-                                                                                        tool_shed_url,
-                                                                                        name,
-                                                                                        owner,
-                                                                                        changeset_revision)
+                        tool_shed_accessible, tool_dependencies = get_tool_dependencies(app, tool_shed_url, name, owner, changeset_revision)
                         all_tool_dependencies = accumulate_tool_dependencies(tool_shed_accessible, tool_dependencies, all_tool_dependencies)
-                    tool_shed_accessible, tool_dependencies = get_tool_dependencies(app,
-                                                                                    tool_shed_url,
-                                                                                    repository_name,
-                                                                                    REPOSITORY_OWNER,
+                    tool_shed_accessible, tool_dependencies = get_tool_dependencies(app, tool_shed_url, repository_name, REPOSITORY_OWNER,
                                                                                     changeset_revision)
                     all_tool_dependencies = accumulate_tool_dependencies(tool_shed_accessible, tool_dependencies, all_tool_dependencies)
                     for tool_elem in elem.findall('tool'):
@@ -73,8 +63,8 @@ def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_scrip
                             # We currently do nothing with repository dependencies except install them (we do not display repositories that will be
                             # installed to the user).  However, we'll store them in the following dictionary in case we choose to display them in the
                             # future.
-                            dependencies_dict = dict(tool_dependencies=all_tool_dependencies,
-                                                     repository_dependencies=repository_dependencies)
+                            dependencies_dict = dict(
+                                tool_dependencies=all_tool_dependencies, repository_dependencies=repository_dependencies)
                             migrated_tool_configs_dict[tool_config_file_name] = dependencies_dict
                 else:
                     break
@@ -90,9 +80,11 @@ def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_scrip
                         elif elem.tag == 'section':
                             for section_elem in elem:
                                 if section_elem.tag == 'tool':
-                                    missing_tool_configs_dict = check_tool_tag_set(section_elem, migrated_tool_configs_dict, missing_tool_configs_dict)
+                                    missing_tool_configs_dict = check_tool_tag_set(section_elem, migrated_tool_configs_dict,
+                                                                                   missing_tool_configs_dict)
     else:
-        exception_msg = '\n\nThe entry for the main Galaxy tool shed at %s is missing from the %s file.  ' % (tool_shed, app.config.tool_sheds_config)
+        exception_msg = '\n\nThe entry for the main Galaxy tool shed at %s is missing from the %s file.  ' % (tool_shed,
+                                                                                                              app.config.tool_sheds_config)
         exception_msg += 'The entry for this tool shed must always be available in this file, so re-add it before attempting to start your Galaxy server.\n'
         raise Exception(exception_msg)
     return tool_shed_accessible, missing_tool_configs_dict
@@ -157,7 +149,8 @@ def get_repository_dependencies(app, tool_shed_url, repository_name, repository_
     params = dict(name=repository_name, owner=repository_owner, changeset_revision=changeset_revision)
     pathspec = ['repository', 'get_repository_dependencies']
     try:
-        raw_text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+        raw_text = util.url_get(
+            tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         tool_shed_accessible = True
     except Exception as e:
         tool_shed_accessible = False

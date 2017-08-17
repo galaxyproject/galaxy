@@ -30,21 +30,14 @@ def load_exception_handler(path, exc_info):
 
 
 def find_possible_tools_from_path(
-    path,
-    recursive=False,
-    enable_beta_formats=False,
-):
+        path,
+        recursive=False,
+        enable_beta_formats=False, ):
     """Walk a directory and find potential tool files."""
     possible_tool_files = []
-    for possible_tool_file in _find_tool_files(
-        path, recursive=recursive,
-        enable_beta_formats=enable_beta_formats
-    ):
+    for possible_tool_file in _find_tool_files(path, recursive=recursive, enable_beta_formats=enable_beta_formats):
         try:
-            does_look_like_a_tool = looks_like_a_tool(
-                possible_tool_file,
-                enable_beta_formats=enable_beta_formats
-            )
+            does_look_like_a_tool = looks_like_a_tool(possible_tool_file, enable_beta_formats=enable_beta_formats)
         except IOError:
             # Some problem reading the tool file, skip.
             continue
@@ -56,11 +49,10 @@ def find_possible_tools_from_path(
 
 
 def load_tool_sources_from_path(
-    path,
-    load_exception_handler=load_exception_handler,
-    recursive=False,
-    register_load_errors=False,
-):
+        path,
+        load_exception_handler=load_exception_handler,
+        recursive=False,
+        register_load_errors=False, ):
     """Walk a directory and ToolSource objects."""
     return _load_tools_from_path(
         path,
@@ -68,16 +60,14 @@ def load_tool_sources_from_path(
         recursive=recursive,
         register_load_errors=register_load_errors,
         loader_func=get_tool_source,
-        enable_beta_formats=True,
-    )
+        enable_beta_formats=True, )
 
 
 def load_tool_elements_from_path(
-    path,
-    load_exception_handler=load_exception_handler,
-    recursive=False,
-    register_load_errors=False,
-):
+        path,
+        load_exception_handler=load_exception_handler,
+        recursive=False,
+        register_load_errors=False, ):
     """Walk a directory and load tool XML elements."""
     return _load_tools_from_path(
         path,
@@ -85,24 +75,21 @@ def load_tool_elements_from_path(
         recursive=recursive,
         register_load_errors=register_load_errors,
         loader_func=loader.load_tool,
-        enable_beta_formats=False,
-    )
+        enable_beta_formats=False, )
 
 
 def _load_tools_from_path(
-    path,
-    load_exception_handler,
-    recursive,
-    register_load_errors,
-    loader_func,
-    enable_beta_formats,
-):
+        path,
+        load_exception_handler,
+        recursive,
+        register_load_errors,
+        loader_func,
+        enable_beta_formats, ):
     loaded_objects = []
     for possible_tool_file in find_possible_tools_from_path(
-        path,
-        recursive=recursive,
-        enable_beta_formats=enable_beta_formats,
-    ):
+            path,
+            recursive=recursive,
+            enable_beta_formats=enable_beta_formats, ):
         try:
             tool_element = loader_func(possible_tool_file)
             loaded_objects.append((possible_tool_file, tool_element))
@@ -162,11 +149,8 @@ def looks_like_a_tool_xml(path):
     if not os.path.getsize(full_path):
         return False
 
-    if(checkers.check_binary(full_path) or
-       checkers.check_image(full_path) or
-       checkers.check_gzip(full_path)[0] or
-       checkers.check_bz2(full_path)[0] or
-       checkers.check_zip(full_path)):
+    if (checkers.check_binary(full_path) or checkers.check_image(full_path) or checkers.check_gzip(full_path)[0]
+            or checkers.check_bz2(full_path)[0] or checkers.check_zip(full_path)):
         return False
 
     with open(path, "r") as f:
@@ -289,14 +273,6 @@ BETA_TOOL_CHECKERS = {
     'cwl': looks_like_a_tool_cwl,
 }
 
-__all__ = (
-    "find_possible_tools_from_path",
-    "is_a_yaml_with_class",
-    "is_tool_load_error",
-    "load_tool_elements_from_path",
-    "load_tool_sources_from_path",
-    "looks_like_a_cwl_artifact",
-    "looks_like_a_tool_cwl",
-    "looks_like_a_tool_xml",
-    "looks_like_a_tool_yaml",
-)
+__all__ = ("find_possible_tools_from_path", "is_a_yaml_with_class", "is_tool_load_error", "load_tool_elements_from_path",
+           "load_tool_sources_from_path", "looks_like_a_cwl_artifact", "looks_like_a_tool_cwl", "looks_like_a_tool_xml",
+           "looks_like_a_tool_yaml", )

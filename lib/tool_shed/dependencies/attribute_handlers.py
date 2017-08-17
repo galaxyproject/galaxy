@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 
 
 class RepositoryDependencyAttributeHandler(object):
-
     def __init__(self, app, unpopulate):
         self.app = app
         self.file_name = REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
@@ -109,10 +108,7 @@ class RepositoryDependencyAttributeHandler(object):
             # revision to ensure that the contents of the revision are valid.
             repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
             if repository:
-                repo = hg_util.get_repo_for_repository(self.app,
-                                                       repository=repository,
-                                                       repo_path=None,
-                                                       create=False)
+                repo = hg_util.get_repo_for_repository(self.app, repository=repository, repo_path=None, create=False)
                 lastest_installable_changeset_revision = \
                     metadata_util.get_latest_downloadable_changeset_revision(self.app, repository, repo)
                 if lastest_installable_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
@@ -180,7 +176,6 @@ class RepositoryDependencyAttributeHandler(object):
 
 
 class ToolDependencyAttributeHandler(object):
-
     def __init__(self, app, unpopulate):
         self.app = app
         self.file_name = TOOL_DEPENDENCY_DEFINITION_FILENAME

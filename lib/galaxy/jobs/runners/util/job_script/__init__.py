@@ -10,9 +10,7 @@ from galaxy.util import unicodify
 
 DEFAULT_SHELL = '/bin/bash'
 
-DEFAULT_JOB_FILE_TEMPLATE = Template(
-    resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8')
-)
+DEFAULT_JOB_FILE_TEMPLATE = Template(resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8'))
 
 SLOTS_STATEMENT_CLUSTER_DEFAULT = \
     resource_string(__name__, 'CLUSTER_SLOTS_STATEMENT.sh').decode('UTF-8')
@@ -142,9 +140,4 @@ def _handle_script_integrity(path, config):
         raise Exception("Failed to write job script, could not verify job script integrity.")
 
 
-__all__ = (
-    'check_script_integrity',
-    'job_script',
-    'write_script',
-    'INTEGRITY_INJECTION',
-)
+__all__ = ('check_script_integrity', 'job_script', 'write_script', 'INTEGRITY_INJECTION', )

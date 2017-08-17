@@ -1,15 +1,11 @@
 import os
 
-from paste import (
-    fileapp,
-    request
-)
+from paste import (fileapp, request)
 from paste.httpheaders import ETAG
 from paste.urlparser import StaticURLParser
 
 
 class CacheableStaticURLParser(StaticURLParser):
-
     def __init__(self, directory, cache_seconds=None):
         StaticURLParser.__init__(self, directory)
         self.cache_seconds = cache_seconds

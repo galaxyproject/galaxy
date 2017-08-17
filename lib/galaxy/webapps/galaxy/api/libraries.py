@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 
 
 class LibrariesController(BaseAPIController):
-
     def __init__(self, app):
         super(LibrariesController, self).__init__(app)
         self.folder_manager = folders.FolderManager()
@@ -235,7 +234,8 @@ class LibrariesController(BaseAPIController):
                 return_roles.append(dict(id=role_id, name=role.name, type=role.type))
             return dict(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
         else:
-            raise exceptions.RequestParameterInvalidException("The value of 'scope' parameter is invalid. Alllowed values: current, available")
+            raise exceptions.RequestParameterInvalidException(
+                "The value of 'scope' parameter is invalid. Alllowed values: current, available")
 
     @expose_api
     def set_permissions(self, trans, encoded_library_id, payload=None, **kwd):

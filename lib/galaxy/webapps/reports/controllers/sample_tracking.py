@@ -15,34 +15,27 @@ log = logging.getLogger(__name__)
 
 
 class SpecifiedDateListGrid(grids.Grid):
-
     class RequestNameColumn(grids.TextColumn):
-
         def get_value(self, trans, grid, request):
             return escape(request.name)
 
     class CreateTimeColumn(grids.DateTimeColumn):
-
         def get_value(self, trans, grid, request):
             return request.create_time
 
     class UserColumn(grids.TextColumn):
-
         def get_value(self, trans, grid, request):
             if request.user:
                 return escape(request.user.email)
             return 'unknown'
 
     class EmailColumn(grids.GridColumn):
-
         def filter(self, trans, user, query, column_filter):
             if column_filter == 'All':
                 return query
-            return query.filter(and_(model.Request.table.c.user_id == model.User.table.c.id,
-                                     model.User.table.c.email == column_filter))
+            return query.filter(and_(model.Request.table.c.user_id == model.User.table.c.id, model.User.table.c.email == column_filter))
 
     class SpecifiedDateColumn(grids.GridColumn):
-
         def filter(self, trans, user, query, column_filter):
             if column_filter == 'All':
                 return query
@@ -53,15 +46,15 @@ class SpecifiedDateListGrid(grids.Grid):
                 year, month, day = map(int, column_filter.split("-"))
                 start_date = date(year, month, day)
                 end_date = start_date + timedelta(days=1)
-                return query.filter(and_(self.model_class.table.c.create_time >= start_date,
-                                         self.model_class.table.c.create_time < end_date))
+                return query.filter(
+                    and_(self.model_class.table.c.create_time >= start_date, self.model_class.table.c.create_time < end_date))
             if column_filter.count('-') == 1:
                 # We are filtering on a month like YYYY-MM
                 year, month = map(int, column_filter.split("-"))
                 start_date = date(year, month, 1)
                 end_date = start_date + timedelta(days=calendar.monthrange(year, month)[1])
-                return query.filter(and_(self.model_class.table.c.create_time >= start_date,
-                                         self.model_class.table.c.create_time < end_date))
+                return query.filter(
+                    and_(self.model_class.table.c.create_time >= start_date, self.model_class.table.c.create_time < end_date))
 
     # Grid definition
     use_async = False
@@ -70,32 +63,21 @@ class SpecifiedDateListGrid(grids.Grid):
     template = '/webapps/reports/grid.mako'
     default_sort_key = "name"
     columns = [
-        RequestNameColumn("Name",
-                          key="name",
-                          attach_popup=False,
-                          filterable="advanced"),
-        CreateTimeColumn("Creation Time",
-                         key="create_time",
-                         attach_popup=False),
-        UserColumn("User",
-                   key="email",
-                   model_class=model.User,
-                   link=(lambda item: dict(operation="user_per_month", id=item.id, webapp="reports")),
-                   attach_popup=False),
+        RequestNameColumn("Name", key="name", attach_popup=False, filterable="advanced"),
+        CreateTimeColumn("Creation Time", key="create_time", attach_popup=False),
+        UserColumn(
+            "User",
+            key="email",
+            model_class=model.User,
+            link=(lambda item: dict(operation="user_per_month", id=item.id, webapp="reports")),
+            attach_popup=False),
         # Columns that are valid for filtering but are not visible.
-        SpecifiedDateColumn("Specified Date",
-                            key="specified_date",
-                            visible=False),
-        EmailColumn("Email",
-                    key="email",
-                    model_class=model.User,
-                    visible=False),
+        SpecifiedDateColumn("Specified Date", key="specified_date", visible=False),
+        EmailColumn("Email", key="email", model_class=model.User, visible=False),
     ]
-    columns.append(grids.MulticolFilterColumn("Search",
-                                              cols_to_filter=[columns[0], columns[2]],
-                                              key="free-text-search",
-                                              visible=False,
-                                              filterable="standard"))
+    columns.append(
+        grids.MulticolFilterColumn(
+            "Search", cols_to_filter=[columns[0], columns[2]], key="free-text-search", visible=False, filterable="standard"))
     standard_filters = []
     default_filter = {'specified_date': 'All'}
     num_rows_per_page = 50
@@ -129,9 +111,7 @@ class SampleTracking(BaseUIController, ReportQueryBuilder):
             operation = kwd['operation'].lower()
             if operation == "request_per_month":
                 # The received id is the request id.
-                return trans.response.send_redirect(web.url_for(controller='sample_tracking',
-                                                                action='request_per_month',
-                                                                **kwd))
+                return trans.response.send_redirect(web.url_for(controller='sample_tracking', action='request_per_month', **kwd))
             elif operation == "user_per_month":
                 request_id = kwd.get('id', None)
                 request = get_request(trans, request_id)
@@ -139,41 +119,33 @@ class SampleTracking(BaseUIController, ReportQueryBuilder):
                     kwd['email'] = request.user.email
                 else:
                     kwd['email'] = None  # For anonymous users ( shouldn't happen with requests )
-                return trans.response.send_redirect(web.url_for(controller='sample_tracking',
-                                                                action='user_per_month',
-                                                                **kwd))
+                return trans.response.send_redirect(web.url_for(controller='sample_tracking', action='user_per_month', **kwd))
         return self.specified_date_list_grid(trans, **kwd)
 
     @web.expose
     def per_month_all(self, trans, **kwd):
         message = ''
-        q = sa.select((self.select_month(model.Request.table.c.create_time).label('date'),
-                       sa.func.count(model.Request.table.c.id).label('total')),
-                      from_obj=[sa.outerjoin(model.Request.table, model.User.table)],
-                      group_by=self.group_by_month(model.Request.table.c.create_time),
-                      order_by=[sa.desc('date')])
+        q = sa.select(
+            (self.select_month(model.Request.table.c.create_time).label('date'), sa.func.count(model.Request.table.c.id).label('total')),
+            from_obj=[sa.outerjoin(model.Request.table, model.User.table)],
+            group_by=self.group_by_month(model.Request.table.c.create_time),
+            order_by=[sa.desc('date')])
         requests = []
         for row in q.execute():
-            requests.append((row.date.strftime("%Y-%m"),
-                             row.total,
-                             row.date.strftime("%B"),
-                             row.date.strftime("%Y")))
-        return trans.fill_template('/webapps/reports/requests_per_month_all.mako',
-                                   requests=requests,
-                                   message=message)
+            requests.append((row.date.strftime("%Y-%m"), row.total, row.date.strftime("%B"), row.date.strftime("%Y")))
+        return trans.fill_template('/webapps/reports/requests_per_month_all.mako', requests=requests, message=message)
 
     @web.expose
     def per_user(self, trans, **kwd):
         message = ''
         requests = []
-        q = sa.select((model.User.table.c.email.label('user_email'),
-                       sa.func.count(model.Request.table.c.id).label('total')),
-                      from_obj=[sa.outerjoin(model.Request.table, model.User.table)],
-                      group_by=['user_email'],
-                      order_by=[sa.desc('total'), 'user_email'])
+        q = sa.select(
+            (model.User.table.c.email.label('user_email'), sa.func.count(model.Request.table.c.id).label('total')),
+            from_obj=[sa.outerjoin(model.Request.table, model.User.table)],
+            group_by=['user_email'],
+            order_by=[sa.desc('total'), 'user_email'])
         for row in q.execute():
-            requests.append((row.user_email,
-                             row.total))
+            requests.append((row.user_email, row.total))
         return trans.fill_template('/webapps/reports/requests_per_user.mako', requests=requests, message=message)
 
     @web.expose
@@ -182,22 +154,18 @@ class SampleTracking(BaseUIController, ReportQueryBuilder):
         message = ''
         email = util.restore_text(params.get('email', ''))
         user_id = trans.security.decode_id(params.get('id', ''))
-        q = sa.select((self.select_month(model.Request.table.c.create_time).label('date'),
-                       sa.func.count(model.Request.table.c.id).label('total')),
-                      whereclause=model.Request.table.c.user_id == user_id,
-                      from_obj=[model.Request.table],
-                      group_by=self.group_by_month(model.Request.table.c.create_time),
-                      order_by=[sa.desc('date')])
+        q = sa.select(
+            (self.select_month(model.Request.table.c.create_time).label('date'), sa.func.count(model.Request.table.c.id).label('total')),
+            whereclause=model.Request.table.c.user_id == user_id,
+            from_obj=[model.Request.table],
+            group_by=self.group_by_month(model.Request.table.c.create_time),
+            order_by=[sa.desc('date')])
         requests = []
         for row in q.execute():
-            requests.append((row.date.strftime("%Y-%m"),
-                             row.total,
-                             row.date.strftime("%B"),
-                             row.date.strftime("%Y")))
-        return trans.fill_template('/webapps/reports/requests_user_per_month.mako',
-                                   email=util.sanitize_text(email),
-                                   requests=requests,
-                                   message=message)
+            requests.append((row.date.strftime("%Y-%m"), row.total, row.date.strftime("%B"), row.date.strftime("%Y")))
+        return trans.fill_template(
+            '/webapps/reports/requests_user_per_month.mako', email=util.sanitize_text(email), requests=requests, message=message)
+
 
 # ---- Utility methods -------------------------------------------------------
 

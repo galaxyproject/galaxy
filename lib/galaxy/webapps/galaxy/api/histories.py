@@ -7,43 +7,20 @@ import glob
 import logging
 import os
 
-from sqlalchemy import (
-    false,
-    true
-)
+from sqlalchemy import (false, true)
 
-from galaxy import (
-    exceptions,
-    model,
-    util
-)
-from galaxy.managers import (
-    citations,
-    histories,
-    users
-)
-from galaxy.util import (
-    restore_text,
-    string_as_bool
-)
-from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous,
-    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
-    _future_expose_api_raw as expose_api_raw,
-    url_for
-)
-from galaxy.web.base.controller import (
-    BaseAPIController,
-    ExportsHistoryMixin,
-    ImportsHistoryMixin
-)
+from galaxy import (exceptions, model, util)
+from galaxy.managers import (citations, histories, users)
+from galaxy.util import (restore_text, string_as_bool)
+from galaxy.web import (_future_expose_api as expose_api, _future_expose_api_anonymous as expose_api_anonymous,
+                        _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless, _future_expose_api_raw as
+                        expose_api_raw, url_for)
+from galaxy.web.base.controller import (BaseAPIController, ExportsHistoryMixin, ImportsHistoryMixin)
 
 log = logging.getLogger(__name__)
 
 
 class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistoryMixin):
-
     def __init__(self, app):
         super(HistoriesController, self).__init__(app)
         self.citations_manager = citations.CitationsManager(app)
@@ -135,8 +112,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             if not current_history:
                 return []
             # note: ignores filters, limit, offset
-            return [self.history_serializer.serialize_to_view(current_history,
-                     user=current_user, trans=trans, **serialization_params)]
+            return [self.history_serializer.serialize_to_view(current_history, user=current_user, trans=trans, **serialization_params)]
 
         filters = []
         # support the old default of not-returning/filtering-out deleted histories
@@ -212,13 +188,13 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         deleted = string_as_bool(deleted)
 
         if history_id == "most_recently_used":
-            history = self.history_manager.most_recent(trans.user,
-                filters=(self.app.model.History.deleted == false()), current_history=trans.history)
+            history = self.history_manager.most_recent(
+                trans.user, filters=(self.app.model.History.deleted == false()), current_history=trans.history)
         else:
             history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
 
-        return self.history_serializer.serialize_to_view(history,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        return self.history_serializer.serialize_to_view(
+            history, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     @expose_api_anonymous
     def citations(self, trans, history_id, **kwd):
@@ -255,8 +231,8 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         histories = self.history_manager.list_published(filters=filters, order_by=order_by, limit=limit, offset=offset)
         rval = []
         for history in histories:
-            history_dict = self.history_serializer.serialize_to_view(history, user=trans.user, trans=trans,
-                **self._parse_serialization_params(kwd, 'summary'))
+            history_dict = self.history_serializer.serialize_to_view(
+                history, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'summary'))
             rval.append(history_dict)
         return rval
 
@@ -278,12 +254,11 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         filter_params = self.parse_filter_params(kwd)
         filters = self.history_filters.parse_filters(filter_params)
         order_by = self._parse_order_by(kwd.get('order', 'create_time-dsc'))
-        histories = self.history_manager.list_shared_with(current_user,
-            filters=filters, order_by=order_by, limit=limit, offset=offset)
+        histories = self.history_manager.list_shared_with(current_user, filters=filters, order_by=order_by, limit=limit, offset=offset)
         rval = []
         for history in histories:
-            history_dict = self.history_serializer.serialize_to_view(history, user=current_user, trans=trans,
-                **self._parse_serialization_params(kwd, 'summary'))
+            history_dict = self.history_serializer.serialize_to_view(
+                history, user=current_user, trans=trans, **self._parse_serialization_params(kwd, 'summary'))
             rval.append(history_dict)
         return rval
 
@@ -340,8 +315,8 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         if self.user_manager.is_anonymous(trans.user):
             self.history_manager.set_current(trans, new_history)
 
-        return self.history_serializer.serialize_to_view(new_history,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        return self.history_serializer.serialize_to_view(
+            new_history, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     @expose_api
     def delete(self, trans, id, **kwd):
@@ -378,8 +353,8 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         else:
             self.history_manager.delete(history)
 
-        return self.history_serializer.serialize_to_view(history,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        return self.history_serializer.serialize_to_view(
+            history, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     @expose_api
     def undelete(self, trans, id, **kwd):
@@ -402,8 +377,8 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         self.history_manager.undelete(history)
 
-        return self.history_serializer.serialize_to_view(history,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        return self.history_serializer.serialize_to_view(
+            history, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     @expose_api
     def update(self, trans, id, payload, **kwd):
@@ -431,8 +406,8 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         history = self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
 
         self.history_deserializer.deserialize(history, payload, user=trans.user, trans=trans)
-        return self.history_serializer.serialize_to_view(history,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        return self.history_serializer.serialize_to_view(
+            history, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     @expose_api
     def archive_export(self, trans, id, **kwds):
@@ -513,6 +488,12 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             .filter_by(history=history, extension="fasta", deleted=False) \
             .order_by(model.HistoryDatasetAssociation.hid.desc())
         return {
-            'installed_builds'  : [{'label' : ins, 'value' : ins} for ins in installed_builds],
-            'fasta_hdas'        : [{'label' : '%s: %s' % (hda.hid, hda.name), 'value' : trans.security.encode_id(hda.id)} for hda in fasta_hdas],
+            'installed_builds': [{
+                'label': ins,
+                'value': ins
+            } for ins in installed_builds],
+            'fasta_hdas': [{
+                'label': '%s: %s' % (hda.hid, hda.name),
+                'value': trans.security.encode_id(hda.id)
+            } for hda in fasta_hdas],
         }

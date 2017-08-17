@@ -5,8 +5,7 @@ import logging
 
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
-from galaxy.exceptions import (InconsistentDatabase, InternalServerError,
-    RequestParameterInvalidException)
+from galaxy.exceptions import (InconsistentDatabase, InternalServerError, RequestParameterInvalidException)
 
 log = logging.getLogger(__name__)
 

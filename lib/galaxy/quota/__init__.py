@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 class NoQuotaAgent(object):
     """Base quota agent, always returns no quota"""
+
     def __init__(self, model):
         self.model = model
         self.sa_session = model.context
@@ -42,6 +43,7 @@ class NoQuotaAgent(object):
 
 class QuotaAgent(NoQuotaAgent):
     """Class that handles galaxy quotas"""
+
     def get_quota(self, user, nice_size=False):
         """
         Calculated like so:
@@ -106,7 +108,8 @@ class QuotaAgent(NoQuotaAgent):
         return self._default_quota(self.model.DefaultQuotaAssociation.types.REGISTERED)
 
     def _default_quota(self, default_type):
-        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(self.model.DefaultQuotaAssociation.table.c.type == default_type).first()
+        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(
+            self.model.DefaultQuotaAssociation.table.c.type == default_type).first()
         if not dqa:
             return None
         if dqa.quota.bytes < 0:
@@ -123,7 +126,8 @@ class QuotaAgent(NoQuotaAgent):
         for gqa in quota.groups:
             self.sa_session.delete(gqa)
         # Find the old default, assign the new quota if it exists
-        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(self.model.DefaultQuotaAssociation.table.c.type == default_type).first()
+        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(
+            self.model.DefaultQuotaAssociation.table.c.type == default_type).first()
         if dqa:
             dqa.quota = quota
         # Or create if necessary

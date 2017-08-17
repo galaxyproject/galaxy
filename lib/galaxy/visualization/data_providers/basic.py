@@ -10,7 +10,10 @@ class BaseDataProvider(object):
     and (b) write subsets of data to new datasets.
     """
 
-    def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None,
+    def __init__(self,
+                 converted_dataset=None,
+                 original_dataset=None,
+                 dependencies=None,
                  error_max_vals="Only the first %i values are returned."):
         """ Create basic data provider. """
         self.converted_dataset = converted_dataset
@@ -92,29 +95,21 @@ class ColumnDataProvider(BaseDataProvider):
 
         # skip comment lines (if any/avail)
         # pre: should have original_dataset and
-        if(skip_comments and
-                self.original_dataset.metadata.comment_lines and
-                start_val < self.original_dataset.metadata.comment_lines):
+        if (skip_comments and self.original_dataset.metadata.comment_lines and start_val < self.original_dataset.metadata.comment_lines):
             start_val = int(self.original_dataset.metadata.comment_lines)
 
         # columns is an array of ints for now (should handle column names later)
         columns = loads(columns)
         for column in columns:
-            assert((column < self.original_dataset.metadata.columns) and
-                   (column >= 0)), (
-                "column index (%d) must be positive and less" % (column) +
-                " than the number of columns: %d" % (self.original_dataset.metadata.columns))
+            assert ((column < self.original_dataset.metadata.columns)
+                    and (column >= 0)), ("column index (%d) must be positive and less" % (column) + " than the number of columns: %d" %
+                                         (self.original_dataset.metadata.columns))
         # print columns, start_val, max_vals, skip_comments, kwargs
 
         # set up the response, column lists
         response = {}
         response['data'] = data = [[] for column in columns]
-        response['meta'] = meta = [{
-            'min'   : None,
-            'max'   : None,
-            'count' : 0,
-            'sum'   : 0
-        } for column in columns]
+        response['meta'] = meta = [{'min': None, 'max': None, 'count': 0, 'sum': 0} for column in columns]
 
         column_types = [self.original_dataset.metadata.column_types[column] for column in columns]
 
@@ -157,11 +152,11 @@ class ColumnDataProvider(BaseDataProvider):
                     if column_val is not None:
 
                         # if numeric, maintain min, max, sum
-                        if(column_type == 'float' or column_type == 'int'):
-                            if((meta[index]['min'] is None) or (column_val < meta[index]['min'])):
+                        if (column_type == 'float' or column_type == 'int'):
+                            if ((meta[index]['min'] is None) or (column_val < meta[index]['min'])):
                                 meta[index]['min'] = column_val
 
-                            if((meta[index]['max'] is None) or (column_val > meta[index]['max'])):
+                            if ((meta[index]['max'] is None) or (column_val > meta[index]['max'])):
                                 meta[index]['max'] = column_val
 
                             meta[index]['sum'] += column_val
@@ -180,7 +175,7 @@ class ColumnDataProvider(BaseDataProvider):
             column_type = column_types[index]
             count = meta['count']
 
-            if((column_type == 'float' or column_type == 'int') and count):
+            if ((column_type == 'float' or column_type == 'int') and count):
                 meta['mean'] = float(meta['sum']) / count
 
                 sorted_data = sorted(response['data'][index])

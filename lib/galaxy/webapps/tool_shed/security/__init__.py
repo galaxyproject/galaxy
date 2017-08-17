@@ -10,7 +10,6 @@ log = logging.getLogger(__name__)
 
 
 class Action(object):
-
     def __init__(self, action, description, model):
         self.action = action
         self.description = description
@@ -56,7 +55,6 @@ class RBACAgent:
 
 
 class CommunityRBACAgent(RBACAgent):
-
     def __init__(self, model, permitted_actions=None):
         self.model = model
         if permitted_actions:

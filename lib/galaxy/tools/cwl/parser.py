@@ -18,8 +18,7 @@ from galaxy.util.odict import odict
 
 from .cwltool_deps import (
     ensure_cwltool_available,
-    process,
-)
+    process, )
 
 from .schema import non_strict_schema_loader, schema_loader
 
@@ -28,7 +27,6 @@ log = logging.getLogger(__name__)
 JOB_JSON_FILE = ".cwl_job.json"
 SECONDARY_FILES_EXTRA_PREFIX = "__secondary_files__"
 
-
 SUPPORTED_TOOL_REQUIREMENTS = [
     "CreateFileRequirement",
     "DockerRequirement",
@@ -36,9 +34,7 @@ SUPPORTED_TOOL_REQUIREMENTS = [
     "InlineJavascriptRequirement",
 ]
 
-
-SUPPORTED_WORKFLOW_REQUIREMENTS = SUPPORTED_TOOL_REQUIREMENTS + [
-]
+SUPPORTED_WORKFLOW_REQUIREMENTS = SUPPORTED_TOOL_REQUIREMENTS + []
 
 
 def tool_proxy(tool_path, strict_cwl_validation=True):
@@ -126,7 +122,6 @@ def check_requirements(rec, tool=True):
 
 @six.add_metaclass(ABCMeta)
 class ToolProxy(object):
-
     def __init__(self, tool, tool_path):
         self._tool = tool
         self._tool_path = tool_path
@@ -160,7 +155,6 @@ class ToolProxy(object):
 
 
 class CommandLineToolProxy(ToolProxy):
-
     def description(self):
         return self._tool.tool.get('doc')
 
@@ -216,7 +210,6 @@ class ExpressionToolProxy(CommandLineToolProxy):
 
 
 class JobProxy(object):
-
     def __init__(self, tool_proxy, input_dict, output_dict, job_directory):
         self._tool_proxy = tool_proxy
         self._input_dict = input_dict
@@ -241,13 +234,13 @@ class JobProxy(object):
     def _ensure_cwl_job_initialized(self):
         if self._cwl_job is None:
 
-            self._cwl_job = next(self._tool_proxy._tool.job(
-                self._input_dict,
-                self._output_callback,
-                basedir=self._job_directory,
-                select_resources=self._select_resources,
-                use_container=False
-            ))
+            self._cwl_job = next(
+                self._tool_proxy._tool.job(
+                    self._input_dict,
+                    self._output_callback,
+                    basedir=self._job_directory,
+                    select_resources=self._select_resources,
+                    use_container=False))
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")
 
     def _select_resources(self, request):
@@ -300,8 +293,7 @@ class JobProxy(object):
 
     def collect_outputs(self, tool_working_directory):
         if not self.is_command_line_job:
-            self.cwl_job().run(
-            )
+            self.cwl_job().run()
             return self._final_output
         else:
             return self.cwl_job().collect_outputs(tool_working_directory)
@@ -346,7 +338,6 @@ class JobProxy(object):
 
 
 class WorkflowProxy(object):
-
     def __init__(self, workflow, workflow_path):
         self._workflow = workflow
         self._workflow_path = workflow_path
@@ -385,7 +376,6 @@ class WorkflowProxy(object):
 
 
 class StepProxy(object):
-
     def __init__(self, workflow_proxy, step):
         self._workflow_proxy = workflow_proxy
         self._step = step
@@ -409,12 +399,7 @@ def _simple_field_union(field):
         value_name = "_cwl__value_"
         value_label = label
         value_description = description
-        return InputInstance(
-            value_name,
-            value_label,
-            value_description,
-            **kwds
-        )
+        return InputInstance(value_name, value_label, value_description, **kwds)
 
     select_options = []
     case_options = []
@@ -444,8 +429,7 @@ def _simple_field_union(field):
         name=case_name,
         label=case_label,
         description=False,
-        options=select_options,
-    )
+        options=select_options, )
 
     return ConditionalInstance(name, case_input, case_options)
 
@@ -518,11 +502,7 @@ def _field_metadata(field):
 def _simple_field_to_output(field):
     name = field["name"]
     output_data_class = field["type"]
-    output_instance = OutputInstance(
-        name,
-        output_data_type=output_data_class,
-        output_type=OUTPUT_TYPE.GLOB
-    )
+    output_instance = OutputInstance(name, output_data_type=output_data_class, output_type=OUTPUT_TYPE.GLOB)
     return output_instance
 
 
@@ -533,12 +513,10 @@ INPUT_TYPE = Bunch(
     TEXT="text",
     BOOLEAN="boolean",
     SELECT="select",
-    CONDITIONAL="conditional",
-)
+    CONDITIONAL="conditional", )
 
 
 class ConditionalInstance(object):
-
     def __init__(self, name, case, whens):
         self.input_type = INPUT_TYPE.CONDITIONAL
         self.name = name
@@ -551,8 +529,7 @@ class ConditionalInstance(object):
             name=self.name,
             type=INPUT_TYPE.CONDITIONAL,
             test=self.case.to_dict(),
-            when=odict(),
-        )
+            when=odict(), )
         for value, block in self.whens:
             as_dict["when"][value] = [i.to_dict() for i in block]
 
@@ -560,7 +537,6 @@ class ConditionalInstance(object):
 
 
 class SelectInputInstance(object):
-
     def __init__(self, name, label, description, options):
         self.input_type = INPUT_TYPE.SELECT
         self.name = name
@@ -575,13 +551,11 @@ class SelectInputInstance(object):
             label=self.label or self.name,
             help=self.description,
             type=self.input_type,
-            options=self.options,
-        )
+            options=self.options, )
         return as_dict
 
 
 class InputInstance(object):
-
     def __init__(self, name, label, description, input_type, array=False, area=False):
         self.input_type = input_type
         self.name = name
@@ -593,22 +567,14 @@ class InputInstance(object):
 
     def to_dict(self, itemwise=True):
         if itemwise and self.array:
-            as_dict = dict(
-                type="repeat",
-                name="%s_repeat" % self.name,
-                title="%s" % self.name,
-                blocks=[
-                    self.to_dict(itemwise=False)
-                ]
-            )
+            as_dict = dict(type="repeat", name="%s_repeat" % self.name, title="%s" % self.name, blocks=[self.to_dict(itemwise=False)])
         else:
             as_dict = dict(
                 name=self.name,
                 label=self.label or self.name,
                 help=self.description,
                 type=self.input_type,
-                optional=not self.required,
-            )
+                optional=not self.required, )
             if self.area:
                 as_dict["area"] = True
 
@@ -621,12 +587,10 @@ class InputInstance(object):
 
 OUTPUT_TYPE = Bunch(
     GLOB="glob",
-    STDOUT="stdout",
-)
+    STDOUT="stdout", )
 
 
 class OutputInstance(object):
-
     def __init__(self, name, output_data_type, output_type, path=None):
         self.name = name
         self.output_data_type = output_data_type
@@ -634,7 +598,4 @@ class OutputInstance(object):
         self.path = path
 
 
-__all__ = (
-    'tool_proxy',
-    'load_job_proxy',
-)
+__all__ = ('tool_proxy', 'load_job_proxy', )

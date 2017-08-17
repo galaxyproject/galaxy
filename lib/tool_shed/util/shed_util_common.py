@@ -13,12 +13,7 @@ import galaxy.tools.deps.requirements
 from galaxy import util
 from galaxy.util import checkers
 from galaxy.web import url_for
-from tool_shed.util import (
-    basic_util,
-    common_util,
-    hg_util,
-    repository_util
-)
+from tool_shed.util import (basic_util, common_util, hg_util, repository_util)
 
 log = logging.getLogger(__name__)
 
@@ -194,9 +189,11 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
     if repositories:
         if not isinstance(repositories, list):
             repositories = [repositories]
-        repository_params = [{'name': repository.name,
-                             'owner': repository.owner,
-                             'changeset_revision': repository.changeset_revision} for repository in repositories]
+        repository_params = [{
+            'name': repository.name,
+            'owner': repository.owner,
+            'changeset_revision': repository.changeset_revision
+        } for repository in repositories]
     else:
         if not isinstance(repo_info_dicts, list):
             repo_info_dicts = [repo_info_dicts]
@@ -206,17 +203,12 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
                 # repo_info_tuple is a list, but keep terminology
                 owner = repo_info_tuple[4]
                 changeset_revision = repo_info_tuple[2]
-                repository_params.append({'name': name,
-                                          'owner': owner,
-                                          'changeset_revision': changeset_revision})
+                repository_params.append({'name': name, 'owner': owner, 'changeset_revision': changeset_revision})
     pathspec = ["api", "repositories", "get_repository_revision_install_info"]
     tools = []
     for params in repository_params:
-        response = util.url_get(tool_shed_url,
-                                password_mgr=app.tool_shed_registry.url_auth(tool_shed_url),
-                                pathspec=pathspec,
-                                params=params
-                                )
+        response = util.url_get(
+            tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         json_response = json.loads(response)
         valid_tools = json_response[1].get('valid_tools', [])
         if valid_tools:
@@ -323,11 +315,8 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
             join_by_str = \
                 "<br/><br/>...some text eliminated here because file size is larger than maximum viewing size of %s...<br/><br/>" % \
                 util.nice_size(basic_util.MAX_DISPLAY_SIZE)
-            safe_str = util.shrink_string_by_size(safe_str,
-                                                  basic_util.MAX_DISPLAY_SIZE,
-                                                  join_by=join_by_str,
-                                                  left_larger=True,
-                                                  beginning_on_size_error=True)
+            safe_str = util.shrink_string_by_size(
+                safe_str, basic_util.MAX_DISPLAY_SIZE, join_by=join_by_str, left_larger=True, beginning_on_size_error=True)
         return safe_str
 
 
@@ -370,7 +359,8 @@ def get_repository_type_from_tool_shed(app, tool_shed_url, name, owner):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
     params = dict(name=name, owner=owner)
     pathspec = ['repository', 'get_repository_type']
-    repository_type = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    repository_type = util.url_get(
+        tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
     return repository_type
 
 
@@ -394,9 +384,7 @@ def get_tool_panel_config_tool_path_install_dir(app, repository):
     defined in a single shed-related tool panel config.
     """
     tool_shed = common_util.remove_port_from_tool_shed_url(str(repository.tool_shed))
-    relative_install_dir = '%s/repos/%s/%s/%s' % (tool_shed,
-                                                  str(repository.owner),
-                                                  str(repository.name),
+    relative_install_dir = '%s/repos/%s/%s/%s' % (tool_shed, str(repository.owner), str(repository.name),
                                                   str(repository.installed_changeset_revision))
     # Get the relative tool installation paths from each of the shed tool configs.
     shed_config_dict = repository.get_shed_config_dict(app)
@@ -481,22 +469,24 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         else:
             template = email_alert_template
         display_date = hg_util.get_readable_ctx_date(ctx)
-        admin_body = string.Template(template).safe_substitute(host=host,
-                                                               sharable_link=sharable_link,
-                                                               repository_name=repository.name,
-                                                               revision='%s:%s' % (str(ctx.rev()), ctx),
-                                                               display_date=display_date,
-                                                               description=ctx.description(),
-                                                               username=username,
-                                                               content_alert_str=content_alert_str)
-        body = string.Template(template).safe_substitute(host=host,
-                                                         sharable_link=sharable_link,
-                                                         repository_name=repository.name,
-                                                         revision='%s:%s' % (str(ctx.rev()), ctx),
-                                                         display_date=display_date,
-                                                         description=ctx.description(),
-                                                         username=username,
-                                                         content_alert_str='')
+        admin_body = string.Template(template).safe_substitute(
+            host=host,
+            sharable_link=sharable_link,
+            repository_name=repository.name,
+            revision='%s:%s' % (str(ctx.rev()), ctx),
+            display_date=display_date,
+            description=ctx.description(),
+            username=username,
+            content_alert_str=content_alert_str)
+        body = string.Template(template).safe_substitute(
+            host=host,
+            sharable_link=sharable_link,
+            repository_name=repository.name,
+            revision='%s:%s' % (str(ctx.rev()), ctx),
+            display_date=display_date,
+            description=ctx.description(),
+            username=username,
+            content_alert_str='')
         admin_users = app.config.get("admin_users", "").split(",")
         frm = email_from
         if new_repo_alert:
@@ -593,11 +583,7 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
                 filename = '%s/' % filename
                 full_path = '%s/' % full_path
                 is_folder = True
-            node = {"title": filename,
-                    "isFolder": is_folder,
-                    "isLazy": is_folder,
-                    "tooltip": full_path,
-                    "key": full_path}
+            node = {"title": filename, "isFolder": is_folder, "isLazy": is_folder, "tooltip": full_path, "key": full_path}
             folder_contents.append(node)
     return folder_contents
 

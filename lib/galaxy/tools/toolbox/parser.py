@@ -35,7 +35,6 @@ class ToolConfSource(object):
 
 
 class XmlToolConfSource(ToolConfSource):
-
     def __init__(self, config_filename):
         tree = parse_xml(config_filename)
         self.root = tree.getroot()
@@ -56,7 +55,6 @@ class XmlToolConfSource(ToolConfSource):
 
 
 class YamlToolConfSource(ToolConfSource):
-
     def __init__(self, config_filename):
         with open(config_filename, "r") as f:
             as_dict = yaml.load(f)
@@ -122,7 +120,6 @@ class ToolConfItem(object):
 
 
 class ToolConfSection(ToolConfItem):
-
     def __init__(self, attributes, items, elem=None):
         super(ToolConfSection, self).__init__('section', attributes, elem)
         self.items = items
@@ -152,7 +149,4 @@ def get_toolbox_parser(config_filename):
         return XmlToolConfSource(config_filename)
 
 
-__all__ = (
-    "get_toolbox_parser",
-    "ensure_tool_conf_item",
-)
+__all__ = ("get_toolbox_parser", "ensure_tool_conf_item", )

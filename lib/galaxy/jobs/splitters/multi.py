@@ -5,7 +5,6 @@ import inspect
 
 from galaxy import model, util
 
-
 log = logging.getLogger(__name__)
 
 
@@ -153,8 +152,7 @@ def do_merge(job_wrapper, task_wrappers):
                 if output_files:
                     log.debug('files %s ' % output_files)
                     if len(output_files) < len(task_dirs):
-                        log.debug('merging only %i out of expected %i files for %s'
-                                  % (len(output_files), len(task_dirs), output_file_name))
+                        log.debug('merging only %i out of expected %i files for %s' % (len(output_files), len(task_dirs), output_file_name))
                     # First two args to merge always output_files and path of dataset. More
                     # complicated merge methods may require more parameters. Set those up here.
                     extra_merge_arg_names = inspect.getargspec(output_type.merge).args[2:]

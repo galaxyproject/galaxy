@@ -14,8 +14,7 @@ metadata = MetaData()
 UserPreference_table = Table("user_preference", metadata,
                              Column("id", Integer, primary_key=True),
                              Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                             Column("name", Unicode(255), index=True),
-                             Column("value", Unicode(1024)))
+                             Column("name", Unicode(255), index=True), Column("value", Unicode(1024)))
 
 
 def upgrade(migrate_engine):

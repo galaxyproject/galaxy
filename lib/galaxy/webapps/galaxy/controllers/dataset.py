@@ -44,7 +44,7 @@ class HistoryDatasetAssociationListGrid(grids.Grid):
 
         def get_accepted_filters(self):
             """ Returns a list of accepted filters for this column. """
-            accepted_filter_labels_and_vals = {"Active" : "False", "Deleted" : "True", "All": "All"}
+            accepted_filter_labels_and_vals = {"Active": "False", "Deleted": "True", "All": "All"}
             accepted_filters = []
             for label, val in accepted_filter_labels_and_vals.items():
                 args = {self.key: val}
@@ -56,21 +56,31 @@ class HistoryDatasetAssociationListGrid(grids.Grid):
     model_class = model.HistoryDatasetAssociation
     default_sort_key = "-update_time"
     columns = [
-        grids.TextColumn("Name", key="name",
-                         # Link name to dataset's history.
-                         link=(lambda item: iff(item.history.deleted, None, dict(operation="switch", id=item.id))), filterable="advanced", attach_popup=True),
-        HistoryColumn("History", key="history", sortable=False, target="inbound",
-                      link=(lambda item: iff(item.history.deleted, None, dict(operation="switch_history", id=item.id)))),
-        grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid"),
+        grids.TextColumn(
+            "Name",
+            key="name",
+            # Link name to dataset's history.
+            link=(lambda item: iff(item.history.deleted, None, dict(operation="switch", id=item.id))),
+            filterable="advanced",
+            attach_popup=True),
+        HistoryColumn(
+            "History",
+            key="history",
+            sortable=False,
+            target="inbound",
+            link=(lambda item: iff(item.history.deleted, None, dict(operation="switch_history", id=item.id)))),
+        grids.IndividualTagsColumn(
+            "Tags",
+            key="tags",
+            model_tag_association_class=model.HistoryDatasetAssociationTagAssociation,
+            filterable="advanced",
+            grid_name="HistoryDatasetAssocationListGrid"),
         StatusColumn("Status", key="deleted", attach_popup=False),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
     ]
     columns.append(
         grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[2]],
-            key="free-text-search", visible=False, filterable="standard")
-    )
+            "Search", cols_to_filter=[columns[0], columns[2]], key="free-text-search", visible=False, filterable="standard"))
     operations = [
         grids.GridOperation("Copy to current history", condition=(lambda item: not item.deleted), async_compatible=True),
     ]
@@ -257,9 +267,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     + trans.sa_session.query(self.app.model.JobToOutputDatasetAssociation) \
                     .filter_by(dataset_id=dataset_id) \
                     .all():
-                if job_to_dataset_association.job.state not in [job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED]:
+                if job_to_dataset_association.job.state not in [
+                        job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR,
+                        job_to_dataset_association.job.states.DELETED
+                ]:
                     return False
             return True
+
         if hid is not None:
             history = trans.get_history()
             # TODO: hid handling
@@ -270,30 +284,23 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
         else:
             trans.log_event("dataset_id and hid are both None, cannot load a dataset to edit")
-            return {
-                status: 'error',
-                message: 'You must provide a history dataset id to edit.'
-            }
+            return {status: 'error', message: 'You must provide a history dataset id to edit.'}
         if data is None:
-            trans.log_event("Problem retrieving dataset (encoded: %s, decoded: %s) with history id %s." % (str(dataset_id), str(id), str(hid)))
-            return {
-                status: 'error',
-                message: "History dataset id is invalid."
-            }
+            trans.log_event("Problem retrieving dataset (encoded: %s, decoded: %s) with history id %s." % (str(dataset_id), str(id),
+                                                                                                           str(hid)))
+            return {status: 'error', message: "History dataset id is invalid."}
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
             trans.log_event("User attempted to edit an HDA they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
             # Do not reveal the dataset's existence
-            return {
-                status: 'error',
-                message: "History dataset id is invalid."
-            }
+            return {status: 'error', message: "History dataset id is invalid."}
         current_user_roles = trans.get_current_user_roles()
         if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
             # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
             # permission.  In this case, we'll reset this permission to the hda user's private role.
-            manage_permissions_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action)
-            permissions = {manage_permissions_action : [trans.app.security_agent.get_private_user_role(data.history.user)]}
+            manage_permissions_action = trans.app.security_agent.get_action(
+                trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action)
+            permissions = {manage_permissions_action: [trans.app.security_agent.get_private_user_role(data.history.user)]}
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
         if self._can_access_dataset(trans, data):
             if data.state == trans.model.Dataset.states.UPLOAD:
@@ -304,7 +311,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             params = util.Params(kwd, sanitize=False)
             if params.change:
                 # The user clicked the Save button on the 'Change data type' form
-                if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(params.datatype).allow_datatype_change:
+                if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(
+                        params.datatype).allow_datatype_change:
                     # prevent modifying datatype when dataset is queued or running as input/output
                     if not __ok_to_edit_metadata(data.id):
                         message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
@@ -312,10 +320,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     else:
                         trans.app.datatypes_registry.change_datatype(data, params.datatype)
                         trans.sa_session.flush()
-                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
+                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                            trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data},
+                            overwrite=False)  # overwrite is False as per existing behavior
                         message = "Changed the type of dataset %s to %s." % (to_unicode(data.name), params.datatype)
                 else:
-                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % (data.extension, params.datatype)
+                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % (data.extension,
+                                                                                                                        params.datatype)
                     error = True
             elif params.save:
                 # The user clicked the Save button on the 'Edit Attributes' form
@@ -335,36 +346,36 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         self.add_item_annotation(trans.sa_session, trans.get_user(), data, annotation)
                     # This block on controller code is inactive until the 'extended_metadata' edit box is added back into the UI
                     # Add or delete extended metadata
-#                    if params.extended_metadata:
-#                        em_string = params.extended_metadata
-#                        if len(em_string):
-#                            em_payload = None
-#                            try:
-#                                em_payload = loads(em_string)
-#                            except Exception as e:
-#                                message = 'Invalid JSON input'
-#                                error = True
-#                            if em_payload is not None:
-#                                if data is not None:
-#                                    ex_obj = self.get_item_extended_metadata_obj(trans, data)
-#                                    if ex_obj is not None:
-#                                        self.unset_item_extended_metadata_obj(trans, data)
-#                                        self.delete_extended_metadata(trans, ex_obj)
-#                                    ex_obj = self.create_extended_metadata(trans, em_payload)
-#                                    self.set_item_extended_metadata_obj(trans, data, ex_obj)
-#                                    message = "Updated Extended metadata '%s'." % data.name
-#                                    status = 'done'
-#                                else:
-#                                    message = "data not found"
-#                                    error = True
-#                    else:
-#                        if data is not None:
-#                            ex_obj = self.get_item_extended_metadata_obj(trans, data)
-#                            if ex_obj is not None:
-#                                self.unset_item_extended_metadata_obj(trans, data)
-#                                self.delete_extended_metadata(trans, ex_obj)
-#                        message = "Deleted Extended metadata '%s'." % data.name
-#                        status = 'done'
+                    #                    if params.extended_metadata:
+                    #                        em_string = params.extended_metadata
+                    #                        if len(em_string):
+                    #                            em_payload = None
+                    #                            try:
+                    #                                em_payload = loads(em_string)
+                    #                            except Exception as e:
+                    #                                message = 'Invalid JSON input'
+                    #                                error = True
+                    #                            if em_payload is not None:
+                    #                                if data is not None:
+                    #                                    ex_obj = self.get_item_extended_metadata_obj(trans, data)
+                    #                                    if ex_obj is not None:
+                    #                                        self.unset_item_extended_metadata_obj(trans, data)
+                    #                                        self.delete_extended_metadata(trans, ex_obj)
+                    #                                    ex_obj = self.create_extended_metadata(trans, em_payload)
+                    #                                    self.set_item_extended_metadata_obj(trans, data, ex_obj)
+                    #                                    message = "Updated Extended metadata '%s'." % data.name
+                    #                                    status = 'done'
+                    #                                else:
+                    #                                    message = "data not found"
+                    #                                    error = True
+                    #                    else:
+                    #                        if data is not None:
+                    #                            ex_obj = self.get_item_extended_metadata_obj(trans, data)
+                    #                            if ex_obj is not None:
+                    #                                self.unset_item_extended_metadata_obj(trans, data)
+                    #                                self.delete_extended_metadata(trans, ex_obj)
+                    #                        message = "Deleted Extended metadata '%s'." % data.name
+                    #                        status = 'done'
 
                     # If setting metadata previously failed and all required elements have now been set, clear the failed state.
                     if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
@@ -391,7 +402,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             if spec.get('default'):
                                 setattr(data.metadata, name, spec.unwrap(spec.get('default')))
                     message = 'Attributes have been queued to be updated.'
-                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data})
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                        trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data})
                     trans.sa_session.flush()
             elif params.convert_data:
                 target_type = kwd.get("target_type", None)
@@ -399,10 +411,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     message = data.datatype.convert_dataset(trans, data, target_type)
             elif params.update_roles_button:
                 if not trans.user:
-                    return {
-                        status: 'error',
-                        message: "You must be logged in if you want to change permissions."
-                    }
+                    return {status: 'error', message: "You must be logged in if you want to change permissions."}
                 if trans.app.security_agent.can_manage_dataset(current_user_roles, data.dataset):
                     permitted_actions = trans.app.model.Dataset.permitted_actions.items()
                     payload_permissions = json.loads(params.permissions)
@@ -412,7 +421,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         trans.app.security_agent.derive_roles_from_access(trans, data.dataset.id, 'root', **payload_permissions)
                     if error:
                         # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-                        access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
+                        access_action = trans.app.security_agent.get_action(
+                            trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
                         permissions[access_action] = data.dataset.get_access_roles(trans)
                         status = 'error'
                     else:
@@ -437,7 +447,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     data.metadata.dbkey = data.dbkey
             # let's not overwrite the imported datatypes module with the variable datatypes?
             # the built-in 'id' is overwritten in lots of places as well
-            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change]
+            ldatatypes = [(dtype_name, dtype_name)
+                          for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems()
+                          if dtype_value.allow_datatype_change]
             ldatatypes.sort()
             all_roles = trans.app.security_agent.get_legitimate_roles(trans, data.dataset, 'root')
             data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
@@ -450,26 +462,21 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             convert_datatype_inputs = list()
             permission_inputs = list()
 
-            edit_attributes_inputs.append({
-                'name' : 'name',
-                'type' : 'text',
-                'label': 'Name:',
-                'value': data.get_display_name()
-            })
+            edit_attributes_inputs.append({'name': 'name', 'type': 'text', 'label': 'Name:', 'value': data.get_display_name()})
+
+            edit_attributes_inputs.append({'name': 'info', 'type': 'text', 'label': 'Info:', 'value': data.info})
 
             edit_attributes_inputs.append({
-                'name' : 'info',
-                'type' : 'text',
-                'label': 'Info:',
-                'value': data.info
-            })
-
-            edit_attributes_inputs.append({
-                'name' : 'annotation',
-                'type' : 'text',
-                'label': 'Annotation',
-                'value': self.get_item_annotation_str(trans.sa_session, trans.user, data),
-                'help' : 'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'
+                'name':
+                'annotation',
+                'type':
+                'text',
+                'label':
+                'Annotation',
+                'value':
+                self.get_item_annotation_str(trans.sa_session, trans.user, data),
+                'help':
+                'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'
             })
 
             for name, spec in data_metadata:
@@ -496,12 +503,18 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
 
             if data.missing_meta():
                 edit_attributes_inputs.append({
-                    'name' : 'errormsg',
-                    'type' : 'text',
-                    'label': 'Error Message',
-                    'value': 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.',
-                    'class'  : 'errormessagesmall',
-                    'readonly' : True
+                    'name':
+                    'errormsg',
+                    'type':
+                    'text',
+                    'label':
+                    'Error Message',
+                    'value':
+                    'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.',
+                    'class':
+                    'errormessagesmall',
+                    'readonly':
+                    True
                 })
 
             convert_inputs.append({
@@ -513,10 +526,14 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             })
 
             convert_datatype_inputs.append({
-                'type': 'select',
-                'name': 'datatype',
-                'label': 'New Type:',
-                'help': 'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',
+                'type':
+                'select',
+                'name':
+                'datatype',
+                'label':
+                'New Type:',
+                'help':
+                'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',
                 'options': [(ext_name, ext_id) for ext_id, ext_name in ldatatypes],
                 'value': [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext]
             })
@@ -587,10 +604,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 'permission_inputs': permission_inputs
             }
         else:
-            return {
-                status: 'error',
-                message: "You do not have permission to edit this dataset's ( id: %s ) information." % str(dataset_id)
-            }
+            return {status: 'error', message: "You do not have permission to edit this dataset's ( id: %s ) information." % str(dataset_id)}
 
     @web.expose
     @web.json
@@ -681,7 +695,16 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         decoded_id = self.decode_id(id)
         dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
         dataset = self.hda_manager.error_if_uploading(dataset)
-        return_dict = {"name" : dataset.name, "link" : url_for(controller='dataset', action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id(dataset.id))}
+        return_dict = {
+            "name":
+            dataset.name,
+            "link":
+            url_for(
+                controller='dataset',
+                action="display_by_username_and_slug",
+                username=dataset.history.user.username,
+                slug=trans.security.encode_id(dataset.id))
+        }
         return return_dict
 
     @web.expose
@@ -738,7 +761,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
 
             # If data is binary or an image, stream without template; otherwise, use display template.
             # TODO: figure out a way to display images in display template.
-            if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image) or isinstance(dataset.datatype, datatypes.text.Html):
+            if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image) or isinstance(
+                    dataset.datatype, datatypes.text.Html):
                 trans.response.set_content_type(dataset.get_mime())
                 return open(dataset.file_name)
             else:
@@ -752,10 +776,15 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         user_item_rating = 0
                 ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, dataset)
 
-                return trans.fill_template_mako("/dataset/display.mako", item=dataset, item_data=dataset_data,
-                                                truncated=truncated, user_item_rating=user_item_rating,
-                                                ave_item_rating=ave_item_rating, num_ratings=num_ratings,
-                                                first_chunk=first_chunk)
+                return trans.fill_template_mako(
+                    "/dataset/display.mako",
+                    item=dataset,
+                    item_data=dataset_data,
+                    truncated=truncated,
+                    user_item_rating=user_item_rating,
+                    ave_item_rating=ave_item_rating,
+                    num_ratings=num_ratings,
+                    first_chunk=first_chunk)
         else:
             raise web.httpexceptions.HTTPNotFound()
 
@@ -804,7 +833,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     def display_at(self, trans, dataset_id, filename=None, **kwd):
         """Sets up a dataset permissions so it is viewable at an external site"""
         if not trans.app.config.enable_old_display_applications:
-            return trans.show_error_message("This method of accessing external display applications has been disabled by a Galaxy administrator.")
+            return trans.show_error_message(
+                "This method of accessing external display applications has been disabled by a Galaxy administrator.")
         site = filename
         data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(dataset_id)
         if not data:
@@ -821,10 +851,21 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.app.host_security_agent.set_dataset_permissions(data, trans.user, site)
             return trans.response.send_redirect(redirect_url)
         else:
-            return trans.show_error_message("You are not allowed to view this dataset at external sites.  Please contact your Galaxy administrator to acquire management permissions for this dataset.")
+            return trans.show_error_message(
+                "You are not allowed to view this dataset at external sites.  Please contact your Galaxy administrator to acquire management permissions for this dataset."
+            )
 
     @web.expose
-    def display_application(self, trans, dataset_id=None, user_id=None, app_name=None, link_name=None, app_action=None, action_param=None, action_param_extra=None, **kwds):
+    def display_application(self,
+                            trans,
+                            dataset_id=None,
+                            user_id=None,
+                            app_name=None,
+                            link_name=None,
+                            app_action=None,
+                            action_param=None,
+                            action_param_extra=None,
+                            **kwds):
         """Access to external display applications"""
         # Build list of parameters to pass in to display application logic (app_kwds)
         app_kwds = {}
@@ -872,7 +913,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             elif data.deleted:
                 msg.append(('This dataset has been deleted, you cannot view it at an external display application.', 'error'))
             elif data.state != data.states.OK:
-                msg.append(('You must wait for this dataset to be created before you can view it at an external display application.', 'info'))
+                msg.append(('You must wait for this dataset to be created before you can view it at an external display application.',
+                            'info'))
                 refresh = True
             else:
                 # We have permissions, dataset is not deleted and is in OK state, allow access
@@ -894,7 +936,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         if value.parameter.type == 'data':
                             try:
                                 if action_param_extra:
-                                    assert value.parameter.allow_extra_files_access, "Extra file content requested (%s), but allow_extra_files_access is False." % (action_param_extra)
+                                    assert value.parameter.allow_extra_files_access, "Extra file content requested (%s), but allow_extra_files_access is False." % (
+                                        action_param_extra)
                                     file_name = os.path.join(value.extra_files_path, action_param_extra)
                                 else:
                                     file_name = value.file_name
@@ -919,21 +962,26 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 else:
                     if app_action is None:
                         if trans.history != data.history:
-                            msg.append(('You must import this dataset into your current history before you can view it at the desired display application.', 'error'))
+                            msg.append((
+                                'You must import this dataset into your current history before you can view it at the desired display application.',
+                                'error'))
                         else:
                             refresh = True
-                            msg.append(('Launching this display application required additional datasets to be generated, you can view the status of these jobs below. ', 'info'))
+                            msg.append((
+                                'Launching this display application required additional datasets to be generated, you can view the status of these jobs below. ',
+                                'info'))
                             if not display_link.preparing_display():
                                 display_link.prepare_display()
                             preparable_steps = display_link.get_prepare_steps()
                     else:
                         raise Exception('Attempted a view action (%s) on a non-ready display application' % app_action)
-            return trans.fill_template_mako("dataset/display_application/display.mako",
-                                            msg=msg,
-                                            display_app=display_app,
-                                            display_link=display_link,
-                                            refresh=refresh,
-                                            preparable_steps=preparable_steps)
+            return trans.fill_template_mako(
+                "dataset/display_application/display.mako",
+                msg=msg,
+                display_app=display_app,
+                display_link=display_link,
+                refresh=refresh,
+                preparable_steps=preparable_steps)
         return trans.show_error_message('You do not have permission to view this dataset at an external display application.')
 
     def _delete(self, trans, dataset_id):
@@ -1064,7 +1112,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     @web.expose
     def delete(self, trans, dataset_id, filename, show_deleted_on_refresh=False):
         message, status = self._delete(trans, dataset_id)
-        return trans.response.send_redirect(web.url_for(controller='root', action='history', show_deleted=show_deleted_on_refresh, message=message, status=status))
+        return trans.response.send_redirect(
+            web.url_for(controller='root', action='history', show_deleted=show_deleted_on_refresh, message=message, status=status))
 
     @web.expose
     def delete_async(self, trans, dataset_id, filename):
@@ -1077,7 +1126,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     @web.expose
     def undelete(self, trans, dataset_id, filename):
         message, status = self._undelete(trans, dataset_id)
-        return trans.response.send_redirect(web.url_for(controller='root', action='history', show_deleted=True, message=message, status=status))
+        return trans.response.send_redirect(
+            web.url_for(controller='root', action='history', show_deleted=True, message=message, status=status))
 
     @web.expose
     def undelete_async(self, trans, dataset_id, filename):
@@ -1100,7 +1150,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         else:
             message = "Removal of datasets by users is not allowed in this Galaxy instance.  Please contact your Galaxy administrator."
             status = 'error'
-        return trans.response.send_redirect(web.url_for(controller='root', action='history', show_deleted=show_deleted_on_refresh, message=message, status=status))
+        return trans.response.send_redirect(
+            web.url_for(controller='root', action='history', show_deleted=show_deleted_on_refresh, message=message, status=status))
 
     @web.expose
     def purge_async(self, trans, dataset_id, filename):
@@ -1155,27 +1206,35 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     except:
                         params_objects = job.get_param_values(trans.app, ignore_errors=True)
                         # use different param_objects in the following line, since we want to display original values as much as possible
-                        upgrade_messages = tool.check_and_update_param_values(job.get_param_values(trans.app, ignore_errors=True),
-                                                                              trans,
-                                                                              update_values=False)
+                        upgrade_messages = tool.check_and_update_param_values(
+                            job.get_param_values(trans.app, ignore_errors=True), trans, update_values=False)
                         has_parameter_errors = True
                 except:
                     pass
         if job is None:
             return trans.show_error_message("Job information is not available for this dataset.")
         # TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
-        return trans.fill_template("show_params.mako",
-                                   inherit_chain=inherit_chain,
-                                   history=trans.get_history(),
-                                   hda=hda,
-                                   job=job,
-                                   tool=tool,
-                                   params_objects=params_objects,
-                                   upgrade_messages=upgrade_messages,
-                                   has_parameter_errors=has_parameter_errors)
+        return trans.fill_template(
+            "show_params.mako",
+            inherit_chain=inherit_chain,
+            history=trans.get_history(),
+            hda=hda,
+            job=job,
+            tool=tool,
+            params_objects=params_objects,
+            upgrade_messages=upgrade_messages,
+            has_parameter_errors=has_parameter_errors)
 
     @web.expose
-    def copy_datasets(self, trans, source_history=None, source_content_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd):
+    def copy_datasets(self,
+                      trans,
+                      source_history=None,
+                      source_content_ids="",
+                      target_history_id=None,
+                      target_history_ids="",
+                      new_history_name="",
+                      do_copy=False,
+                      **kwd):
         user = trans.get_user()
         if source_history is not None:
             decoded_source_history_id = self.decode_id(source_history)
@@ -1187,7 +1246,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if source_content_ids:
             if not isinstance(source_content_ids, list):
                 source_content_ids = source_content_ids.split(",")
-            encoded_dataset_collection_ids = [s[len("dataset_collection|"):] for s in source_content_ids if s.startswith("dataset_collection|")]
+            encoded_dataset_collection_ids = [
+                s[len("dataset_collection|"):] for s in source_content_ids if s.startswith("dataset_collection|")
+            ]
             encoded_dataset_ids = [s[len("dataset|"):] for s in source_content_ids if s.startswith("dataset|")]
             decoded_dataset_collection_ids = set(map(self.decode_id, encoded_dataset_collection_ids))
             decoded_dataset_ids = set(map(self.decode_id, encoded_dataset_ids))
@@ -1220,13 +1281,18 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     trans.sa_session.flush()
                     target_history_ids.append(new_history.id)
                 if user:
-                    target_histories = [hist for hist in map(trans.sa_session.query(trans.app.model.History).get, target_history_ids) if hist is not None and hist.user == user]
+                    target_histories = [
+                        hist for hist in map(trans.sa_session.query(trans.app.model.History).get, target_history_ids)
+                        if hist is not None and hist.user == user
+                    ]
                 else:
                     target_histories = [history]
                 if len(target_histories) != len(target_history_ids):
-                    error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % (len(target_history_ids) - len(target_histories))
+                    error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % (
+                        len(target_history_ids) - len(target_histories))
                 source_contents = map(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get, decoded_dataset_ids)
-                source_contents.extend(map(trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get, decoded_dataset_collection_ids))
+                source_contents.extend(
+                    map(trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get, decoded_dataset_collection_ids))
                 source_contents.sort(key=lambda content: content.hid)
                 for content in source_contents:
                     if content is None:
@@ -1248,30 +1314,33 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 if current_history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
-                hist_names_str = ", ".join(['<a href="%s" target="_top">%s</a>' %
-                                            (url_for(controller="history", action="switch_to_history",
-                                                     hist_id=trans.security.encode_id(hist.id)), escape(hist.name))
-                                            for hist in target_histories])
+                hist_names_str = ", ".join([
+                    '<a href="%s" target="_top">%s</a>' %
+                    (url_for(controller="history", action="switch_to_history", hist_id=trans.security.encode_id(hist.id)),
+                     escape(hist.name)) for hist in target_histories
+                ])
                 num_source = len(source_content_ids) - invalid_contents
                 num_target = len(target_histories)
-                done_msg = "%i %s copied to %i %s: %s." % (num_source, inflector.cond_plural(num_source, "dataset"), num_target, inflector.cond_plural(num_target, "history"), hist_names_str)
+                done_msg = "%i %s copied to %i %s: %s." % (num_source, inflector.cond_plural(num_source, "dataset"), num_target,
+                                                           inflector.cond_plural(num_target, "history"), hist_names_str)
                 trans.sa_session.refresh(history)
         source_contents = history.active_contents
         target_histories = [history]
         if user:
             target_histories = user.active_histories
-        return trans.fill_template("/dataset/copy_view.mako",
-                                   source_history=history,
-                                   current_history=current_history,
-                                   source_content_ids=source_content_ids,
-                                   target_history_id=target_history_id,
-                                   target_history_ids=target_history_ids,
-                                   source_contents=source_contents,
-                                   target_histories=target_histories,
-                                   new_history_name=new_history_name,
-                                   done_msg=done_msg,
-                                   error_msg=error_msg,
-                                   refresh_frames=refresh_frames)
+        return trans.fill_template(
+            "/dataset/copy_view.mako",
+            source_history=history,
+            current_history=current_history,
+            source_content_ids=source_content_ids,
+            target_history_id=target_history_id,
+            target_history_ids=target_history_ids,
+            source_contents=source_contents,
+            target_histories=target_histories,
+            new_history_name=new_history_name,
+            done_msg=done_msg,
+            error_msg=error_msg,
+            refresh_frames=refresh_frames)
 
     def _copy_datasets(self, trans, dataset_ids, target_histories, imported=False):
         """ Helper method for copying datasets. """
@@ -1285,7 +1354,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # User must own target histories to copy datasets to them.
             for history in target_histories:
                 if user != history.user:
-                    error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % (len(target_histories))
+                    error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % (
+                        len(target_histories))
             for dataset_id in dataset_ids:
                 decoded_id = self.decode_id(dataset_id)
                 data = self.hda_manager.get_accessible(decoded_id, trans.user)

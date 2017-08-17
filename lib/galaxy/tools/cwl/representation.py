@@ -14,13 +14,7 @@ log = logging.getLogger(__name__)
 
 NOT_PRESENT = object()
 
-GALAXY_TO_CWL_TYPES = {
-    'integer': 'integer',
-    'float': 'float',
-    'data': 'File',
-    'boolean': 'boolean',
-    'text': 'text'
-}
+GALAXY_TO_CWL_TYPES = {'integer': 'integer', 'float': 'float', 'data': 'File', 'boolean': 'boolean', 'text': 'text'}
 
 
 def to_cwl_job(tool, param_dict, local_working_directory):
@@ -57,8 +51,7 @@ def to_cwl_job(tool, param_dict, local_working_directory):
                     os.symlink(secondary_file_path, new_input_path + secondary_file_name)
                 path = new_input_path
 
-            return {"location": path,
-                    "class": "File"}
+            return {"location": path, "class": "File"}
         elif cwl_type == "integer":
             return int(str(param_dict_value))
         elif cwl_type == "long":
@@ -132,10 +125,8 @@ def to_galaxy_parameters(tool, as_dict):
                 cwl_type = "null"
             elif (as_dict_value is NOT_PRESENT or as_dict_value is None):
                 raise RequestParameterInvalidException(
-                    "Cannot translate CWL datatype - value [%s] of type [%s] with case_strings [%s]. Non-null property must be set." % (
-                        as_dict_value, type(as_dict_value), case_strings
-                    )
-                )
+                    "Cannot translate CWL datatype - value [%s] of type [%s] with case_strings [%s]. Non-null property must be set." %
+                    (as_dict_value, type(as_dict_value), case_strings))
             elif isinstance(as_dict_value, bool) and "boolean" in case_strings:
                 cwl_type = "boolean"
             elif isinstance(as_dict_value, int) and "integer" in case_strings:
@@ -154,11 +145,8 @@ def to_galaxy_parameters(tool, as_dict):
             elif "json" in case_strings and as_dict_value is not None:
                 cwl_type = "json"
             else:
-                raise RequestParameterInvalidException(
-                    "Cannot translate CWL datatype - value [%s] of type [%s] with case_strings [%s]." % (
-                        as_dict_value, type(as_dict_value), case_strings
-                    )
-                )
+                raise RequestParameterInvalidException("Cannot translate CWL datatype - value [%s] of type [%s] with case_strings [%s]." %
+                                                       (as_dict_value, type(as_dict_value), case_strings))
             galaxy_request["%s|_cwl__type_" % input_name] = cwl_type
             if cwl_type != "null":
                 current_case_index = input.get_current_case(cwl_type)

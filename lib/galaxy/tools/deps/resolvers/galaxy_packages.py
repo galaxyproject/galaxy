@@ -7,8 +7,7 @@ from os.path import (
     isdir,
     islink,
     join,
-    realpath,
-)
+    realpath, )
 
 from .resolver_mixins import UsesToolDependencyDirMixin
 
@@ -17,8 +16,7 @@ from ..resolvers import (
     DependencyResolver,
     ListableDependencyResolver,
     MappableDependencyResolver,
-    NullDependency,
-)
+    NullDependency, )
 
 log = logging.getLogger(__name__)
 
@@ -133,8 +131,4 @@ def _is_dependency_directory(directory):
     return exists(join(directory, 'env.sh')) or exists(join(directory, 'bin'))
 
 
-__all__ = (
-    'GalaxyPackageDependency',
-    'GalaxyPackageDependencyResolver',
-    'ToolShedDependency'
-)
+__all__ = ('GalaxyPackageDependency', 'GalaxyPackageDependencyResolver', 'ToolShedDependency')

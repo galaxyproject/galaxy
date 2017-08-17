@@ -18,7 +18,6 @@ from galaxy.tools.deps.docker_util import DockerVolume
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 
-
 IS_OS_X = _platform == "darwin"
 
 CONTAINER_NAME_PREFIX = 'gie_'
@@ -27,7 +26,6 @@ log = logging.getLogger(__name__)
 
 
 class InteractiveEnvironmentRequest(object):
-
     def __init__(self, trans, plugin):
         self.trans = trans
         self.log = log
@@ -72,16 +70,10 @@ class InteractiveEnvironmentRequest(object):
                 log.error("Could not change permissions of tmpdir %s" % self.temp_dir)
                 # continue anyway
 
-        # This duplicates the logic in the proxy manager
+            # This duplicates the logic in the proxy manager
         if self.attr.galaxy_config.dynamic_proxy_external_proxy:
-            self.attr.proxy_prefix = '/'.join(
-                (
-                    '',
-                    self.attr.galaxy_config.cookie_path.strip('/'),
-                    self.attr.galaxy_config.dynamic_proxy_prefix.strip('/'),
-                    self.attr.viz_id,
-                )
-            )
+            self.attr.proxy_prefix = '/'.join(('', self.attr.galaxy_config.cookie_path.strip('/'),
+                                               self.attr.galaxy_config.dynamic_proxy_prefix.strip('/'), self.attr.viz_id, ))
         else:
             self.attr.proxy_prefix = ''
         # If cookie_path is unset (thus '/'), the proxy prefix ends up with
@@ -162,8 +154,7 @@ class InteractiveEnvironmentRequest(object):
         if key:
             containers = build_container_interfaces(
                 self.attr.galaxy_config.containers_config_file,
-                containers_conf=self.attr.galaxy_config.containers_conf,
-            )
+                containers_conf=self.attr.galaxy_config.containers_conf, )
             try:
                 self.attr.container_interface = containers[key]
             except KeyError:
@@ -293,8 +284,7 @@ class InteractiveEnvironmentRequest(object):
             environment=env_str,
             import_volume_str=import_volume_str,
             volume_str=volume_str,
-            image=image,
-        )
+            image=image, )
         return command
 
     @property
@@ -351,7 +341,9 @@ class InteractiveEnvironmentRequest(object):
                         port_mapping = _port_mapping
                         break
             else:
-                log.warning("Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first. Please set 'docker_connect_port' in your config file to be more specific.")
+                log.warning(
+                    "Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first. Please set 'docker_connect_port' in your config file to be more specific."
+                )
         elif len(port_mappings) == 0:
             log.warning("No exposed ports to map! Images MUST EXPOSE")
             return None
@@ -365,10 +357,7 @@ class InteractiveEnvironmentRequest(object):
         """
         raw_cmd = self.docker_cmd(image, env_override=env_override, volumes=volumes)
 
-        log.info("Starting docker container for IE {0} with command [{1}]".format(
-            self.attr.viz_id,
-            raw_cmd
-        ))
+        log.info("Starting docker container for IE {0} with command [{1}]".format(self.attr.viz_id, raw_cmd))
         p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
@@ -391,8 +380,7 @@ class InteractiveEnvironmentRequest(object):
                 port=host_port,
                 proxy_prefix=self.attr.proxy_prefix,
                 route_name=self.attr.viz_id,
-                container_ids=[container_id],
-            )
+                container_ids=[container_id], )
             # These variables then become available for use in templating URLs
             self.attr.proxy_url = self.attr.proxy_request['proxy_url']
             # Commented out because it needs to be documented and visible that
@@ -418,8 +406,7 @@ class InteractiveEnvironmentRequest(object):
             proxy_prefix=self.attr.proxy_prefix,
             route_name=self.attr.viz_id,
             container_ids=[container.id],
-            container_interface=self.attr.container_interface.key
-        )
+            container_interface=self.attr.container_interface.key)
         self.attr.proxy_url = self.attr.proxy_request['proxy_url']
 
     def launch(self, image=None, additional_ids=None, env_override=None, volumes=None):
@@ -450,8 +437,8 @@ class InteractiveEnvironmentRequest(object):
         if image not in self.allowed_images:
             # Now that we're allowing users to specify images, we need to ensure that they aren't
             # requesting images we have not specifically allowed.
-            raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]"
-                            % (image, ', '.join(self.allowed_images)))
+            raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]" %
+                            (image, ', '.join(self.allowed_images)))
 
         # Do not allow a None volumes
         if not volumes:
@@ -475,10 +462,7 @@ class InteractiveEnvironmentRequest(object):
         """
         command = self.attr.viz_config.get("docker", "command")
         command = command.format(docker_args="inspect %s" % container_id)
-        log.info("Inspecting docker container {0} with command [{1}]".format(
-            container_id,
-            command
-        ))
+        log.info("Inspecting docker container {0} with command [{1}]".format(container_id, command))
 
         p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
@@ -536,9 +520,5 @@ class InteractiveEnvironmentRequest(object):
         port_mappings = inspect_data[0]['NetworkSettings']['Ports']
         for port_name in port_mappings:
             for binding in port_mappings[port_name]:
-                mappings.append((
-                    int(port_name.replace('/tcp', '').replace('/udp', '')),
-                    binding['HostIp'],
-                    int(binding['HostPort'])
-                ))
+                mappings.append((int(port_name.replace('/tcp', '').replace('/udp', '')), binding['HostIp'], int(binding['HostPort'])))
         return mappings

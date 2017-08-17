@@ -4,11 +4,7 @@ Functionality for dealing with tool errors.
 import cgi
 import string
 
-from galaxy import (
-    model,
-    util,
-    web
-)
+from galaxy import (model, util, web)
 from galaxy.util import unicodify
 
 error_report_template = """
@@ -191,8 +187,7 @@ class ErrorReporter(object):
             job_info=util.unicodify(job.info),
             job_traceback=util.unicodify(job.traceback),
             email_str=email_str,
-            message=util.unicodify(message)
-        )
+            message=util.unicodify(message))
 
         self.report = string.Template(error_report_template).safe_substitute(report_variables)
 

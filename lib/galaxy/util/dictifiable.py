@@ -38,9 +38,7 @@ class Dictifiable:
                 return item
 
         # Create dict to represent item.
-        rval = dict(
-            model_class=self.__class__.__name__
-        )
+        rval = dict(model_class=self.__class__.__name__)
 
         # Fill item dict with visible keys.
         try:

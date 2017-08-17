@@ -63,8 +63,11 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
 
         visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
         dictionary = trans.security.encode_dict_ids(self.get_visualization_dict(visualization))
-        dictionary['url'] = web.url_for(controller='visualization',
-                                        action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug)
+        dictionary['url'] = web.url_for(
+            controller='visualization',
+            action="display_by_username_and_slug",
+            username=visualization.user.username,
+            slug=visualization.slug)
         dictionary['annotation'] = self.get_item_annotation_str(trans.sa_session, trans.user, visualization)
 
         # need to encode ids in revisions as well
@@ -107,7 +110,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             except ValueError as val_err:
                 raise exceptions.RequestParameterMissingException(str(val_err))
 
-        rval = {'id' : trans.security.encode_id(visualization.id)}
+        rval = {'id': trans.security.encode_id(visualization.id)}
 
         return rval
 
@@ -134,11 +137,10 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         config = payload.get('config', visualization.latest_revision.config)
 
         latest_config = visualization.latest_revision.config
-        if((title != visualization.latest_revision.title) or
-                (dbkey != visualization.latest_revision.dbkey) or
-                (json.dumps(config) != json.dumps(latest_config))):
+        if ((title != visualization.latest_revision.title) or (dbkey != visualization.latest_revision.dbkey)
+                or (json.dumps(config) != json.dumps(latest_config))):
             revision = self.add_visualization_revision(trans, visualization, config, title, dbkey)
-            rval = {'id' : id, 'revision' : revision.id}
+            rval = {'id': id, 'revision': revision.id}
 
         # allow updating vis title
         visualization.title = title

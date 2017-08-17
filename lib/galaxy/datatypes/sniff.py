@@ -18,17 +18,8 @@ from six import text_type
 
 from galaxy import util
 from galaxy.datatypes.binary import Binary
-from galaxy.util import (
-    compression_utils,
-    multi_byte,
-    unicodify
-)
-from galaxy.util.checkers import (
-    check_binary,
-    check_html,
-    is_bz2,
-    is_gzip
-)
+from galaxy.util import (compression_utils, multi_byte, unicodify)
+from galaxy.util.checkers import (check_binary, check_html, is_bz2, is_gzip)
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +31,13 @@ def get_test_fname(fname):
     return full_path
 
 
-def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):
+def stream_to_open_named_file(stream,
+                              fd,
+                              filename,
+                              source_encoding=None,
+                              source_error='strict',
+                              target_encoding=None,
+                              target_error='strict'):
     """Writes a stream to the provided file descriptor, returns the file's name and bool( is_multi_byte ). Closes file descriptor"""
     # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
     CHUNK_SIZE = 1048576
@@ -98,7 +95,7 @@ def check_newlines(fname, bytes_to_read=52428800):
     Determines if there are any non-POSIX newlines in the first
     number_of_bytes (by default, 50MB) of the file.
     """
-    CHUNK_SIZE = 2 ** 20
+    CHUNK_SIZE = 2**20
     f = open(fname, 'r')
     for chunk in f.read(CHUNK_SIZE):
         if f.tell() > bytes_to_read:
@@ -434,7 +431,7 @@ def guess_ext(fname, sniff_order, is_multi_byte=False):
 
 
 def handle_compressed_file(filename, datatypes_registry, ext='auto'):
-    CHUNK_SIZE = 2 ** 20  # 1Mb
+    CHUNK_SIZE = 2**20  # 1Mb
     is_compressed = False
     compressed_type = None
     keep_compressed = False
@@ -502,7 +499,9 @@ def handle_uploaded_dataset_file(filename, datatypes_registry, ext='auto', is_mu
 AUTO_DETECT_EXTENSIONS = ['auto']  # should 'data' also cause auto detect?
 DECOMPRESSION_FUNCTIONS = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File)
 COMPRESSION_CHECK_FUNCTIONS = [('gzip', is_gzip), ('bz2', is_bz2)]
-COMPRESSION_DATATYPES = dict(gzip=['bam', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz'], bz2=['fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2'])
+COMPRESSION_DATATYPES = dict(
+    gzip=['bam', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz'],
+    bz2=['fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2'])
 COMPRESSED_EXTENSIONS = []
 for exts in COMPRESSION_DATATYPES.values():
     COMPRESSED_EXTENSIONS.extend(exts)

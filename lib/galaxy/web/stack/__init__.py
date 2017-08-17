@@ -17,14 +17,12 @@ except ImportError:
 try:
     from uwsgidecorators import postfork as uwsgi_postfork
 except:
-    uwsgi_postfork = lambda x: x    # noqa: E731
+    uwsgi_postfork = lambda x: x  # noqa: E731
     if uwsgi is not None and hasattr(uwsgi, 'numproc'):
         print("WARNING: This is a uwsgi process but the uwsgidecorators library"
               " is unavailable.  This is likely due to using an external (not"
               " in Galaxy's virtualenv) uwsgi and you may experience errors. "
-              "HINT:\n  {venv}/bin/pip install uwsgidecorators".format(
-                  venv=os.environ.get('VIRTUAL_ENV', '/path/to/venv')))
-
+              "HINT:\n  {venv}/bin/pip install uwsgidecorators".format(venv=os.environ.get('VIRTUAL_ENV', '/path/to/venv')))
 
 log = logging.getLogger(__name__)
 

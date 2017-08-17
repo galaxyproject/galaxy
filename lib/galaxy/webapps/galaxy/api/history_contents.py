@@ -24,18 +24,14 @@ from galaxy.managers import history_contents
 from galaxy.managers import hdas
 from galaxy.managers import hdcas
 from galaxy.managers import folders
-from galaxy.managers.collections_util import (
-    api_payload_to_create_params,
-    dictify_dataset_collection_instance,
-    get_hda_and_element_identifiers
-)
+from galaxy.managers.collections_util import (api_payload_to_create_params, dictify_dataset_collection_instance,
+                                              get_hda_and_element_identifiers)
 
 import logging
 log = logging.getLogger(__name__)
 
 
 class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin):
-
     def __init__(self, app):
         super(HistoryContentsController, self).__init__(app)
         self.hda_manager = hdas.HDAManager(app)
@@ -122,8 +118,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         return rval
 
     def __collection_dict(self, trans, dataset_collection_instance, view="collection"):
-        return dictify_dataset_collection_instance(dataset_collection_instance,
-            security=trans.security, parent=dataset_collection_instance.history, view=view)
+        return dictify_dataset_collection_instance(
+            dataset_collection_instance, security=trans.security, parent=dataset_collection_instance.history, view=view)
 
     @expose_api_anonymous
     def show(self, trans, id, history_id, **kwd):
@@ -151,10 +147,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
     def __show_dataset(self, trans, id, **kwd):
         hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
-        return self.hda_serializer.serialize_to_view(hda,
-                                                     user=trans.user,
-                                                     trans=trans,
-                                                     **self._parse_serialization_params(kwd, 'detailed'))
+        return self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     def __show_dataset_collection(self, trans, id, history_id, **kwd):
         try:
@@ -162,8 +155,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             dataset_collection_instance = service.get_dataset_collection_instance(
                 trans=trans,
                 instance_type='history',
-                id=id,
-            )
+                id=id, )
             return self.__collection_dict(trans, dataset_collection_instance, view="element")
         except Exception as e:
             log.exception("Error in history API at listing dataset collection")
@@ -186,8 +178,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             dataset_collection_instance = service.get_dataset_collection_instance(
                 trans=trans,
                 instance_type='history',
-                id=id,
-            )
+                id=id, )
             return self.__stream_dataset_collection(trans, dataset_collection_instance)
 
         except Exception as e:
@@ -272,8 +263,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         # TODO: Flush out create new collection documentation above, need some
         # examples. See also bioblend and API tests for specific examples.
 
-        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user,
-                                                 current_history=trans.history)
+        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
 
         type = payload.get('type', 'dataset')
         if type == 'dataset':
@@ -290,8 +280,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def __create_dataset(self, trans, history, payload, **kwd):
         source = payload.get('source', None)
         if source not in ('library', 'hda'):
-            raise exceptions.RequestParameterInvalidException(
-                "'source' must be either 'library' or 'hda': %s" % (source))
+            raise exceptions.RequestParameterInvalidException("'source' must be either 'library' or 'hda': %s" % (source))
         content = payload.get('content', None)
         if content is None:
             raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
@@ -302,8 +291,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             ld = self.get_library_dataset(trans, content, check_ownership=False, check_accessible=False)
             # TODO: why would get_library_dataset NOT return a library dataset?
             if type(ld) is not trans.app.model.LibraryDataset:
-                raise exceptions.RequestParameterInvalidException(
-                    "Library content id ( %s ) is not a dataset" % content)
+                raise exceptions.RequestParameterInvalidException("Library content id ( %s ) is not a dataset" % content)
             # insert into history
             hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
 
@@ -318,8 +306,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         trans.sa_session.flush()
         if not hda:
             return None
-        return self.hda_serializer.serialize_to_view(hda,
-            user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        return self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     def __create_datasets_from_library_folder(self, trans, history, payload, **kwd):
         rval = []
@@ -345,18 +332,16 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                         rval.extend(traverse(subfolder))
                 for ld in folder.datasets:
                     if not admin:
-                        can_access = trans.app.security_agent.can_access_dataset(
-                            current_user_roles,
-                            ld.library_dataset_dataset_association.dataset
-                        )
+                        can_access = trans.app.security_agent.can_access_dataset(current_user_roles,
+                                                                                 ld.library_dataset_dataset_association.dataset)
                     if (admin or can_access) and not ld.deleted:
                         rval.append(ld)
                 return rval
 
             for ld in traverse(folder):
                 hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
-                hda_dict = self.hda_serializer.serialize_to_view(hda,
-                    user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+                hda_dict = self.hda_serializer.serialize_to_view(
+                    hda, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
                 rval.append(hda_dict)
         else:
             message = "Invalid 'source' parameter in request %s" % source
@@ -370,11 +355,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         service = trans.app.dataset_collections_service
         if source == "new_collection":
             create_params = api_payload_to_create_params(payload)
-            dataset_collection_instance = service.create(
-                trans,
-                parent=history,
-                **create_params
-            )
+            dataset_collection_instance = service.create(trans, parent=history, **create_params)
         elif source == "hdca":
             content = payload.get('content', None)
             if content is None:
@@ -383,16 +364,15 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 trans=trans,
                 parent=history,
                 source="hdca",
-                encoded_source_id=content,
-            )
+                encoded_source_id=content, )
         else:
             message = "Invalid 'source' parameter in request %s" % source
             raise exceptions.RequestParameterInvalidException(message)
 
         # if the consumer specified keys or view, use the secondary serializer
         if 'view' in kwd or 'keys' in kwd:
-            return self.hdca_serializer.serialize_to_view(dataset_collection_instance,
-                user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+            return self.hdca_serializer.serialize_to_view(
+                dataset_collection_instance, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
         return self.__collection_dict(trans, dataset_collection_instance, view="element")
 
@@ -458,8 +438,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             # TODO: this should be an effect of deleting the hda
             if payload.get('deleted', False):
                 self.hda_manager.stop_creating_job(hda)
-            return self.hda_serializer.serialize_to_view(hda,
-                                                         user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+            return self.hda_serializer.serialize_to_view(
+                hda, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
         return {}
 
@@ -499,7 +479,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return self.__delete_dataset(trans, history_id, id, purge=purge, **kwd)
         elif contents_type == "dataset_collection":
             trans.app.dataset_collections_service.delete(trans, "history", id)
-            return {'id' : id, "deleted": True}
+            return {'id': id, "deleted": True}
         else:
             return self.__handle_unknown_contents_type(trans, contents_type)
 
@@ -517,8 +497,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             self.hda_manager.purge(hda)
         else:
             self.hda_manager.delete(hda)
-        return self.hda_serializer.serialize_to_view(hda,
-                                                     user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        return self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     def __handle_unknown_contents_type(self, trans, contents_type):
         raise exceptions.UnknownContentsType('Unknown contents type: %s' % type)
@@ -599,8 +578,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         rval = []
 
-        history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user,
-            current_history=trans.history)
+        history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
 
         filter_params = self.parse_filter_params(kwd)
         filters = self.history_contents_filters.parse_filters(filter_params)
@@ -618,23 +596,23 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             details = util.listify(details)
         view = serialization_params.pop('view')
 
-        contents = self.history_contents_manager.contents(history,
-            filters=filters, limit=limit, offset=offset, order_by=order_by)
+        contents = self.history_contents_manager.contents(history, filters=filters, limit=limit, offset=offset, order_by=order_by)
         for content in contents:
 
             # TODO: remove split
             if isinstance(content, trans.app.model.HistoryDatasetAssociation):
                 # TODO: remove split
                 if details == 'all' or trans.security.encode_id(content.id) in details:
-                    rval.append(self.hda_serializer.serialize_to_view(content,
-                        user=trans.user, trans=trans, view='detailed', **serialization_params))
+                    rval.append(
+                        self.hda_serializer.serialize_to_view(
+                            content, user=trans.user, trans=trans, view='detailed', **serialization_params))
                 else:
-                    rval.append(self.hda_serializer.serialize_to_view(content,
-                        user=trans.user, trans=trans, view=view, **serialization_params))
+                    rval.append(
+                        self.hda_serializer.serialize_to_view(content, user=trans.user, trans=trans, view=view, **serialization_params))
 
             elif isinstance(content, trans.app.model.HistoryDatasetCollectionAssociation):
-                collection = self.hdca_serializer.serialize_to_view(content,
-                    user=trans.user, trans=trans, view=view, **serialization_params)
+                collection = self.hdca_serializer.serialize_to_view(
+                    content, user=trans.user, trans=trans, view=view, **serialization_params)
                 rval.append(collection)
 
         return rval

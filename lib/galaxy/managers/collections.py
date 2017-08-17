@@ -16,7 +16,6 @@ from galaxy.util import validation
 import logging
 log = logging.getLogger(__name__)
 
-
 ERROR_INVALID_ELEMENTS_SPECIFICATION = "Create called with invalid parameters, must specify element identifiers."
 ERROR_NO_COLLECTION_TYPE = "Create called without specifing a collection type."
 
@@ -39,9 +38,17 @@ class DatasetCollectionManager(object):
         self.tag_manager = tags.GalaxyTagManager(app.model.context)
         self.ldda_manager = lddas.LDDAManager(app)
 
-    def create(self, trans, parent, name, collection_type, element_identifiers=None,
-               elements=None, implicit_collection_info=None, trusted_identifiers=None,
-               hide_source_items=False, tags=None):
+    def create(self,
+               trans,
+               parent,
+               name,
+               collection_type,
+               element_identifiers=None,
+               elements=None,
+               implicit_collection_info=None,
+               trusted_identifiers=None,
+               hide_source_items=False,
+               tags=None):
         """
         PRECONDITION: security checks on ability to add to parent
         occurred during load.
@@ -58,14 +65,12 @@ class DatasetCollectionManager(object):
             collection_type=collection_type,
             element_identifiers=element_identifiers,
             elements=elements,
-            hide_source_items=hide_source_items,
-        )
+            hide_source_items=hide_source_items, )
 
         if isinstance(parent, model.History):
             dataset_collection_instance = self.model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
-                name=name,
-            )
+                name=name, )
             if implicit_collection_info:
                 for input_name, input_collection in implicit_collection_info["implicit_inputs"]:
                     dataset_collection_instance.add_implicit_input_collection(input_name, input_collection)
@@ -91,8 +96,7 @@ class DatasetCollectionManager(object):
             dataset_collection_instance = self.model.LibraryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 folder=parent,
-                name=name,
-            )
+                name=name, )
 
         else:
             message = "Internal logic error - create called with unknown parent type %s" % type(parent)
@@ -108,8 +112,7 @@ class DatasetCollectionManager(object):
 
         return self.__persist(dataset_collection_instance)
 
-    def create_dataset_collection(self, trans, collection_type, element_identifiers=None, elements=None,
-                                  hide_source_items=None):
+    def create_dataset_collection(self, trans, collection_type, element_identifiers=None, elements=None, hide_source_items=None):
         if element_identifiers is None and elements is None:
             raise RequestParameterInvalidException(ERROR_INVALID_ELEMENTS_SPECIFICATION)
         if not collection_type:
@@ -200,7 +203,8 @@ class DatasetCollectionManager(object):
         changed = dataset_collection_instance.set_from_dict(new_data)
         # the rest (often involving the trans) - do here
         if 'annotation' in new_data.keys() and trans.get_user():
-            dataset_collection_instance.add_item_annotation(trans.sa_session, trans.get_user(), dataset_collection_instance, new_data['annotation'])
+            dataset_collection_instance.add_item_annotation(trans.sa_session,
+                                                            trans.get_user(), dataset_collection_instance, new_data['annotation'])
             changed['annotation'] = new_data['annotation']
         if 'tags' in new_data.keys() and trans.get_user():
             # set_tags_from_list will flush on its own, no need to add to 'changed' here and incur a second flush.
@@ -251,8 +255,7 @@ class DatasetCollectionManager(object):
             collection = self.create_dataset_collection(
                 trans=trans,
                 collection_type=collection_type,
-                element_identifiers=element_identifier["element_identifiers"],
-            )
+                element_identifiers=element_identifier["element_identifiers"], )
             element_identifier["__object__"] = collection
 
         return element_identifiers

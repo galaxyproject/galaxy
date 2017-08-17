@@ -171,7 +171,6 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
 
 
 class WorkflowRequestMonitor(object):
-
     def __init__(self, app, workflow_scheduling_manager):
         self.app = app
         self.active = True
@@ -228,8 +227,7 @@ class WorkflowRequestMonitor(object):
         return model.WorkflowInvocation.poll_active_workflow_ids(
             sa_session,
             scheduler=scheduler_id,
-            handler=handler,
-        )
+            handler=handler, )
 
     def shutdown(self):
         self.active = False

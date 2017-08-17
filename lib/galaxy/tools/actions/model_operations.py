@@ -3,15 +3,13 @@ import logging
 from galaxy.tools.actions import (
     DefaultToolAction,
     OutputCollections,
-    ToolExecutionCache,
-)
+    ToolExecutionCache, )
 from galaxy.util.odict import odict
 
 log = logging.getLogger(__name__)
 
 
 class ModelOperationToolAction(DefaultToolAction):
-
     def check_inputs_ready(self, tool, trans, incoming, history, execution_cache=None):
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
@@ -21,7 +19,17 @@ class ModelOperationToolAction(DefaultToolAction):
 
         tool.check_inputs_ready(inp_data, inp_dataset_collections)
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, mapping_over_collection=False, execution_cache=None, **kwargs):
+    def execute(self,
+                tool,
+                trans,
+                incoming={},
+                set_output_hid=False,
+                overwrite=True,
+                history=None,
+                job_params=None,
+                mapping_over_collection=False,
+                execution_cache=None,
+                **kwargs):
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
 
@@ -46,8 +54,7 @@ class ModelOperationToolAction(DefaultToolAction):
             on_text=on_text,
             incoming=incoming,
             params=wrapped_params.params,
-            job_params=job_params,
-        )
+            job_params=job_params, )
 
         #
         # Create job.

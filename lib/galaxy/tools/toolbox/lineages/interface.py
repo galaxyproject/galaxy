@@ -26,8 +26,7 @@ class ToolLineageVersion(object):
     def to_dict(self):
         return dict(
             id=self.id,
-            version=self.version,
-        )
+            version=self.version, )
 
 
 class ToolLineage:
@@ -82,5 +81,4 @@ class ToolLineage:
         return dict(
             tool_id=self.tool_id,
             tool_versions=list(self.tool_versions),
-            lineage_type='stock',
-        )
+            lineage_type='stock', )

@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 
 
 class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin):
-
     @expose_api
     def index(self, trans, deleted=False, **kwd):
         """
@@ -71,7 +70,8 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         elif not payload.get("slug", None):
             raise exceptions.ObjectAttributeMissingException("Page id is required")
         elif not self._is_valid_slug(payload["slug"]):
-            raise exceptions.ObjectAttributeInvalidException("Page identifier must consist of only lowercase letters, numbers, and the '-' character")
+            raise exceptions.ObjectAttributeInvalidException(
+                "Page identifier must consist of only lowercase letters, numbers, and the '-' character")
         elif trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload["slug"], deleted=False).first():
             raise exceptions.DuplicatedSlugException("Page slug must be unique")
 

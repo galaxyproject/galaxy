@@ -25,7 +25,7 @@ def __submodule_names(module):
     module_dir = module.__path__[0]
     names = []
     for fname in listdir(module_dir):
-        if not(fname.startswith("_")) and fname.endswith(".py"):
+        if not (fname.startswith("_")) and fname.endswith(".py"):
             submodule_name = fname[:-len(".py")]
             names.append(submodule_name)
     return names

@@ -38,25 +38,10 @@ from galaxy.web.framework import formbuilder
 import logging
 log = logging.getLogger(__name__)
 
-
-UCSC_SERVERS = (
-    'hgw1.cse.ucsc.edu',
-    'hgw2.cse.ucsc.edu',
-    'hgw3.cse.ucsc.edu',
-    'hgw4.cse.ucsc.edu',
-    'hgw5.cse.ucsc.edu',
-    'hgw6.cse.ucsc.edu',
-    'hgw7.cse.ucsc.edu',
-    'hgw8.cse.ucsc.edu',
-    'hgw1.soe.ucsc.edu',
-    'hgw2.soe.ucsc.edu',
-    'hgw3.soe.ucsc.edu',
-    'hgw4.soe.ucsc.edu',
-    'hgw5.soe.ucsc.edu',
-    'hgw6.soe.ucsc.edu',
-    'hgw7.soe.ucsc.edu',
-    'hgw8.soe.ucsc.edu',
-)
+UCSC_SERVERS = ('hgw1.cse.ucsc.edu', 'hgw2.cse.ucsc.edu', 'hgw3.cse.ucsc.edu', 'hgw4.cse.ucsc.edu', 'hgw5.cse.ucsc.edu',
+                'hgw6.cse.ucsc.edu', 'hgw7.cse.ucsc.edu', 'hgw8.cse.ucsc.edu', 'hgw1.soe.ucsc.edu', 'hgw2.soe.ucsc.edu',
+                'hgw3.soe.ucsc.edu', 'hgw4.soe.ucsc.edu', 'hgw5.soe.ucsc.edu', 'hgw6.soe.ucsc.edu', 'hgw7.soe.ucsc.edu',
+                'hgw8.soe.ucsc.edu', )
 
 
 class WebApplication(base.WebApplication):
@@ -70,6 +55,7 @@ class WebApplication(base.WebApplication):
         * builds mako template lookups.
         * generates GalaxyWebTransactions.
     """
+
     def __init__(self, galaxy_app, session_cookie='galaxysession', name=None):
         self.name = name
         base.WebApplication.__init__(self)
@@ -87,10 +73,8 @@ class WebApplication(base.WebApplication):
         # Then look in root directory
         paths.append(galaxy_app.config.template_path)
         # Create TemplateLookup with a small cache
-        return mako.lookup.TemplateLookup(directories=paths,
-                                          module_directory=galaxy_app.config.template_cache,
-                                          collection_size=500,
-                                          output_encoding='utf-8')
+        return mako.lookup.TemplateLookup(
+            directories=paths, module_directory=galaxy_app.config.template_cache, collection_size=500, output_encoding='utf-8')
 
     def handle_controller_exception(self, e, trans, **kwargs):
         if isinstance(e, MessageException):
@@ -116,7 +100,7 @@ class WebApplication(base.WebApplication):
         package = import_module(package_name)
         controller_dir = package.__path__[0]
         for fname in os.listdir(controller_dir):
-            if not(fname.startswith("_")) and fname.endswith(".py"):
+            if not (fname.startswith("_")) and fname.endswith(".py"):
                 name = fname[:-3]
                 module_name = package_name + "." + name
                 try:
@@ -141,7 +125,7 @@ class WebApplication(base.WebApplication):
         package = import_module(package_name)
         controller_dir = package.__path__[0]
         for fname in os.listdir(controller_dir):
-            if not(fname.startswith("_")) and fname.endswith(".py"):
+            if not (fname.startswith("_")) and fname.endswith(".py"):
                 name = fname[:-3]
                 module_name = package_name + "." + name
                 try:
@@ -165,8 +149,8 @@ class WebApplication(base.WebApplication):
         return T(app)
 
 
-class GalaxyWebTransaction(base.DefaultWebTransaction,
-                           context.ProvidesAppContext, context.ProvidesUserContext, context.ProvidesHistoryContext):
+class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesAppContext, context.ProvidesUserContext,
+                           context.ProvidesHistoryContext):
     """
     Encapsulates web transaction specific state for the Galaxy application
     (specifically the user's "cookie" session and history)
@@ -242,11 +226,13 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                         self.user = None
                         self.galaxy_session = None
                     else:
-                        self.response.send_redirect(url_for(controller='user',
-                                                     action='login',
-                                                     message="You have been logged out due to inactivity.  Please log in again to continue using Galaxy.",
-                                                     status='info',
-                                                     use_panels=True))
+                        self.response.send_redirect(
+                            url_for(
+                                controller='user',
+                                action='login',
+                                message="You have been logged out due to inactivity.  Please log in again to continue using Galaxy.",
+                                status='info',
+                                use_panels=True))
                 else:
                     self.galaxy_session.last_action = now
                     self.sa_session.add(self.galaxy_session)
@@ -389,7 +375,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             try:
                 self._ensure_valid_session(session_cookie)
             except Exception:
-                log.exception("Exception during Session-based API authentication, this was most likely an attempt to use an anonymous cookie under remote authentication (so, no user), which we don't support.")
+                log.exception(
+                    "Exception during Session-based API authentication, this was most likely an attempt to use an anonymous cookie under remote authentication (so, no user), which we don't support."
+                )
                 self.user = None
                 self.galaxy_session = None
         else:
@@ -447,17 +435,15 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                     # No user, associate
                     galaxy_session.user = self.get_or_create_remote_user(remote_user_email)
                     galaxy_session_requires_flush = True
-                elif (remote_user_email and
-                      (galaxy_session.user.email != remote_user_email) and
-                      ((not self.app.config.allow_user_impersonation) or
-                       (remote_user_email not in self.app.config.admin_users_list))):
+                elif (remote_user_email and (galaxy_session.user.email != remote_user_email)
+                      and ((not self.app.config.allow_user_impersonation) or (remote_user_email not in self.app.config.admin_users_list))):
                     # Session exists but is not associated with the correct
                     # remote user, and the currently set remote_user is not a
                     # potentially impersonating admin.
                     invalidate_existing_session = True
                     user_for_new_session = self.get_or_create_remote_user(remote_user_email)
-                    log.warning("User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
-                                remote_user_email, galaxy_session.user.email)
+                    log.warning("User logged in as '%s' externally, but has a cookie as '%s' invalidating session", remote_user_email,
+                                galaxy_session.user.email)
             elif remote_user_email:
                 # No session exists, get/create user for new session
                 user_for_new_session = self.get_or_create_remote_user(remote_user_email)
@@ -535,7 +521,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             if self.app.datatypes_registry.get_display_sites('ucsc') and self.request.path == display_as:
                 try:
                     host = socket.gethostbyaddr(self.environ['REMOTE_ADDR'])[0]
-                except(socket.error, socket.herror, socket.gaierror, socket.timeout):
+                except (socket.error, socket.herror, socket.gaierror, socket.timeout):
                     host = None
                 if host in UCSC_SERVERS:
                     return
@@ -544,9 +530,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             if self.request.path.startswith(external_display_path):
                 request_path_split = self.request.path.split('/')
                 try:
-                    if (self.app.datatypes_registry.display_applications.get(request_path_split[-5]) and
-                            request_path_split[-4] in self.app.datatypes_registry.display_applications.get(request_path_split[-5]).links and
-                            request_path_split[-3] != 'None'):
+                    if (self.app.datatypes_registry.display_applications.get(request_path_split[-5])
+                            and request_path_split[-4] in self.app.datatypes_registry.display_applications.get(request_path_split[-5]).links
+                            and request_path_split[-3] != 'None'):
                         return
                 except IndexError:
                     pass
@@ -626,8 +612,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         """
         Update the session cookie to match the current session.
         """
-        self.set_cookie(self.security.encode_guid(self.galaxy_session.session_key),
-                        name=name, path=self.app.config.cookie_path)
+        self.set_cookie(self.security.encode_guid(self.galaxy_session.session_key), name=name, path=self.app.config.cookie_path)
 
     def handle_user_login(self, user):
         """
@@ -654,9 +639,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             except:
                 users_last_session = None
                 last_accessed = False
-            if (prev_galaxy_session.current_history and not
-                    prev_galaxy_session.current_history.deleted and
-                    prev_galaxy_session.current_history.datasets):
+            if (prev_galaxy_session.current_history and not prev_galaxy_session.current_history.deleted
+                    and prev_galaxy_session.current_history.datasets):
                 if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
                     # If the previous galaxy session had a history, associate it with the new
                     # session, but only if it didn't belong to a different user.
@@ -667,9 +651,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                             user.adjust_total_disk_usage(hda.quota_amount(user))
             elif self.galaxy_session.current_history:
                 history = self.galaxy_session.current_history
-            if (not history and users_last_session and
-                    users_last_session.current_history and not
-                    users_last_session.current_history.deleted):
+            if (not history and users_last_session and users_last_session.current_history
+                    and not users_last_session.current_history.deleted):
                 history = users_last_session.current_history
             elif not history:
                 history = self.get_history(create=True, most_recent=True)
@@ -701,10 +684,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         self.sa_session.add_all((prev_galaxy_session, self.galaxy_session))
         galaxy_user_id = prev_galaxy_session.user_id
         if logout_all and galaxy_user_id is not None:
-            for other_galaxy_session in (self.sa_session.query(self.app.model.GalaxySession)
-                                         .filter(and_(self.app.model.GalaxySession.table.c.user_id == galaxy_user_id,
-                                                      self.app.model.GalaxySession.table.c.is_valid == true(),
-                                                      self.app.model.GalaxySession.table.c.id != prev_galaxy_session.id))):
+            for other_galaxy_session in (self.sa_session.query(self.app.model.GalaxySession).filter(
+                    and_(self.app.model.GalaxySession.table.c.user_id == galaxy_user_id, self.app.model.GalaxySession.table.c.is_valid ==
+                         true(), self.app.model.GalaxySession.table.c.id != prev_galaxy_session.id))):
                 other_galaxy_session.is_valid = False
                 self.sa_session.add(other_galaxy_session)
         self.sa_session.flush()
@@ -760,9 +742,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         # (b) has no datasets. If suitable history found, use it; otherwise, create
         # new history.
         unnamed_histories = self.sa_session.query(self.app.model.History).filter_by(
-            user=self.galaxy_session.user,
-            name=self.app.model.History.default_name,
-            deleted=False)
+            user=self.galaxy_session.user, name=self.app.model.History.default_name, deleted=False)
         default_history = None
         for history in unnamed_histories:
             if len(history.datasets) == 0:
@@ -789,8 +769,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             return None
         try:
             recent_history = self.sa_session.query(self.app.model.History).filter_by(
-                user=self.galaxy_session.user,
-                deleted=False).order_by(self.app.model.History.update_time.desc()).first()
+                user=self.galaxy_session.user, deleted=False).order_by(self.app.model.History.update_time.desc()).first()
         except NoResultFound:
             return None
         self.set_history(recent_history)
@@ -851,7 +830,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         `refresh_frames`: names of frames in the interface that should be
                           refreshed when the message is displayed
         """
-        return self.fill_template("message.mako", status=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels, active_view=active_view)
+        return self.fill_template(
+            "message.mako",
+            status=type,
+            message=message,
+            refresh_frames=refresh_frames,
+            cont=cont,
+            use_panels=use_panels,
+            active_view=active_view)
 
     def show_error_message(self, message, refresh_frames=[], use_panels=False, active_view=""):
         """
@@ -876,17 +862,13 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         Convenience method for displaying a simple page with a single HTML
         form.
         """
-        return self.fill_template(template, form=form, header=header,
-                                  use_panels=(form.use_panels or use_panels),
-                                  active_view=active_view)
+        return self.fill_template(template, form=form, header=header, use_panels=(form.use_panels or use_panels), active_view=active_view)
 
     @property
     def session_csrf_token(self):
         token = ''
         if self.galaxy_session:
-            token = self.security.encode_id(
-                self.galaxy_session.id, kind="session_csrf_token"
-            )
+            token = self.security.encode_id(self.galaxy_session.id, kind="session_csrf_token")
         return token
 
     def check_csrf_token(self):
@@ -912,8 +894,12 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         if filename.endswith(".mako"):
             return self.fill_template_mako(filename, **kwargs)
         else:
-            template = Template(file=os.path.join(self.app.config.template_path, filename),
-                                searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)])
+            template = Template(
+                file=os.path.join(self.app.config.template_path, filename),
+                searchList=[
+                    kwargs, self.template_context,
+                    dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)
+                ])
             return str(template)
 
     def fill_template_mako(self, filename, template_lookup=None, **kwargs):
@@ -939,18 +925,19 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             class StreamBuffer(object):
                 def write(self, d):
                     response_write(d.encode('utf-8'))
+
             buffer = StreamBuffer()
             context = mako.runtime.Context(buffer, **data)
             template.render_context(context)
             return []
+
         return render
 
     def fill_template_string(self, template_string, context=None, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.
         """
-        template = Template(source=template_string,
-                            searchList=[context or kwargs, dict(caller=self)])
+        template = Template(source=template_string, searchList=[context or kwargs, dict(caller=self)])
         return str(template)
 
 
@@ -965,10 +952,11 @@ def build_native_uwsgi_app(paste_factory, config_section):
         # Probably loaded via --ini-paste - expect paste app.
         return None
 
-    uwsgi_app = paste_factory(uwsgi.opt, load_app_kwds={
-        "config_file": config_file,
-        "config_section": config_section,
-    })
+    uwsgi_app = paste_factory(
+        uwsgi.opt, load_app_kwds={
+            "config_file": config_file,
+            "config_section": config_section,
+        })
     return uwsgi_app
 
 

@@ -38,8 +38,7 @@ class RoleManager(base.ModelManager):
         :raises: InconsistentDatabase, RequestParameterInvalidException, InternalServerError
         """
         try:
-            role = (self.session().query(self.model_class)
-                    .filter(self.model_class.id == decoded_role_id).one())
+            role = (self.session().query(self.model_class).filter(self.model_class.id == decoded_role_id).one())
         except sqlalchemy_exceptions.MultipleResultsFound:
             raise galaxy.exceptions.InconsistentDatabase('Multiple roles found with the same id.')
         except sqlalchemy_exceptions.NoResultFound:

@@ -6,7 +6,6 @@ from json import loads
 
 from pkg_resources import resource_string
 
-
 # Error codes are provided as a convience to Galaxy API clients, but at this
 # time they do represent part of the more stable interface. They can change
 # without warning between releases.

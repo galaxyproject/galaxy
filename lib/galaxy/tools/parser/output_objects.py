@@ -3,7 +3,6 @@ from galaxy.util.odict import odict
 
 
 class ToolOutputBase(Dictifiable, object):
-
     def __init__(self, name, label=None, filters=None, hidden=False):
         super(ToolOutputBase, self).__init__()
         self.name = name
@@ -23,8 +22,16 @@ class ToolOutput(ToolOutputBase):
 
     dict_collection_visible_keys = ('name', 'format', 'label', 'hidden')
 
-    def __init__(self, name, format=None, format_source=None, metadata_source=None,
-                 parent=None, label=None, filters=None, actions=None, hidden=False,
+    def __init__(self,
+                 name,
+                 format=None,
+                 format_source=None,
+                 metadata_source=None,
+                 parent=None,
+                 label=None,
+                 filters=None,
+                 actions=None,
+                 hidden=False,
                  implicit=False):
         super(ToolOutput, self).__init__(name, label=label, filters=filters, hidden=hidden)
         self.format = format
@@ -83,19 +90,17 @@ class ToolOutputCollection(ToolOutputBase):
     <outputs>
     """
 
-    def __init__(
-        self,
-        name,
-        structure,
-        label=None,
-        filters=None,
-        hidden=False,
-        default_format="data",
-        default_format_source=None,
-        default_metadata_source=None,
-        inherit_format=False,
-        inherit_metadata=False
-    ):
+    def __init__(self,
+                 name,
+                 structure,
+                 label=None,
+                 filters=None,
+                 hidden=False,
+                 default_format="data",
+                 default_format_source=None,
+                 default_metadata_source=None,
+                 inherit_format=False,
+                 inherit_metadata=False):
         super(ToolOutputCollection, self).__init__(name, label=label, filters=filters, hidden=hidden)
         self.collection = True
         self.default_format = default_format
@@ -130,16 +135,14 @@ class ToolOutputCollection(ToolOutputBase):
                     format=format,
                     format_source=self.format_source,
                     metadata_source=self.metadata_source,
-                    implicit=True,
-                )
+                    implicit=True, )
                 if self.inherit_metadata:
                     output.metadata_source = element.dataset_instance
                 return ToolOutputCollectionPart(
                     self,
                     element.element_identifier,
                     output,
-                    parent_ids=parent_ids,
-                )
+                    parent_ids=parent_ids, )
 
             def prototype_collection_to_output(collection_prototype, parent_ids=[]):
                 output_parts = []
@@ -170,14 +173,12 @@ class ToolOutputCollection(ToolOutputBase):
 
 
 class ToolOutputCollectionStructure(object):
-
     def __init__(
-        self,
-        collection_type,
-        collection_type_source=None,
-        structured_like=None,
-        dataset_collector_descriptions=None,
-    ):
+            self,
+            collection_type,
+            collection_type_source=None,
+            structured_like=None,
+            dataset_collector_descriptions=None, ):
         self.collection_type = collection_type
         self.collection_type_source = collection_type_source
         self.structured_like = structured_like
@@ -200,7 +201,6 @@ class ToolOutputCollectionStructure(object):
 
 
 class ToolOutputCollectionPart(object):
-
     def __init__(self, output_collection_def, element_identifier, output_def, parent_ids=[]):
         self.output_collection_def = output_collection_def
         self.element_identifier = element_identifier

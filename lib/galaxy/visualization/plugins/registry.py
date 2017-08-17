@@ -15,7 +15,6 @@ from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins import plugin as vis_plugins
 from galaxy.visualization.plugins import utils as vis_utils
 
-
 import logging
 log = logging.getLogger(__name__)
 
@@ -36,12 +35,7 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
     # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
     # TODO: change/remove if/when they can be updated to use this system
     #: any built in visualizations that have their own render method in ctrls/visualization
-    BUILT_IN_VISUALIZATIONS = [
-        'trackster',
-        'circster',
-        'sweepster',
-        'phyloviz'
-    ]
+    BUILT_IN_VISUALIZATIONS = ['trackster', 'circster', 'sweepster', 'phyloviz']
 
     def __str__(self):
         return self.__class__.__name__
@@ -109,11 +103,15 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
         elif config['entry_point']['type'] == 'html':
             plugin_class = vis_plugins.StaticFileVisualizationPlugin
 
-        plugin = plugin_class(self.app(), plugin_path, plugin_name, config, context=dict(
-            base_url=self.base_url,
-            template_cache_dir=self.template_cache_dir,
-            additional_template_paths=self.additional_template_paths
-        ))
+        plugin = plugin_class(
+            self.app(),
+            plugin_path,
+            plugin_name,
+            config,
+            context=dict(
+                base_url=self.base_url,
+                template_cache_dir=self.template_cache_dir,
+                additional_template_paths=self.additional_template_paths))
         return plugin
 
     def get_plugin(self, key):
@@ -171,12 +169,7 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
             render_target = visualization.config.get('render_target', 'galaxy_main')
             embeddable = visualization.config.get('embeddable', False)
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
-            return {
-                'href'      : url,
-                'html'      : display_name,
-                'target'    : render_target,
-                'embeddable': embeddable
-            }
+            return {'href': url, 'html': display_name, 'target': render_target, 'embeddable': embeddable}
 
         return None
 

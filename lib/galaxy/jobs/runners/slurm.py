@@ -22,8 +22,7 @@ SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 # always the cause of the step termination, which can be successful.
 # See src/plugins/task/cgroup/task_cgroup_memory.c in
 # https://github.com/SchedMD/slurm/
-SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
-                                                ': Exceeded step memory limit at some point.']
+SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.', ': Exceeded step memory limit at some point.']
 SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
 
 
@@ -81,7 +80,8 @@ class SlurmJobRunner(DRMAAJobRunner):
                 slurm_state = _get_slurm_state()
                 sleep = 1
                 while slurm_state == 'COMPLETING':
-                    log.debug('(%s/%s) Waiting %s seconds for failed job to exit COMPLETING state for post-mortem', ajs.job_wrapper.get_id_tag(), ajs.job_id, sleep)
+                    log.debug('(%s/%s) Waiting %s seconds for failed job to exit COMPLETING state for post-mortem',
+                              ajs.job_wrapper.get_id_tag(), ajs.job_id, sleep)
                     time.sleep(sleep)
                     sleep *= 2
                     if sleep > 64:
@@ -89,10 +89,12 @@ class SlurmJobRunner(DRMAAJobRunner):
                         break
                     slurm_state = _get_slurm_state()
                 if slurm_state == 'NOT_FOUND':
-                    log.warning('(%s/%s) Job not found, assuming job check exceeded MinJobAge and completing as successful', ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                    log.warning('(%s/%s) Job not found, assuming job check exceeded MinJobAge and completing as successful',
+                                ajs.job_wrapper.get_id_tag(), ajs.job_id)
                     drmaa_state = self.drmaa_job_states.DONE
                 elif slurm_state == 'COMPLETED':
-                    log.debug("(%s/%s) SLURM reported job success, assuming job check exceeded MinJobAge and completing as successful", ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                    log.debug("(%s/%s) SLURM reported job success, assuming job check exceeded MinJobAge and completing as successful",
+                              ajs.job_wrapper.get_id_tag(), ajs.job_id)
                     drmaa_state = self.drmaa_job_states.DONE
                 elif slurm_state == 'TIMEOUT':
                     log.info('(%s/%s) Job hit walltime', ajs.job_wrapper.get_id_tag(), ajs.job_id)
@@ -117,10 +119,12 @@ class SlurmJobRunner(DRMAAJobRunner):
                         log.info('(%s/%s) Job was cancelled via SLURM (e.g. with scancel(1))', ajs.job_wrapper.get_id_tag(), ajs.job_id)
                         ajs.fail_message = "This job failed because it was cancelled by an administrator."
                 elif slurm_state in ('PENDING', 'RUNNING'):
-                    log.warning('(%s/%s) Job was reported by drmaa as terminal but job state in SLURM is: %s, returning to monitor queue', ajs.job_wrapper.get_id_tag(), ajs.job_id, slurm_state)
+                    log.warning('(%s/%s) Job was reported by drmaa as terminal but job state in SLURM is: %s, returning to monitor queue',
+                                ajs.job_wrapper.get_id_tag(), ajs.job_id, slurm_state)
                     return True
                 else:
-                    log.warning('(%s/%s) Job failed due to unknown reasons, job state in SLURM was: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, slurm_state)
+                    log.warning('(%s/%s) Job failed due to unknown reasons, job state in SLURM was: %s',
+                                ajs.job_wrapper.get_id_tag(), ajs.job_id, slurm_state)
                     ajs.fail_message = "This job failed for reasons that could not be determined."
                 if drmaa_state == self.drmaa_job_states.FAILED:
                     ajs.fail_message += '\nPlease click the bug icon to report this problem if you need help.'
@@ -138,12 +142,14 @@ class SlurmJobRunner(DRMAAJobRunner):
                     for line in lines:
                         stripped_line = line.strip()
                         if any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
-                            log.debug('(%s/%s) Job completed, removing SLURM exceeded memory warning: "%s"', ajs.job_wrapper.get_id_tag(), ajs.job_id, stripped_line)
+                            log.debug('(%s/%s) Job completed, removing SLURM exceeded memory warning: "%s"',
+                                      ajs.job_wrapper.get_id_tag(), ajs.job_id, stripped_line)
                         else:
                             f.write(line)
                     f.truncate()
         except Exception:
-            log.exception('(%s/%s) Failure in SLURM _complete_terminal_job(), job final state will be: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, drmaa_state)
+            log.exception('(%s/%s) Failure in SLURM _complete_terminal_job(), job final state will be: %s',
+                          ajs.job_wrapper.get_id_tag(), ajs.job_id, drmaa_state)
         # by default, finish the job with the state from drmaa
         return super(SlurmJobRunner, self)._complete_terminal_job(ajs, drmaa_state=drmaa_state)
 

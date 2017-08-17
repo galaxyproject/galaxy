@@ -21,6 +21,7 @@ class HgController(BaseUIController):
         def make_web_app():
             hgwebapp = hgwebdir(hgweb_config)
             return hgwebapp
+
         wsgi_app = wsgiapplication(make_web_app)
         if cmd == 'getbundle':
             path_info = kwd.get('path_info', None)

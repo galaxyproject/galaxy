@@ -1,10 +1,7 @@
 import logging
 import uuid
 
-from galaxy import (
-    exceptions,
-    model
-)
+from galaxy import (exceptions, model)
 from galaxy.managers import histories
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 
@@ -41,7 +38,13 @@ class WorkflowRunConfig(object):
     :type param_map: dict
     """
 
-    def __init__(self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, param_map={}, allow_tool_state_corrections=False):
+    def __init__(self,
+                 target_history,
+                 replacement_dict,
+                 copy_inputs_to_history=False,
+                 inputs={},
+                 param_map={},
+                 allow_tool_state_corrections=False):
         self.target_history = target_history
         self.replacement_dict = replacement_dict
         self.copy_inputs_to_history = copy_inputs_to_history
@@ -166,7 +169,9 @@ def _get_target_history(trans, workflow, payload, param_keys=[], index=0):
     history_id = payload.get('history_id', None)
     history_param = payload.get('history', None)
     if [history_name, history_id, history_param].count(None) < 2:
-        raise exceptions.RequestParameterInvalidException("Specified workflow target history multiple ways - at most one of 'history', 'history_id', and 'new_history_name' may be specified.")
+        raise exceptions.RequestParameterInvalidException(
+            "Specified workflow target history multiple ways - at most one of 'history', 'history_id', and 'new_history_name' may be specified."
+        )
     if history_param:
         if history_param.startswith('hist_id='):
             history_id = history_param[8:]
@@ -259,16 +264,20 @@ def build_workflow_run_configs(trans, workflow, payload):
             try:
                 if input_source == 'ldda':
                     ldda = trans.sa_session.query(app.model.LibraryDatasetDatasetAssociation).get(trans.security.decode_id(input_id))
-                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset)
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(),
+                                                                                                ldda.dataset)
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == 'ld':
-                    ldda = trans.sa_session.query(app.model.LibraryDataset).get(trans.security.decode_id(input_id)).library_dataset_dataset_association
-                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset)
+                    ldda = trans.sa_session.query(app.model.LibraryDataset).get(
+                        trans.security.decode_id(input_id)).library_dataset_dataset_association
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(),
+                                                                                                ldda.dataset)
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == 'hda':
                     # Get dataset handle, add to dict and history if necessary
                     content = trans.sa_session.query(app.model.HistoryDatasetAssociation).get(trans.security.decode_id(input_id))
-                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), content.dataset)
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(),
+                                                                                                content.dataset)
                 elif input_source == 'uuid':
                     dataset = trans.sa_session.query(app.model.Dataset).filter(app.model.Dataset.uuid == input_id).first()
                     if dataset is None:
@@ -296,13 +305,13 @@ def build_workflow_run_configs(trans, workflow, payload):
                 normalized_inputs[key] = value['content']
             else:
                 normalized_inputs[key] = value
-        run_configs.append(WorkflowRunConfig(
-            target_history=history,
-            replacement_dict=payload.get('replacement_params', {}),
-            inputs=normalized_inputs,
-            param_map=param_map,
-            allow_tool_state_corrections=allow_tool_state_corrections
-        ))
+        run_configs.append(
+            WorkflowRunConfig(
+                target_history=history,
+                replacement_dict=payload.get('replacement_params', {}),
+                inputs=normalized_inputs,
+                param_map=param_map,
+                allow_tool_state_corrections=allow_tool_state_corrections))
 
     return run_configs
 
@@ -318,8 +327,7 @@ def workflow_run_config_to_request(trans, run_config, workflow):
         parameter = model.WorkflowRequestInputParameter(
             name=name,
             value=value,
-            type=type,
-        )
+            type=type, )
         workflow_invocation.input_parameters.append(parameter)
 
     steps_by_id = {}
@@ -340,25 +348,21 @@ def workflow_run_config_to_request(trans, run_config, workflow):
                 copy_inputs_to_history=False,
                 inputs={},
                 param_map={},
-                allow_tool_state_corrections=run_config.allow_tool_state_corrections
-            )
+                allow_tool_state_corrections=run_config.allow_tool_state_corrections)
             subworkflow_invocation = workflow_run_config_to_request(
                 trans,
                 subworkflow_run_config,
-                step.subworkflow,
-            )
+                step.subworkflow, )
             workflow_invocation.attach_subworkflow_invocation_for_step(
                 step,
-                subworkflow_invocation,
-            )
+                subworkflow_invocation, )
 
     replacement_dict = run_config.replacement_dict
     for name, value in replacement_dict.items():
         add_parameter(
             name=name,
             value=value,
-            type=param_types.REPLACEMENT_PARAMETERS,
-        )
+            type=param_types.REPLACEMENT_PARAMETERS, )
     for step_id, content in run_config.inputs.items():
         workflow_invocation.add_input(content, step_id)
 
@@ -394,8 +398,7 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
         replacement_dict=replacement_dict,
         inputs=inputs,
         param_map=param_map,
-        copy_inputs_to_history=copy_inputs_to_history,
-    )
+        copy_inputs_to_history=copy_inputs_to_history, )
     return workflow_run_config
 
 

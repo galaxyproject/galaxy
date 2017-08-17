@@ -9,7 +9,6 @@ from galaxy.web.framework.helpers import time_ago, grids
 from .requests_common import RequestsGrid, invalid_id_redirect
 from markupsafe import escape
 
-
 log = logging.getLogger(__name__)
 
 
@@ -17,20 +16,17 @@ class AdminRequestsGrid(RequestsGrid):
     class UserColumn(grids.TextColumn):
         def get_value(self, trans, grid, request):
             return escape(request.user.email)
+
     # Grid definition
     columns = [col for col in RequestsGrid.columns]
-    columns.append(UserColumn("User",
-                              model_class=model.User,
-                              key='username'))
+    columns.append(UserColumn("User", model_class=model.User, key='username'))
     operations = [operation for operation in RequestsGrid.operations]
     operations.append(grids.GridOperation("Edit", allow_multiple=False, condition=(lambda item: not item.deleted)))
     operations.append(grids.GridOperation("Reject", allow_multiple=False, condition=(lambda item: not item.deleted and item.is_submitted)))
     operations.append(grids.GridOperation("Delete", allow_multiple=True, condition=(lambda item: not item.deleted)))
     operations.append(grids.GridOperation("Undelete", condition=(lambda item: item.deleted)))
     global_actions = [
-        grids.GridAction("Create new request", dict(controller='requests_common',
-                                                    action='create_request',
-                                                    cntrller='requests_admin'))
+        grids.GridAction("Create new request", dict(controller='requests_common', action='create_request', cntrller='requests_admin'))
     ]
 
 
@@ -54,6 +50,7 @@ class DataTransferGrid(grids.Grid):
                 return escape(sample_dataset.external_service.name)
             except:
                 return 'None'
+
     # Grid definition
     title = "Sample Datasets"
     template = "admin/requests/sample_datasets_grid.mako"
@@ -63,37 +60,26 @@ class DataTransferGrid(grids.Grid):
     preserve_state = True
     use_paging = False
     columns = [
-        NameColumn("Name",
-                   link=(lambda item: dict(operation="view", id=item.id)),
-                   attach_popup=True,
-                   filterable="advanced"),
-        SizeColumn("Size",
-                   filterable="advanced"),
-        grids.GridColumn("Last Updated",
-                         key="update_time",
-                         format=time_ago),
-        ExternalServiceColumn('External service',
-                              link=(lambda item: dict(operation="view_external_service", id=item.external_service.id)), ),
-        StatusColumn("Transfer Status",
-                     filterable="advanced",
-                     label_id_prefix='datasetTransferStatus-'),
+        NameColumn("Name", link=(lambda item: dict(operation="view", id=item.id)), attach_popup=True, filterable="advanced"),
+        SizeColumn("Size", filterable="advanced"),
+        grids.GridColumn("Last Updated", key="update_time", format=time_ago),
+        ExternalServiceColumn(
+            'External service',
+            link=(lambda item: dict(operation="view_external_service", id=item.external_service.id)), ),
+        StatusColumn("Transfer Status", filterable="advanced", label_id_prefix='datasetTransferStatus-'),
     ]
-    columns.append(grids.MulticolFilterColumn("Search",
-                                              cols_to_filter=[columns[0]],
-                                              key="free-text-search",
-                                              visible=False,
-                                              filterable="standard"))
+    columns.append(
+        grids.MulticolFilterColumn("Search", cols_to_filter=[columns[0]], key="free-text-search", visible=False, filterable="standard"))
     operations = [
-        grids.GridOperation("Transfer",
-                            allow_multiple=True,
-                            condition=(lambda item: item.status in [model.SampleDataset.transfer_status.NOT_STARTED])),
-        grids.GridOperation("Rename",
-                            allow_multiple=True,
-                            allow_popup=False,
-                            condition=(lambda item: item.status in [model.SampleDataset.transfer_status.NOT_STARTED])),
-        grids.GridOperation("Delete",
-                            allow_multiple=True,
-                            condition=(lambda item: item.status in [model.SampleDataset.transfer_status.NOT_STARTED]))
+        grids.GridOperation(
+            "Transfer", allow_multiple=True, condition=(lambda item: item.status in [model.SampleDataset.transfer_status.NOT_STARTED])),
+        grids.GridOperation(
+            "Rename",
+            allow_multiple=True,
+            allow_popup=False,
+            condition=(lambda item: item.status in [model.SampleDataset.transfer_status.NOT_STARTED])),
+        grids.GridOperation(
+            "Delete", allow_multiple=True, condition=(lambda item: item.status in [model.SampleDataset.transfer_status.NOT_STARTED]))
     ]
 
     def apply_query_filter(self, trans, query, **kwd):
@@ -118,46 +104,30 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "edit":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='edit_basic_request_info',
-                                                                cntrller='requests_admin',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='edit_basic_request_info', cntrller='requests_admin', **kwd))
             if operation == "add_samples":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='add_samples',
-                                                                cntrller='requests_admin',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='add_samples', cntrller='requests_admin', **kwd))
             if operation == "edit_samples":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='edit_samples',
-                                                                cntrller='requests_admin',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='edit_samples', cntrller='requests_admin', **kwd))
             if operation == "view_request":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='view_request',
-                                                                cntrller='requests_admin',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='view_request', cntrller='requests_admin', **kwd))
             if operation == "view_request_history":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='view_request_history',
-                                                                cntrller='requests_admin',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='view_request_history', cntrller='requests_admin', **kwd))
             if operation == "reject":
                 return self.reject_request(trans, **kwd)
             if operation == "view_type":
-                return trans.response.send_redirect(web.url_for(controller='request_type',
-                                                                action='view_request_type',
-                                                                **kwd))
+                return trans.response.send_redirect(web.url_for(controller='request_type', action='view_request_type', **kwd))
             if operation == "delete":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='delete_request',
-                                                                cntrller='requests_admin',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='delete_request', cntrller='requests_admin', **kwd))
             if operation == "undelete":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='undelete_request',
-                                                                cntrller='requests_admin',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='undelete_request', cntrller='requests_admin', **kwd))
         # Render the list view
         return self.request_grid(trans, **kwd)
 
@@ -169,10 +139,8 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
         status = params.get('status', 'done')
         message = params.get('message', 'done')
         if params.get('cancel_reject_button', False):
-            return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                            action='view_request',
-                                                            cntrller='requests_admin',
-                                                            id=request_id))
+            return trans.response.send_redirect(
+                web.url_for(controller='requests_common', action='view_request', cntrller='requests_admin', id=request_id))
         try:
             request = trans.sa_session.query(trans.model.Request).get(trans.security.decode_id(request_id))
         except:
@@ -182,22 +150,16 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
         if not comment:
             status = 'error'
             message = 'A reason for rejecting the request is required.'
-            return trans.fill_template('/admin/requests/reject.mako',
-                                       cntrller='requests_admin',
-                                       request=request,
-                                       status=status,
-                                       message=message)
+            return trans.fill_template(
+                '/admin/requests/reject.mako', cntrller='requests_admin', request=request, status=status, message=message)
         # Create an event with state 'Rejected' for this request
         event_comment = "Sequencing request marked rejected by %s. Reason: %s " % (trans.user.email, comment)
         event = trans.model.RequestEvent(request, request.states.REJECTED, event_comment)
         trans.sa_session.add(event)
         trans.sa_session.flush()
         message = 'Sequencing request (%s) has been rejected.' % request.name
-        return trans.response.send_redirect(web.url_for(controller='requests_admin',
-                                                        action='browse_requests',
-                                                        status=status,
-                                                        message=message,
-                                                        **kwd))
+        return trans.response.send_redirect(
+            web.url_for(controller='requests_admin', action='browse_requests', status=status, message=message, **kwd))
 
     # Data transfer from sequencer/external_service
     @web.expose
@@ -205,9 +167,8 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
     def manage_datasets(self, trans, **kwd):
         def handle_error(**kwd):
             kwd['status'] = 'error'
-            return trans.response.send_redirect(web.url_for(controller='requests_admin',
-                                                            action='manage_datasets',
-                                                            **kwd))
+            return trans.response.send_redirect(web.url_for(controller='requests_admin', action='manage_datasets', **kwd))
+
         params = util.Params(kwd)
         message = util.restore_text(params.get('message', ''))
         status = params.get('status', 'done')
@@ -239,9 +200,8 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
                     return invalid_id_redirect(trans, 'requests_admin', sample_dataset_id, 'sample dataset')
                 selected_sample_datasets.append(sample_dataset)
             if operation == "view":
-                return trans.fill_template('/admin/requests/view_sample_dataset.mako',
-                                           cntrller='requests_admin',
-                                           sample_dataset=selected_sample_datasets[0])
+                return trans.fill_template(
+                    '/admin/requests/view_sample_dataset.mako', cntrller='requests_admin', sample_dataset=selected_sample_datasets[0])
             elif operation == "delete":
                 not_deleted = []
                 for sample_dataset in selected_sample_datasets:
@@ -257,11 +217,13 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
                 if not_deleted:
                     status = 'warning'
                     message = message + '  %s could not be deleted because their transfer status is not "Not Started". ' % str(not_deleted)
-                return trans.response.send_redirect(web.url_for(controller='requests_admin',
-                                                                action='manage_datasets',
-                                                                sample_id=trans.security.encode_id(sample.id),
-                                                                status=status,
-                                                                message=message))
+                return trans.response.send_redirect(
+                    web.url_for(
+                        controller='requests_admin',
+                        action='manage_datasets',
+                        sample_id=trans.security.encode_id(sample.id),
+                        status=status,
+                        message=message))
             elif operation == "rename":
                 # If one of the selected sample datasets is in the NOT_STARTED state,
                 # then display an error message.  A NOT_STARTED state implies the dataset
@@ -274,37 +236,31 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
                 if no_datasets_transferred:
                     status = 'error'
                     message = 'A dataset can be renamed only if it has been transferred.'
-                    return trans.response.send_redirect(web.url_for(controller='requests_admin',
-                                                                    action='manage_datasets',
-                                                                    sample_id=trans.security.encode_id(selected_sample_datasets[0].sample.id),
-                                                                    status=status,
-                                                                    message=message))
-                return trans.fill_template('/admin/requests/rename_datasets.mako',
-                                           sample=selected_sample_datasets[0].sample,
-                                           id_list=id_list)
+                    return trans.response.send_redirect(
+                        web.url_for(
+                            controller='requests_admin',
+                            action='manage_datasets',
+                            sample_id=trans.security.encode_id(selected_sample_datasets[0].sample.id),
+                            status=status,
+                            message=message))
+                return trans.fill_template(
+                    '/admin/requests/rename_datasets.mako', sample=selected_sample_datasets[0].sample, id_list=id_list)
             elif operation == "transfer":
-                self.initiate_data_transfer(trans,
-                                            trans.security.encode_id(selected_sample_datasets[0].sample.id),
-                                            sample_datasets=selected_sample_datasets)
+                self.initiate_data_transfer(
+                    trans, trans.security.encode_id(selected_sample_datasets[0].sample.id), sample_datasets=selected_sample_datasets)
             elif operation == "view_external_service":
-                return trans.response.send_redirect(web.url_for(controller='external_service',
-                                                                action='view_external_service',
-                                                                **kwd))
+                return trans.response.send_redirect(web.url_for(controller='external_service', action='view_external_service', **kwd))
 
         # Render the grid view
         request_id = trans.security.encode_id(sample.request.id)
         library_id = trans.security.encode_id(sample.library.id)
         self.datatx_grid.title = 'Manage "%s" datasets' % sample.name
-        self.datatx_grid.global_actions = [grids.GridAction("Browse target data library",
-                                                            dict(controller='library_common',
-                                                                 action='browse_library',
-                                                                 cntrller='library_admin',
-                                                                 id=library_id)),
-                                           grids.GridAction("Browse this request",
-                                                            dict(controller='requests_common',
-                                                                 action='view_request',
-                                                                 cntrller='requests_admin',
-                                                                 id=request_id))]
+        self.datatx_grid.global_actions = [
+            grids.GridAction("Browse target data library",
+                             dict(controller='library_common', action='browse_library', cntrller='library_admin', id=library_id)),
+            grids.GridAction("Browse this request",
+                             dict(controller='requests_common', action='view_request', cntrller='requests_admin', id=request_id))
+        ]
         return self.datatx_grid(trans, **kwd)
 
     @web.expose
@@ -353,14 +309,9 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
                 message = 'Changes saved successfully. The following datasets were renamed incorrectly: %s.' % str(incorrect_dataset_names)
             else:
                 message = 'Changes saved successfully.'
-            return trans.fill_template('/admin/requests/rename_datasets.mako',
-                                       sample=sample,
-                                       id_list=id_list,
-                                       message=message,
-                                       status=status)
-        return trans.response.send_redirect(web.url_for(controller='requests_admin',
-                                                        action='manage_datasets',
-                                                        sample_id=sample_id))
+            return trans.fill_template(
+                '/admin/requests/rename_datasets.mako', sample=sample, id_list=id_list, message=message, status=status)
+        return trans.response.send_redirect(web.url_for(controller='requests_admin', action='manage_datasets', sample_id=sample_id))
 
     def __ensure_library_add_permission(self, trans, target_library, target_folder):
         """
@@ -370,14 +321,12 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
         current_user_private_role = trans.app.security_agent.get_private_user_role(trans.user)
         flush_needed = False
         if not trans.app.security_agent.can_add_library_item(current_user_roles, target_library):
-            lp = trans.model.LibraryPermissions(trans.app.security_agent.permitted_actions.LIBRARY_ADD.action,
-                                                target_library,
+            lp = trans.model.LibraryPermissions(trans.app.security_agent.permitted_actions.LIBRARY_ADD.action, target_library,
                                                 current_user_private_role)
             trans.sa_session.add(lp)
             flush_needed = True
         if not trans.app.security_agent.can_add_library_item(current_user_roles, target_folder):
-            lfp = trans.model.LibraryFolderPermissions(trans.app.security_agent.permitted_actions.LIBRARY_ADD.action,
-                                                       target_folder,
+            lfp = trans.model.LibraryFolderPermissions(trans.app.security_agent.permitted_actions.LIBRARY_ADD.action, target_folder,
                                                        current_user_private_role)
             trans.sa_session.add(lfp)
             flush_needed = True
@@ -419,19 +368,22 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
                     deferred_plugin = 'ManualDataTransferPlugin'
                 else:
                     raise Exception("Automatic data transfer using scp is not yet supported.")
-            trans.app.job_manager.deferred_job_queue.plugins[deferred_plugin].create_job(trans,
-                                                                                         sample=sample,
-                                                                                         sample_datasets=sample_datasets,
-                                                                                         external_service=external_service,
-                                                                                         external_service_type=external_service_type)
+            trans.app.job_manager.deferred_job_queue.plugins[deferred_plugin].create_job(
+                trans,
+                sample=sample,
+                sample_datasets=sample_datasets,
+                external_service=external_service,
+                external_service_type=external_service_type)
         else:
             message = "Message queue transfer is no longer supported, please set enable_beta_job_managers = True in galaxy.ini"
             status = "error"
-        return trans.response.send_redirect(web.url_for(controller='requests_admin',
-                                                        action='manage_datasets',
-                                                        sample_id=trans.security.encode_id(sample.id),
-                                                        message=message,
-                                                        status=status))
+        return trans.response.send_redirect(
+            web.url_for(
+                controller='requests_admin',
+                action='manage_datasets',
+                sample_id=trans.security.encode_id(sample.id),
+                message=message,
+                status=status))
 
     @web.expose
     def update_sample_dataset_status(self, trans, cntrller, sample_dataset_ids, new_status, error_msg=None):
@@ -452,6 +404,7 @@ class RequestsAdmin(BaseUIController, UsesFormDefinitionsMixin):
             trans.sa_session.add(sample_dataset)
             trans.sa_session.flush()
         return 200, 'Done'
+
     # Methods for building SelectFields used on various admin_requests forms
 
     def __build_sample_id_select_field(self, trans, request, selected_value):
@@ -465,9 +418,10 @@ def build_rename_datasets_for_sample_select_field(trans, sample_dataset, selecte
         option = option.strip()
         if option:
             options.append(option)
-    return build_select_field(trans,
-                              objs=options,
-                              label_attr='self',
-                              select_field_name='rename_datasets_for_sample_%s' % trans.security.encode_id(sample_dataset.id),
-                              selected_value=selected_value,
-                              refresh_on_change=False)
+    return build_select_field(
+        trans,
+        objs=options,
+        label_attr='self',
+        select_field_name='rename_datasets_for_sample_%s' % trans.security.encode_id(sample_dataset.id),
+        selected_value=selected_value,
+        refresh_on_change=False)

@@ -31,7 +31,6 @@ log = logging.getLogger(__name__)
 
 
 class UploadController(BaseUIController):
-
     @web.expose
     @web.require_login('upload', use_panels=True)
     def upload(self, trans, **kwd):
@@ -153,11 +152,8 @@ class UploadController(BaseUIController):
                                               new_repo_alert)
                 else:
                     if (isgzip or isbz2) and uncompress_file:
-                        uploaded_file_filename = commit_util.uncompress(repository,
-                                                                        uploaded_file_name,
-                                                                        uploaded_file_filename,
-                                                                        isgzip=isgzip,
-                                                                        isbz2=isbz2)
+                        uploaded_file_filename = commit_util.uncompress(
+                            repository, uploaded_file_name, uploaded_file_filename, isgzip=isgzip, isbz2=isbz2)
                     if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and \
                             uploaded_file_filename != rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                         ok = False
@@ -214,11 +210,8 @@ class UploadController(BaseUIController):
                             hg_util.add_changeset(repo.ui, repo, full_path)
                             # Convert from unicode to prevent "TypeError: array item must be char"
                             full_path = full_path.encode('ascii', 'replace')
-                            hg_util.commit_changeset(repo.ui,
-                                                     repo,
-                                                     full_path_to_changeset=full_path,
-                                                     username=trans.user.username,
-                                                     message=commit_message)
+                            hg_util.commit_changeset(
+                                repo.ui, repo, full_path_to_changeset=full_path, username=trans.user.username, message=commit_message)
                             if full_path.endswith('tool_data_table_conf.xml.sample'):
                                 # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
                                 # by parsing the file and adding new entries to the in-memory trans.app.tool_data_tables
@@ -228,12 +221,13 @@ class UploadController(BaseUIController):
                                     message = '%s<br/>%s' % (message, error_message)
                             # See if the content of the change set was valid.
                             admin_only = len(repository.downloadable_revisions) != 1
-                            suc.handle_email_alerts(trans.app,
-                                                    trans.request.host,
-                                                    repository,
-                                                    content_alert_str=content_alert_str,
-                                                    new_repo_alert=new_repo_alert,
-                                                    admin_only=admin_only)
+                            suc.handle_email_alerts(
+                                trans.app,
+                                trans.request.host,
+                                repository,
+                                content_alert_str=content_alert_str,
+                                new_repo_alert=new_repo_alert,
+                                admin_only=admin_only)
                 if ok:
                     # Update the repository files for browsing.
                     hg_util.update_repository(repo)
@@ -264,9 +258,7 @@ class UploadController(BaseUIController):
                                     (len(files_to_remove), upload_point)
                             else:
                                 message += "  %d files were removed from the repository root.  " % len(files_to_remove)
-                        rmm = repository_metadata_manager.RepositoryMetadataManager(app=trans.app,
-                                                                                    user=trans.user,
-                                                                                    repository=repository)
+                        rmm = repository_metadata_manager.RepositoryMetadataManager(app=trans.app, user=trans.user, repository=repository)
                         status, error_message = \
                             rmm.set_repository_metadata_due_to_new_tip(trans.request.host,
                                                                        content_alert_str=content_alert_str,
@@ -281,10 +273,8 @@ class UploadController(BaseUIController):
                     else:
                         metadata_dict = {}
                     dd = dependency_display.DependencyDisplayer(trans.app)
-                    if str(repository.type) not in [rt_util.REPOSITORY_SUITE_DEFINITION,
-                                                    rt_util.TOOL_DEPENDENCY_DEFINITION]:
-                        change_repository_type_message = rt_util.generate_message_for_repository_type_change(trans.app,
-                                                                                                             repository)
+                    if str(repository.type) not in [rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION]:
+                        change_repository_type_message = rt_util.generate_message_for_repository_type_change(trans.app, repository)
                         if change_repository_type_message:
                             message += change_repository_type_message
                             status = 'warning'
@@ -315,27 +305,30 @@ class UploadController(BaseUIController):
                     tdtm.reset_tool_data_tables()
                     if uploaded_directory:
                         basic_util.remove_dir(uploaded_directory)
-                    trans.response.send_redirect(web.url_for(controller='repository',
-                                                             action='browse_repository',
-                                                             id=repository_id,
-                                                             commit_message='Deleted selected files',
-                                                             message=message,
-                                                             status=status))
+                    trans.response.send_redirect(
+                        web.url_for(
+                            controller='repository',
+                            action='browse_repository',
+                            id=repository_id,
+                            commit_message='Deleted selected files',
+                            message=message,
+                            status=status))
                 else:
                     if uploaded_directory:
                         basic_util.remove_dir(uploaded_directory)
                     status = 'error'
                 # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                 tdtm.reset_tool_data_tables()
-        return trans.fill_template('/webapps/tool_shed/repository/upload.mako',
-                                   repository=repository,
-                                   changeset_revision=tip,
-                                   url=url,
-                                   commit_message=commit_message,
-                                   uncompress_file=uncompress_file,
-                                   remove_repo_files_not_in_tar=remove_repo_files_not_in_tar,
-                                   message=message,
-                                   status=status)
+        return trans.fill_template(
+            '/webapps/tool_shed/repository/upload.mako',
+            repository=repository,
+            changeset_revision=tip,
+            url=url,
+            commit_message=commit_message,
+            uncompress_file=uncompress_file,
+            remove_repo_files_not_in_tar=remove_repo_files_not_in_tar,
+            message=message,
+            status=status)
 
     def upload_directory(self, trans, rdah, tdah, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar,
                          commit_message, new_repo_alert):
@@ -395,14 +388,6 @@ class UploadController(BaseUIController):
                             os.remove(repo_path)
                     shutil.move(os.path.join(uploaded_directory, relative_path), repo_path)
                     filenames_in_archive.append(relative_path)
-        return commit_util.handle_directory_changes(trans.app,
-                                                    trans.request.host,
-                                                    trans.user.username,
-                                                    repository,
-                                                    full_path,
-                                                    filenames_in_archive,
-                                                    remove_repo_files_not_in_tar,
-                                                    new_repo_alert,
-                                                    commit_message,
-                                                    undesirable_dirs_removed,
-                                                    undesirable_files_removed)
+        return commit_util.handle_directory_changes(trans.app, trans.request.host, trans.user.username, repository, full_path,
+                                                    filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
+                                                    undesirable_dirs_removed, undesirable_files_removed)

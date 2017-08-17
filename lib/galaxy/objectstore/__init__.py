@@ -24,8 +24,7 @@ from galaxy.util import (
     force_symlink,
     safe_makedirs,
     safe_relpath,
-    umask_fix_perms,
-)
+    umask_fix_perms, )
 from galaxy.util.odict import odict
 from galaxy.util.sleeper import Sleeper
 
@@ -35,7 +34,6 @@ log = logging.getLogger(__name__)
 
 
 class ObjectStore(object):
-
     """ObjectStore abstract interface.
 
     FIELD DESCRIPTIONS (these apply to all the methods in this class):
@@ -173,7 +171,15 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
-    def update_from_file(self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, file_name=None, create=False):
+    def update_from_file(self,
+                         obj,
+                         base_dir=None,
+                         extra_dir=None,
+                         extra_dir_at_root=False,
+                         alt_name=None,
+                         obj_dir=False,
+                         file_name=None,
+                         create=False):
         """
         Inform the store that the file associated with `obj.id` has been updated.
 
@@ -205,7 +211,6 @@ class ObjectStore(object):
 
 
 class DiskObjectStore(ObjectStore):
-
     """
     Standard Galaxy object store.
 
@@ -258,18 +263,33 @@ class DiskObjectStore(ObjectStore):
 
         This is regardless of whether or not the file exists.
         """
-        path = self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir,
-                                    extra_dir_at_root=extra_dir_at_root, alt_name=alt_name,
-                                    obj_dir=False, old_style=True)
+        path = self._construct_path(
+            obj,
+            base_dir=base_dir,
+            dir_only=dir_only,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=False,
+            old_style=True)
         # For backward compatibility: check the old style root path first;
         # otherwise construct hashed path.
         if not os.path.exists(path):
-            return self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir,
-                                        extra_dir_at_root=extra_dir_at_root, alt_name=alt_name)
+            return self._construct_path(
+                obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name)
 
     # TODO: rename to _disk_path or something like that to avoid conflicts with
     # children that'll use the local_extra_dirs decorator, e.g. S3
-    def _construct_path(self, obj, old_style=False, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
+    def _construct_path(self,
+                        obj,
+                        old_style=False,
+                        base_dir=None,
+                        dir_only=False,
+                        extra_dir=None,
+                        extra_dir_at_root=False,
+                        alt_name=None,
+                        obj_dir=False,
+                        **kwargs):
         """
         Construct the absolute path for accessing the object identified by `obj.id`.
 
@@ -444,7 +464,6 @@ class DiskObjectStore(ObjectStore):
 
 
 class NestedObjectStore(ObjectStore):
-
     """
     Base for ObjectStores that use other ObjectStores.
 
@@ -505,21 +524,18 @@ class NestedObjectStore(ObjectStore):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method('get_object_url', obj, None, False, **kwargs)
 
-    def _call_method(self, method, obj, default, default_is_exception,
-            **kwargs):
+    def _call_method(self, method, obj, default, default_is_exception, **kwargs):
         """Check all children object stores for the first one with the dataset."""
         for key, store in self.backends.items():
             if store.exists(obj, **kwargs):
                 return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
-            raise default('objectstore, _call_method failed: %s on %s, kwargs: %s'
-                          % (method, str(obj), str(kwargs)))
+            raise default('objectstore, _call_method failed: %s on %s, kwargs: %s' % (method, str(obj), str(kwargs)))
         else:
             return default
 
 
 class DistributedObjectStore(NestedObjectStore):
-
     """
     ObjectStore that defers to a list of backends.
 
@@ -543,8 +559,7 @@ class DistributedObjectStore(NestedObjectStore):
         :param fsmon: If True, monitor the file system for free space,
             removing backends when they get too full.
         """
-        super(DistributedObjectStore, self).__init__(config,
-                config_xml=config_xml)
+        super(DistributedObjectStore, self).__init__(config, config_xml=config_xml)
         if config_xml is None:
             self.distributed_config = config.distributed_object_store_config_file
             assert self.distributed_config is not None, \
@@ -626,14 +641,11 @@ class DistributedObjectStore(NestedObjectStore):
                     obj.object_store_id = random.choice(self.weighted_backend_ids)
                 except IndexError:
                     raise ObjectInvalid('objectstore.create, could not generate '
-                                        'obj.object_store_id: %s, kwargs: %s'
-                                        % (str(obj), str(kwargs)))
+                                        'obj.object_store_id: %s, kwargs: %s' % (str(obj), str(kwargs)))
                 _create_object_in_session(obj)
-                log.debug("Selected backend '%s' for creation of %s %s"
-                          % (obj.object_store_id, obj.__class__.__name__, obj.id))
+                log.debug("Selected backend '%s' for creation of %s %s" % (obj.object_store_id, obj.__class__.__name__, obj.id))
             else:
-                log.debug("Using preferred backend '%s' for creation of %s %s"
-                          % (obj.object_store_id, obj.__class__.__name__, obj.id))
+                log.debug("Using preferred backend '%s' for creation of %s %s" % (obj.object_store_id, obj.__class__.__name__, obj.id))
             self.backends[obj.object_store_id].create(obj, **kwargs)
 
     def _call_method(self, method, obj, default, default_is_exception, **kwargs):
@@ -641,8 +653,7 @@ class DistributedObjectStore(NestedObjectStore):
         if object_store_id is not None:
             return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
-            raise default('objectstore, _call_method failed: %s on %s, kwargs: %s'
-                          % (method, str(obj), str(kwargs)))
+            raise default('objectstore, _call_method failed: %s on %s, kwargs: %s' % (method, str(obj), str(kwargs)))
         else:
             return default
 
@@ -653,12 +664,11 @@ class DistributedObjectStore(NestedObjectStore):
             # if this instance has been switched from a non-distributed to a
             # distributed object store, or if the object's store id is invalid,
             # try to locate the object
-            log.warning('The backend object store ID (%s) for %s object with ID %s is invalid'
-                        % (obj.object_store_id, obj.__class__.__name__, obj.id))
+            log.warning('The backend object store ID (%s) for %s object with ID %s is invalid' % (obj.object_store_id,
+                                                                                                  obj.__class__.__name__, obj.id))
             for id, store in self.backends.items():
                 if store.exists(obj, **kwargs):
-                    log.warning('%s object with ID %s found in backend object store with ID %s'
-                                % (obj.__class__.__name__, obj.id, id))
+                    log.warning('%s object with ID %s found in backend object store with ID %s' % (obj.__class__.__name__, obj.id, id))
                     obj.object_store_id = id
                     _create_object_in_session(obj)
                     return id
@@ -666,7 +676,6 @@ class DistributedObjectStore(NestedObjectStore):
 
 
 class HierarchicalObjectStore(NestedObjectStore):
-
     """
     ObjectStore that defers to a list of backends.
 
@@ -726,8 +735,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
         from .s3 import SwiftObjectStore
         return SwiftObjectStore(config=config, config_xml=config_xml)
     elif store == 'distributed':
-        return DistributedObjectStore(
-            config=config, fsmon=fsmon, config_xml=config_xml)
+        return DistributedObjectStore(config=config, fsmon=fsmon, config_xml=config_xml)
     elif store == 'hierarchical':
         return HierarchicalObjectStore(config=config, config_xml=config_xml)
     elif store == 'irods':
@@ -749,6 +757,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
 
 def local_extra_dirs(func):
     """Non-local plugin decorator using local directories for the extra_dirs (job_work and temp)."""
+
     def wraps(self, *args, **kwargs):
         if kwargs.get('base_dir', None) is None:
             return func(self, *args, **kwargs)
@@ -757,8 +766,8 @@ def local_extra_dirs(func):
                 if c.__name__ == 'DiskObjectStore':
                     return getattr(c, func.__name__)(self, *args, **kwargs)
             raise Exception("Could not call DiskObjectStore's %s method, does your "
-                            "Object Store plugin inherit from DiskObjectStore?"
-                            % func.__name__)
+                            "Object Store plugin inherit from DiskObjectStore?" % func.__name__)
+
     return wraps
 
 

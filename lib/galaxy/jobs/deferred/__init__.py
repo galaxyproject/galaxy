@@ -14,9 +14,7 @@ log = logging.getLogger(__name__)
 
 
 class DeferredJobQueue(object):
-    job_states = Bunch(READY='ready',
-                       WAIT='wait',
-                       INVALID='invalid')
+    job_states = Bunch(READY='ready', WAIT='wait', INVALID='invalid')
 
     def __init__(self, app):
         self.app = app
@@ -151,10 +149,12 @@ class DeferredJobQueue(object):
 
 class FakeTrans(object):
     """A fake trans for calling the external set metadata tool"""
+
     def __init__(self, app, history=None, user=None):
         class Dummy(object):
             def __init__(self):
                 self.id = None
+
         self.app = app
         self.sa_session = app.model.context.current
         self.dummy = Dummy()

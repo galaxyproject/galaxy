@@ -49,5 +49,5 @@ def compute_fasta_length(fasta_file, out_file, keep_first_char, keep_first_word=
     out.close()
 
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     compute_fasta_length(sys.argv[1], sys.argv[2], sys.argv[3], True)

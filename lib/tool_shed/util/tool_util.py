@@ -81,8 +81,7 @@ def copy_sample_files(app, sample_files, tool_path=None, sample_files_copied=Non
                 copy_sample_file(app, filename, dest_path=dest_path)
 
 
-def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metadata_dict, as_html=True,
-                                       displaying_invalid_tool=False):
+def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False):
     if as_html:
         new_line = '<br/>'
         bold_start = '<b>'

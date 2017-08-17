@@ -11,7 +11,7 @@ from galaxy import util
 
 from ..collectl import stats
 
-if sys.version_info > (3,):
+if sys.version_info > (3, ):
     long = int
 
 log = logging.getLogger(__name__)
@@ -144,7 +144,6 @@ def _read_process_statistics(tsv_file, pid, statistics):
 
 
 class CollectlProcessSummarizer(object):
-
     def __init__(self, pid, statistics):
         self.pid = pid
         self.statistics = statistics
@@ -223,7 +222,7 @@ class CollectlProcessSummarizer(object):
         parts = minutes_str.split(":")
         seconds = 0.0
         for i, val in enumerate(parts):
-            seconds += float(val) * (60 ** (len(parts) - (i + 1)))
+            seconds += float(val) * (60**(len(parts) - (i + 1)))
         return seconds
 
 

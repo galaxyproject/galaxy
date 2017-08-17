@@ -7,12 +7,10 @@ from galaxy.containers import build_container_interfaces
 from galaxy.web import expose, json
 from galaxy.web.base.controller import BaseUIController
 
-
 log = logging.getLogger(__name__)
 
 
 class InteractiveEnvironmentsController(BaseUIController):
-
     @expose
     @json
     def ready(self, trans, **kwd):
@@ -31,8 +29,7 @@ class InteractiveEnvironmentsController(BaseUIController):
 
         container_interfaces = build_container_interfaces(
             self.app.config.containers_config_file,
-            containers_conf=self.app.config.containers_conf,
-        )
+            containers_conf=self.app.config.containers_conf, )
         try:
             interface = container_interfaces[proxy_map.container_interface]
         except KeyError:

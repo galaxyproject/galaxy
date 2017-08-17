@@ -44,6 +44,7 @@ def docker_columns(f):
                 row[key] = line[colstarts[i]:colstarts[i + 1]].strip()
             parsed.append(row)
         return parsed
+
     return parse_docker_column_output
 
 
@@ -51,4 +52,5 @@ def docker_json(f):
     @wraps(f)
     def json_loads(*args, **kwargs):
         return json.loads(f(*args, **kwargs))
+
     return json_loads

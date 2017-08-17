@@ -12,7 +12,6 @@ from galaxy.auth import _get_bool
 from ..providers import AuthProvider
 
 log = logging.getLogger(__name__)
-
 """
 This module provides an AuthProvider for PAM (pluggable authentication module) authentication.
 PAM is the Pluggable Authentication Module system (http://www.linux-pam.org/)
@@ -62,7 +61,8 @@ class PAM(AuthProvider):
         auto_register_username = None
         auto_register_email = None
         force_fail = False
-        log.debug("use username: {} use email {} email {} username {}".format(options.get('login-use-username'), options.get('login-use-email', False), email, username))
+        log.debug("use username: {} use email {} email {} username {}".format(
+            options.get('login-use-username'), options.get('login-use-email', False), email, username))
         # check email based login first because if email exists in Galaxy DB
         # we will be given the "public name" as username
         if _get_bool(options, 'login-use-email', False) and email is not None:

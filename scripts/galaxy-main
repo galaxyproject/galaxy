@@ -40,7 +40,6 @@ except ImportError:
     from optparse import OptionParser
 
     class ArgumentParser(OptionParser):
-
         def __init__(self, **kwargs):
             self.delegate = OptionParser(**kwargs)
 
@@ -52,6 +51,7 @@ except ImportError:
         def parse_args(self, args=None):
             (options, args) = self.delegate.parse_args(args)
             return options
+
 
 REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemonize is unavailable."
 
@@ -68,12 +68,7 @@ DEFAULT_VERBOSE = True
 DESCRIPTION = "Daemonized entry point for Galaxy."
 
 
-def load_galaxy_app(
-    config_builder,
-    config_env=False,
-    log=None,
-    **kwds
-):
+def load_galaxy_app(config_builder, config_env=False, log=None, **kwds):
     # Allow specification of log so daemon can reuse properly configured one.
     if log is None:
         log = logging.getLogger(__name__)
@@ -97,10 +92,7 @@ def load_galaxy_app(
     kwds = config_builder.app_kwds()
     kwds = load_app_properties(**kwds)
     from galaxy.app import UniverseApplication
-    app = UniverseApplication(
-        global_conf={"__file__": config_builder.ini_path},
-        **kwds
-    )
+    app = UniverseApplication(global_conf={"__file__": config_builder.ini_path}, **kwds)
     app.control_worker.bind_and_start()
     return app
 
@@ -111,8 +103,7 @@ def app_loop(args, log):
         galaxy_app = load_galaxy_app(
             config_builder,
             config_env=True,
-            log=log,
-        )
+            log=log, )
     except BaseException:
         log.exception("Failed to initialize Galaxy application")
         raise
@@ -182,8 +173,7 @@ class GalaxyConfigBuilder(object):
     def app_kwds(self):
         config = dict(
             ini_file=self.ini_path,
-            ini_section="app:%s" % self.app_name,
-        )
+            ini_section="app:%s" % self.app_name, )
         return config
 
     def setup_logging(self):
@@ -196,10 +186,7 @@ class GalaxyConfigBuilder(object):
         raw_config.read([self.ini_path])
         if raw_config.has_section('loggers'):
             config_file = os.path.abspath(self.ini_path)
-            fileConfig(
-                config_file,
-                dict(__file__=config_file, here=os.path.dirname(config_file))
-            )
+            fileConfig(config_file, dict(__file__=config_file, here=os.path.dirname(config_file)))
 
 
 def main():
@@ -235,8 +222,7 @@ def main():
             action=functools.partial(app_loop, args, log),
             verbose=DEFAULT_VERBOSE,
             logger=log,
-            keep_fds=keep_fds,
-        )
+            keep_fds=keep_fds, )
         daemon.start()
     else:
         app_loop(args, log)

@@ -13,6 +13,7 @@ class AdminActions(object):
     """
     Mixin for controllers that provide administrative functionality.
     """
+
     def _create_quota(self, params, decode_id=None):
         if params.amount.lower() in ('unlimited', 'none', 'no limit'):
             create_amount = None
@@ -47,8 +48,13 @@ class AdminActions(object):
                 message = "Default quota '%s' has been created."
             else:
                 # Create the UserQuotaAssociations
-                in_users = [self.sa_session.query(self.app.model.User).get(decode_id(x) if decode_id else x) for x in util.listify(params.in_users)]
-                in_groups = [self.sa_session.query(self.app.model.Group).get(decode_id(x) if decode_id else x) for x in util.listify(params.in_groups)]
+                in_users = [
+                    self.sa_session.query(self.app.model.User).get(decode_id(x) if decode_id else x) for x in util.listify(params.in_users)
+                ]
+                in_groups = [
+                    self.sa_session.query(self.app.model.Group).get(decode_id(x) if decode_id else x)
+                    for x in util.listify(params.in_groups)
+                ]
                 if None in in_users:
                     raise ActionInputError("One or more invalid user id has been provided.")
                 for user in in_users:
@@ -60,14 +66,16 @@ class AdminActions(object):
                 for group in in_groups:
                     gqa = self.app.model.GroupQuotaAssociation(group, quota)
                     self.sa_session.add(gqa)
-                message = "Quota '%s' has been created with %d associated users and %d associated groups." % (quota.name, len(in_users), len(in_groups))
+                message = "Quota '%s' has been created with %d associated users and %d associated groups." % (quota.name, len(in_users),
+                                                                                                              len(in_groups))
             self.sa_session.flush()
             return quota, message
 
     def _rename_quota(self, quota, params):
         if not params.name:
             raise ActionInputError('Enter a valid name.')
-        elif params.name != quota.name and self.sa_session.query(self.app.model.Quota).filter(self.app.model.Quota.table.c.name == params.name).first():
+        elif params.name != quota.name and self.sa_session.query(self.app.model.Quota).filter(
+                self.app.model.Quota.table.c.name == params.name).first():
             raise ActionInputError('A quota with that name already exists.')
         else:
             old_name = quota.name
@@ -82,15 +90,20 @@ class AdminActions(object):
         if quota.default:
             raise ActionInputError('Default quotas cannot be associated with specific users and groups.')
         else:
-            in_users = [self.sa_session.query(self.app.model.User).get(decode_id(x) if decode_id else x) for x in util.listify(params.in_users)]
+            in_users = [
+                self.sa_session.query(self.app.model.User).get(decode_id(x) if decode_id else x) for x in util.listify(params.in_users)
+            ]
             if None in in_users:
                 raise ActionInputError("One or more invalid user id has been provided.")
-            in_groups = [self.sa_session.query(self.app.model.Group).get(decode_id(x) if decode_id else x) for x in util.listify(params.in_groups)]
+            in_groups = [
+                self.sa_session.query(self.app.model.Group).get(decode_id(x) if decode_id else x) for x in util.listify(params.in_groups)
+            ]
             if None in in_groups:
                 raise ActionInputError("One or more invalid group id has been provided.")
             self.app.quota_agent.set_entity_quota_associations(quotas=[quota], users=in_users, groups=in_groups)
             self.sa_session.refresh(quota)
-            message = "Quota '%s' has been updated with %d associated users and %d associated groups." % (quota.name, len(in_users), len(in_groups))
+            message = "Quota '%s' has been updated with %d associated users and %d associated groups." % (quota.name, len(in_users),
+                                                                                                          len(in_groups))
             return message
 
     def _edit_quota(self, quota, params):

@@ -1,10 +1,7 @@
 """ Handle details of tool tagging - perhaps a deprecated feature.
 """
 import logging
-from abc import (
-    ABCMeta,
-    abstractmethod
-)
+from abc import (ABCMeta, abstractmethod)
 
 import six
 
@@ -23,7 +20,6 @@ def tool_tag_manager(app):
 
 @six.add_metaclass(ABCMeta)
 class AbstractToolTagManager(object):
-
     @abstractmethod
     def reset_tags(self):
         """ Starting to load tool panels, reset all tags.
@@ -36,7 +32,6 @@ class AbstractToolTagManager(object):
 
 
 class NullToolTagManager(AbstractToolTagManager):
-
     def reset_tags(self):
         return None
 
@@ -45,7 +40,6 @@ class NullToolTagManager(AbstractToolTagManager):
 
 
 class PersistentToolTagManager(AbstractToolTagManager):
-
     def __init__(self, app):
         self.app = app
         self.sa_session = app.model.context

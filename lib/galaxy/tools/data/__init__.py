@@ -28,7 +28,6 @@ DEFAULT_TABLE_TYPE = 'tabular'
 
 
 class ToolDataPathFiles(object):
-
     def __init__(self, tool_data_path):
         self.tool_data_path = os.path.abspath(tool_data_path)
         self.update_time = 0
@@ -42,7 +41,11 @@ class ToolDataPathFiles(object):
     def update_files(self):
         try:
             content = os.walk(self.tool_data_path)
-            self._tool_data_path_files = set(filter(os.path.exists, [os.path.join(dirpath, fn) for dirpath, _, fn_list in content for fn in fn_list if fn and fn.endswith('.loc') or fn.endswith('.loc.sample')]))
+            self._tool_data_path_files = set(
+                filter(os.path.exists, [
+                    os.path.join(dirpath, fn) for dirpath, _, fn_list in content for fn in fn_list
+                    if fn and fn.endswith('.loc') or fn.endswith('.loc.sample')
+                ]))
             self.update_time = time.time()
         except Exception:
             log.exception()
@@ -111,14 +114,18 @@ class ToolDataTableManager(object):
             tree = util.parse_xml(filename)
             root = tree.getroot()
             for table_elem in root.findall('table'):
-                table = ToolDataTable.from_elem(table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files)
+                table = ToolDataTable.from_elem(
+                    table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files)
                 table_elems.append(table_elem)
                 if table.name not in self.data_tables:
                     self.data_tables[table.name] = table
                     log.debug("Loaded tool data table '%s' from file '%s'", table.name, filename)
                 else:
-                    log.debug("Loading another instance of data table '%s' from file '%s', attempting to merge content.", table.name, filename)
-                    self.data_tables[table.name].merge_tool_data_table(table, allow_duplicates=False)  # only merge content, do not persist to disk, do not allow duplicate rows when merging
+                    log.debug("Loading another instance of data table '%s' from file '%s', attempting to merge content.", table.name,
+                              filename)
+                    self.data_tables[table.name].merge_tool_data_table(
+                        table,
+                        allow_duplicates=False)  # only merge content, do not persist to disk, do not allow duplicate rows when merging
                     # FIXME: This does not account for an entry with the same unique build ID, but a different path.
         return table_elems
 
@@ -146,9 +153,7 @@ class ToolDataTableManager(object):
         """
         error_message = ''
         try:
-            table_elems = self.load_from_config_file(config_filename=config_filename,
-                                                     tool_data_path=tool_data_path,
-                                                     from_shed_config=True)
+            table_elems = self.load_from_config_file(config_filename=config_filename, tool_data_path=tool_data_path, from_shed_config=True)
         except Exception as e:
             error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), str(e))
             log.debug(error_message)
@@ -222,12 +227,12 @@ class ToolDataTableManager(object):
 
 
 class ToolDataTable(object):
-
     @classmethod
     def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files):
         table_type = table_elem.get('type', 'tabular')
         assert table_type in tool_data_table_types, "Unknown data table type '%s'" % type
-        return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files)
+        return tool_data_table_types[table_type](
+            table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files)
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None):
         self.name = config_element.get('name')
@@ -243,7 +248,10 @@ class ToolDataTable(object):
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files})
+        self._load_info = ([config_element, tool_data_path], {
+            'from_shed_config': from_shed_config,
+            'tool_data_path_files': self.tool_data_path_files
+        })
         self._merged_load_info = []
 
     def _update_version(self, version=None):
@@ -260,13 +268,20 @@ class ToolDataTable(object):
         raise NotImplementedError("Abstract method")
 
     def add_entry(self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
-        self._add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
+        self._add_entry(
+            entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
         return self._update_version()
 
     def add_entries(self, entries, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
         if entries:
             for entry in entries:
-                self.add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
+                self.add_entry(
+                    entry,
+                    allow_duplicates=allow_duplicates,
+                    persist=persist,
+                    persist_on_error=persist_on_error,
+                    entry_source=entry_source,
+                    **kwd)
         return self._loaded_content_version
 
     def _remove_entry(self, values):
@@ -326,8 +341,11 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         # store repo info if available:
         repo_elem = config_element.find('tool_shed_repository')
         if repo_elem is not None:
-            repo_info = dict(tool_shed=repo_elem.find('tool_shed').text, name=repo_elem.find('repository_name').text,
-                             owner=repo_elem.find('repository_owner').text, installed_changeset_revision=repo_elem.find('installed_changeset_revision').text)
+            repo_info = dict(
+                tool_shed=repo_elem.find('tool_shed').text,
+                name=repo_elem.find('repository_name').text,
+                owner=repo_elem.find('repository_owner').text,
+                installed_changeset_revision=repo_elem.find('installed_changeset_revision').text)
         else:
             repo_info = None
         # Read every file
@@ -350,7 +368,8 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             filename = file_path = expand_here_template(filename, here=self.here)
             found = False
             if file_path is None:
-                log.debug("Encountered a file element (%s) that does not contain a path value when loading tool data table '%s'.", util.xml_to_string(file_element), self.name)
+                log.debug("Encountered a file element (%s) that does not contain a path value when loading tool data table '%s'.",
+                          util.xml_to_string(file_element), self.name)
                 continue
 
             # FIXME: splitting on and merging paths from a configuration file when loading is wonky
@@ -393,8 +412,14 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 log.warning("Cannot find index file '%s' for tool data table '%s'" % (filename, self.name))
 
             if filename not in self.filenames or not self.filenames[filename]['found']:
-                self.filenames[filename] = dict(found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path,
-                                                config_element=config_element, tool_shed_repository=repo_info, errors=errors)
+                self.filenames[filename] = dict(
+                    found=found,
+                    filename=filename,
+                    from_shed_config=from_shed_config,
+                    tool_data_path=tool_data_path,
+                    config_element=config_element,
+                    tool_shed_repository=repo_info,
+                    errors=errors)
             else:
                 log.debug("Filename '%s' already exists in filenames (%s), not adding", filename, list(self.filenames.keys()))
             # Remove URL tmp file
@@ -402,7 +427,8 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 tmp_file.close()
 
     def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
-        assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: %s:%s != %s:%s" % (self.name, self.columns, other_table.name, other_table.columns)
+        assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: %s:%s != %s:%s" % (
+            self.name, self.columns, other_table.name, other_table.columns)
         # merge filename info
         for filename, info in other_table.filenames.items():
             if filename not in self.filenames:
@@ -411,11 +437,19 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         self._merged_load_info.append((other_table.__class__, other_table._load_info))
         # If we are merging in a data table that does not allow duplicates, enforce that upon the data table
         if self.allow_duplicate_entries and not other_table.allow_duplicate_entries:
-            log.debug('While attempting to merge tool data table "%s", the other instance of the table specified that duplicate entries are not allowed, now deduplicating all previous entries.', self.name)
+            log.debug(
+                'While attempting to merge tool data table "%s", the other instance of the table specified that duplicate entries are not allowed, now deduplicating all previous entries.',
+                self.name)
             self.allow_duplicate_entries = False
             self._deduplicate_data()
         # add data entries and return current data table version
-        return self.add_entries(other_table.data, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
+        return self.add_entries(
+            other_table.data,
+            allow_duplicates=allow_duplicates,
+            persist=persist,
+            persist_on_error=persist_on_error,
+            entry_source=entry_source,
+            **kwd)
 
     def handle_found_index_file(self, filename):
         self.missing_index_file = None
@@ -508,7 +542,8 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 if self.largest_index < len(fields):
                     rval.append(fields)
                 else:
-                    line_error = "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s" % ((i + 1), self.name, separator_char, line)
+                    line_error = "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s" % (
+                        (i + 1), self.name, separator_char, line)
                     if errors is not None:
                         errors.append(line_error)
                     log.warning(line_error)
@@ -590,7 +625,8 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             fields = []
             for column_name in self.get_column_name_list():
                 if column_name not in entry:
-                    log.debug("Using default column value for column '%s' when adding data table entry (%s) to table '%s'.", column_name, entry, self.name)
+                    log.debug("Using default column value for column '%s' when adding data table entry (%s) to table '%s'.", column_name,
+                              entry, self.name)
                     field_value = self.get_empty_field_by_name(column_name)
                 else:
                     field_value = entry[column_name]
@@ -603,10 +639,12 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             if fields not in self.get_fields() or (allow_duplicates and self.allow_duplicate_entries):
                 self.data.append(fields)
             else:
-                log.debug("Attempted to add fields (%s) to data table '%s', but this entry already exists and allow_duplicates is False.", fields, self.name)
+                log.debug("Attempted to add fields (%s) to data table '%s', but this entry already exists and allow_duplicates is False.",
+                          fields, self.name)
                 is_error = True
         else:
-            log.error("Attempted to add fields (%s) to data table '%s', but there were not enough fields specified ( %i < %i ).", fields, self.name, len(fields), self.largest_index + 1)
+            log.error("Attempted to add fields (%s) to data table '%s', but there were not enough fields specified ( %i < %i ).", fields,
+                      self.name, len(fields), self.largest_index + 1)
             is_error = True
         filename = None
 
@@ -622,7 +660,8 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 try:
                     data_table_fh = open(filename, 'r+b')
                 except IOError as e:
-                    log.warning('Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e)
+                    log.warning('Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s',
+                                filename, e)
                     data_table_fh = open(filename, 'wb')
                 if os.stat(filename)[6] != 0:
                     # ensure last existing line ends with new line
@@ -694,7 +733,9 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             fields_hash = hash(self.separator.join(fields))
             if fields_hash in hash_list:
                 dup_lines.append(i)
-                log.debug('Found duplicate entry in tool data table "%s", but duplicates are not allowed, removing additional entry for: "%s"', self.name, fields)
+                log.debug(
+                    'Found duplicate entry in tool data table "%s", but duplicates are not allowed, removing additional entry for: "%s"',
+                    self.name, fields)
             else:
                 hash_list.append(fields_hash)
         for i in reversed(dup_lines):

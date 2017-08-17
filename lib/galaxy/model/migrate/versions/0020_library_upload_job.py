@@ -27,8 +27,9 @@ metadata = MetaData()
 JobToOutputLibraryDatasetAssociation_table = Table("job_to_output_library_dataset", metadata,
                                                    Column("id", Integer, primary_key=True),
                                                    Column("job_id", Integer, ForeignKey("job.id"), index=True),
-                                                   Column("ldda_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True),
-                                                   Column("name", String(255)))
+                                                   Column(
+                                                       "ldda_id", Integer, ForeignKey("library_dataset_dataset_association.id"),
+                                                       index=True), Column("name", String(255)))
 
 
 def upgrade(migrate_engine):
@@ -64,9 +65,8 @@ def upgrade(migrate_engine):
             # Sqlite can't alter-table-add-foreign-key
             if Job_table is not None and LibraryFolder_table is not None:
                 try:
-                    cons = ForeignKeyConstraint([Job_table.c.library_folder_id],
-                                                [LibraryFolder_table.c.id],
-                                                name='job_library_folder_id_fk')
+                    cons = ForeignKeyConstraint(
+                        [Job_table.c.library_folder_id], [LibraryFolder_table.c.id], name='job_library_folder_id_fk')
                     # Create the constraint
                     cons.create()
                 except Exception:

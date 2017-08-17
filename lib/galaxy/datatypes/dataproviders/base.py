@@ -47,6 +47,7 @@ class HasSettings(type):
     Useful for allowing class level access to expected variable types
     passed to class `__init__` functions so they can be parsed from a query string.
     """
+
     # yeah - this is all too acrobatic
     def __new__(cls, name, base_classes, attributes):
         settings = {}
@@ -173,6 +174,7 @@ class FilteredDataProvider(DataProvider):
         - `num_valid_data_read`: how many data have been returned from `filter`.
         - `num_data_returned`: how many data has this provider yielded.
     """
+
     # not useful here - we don't want functions over the query string
     # settings.update({ 'filter_fn': 'function' })
 
@@ -226,10 +228,7 @@ class LimitedOffsetDataProvider(FilteredDataProvider):
     Useful for grabbing sections from a source (e.g. pagination).
     """
     # define the expected types of these __init__ arguments so they can be parsed out from query strings
-    settings = {
-        'limit' : 'int',
-        'offset': 'int'
-    }
+    settings = {'limit': 'int', 'offset': 'int'}
 
     # TODO: may want to squash this into DataProvider
     def __init__(self, source, offset=0, limit=None, **kwargs):
@@ -291,6 +290,7 @@ class MultiSourceDataProvider(DataProvider):
 
     An iterator over iterators.
     """
+
     def __init__(self, source_list, **kwargs):
         """
         :param source_list: an iterator of iterables

@@ -2,10 +2,7 @@
 for workflow scheduling is highly experimental and the interface required for
 scheduling plugins will almost certainly change.
 """
-from abc import (
-    ABCMeta,
-    abstractmethod
-)
+from abc import (ABCMeta, abstractmethod)
 
 import six
 
@@ -36,7 +33,6 @@ class WorkflowSchedulingPlugin(object):
 
 @six.add_metaclass(ABCMeta)
 class ActiveWorkflowSchedulingPlugin(WorkflowSchedulingPlugin):
-
     @abstractmethod
     def schedule(self, workflow_invocation):
         """ Optionally return one or more commands to instrument job. These

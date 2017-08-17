@@ -35,6 +35,7 @@ class AzureBlobObjectStore(ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and Azure.
     """
+
     def __init__(self, config, config_xml):
         if BlockBlobService is None:
             raise Exception(NO_BLOBSERVICE_ERROR_MESSAGE)
@@ -88,7 +89,15 @@ class AzureBlobObjectStore(ObjectStore):
         self.account = CloudStorageAccount(self.account_name, self.account_key)
         self.service = self.account.create_block_blob_service()
 
-    def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
+    def _construct_path(self,
+                        obj,
+                        base_dir=None,
+                        dir_only=None,
+                        extra_dir=None,
+                        extra_dir_at_root=False,
+                        alt_name=None,
+                        obj_dir=False,
+                        **kwargs):
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
@@ -190,8 +199,8 @@ class AzureBlobObjectStore(ObjectStore):
         try:
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
             if self.cache_size > 0 and self._get_size_in_azure(rel_path) > self.cache_size:
-                log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
-                             rel_path, self._get_size_in_azure(rel_path), self.cache_size)
+                log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.", rel_path,
+                             self._get_size_in_azure(rel_path), self.cache_size)
                 return False
             else:
                 self.transfer_progress = 0  # Reset transfer progress counter
@@ -229,8 +238,8 @@ class AzureBlobObjectStore(ObjectStore):
                 self.transfer_progress = 0  # Reset transfer progress counter
                 self.service.create_blob_from_path(self.container_name, rel_path, source_file, progress_callback=self._transfer_cb)
                 end_time = datetime.now()
-                log.debug("Pushed cache file '%s' to blob '%s' (%s bytes transfered in %s sec)",
-                          source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
+                log.debug("Pushed cache file '%s' to blob '%s' (%s bytes transfered in %s sec)", source_file, rel_path,
+                          os.path.getsize(source_file), end_time - start_time)
             return True
 
         except AzureHttpError:

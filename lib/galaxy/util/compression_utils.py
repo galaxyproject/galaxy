@@ -2,10 +2,7 @@ import bz2
 import gzip
 import zipfile
 
-from .checkers import (
-    is_bz2,
-    is_gzip
-)
+from .checkers import (is_bz2, is_gzip)
 
 
 def get_fileobj(filename, mode="r", gzip_only=False, bz2_only=False, zip_only=False):

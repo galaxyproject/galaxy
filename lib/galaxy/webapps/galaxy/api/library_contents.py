@@ -18,7 +18,6 @@ log = logging.getLogger(__name__)
 
 
 class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
-
     def __init__(self, app):
         super(LibraryContentsController, self).__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
@@ -62,15 +61,14 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                     rval.extend(traverse(subfolder))
             for ld in folder.datasets:
                 if not admin:
-                    can_access = trans.app.security_agent.can_access_dataset(
-                        current_user_roles,
-                        ld.library_dataset_dataset_association.dataset
-                    )
+                    can_access = trans.app.security_agent.can_access_dataset(current_user_roles,
+                                                                             ld.library_dataset_dataset_association.dataset)
                 if (admin or can_access) and not ld.deleted:
                     ld.api_path = folder.api_path + '/' + ld.name
                     ld.api_type = 'file'
                     rval.append(ld)
             return rval
+
         try:
             decoded_library_id = self.decode_id(library_id)
         except Exception:
@@ -87,20 +85,22 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         encoded_id = 'F' + trans.security.encode_id(library.root_folder.id)
         # appending root folder
-        rval.append(dict(id=encoded_id,
-                         type='folder',
-                         name='/',
-                         url=url_for('library_content', library_id=library_id, id=encoded_id)))
+        rval.append(dict(id=encoded_id, type='folder', name='/', url=url_for('library_content', library_id=library_id, id=encoded_id)))
         library.root_folder.api_path = ''
         # appending all other items in the library recursively
         for content in traverse(library.root_folder):
             encoded_id = trans.security.encode_id(content.id)
             if content.api_type == 'folder':
                 encoded_id = 'F' + encoded_id
-            rval.append(dict(id=encoded_id,
-                             type=content.api_type,
-                             name=content.api_path,
-                             url=url_for('library_content', library_id=library_id, id=encoded_id, )))
+            rval.append(
+                dict(
+                    id=encoded_id,
+                    type=content.api_type,
+                    name=content.api_path,
+                    url=url_for(
+                        'library_content',
+                        library_id=library_id,
+                        id=encoded_id, )))
         return rval
 
     @expose_api
@@ -214,12 +214,14 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         # are we copying an HDA to the library folder?
         #   we'll need the id and any message to attach, then branch to that private function
-        from_hda_id, from_hdca_id, ldda_message = (payload.pop('from_hda_id', None), payload.pop('from_hdca_id', None), payload.pop('ldda_message', ''))
+        from_hda_id, from_hdca_id, ldda_message = (payload.pop('from_hda_id', None), payload.pop('from_hdca_id', None), payload.pop(
+            'ldda_message', ''))
         if create_type == 'file':
             if from_hda_id:
                 return self._copy_hda_to_library_folder(trans, self.hda_manager, self.decode_id(from_hda_id), real_folder_id, ldda_message)
             if from_hdca_id:
-                return self._copy_hdca_to_library_folder(trans, self.hda_manager, self.decode_id(from_hdca_id), real_folder_id, ldda_message)
+                return self._copy_hdca_to_library_folder(trans, self.hda_manager, self.decode_id(from_hdca_id), real_folder_id,
+                                                         ldda_message)
 
         # check for extended metadata, store it and pop it out of the param
         # otherwise sanitize_param will have a fit
@@ -227,7 +229,8 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         # Now create the desired content object, either file or folder.
         if create_type == 'file':
-            status, output = trans.webapp.controllers['library_common'].upload_library_dataset(trans, 'api', library_id, real_folder_id, **payload)
+            status, output = trans.webapp.controllers['library_common'].upload_library_dataset(trans, 'api', library_id, real_folder_id,
+                                                                                               **payload)
         elif create_type == 'folder':
             status, output = trans.webapp.controllers['library_common'].create_folder(trans, 'api', real_folder_id, library_id, **payload)
         elif create_type == 'collection':
@@ -261,9 +264,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 encoded_id = trans.security.encode_id(v.id)
                 if create_type == 'folder':
                     encoded_id = 'F' + encoded_id
-                rval.append(dict(id=encoded_id,
-                                 name=v.name,
-                                 url=url_for('library_content', library_id=library_id, id=encoded_id)))
+                rval.append(dict(id=encoded_id, name=v.name, url=url_for('library_content', library_id=library_id, id=encoded_id)))
             return rval
 
     def _scan_json_block(self, meta, prefix=""):
@@ -316,10 +317,11 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             converted_id = payload.pop('converted_dataset_id')
             content = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=False)
             content_conv = self.get_library_dataset(trans, converted_id, check_ownership=False, check_accessible=False)
-            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(parent=content.library_dataset_dataset_association,
-                                                                          dataset=content_conv.library_dataset_dataset_association,
-                                                                          file_type=content_conv.library_dataset_dataset_association.extension,
-                                                                          metadata_safe=True)
+            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(
+                parent=content.library_dataset_dataset_association,
+                dataset=content_conv.library_dataset_dataset_association,
+                file_type=content_conv.library_dataset_dataset_association.extension,
+                metadata_safe=True)
             trans.sa_session.add(assoc)
             trans.sa_session.flush()
 
@@ -393,14 +395,12 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             rval['deleted'] = True
 
         except exceptions.httpexceptions.HTTPInternalServerError:
-            log.exception('Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s',
-                          id, str(kwd))
+            log.exception('Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s', id, str(kwd))
             raise
         except exceptions.httpexceptions.HTTPException:
             raise
         except Exception as exc:
-            log.exception('library_contents API, delete: uncaught exception: %s, %s',
-                          id, str(kwd))
+            log.exception('library_contents API, delete: uncaught exception: %s, %s', id, str(kwd))
             trans.response.status = 500
             rval.update({'error': str(exc)})
         return rval

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Convert from GFF file to interval index file.
 

@@ -29,7 +29,8 @@ def lint_output(tool_xml, lint_ctx):
                 format_set = True
                 format = output_attrib["format"]
                 if format == "input":
-                    lint_ctx.warn("Using format='input' on output data, format_source attribute is less ambiguous and should be used instead.")
+                    lint_ctx.warn(
+                        "Using format='input' on output data, format_source attribute is less ambiguous and should be used instead.")
             elif "format_source" in output_attrib:
                 format_set = True
             if not format_set:

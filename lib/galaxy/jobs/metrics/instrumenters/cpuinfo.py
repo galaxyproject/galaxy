@@ -13,7 +13,6 @@ PROCESSOR_LINE = re.compile(r"processor\s*\:\s*(\d+)")
 
 
 class CpuInfoFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         if key == "processor_count":
             return "Processor Count", "%s" % int(value)

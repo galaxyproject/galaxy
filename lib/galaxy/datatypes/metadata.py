@@ -22,25 +22,8 @@ from galaxy.model.metadata import (
     PythonObjectParameter,
     RangeParameter,
     SelectParameter,
-    Statement,
-)
+    Statement, )
 
-__all__ = (
-    "Statement",
-    "MetadataElement",
-    "MetadataCollection",
-    "MetadataSpecCollection",
-    "MetadataParameter",
-    "MetadataElementSpec",
-    "SelectParameter",
-    "DBKeyParameter",
-    "RangeParameter",
-    "ColumnParameter",
-    "ColumnTypesParameter",
-    "ListParameter",
-    "DictParameter",
-    "PythonObjectParameter",
-    "FileParameter",
-    "MetadataTempFile",
-    "JobExternalOutputMetadataWrapper",
-)
+__all__ = ("Statement", "MetadataElement", "MetadataCollection", "MetadataSpecCollection", "MetadataParameter", "MetadataElementSpec",
+           "SelectParameter", "DBKeyParameter", "RangeParameter", "ColumnParameter", "ColumnTypesParameter", "ListParameter",
+           "DictParameter", "PythonObjectParameter", "FileParameter", "MetadataTempFile", "JobExternalOutputMetadataWrapper", )

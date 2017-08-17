@@ -2,14 +2,12 @@ import logging
 
 import tool_shed.util.repository_util
 from galaxy.util import asbool, listify
-from tool_shed.util import (common_util, container_util, hg_util, metadata_util,
-    shed_util_common as suc)
+from tool_shed.util import (common_util, container_util, hg_util, metadata_util, shed_util_common as suc)
 
 log = logging.getLogger(__name__)
 
 
 class RelationBuilder(object):
-
     def __init__(self, app, repository, repository_metadata, tool_shed_url):
         self.all_repository_dependencies = {}
         self.app = app
@@ -80,10 +78,11 @@ class RelationBuilder(object):
             current_changeset_revision = str(self.repository_metadata.changeset_revision)
             # Get the changeset revision to which the current value of required_repository_changeset_revision
             # should be updated if it's not current.
-            text = metadata_util.get_updated_changeset_revisions(self.app,
-                                                                 name=str(self.repository.name),
-                                                                 owner=str(self.repository.user.username),
-                                                                 changeset_revision=current_changeset_revision)
+            text = metadata_util.get_updated_changeset_revisions(
+                self.app,
+                name=str(self.repository.name),
+                owner=str(self.repository.user.username),
+                changeset_revision=current_changeset_revision)
             if text:
                 valid_changeset_revisions = listify(text)
                 if current_changeset_revision not in valid_changeset_revisions:
@@ -111,12 +110,9 @@ class RelationBuilder(object):
         prior_installation_required, only_if_compiling_contained_td = \
             self.get_prior_installation_required_and_only_if_compiling_contained_td()
         # Create a key with the value of prior_installation_required defaulted to False.
-        key = container_util.generate_repository_dependencies_key_for_repository(self.tool_shed_url,
-                                                                                 self.repository.name,
-                                                                                 self.repository.user.username,
-                                                                                 self.repository_metadata.changeset_revision,
-                                                                                 prior_installation_required,
-                                                                                 only_if_compiling_contained_td)
+        key = container_util.generate_repository_dependencies_key_for_repository(
+            self.tool_shed_url, self.repository.name, self.repository.user.username, self.repository_metadata.changeset_revision,
+            prior_installation_required, only_if_compiling_contained_td)
         return key
 
     def get_repository_dependencies_for_changeset_revision(self):
@@ -164,12 +160,8 @@ class RelationBuilder(object):
     def get_repository_dependency_as_key(self, repository_dependency):
         tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple(repository_dependency)
-        return container_util.generate_repository_dependencies_key_for_repository(tool_shed,
-                                                                                  name,
-                                                                                  owner,
-                                                                                  changeset_revision,
-                                                                                  prior_installation_required,
-                                                                                  only_if_compiling_contained_td)
+        return container_util.generate_repository_dependencies_key_for_repository(
+            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td)
 
     def get_updated_changeset_revisions_for_repository_dependencies(self, key_rd_dicts):
         updated_key_rd_dicts = []
@@ -237,8 +229,7 @@ class RelationBuilder(object):
     def handle_circular_repository_dependency(self, repository_key, repository_dependency):
         all_repository_dependencies_root_key = self.all_repository_dependencies['root_key']
         repository_dependency_as_key = self.get_repository_dependency_as_key(repository_dependency)
-        self.update_circular_repository_dependencies(repository_key,
-                                                     repository_dependency,
+        self.update_circular_repository_dependencies(repository_key, repository_dependency,
                                                      self.all_repository_dependencies[repository_dependency_as_key])
         if all_repository_dependencies_root_key != repository_dependency_as_key:
             self.all_repository_dependencies[repository_key] = [repository_dependency]

@@ -5,19 +5,12 @@ from copy import deepcopy
 from six import string_types
 from six.moves.urllib.parse import quote_plus
 
-from galaxy.util import (
-    parse_xml,
-    string_as_bool
-)
+from galaxy.util import (parse_xml, string_as_bool)
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 
-from .parameters import (
-    DEFAULT_DATASET_NAME,
-    DisplayApplicationDataParameter,
-    DisplayApplicationParameter
-)
+from .parameters import (DEFAULT_DATASET_NAME, DisplayApplicationDataParameter, DisplayApplicationParameter)
 from .util import encode_dataset_user
 
 log = logging.getLogger(__name__)
@@ -54,20 +47,24 @@ class DisplayApplicationLink(object):
 
     def get_display_url(self, data, trans):
         dataset_hash, user_hash = encode_dataset_user(trans, data, None)
-        return url_for(controller='dataset',
-                       action="display_application",
-                       dataset_id=dataset_hash,
-                       user_id=user_hash,
-                       app_name=quote_plus(self.display_application.id),
-                       link_name=quote_plus(self.id),
-                       app_action=None)
+        return url_for(
+            controller='dataset',
+            action="display_application",
+            dataset_id=dataset_hash,
+            user_id=user_hash,
+            app_name=quote_plus(self.display_application.id),
+            link_name=quote_plus(self.id),
+            app_action=None)
 
     def get_inital_values(self, data, trans):
         if self.other_values:
             rval = odict(self.other_values)
         else:
             rval = odict()
-        rval.update({'BASE_URL': trans.request.base, 'APP': trans.app})  # trans automatically appears as a response, need to add properties of trans that we want here
+        rval.update({
+            'BASE_URL': trans.request.base,
+            'APP': trans.app
+        })  # trans automatically appears as a response, need to add properties of trans that we want here
         for key, value in BASE_PARAMS.items():  # add helper functions/variables
             rval[key] = value
         rval[DEFAULT_DATASET_NAME] = data  # always have the display dataset name available
@@ -84,10 +81,12 @@ class DisplayApplicationLink(object):
                 if name in app_kwds and param.allow_override:
                     other_values[name] = app_kwds[name]
                 else:
-                    other_values[name] = param.get_value(other_values, dataset_hash, user_hash, trans)  # subsequent params can rely on this value
+                    other_values[name] = param.get_value(other_values, dataset_hash, user_hash,
+                                                         trans)  # subsequent params can rely on this value
             else:
                 ready = False
-                other_values[name] = param.get_value(other_values, dataset_hash, user_hash, trans)  # subsequent params can rely on this value
+                other_values[name] = param.get_value(other_values, dataset_hash, user_hash,
+                                                     trans)  # subsequent params can rely on this value
                 if other_values[name] is None:
                     # Need to stop here, next params may need this value to determine its own value
                     return False, other_values
@@ -102,7 +101,6 @@ class DisplayApplicationLink(object):
 
 
 class DynamicDisplayApplicationBuilder(object):
-
     def __init__(self, elem, display_application, build_sites):
         filename = None
         data_table = None
@@ -324,7 +322,8 @@ class DisplayApplication(object):
         # All toolshed-specific attributes added by e.g the registry will remain
         attr_dict = self._get_attributes_from_elem(elem)
         # We will not allow changing the id at this time (we'll need to fix several mappings upstream to handle this case)
-        assert attr_dict.get('id') == self.id, ValueError("You cannot reload a Display application where the ID has changed. You will need to restart the server instead.")
+        assert attr_dict.get('id') == self.id, ValueError(
+            "You cannot reload a Display application where the ID has changed. You will need to restart the server instead.")
         # clear old links
         self.links = {}
         # clear data table versions:

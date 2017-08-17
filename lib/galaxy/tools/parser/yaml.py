@@ -1,4 +1,3 @@
-
 from galaxy.tools.deps import requirements
 from galaxy.util.odict import odict
 
@@ -11,13 +10,11 @@ from .output_collection_def import dataset_collector_descriptions_from_list
 from .output_objects import (
     ToolOutput,
     ToolOutputCollection,
-    ToolOutputCollectionStructure,
-)
+    ToolOutputCollectionStructure, )
 from .util import error_on_exit_code
 
 
 class YamlToolSource(ToolSource):
-
     def __init__(self, root_dict, source_path=None):
         self.root_dict = root_dict
         self._source_path = source_path
@@ -148,8 +145,7 @@ class YamlToolSource(ToolSource):
             collection_type=collection_type,
             collection_type_source=collection_type_source,
             structured_like=structured_like,
-            dataset_collector_descriptions=dataset_collector_descriptions,
-        )
+            dataset_collector_descriptions=dataset_collector_descriptions, )
         output_collection = ToolOutputCollection(
             name,
             structure,
@@ -159,8 +155,7 @@ class YamlToolSource(ToolSource):
             inherit_format=inherit_format,
             inherit_metadata=inherit_metadata,
             default_format_source=default_format_source,
-            default_metadata_source=default_metadata_source,
-        )
+            default_metadata_source=default_metadata_source, )
         return output_collection
 
     def _dataset_collector_descriptions(self, discover_datasets_dicts):
@@ -171,9 +166,7 @@ class YamlToolSource(ToolSource):
 
     def parse_tests_to_dict(self):
         tests = []
-        rval = dict(
-            tests=tests
-        )
+        rval = dict(tests=tests)
 
         for i, test_dict in enumerate(self.root_dict.get("tests", [])):
             tests.append(_parse_test(i, test_dict))
@@ -265,15 +258,13 @@ def __to_test_assert_list(assertions):
         assert_dict = dict(
             tag=assertion["that"],
             attributes=assertion,
-            children=children,
-        )
+            children=children, )
         assert_list.append(assert_dict)
 
     return assert_list or None  # XML variant is None if no assertions made
 
 
 class YamlPageSource(PageSource):
-
     def __init__(self, inputs_list):
         self.inputs_list = inputs_list
 
@@ -282,7 +273,6 @@ class YamlPageSource(PageSource):
 
 
 class YamlInputSource(InputSource):
-
     def __init__(self, input_dict):
         self.input_dict = input_dict
 

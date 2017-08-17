@@ -3,11 +3,7 @@ workflow steps.
 """
 import math
 
-from galaxy.util.topsort import (
-    CycleError,
-    topsort,
-    topsort_levels
-)
+from galaxy.util.topsort import (CycleError, topsort, topsort_levels)
 
 
 def attach_ordered_steps(workflow, steps):
@@ -33,7 +29,7 @@ def order_workflow_steps(steps):
         if not step.position or 'left' not in step.position or 'top' not in step.position:
             position_data_available = False
     if position_data_available:
-        steps.sort(key=lambda _: math.sqrt(_.position['left'] ** 2 + _.position['top'] ** 2))
+        steps.sort(key=lambda _: math.sqrt(_.position['left']**2 + _.position['top']**2))
     try:
         edges = edgelist_for_workflow_steps(steps)
         node_order = topsort(edges)

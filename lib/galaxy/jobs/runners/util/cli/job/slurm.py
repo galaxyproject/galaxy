@@ -14,24 +14,17 @@ except ImportError:
 
 log = getLogger(__name__)
 
-argmap = {
-    'time': '-t',
-    'ncpus': '-c',
-    'partition': '-p'
-}
+argmap = {'time': '-t', 'ncpus': '-c', 'partition': '-p'}
 
 
 class Slurm(BaseJobExec):
-
     def __init__(self, **params):
         self.params = {}
         for k, v in params.items():
             self.params[k] = v
 
     def job_script_kwargs(self, ofile, efile, job_name):
-        scriptargs = {'-o': ofile,
-                      '-e': efile,
-                      '-J': job_name}
+        scriptargs = {'-o': ofile, '-e': efile, '-J': job_name}
 
         # Map arguments using argmap.
         for k, v in self.params.items():
@@ -94,4 +87,4 @@ class Slurm(BaseJobExec):
             raise KeyError("Failed to map slurm status code [%s] to job state." % state)
 
 
-__all__ = ('Slurm',)
+__all__ = ('Slurm', )

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Uses pysam to bgzip a file
 
@@ -28,9 +27,15 @@ def main():
     if options.chrom_col and options.start_col and options.end_col:
         sort_params = [
             "sort",
-            "-k%(i)s,%(i)s" % {'i': options.chrom_col},
-            "-k%(i)i,%(i)in" % {'i': options.start_col},
-            "-k%(i)i,%(i)in" % {'i': options.end_col}
+            "-k%(i)s,%(i)s" % {
+                'i': options.chrom_col
+            },
+            "-k%(i)i,%(i)in" % {
+                'i': options.start_col
+            },
+            "-k%(i)i,%(i)in" % {
+                'i': options.end_col
+            }
         ]
     elif options.preset == "bed":
         sort_params = ["sort", "-k1,1", "-k2,2n", "-k3,3n"]

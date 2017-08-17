@@ -12,18 +12,15 @@ from galaxy.model.custom_types import JSONType
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
-ExtendedMetadata_table = Table("extended_metadata", metadata,
-                               Column("id", Integer, primary_key=True),
-                               Column("data", JSONType))
+ExtendedMetadata_table = Table("extended_metadata", metadata, Column("id", Integer, primary_key=True), Column("data", JSONType))
 
 ExtendedMetadataIndex_table = Table("extended_metadata_index", metadata,
                                     Column("id", Integer, primary_key=True),
-                                    Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id",
-                                                                                       onupdate="CASCADE",
-                                                                                       ondelete="CASCADE"),
-                                           index=True),
-                                    Column("path", String(255)),
-                                    Column("value", TEXT))
+                                    Column(
+                                        "extended_metadata_id",
+                                        Integer,
+                                        ForeignKey("extended_metadata.id", onupdate="CASCADE", ondelete="CASCADE"),
+                                        index=True), Column("path", String(255)), Column("value", TEXT))
 
 extended_metadata_ldda_col = Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), nullable=True)
 

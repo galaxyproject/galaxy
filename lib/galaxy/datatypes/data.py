@@ -47,6 +47,7 @@ class DataMeta(abc.ABCMeta):
     """
     Metaclass for Data class.  Sets up metadata spec.
     """
+
     def __init__(cls, name, bases, dict_):
         cls.metadata_spec = metadata.MetadataSpecCollection()
         for base in bases:  # loop through bases (class/types) of cls
@@ -317,8 +318,10 @@ class Data(object):
 
     def _serve_raw(self, trans, dataset, to_ext, **kwd):
         trans.response.headers['Content-Length'] = int(os.stat(dataset.file_name).st_size)
-        trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
-        filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
+        trans.response.set_content_type(
+            "application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
+        filename = self._download_filename(
+            dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
         return open(dataset.file_name)
 
@@ -409,8 +412,10 @@ class Data(object):
                 return self._archive_composite_dataset(trans, data, **kwd)
             else:
                 trans.response.headers['Content-Length'] = int(os.stat(data.file_name).st_size)
-                filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
-                trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
+                filename = self._download_filename(
+                    data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
+                trans.response.set_content_type(
+                    "application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
                 return open(data.file_name)
         if not os.path.exists(data.file_name):
@@ -433,9 +438,8 @@ class Data(object):
             return open(data.file_name)
         else:
             trans.response.set_content_type("text/html")
-            return trans.stream_template_mako("/dataset/large_file.mako",
-                                              truncated_data=open(data.file_name).read(max_peek_size),
-                                              data=data)
+            return trans.stream_template_mako(
+                "/dataset/large_file.mako", truncated_data=open(data.file_name).read(max_peek_size), data=data)
 
     def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
         def escape(raw_identifier):
@@ -516,7 +520,8 @@ class Data(object):
         try:
             del self.supported_display_apps[app_id]
         except:
-            log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.', type, self.__class__.__name__)
+            log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.', type,
+                          self.__class__.__name__)
 
     def clear_display_apps(self):
         self.supported_display_apps = {}
@@ -554,7 +559,8 @@ class Data(object):
             if type in self.get_display_types():
                 return getattr(self, self.supported_display_apps[type]['file_function'])(dataset, **kwd)
         except:
-            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible', self.supported_display_apps[type]['file_function'], self.__class__.__name__, type)
+            log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible',
+                          self.supported_display_apps[type]['file_function'], self.__class__.__name__, type)
         return "This display type (%s) is not implemented for this datatype (%s)." % (type, dataset.ext)
 
     def get_display_links(self, dataset, type, app, base_url, target_frame='_blank', **kwd):
@@ -580,7 +586,15 @@ class Data(object):
         """Returns ( target_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions(dataset, accepted_formats, **kwd)
 
-    def convert_dataset(self, trans, original_dataset, target_type, return_output=False, visible=True, deps=None, target_context=None, history=None):
+    def convert_dataset(self,
+                        trans,
+                        original_dataset,
+                        target_type,
+                        return_output=False,
+                        visible=True,
+                        deps=None,
+                        target_context=None,
+                        history=None):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
         converter = trans.app.datatypes_registry.get_converter_by_target_type(original_dataset.ext, target_type)
 
@@ -624,7 +638,16 @@ class Data(object):
         """This function is called on the dataset before metadata is set."""
         dataset.clear_associated_files(metadata_safe=True)
 
-    def __new_composite_file(self, name, optional=False, mimetype=None, description=None, substitute_name_with_metadata=None, is_binary=False, to_posix_lines=True, space_to_tab=False, **kwds):
+    def __new_composite_file(self,
+                             name,
+                             optional=False,
+                             mimetype=None,
+                             description=None,
+                             substitute_name_with_metadata=None,
+                             is_binary=False,
+                             to_posix_lines=True,
+                             space_to_tab=False,
+                             **kwds):
         kwds['name'] = name
         kwds['optional'] = optional
         kwds['mimetype'] = mimetype
@@ -666,6 +689,7 @@ class Data(object):
                     meta_value = self.metadata_spec[composite_file.substitute_name_with_metadata].default
                 return key % meta_value
             return key
+
         files = odict()
         for key, value in self.composite_files.items():
             files[substitute_composite_key(key, value)] = value
@@ -829,11 +853,13 @@ class Text(Data):
         """
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
-                    dataset.blurb = "%s %s" % (util.commaify(str(dataset.metadata.data_lines)), inflector.cond_plural(dataset.metadata.data_lines, self.line_class))
+                    dataset.blurb = "%s %s" % (util.commaify(str(dataset.metadata.data_lines)),
+                                               inflector.cond_plural(dataset.metadata.data_lines, self.line_class))
                 else:
                     # Number of lines is not known ( this should not happen ), and auto-detect is
                     # needed to set metadata
@@ -845,7 +871,8 @@ class Text(Data):
                         dataset.blurb = "%s %s" % (util.commaify(str(lc)), inflector.cond_plural(lc, self.line_class))
                     else:
                         est_lines = self.estimate_file_lines(dataset)
-                        dataset.blurb = "~%s %s" % (util.commaify(util.roundify(str(est_lines))), inflector.cond_plural(est_lines, self.line_class))
+                        dataset.blurb = "~%s %s" % (util.commaify(util.roundify(str(est_lines))),
+                                                    inflector.cond_plural(est_lines, self.line_class))
             else:
                 dataset.blurb = "%s %s" % (util.commaify(str(line_count)), inflector.cond_plural(line_count, self.line_class))
         else:
@@ -876,6 +903,7 @@ class Text(Data):
                     pass
                 f.close()
                 return i + 1
+
             length = _file_len(input_files[0])
             parts = int(split_params['split_size'])
             if length < parts:
@@ -926,6 +954,7 @@ class Text(Data):
                 part_file.close()
             raise
         f.close()
+
     split = classmethod(split)
 
     # ------------- Dataproviders

@@ -23,10 +23,10 @@ class SentryPlugin(ErrorPlugin):
         """
         if self.app.sentry_client:
             extra = {
-                'info' : job.info,
-                'id' : job.id,
-                'command_line' : job.command_line,
-                'stderr' : job.stderr,
+                'info': job.info,
+                'id': job.id,
+                'command_line': job.command_line,
+                'stderr': job.stderr,
                 'traceback': job.traceback,
                 'exit_code': job.exit_code,
                 'stdout': job.stdout,
@@ -44,8 +44,7 @@ class SentryPlugin(ErrorPlugin):
             response = self.app.sentry_client.capture(
                 'raven.events.Message',
                 message="Galaxy Job Error: %s  v.%s" % (job.tool_id, job.tool_version),
-                extra=extra,
-            )
+                extra=extra, )
             return ('Submitted bug report to Sentry. Your guru meditation number is %s' % response, 'success')
 
 

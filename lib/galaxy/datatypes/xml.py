@@ -4,10 +4,7 @@ XML format classes
 import logging
 import re
 
-from . import (
-    data,
-    dataproviders
-)
+from . import (data, dataproviders)
 
 log = logging.getLogger(__name__)
 
@@ -53,6 +50,7 @@ class GenericXml(data.Text):
             raise NotImplementedError("Merging multiple XML files is non-trivial and must be implemented for each XML type")
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
+
     merge = staticmethod(merge)
 
     @dataproviders.decorators.dataprovider_factory('xml', dataproviders.hierarchy.XMLDataProvider.settings)

@@ -48,9 +48,7 @@ class UniverseApplication(object):
         create_or_verify_database(db_url, self.config.database_engine_options)
         # Set up the Tool Shed database engine and ORM.
         from galaxy.webapps.tool_shed.model import mapping
-        self.model = mapping.init(self.config.file_path,
-                                  db_url,
-                                  self.config.database_engine_options)
+        self.model = mapping.init(self.config.file_path, db_url, self.config.database_engine_options)
         # Initialize the Tool Shed security helper.
         self.security = security.SecurityHelper(id_secret=self.config.id_secret)
         # initialize the Tool Shed tag handler.

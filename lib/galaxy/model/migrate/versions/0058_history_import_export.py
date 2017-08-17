@@ -19,8 +19,7 @@ JobExportHistoryArchive_table = Table("job_export_history_archive", metadata,
                                       Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
                                       Column("compressed", Boolean, index=True, default=False),
                                       Column("history_attrs_filename", TEXT),
-                                      Column("datasets_attrs_filename", TEXT),
-                                      Column("jobs_attrs_filename", TEXT))
+                                      Column("datasets_attrs_filename", TEXT), Column("jobs_attrs_filename", TEXT))
 
 
 def upgrade(migrate_engine):

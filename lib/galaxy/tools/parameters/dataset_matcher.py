@@ -139,7 +139,6 @@ class HdaImplicitMatch(object):
 
 
 class DatasetCollectionMatcher(object):
-
     def __init__(self, dataset_matcher):
         self.dataset_matcher = dataset_matcher
 

@@ -5,12 +5,7 @@ import logging
 
 from galaxy.util import simplegraph
 
-from . import (
-    data,
-    dataproviders,
-    tabular,
-    xml
-)
+from . import (data, dataproviders, tabular, xml)
 
 log = logging.getLogger(__name__)
 
@@ -46,8 +41,7 @@ class Xgmml(xml.GenericXml):
         Merging multiple XML files is non-trivial and must be done in subclasses.
         """
         if len(split_files) > 1:
-            raise NotImplementedError("Merging multiple XML files is non-trivial " +
-                                      "and must be implemented for each XML type")
+            raise NotImplementedError("Merging multiple XML files is non-trivial " + "and must be implemented for each XML type")
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
 
@@ -106,6 +100,7 @@ class XGMMLGraphDataProvider(dataproviders.hierarchy.XMLDataProvider):
         'edges': contains objects of the form:
             { 'source' : <an index into nodes>, 'target': <an index into nodes>, 'data': <any extra data> }
     """
+
     def __iter__(self):
         # use simple graph to store nodes and links, later providing them as a dict
         #   essentially this is a form of aggregation
@@ -139,6 +134,7 @@ class SIFGraphDataProvider(dataproviders.column.ColumnarDataProvider):
         'edges': contains objects of the form:
             { 'source' : <an index into nodes>, 'target': <an index into nodes>, 'data': <any extra data> }
     """
+
     def __iter__(self):
         # use simple graph to store nodes and links, later providing them as a dict
         #   essentially this is a form of aggregation

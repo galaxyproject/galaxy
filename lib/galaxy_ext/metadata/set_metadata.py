@@ -32,7 +32,8 @@ assert sys.version_info[:2] >= (2, 6) and sys.version_info[:2] <= (2, 7), 'Pytho
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
-galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
+galaxy.model.Job(
+)  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
 
 
 def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, datatypes_registry):
@@ -149,7 +150,8 @@ def set_metadata():
         new_dataset.state = new_dataset.states.OK
         new_dataset_instance = galaxy.model.HistoryDatasetAssociation(id=-i, dataset=new_dataset, extension=file_dict.get('ext', 'data'))
         set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry)
-        file_dict['metadata'] = json.loads(new_dataset_instance.metadata.to_JSON_dict())  # storing metadata in external form, need to turn back into dict, then later jsonify
+        file_dict['metadata'] = json.loads(new_dataset_instance.metadata.to_JSON_dict()
+                                           )  # storing metadata in external form, need to turn back into dict, then later jsonify
     if existing_job_metadata_dict or new_job_metadata_dict:
         with open(job_metadata, 'wb') as job_metadata_fh:
             for value in existing_job_metadata_dict.values() + new_job_metadata_dict.values():

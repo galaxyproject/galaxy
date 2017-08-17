@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 class BaseProvenanceController(BaseAPIController):
     """
     """
+
     def __init__(self, app):
         super(BaseProvenanceController, self).__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
@@ -63,10 +64,7 @@ class BaseProvenanceController(BaseAPIController):
                     "stdout": job.stdout,
                 }
             else:
-                return {
-                    "id": trans.security.encode_id(item.id),
-                    "uuid": (lambda uuid: str(uuid) if uuid else None)(item.dataset.uuid)
-                }
+                return {"id": trans.security.encode_id(item.id), "uuid": (lambda uuid: str(uuid) if uuid else None)(item.dataset.uuid)}
         return None
 
     def _get_job_record(self, trans, job, follow):

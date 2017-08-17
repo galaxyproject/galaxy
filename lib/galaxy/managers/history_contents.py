@@ -55,8 +55,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         "purged",
         "visible",
         "create_time",
-        "update_time",
-    )
+        "update_time", )
     default_order_by = 'hid'
 
     def __init__(self, app):
@@ -89,22 +88,19 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         """
         # TODO?: we could branch here based on 'if limit is None and offset is None' - to a simpler (non-union) query
         # for now, I'm just using this (even for non-limited/offset queries) to reduce code paths
-        return self._union_of_contents(container,
-            filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs)
+        return self._union_of_contents(container, filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs)
 
     def contents_count(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
         """
         Returns a count of both/all types of contents, based on the given filters.
         """
-        return self.contents_query(container,
-            filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs).count()
+        return self.contents_query(container, filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs).count()
 
     def contents_query(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
         """
         Returns the contents union query for subqueries, etc.
         """
-        return self._union_of_contents_query(container,
-            filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs)
+        return self._union_of_contents_query(container, filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs)
 
     # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
     def parse_order_by(self, order_by_string, default=None):
@@ -128,8 +124,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         if default:
             return self.parse_order_by(default)
         # TODO: allow order_by None
-        raise glx_exceptions.RequestParameterInvalidException('Unknown order_by', order_by=order_by_string,
-            available=['create_time', 'update_time', 'name', 'hid'])
+        raise glx_exceptions.RequestParameterInvalidException(
+            'Unknown order_by', order_by=order_by_string, available=['create_time', 'update_time', 'name', 'hid'])
 
     # history specific methods
     def state_counts(self, history):
@@ -139,14 +135,9 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
 
         Note: does not include deleted/hidden contents.
         """
-        filters = [
-            sql.column('deleted') == false(),
-            sql.column('visible') == true()
-        ]
+        filters = [sql.column('deleted') == false(), sql.column('visible') == true()]
         contents_subquery = self._union_of_contents_query(history, filters=filters).subquery()
-        statement = (sql.select([sql.column('state'), func.count('*')])
-            .select_from(contents_subquery)
-            .group_by(sql.column('state')))
+        statement = (sql.select([sql.column('state'), func.count('*')]).select_from(contents_subquery).group_by(sql.column('state')))
         counts = self.app.model.context.execute(statement).fetchall()
         return dict(counts)
 
@@ -160,14 +151,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         """
         returned = dict(deleted=0, hidden=0, active=0)
         contents_subquery = self._union_of_contents_query(history).subquery()
-        columns = [
-            sql.column('deleted'),
-            sql.column('visible'),
-            func.count('*')
-        ]
-        statement = (sql.select(columns)
-            .select_from(contents_subquery)
-            .group_by(sql.column('deleted'), sql.column('visible')))
+        columns = [sql.column('deleted'), sql.column('visible'), func.count('*')]
+        statement = (sql.select(columns).select_from(contents_subquery).group_by(sql.column('deleted'), sql.column('visible')))
         groups = self.app.model.context.execute(statement).fetchall()
         for deleted, visible, count in groups:
             if deleted:
@@ -294,12 +279,12 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
     def _contents_common_query_for_contained(self, history_id):
         component_class = self.contained_class
         # TODO: and now a join with Dataset - this is getting sad
-        columns = self._contents_common_columns(component_class,
+        columns = self._contents_common_columns(
+            component_class,
             history_content_type=literal('dataset'),
             state=model.Dataset.state,
             # do not have inner collections
-            collection_id=literal(None)
-        )
+            collection_id=literal(None))
         subquery = self._session().query(*columns)
         # for the HDA's we need to join the Dataset since it has an actual state column
         subquery = subquery.join(model.Dataset, model.Dataset.id == component_class.dataset_id)
@@ -308,7 +293,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
 
     def _contents_common_query_for_subcontainer(self, history_id):
         component_class = self.subcontainer_class
-        columns = self._contents_common_columns(component_class,
+        columns = self._contents_common_columns(
+            component_class,
             history_content_type=literal('dataset_collection'),
             # do not have datasets
             dataset_id=literal(None),
@@ -317,12 +303,10 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             purged=literal(False),
             # these are attached instead to the inner collection joined below
             create_time=model.DatasetCollection.create_time,
-            update_time=model.DatasetCollection.update_time
-        )
+            update_time=model.DatasetCollection.update_time)
         subquery = self._session().query(*columns)
         # for the HDCA's we need to join the DatasetCollection since it has update/create times
-        subquery = subquery.join(model.DatasetCollection,
-            model.DatasetCollection.id == component_class.collection_id)
+        subquery = subquery.join(model.DatasetCollection, model.DatasetCollection.id == component_class.collection_id)
         subquery = subquery.filter(component_class.history_id == history_id)
         return subquery
 
@@ -339,12 +323,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         if not id_list:
             return []
         component_class = self.contained_class
-        query = (self._session().query(component_class)
-            .filter(component_class.id.in_(id_list))
-            .options(undefer('_metadata'))
-            .options(eagerload('dataset.actions'))
-            .options(eagerload('tags'))
-            .options(eagerload('annotations')))
+        query = (self._session().query(component_class).filter(component_class.id.in_(id_list)).options(undefer('_metadata'))
+                 .options(eagerload('dataset.actions')).options(eagerload('tags')).options(eagerload('annotations')))
         return dict((row.id, row) for row in query.all())
 
     def _subcontainer_id_map(self, id_list):
@@ -352,11 +332,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         if not id_list:
             return []
         component_class = self.subcontainer_class
-        query = (self._session().query(component_class)
-            .filter(component_class.id.in_(id_list))
-            .options(eagerload('collection'))
-            .options(eagerload('tags'))
-            .options(eagerload('annotations')))
+        query = (self._session().query(component_class).filter(component_class.id.in_(id_list)).options(eagerload('collection'))
+                 .options(eagerload('tags')).options(eagerload('annotations')))
         return dict((row.id, row) for row in query.all())
 
 
@@ -393,10 +370,10 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'type_id'       : self.serialize_type_id,
-            'history_id'    : self.serialize_id,
-            'dataset_id'    : self.serialize_id_or_skip,
-            'collection_id' : self.serialize_id_or_skip,
+            'type_id': self.serialize_type_id,
+            'history_id': self.serialize_id,
+            'dataset_id': self.serialize_id_or_skip,
+            'collection_id': self.serialize_id_or_skip,
         })
 
     def serialize_id_or_skip(self, content, key, **context):
@@ -412,7 +389,6 @@ class HistoryContentsFilters(base.ModelFilterParser, deletable.PurgableFiltersMi
 
     # TODO: history_content_type filter doesn't work with psycopg2: column does not exist (even with hybrid props)
     def _parse_orm_filter(self, attr, op, val):
-
         def raise_filter_err(attr, op, val, msg):
             raise glx_exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
 
@@ -473,14 +449,35 @@ class HistoryContentsFilters(base.ModelFilterParser, deletable.PurgableFiltersMi
         super(HistoryContentsFilters, self)._add_parsers()
         deletable.PurgableFiltersMixin._add_parsers(self)
         self.orm_filter_parsers.update({
-            'history_content_type' : {'op': ('eq')},
-            'type_id'       : {'op': ('eq', 'in'), 'val': self.parse_type_id_list},
-            'hid'           : {'op': ('eq', 'ge', 'le'), 'val': int},
+            'history_content_type': {
+                'op': ('eq')
+            },
+            'type_id': {
+                'op': ('eq', 'in'),
+                'val': self.parse_type_id_list
+            },
+            'hid': {
+                'op': ('eq', 'ge', 'le'),
+                'val': int
+            },
             # TODO: needs a different val parser - but no way to add to the above
             # 'hid-in'        : { 'op': ( 'in' ), 'val': self.parse_int_list },
-            'name'          : {'op': ('eq', 'contains', 'like')},
-            'state'         : {'op': ('eq', 'in')},
-            'visible'       : {'op': ('eq'), 'val': self.parse_bool},
-            'create_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
-            'update_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
+            'name': {
+                'op': ('eq', 'contains', 'like')
+            },
+            'state': {
+                'op': ('eq', 'in')
+            },
+            'visible': {
+                'op': ('eq'),
+                'val': self.parse_bool
+            },
+            'create_time': {
+                'op': ('le', 'ge'),
+                'val': self.parse_date
+            },
+            'update_time': {
+                'op': ('le', 'ge'),
+                'val': self.parse_date
+            },
         })

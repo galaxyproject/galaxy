@@ -3,17 +3,11 @@ import logging
 import os
 import subprocess
 
-from galaxy.datatypes import (
-    data,
-    metadata
-)
+from galaxy.datatypes import (data, metadata)
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import (
-    get_headers,
-    iter_headers
-)
+from galaxy.datatypes.sniff import (get_headers, iter_headers)
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.xml import GenericXml
 
@@ -57,7 +51,8 @@ class GenericMolFile(data.Text):
     """
         abstract class for most of the molecule files
     """
-    MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -161,6 +156,7 @@ class SDF(GenericMolFile):
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
+
     split = classmethod(split)
 
 
@@ -243,6 +239,7 @@ class MOL2(GenericMolFile):
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
+
     split = classmethod(split)
 
 
@@ -323,6 +320,7 @@ class FPS(GenericMolFile):
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
+
     split = classmethod(split)
 
     def merge(split_files, output_file):
@@ -334,8 +332,7 @@ class FPS(GenericMolFile):
             # For one file only, use base class method (move/copy)
             return data.Text.merge(split_files, output_file)
         if not split_files:
-            raise ValueError("No fps files given, %r, to merge into %s"
-                             % (split_files, output_file))
+            raise ValueError("No fps files given, %r, to merge into %s" % (split_files, output_file))
         out = open(output_file, "w")
         first = True
         for filename in split_files:
@@ -349,6 +346,7 @@ class FPS(GenericMolFile):
                         first = False
                         out.write(line)
         out.close()
+
     merge = staticmethod(merge)
 
 
@@ -358,8 +356,12 @@ class OBFS(Binary):
     composite_type = 'basic'
     allow_datatype_change = False
 
-    MetadataElement(name="base_name", default='OpenBabel Fastsearch Index',
-                    readonly=True, visible=True, optional=True,)
+    MetadataElement(
+        name="base_name",
+        default='OpenBabel Fastsearch Index',
+        readonly=True,
+        visible=True,
+        optional=True, )
 
     def __init__(self, **kwd):
         """
@@ -367,18 +369,12 @@ class OBFS(Binary):
             and a pointer the actual molecule file.
         """
         Binary.__init__(self, **kwd)
-        self.add_composite_file('molecule.fs', is_binary=True,
-                                description='OpenBabel Fastsearch Index')
-        self.add_composite_file('molecule.sdf', optional=True,
-                                is_binary=False, description='Molecule File')
-        self.add_composite_file('molecule.smi', optional=True,
-                                is_binary=False, description='Molecule File')
-        self.add_composite_file('molecule.inchi', optional=True,
-                                is_binary=False, description='Molecule File')
-        self.add_composite_file('molecule.mol2', optional=True,
-                                is_binary=False, description='Molecule File')
-        self.add_composite_file('molecule.cml', optional=True,
-                                is_binary=False, description='Molecule File')
+        self.add_composite_file('molecule.fs', is_binary=True, description='OpenBabel Fastsearch Index')
+        self.add_composite_file('molecule.sdf', optional=True, is_binary=False, description='Molecule File')
+        self.add_composite_file('molecule.smi', optional=True, is_binary=False, description='Molecule File')
+        self.add_composite_file('molecule.inchi', optional=True, is_binary=False, description='Molecule File')
+        self.add_composite_file('molecule.mol2', optional=True, is_binary=False, description='Molecule File')
+        self.add_composite_file('molecule.cml', optional=True, is_binary=False, description='Molecule File')
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text."""
@@ -396,8 +392,7 @@ class OBFS(Binary):
         except:
             return "OpenBabel Fastsearch Index"
 
-    def display_data(self, trans, data, preview=False, filename=None,
-                     to_ext=None, **kwd):
+    def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
         """Apparently an old display method, but still gets called.
 
         This allows us to format the data shown in the central pane via the "eye" icon.
@@ -576,8 +571,10 @@ class InChI(Tabular):
     file_ext = "inchi"
     column_names = ['InChI']
     MetadataElement(name="columns", default=2, desc="Number of columns", readonly=True, visible=False)
-    MetadataElement(name="column_types", default=['str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
-    MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="column_types", default=['str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
+    MetadataElement(
+        name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
 
     def set_meta(self, dataset, **kwd):
         """
@@ -621,8 +618,10 @@ class SMILES(Tabular):
     file_ext = "smi"
     column_names = ['SMILES', 'TITLE']
     MetadataElement(name="columns", default=2, desc="Number of columns", readonly=True, visible=False)
-    MetadataElement(name="column_types", default=['str', 'str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
-    MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="column_types", default=['str', 'str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
+    MetadataElement(
+        name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
 
     def set_meta(self, dataset, **kwd):
         """
@@ -683,7 +682,8 @@ class CML(GenericXml):
     http://cml.sourceforge.net/
     """
     file_ext = "cml"
-    MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
 
     def set_meta(self, dataset, **kwd):
         """
@@ -754,7 +754,7 @@ class CML(GenericXml):
                     if line.lstrip().startswith('<?xml version="1.0"?>') or \
                        line.lstrip().startswith('<cml xmlns="http://www.xml-cml.org/schema') or \
                        line.lstrip().startswith('</cml>'):
-                            continue
+                        continue
                     lines.append(line)
                     if line.lstrip().startswith('</molecule>'):
                         yield lines
@@ -785,6 +785,7 @@ class CML(GenericXml):
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
+
     split = classmethod(split)
 
     def merge(split_files, output_file):
@@ -795,8 +796,7 @@ class CML(GenericXml):
             # For one file only, use base class method (move/copy)
             return data.Text.merge(split_files, output_file)
         if not split_files:
-            raise ValueError("Given no CML files, %r, to merge into %s"
-                             % (split_files, output_file))
+            raise ValueError("Given no CML files, %r, to merge into %s" % (split_files, output_file))
         with open(output_file, "w") as out:
             for filename in split_files:
                 with open(filename) as handle:
@@ -821,4 +821,5 @@ class CML(GenericXml):
                         if molecule_found:
                             out.write(line)
             out.write("</cml>\n")
+
     merge = staticmethod(merge)

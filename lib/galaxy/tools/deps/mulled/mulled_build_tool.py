@@ -17,8 +17,7 @@ from .mulled_build import (
     add_single_image_arguments,
     args_to_mull_targets_kwds,
     build_target,
-    mull_targets,
-)
+    mull_targets, )
 
 
 def main(argv=None):
@@ -47,7 +46,6 @@ def requirements_to_mulled_targets(requirements):
 
 
 __all__ = ("main", "requirements_to_mulled_targets")
-
 
 if __name__ == '__main__':
     main()

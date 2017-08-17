@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 
 
 class UploadToolAction(ToolAction):
-
     def execute(self, tool, trans, incoming={}, set_output_hid=True, history=None, **kwargs):
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.items():
@@ -24,7 +23,8 @@ class UploadToolAction(ToolAction):
         # We can pass an empty string as the cntrller here since it is used to check whether we
         # are in an admin view, and this tool is currently not used there.
         check_and_cleanup_timer = ExecutionTimer()
-        uploaded_datasets = upload_common.get_uploaded_datasets(trans, '', incoming, precreated_datasets, dataset_upload_inputs, history=history)
+        uploaded_datasets = upload_common.get_uploaded_datasets(
+            trans, '', incoming, precreated_datasets, dataset_upload_inputs, history=history)
         upload_common.cleanup_unused_precreated_datasets(precreated_datasets)
 
         if not uploaded_datasets:

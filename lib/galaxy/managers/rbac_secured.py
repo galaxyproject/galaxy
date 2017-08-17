@@ -232,8 +232,7 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
         #   anonymous access to public datasets
         return (self._is_public_based_on_roles(current_roles) or
                 # admin is always permitted
-                self.user_manager.is_admin(user) or
-                self._user_has_all_roles(user, current_roles))
+                self.user_manager.is_admin(user) or self._user_has_all_roles(user, current_roles))
 
     def grant(self, item, user):
         pass
@@ -246,6 +245,7 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
         # not so easy
 
     # TODO: these are a lil off message
+
     def is_public(self, dataset):
         current_roles = self._roles(dataset)
         return self._is_public_based_on_roles(current_roles)

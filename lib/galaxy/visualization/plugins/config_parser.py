@@ -140,8 +140,7 @@ class VisualizationsConfigParser(object):
         # render_target: where in the browser to open the rendered visualization
         # defaults to: galaxy_main
         render_target = xml_tree.find('render_target')
-        if((render_target is not None and render_target.text) and
-                (render_target.text in self.VALID_RENDER_TARGETS)):
+        if ((render_target is not None and render_target.text) and (render_target.text in self.VALID_RENDER_TARGETS)):
             returned['render_target'] = render_target.text
         else:
             returned['render_target'] = 'galaxy_main'
@@ -159,11 +158,7 @@ class VisualizationsConfigParser(object):
         template = xml_tree.find('template')
         if template is not None and template.text:
             log.info('template syntax is deprecated: use entry_point instead')
-            return {
-                'type' : 'mako',
-                'file' : template.text,
-                'attr' : {}
-            }
+            return {'type': 'mako', 'file': template.text, 'attr': {}}
 
         # need one of the two: (the deprecated) template or entry_point
         entry_point = xml_tree.find('entry_point')
@@ -175,11 +170,7 @@ class VisualizationsConfigParser(object):
         entry_point_type = entry_point_attrib.pop('entry_point_type', 'mako')
         if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
             raise ParsingException('Unknown entry_point type: ' + entry_point_type)
-        return {
-            'type' : entry_point_type,
-            'file' : entry_point.text,
-            'attr' : entry_point_attrib
-        }
+        return {'type': entry_point_type, 'file': entry_point.text, 'attr': entry_point_attrib}
 
 
 # -------------------------------------------------------------------
@@ -194,17 +185,11 @@ class DataSourceParser(object):
     """
     # these are the allowed classes to associate visualizations with (as strings)
     #   any model_class element not in this list will throw a parsing ParsingExcepion
-    ALLOWED_MODEL_CLASSES = [
-        'Visualization',
-        'HistoryDatasetAssociation',
-        'LibraryDatasetDatasetAssociation'
-    ]
+    ALLOWED_MODEL_CLASSES = ['Visualization', 'HistoryDatasetAssociation', 'LibraryDatasetDatasetAssociation']
     ATTRIBUTE_SPLIT_CHAR = '.'
     # these are the allowed object attributes to use in data source tests
     #   any attribute element not in this list will throw a parsing ParsingExcepion
-    ALLOWED_DATA_SOURCE_ATTRIBUTES = [
-        'datatype'
-    ]
+    ALLOWED_DATA_SOURCE_ATTRIBUTES = ['datatype']
 
     def parse(self, xml_tree):
         """
@@ -283,8 +268,8 @@ class DataSourceParser(object):
             test_type = test_elem.get('type', 'eq')
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
-                log.warning('Skipping test. Needs both type attribute and text node to be parsed: ' +
-                          '%s, %s' % (test_type, test_elem.text))
+                log.warning('Skipping test. Needs both type attribute and text node to be parsed: ' + '%s, %s' % (test_type,
+                                                                                                                  test_elem.text))
                 continue
             test_result = test_result.strip()
 
@@ -310,8 +295,7 @@ class DataSourceParser(object):
             elif test_type == 'has_dataprovider':
                 # does the object itself have a datatype attr and does that datatype have the given dataprovider
                 def test_fn(o, result):
-                    return (hasattr(getter(o), 'has_dataprovider') and
-                            getter(o).has_dataprovider(result))
+                    return (hasattr(getter(o), 'has_dataprovider') and getter(o).has_dataprovider(result))
 
             elif test_type == 'has_attribute':
                 # does the object itself have attr in 'result' (no equivalence checking)
@@ -319,6 +303,7 @@ class DataSourceParser(object):
                     return hasattr(getter(o), result)
 
             elif test_type == 'not_eq':
+
                 def test_fn(o, result):
                     return str(getter(o)) != result
 
@@ -327,12 +312,7 @@ class DataSourceParser(object):
                 def test_fn(o, result):
                     return str(getter(o)) == result
 
-            tests.append({
-                'type'          : test_type,
-                'result'        : test_result,
-                'result_type'   : test_result_type,
-                'fn'            : test_fn
-            })
+            tests.append({'type': test_type, 'result': test_result, 'result_type': test_result_type, 'fn': test_fn})
 
         return tests
 
@@ -452,6 +432,7 @@ class ParamModifierParser(ParamParser):
     (normal) param (e.g. 'hda_ldda' can equal 'hda' or 'ldda' and control
     whether a visualizations 'dataset_id' param is for an HDA or LDDA).
     """
+
     def parse(self, element):
         # modifies is required
         modifies = element.get('modifies')

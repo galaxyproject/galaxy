@@ -18,40 +18,38 @@ log = getLogger(__name__)
 
 ERROR_MESSAGE_UNRECOGNIZED_ARG = 'Unrecognized long argument passed to Torque CLI plugin: %s'
 
-
-argmap = {'destination': '-q',
-          'Execution_Time': '-a',
-          'Account_Name': '-A',
-          'Checkpoint': '-c',
-          'Error_Path': '-e',
-          'Group_List': '-g',
-          'Hold_Types': '-h',
-          'Join_Paths': '-j',
-          'Keep_Files': '-k',
-          'Resource_List': '-l',
-          'Mail_Points': '-m',
-          'Mail_Users': '-M',
-          'Job_Name': '-N',
-          'Output_Path': '-o',
-          'Priority': '-p',
-          'Rerunable': '-r',
-          'Shell_Path_List': '-S',
-          'job_array_request': '-t',
-          'User_List': '-u',
-          'Variable_List': '-v'}
+argmap = {
+    'destination': '-q',
+    'Execution_Time': '-a',
+    'Account_Name': '-A',
+    'Checkpoint': '-c',
+    'Error_Path': '-e',
+    'Group_List': '-g',
+    'Hold_Types': '-h',
+    'Join_Paths': '-j',
+    'Keep_Files': '-k',
+    'Resource_List': '-l',
+    'Mail_Points': '-m',
+    'Mail_Users': '-M',
+    'Job_Name': '-N',
+    'Output_Path': '-o',
+    'Priority': '-p',
+    'Rerunable': '-r',
+    'Shell_Path_List': '-S',
+    'job_array_request': '-t',
+    'User_List': '-u',
+    'Variable_List': '-v'
+}
 
 
 class Torque(BaseJobExec):
-
     def __init__(self, **params):
         self.params = {}
         for k, v in params.items():
             self.params[k] = v
 
     def job_script_kwargs(self, ofile, efile, job_name):
-        pbsargs = {'-o': ofile,
-                   '-e': efile,
-                   '-N': job_name}
+        pbsargs = {'-o': ofile, '-e': efile, '-N': job_name}
         for k, v in self.params.items():
             if k == 'plugin':
                 continue
@@ -111,14 +109,9 @@ class Torque(BaseJobExec):
 
     def _get_job_state(self, state):
         try:
-            return {
-                'E': job_states.RUNNING,
-                'R': job_states.RUNNING,
-                'Q': job_states.QUEUED,
-                'C': job_states.OK
-            }.get(state)
+            return {'E': job_states.RUNNING, 'R': job_states.RUNNING, 'Q': job_states.QUEUED, 'C': job_states.OK}.get(state)
         except KeyError:
             raise KeyError("Failed to map torque status code [%s] to job state." % state)
 
 
-__all__ = ('Torque',)
+__all__ = ('Torque', )

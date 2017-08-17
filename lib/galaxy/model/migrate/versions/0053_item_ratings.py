@@ -20,7 +20,11 @@ HistoryRatingAssociation_table = Table("history_rating_association", metadata,
 
 HistoryDatasetAssociationRatingAssociation_table = Table("history_dataset_association_rating_association", metadata,
                                                          Column("id", Integer, primary_key=True),
-                                                         Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+                                                         Column(
+                                                             "history_dataset_association_id",
+                                                             Integer,
+                                                             ForeignKey("history_dataset_association.id"),
+                                                             index=True),
                                                          Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                                                          Column("rating", Integer, index=True))
 
@@ -65,7 +69,9 @@ def upgrade(migrate_engine):
             try:
                 i.create()
             except Exception:
-                log.exception("Adding index 'ix_hda_rating_association_hda_id' to table 'history_dataset_association_rating_association' table failed.")
+                log.exception(
+                    "Adding index 'ix_hda_rating_association_hda_id' to table 'history_dataset_association_rating_association' table failed."
+                )
         else:
             log.exception("Creating history_dataset_association_rating_association table failed.")
 

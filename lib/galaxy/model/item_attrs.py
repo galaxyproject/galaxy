@@ -21,6 +21,7 @@ class UsesItemRatings:
         (2) item-rating association table has a column with a foreign key referencing
         item table that contains the item's id.
     """
+
     def get_ave_item_rating_data(self, db_session, item, webapp_model=None):
         """ Returns the average rating for an item."""
         if webapp_model is None:
@@ -88,7 +89,8 @@ class UsesItemRatings:
                 break
 
         if not item_fk:
-            raise RuntimeException("Cannot find item id column in item-rating association table: %s, %s" % item_rating_assoc_class.__name__, item_rating_assoc_class.table.name)
+            raise RuntimeException("Cannot find item id column in item-rating association table: %s, %s" % item_rating_assoc_class.__name__,
+                                   item_rating_assoc_class.table.name)
 
         # TODO: can we provide a better filter than a raw string?
         return "%s=%i" % (item_fk.parent.name, item.id)
@@ -96,6 +98,7 @@ class UsesItemRatings:
 
 class UsesAnnotations:
     """ Mixin for getting and setting item annotations. """
+
     def get_item_annotation_str(self, db_session, user, item):
         """ Returns a user's annotation string for an item. """
         annotation_obj = self.get_item_annotation_obj(db_session, user, item)
@@ -164,8 +167,4 @@ class UsesAnnotations:
         return getattr(galaxy.model, class_name, None)
 
 
-__all__ = (
-    'UsesAnnotations',
-    'UsesItemRatings',
-    'RuntimeException',
-)
+__all__ = ('UsesAnnotations', 'UsesItemRatings', 'RuntimeException', )

@@ -23,7 +23,6 @@ assert sys.version_info[:2] >= (2, 4)
 
 log = logging.getLogger(__name__)
 
-
 GAP_CHARS = ['-']
 SRC_SPLIT_CHAR = '.'
 
@@ -142,7 +141,8 @@ class RegionAlignment(object):
     MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
 
     def __init__(self, size, species=[], temp_file_handler=None):
-        assert size <= self.MAX_SEQUENCE_SIZE, "Maximum length allowed for an individual sequence has been exceeded (%i > %i)." % (size, self.MAX_SEQUENCE_SIZE)
+        assert size <= self.MAX_SEQUENCE_SIZE, "Maximum length allowed for an individual sequence has been exceeded (%i > %i)." % (
+            size, self.MAX_SEQUENCE_SIZE)
         self.size = size
         if not temp_file_handler:
             temp_file_handler = TempFileHandler()
@@ -189,6 +189,7 @@ class RegionAlignment(object):
         if len(base) != 1:
             raise Exception("A genomic position can only have a length of 1.")
         return self.set_range(index, species, base)
+
     # sets a range for a species
 
     def set_range(self, index, species, bases):
@@ -213,7 +214,6 @@ class RegionAlignment(object):
 
 
 class GenomicRegionAlignment(RegionAlignment):
-
     def __init__(self, start, end, species=[], temp_file_handler=None):
         RegionAlignment.__init__(self, end - start, species, temp_file_handler=temp_file_handler)
         self.start = start
@@ -442,7 +442,9 @@ def iter_blocks_split_by_src(block, src):
         new_block.text_size = block.text_size
         for c in block.components:
             if c == src_c or c.src != src:
-                new_block.add_component(deepcopy(c))  # components have reference to alignment, dont want to loose reference to original alignment block in original components
+                new_block.add_component(
+                    deepcopy(c)
+                )  # components have reference to alignment, dont want to loose reference to original alignment block in original components
         yield new_block
 
 
@@ -500,7 +502,16 @@ def get_chopped_blocks_with_index_offset_for_region(index, src, region, species=
 
 
 # returns a filled region alignment for specified regions
-def get_region_alignment(index, primary_species, chrom, start, end, strand='+', species=None, mincols=0, overwrite_with_gaps=True, temp_file_handler=None):
+def get_region_alignment(index,
+                         primary_species,
+                         chrom,
+                         start,
+                         end,
+                         strand='+',
+                         species=None,
+                         mincols=0,
+                         overwrite_with_gaps=True,
+                         temp_file_handler=None):
     if species is not None:
         alignment = RegionAlignment(end - start, species, temp_file_handler=temp_file_handler)
     else:
@@ -529,7 +540,16 @@ def reduce_block_by_primary_genome(block, species, chromosome, region_start):
 
 
 # fills a region alignment
-def fill_region_alignment(alignment, index, primary_species, chrom, start, end, strand='+', species=None, mincols=0, overwrite_with_gaps=True):
+def fill_region_alignment(alignment,
+                          index,
+                          primary_species,
+                          chrom,
+                          start,
+                          end,
+                          strand='+',
+                          species=None,
+                          mincols=0,
+                          overwrite_with_gaps=True):
     region = bx.intervals.Interval(start, end)
     region.chrom = chrom
     region.strand = strand
@@ -550,7 +570,8 @@ def fill_region_alignment(alignment, index, primary_species, chrom, start, end, 
     gap_chars_str = ''.join(GAP_CHARS)
     # Loop through ordered blocks and layer by increasing score
     for block_dict in blocks:
-        for block in iter_blocks_split_by_species(block_dict[1].get_at_offset(block_dict[2])):  # need to handle each occurance of sequence in block seperately
+        for block in iter_blocks_split_by_species(
+                block_dict[1].get_at_offset(block_dict[2])):  # need to handle each occurance of sequence in block seperately
             if component_overlaps_region(block.get_component_by_src(primary_src), region):
                 block = chop_block_by_region(block, primary_src, region, species, mincols)  # chop block
                 block = orient_block_by_region(block, primary_src, region)  # orient block
@@ -560,7 +581,8 @@ def fill_region_alignment(alignment, index, primary_species, chrom, start, end, 
                     text = text.rstrip(gap_chars_str)
                     gap_offset = 0
                     # while text.startswith( gap_chars_tuple ):
-                    while True in [text.startswith(gap_char) for gap_char in GAP_CHARS]:  # python2.4 doesn't accept a tuple for .startswith()
+                    while True in [text.startswith(gap_char)
+                                   for gap_char in GAP_CHARS]:  # python2.4 doesn't accept a tuple for .startswith()
                         gap_offset += 1
                         text = text[1:]
                         if not text:
@@ -576,7 +598,16 @@ def fill_region_alignment(alignment, index, primary_species, chrom, start, end, 
 
 
 # returns a filled spliced region alignment for specified region with start and end lists
-def get_spliced_region_alignment(index, primary_species, chrom, starts, ends, strand='+', species=None, mincols=0, overwrite_with_gaps=True, temp_file_handler=None):
+def get_spliced_region_alignment(index,
+                                 primary_species,
+                                 chrom,
+                                 starts,
+                                 ends,
+                                 strand='+',
+                                 species=None,
+                                 mincols=0,
+                                 overwrite_with_gaps=True,
+                                 temp_file_handler=None):
     # create spliced alignment object
     if species is not None:
         alignment = SplicedAlignment(starts, ends, species, temp_file_handler=temp_file_handler)
@@ -678,6 +709,7 @@ def remove_temp_index_file(index_filename):
     except:
         pass
 
+
 # Below are methods to deal with FASTA files
 
 
@@ -734,6 +766,7 @@ def iter_fasta_alignment(filename):
 
         def extend(self, text):
             self.text = self.text + text.replace('\n', '').replace('\r', '').strip()
+
     # yields a list of fastaComponents for a FASTA file
     f = open(filename, 'rb')
     components = []

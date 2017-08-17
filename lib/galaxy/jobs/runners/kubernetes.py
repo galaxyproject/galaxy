@@ -9,19 +9,13 @@ from os import environ as os_environ
 from six import text_type
 
 from galaxy import model
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState
-)
+from galaxy.jobs.runners import (AsynchronousJobRunner, AsynchronousJobState)
 
 # pykube imports:
 try:
     from pykube.config import KubeConfig
     from pykube.http import HTTPClient
-    from pykube.objects import (
-        Job,
-        Pod
-    )
+    from pykube.objects import (Job, Pod)
 except ImportError as exc:
     KubeConfig = None
     K8S_IMPORT_MESSAGE = ('The Python pykube package is required to use '
@@ -57,7 +51,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if 'runner_param_specs' not in kwargs:
             kwargs['runner_param_specs'] = dict()
         kwargs['runner_param_specs'].update(runner_param_specs)
-
         """Start the job runner parent object """
         super(KubernetesJobRunner, self).__init__(app, nworkers, **kwargs)
 
@@ -93,11 +86,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "apiVersion": self.runner_params['k8s_job_api_version'],
             "kind": "Job",
             "metadata": {
-                    # metadata.name is the name of the pod resource created, and must be unique
-                    # http://kubernetes.io/docs/user-guide/configuring-containers/
-                    "name": k8s_job_name,
-                    "namespace": "default",  # TODO this should be set
-                    "labels": {"app": k8s_job_name}
+                # metadata.name is the name of the pod resource created, and must be unique
+                # http://kubernetes.io/docs/user-guide/configuring-containers/
+                "name": k8s_job_name,
+                "namespace": "default",  # TODO this should be set
+                "labels": {
+                    "app": k8s_job_name
+                }
             },
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
@@ -113,8 +108,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         Job(self._pykube_api, k8s_job_obj).create()
 
         # define job attributes in the AsyncronousJobState for follow-up
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper,
-                                   job_id=k8s_job_name, job_destination=job_destination)
+        ajs = AsynchronousJobState(
+            files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_id=k8s_job_name, job_destination=job_destination)
         self.monitor_queue.put(ajs)
 
         # external_runJob_script can be None, in which case it's not used.
@@ -132,8 +127,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             try:
                 return int(self.runner_params["k8s_supplemental_group_id"])
             except:
-                log.warn("Supplemental group passed for Kubernetes runner needs to be an integer, value "
-                         + self.runner_params["k8s_supplemental_group_id"] + " passed is invalid")
+                log.warn("Supplemental group passed for Kubernetes runner needs to be an integer, value " +
+                         self.runner_params["k8s_supplemental_group_id"] + " passed is invalid")
                 return None
         return None
 
@@ -142,8 +137,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             try:
                 return int(self.runner_params["k8s_fs_group_id"])
             except:
-                log.warn("FS group passed for Kubernetes runner needs to be an integer, value "
-                         + self.runner_params["k8s_fs_group_id"] + " passed is invalid")
+                log.warn("FS group passed for Kubernetes runner needs to be an integer, value " + self.runner_params["k8s_fs_group_id"] +
+                         " passed is invalid")
                 return None
         return None
 
@@ -162,7 +157,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         (see pod selector) and an appropriate restart policy."""
         k8s_spec_template = {
             "metadata": {
-                "labels": {"app": self.__produce_unique_k8s_job_name(job_wrapper.get_id_tag())}
+                "labels": {
+                    "app": self.__produce_unique_k8s_job_name(job_wrapper.get_id_tag())
+                }
             },
             "spec": {
                 "volumes": self.__get_k8s_mountable_volumes(job_wrapper),
@@ -306,8 +303,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 job.scale(replicas=0)
                 return None
             # We should not get here
-            log.debug(
-                "Reaching unexpected point for Kubernetes job, where it is not classified as succ., active nor failed.")
+            log.debug("Reaching unexpected point for Kubernetes job, where it is not classified as succ., active nor failed.")
             return job_state
 
         elif len(jobs.response['items']) == 0:
@@ -349,9 +345,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # something necessary
         if not job_state.runner_state_handled:
             job_state.job_wrapper.fail(
-                message=getattr(job_state, 'fail_message', 'Job failed'),
-                stdout=stdout_content, stderr='See stdout for pod\'s stderr.'
-            )
+                message=getattr(job_state, 'fail_message', 'Job failed'), stdout=stdout_content, stderr='See stdout for pod\'s stderr.')
             if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
@@ -365,8 +359,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 logs += pod.logs(timestamps=True)
                 logs += "\n\n==== Pod " + pod.name + " log end   ===="
             except Exception as detail:
-                log.info("Could not write pod\'s " + pod_obj['metadata']['name'] +
-                         " log file due to HTTPError " + str(detail))
+                log.info("Could not write pod\'s " + pod_obj['metadata']['name'] + " log file due to HTTPError " + str(detail))
 
         logs_file_path = job_state.output_file
         logs_file = open(logs_file_path, mode="w")
@@ -379,8 +372,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def stop_job(self, job):
         """Attempts to delete a dispatched job to the k8s cluster"""
         try:
-            jobs = Job.objects(self._pykube_api).filter(selector="app=" +
-                                                                 self.__produce_unique_k8s_job_name(job.get_id_tag()))
+            jobs = Job.objects(self._pykube_api).filter(selector="app=" + self.__produce_unique_k8s_job_name(job.get_id_tag()))
             if len(jobs.response['items']) >= 0:
                 job_to_delete = Job(self._pykube_api, jobs.response['items'][0])
                 job_to_delete.scale(replicas=0)
@@ -388,8 +380,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
             log.debug("(%s/%s) Terminated at user's request" % (job.id, job.job_runner_external_id))
         except Exception as e:
-            log.debug("(%s/%s) User killed running job, but error encountered during termination: %s" % (
-                job.id, job.job_runner_external_id, e))
+            log.debug("(%s/%s) User killed running job, but error encountered during termination: %s" % (job.id, job.job_runner_external_id,
+                                                                                                         e))
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
@@ -404,14 +396,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
         if job.state == model.Job.states.RUNNING:
-            log.debug("(%s/%s) is still in running state, adding to the runner monitor queue" % (
-                job.id, job.job_runner_external_id))
+            log.debug("(%s/%s) is still in running state, adding to the runner monitor queue" % (job.id, job.job_runner_external_id))
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in queued state, adding to the runner monitor queue" % (
-                job.id, job.job_runner_external_id))
+            log.debug("(%s/%s) is still in queued state, adding to the runner monitor queue" % (job.id, job.job_runner_external_id))
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)

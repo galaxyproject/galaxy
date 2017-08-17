@@ -24,7 +24,6 @@ log = logging.getLogger(__name__)
 
 
 class JobController(BaseAPIController, UsesLibraryMixinItems):
-
     def __init__(self, app):
         super(JobController, self).__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
@@ -88,8 +87,10 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: trans.app.model.Job.tool_id == t)
         query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: trans.app.model.Job.tool_id.like(t))
 
-        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: trans.app.model.Job.table.c.update_time >= dmin)
-        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: trans.app.model.Job.table.c.update_time <= dmax)
+        query = build_and_apply_filters(query, kwd.get('date_range_min', None),
+                                        lambda dmin: trans.app.model.Job.table.c.update_time >= dmin)
+        query = build_and_apply_filters(query, kwd.get('date_range_max', None),
+                                        lambda dmax: trans.app.model.Job.table.c.update_time <= dmax)
 
         history_id = kwd.get('history_id', None)
         if history_id is not None:
@@ -148,8 +149,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                         value=value,
                         plugin=metric_plugin,
                         name=metric_name,
-                        raw_value=str(metric_value),
-                    )
+                        raw_value=str(metric_value), )
 
                 job_dict['job_metrics'] = [metric_to_dict(metric) for metric in job.metrics]
         return job_dict
@@ -297,10 +297,8 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             else:
                 input_param[k] = json.dumps(str(v))
 
-        query = trans.sa_session.query(trans.app.model.Job).filter(
-            trans.app.model.Job.tool_id == tool_id,
-            trans.app.model.Job.user == trans.user
-        )
+        query = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.tool_id == tool_id,
+                                                                   trans.app.model.Job.user == trans.user)
 
         if 'state' not in payload:
             query = query.filter(
@@ -309,9 +307,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                     trans.app.model.Job.state == 'queued',
                     trans.app.model.Job.state == 'waiting',
                     trans.app.model.Job.state == 'running',
-                    trans.app.model.Job.state == 'ok',
-                )
-            )
+                    trans.app.model.Job.state == 'ok', ))
         else:
             if isinstance(payload['state'], string_types):
                 query = query.filter(trans.app.model.Job.state == payload['state'])
@@ -319,17 +315,11 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                 o = []
                 for s in payload['state']:
                     o.append(trans.app.model.Job.state == s)
-                query = query.filter(
-                    or_(*o)
-                )
+                query = query.filter(or_(*o))
 
         for k, v in input_param.items():
             a = aliased(trans.app.model.JobParameter)
-            query = query.filter(and_(
-                trans.app.model.Job.id == a.job_id,
-                a.name == k,
-                a.value == v
-            ))
+            query = query.filter(and_(trans.app.model.Job.id == a.job_id, a.name == k, a.value == v))
 
         for k, v in input_data.items():
             # Here we are attempting to link the inputs to the underlying
@@ -339,12 +329,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             # still find the job
             a = aliased(trans.app.model.JobToInputDatasetAssociation)
             b = aliased(trans.app.model.HistoryDatasetAssociation)
-            query = query.filter(and_(
-                trans.app.model.Job.id == a.job_id,
-                a.dataset_id == b.id,
-                b.deleted == false(),
-                b.dataset_id == v
-            ))
+            query = query.filter(and_(trans.app.model.Job.id == a.job_id, a.dataset_id == b.id, b.deleted == false(), b.dataset_id == v))
 
         out = []
         for job in query.all():
@@ -377,9 +362,12 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         job = self.__get_job(trans, id)
         tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
         messages = trans.app.error_reports.default_error_plugin.submit_report(
-            dataset, job, tool, user_submission=True, user=trans.user,
+            dataset,
+            job,
+            tool,
+            user_submission=True,
+            user=trans.user,
             email=kwd.get('email', trans.user.email),
-            message=kwd.get('message', None)
-        )
+            message=kwd.get('message', None))
 
         return {'messages': messages}

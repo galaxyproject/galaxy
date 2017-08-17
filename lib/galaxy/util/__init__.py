@@ -35,10 +35,7 @@ from xml.etree.ElementTree import ParseError
 
 from six import binary_type, iteritems, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
-from six.moves.urllib import (
-    parse as urlparse,
-    request as urlrequest
-)
+from six.moves.urllib import (parse as urlparse, request as urlrequest)
 from six.moves.urllib.request import urlopen
 
 try:
@@ -157,12 +154,14 @@ def get_charset_from_http_headers(headers, default=None):
 
 def synchronized(func):
     """This wrapper will serialize access to 'func' to a single thread. Use it as a decorator."""
+
     def caller(*params, **kparams):
         _lock.acquire(True)  # Wait
         try:
             return func(*params, **kparams)
         finally:
             _lock.release()
+
     return caller
 
 
@@ -205,10 +204,12 @@ def unique_id(KEY_SIZE=128):
 
 def parse_xml(fname):
     """Returns a parsed xml tree"""
+
     # handle deprecation warning for XMLParsing a file with DOCTYPE
     class DoctypeSafeCallbackTarget(ElementTree.TreeBuilder):
         def doctype(*args):
             pass
+
     tree = ElementTree.ElementTree()
     try:
         root = tree.parse(fname, parser=ElementTree.XMLParser(target=DoctypeSafeCallbackTarget()))
@@ -407,18 +408,18 @@ def pretty_print_time_interval(time=False, precise=False):
 
     if precise:
         if day_diff == 0:
-                if second_diff < 10:
-                    return "just now"
-                if second_diff < 60:
-                    return str(second_diff) + " seconds ago"
-                if second_diff < 120:
-                    return "a minute ago"
-                if second_diff < 3600:
-                    return str(second_diff / 60) + " minutes ago"
-                if second_diff < 7200:
-                    return "an hour ago"
-                if second_diff < 86400:
-                    return str(second_diff / 3600) + " hours ago"
+            if second_diff < 10:
+                return "just now"
+            if second_diff < 60:
+                return str(second_diff) + " seconds ago"
+            if second_diff < 120:
+                return "a minute ago"
+            if second_diff < 3600:
+                return str(second_diff / 60) + " minutes ago"
+            if second_diff < 7200:
+                return "an hour ago"
+            if second_diff < 86400:
+                return str(second_diff / 3600) + " hours ago"
         if day_diff == 1:
             return "yesterday"
         if day_diff < 7:
@@ -452,19 +453,21 @@ def pretty_print_json(json_data, is_json_string=False):
 valid_chars = set(string.ascii_letters + string.digits + " -=_.()/+*^,:?!")
 
 # characters that are allowed but need to be escaped
-mapped_chars = {'>': '__gt__',
-                '<': '__lt__',
-                "'": '__sq__',
-                '"': '__dq__',
-                '[': '__ob__',
-                ']': '__cb__',
-                '{': '__oc__',
-                '}': '__cc__',
-                '@': '__at__',
-                '\n': '__cn__',
-                '\r': '__cr__',
-                '\t': '__tc__',
-                '#': '__pd__'}
+mapped_chars = {
+    '>': '__gt__',
+    '<': '__lt__',
+    "'": '__sq__',
+    '"': '__dq__',
+    '[': '__ob__',
+    ']': '__cb__',
+    '{': '__oc__',
+    '}': '__cc__',
+    '@': '__at__',
+    '\n': '__cn__',
+    '\r': '__cr__',
+    '\t': '__tc__',
+    '#': '__pd__'
+}
 
 
 def restore_text(text, character_map=mapped_chars):
@@ -482,7 +485,10 @@ def sanitize_text(text, valid_characters=valid_chars, character_map=mapped_chars
     and lists of strings; non-string entities will be cast to strings.
     """
     if isinstance(text, list):
-        return [sanitize_text(x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character) for x in text]
+        return [
+            sanitize_text(x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)
+            for x in text
+        ]
     if not isinstance(text, string_types):
         text = smart_str(text)
     return _sanitize_text_helper(text, valid_characters=valid_characters, character_map=character_map)
@@ -506,10 +512,9 @@ def sanitize_lists_to_string(values, valid_characters=valid_chars, character_map
     if isinstance(values, list):
         rval = []
         for value in values:
-            rval.append(sanitize_lists_to_string(value,
-                                                 valid_characters=valid_characters,
-                                                 character_map=character_map,
-                                                 invalid_character=invalid_character))
+            rval.append(
+                sanitize_lists_to_string(
+                    value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character))
         values = ",".join(rval)
     else:
         values = sanitize_text(values, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)
@@ -521,7 +526,10 @@ def sanitize_param(value, valid_characters=valid_chars, character_map=mapped_cha
     if isinstance(value, string_types):
         return sanitize_text(value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)
     elif isinstance(value, list):
-        return [sanitize_text(x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character) for x in value]
+        return [
+            sanitize_text(x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)
+            for x in value
+        ]
     else:
         raise Exception('Unknown parameter type (%s)' % (type(value)))
 
@@ -599,7 +607,7 @@ def which(file):
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
         if os.path.exists(path + "/" + file):
-                return path + "/" + file
+            return path + "/" + file
 
     return None
 
@@ -647,11 +655,7 @@ def merge_sorted_iterables(operator, *iterables):
         for el in first_iterable:
             yield el
     else:
-        for el in __merge_two_sorted_iterables(
-            operator,
-            iter(first_iterable),
-            merge_sorted_iterables(operator, *iterables[1:])
-        ):
+        for el in __merge_two_sorted_iterables(operator, iter(first_iterable), merge_sorted_iterables(operator, *iterables[1:])):
             yield el
 
 
@@ -717,11 +721,9 @@ class Params(object):
                 # name. Anything relying on NEVER_SANITIZE should be
                 # changed to not require this and NEVER_SANITIZE should be
                 # removed.
-                if (value is not None and
-                    key not in self.NEVER_SANITIZE and
-                    True not in [key.endswith("|%s" % nonsanitize_parameter) for
-                                 nonsanitize_parameter in self.NEVER_SANITIZE]):
-                        self.__dict__[key] = sanitize_param(value)
+                if (value is not None and key not in self.NEVER_SANITIZE
+                        and True not in [key.endswith("|%s" % nonsanitize_parameter) for nonsanitize_parameter in self.NEVER_SANITIZE]):
+                    self.__dict__[key] = sanitize_param(value)
                 else:
                     self.__dict__[key] = value
         else:
@@ -777,12 +779,10 @@ def rst_to_html(s):
         "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
         "warning_stream": FakeStream(),
         "doctitle_xform": False,  # without option, very different rendering depending on
-                                  # number of sections in help content.
+        # number of sections in help content.
     }
 
-    return unicodify(docutils_core.publish_string(s,
-                      writer=docutils_html4css1.Writer(),
-                      settings_overrides=settings_overrides))
+    return unicodify(docutils_core.publish_string(s, writer=docutils_html4css1.Writer(), settings_overrides=settings_overrides))
 
 
 def xml_text(root, name=None):
@@ -994,9 +994,11 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
 
 def read_dbnames(filename):
     """ Read build names from file """
+
     class DBNames(list):
         default_value = "?"
         default_name = "unspecified (?)"
+
     db_names = DBNames()
     try:
         ucsc_builds = {}
@@ -1146,11 +1148,8 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
         try:
             os.chmod(path, perms)
         except Exception as e:
-            log.warning('Unable to honor umask (%s) for %s, tried to set: %s but mode remains %s, error was: %s' % (oct(umask),
-                                                                                                                    path,
-                                                                                                                    oct(perms),
-                                                                                                                    oct(stat.S_IMODE(st.st_mode)),
-                                                                                                                    e))
+            log.warning('Unable to honor umask (%s) for %s, tried to set: %s but mode remains %s, error was: %s' %
+                        (oct(umask), path, oct(perms), oct(stat.S_IMODE(st.st_mode)), e))
     # fix group
     if gid is not None and st.st_gid != gid:
         try:
@@ -1162,9 +1161,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
             except:
                 desired_group = gid
                 current_group = st.st_gid
-            log.warning('Unable to honor primary group (%s) for %s, group remains %s, error was: %s' % (desired_group,
-                                                                                                        path,
-                                                                                                        current_group,
+            log.warning('Unable to honor primary group (%s) for %s, group remains %s, error was: %s' % (desired_group, path, current_group,
                                                                                                         e))
 
 
@@ -1218,9 +1215,9 @@ def nice_size(size):
     except:
         return '??? bytes'
     for ind, word in enumerate(words):
-        step = 1024 ** (ind + 1)
+        step = 1024**(ind + 1)
         if step > size:
-            size = size / float(1024 ** ind)
+            size = size / float(1024**ind)
             if word == 'bytes':  # No decimals for bytes
                 return "%s%d bytes" % (prefix, size)
             return "%s%.1f %s" % (prefix, size, word)
@@ -1243,11 +1240,11 @@ def size_to_bytes(size):
     size = float(size_match.group(1))
     multiple = size_match.group(2)
     if multiple.startswith('t'):
-        return int(size * 1024 ** 4)
+        return int(size * 1024**4)
     elif multiple.startswith('g'):
-        return int(size * 1024 ** 3)
+        return int(size * 1024**3)
     elif multiple.startswith('m'):
-        return int(size * 1024 ** 2)
+        return int(size * 1024**2)
     elif multiple.startswith('k'):
         return int(size * 1024)
     elif multiple.startswith('b'):
@@ -1491,7 +1488,7 @@ def url_get(base_url, password_mgr=None, pathspec=None, params=None):
     return content
 
 
-def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
+def download_to_file(url, dest_file_path, timeout=30, chunk_size=2**20):
     """Download a URL to a file in chunks."""
     src = urlopen(url, timeout=timeout)
     with open(dest_file_path, 'wb') as f:
@@ -1519,7 +1516,6 @@ def safe_relpath(path):
 
 
 class ExecutionTimer(object):
-
     def __init__(self):
         self.begin = time.time()
 

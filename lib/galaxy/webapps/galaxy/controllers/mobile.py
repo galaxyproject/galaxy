@@ -3,7 +3,6 @@ from galaxy.web.base.controller import BaseUIController
 
 
 class Mobile(BaseUIController):
-
     @web.expose
     def index(self, trans, **kwargs):
         return trans.response.send_redirect(web.url_for(controller='root', action='index'))

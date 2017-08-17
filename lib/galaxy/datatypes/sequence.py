@@ -17,24 +17,15 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import (
-    get_headers,
-    iter_headers
-)
-from galaxy.util import (
-    compression_utils,
-    nice_size
-)
-from galaxy.util.checkers import (
-    is_bz2,
-    is_gzip
-)
+from galaxy.datatypes.sniff import (get_headers, iter_headers)
+from galaxy.util import (compression_utils, nice_size)
+from galaxy.util.checkers import (is_bz2, is_gzip)
 
 from galaxy.util.image_util import check_image_type
 
 from . import data
 
-if sys.version_info > (3,):
+if sys.version_info > (3, ):
     long = int
 
 log = logging.getLogger(__name__)
@@ -88,7 +79,6 @@ class SequenceSplitLocations(data.Text):
 class Sequence(data.Text):
     """Class describing a sequence"""
     edam_data = "data_2044"
-
     """Add metadata elements"""
     MetadataElement(name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0)
 
@@ -140,6 +130,7 @@ class Sequence(data.Text):
         else:
             raise Exception('Unsupported split mode %s' % split_params['split_mode'])
         return sequences_per_file
+
     get_sequences_per_file = staticmethod(get_sequences_per_file)
 
     def do_slow_split(cls, input_datasets, subdir_generator_function, split_params):
@@ -156,6 +147,7 @@ class Sequence(data.Text):
 
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
         return cls.write_split_files(input_datasets, None, subdir_generator_function, sequences_per_file)
+
     do_slow_split = classmethod(do_slow_split)
 
     def do_fast_split(cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
@@ -166,6 +158,7 @@ class Sequence(data.Text):
             total_sequences += long(section['sequences'])
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
         return cls.write_split_files(input_datasets, toc_file_datasets, subdir_generator_function, sequences_per_file)
+
     do_fast_split = classmethod(do_fast_split)
 
     def write_split_files(cls, input_datasets, toc_file_datasets, subdir_generator_function, sequences_per_file):
@@ -188,10 +181,11 @@ class Sequence(data.Text):
                 ds = input_datasets[ds_no]
                 base_name = os.path.basename(ds.file_name)
                 part_path = os.path.join(dir, base_name)
-                split_data = dict(class_name='%s.%s' % (cls.__module__, cls.__name__),
-                                  output_name=part_path,
-                                  input_name=ds.file_name,
-                                  args=dict(start_sequence=start_sequence, num_sequences=sequences_per_file[part_no]))
+                split_data = dict(
+                    class_name='%s.%s' % (cls.__module__, cls.__name__),
+                    output_name=part_path,
+                    input_name=ds.file_name,
+                    args=dict(start_sequence=start_sequence, num_sequences=sequences_per_file[part_no]))
                 if toc_file_datasets is not None:
                     toc = toc_file_datasets[ds_no]
                     split_data['args']['toc_file'] = toc.file_name
@@ -200,6 +194,7 @@ class Sequence(data.Text):
                 f.close()
             start_sequence += sequences_per_file[part_no]
         return directories
+
     write_split_files = classmethod(write_split_files)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
@@ -258,8 +253,9 @@ class Sequence(data.Text):
                     result.append(copy_chunk_cmd % (start_chunk, end_chunk - start_chunk, input_name, output_name))
                     start_chunk = -1
                 # extract, unzip, trim, recompress
-                result.append('(dd bs=1 skip=%s count=%s if=%s 2> /dev/null )| zcat | ( tail -n +%s 2> /dev/null) | head -%s | gzip -c >> %s' %
-                              (start_copy, end_copy - start_copy, input_name, skip_sequences * 4 + 1, sequences_to_extract * 4, output_name))
+                result.append(
+                    '(dd bs=1 skip=%s count=%s if=%s 2> /dev/null )| zcat | ( tail -n +%s 2> /dev/null) | head -%s | gzip -c >> %s' %
+                    (start_copy, end_copy - start_copy, input_name, skip_sequences * 4 + 1, sequences_to_extract * 4, output_name))
             else:  # whole section - add it to the start_chunk/end_chunk accumulator
                 if start_chunk == -1:
                     start_chunk = start_copy
@@ -275,6 +271,7 @@ class Sequence(data.Text):
             raise Exception('%s sequences not found in file' % sequence_count)
 
         return result
+
     get_split_commands_with_toc = staticmethod(get_split_commands_with_toc)
 
     def get_split_commands_sequential(is_compressed, input_name, output_name, start_sequence, sequence_count):
@@ -295,13 +292,13 @@ class Sequence(data.Text):
         cmd += ' > "%s"' % output_name
 
         return [cmd]
+
     get_split_commands_sequential = staticmethod(get_split_commands_sequential)
 
 
 class Alignment(data.Text):
     """Class describing an alignment"""
     edam_data = "data_0863"
-
     """Add metadata elements"""
     MetadataElement(name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
 
@@ -422,6 +419,7 @@ class Fasta(Sequence):
             cls._count_split(input_file, batch_size, subdir_generator_function)
         else:
             raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+
     split = classmethod(split)
 
     def _size_split(cls, input_file, chunk_size, subdir_generator_function):
@@ -462,6 +460,7 @@ class Fasta(Sequence):
                 part_file.close()
             raise
         f.close()
+
     _size_split = classmethod(_size_split)
 
     def _count_split(cls, input_file, chunk_size, subdir_generator_function):
@@ -500,6 +499,7 @@ class Fasta(Sequence):
                 part_file.close()
             raise
         f.close()
+
     _count_split = classmethod(_count_split)
 
 
@@ -554,7 +554,7 @@ class csFasta(Sequence):
         return Sequence.set_meta(self, dataset, **kwd)
 
 
-class BaseFastq (Sequence):
+class BaseFastq(Sequence):
     """Base class for FastQ sequences"""
     edam_format = "format_1930"
     file_ext = "fastq"
@@ -571,7 +571,7 @@ class BaseFastq (Sequence):
             return
         data_lines = 0
         sequences = 0
-        seq_counter = 0     # blocks should be 4 lines long
+        seq_counter = 0  # blocks should be 4 lines long
         with compression_utils.get_fileobj(dataset.file_name) as in_file:
             for line in in_file:
                 line = line.strip()
@@ -627,7 +627,8 @@ class BaseFastq (Sequence):
         # check that first block looks like a fastq block
         try:
             headers = get_headers(filename, None, count=4)
-            if len(headers) == 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
+            if len(headers
+                   ) == 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
                 # Check the sequence line, make sure it contains only G/C/A/T/N
                 if not bases_regexp.match(headers[1][0]):
                     return False
@@ -644,9 +645,7 @@ class BaseFastq (Sequence):
                     mime = "text/plain"
                     self._clean_and_set_mime_type(trans, mime)
                     return fh.read()
-                return trans.stream_template_mako("/dataset/large_file.mako",
-                                                  truncated_data=fh.read(max_peek_size),
-                                                  data=dataset)
+                return trans.stream_template_mako("/dataset/large_file.mako", truncated_data=fh.read(max_peek_size), data=dataset)
         else:
             return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 
@@ -673,6 +672,7 @@ class BaseFastq (Sequence):
         if len(toc_file_datasets) == len(input_datasets):
             return cls.do_fast_split(input_datasets, toc_file_datasets, subdir_generator_function, split_params)
         return cls.do_slow_split(input_datasets, subdir_generator_function, split_params)
+
     split = classmethod(split)
 
     def process_split_file(data):
@@ -696,6 +696,7 @@ class BaseFastq (Sequence):
             if 0 != os.system(cmd):
                 raise Exception("Executing '%s' failed" % cmd)
         return True
+
     process_split_file = staticmethod(process_split_file)
 
     @staticmethod
@@ -736,7 +737,7 @@ class FastqCSSanger(Fastq):
     file_ext = "fastqcssanger"
 
 
-class FastqGz (BaseFastq, Binary):
+class FastqGz(BaseFastq, Binary):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.gz"
@@ -777,7 +778,7 @@ class FastqCSSangerGz(FastqGz):
     file_ext = "fastqcssanger.gz"
 
 
-class FastqBz2 (BaseFastq, Binary):
+class FastqBz2(BaseFastq, Binary):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.bz2"
@@ -825,8 +826,16 @@ class Maf(Alignment):
 
     # Readonly and optional, users can't unset it, but if it is not set, we are generally ok; if required use a metadata validator in the tool definition
     MetadataElement(name="blocks", default=0, desc="Number of blocks", readonly=True, optional=True, visible=False, no_value=0)
-    MetadataElement(name="species_chromosomes", desc="Species Chromosomes", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True)
-    MetadataElement(name="maf_index", desc="MAF Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(
+        name="species_chromosomes",
+        desc="Species Chromosomes",
+        param=metadata.FileParameter,
+        readonly=True,
+        no_value=None,
+        visible=False,
+        optional=True)
+    MetadataElement(
+        name="maf_index", desc="MAF Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True)
 
     def init_meta(self, dataset, copy_from=None):
         Alignment.init_meta(self, dataset, copy_from=copy_from)
@@ -937,7 +946,8 @@ class Maf(Alignment):
 class MafCustomTrack(data.Text):
     file_ext = "mafcustomtrack"
 
-    MetadataElement(name="vp_chromosome", default='chr1', desc="Viewport Chromosome", readonly=True, optional=True, visible=False, no_value='')
+    MetadataElement(
+        name="vp_chromosome", default='chr1', desc="Viewport Chromosome", readonly=True, optional=True, visible=False, no_value='')
     MetadataElement(name="vp_start", default='1', desc="Viewport Start", readonly=True, optional=True, visible=False, no_value='')
     MetadataElement(name="vp_end", default='100', desc="Viewport End", readonly=True, optional=True, visible=False, no_value='')
 
@@ -1097,7 +1107,7 @@ class RNADotPlotMatrix(data.Data):
         return False
 
 
-class DotBracket (Sequence):
+class DotBracket(Sequence):
     edam_data = "data_0880"
     edam_format = "format_1457"
     file_ext = "dbn"
@@ -1168,7 +1178,7 @@ class DotBracket (Sequence):
                 if line:
                     # header line
                     if state == 0:
-                        if(line[0] != '>'):
+                        if (line[0] != '>'):
                             return False
                         else:
                             state = 1
@@ -1232,6 +1242,7 @@ class MemePsp(Sequence):
         >>> MemePsp().sniff(fname)
         False
         """
+
         def floats_verified(l):
             for item in l.split():
                 try:
@@ -1239,6 +1250,7 @@ class MemePsp(Sequence):
                 except:
                     return False
             return True
+
         try:
             num_lines = 0
             with open(filename) as fh:

@@ -14,15 +14,9 @@ from os import environ
 from bx.cookbook import doc_optparse
 from bx.intervals import io
 
-INTERVAL_METADATA = ('chromCol',
-                     'startCol',
-                     'endCol',
-                     'strandCol',)
+INTERVAL_METADATA = ('chromCol', 'startCol', 'endCol', 'strandCol', )
 
-COVERAGE_METADATA = ('chromCol',
-                     'positionCol',
-                     'forwardCol',
-                     'reverseCol',)
+COVERAGE_METADATA = ('chromCol', 'positionCol', 'forwardCol', 'reverseCol', )
 
 
 def main(interval, coverage):
@@ -46,8 +40,8 @@ def main(interval, coverage):
                 forward = forward_covs[partition]
                 reverse = reverse_covs[partition]
                 if forward + reverse > 0:
-                    coverage.write(chrom=chrom, position=range(partitions[partition], partitions[partition + 1]),
-                                   forward=forward, reverse=reverse)
+                    coverage.write(
+                        chrom=chrom, position=range(partitions[partition], partitions[partition + 1]), forward=forward, reverse=reverse)
             partitions = []
             forward_covs = []
             reverse_covs = []
@@ -76,8 +70,8 @@ def main(interval, coverage):
                 forward = forward_covs[partition]
                 reverse = reverse_covs[partition]
                 if forward + reverse > 0:
-                    coverage.write(chrom=chrom, position=range(partitions[partition], partitions[partition + 1]),
-                                   forward=forward, reverse=reverse)
+                    coverage.write(
+                        chrom=chrom, position=range(partitions[partition], partitions[partition + 1]), forward=forward, reverse=reverse)
             partitions = partitions[start_index:]
             forward_covs = forward_covs[start_index:]
             reverse_covs = reverse_covs[start_index:]
@@ -90,8 +84,8 @@ def main(interval, coverage):
             forward = forward_covs[partition]
             reverse = reverse_covs[partition]
             if forward + reverse > 0:
-                coverage.write(chrom=chrom, position=range(partitions[partition], partitions[partition + 1]),
-                               forward=forward, reverse=reverse)
+                coverage.write(
+                    chrom=chrom, position=range(partitions[partition], partitions[partition + 1]), forward=forward, reverse=reverse)
 
 
 class CoverageWriter(object):
@@ -99,10 +93,12 @@ class CoverageWriter(object):
         self.out_stream = out_stream
         self.reverseCol = reverseCol
         self.nlines = 0
-        positions = {str(chromCol): '%(chrom)s',
-                     str(positionCol): '%(position)d',
-                     str(forwardCol): '%(forward)d',
-                     str(reverseCol): '%(reverse)d'}
+        positions = {
+            str(chromCol): '%(chrom)s',
+            str(positionCol): '%(position)d',
+            str(forwardCol): '%(forward)d',
+            str(reverseCol): '%(reverse)d'
+        }
         if reverseCol < 0:
             self.template = "%(0)s\t%(1)s\t%(2)s\n" % positions
         else:
@@ -136,16 +132,15 @@ if __name__ == "__main__":
     commandline = "sort -f -n -k %d -k %d -k %d -o %s %s" % (chr_col_1 + 1, start_col_1 + 1, end_col_1 + 1, temp_file.name, in_fname)
     subprocess.check_call(commandline, shell=True)
 
-    coverage = CoverageWriter(out_stream=open(out_fname, "a"),
-                              chromCol=chr_col_2, positionCol=position_col_2,
-                              forwardCol=forward_col_2, reverseCol=reverse_col_2, )
+    coverage = CoverageWriter(
+        out_stream=open(out_fname, "a"),
+        chromCol=chr_col_2,
+        positionCol=position_col_2,
+        forwardCol=forward_col_2,
+        reverseCol=reverse_col_2, )
     temp_file.seek(0)
-    interval = io.NiceReaderWrapper(temp_file,
-                                    chrom_col=chr_col_1,
-                                    start_col=start_col_1,
-                                    end_col=end_col_1,
-                                    strand_col=strand_col_1,
-                                    fix_strand=True)
+    interval = io.NiceReaderWrapper(
+        temp_file, chrom_col=chr_col_1, start_col=start_col_1, end_col=end_col_1, strand_col=strand_col_1, fix_strand=True)
     main(interval, coverage)
     temp_file.close()
     coverage.close()

@@ -120,10 +120,12 @@ class InstallEnvironment(object):
         stderr = output.stderr
         if len(stdout) > DATABASE_MAX_STRING_SIZE:
             log.warning("Length of stdout > %s, so only a portion will be saved in the database." % str(DATABASE_MAX_STRING_SIZE_PRETTY))
-            stdout = shrink_string_by_size(stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+            stdout = shrink_string_by_size(
+                stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
         if len(stderr) > DATABASE_MAX_STRING_SIZE:
             log.warning("Length of stderr > %s, so only a portion will be saved in the database." % str(DATABASE_MAX_STRING_SIZE_PRETTY))
-            stderr = shrink_string_by_size(stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+            stderr = shrink_string_by_size(
+                stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
         if output.return_code not in [0]:
             status = self.app.install_model.ToolDependency.installation_status.ERROR
             if stderr:
@@ -134,10 +136,8 @@ class InstallEnvironment(object):
                 # We have a problem if there was no stdout and no stderr.
                 error_message = "Unknown error occurred executing shell command %s, return_code: %s" % \
                     (str(cmd), str(output.return_code))
-            tool_dependency_util.set_tool_dependency_attributes(self.app,
-                                                                tool_dependency=tool_dependency,
-                                                                status=status,
-                                                                error_message=error_message)
+            tool_dependency_util.set_tool_dependency_attributes(
+                self.app, tool_dependency=tool_dependency, status=status, error_message=error_message)
         if return_output:
             return output
         return output.return_code
@@ -160,13 +160,8 @@ class InstallEnvironment(object):
         # Print the command we're about to execute, ``set -x`` style.
         llog.debug('+ ' + str(command))
         # Launch the command as subprocess.  A bufsize of 1 means line buffered.
-        process_handle = subprocess.Popen(str(command),
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE,
-                                          bufsize=1,
-                                          close_fds=False,
-                                          shell=True,
-                                          cwd=state.env['lcwd'])
+        process_handle = subprocess.Popen(
+            str(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, close_fds=False, shell=True, cwd=state.env['lcwd'])
         pid = process_handle.pid
         # Launch the asynchronous readers of the process' stdout and stderr.
         stdout_queue = queue.Queue()
@@ -177,11 +172,8 @@ class InstallEnvironment(object):
         stderr_reader.start()
         # Place streamed stdout and stderr into a threaded IPC queue target so it can
         # be printed and stored for later retrieval when generating the INSTALLATION.log.
-        stdio_thread = threading.Thread(target=self.enqueue_output,
-                                        args=(process_handle.stdout,
-                                              stdout_queue,
-                                              process_handle.stderr,
-                                              stderr_queue))
+        stdio_thread = threading.Thread(
+            target=self.enqueue_output, args=(process_handle.stdout, stdout_queue, process_handle.stderr, stderr_queue))
         thread_lock = threading.Lock()
         thread_lock.acquire()
         stdio_thread.start()

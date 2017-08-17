@@ -55,8 +55,7 @@ class VisualizationSerializer(sharable.SharableModelSerializer):
 
     def add_serializers(self):
         super(VisualizationSerializer, self).add_serializers()
-        self.serializers.update({
-        })
+        self.serializers.update({})
 
 
 class VisualizationDeserializer(sharable.SharableModelDeserializer):
@@ -72,6 +71,5 @@ class VisualizationDeserializer(sharable.SharableModelDeserializer):
 
     def add_deserializers(self):
         super(VisualizationDeserializer, self).add_deserializers()
-        self.deserializers.update({
-        })
+        self.deserializers.update({})
         self.deserializable_keyset.update(self.deserializers.keys())

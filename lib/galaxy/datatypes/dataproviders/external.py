@@ -10,10 +10,7 @@ import tempfile
 from six.moves.urllib.parse import urlencode
 from six.moves.urllib.request import urlopen
 
-from . import (
-    base,
-    line
-)
+from . import (base, line)
 
 _TODO = """
 YAGNI: ftp, image, cryptos, sockets
@@ -30,6 +27,7 @@ class SubprocessDataProvider(base.DataProvider):
     Data provider that uses the output from an intermediate program and
     subprocess as its data source.
     """
+
     # TODO: need better ways of checking returncode, stderr for errors and raising
     def __init__(self, *args, **kwargs):
         """
@@ -79,6 +77,7 @@ class RegexSubprocessDataProvider(line.RegexLineDataProvider):
     """
     RegexLineDataProvider that uses a SubprocessDataProvider as its data source.
     """
+
     # this is a conv. class and not really all that necc...
     def __init__(self, *args, **kwargs):
         # using subprocess as proxy data source in filtered line prov.
@@ -135,19 +134,21 @@ class GzipDataProvider(base.DataProvider):
 
     This can be piped through other providers (column, map, genome region, etc.).
     """
+
     def __init__(self, source, **kwargs):
         unzipped = gzip.GzipFile(source, 'rb')
         super(GzipDataProvider, self).__init__(unzipped, **kwargs)
         # NOTE: the GzipFile is now accessible in self.source
 
 
-# ----------------------------------------------------------------------------- intermediate tempfile
+    # ----------------------------------------------------------------------------- intermediate tempfile
 class TempfileDataProvider(base.DataProvider):
     """
     Writes the data from the given source to a temp file, allowing
     it to be used as a source where a file_name is needed (e.g. as a parameter
     to a command line tool: samtools view -t <this_provider.source.file_name>)
     """
+
     def __init__(self, source, **kwargs):
         # TODO:
         raise NotImplementedError()

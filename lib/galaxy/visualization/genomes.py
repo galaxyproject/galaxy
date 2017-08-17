@@ -20,8 +20,7 @@ messages = Bunch(
     NO_TOOL="no tool",
     DATA="data",
     ERROR="error",
-    OK="ok"
-)
+    OK="ok")
 
 
 def decode_dbkey(dbkey):
@@ -48,9 +47,7 @@ class GenomeRegion(object):
 
     @staticmethod
     def from_dict(obj_dict):
-        return GenomeRegion(chrom=obj_dict['chrom'],
-                            start=obj_dict['start'],
-                            end=obj_dict['end'])
+        return GenomeRegion(chrom=obj_dict['chrom'], start=obj_dict['start'], end=obj_dict['end'])
 
     @staticmethod
     def from_str(obj_str):
@@ -63,9 +60,7 @@ class GenomeRegion(object):
 
             # check length
             if (len(gene_interval) == 2):
-                return GenomeRegion(chrom=gene_region[0],
-                                    start=gene_interval[0],
-                                    end=gene_interval[1])
+                return GenomeRegion(chrom=gene_region[0], start=gene_interval[0], end=gene_interval[1])
 
         # return genome region instance
         return GenomeRegion()
@@ -75,6 +70,7 @@ class Genome(object):
     """
     Encapsulates information about a known genome/dbkey.
     """
+
     def __init__(self, key, description, len_file=None, twobit_file=None):
         self.key = key
         self.description = description
@@ -175,9 +171,9 @@ class Genome(object):
             'id': self.key,
             'reference': self.twobit_file is not None,
             'chrom_info': to_sort,
-            'prev_chroms' : prev_chroms,
-            'next_chroms' : next_chroms,
-            'start_index' : start_index
+            'prev_chroms': prev_chroms,
+            'next_chroms': next_chroms,
+            'start_index': start_index
         }
 
 
@@ -263,9 +259,11 @@ class Genomes(object):
 
         # If chrom_info is True, only include keys with len files (which contain chromosome info).
         if chrom_info:
+
             def filter_fn(b):
                 return b.len_file is not None
         else:
+
             def filter_fn(b):
                 return True
 

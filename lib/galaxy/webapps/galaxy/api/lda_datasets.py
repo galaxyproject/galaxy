@@ -28,7 +28,6 @@ log = logging.getLogger(__name__)
 
 
 class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
-
     def __init__(self, app):
         super(LibraryDatasetsController, self).__init__(app)
         self.folder_manager = folders.FolderManager()
@@ -78,12 +77,14 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         rval['full_path'] = full_path
         rval['file_size'] = util.nice_size(int(library_dataset.library_dataset_dataset_association.get_size()))
         rval['date_uploaded'] = library_dataset.library_dataset_dataset_association.create_time.strftime("%Y-%m-%d %I:%M %p")
-        rval['can_user_modify'] = trans.app.security_agent.can_modify_library_item(current_user_roles, library_dataset) or trans.user_is_admin()
+        rval['can_user_modify'] = trans.app.security_agent.can_modify_library_item(current_user_roles,
+                                                                                   library_dataset) or trans.user_is_admin()
         rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(library_dataset.library_dataset_dataset_association.dataset)
         rval['tags'] = tag_manager.get_tags_str(library_dataset.library_dataset_dataset_association.tags)
 
         #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
-        rval['can_user_manage'] = trans.app.security_agent.can_manage_dataset(current_user_roles, library_dataset.library_dataset_dataset_association.dataset) or trans.user_is_admin()
+        rval['can_user_manage'] = trans.app.security_agent.can_manage_dataset(
+            current_user_roles, library_dataset.library_dataset_dataset_association.dataset) or trans.user_is_admin()
         return rval
 
     @expose_api_anonymous
@@ -177,7 +178,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
                 return_roles.append(dict(id=role_id, name=role.name, type=role.type))
             return dict(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
         else:
-            raise exceptions.RequestParameterInvalidException("The value of 'scope' parameter is invalid. Alllowed values: current, available")
+            raise exceptions.RequestParameterInvalidException(
+                "The value of 'scope' parameter is invalid. Alllowed values: current, available")
 
     def _get_current_roles(self, trans, library_dataset):
         """
@@ -194,14 +196,18 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
 
         # Omit duplicated roles by converting to set
         access_roles = set(dataset.get_access_roles(trans))
-        modify_roles = set(trans.app.security_agent.get_roles_for_action(library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY))
+        modify_roles = set(
+            trans.app.security_agent.get_roles_for_action(library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY))
         manage_roles = set(dataset.get_manage_permissions_roles(trans))
 
         access_dataset_role_list = [(access_role.name, trans.security.encode_id(access_role.id)) for access_role in access_roles]
         manage_dataset_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in manage_roles]
         modify_item_role_list = [(modify_role.name, trans.security.encode_id(modify_role.id)) for modify_role in modify_roles]
 
-        return dict(access_dataset_roles=access_dataset_role_list, modify_item_roles=modify_item_role_list, manage_dataset_roles=manage_dataset_role_list)
+        return dict(
+            access_dataset_roles=access_dataset_role_list,
+            modify_item_roles=modify_item_role_list,
+            manage_dataset_roles=manage_dataset_role_list)
 
     @expose_api
     def update_permissions(self, trans, encoded_dataset_id, payload=None, **kwd):
@@ -252,7 +258,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
         elif action == 'make_private':
             if not trans.app.security_agent.dataset_is_private_to_user(trans, library_dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
-                dp = trans.app.model.DatasetPermissions(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role)
+                dp = trans.app.model.DatasetPermissions(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset,
+                                                        private_role)
                 trans.sa_session.add(dp)
                 trans.sa_session.flush()
             if not trans.app.security_agent.dataset_is_private_to_user(trans, library_dataset):
@@ -324,8 +331,9 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
             trans.app.security_agent.set_library_item_permission(library_dataset, modify_permission)
 
         else:
-            raise exceptions.RequestParameterInvalidException('The mandatory parameter "action" has an invalid value. '
-                                                              'Allowed values are: "remove_restrictions", "make_private", "set_permissions"')
+            raise exceptions.RequestParameterInvalidException(
+                'The mandatory parameter "action" has an invalid value. '
+                'Allowed values are: "remove_restrictions", "make_private", "set_permissions"')
 
         return self._get_current_roles(trans, library_dataset)
 
@@ -427,19 +435,23 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
 
         source = kwd.get('source', None)
         if source not in ['userdir_file', 'userdir_folder', 'importdir_file', 'importdir_folder', 'admin_path']:
-            raise exceptions.RequestParameterMissingException('You have to specify "source" parameter. Possible values are "userdir_file", "userdir_folder", "admin_path", "importdir_file" and "importdir_folder". ')
+            raise exceptions.RequestParameterMissingException(
+                'You have to specify "source" parameter. Possible values are "userdir_file", "userdir_folder", "admin_path", "importdir_file" and "importdir_folder". '
+            )
         if source in ['importdir_file', 'importdir_folder']:
             if not trans.user_is_admin:
                 raise exceptions.AdminRequiredException('Only admins can import from importdir.')
             if not trans.app.config.library_import_dir:
-                raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to import into library from importdir.')
+                raise exceptions.ConfigDoesNotAllowException(
+                    'The configuration of this Galaxy instance does not allow admins to import into library from importdir.')
             import_base_dir = trans.app.config.library_import_dir
             path = os.path.join(import_base_dir, path)
         if source in ['userdir_file', 'userdir_folder']:
             user_login = trans.user.email
             user_base_dir = trans.app.config.user_library_import_dir
             if user_base_dir is None:
-                raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow upload from user directories.')
+                raise exceptions.ConfigDoesNotAllowException(
+                    'The configuration of this Galaxy instance does not allow upload from user directories.')
             full_dir = os.path.join(user_base_dir, user_login)
             if not path.lower().startswith(full_dir.lower()):
                 path = os.path.join(full_dir, path)
@@ -449,7 +461,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
                 raise exceptions.InsufficientPermissionsException('You do not have proper permission to add items to the given folder.')
         if source == 'admin_path':
             if not trans.app.config.allow_library_path_paste:
-                raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to import into library from path.')
+                raise exceptions.ConfigDoesNotAllowException(
+                    'The configuration of this Galaxy instance does not allow admins to import into library from path.')
             if not trans.user_is_admin:
                 raise exceptions.AdminRequiredException('Only admins can import from path.')
 
@@ -566,10 +579,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
                         rval.extend(traverse(subfolder))
                 for ld in folder.datasets:
                     if not admin:
-                        can_access = trans.app.security_agent.can_access_dataset(
-                            current_user_roles,
-                            ld.library_dataset_dataset_association.dataset
-                        )
+                        can_access = trans.app.security_agent.can_access_dataset(current_user_roles,
+                                                                                 ld.library_dataset_dataset_association.dataset)
                     if (admin or can_access) and not ld.deleted:
                         rval.append(ld)
                 return rval
@@ -652,7 +663,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
                         raise exceptions.ObjectNotFound("Requested dataset not found. ")
                     except Exception as e:
                         log.exception("Unable to add composite parent %s to temporary library download archive", ldda.dataset.file_name)
-                        raise exceptions.InternalServerError("Unable to add composite parent to temporary library download archive. " + str(e))
+                        raise exceptions.InternalServerError("Unable to add composite parent to temporary library download archive. " +
+                                                             str(e))
 
                     flist = glob.glob(os.path.join(ldda.dataset.extra_files_path, '*.*'))  # glob returns full paths
                     for fpath in flist:

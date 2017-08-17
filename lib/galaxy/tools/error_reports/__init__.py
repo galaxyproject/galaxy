@@ -24,7 +24,6 @@ class ErrorReports(object):
 
 
 class NullErrorPlugin(object):
-
     def submit_report(self, dataset, job, tool, **kwargs):
         return "Submitted Bug Report"
 
@@ -33,7 +32,6 @@ NULL_ERROR_PLUGIN = NullErrorPlugin()
 
 
 class ErrorPlugin(object):
-
     def __init__(self, plugin_classes, plugins_source, **kwargs):
         self.extra_kwargs = kwargs
         self.app = kwargs['app']

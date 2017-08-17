@@ -82,12 +82,8 @@ class TagManager(object):
         order_by = [func.count("*").desc()]
         group_by = item_tag_assoc_class.table.c.tag_id
         # Do query and get result set.
-        query = select(columns=cols_to_select,
-                       from_obj=from_obj,
-                       whereclause=where_clause,
-                       group_by=group_by,
-                       order_by=order_by,
-                       limit=limit)
+        query = select(
+            columns=cols_to_select, from_obj=from_obj, whereclause=where_clause, group_by=group_by, order_by=order_by, limit=limit)
         result_set = self.sa_session.execute(query)
         # Return community tags.
         community_tags = []
@@ -97,8 +93,7 @@ class TagManager(object):
         return community_tags
 
     def get_tool_tags(self):
-        query = select(columns=[galaxy.model.ToolTagAssociation.table.c.tag_id],
-                       from_obj=galaxy.model.ToolTagAssociation.table).distinct()
+        query = select(columns=[galaxy.model.ToolTagAssociation.table.c.tag_id], from_obj=galaxy.model.ToolTagAssociation.table).distinct()
         result_set = self.sa_session.execute(query)
 
         tags = []
@@ -313,8 +308,7 @@ class GalaxyTagManager(TagManager):
     def __init__(self, sa_session):
         from galaxy import model
         TagManager.__init__(self, sa_session)
-        self.item_tag_assoc_info["History"] = ItemTagAssocInfo(model.History,
-                                                               model.HistoryTagAssociation,
+        self.item_tag_assoc_info["History"] = ItemTagAssocInfo(model.History, model.HistoryTagAssociation,
                                                                model.HistoryTagAssociation.table.c.history_id)
         self.item_tag_assoc_info["HistoryDatasetAssociation"] = \
             ItemTagAssocInfo(model.HistoryDatasetAssociation,
@@ -328,14 +322,10 @@ class GalaxyTagManager(TagManager):
             ItemTagAssocInfo(model.LibraryDatasetDatasetAssociation,
                              model.LibraryDatasetDatasetAssociationTagAssociation,
                              model.LibraryDatasetDatasetAssociationTagAssociation.table.c.library_dataset_dataset_association_id)
-        self.item_tag_assoc_info["Page"] = ItemTagAssocInfo(model.Page,
-                                                            model.PageTagAssociation,
-                                                            model.PageTagAssociation.table.c.page_id)
-        self.item_tag_assoc_info["StoredWorkflow"] = ItemTagAssocInfo(model.StoredWorkflow,
-                                                                      model.StoredWorkflowTagAssociation,
+        self.item_tag_assoc_info["Page"] = ItemTagAssocInfo(model.Page, model.PageTagAssociation, model.PageTagAssociation.table.c.page_id)
+        self.item_tag_assoc_info["StoredWorkflow"] = ItemTagAssocInfo(model.StoredWorkflow, model.StoredWorkflowTagAssociation,
                                                                       model.StoredWorkflowTagAssociation.table.c.stored_workflow_id)
-        self.item_tag_assoc_info["Visualization"] = ItemTagAssocInfo(model.Visualization,
-                                                                     model.VisualizationTagAssociation,
+        self.item_tag_assoc_info["Visualization"] = ItemTagAssocInfo(model.Visualization, model.VisualizationTagAssociation,
                                                                      model.VisualizationTagAssociation.table.c.visualization_id)
 
 

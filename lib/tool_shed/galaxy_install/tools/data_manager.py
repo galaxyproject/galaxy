@@ -10,7 +10,6 @@ log = logging.getLogger(__name__)
 
 
 class DataManagerHandler(object):
-
     def __init__(self, app):
         self.app = app
 
@@ -45,8 +44,8 @@ class DataManagerHandler(object):
         finally:
             lock.release()
 
-    def install_data_managers(self, shed_data_manager_conf_filename, metadata_dict, shed_config_dict,
-                              relative_install_dir, repository, repository_tools_tups):
+    def install_data_managers(self, shed_data_manager_conf_filename, metadata_dict, shed_config_dict, relative_install_dir, repository,
+                              repository_tools_tups):
         rval = []
         if 'data_manager' in metadata_dict:
             tpm = tool_panel_manager.ToolPanelManager(self.app)
@@ -106,13 +105,8 @@ class DataManagerHandler(object):
                     elem.set('shed_conf_file', shed_config_dict['config_filename'])
                     if elem.get('tool_file', None) is not None:
                         del elem.attrib['tool_file']  # remove old tool_file info
-                    tool_elem = tpm.generate_tool_elem(repository.tool_shed,
-                                                       repository.name,
-                                                       repository.installed_changeset_revision,
-                                                       repository.owner,
-                                                       tool_config_filename,
-                                                       tool,
-                                                       None)
+                    tool_elem = tpm.generate_tool_elem(repository.tool_shed, repository.name, repository.installed_changeset_revision,
+                                                       repository.owner, tool_config_filename, tool, None)
                     elem.insert(0, tool_elem)
                     data_manager = \
                         self.app.data_managers.load_manager_from_elem(elem,
@@ -138,8 +132,13 @@ class DataManagerHandler(object):
             tree, error_message = xml_util.parse_xml(shed_data_manager_conf_filename)
             if tree:
                 root = tree.getroot()
-                assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % (shed_data_manager_conf_filename)
-                guids = [data_manager_dict.get('guid') for data_manager_dict in metadata_dict.get('data_manager', {}).get('data_managers', {}).values() if 'guid' in data_manager_dict]
+                assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % (
+                    shed_data_manager_conf_filename)
+                guids = [
+                    data_manager_dict.get('guid')
+                    for data_manager_dict in metadata_dict.get('data_manager', {}).get('data_managers', {}).values()
+                    if 'guid' in data_manager_dict
+                ]
                 load_old_data_managers_by_guid = {}
                 data_manager_config_has_changes = False
                 config_elems = []

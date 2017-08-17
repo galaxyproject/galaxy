@@ -12,10 +12,7 @@ from string import Template
 # TODO: eliminate the use of fabric here.
 from fabric.api import lcd, settings
 
-from galaxy.util import (
-    asbool,
-    download_to_file
-)
+from galaxy.util import (asbool, download_to_file)
 from galaxy.util.template import fill_template
 from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from tool_shed.util import basic_util, tool_dependency_util
@@ -26,7 +23,6 @@ VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualen
 
 
 class CompressedFile(object):
-
     def __init__(self, file_path, mode='r'):
         if tarfile.is_tarfile(file_path):
             self.file_type = 'tar'
@@ -144,7 +140,6 @@ class CompressedFile(object):
 
 
 class Download(object):
-
     def url_download(self, install_dir, downloaded_file_name, download_url, extract=True, checksums={}):
         """
         The given download_url can have an extension like #md5#, #sha256#, (or #md5= to support pypi defaults).
@@ -174,7 +169,8 @@ class Download(object):
                 expected = download_url.split('#sha256#')[1].lower()
 
             if downloaded_checksum != expected:
-                raise Exception('Given sha256 checksum does not match with the one from the downloaded file (%s != %s).' % (downloaded_checksum, expected))
+                raise Exception('Given sha256 checksum does not match with the one from the downloaded file (%s != %s).' %
+                                (downloaded_checksum, expected))
 
         if 'md5sum' in checksums or '#md5#' in download_url or '#md5=' in download_url:
             downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest().lower()
@@ -186,7 +182,8 @@ class Download(object):
                 expected = re.split('#md5[#=]', download_url)[1].lower()
 
             if downloaded_checksum != expected:
-                raise Exception('Given md5 checksum does not match with the one from the downloaded file (%s != %s).' % (downloaded_checksum, expected))
+                raise Exception('Given md5 checksum does not match with the one from the downloaded file (%s != %s).' %
+                                (downloaded_checksum, expected))
 
         if extract:
             if tarfile.is_tarfile(file_path) or (zipfile.is_zipfile(file_path) and not file_path.endswith('.jar')):
@@ -213,8 +210,17 @@ class Download(object):
 class RecipeStep(object):
     """Abstract class that defines a standard format for handling recipe steps when installing packages."""
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         raise Exception("Unimplemented Method")
 
     def prepare_step(self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download):
@@ -222,7 +228,6 @@ class RecipeStep(object):
 
 
 class AssertDirectoryExecutable(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'assert_directory_executable'
@@ -243,8 +248,17 @@ class AssertDirectoryExecutable(RecipeStep):
                 return True
         return False
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Make sure a symbolic link or directory on disk exists and is executable, but is not a file.
         Since this class is not used in the initial download stage, no recipe step filtering is
@@ -257,10 +271,8 @@ class AssertDirectoryExecutable(RecipeStep):
         if not self.assert_directory_executable(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
             error_message = 'The path %s is not a directory or is not executable by the owner.' % str(full_path)
-            tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
-                                                                                  tool_dependency,
-                                                                                  status=status,
-                                                                                  error_message=error_message)
+            tool_dependency = tool_dependency_util.set_tool_dependency_attributes(
+                self.app, tool_dependency, status=status, error_message=error_message)
         return tool_dependency, None, None
 
     def prepare_step(self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download):
@@ -271,7 +283,6 @@ class AssertDirectoryExecutable(RecipeStep):
 
 
 class AssertDirectoryExists(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'assert_directory_exists'
@@ -289,8 +300,17 @@ class AssertDirectoryExists(RecipeStep):
             return True
         return False
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Make sure a a symbolic link or directory on disk exists, but is not a file.  Since this
         class is not used in the initial download stage, no recipe step filtering is performed
@@ -303,10 +323,8 @@ class AssertDirectoryExists(RecipeStep):
         if not self.assert_directory_exists(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
             error_message = 'The path %s is not a directory or does not exist.' % str(full_path)
-            tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
-                                                                                  tool_dependency,
-                                                                                  status=status,
-                                                                                  error_message=error_message)
+            tool_dependency = tool_dependency_util.set_tool_dependency_attributes(
+                self.app, tool_dependency, status=status, error_message=error_message)
         return tool_dependency, None, None
 
     def prepare_step(self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download):
@@ -317,7 +335,6 @@ class AssertDirectoryExists(RecipeStep):
 
 
 class AssertFileExecutable(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'assert_file_executable'
@@ -338,8 +355,17 @@ class AssertFileExecutable(RecipeStep):
                 return True
         return False
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Make sure a symbolic link or file on disk exists and is executable, but is not a directory.
         Since this class is not used in the initial download stage, no recipe step filtering is
@@ -352,10 +378,8 @@ class AssertFileExecutable(RecipeStep):
         if not self.assert_file_executable(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
             error_message = 'The path %s is not a file or is not executable by the owner.' % str(full_path)
-            tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
-                                                                                  tool_dependency,
-                                                                                  status=status,
-                                                                                  error_message=error_message)
+            tool_dependency = tool_dependency_util.set_tool_dependency_attributes(
+                self.app, tool_dependency, status=status, error_message=error_message)
         return tool_dependency, None, None
 
     def prepare_step(self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download):
@@ -366,7 +390,6 @@ class AssertFileExecutable(RecipeStep):
 
 
 class AssertFileExists(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'assert_file_exists'
@@ -384,8 +407,17 @@ class AssertFileExists(RecipeStep):
             return True
         return False
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Make sure a symbolic link or file on disk exists, but is not a directory.  Since this
         class is not used in the initial download stage, no recipe step filtering is performed
@@ -398,10 +430,8 @@ class AssertFileExists(RecipeStep):
         if not self.assert_file_exists(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
             error_message = 'The path %s is not a file or does not exist.' % str(full_path)
-            tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
-                                                                                  tool_dependency,
-                                                                                  status=status,
-                                                                                  error_message=error_message)
+            tool_dependency = tool_dependency_util.set_tool_dependency_attributes(
+                self.app, tool_dependency, status=status, error_message=error_message)
         return tool_dependency, None, None
 
     def prepare_step(self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download):
@@ -412,13 +442,21 @@ class AssertFileExists(RecipeStep):
 
 
 class Autoconf(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'autoconf'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Handle configure, make and make install in a shell, allowing for configuration options.  Since this
         class is not used in the initial download stage, no recipe step filtering is performed here, and None
@@ -431,10 +469,7 @@ class Autoconf(RecipeStep):
             else:
                 pre_cmd = './configure --prefix=$INSTALL_DIR %s && make && make install' % configure_opts
             cmd = install_environment.build_command(basic_util.evaluate_template(pre_cmd, install_environment))
-            install_environment.handle_command(tool_dependency=tool_dependency,
-                                               cmd=cmd,
-                                               return_output=False,
-                                               job_name=package_name)
+            install_environment.handle_command(tool_dependency=tool_dependency, cmd=cmd, return_output=False, job_name=package_name)
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with the return_code.
             return tool_dependency, None, None
@@ -448,13 +483,21 @@ class Autoconf(RecipeStep):
 
 
 class ChangeDirectory(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'change_directory'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Change the working directory in a shell.  Since this class is not used in the initial download stage,
         no recipe step filtering is performed here and a None value is return for filtered_actions.  However,
@@ -491,13 +534,21 @@ class ChangeDirectory(RecipeStep):
 
 
 class Chmod(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'chmod'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Change the mode setting for certain files in the installation environment.  Since this class is not
         used in the initial download stage, no recipe step filtering is performed here, and None values are
@@ -539,7 +590,6 @@ class Chmod(RecipeStep):
 
 
 class DownloadBinary(Download, RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'download_binary'
@@ -559,8 +609,17 @@ class DownloadBinary(Download, RecipeStep):
                 filtered_actions.append(action)
         return filtered_actions
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Download a binary file.  If the value of initial_download is True, the recipe steps will be
         filtered and returned and the installation directory (i.e., dir) will be defined and returned.
@@ -593,8 +652,7 @@ class DownloadBinary(Download, RecipeStep):
         # any errors in the move step are correctly sent to the tool dependency error handler.
         if downloaded_filename and os.path.exists(os.path.join(work_dir, downloaded_filename)):
             if target_directory:
-                target_directory = os.path.realpath(os.path.normpath(os.path.join(install_environment.install_dir,
-                                                                                  target_directory)))
+                target_directory = os.path.realpath(os.path.normpath(os.path.join(install_environment.install_dir, target_directory)))
                 # Make sure the target directory is not outside of $INSTALL_DIR.
                 if target_directory.startswith(os.path.realpath(install_environment.install_dir)):
                     full_path_to_dir = os.path.abspath(os.path.join(install_environment.install_dir, target_directory))
@@ -602,9 +660,7 @@ class DownloadBinary(Download, RecipeStep):
                     full_path_to_dir = os.path.abspath(install_environment.install_dir)
             else:
                 full_path_to_dir = os.path.abspath(install_environment.install_dir)
-            basic_util.move_file(current_dir=work_dir,
-                                 source=downloaded_filename,
-                                 destination=full_path_to_dir)
+            basic_util.move_file(current_dir=work_dir, source=downloaded_filename, destination=full_path_to_dir)
         # Not sure why dir is ignored in this method, need to investigate...
         dir = None
         if initial_download:
@@ -634,13 +690,21 @@ class DownloadBinary(Download, RecipeStep):
 
 
 class DownloadByUrl(Download, RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'download_by_url'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Download a file via HTTP.  If the value of initial_download is True, the recipe steps will be
         filtered and returned and the installation directory (i.e., dir) will be defined and returned.
@@ -696,13 +760,21 @@ class DownloadByUrl(Download, RecipeStep):
 
 
 class DownloadFile(Download, RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'download_file'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Download a file.  If the value of initial_download is True, the recipe steps will be
         filtered and returned and the installation directory (i.e., dir) will be defined and returned.
@@ -744,13 +816,21 @@ class DownloadFile(Download, RecipeStep):
 
 
 class MakeDirectory(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'make_directory'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Make a directory on disk.  Since this class is not used in the initial download stage, no recipe step
         filtering is performed here, and None values are always returned for filtered_actions and dir.
@@ -774,13 +854,21 @@ class MakeDirectory(RecipeStep):
 
 
 class MakeInstall(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'make_install'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Execute a make_install command in a shell.  Since this class is not used in the initial download stage,
         no recipe step filtering is performed here, and None values are always returned for filtered_actions and dir.
@@ -789,10 +877,7 @@ class MakeInstall(RecipeStep):
         with settings(warn_only=True):
             make_opts = action_dict.get('make_opts', '')
             cmd = install_environment.build_command('make %s && make install' % make_opts)
-            install_environment.handle_command(tool_dependency=tool_dependency,
-                                               cmd=cmd,
-                                               return_output=False,
-                                               job_name=package_name)
+            install_environment.handle_command(tool_dependency=tool_dependency, cmd=cmd, return_output=False, job_name=package_name)
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with the return_code.
             return tool_dependency, None, None
@@ -806,20 +891,29 @@ class MakeInstall(RecipeStep):
 
 
 class MoveDirectoryFiles(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'move_directory_files'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Move a directory of files.  Since this class is not used in the initial download stage, no recipe step
         filtering is performed here, and None values are always returned for filtered_actions and dir.
         """
-        self.move_directory_files(current_dir=current_dir,
-                                  source_dir=os.path.join(action_dict['source_directory']),
-                                  destination_dir=os.path.join(action_dict['destination_directory']))
+        self.move_directory_files(
+            current_dir=current_dir,
+            source_dir=os.path.join(action_dict['source_directory']),
+            destination_dir=os.path.join(action_dict['destination_directory']))
         return tool_dependency, None, None
 
     def move_directory_files(self, current_dir, source_dir, destination_dir):
@@ -849,21 +943,30 @@ class MoveDirectoryFiles(RecipeStep):
 
 
 class MoveFile(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'move_file'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Move a file on disk.  Since this class is not used in the initial download stage, no recipe step
         filtering is performed here, and None values are always returned for filtered_actions and dir.
         """
-        basic_util.move_file(current_dir=current_dir,
-                             source=os.path.join(action_dict['source']),
-                             destination=os.path.join(action_dict['destination']),
-                             rename_to=action_dict['rename_to'])
+        basic_util.move_file(
+            current_dir=current_dir,
+            source=os.path.join(action_dict['source']),
+            destination=os.path.join(action_dict['destination']),
+            rename_to=action_dict['rename_to'])
         return tool_dependency, None, None
 
     def prepare_step(self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download):
@@ -878,13 +981,21 @@ class MoveFile(RecipeStep):
 
 
 class RegexReplace(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'regex_replace'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Search and replace text in a file using regular expressions. Since this class is not used in the initial
         download stage, no recipe step filtering is performed here, and None values are always returned for
@@ -950,13 +1061,21 @@ class RegexReplace(RecipeStep):
 
 
 class SetEnvironment(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'set_environment'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Configure an install environment.  Since this class is not used in the initial download stage,
         no recipe step filtering is performed here, and None values are always returned for filtered_actions
@@ -965,23 +1084,24 @@ class SetEnvironment(RecipeStep):
         # Currently the only action supported in this category is "environment_variable".
         cmds = install_environment.environment_commands('set_environment')
         env_var_dicts = action_dict.get('environment_variable', [])
-        root_dir_dict = dict(action='set_to',
-                             name='%s_ROOT_DIR' % re.sub(r"[^A-Z0-9_]", "_", tool_dependency.name.upper()),
-                             value=install_environment.install_dir)
+        root_dir_dict = dict(
+            action='set_to',
+            name='%s_ROOT_DIR' % re.sub(r"[^A-Z0-9_]", "_", tool_dependency.name.upper()),
+            value=install_environment.install_dir)
         env_var_dicts.append(root_dir_dict)
         for env_var_dict in env_var_dicts:
             # Check for the presence of the $ENV[] key string and populate it if possible.
-            env_var_dict = self.handle_environment_variables(install_environment=install_environment,
-                                                             tool_dependency=tool_dependency,
-                                                             env_var_dict=env_var_dict,
-                                                             set_prior_environment_commands=cmds)
+            env_var_dict = self.handle_environment_variables(
+                install_environment=install_environment,
+                tool_dependency=tool_dependency,
+                env_var_dict=env_var_dict,
+                set_prior_environment_commands=cmds)
             env_file_builder.append_line(**env_var_dict)
         # The caller should check the status of the returned tool_dependency since return_code is not
         # returned by this function.
         return tool_dependency, None, None
 
-    def handle_environment_variables(self, install_environment, tool_dependency, env_var_dict,
-                                     set_prior_environment_commands):
+    def handle_environment_variables(self, install_environment, tool_dependency, env_var_dict, set_prior_environment_commands):
         """
         This method works with a combination of three tool dependency definition tag sets, which are defined in
         the tool_dependencies.xml file in the order discussed here.  The example for this discussion is the
@@ -1091,8 +1211,7 @@ class SetEnvironment(RecipeStep):
         env_var_dicts = []
         for env_elem in action_elem:
             if env_elem.tag == 'environment_variable':
-                env_var_dict = env_manager.create_env_var_dict(elem=env_elem,
-                                                               install_environment=install_environment)
+                env_var_dict = env_manager.create_env_var_dict(elem=env_elem, install_environment=install_environment)
                 if env_var_dict:
                     env_var_dicts.append(env_var_dict)
         if env_var_dicts:
@@ -1102,13 +1221,21 @@ class SetEnvironment(RecipeStep):
 
 
 class SetEnvironmentForInstall(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'set_environment_for_install'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Configure an environment for compiling a package.  Since this class is not used in the initial
         download stage, no recipe step filtering is performed here, and None values are always returned
@@ -1146,13 +1273,21 @@ class SetEnvironmentForInstall(RecipeStep):
 
 
 class SetupPerlEnvironment(Download, RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'setup_perl_environment'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Initialize the environment for installing Perl packages.  The class is called during the initial
         download stage when installing packages, so the value of initial_download will generally be True.
@@ -1208,17 +1343,15 @@ class SetupPerlEnvironment(Download, RecipeStep):
                         elif os.path.exists(os.path.join(tmp_work_dir, 'Build.PL')):
                             cmd += '''perl Build.PL --install_base $INSTALL_DIR && perl Build && perl Build install'''
                         else:
-                            log.debug('No Makefile.PL or Build.PL file found in %s. Skipping installation of %s.' %
-                                (url, perl_package_name))
+                            log.debug('No Makefile.PL or Build.PL file found in %s. Skipping installation of %s.' % (url,
+                                                                                                                     perl_package_name))
                             if initial_download:
                                 return tool_dependency, filtered_actions, dir
                             return tool_dependency, None, None
                         with lcd(tmp_work_dir):
                             cmd = install_environment.build_command(basic_util.evaluate_template(cmd, install_environment))
-                            return_code = install_environment.handle_command(tool_dependency=tool_dependency,
-                                                                             cmd=cmd,
-                                                                             return_output=False,
-                                                                             job_name=package_name)
+                            return_code = install_environment.handle_command(
+                                tool_dependency=tool_dependency, cmd=cmd, return_output=False, job_name=package_name)
                             if return_code:
                                 if initial_download:
                                     return tool_dependency, filtered_actions, dir
@@ -1228,10 +1361,8 @@ class SetupPerlEnvironment(Download, RecipeStep):
                         # cpanm should be installed with the parent perl distribution, otherwise this will not work.
                         cmd += '''cpanm --local-lib=$INSTALL_DIR %s''' % (perl_package)
                         cmd = install_environment.build_command(basic_util.evaluate_template(cmd, install_environment))
-                        return_code = install_environment.handle_command(tool_dependency=tool_dependency,
-                                                                         cmd=cmd,
-                                                                         return_output=False,
-                                                                         job_name=package_name)
+                        return_code = install_environment.handle_command(
+                            tool_dependency=tool_dependency, cmd=cmd, return_output=False, job_name=package_name)
                         if return_code:
                             if initial_download:
                                 return tool_dependency, filtered_actions, dir
@@ -1239,12 +1370,9 @@ class SetupPerlEnvironment(Download, RecipeStep):
                 # Pull in perl dependencies (runtime).
                 env_file_builder.handle_action_shell_file_paths(action_dict)
                 # Recursively add dependent PERL5LIB and PATH to env.sh & anything else needed.
-                env_file_builder.append_line(name="PERL5LIB",
-                                             action="prepend_to",
-                                             value=os.path.join(install_environment.install_dir, 'lib', 'perl5'))
-                env_file_builder.append_line(name="PATH",
-                                             action="prepend_to",
-                                             value=os.path.join(install_environment.install_dir, 'bin'))
+                env_file_builder.append_line(
+                    name="PERL5LIB", action="prepend_to", value=os.path.join(install_environment.install_dir, 'lib', 'perl5'))
+                env_file_builder.append_line(name="PATH", action="prepend_to", value=os.path.join(install_environment.install_dir, 'bin'))
                 return_code = env_file_builder.return_code
                 if return_code:
                     if initial_download:
@@ -1269,9 +1397,7 @@ class SetupPerlEnvironment(Download, RecipeStep):
         # in action_dict.
         all_env_shell_file_paths = []
         env_manager = EnvManager(self.app)
-        action_dict = env_manager.get_env_shell_file_paths_from_setup_environment_elem(all_env_shell_file_paths,
-                                                                                       action_elem,
-                                                                                       action_dict)
+        action_dict = env_manager.get_env_shell_file_paths_from_setup_environment_elem(all_env_shell_file_paths, action_elem, action_dict)
         perl_packages = []
         for env_elem in action_elem:
             if env_elem.tag == 'package':
@@ -1280,21 +1406,28 @@ class SetupPerlEnvironment(Download, RecipeStep):
                 #     http://search.cpan.org/CPAN/authors/id/C/CJ/CJFIELDS/BioPerl-1.6.922.tar.gz
                 # Unfortunately CPAN does not support versioning, so if you want real reproducibility you need to specify
                 # the tarball path and the right order of different tarballs manually.
-                perl_packages.append(dict(package=env_elem.text.strip(),
-                                          checksums=self.get_elem_checksums(env_elem)))
+                perl_packages.append(dict(package=env_elem.text.strip(), checksums=self.get_elem_checksums(env_elem)))
         if perl_packages:
             action_dict['perl_packages'] = perl_packages
         return action_dict
 
 
 class SetupREnvironment(Download, RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'setup_r_environment'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Initialize the environment for installing R packages.  The class is called during the initial
         download stage when installing packages, so the value of initial_download will generally be True.
@@ -1318,10 +1451,8 @@ class SetupREnvironment(Download, RecipeStep):
             error_message = 'Missing R environment. Please check your specified R installation exists.'
             log.error(error_message)
             status = self.app.install_model.ToolDependency.installation_status.ERROR
-            tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
-                                                                                  tool_dependency,
-                                                                                  status=status,
-                                                                                  error_message=error_message)
+            tool_dependency = tool_dependency_util.set_tool_dependency_attributes(
+                self.app, tool_dependency, status=status, error_message=error_message)
             return tool_dependency, [], None
         else:
             install_environment.add_env_shell_file_paths(env_shell_file_paths)
@@ -1345,10 +1476,8 @@ class SetupREnvironment(Download, RecipeStep):
                         Rscript -e "tryCatch( { install.packages(c('%s'), lib = '$INSTALL_DIR', repos = NULL, dependencies = FALSE) }, error = function(e) { print(e); quit(status = 1) }, warning = function(w) { if ( grepl('had non-zero exit status|is not writable|installation of one of more packages failed', as.character(w)) ) { print(w); quit(status = 1) } } )"''' % \
                         (str(tarball_name))
                     cmd = install_environment.build_command(basic_util.evaluate_template(cmd, install_environment))
-                    return_code = install_environment.handle_command(tool_dependency=tool_dependency,
-                                                                     cmd=cmd,
-                                                                     return_output=False,
-                                                                     job_name=package_name)
+                    return_code = install_environment.handle_command(
+                        tool_dependency=tool_dependency, cmd=cmd, return_output=False, job_name=package_name)
                     if return_code:
                         if initial_download:
                             return tool_dependency, filtered_actions, dir
@@ -1380,27 +1509,32 @@ class SetupREnvironment(Download, RecipeStep):
         # 'env_shell_file_paths' entry in action_dict.
         all_env_shell_file_paths = []
         env_manager = EnvManager(self.app)
-        action_dict = env_manager.get_env_shell_file_paths_from_setup_environment_elem(all_env_shell_file_paths,
-                                                                                       action_elem,
-                                                                                       action_dict)
+        action_dict = env_manager.get_env_shell_file_paths_from_setup_environment_elem(all_env_shell_file_paths, action_elem, action_dict)
         r_packages = list()
         for env_elem in action_elem:
             if env_elem.tag == 'package':
-                r_packages.append(dict(package=env_elem.text.strip(),
-                                       checksums=self.get_elem_checksums(env_elem)))
+                r_packages.append(dict(package=env_elem.text.strip(), checksums=self.get_elem_checksums(env_elem)))
         if r_packages:
             action_dict['r_packages'] = r_packages
         return action_dict
 
 
 class SetupRubyEnvironment(Download, RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'setup_ruby_environment'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Initialize the environment for installing Ruby packages.  The class is called during the initial
         download stage when installing packages, so the value of initial_download will generally be True.
@@ -1468,22 +1602,16 @@ class SetupRubyEnvironment(Download, RecipeStep):
                             cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                 gem install %s %s''' % (gem, gem_parameters)
                     cmd = install_environment.build_command(basic_util.evaluate_template(cmd, install_environment))
-                    return_code = install_environment.handle_command(tool_dependency=tool_dependency,
-                                                                     cmd=cmd,
-                                                                     return_output=False,
-                                                                     job_name=package_name)
+                    return_code = install_environment.handle_command(
+                        tool_dependency=tool_dependency, cmd=cmd, return_output=False, job_name=package_name)
                     if return_code:
                         if initial_download:
                             return tool_dependency, filtered_actions, dir
                         return tool_dependency, None, None
                 # Pull in ruby dependencies (runtime).
                 env_file_builder.handle_action_shell_file_paths(action_dict)
-                env_file_builder.append_line(name="GEM_PATH",
-                                             action="prepend_to",
-                                             value=install_environment.install_dir)
-                env_file_builder.append_line(name="PATH",
-                                             action="prepend_to",
-                                             value=os.path.join(install_environment.install_dir, 'bin'))
+                env_file_builder.append_line(name="GEM_PATH", action="prepend_to", value=install_environment.install_dir)
+                env_file_builder.append_line(name="PATH", action="prepend_to", value=os.path.join(install_environment.install_dir, 'bin'))
                 return_code = env_file_builder.return_code
                 if return_code:
                     if initial_download:
@@ -1509,9 +1637,7 @@ class SetupRubyEnvironment(Download, RecipeStep):
         # 'env_shell_file_paths' entry in action_dict.
         all_env_shell_file_paths = []
         env_manager = EnvManager(self.app)
-        action_dict = env_manager.get_env_shell_file_paths_from_setup_environment_elem(all_env_shell_file_paths,
-                                                                                       action_elem,
-                                                                                       action_dict)
+        action_dict = env_manager.get_env_shell_file_paths_from_setup_environment_elem(all_env_shell_file_paths, action_elem, action_dict)
         ruby_package_tups = []
         for env_elem in action_elem:
             if env_elem.tag == 'package':
@@ -1530,21 +1656,28 @@ class SetupRubyEnvironment(Download, RecipeStep):
                     # gem name for rubygems.org without version number
                     gem = env_elem.text.strip()
                     tup = (gem, None, gem_parameters)
-                ruby_package_tups.append(dict(package=tup,
-                                              checksums=self.get_elem_checksums(env_elem)))
+                ruby_package_tups.append(dict(package=tup, checksums=self.get_elem_checksums(env_elem)))
         if ruby_package_tups:
             action_dict['ruby_package_tups'] = ruby_package_tups
         return action_dict
 
 
 class SetupPythonEnvironment(Download, RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'setup_python_environment'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Initialize the environment for installing Python packages.  The class is called during the initial
         download stage when installing packages, so the value of initial_download will generally be True.
@@ -1606,25 +1739,18 @@ class SetupPythonEnvironment(Download, RecipeStep):
                         ''' % (uncompressed_path)
 
                     cmd = install_environment.build_command(basic_util.evaluate_template(cmd, install_environment))
-                    return_code = install_environment.handle_command(tool_dependency=tool_dependency,
-                                                                     cmd=cmd,
-                                                                     return_output=False,
-                                                                     job_name=package_name)
+                    return_code = install_environment.handle_command(
+                        tool_dependency=tool_dependency, cmd=cmd, return_output=False, job_name=package_name)
                     if return_code:
                         if initial_download:
                             return tool_dependency, filtered_actions, dir
                         return tool_dependency, None, None
                 # Pull in python dependencies (runtime).
                 env_file_builder.handle_action_shell_file_paths(action_dict)
-                env_file_builder.append_line(name="PYTHONPATH",
-                                             action="prepend_to",
-                                             value=os.path.join(install_environment.install_dir, 'lib', 'python'))
-                env_file_builder.append_line(name="PYTHONPATH",
-                                             action="prepend_to",
-                                             value=os.path.join(install_environment.install_dir))
-                env_file_builder.append_line(name="PATH",
-                                             action="prepend_to",
-                                             value=os.path.join(install_environment.install_dir, 'bin'))
+                env_file_builder.append_line(
+                    name="PYTHONPATH", action="prepend_to", value=os.path.join(install_environment.install_dir, 'lib', 'python'))
+                env_file_builder.append_line(name="PYTHONPATH", action="prepend_to", value=os.path.join(install_environment.install_dir))
+                env_file_builder.append_line(name="PATH", action="prepend_to", value=os.path.join(install_environment.install_dir, 'bin'))
                 return_code = env_file_builder.return_code
                 if return_code:
                     if initial_download:
@@ -1649,9 +1775,7 @@ class SetupPythonEnvironment(Download, RecipeStep):
         # 'env_shell_file_paths' entry in action_dict.
         all_env_shell_file_paths = []
         env_manager = EnvManager(self.app)
-        action_dict = env_manager.get_env_shell_file_paths_from_setup_environment_elem(all_env_shell_file_paths,
-                                                                                       action_elem,
-                                                                                       action_dict)
+        action_dict = env_manager.get_env_shell_file_paths_from_setup_environment_elem(all_env_shell_file_paths, action_elem, action_dict)
         python_package_tups = []
         for env_elem in action_elem:
             if env_elem.tag == 'package':
@@ -1668,8 +1792,7 @@ class SetupPythonEnvironment(Download, RecipeStep):
                     # package name for pypi.org without version number
                     package = env_elem.text.strip()
                     tup = (package, None)
-                python_package_tups.append(dict(package=tup,
-                                                checksums=self.get_elem_checksums(env_elem)))
+                python_package_tups.append(dict(package=tup, checksums=self.get_elem_checksums(env_elem)))
         if python_package_tups:
             action_dict['python_package_tups'] = python_package_tups
         action_dict.update(self.get_elem_checksums(action_elem))
@@ -1677,13 +1800,21 @@ class SetupPythonEnvironment(Download, RecipeStep):
 
 
 class SetupVirtualEnv(Download, RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'setup_virtualenv'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Initialize a virtual environment for installing packages.  If initial_download is True, the recipe
         steps will be filtered and returned and the installation directory (i.e., dir) will be defined and
@@ -1736,10 +1867,8 @@ class SetupVirtualEnv(Download, RecipeStep):
                         else:
                             install_command = "%s && %s" % (install_command, line_install_command)
         full_setup_command = "%s; %s; %s" % (setup_command, activate_command, install_command)
-        return_code = install_environment.handle_command(tool_dependency=tool_dependency,
-                                                         cmd=full_setup_command,
-                                                         return_output=False,
-                                                         job_name=package_name)
+        return_code = install_environment.handle_command(
+            tool_dependency=tool_dependency, cmd=full_setup_command, return_output=False, job_name=package_name)
         if return_code:
             log.error("Failed to do setup_virtualenv install, exit code='%s'", return_code)
             # would it be better to try to set env variables anway, instead of returning here?
@@ -1767,8 +1896,8 @@ class SetupVirtualEnv(Download, RecipeStep):
                 try:
                     dir = self.url_download(work_dir, downloaded_filename, VIRTUALENV_URL)
                 except:
-                    log.error("Failed to download virtualenv: url_download( '%s', '%s', '%s' ) threw an exception",
-                              work_dir, downloaded_filename, VIRTUALENV_URL)
+                    log.error("Failed to download virtualenv: url_download( '%s', '%s', '%s' ) threw an exception", work_dir,
+                              downloaded_filename, VIRTUALENV_URL)
                     return False
                 full_path_to_dir = os.path.abspath(os.path.join(work_dir, dir))
                 shutil.move(full_path_to_dir, venv_dir)
@@ -1805,14 +1934,13 @@ class SetupVirtualEnv(Download, RecipeStep):
         # preventing the entire path from being included (it gets truncated)
         # Use raw strings so that python won't automatically unescape the quotes before passing the command
         # to subprocess.Popen.
-        for site_packages_command in [r"""%s -c 'import site; site.getsitepackages()[0]'""" %
-                                      os.path.join(venv_directory, "bin", "python"),
-                                      r"""%s -c 'import os, sys; print os.path.join( sys.prefix, "lib", "python" + sys.version[:3], "site-packages" )'""" %
-                                      os.path.join(venv_directory, "bin", "python")]:
-            output = install_environment.handle_command(tool_dependency=tool_dependency,
-                                                        cmd=site_packages_command,
-                                                        return_output=True,
-                                                        job_name='_get_site_packages')
+        for site_packages_command in [
+                r"""%s -c 'import site; site.getsitepackages()[0]'""" % os.path.join(venv_directory, "bin", "python"),
+                r"""%s -c 'import os, sys; print os.path.join( sys.prefix, "lib", "python" + sys.version[:3], "site-packages" )'""" %
+                os.path.join(venv_directory, "bin", "python")
+        ]:
+            output = install_environment.handle_command(
+                tool_dependency=tool_dependency, cmd=site_packages_command, return_output=True, job_name='_get_site_packages')
             site_packages_directory_list.append(output.stdout)
             if not output.return_code and os.path.exists(output.stdout):
                 return (output.stdout, site_packages_directory_list)
@@ -1820,13 +1948,21 @@ class SetupVirtualEnv(Download, RecipeStep):
 
 
 class ShellCommand(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'shell_command'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Execute a command in a shell.  If the value of initial_download is True, the recipe steps will
         be filtered and returned and the installation directory (i.e., dir) will be defined and returned.
@@ -1846,10 +1982,7 @@ class ShellCommand(RecipeStep):
         with settings(warn_only=True):
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with return_code.
-            install_environment.handle_command(tool_dependency=tool_dependency,
-                                               cmd=cmd,
-                                               return_output=False,
-                                               job_name=package_name)
+            install_environment.handle_command(tool_dependency=tool_dependency, cmd=cmd, return_output=False, job_name=package_name)
             if initial_download:
                 return tool_dependency, filtered_actions, dir
             return tool_dependency, None, None
@@ -1863,13 +1996,21 @@ class ShellCommand(RecipeStep):
 
 
 class TemplateCommand(RecipeStep):
-
     def __init__(self, app):
         self.app = app
         self.type = 'template_command'
 
-    def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                     install_environment, work_dir, current_dir=None, initial_download=False):
+    def execute_step(self,
+                     tool_dependency,
+                     package_name,
+                     actions,
+                     action_dict,
+                     filtered_actions,
+                     env_file_builder,
+                     install_environment,
+                     work_dir,
+                     current_dir=None,
+                     initial_download=False):
         """
         Execute a template command in a shell.  If the value of initial_download is True, the recipe steps
         will be filtered and returned and the installation directory (i.e., dir) will be defined and returned.
@@ -1886,10 +2027,7 @@ class TemplateCommand(RecipeStep):
                 cmd = fill_template('#from fabric.api import env\n%s' % action_dict['command'], context=env_vars)
                 # The caller should check the status of the returned tool_dependency since this function
                 # does nothing with return_code.
-                install_environment.handle_command(tool_dependency=tool_dependency,
-                                                   cmd=cmd,
-                                                   return_output=False,
-                                                   job_name=package_name)
+                install_environment.handle_command(tool_dependency=tool_dependency, cmd=cmd, return_output=False, job_name=package_name)
             return tool_dependency, None, None
 
     def prepare_step(self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download):

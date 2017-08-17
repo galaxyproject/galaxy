@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 
 
 class UpdateRepositoryManager(object):
-
     def __init__(self, app):
         self.app = app
         self.context = self.app.install_model.context
@@ -33,12 +32,12 @@ class UpdateRepositoryManager(object):
         """Return the changeset revision hash to which the repository can be updated."""
         changeset_revision_dict = {}
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, str(repository.tool_shed))
-        params = dict(name=str(repository.name),
-                      owner=str(repository.owner),
-                      changeset_revision=str(repository.installed_changeset_revision))
+        params = dict(
+            name=str(repository.name), owner=str(repository.owner), changeset_revision=str(repository.installed_changeset_revision))
         pathspec = ['repository', 'get_changeset_revision_and_ctx_rev']
         try:
-            encoded_update_dict = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+            encoded_update_dict = util.url_get(
+                tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
             if encoded_update_dict:
                 update_dict = encoding_util.tool_shed_decode(encoded_update_dict)
                 includes_data_managers = update_dict.get('includes_data_managers', False)
@@ -48,7 +47,8 @@ class UpdateRepositoryManager(object):
                 includes_tool_dependencies = update_dict.get('includes_tool_dependencies', False)
                 includes_workflows = update_dict.get('includes_workflows', False)
                 has_repository_dependencies = update_dict.get('has_repository_dependencies', False)
-                has_repository_dependencies_only_if_compiling_contained_td = update_dict.get('has_repository_dependencies_only_if_compiling_contained_td', False)
+                has_repository_dependencies_only_if_compiling_contained_td = update_dict.get(
+                    'has_repository_dependencies_only_if_compiling_contained_td', False)
                 changeset_revision = update_dict.get('changeset_revision', None)
                 ctx_rev = update_dict.get('ctx_rev', None)
             changeset_revision_dict['includes_data_managers'] = includes_data_managers
@@ -58,7 +58,8 @@ class UpdateRepositoryManager(object):
             changeset_revision_dict['includes_tool_dependencies'] = includes_tool_dependencies
             changeset_revision_dict['includes_workflows'] = includes_workflows
             changeset_revision_dict['has_repository_dependencies'] = has_repository_dependencies
-            changeset_revision_dict['has_repository_dependencies_only_if_compiling_contained_td'] = has_repository_dependencies_only_if_compiling_contained_td
+            changeset_revision_dict[
+                'has_repository_dependencies_only_if_compiling_contained_td'] = has_repository_dependencies_only_if_compiling_contained_td
             changeset_revision_dict['changeset_revision'] = changeset_revision
             changeset_revision_dict['ctx_rev'] = ctx_rev
         except Exception as e:

@@ -123,7 +123,6 @@ class GenomeDataProvider(BaseDataProvider):
     """
 
     dataset_type = None
-
     """
     Mapping from column name to payload data; this mapping is used to create
     filters. Key is column name, value is a dict with mandatory key 'index' and
@@ -133,12 +132,16 @@ class GenomeDataProvider(BaseDataProvider):
     """
     col_name_data_attr_mapping = {}
 
-    def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None,
+    def __init__(self,
+                 converted_dataset=None,
+                 original_dataset=None,
+                 dependencies=None,
                  error_max_vals="Only the first %i %s in this region are displayed."):
-        super(GenomeDataProvider, self).__init__(converted_dataset=converted_dataset,
-                                                 original_dataset=original_dataset,
-                                                 dependencies=dependencies,
-                                                 error_max_vals=error_max_vals)
+        super(GenomeDataProvider, self).__init__(
+            converted_dataset=converted_dataset,
+            original_dataset=original_dataset,
+            dependencies=dependencies,
+            error_max_vals=error_max_vals)
 
     def write_data_to_file(self, regions, filename):
         """
@@ -213,16 +216,11 @@ class GenomeDataProvider(BaseDataProvider):
             # Some data providers return None when there's no data, so
             # create a dummy dict if necessary.
             if not chrom_data:
-                chrom_data = {
-                    'data': None
-                }
+                chrom_data = {'data': None}
             chrom_data['region'] = "%s:%i-%i" % (chrom, 0, chrom_len)
             genome_data.append(chrom_data)
 
-        return {
-            'data': genome_data,
-            'dataset_type': self.dataset_type
-        }
+        return {'data': genome_data, 'dataset_type': self.dataset_type}
 
     def get_filters(self):
         """
@@ -260,13 +258,12 @@ class GenomeDataProvider(BaseDataProvider):
                     attrs = self.col_name_data_attr_mapping[col_name]
                 except KeyError:
                     continue
-                filters.append({'name': attrs['name'],
-                                'type': column_types[viz_col_index],
-                                'index': attrs['index']})
+                filters.append({'name': attrs['name'], 'type': column_types[viz_col_index], 'index': attrs['index']})
         return filters
 
     def get_default_max_vals(self):
         return 5000
+
 
 #
 # -- Base mixins and providers --
@@ -305,37 +302,29 @@ class FilterableMixin:
         filter_col = 8
         if isinstance(self.original_dataset.datatype, Gff):
             # Can filter by score and GTF attributes.
-            filters = [{'name': 'Score',
-                        'type': 'number',
-                        'index': filter_col,
-                        'tool_id': 'Filter1',
-                        'tool_exp_name': 'c6'}]
+            filters = [{'name': 'Score', 'type': 'number', 'index': filter_col, 'tool_id': 'Filter1', 'tool_exp_name': 'c6'}]
             filter_col += 1
             if isinstance(self.original_dataset.datatype, Gtf):
                 # Create filters based on dataset metadata.
                 for name, a_type in self.original_dataset.metadata.attribute_types.items():
                     if a_type in ['int', 'float']:
-                        filters.append(
-                            {'name': name,
-                             'type': 'number',
-                             'index': filter_col,
-                             'tool_id': 'gff_filter_by_attribute',
-                             'tool_exp_name': name})
+                        filters.append({
+                            'name': name,
+                            'type': 'number',
+                            'index': filter_col,
+                            'tool_id': 'gff_filter_by_attribute',
+                            'tool_exp_name': name
+                        })
                         filter_col += 1
         elif isinstance(self.original_dataset.datatype, Bed):
             # Can filter by score column only.
-            filters = [{'name': 'Score',
-                        'type': 'number',
-                        'index': filter_col,
-                        'tool_id': 'Filter1',
-                        'tool_exp_name': 'c5'}]
+            filters = [{'name': 'Score', 'type': 'number', 'index': filter_col, 'tool_id': 'Filter1', 'tool_exp_name': 'c5'}]
 
         return filters
 
 
 class TabixDataProvider(FilterableMixin, GenomeDataProvider):
     dataset_type = 'tabix'
-
     """
     Tabix index data provider for the Galaxy track browser.
     """
@@ -343,8 +332,7 @@ class TabixDataProvider(FilterableMixin, GenomeDataProvider):
     col_name_data_attr_mapping = {4: {'index': 4, 'name': 'Score'}}
 
     def open_data_file(self):
-        return ctabix.Tabixfile(self.dependencies['bgzip'].file_name,
-                                index=self.converted_dataset.file_name)
+        return ctabix.Tabixfile(self.dependencies['bgzip'].file_name, index=self.converted_dataset.file_name)
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         # chrom must be a string, start/end integers.
@@ -381,6 +369,7 @@ class TabixDataProvider(FilterableMixin, GenomeDataProvider):
 
         out.close()
 
+
 #
 # -- Interval data providers --
 #
@@ -388,7 +377,6 @@ class TabixDataProvider(FilterableMixin, GenomeDataProvider):
 
 class IntervalDataProvider(GenomeDataProvider):
     dataset_type = 'interval_index'
-
     """
     Processes interval data from native format to payload format.
 
@@ -470,6 +458,7 @@ class IntervalTabixDataProvider(TabixDataProvider, IntervalDataProvider):
 #
 # -- BED data providers --
 #
+
 
 class BedDataProvider(GenomeDataProvider):
     """
@@ -604,6 +593,7 @@ class RawBedDataProvider(BedDataProvider):
 
         return line_filter_iter()
 
+
 #
 # -- VCF data providers --
 #
@@ -736,16 +726,7 @@ class VcfDataProvider(GenomeDataProvider):
                 sample_gts = ['1/1']
 
             # Add locus data.
-            locus_data = [
-                -1,
-                pos,
-                c_id,
-                ref,
-                alt,
-                qual,
-                c_filter,
-                ','.join(sample_gts)
-            ]
+            locus_data = [-1, pos, c_id, ref, alt, qual, c_filter, ','.join(sample_gts)]
             locus_data.extend(allele_counts)
             data.append(locus_data)
 
@@ -835,9 +816,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         # HACK: first 7 fields are for drawing, so start filter column index at 7.
         filter_col = 7
         filters = []
-        filters.append({'name': 'Mapping Quality',
-                        'type': 'number',
-                        'index': filter_col})
+        filters.append({'name': 'Mapping Quality', 'type': 'number', 'index': filter_col})
         return filters
 
     def write_data_to_file(self, regions, filename):
@@ -846,8 +825,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         """
 
         # Open current BAM file using index.
-        bamfile = pysam.AlignmentFile(self.original_dataset.file_name, mode='rb',
-                                      index_filename=self.converted_dataset.file_name)
+        bamfile = pysam.AlignmentFile(self.original_dataset.file_name, mode='rb', index_filename=self.converted_dataset.file_name)
 
         # TODO: write headers as well?
         new_bamfile = pysam.AlignmentFile(filename, template=bamfile, mode='wb')
@@ -878,8 +856,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
 
     def open_data_file(self):
         # Attempt to open the BAM file with index
-        return pysam.AlignmentFile(self.original_dataset.file_name, mode='rb',
-                                   index_filename=self.converted_dataset.file_name)
+        return pysam.AlignmentFile(self.original_dataset.file_name, mode='rb', index_filename=self.converted_dataset.file_name)
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         """
@@ -901,8 +878,16 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                 return None
         return data
 
-    def process_data(self, iterator, start_val=0, max_vals=None, ref_seq=None,
-                     iterator_type='nth', mean_depth=None, start=0, end=0, **kwargs):
+    def process_data(self,
+                     iterator,
+                     start_val=0,
+                     max_vals=None,
+                     ref_seq=None,
+                     iterator_type='nth',
+                     mean_depth=None,
+                     start=0,
+                     end=0,
+                     **kwargs):
         """
         Returns a dict with the following attributes::
 
@@ -1020,23 +1005,28 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                 if qname in paired_pending:
                     # Found pair.
                     pair = paired_pending[qname]
-                    results.append([hash("%i_%s" % (pair['start'], qname)),
-                                    pair['start'],
-                                    read.pos + read_len,
-                                    qname,
-                                    [pair['start'], pair['end'], pair['cigar'], pair['strand'], pair['seq']],
-                                    [read.pos, read.pos + read_len, read.cigar, strand, seq],
-                                    None, [pair['mapq'], read.mapq]])
+                    results.append([
+                        hash("%i_%s" % (pair['start'], qname)), pair['start'], read.pos + read_len, qname,
+                        [pair['start'], pair['end'], pair['cigar'], pair['strand'],
+                         pair['seq']], [read.pos, read.pos + read_len, read.cigar, strand, seq], None, [pair['mapq'], read.mapq]
+                    ])
                     del paired_pending[qname]
                 else:
                     # Insert first of pair.
-                    paired_pending[qname] = {'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos,
-                                             'rlen': read_len, 'strand': strand, 'cigar': read.cigar, 'mapq': read.mapq}
+                    paired_pending[qname] = {
+                        'start': read.pos,
+                        'end': read.pos + read_len,
+                        'seq': seq,
+                        'mate_start': read.mpos,
+                        'rlen': read_len,
+                        'strand': strand,
+                        'cigar': read.cigar,
+                        'mapq': read.mapq
+                    }
                     count += 1
             else:
-                results.append([hash("%i_%s" % (read.pos, qname)),
-                                read.pos, read.pos + read_len, qname,
-                                read.cigar, strand, read.seq, read.mapq])
+                results.append(
+                    [hash("%i_%s" % (read.pos, qname)), read.pos, read.pos + read_len, qname, read.cigar, strand, read.seq, read.mapq])
                 count += 1
 
         # Take care of reads whose mates are out of range.
@@ -1067,11 +1057,8 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
             '''
             Use reference-based compression to compress read sequence and cigar.
             '''
-            read_seq, read_cigar = get_ref_based_read_seq_and_cigar(read[seq_field].upper(),
-                                                                    read[start_field],
-                                                                    ref_seq.sequence,
-                                                                    ref_seq.start,
-                                                                    read[cigar_field])
+            read_seq, read_cigar = get_ref_based_read_seq_and_cigar(read[seq_field].upper(), read[start_field], ref_seq.sequence,
+                                                                    ref_seq.start, read[cigar_field])
             read[seq_field] = read_seq
             read[cigar_field] = read_cigar
 
@@ -1117,9 +1104,8 @@ class SamDataProvider(BamDataProvider):
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None):
         """ Create SamDataProvider. """
-        super(SamDataProvider, self).__init__(converted_dataset=converted_dataset,
-                                              original_dataset=original_dataset,
-                                              dependencies=dependencies)
+        super(SamDataProvider, self).__init__(
+            converted_dataset=converted_dataset, original_dataset=original_dataset, dependencies=dependencies)
 
         # To use BamDataProvider, original dataset must be BAM and
         # converted dataset must be BAI. Use BAI from BAM metadata.
@@ -1252,10 +1238,7 @@ class BBIDataProvider(GenomeDataProvider):
 
         # Cleanup and return.
         f.close()
-        return {
-            'data': result,
-            'dataset_type': self.dataset_type
-        }
+        return {'data': result, 'dataset_type': self.dataset_type}
 
 
 class BigBedDataProvider(BBIDataProvider):
@@ -1265,11 +1248,12 @@ class BigBedDataProvider(BBIDataProvider):
         return f, BigBedFile(file=f)
 
 
-class BigWigDataProvider (BBIDataProvider):
+class BigWigDataProvider(BBIDataProvider):
     """
     Provides data from BigWig files; position data is reported in 1-based
     coordinate system, i.e. wiggle format.
     """
+
     def _get_dataset(self):
         if self.converted_dataset is not None:
             f = open(self.converted_dataset.file_name)
@@ -1467,6 +1451,7 @@ class GtfTabixDataProvider(TabixDataProvider):
 
         return {'data': results, 'message': message}
 
+
 #
 # -- ENCODE Peak data providers.
 #
@@ -1556,30 +1541,15 @@ class ENCODEPeakTabixDataProvider(TabixDataProvider, ENCODEPeakDataProvider):
         # HACK: first 8 fields are for drawing, so start filter column index at 9.
         filter_col = 8
         filters = []
-        filters.append({'name': 'Score',
-                        'type': 'number',
-                        'index': filter_col,
-                        'tool_id': 'Filter1',
-                        'tool_exp_name': 'c6'})
+        filters.append({'name': 'Score', 'type': 'number', 'index': filter_col, 'tool_id': 'Filter1', 'tool_exp_name': 'c6'})
         filter_col += 1
-        filters.append({'name': 'Signal Value',
-                        'type': 'number',
-                        'index': filter_col,
-                        'tool_id': 'Filter1',
-                        'tool_exp_name': 'c7'})
+        filters.append({'name': 'Signal Value', 'type': 'number', 'index': filter_col, 'tool_id': 'Filter1', 'tool_exp_name': 'c7'})
         filter_col += 1
-        filters.append({'name': 'pValue',
-                        'type': 'number',
-                        'index': filter_col,
-                        'tool_id': 'Filter1',
-                        'tool_exp_name': 'c8'})
+        filters.append({'name': 'pValue', 'type': 'number', 'index': filter_col, 'tool_id': 'Filter1', 'tool_exp_name': 'c8'})
         filter_col += 1
-        filters.append({'name': 'qValue',
-                        'type': 'number',
-                        'index': filter_col,
-                        'tool_id': 'Filter1',
-                        'tool_exp_name': 'c9'})
+        filters.append({'name': 'qValue', 'type': 'number', 'index': filter_col, 'tool_id': 'Filter1', 'tool_exp_name': 'c9'})
         return filters
+
 
 #
 # -- ChromatinInteraction data providers --
@@ -1615,7 +1585,12 @@ class ChromatinInteractionsDataProvider(GenomeDataProvider):
                 # GUID is just a hash of the line
                 hash(line),
                 # Add start1, end1, chr2, start2, end2, value.
-                s1, e1, c, s2, e2, v
+                s1,
+                e1,
+                c,
+                s2,
+                e2,
+                v
             ]
 
             rval.append(payload)
@@ -1648,7 +1623,9 @@ class ChromatinInteractionsTabixDataProvider(TabixDataProvider, ChromatinInterac
                 # Check for interchromosal interactions.
                 if interchromosomal and c != chrom:
                     yield line
+
         return filter(TabixDataProvider.get_iterator(self, data_file, chrom, filter_start, end))
+
 
 #
 # -- Helper methods. --
@@ -1664,14 +1641,16 @@ def package_gff_feature(feature, no_detail=False, filter_cols=[]):
         return [feature.start, feature.end]
 
     # Return full feature.
-    payload = [feature.start,
-               feature.end,
-               feature.name(),
-               feature.strand,
-               # No notion of thick start, end in GFF, so make everything
-               # thick.
-               feature.start,
-               feature.end]
+    payload = [
+        feature.start,
+        feature.end,
+        feature.name(),
+        feature.strand,
+        # No notion of thick start, end in GFF, so make everything
+        # thick.
+        feature.start,
+        feature.end
+    ]
 
     # HACK: ignore interval with name 'transcript' from feature.
     # Cufflinks puts this interval in each of its transcripts,

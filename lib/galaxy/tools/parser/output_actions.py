@@ -474,7 +474,8 @@ class ColumnReplaceFilter(ToolOutputActionOptionFilter):
         self.old_value = elem.get("old_value", None)
         self.new_value = elem.get("new_value", None)
         self.new_column = elem.get('new_column', None)
-        assert (bool(self.old_column) ^ bool(self.old_value) and bool(self.new_column) ^ bool(self.new_value)), "Required 'old_column' or 'old_value' and 'new_column' or 'new_value' attribute missing from ColumnReplaceFilter"
+        assert (bool(self.old_column) ^ bool(self.old_value) and bool(self.new_column) ^ bool(self.new_value)
+                ), "Required 'old_column' or 'old_value' and 'new_column' or 'new_value' attribute missing from ColumnReplaceFilter"
         self.column = elem.get('column', None)
         assert self.column is not None, "Required 'column' attribute missing from ColumnReplaceFilter"
         self.column = int(self.column)
@@ -560,7 +561,8 @@ class StringFunctionFilter(ToolOutputActionOptionFilter):
         assert self.column is not None, "Required 'column' attribute missing from StringFunctionFilter"
         self.column = int(self.column)
         self.function = elem.get("name", None)
-        assert self.function in ['lower', 'upper'], "Required function 'name' missing or invalid from StringFunctionFilter"  # add function names as needed
+        assert self.function in ['lower', 'upper'
+                                 ], "Required function 'name' missing or invalid from StringFunctionFilter"  # add function names as needed
         self.function = getattr(string, self.function)
 
     def filter_options(self, options, other_values):
@@ -576,11 +578,16 @@ for action_type in [MetadataToolOutputAction, FormatToolOutputAction]:
     action_types[action_type.tag] = action_type
 
 option_types = {}
-for option_type in [NullToolOutputActionOption, FromFileToolOutputActionOption, FromParamToolOutputActionOption, FromDataTableOutputActionOption]:
+for option_type in [
+        NullToolOutputActionOption, FromFileToolOutputActionOption, FromParamToolOutputActionOption, FromDataTableOutputActionOption
+]:
     option_types[option_type.tag] = option_type
 
 filter_types = {}
-for filter_type in [ParamValueToolOutputActionOptionFilter, InsertColumnToolOutputActionOptionFilter, MultipleSplitterFilter, ColumnStripFilter, MetadataValueFilter, BooleanFilter, StringFunctionFilter, ColumnReplaceFilter]:
+for filter_type in [
+        ParamValueToolOutputActionOptionFilter, InsertColumnToolOutputActionOptionFilter, MultipleSplitterFilter, ColumnStripFilter,
+        MetadataValueFilter, BooleanFilter, StringFunctionFilter, ColumnReplaceFilter
+]:
     filter_types[filter_type.tag] = filter_type
 
 
@@ -597,6 +604,7 @@ def parse_cast_attribute(cast):
         # return value as-is
         def cast(x):
             return x
+
     return cast
 
 

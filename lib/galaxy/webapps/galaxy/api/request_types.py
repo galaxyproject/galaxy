@@ -19,7 +19,11 @@ class RequestTypeAPIController(BaseAPIController):
         """
         rval = []
         for request_type in trans.app.security_agent.get_accessible_request_types(trans, trans.user):
-            item = request_type.to_dict(value_mapper={'id': trans.security.encode_id, 'request_form_id': trans.security.encode_id, 'sample_form_id': trans.security.encode_id})
+            item = request_type.to_dict(value_mapper={
+                'id': trans.security.encode_id,
+                'request_form_id': trans.security.encode_id,
+                'sample_form_id': trans.security.encode_id
+            })
             encoded_id = trans.security.encode_id(request_type.id)
             item['url'] = url_for('request_type', id=encoded_id)
             rval.append(item)
@@ -47,7 +51,13 @@ class RequestTypeAPIController(BaseAPIController):
         if not trans.app.security_agent.can_access_request_type(trans.user.all_roles(), request_type):
             trans.response.status = 400
             return "No permission to access request_type ( %s )." % str(request_type_id)
-        item = request_type.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'request_form_id': trans.security.encode_id, 'sample_form_id': trans.security.encode_id})
+        item = request_type.to_dict(
+            view='element',
+            value_mapper={
+                'id': trans.security.encode_id,
+                'request_form_id': trans.security.encode_id,
+                'sample_form_id': trans.security.encode_id
+            })
         item['url'] = url_for('request_type', id=request_type_id)
         return item
 
@@ -84,7 +94,8 @@ class RequestTypeAPIController(BaseAPIController):
         # FIXME: move permission building/setting to separate abstract method call and
         # allow setting individual permissions by role (currently only one action, so not strictly needed)
         role_ids = payload.get('role_ids', [])
-        roles = [trans.sa_session.query(trans.model.Role).get(trans.security.decode_id(i)) for i in role_ids]  # if trans.app.security_agent.ok_to_display( trans.user, i ) ]
+        roles = [trans.sa_session.query(trans.model.Role).get(trans.security.decode_id(i))
+                 for i in role_ids]  # if trans.app.security_agent.ok_to_display( trans.user, i ) ]
         permissions = {}
         if roles:
             # yikes, there has to be a better way?
@@ -97,6 +108,12 @@ class RequestTypeAPIController(BaseAPIController):
         trans.sa_session.add(request_type)
         trans.sa_session.flush()
         encoded_id = trans.security.encode_id(request_type.id)
-        item = request_type.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'request_form_id': trans.security.encode_id, 'sample_form_id': trans.security.encode_id})
+        item = request_type.to_dict(
+            view='element',
+            value_mapper={
+                'id': trans.security.encode_id,
+                'request_form_id': trans.security.encode_id,
+                'sample_form_id': trans.security.encode_id
+            })
         item['url'] = url_for('request_type', id=encoded_id)
         return [item]

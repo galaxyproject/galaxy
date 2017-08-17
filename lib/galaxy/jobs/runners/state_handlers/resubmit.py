@@ -11,12 +11,10 @@ from galaxy.jobs.runners import JobState
 
 from ._safe_eval import safe_eval
 
-
 MESSAGES = dict(
     walltime_reached='it reached the walltime',
     memory_limit_reached='it exceeded the amount of allocated memory',
-    unknown_error='it encountered an unknown error'
-)
+    unknown_error='it encountered an unknown error')
 
 
 def eval_condition(condition, job_state):
@@ -66,8 +64,7 @@ def failure(app, job_runner, job_state):
         return
 
     runner_state = getattr(job_state, 'runner_state', None) or JobState.runner_states.UNKNOWN_ERROR
-    if (runner_state not in (JobState.runner_states.WALLTIME_REACHED,
-                             JobState.runner_states.MEMORY_LIMIT_REACHED,
+    if (runner_state not in (JobState.runner_states.WALLTIME_REACHED, JobState.runner_states.MEMORY_LIMIT_REACHED,
                              JobState.runner_states.UNKNOWN_ERROR)):
         # not set or not a handleable runner state
         return
@@ -98,11 +95,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
 
         destination = resubmit['destination']
         log.info("%s Job will be resubmitted to '%s' because %s at "
-                 "the '%s' destination",
-                 job_log_prefix,
-                 destination,
-                 MESSAGES[runner_state],
-                 job_state.job_wrapper.job_destination.id)
+                 "the '%s' destination", job_log_prefix, destination, MESSAGES[runner_state], job_state.job_wrapper.job_destination.id)
         # fetch JobDestination for the id or tag
         if destination:
             new_destination = app.job_config.get_destination(destination)
@@ -110,16 +103,13 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
             new_destination = job_state.job_destination
 
         # Resolve dynamic if necessary
-        new_destination = (job_state.job_wrapper.job_runner_mapper
-                           .cache_job_destination(new_destination))
+        new_destination = (job_state.job_wrapper.job_runner_mapper.cache_job_destination(new_destination))
         # Reset job state
         job_state.job_wrapper.clear_working_directory()
         job_state.job_wrapper.invalidate_external_metadata()
         job = job_state.job_wrapper.get_job()
         if resubmit.get('handler', None):
-            log.debug('%s Job reassigned to handler %s',
-                      job_log_prefix,
-                      resubmit['handler'])
+            log.debug('%s Job reassigned to handler %s', job_log_prefix, resubmit['handler'])
             job.set_handler(resubmit['handler'])
             job_runner.sa_session.add(job)
             # Is this safe to do here?
@@ -152,7 +142,6 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
 
 
 class _ExpressionContext(object):
-
     def __init__(self, job_state):
         self._job_state = job_state
         self._lazy_context = None
@@ -187,7 +176,8 @@ class _ExpressionContext(object):
                 "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
                 "unknown_error": JobState.runner_states.UNKNOWN_ERROR,
                 "any_failure": True,
-                "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
+                "any_potential_job_failure":
+                True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
                 "attempt": attempt,
                 "seconds_running": seconds_running,
                 "seconds_since_queued": seconds_since_queued,

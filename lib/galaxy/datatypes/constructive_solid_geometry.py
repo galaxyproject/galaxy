@@ -24,14 +24,10 @@ class Ply(object):
     """
     subtype = ''
     # Add metadata elements.
-    MetadataElement(name="file_format", default=None, desc="File format",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="vertex", default=None, desc="Vertex",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="face", default=None, desc="Face",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="other_elements", default=[], desc="Other elements",
-                    readonly=True, optional=True, visible=True, no_value=[])
+    MetadataElement(name="file_format", default=None, desc="File format", readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="vertex", default=None, desc="Vertex", readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="face", default=None, desc="Face", readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="other_elements", default=[], desc="Other elements", readonly=True, optional=True, visible=True, no_value=[])
 
     @abc.abstractmethod
     def __init__(self, **kwd):
@@ -160,44 +156,31 @@ class Vtk(object):
     """
     subtype = ''
     # Add metadata elements.
-    MetadataElement(name="vtk_version", default=None, desc="Vtk version",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="file_format", default=None, desc="File format",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="dataset_type", default=None, desc="Dataset type",
-                    readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="vtk_version", default=None, desc="Vtk version", readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="file_format", default=None, desc="File format", readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="dataset_type", default=None, desc="Dataset type", readonly=True, optional=True, visible=True, no_value=None)
 
     # STRUCTURED_GRID data_type.
-    MetadataElement(name="dimensions", default=[], desc="Dimensions",
-                    readonly=True, optional=True, visible=True, no_value=[])
-    MetadataElement(name="origin", default=[], desc="Origin",
-                    readonly=True, optional=True, visible=True, no_value=[])
-    MetadataElement(name="spacing", default=[], desc="Spacing",
-                    readonly=True, optional=True, visible=True, no_value=[])
+    MetadataElement(name="dimensions", default=[], desc="Dimensions", readonly=True, optional=True, visible=True, no_value=[])
+    MetadataElement(name="origin", default=[], desc="Origin", readonly=True, optional=True, visible=True, no_value=[])
+    MetadataElement(name="spacing", default=[], desc="Spacing", readonly=True, optional=True, visible=True, no_value=[])
 
     # POLYDATA data_type (Points element is also a component of UNSTRUCTURED_GRID..
-    MetadataElement(name="points", default=None, desc="Points",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="vertices", default=None, desc="Vertices",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="lines", default=None, desc="Lines",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="polygons", default=None, desc="Polygons",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="triangle_strips", default=None, desc="Triangle strips",
-                    readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="points", default=None, desc="Points", readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="vertices", default=None, desc="Vertices", readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="lines", default=None, desc="Lines", readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="polygons", default=None, desc="Polygons", readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="triangle_strips", default=None, desc="Triangle strips", readonly=True, optional=True, visible=True, no_value=None)
 
     # UNSTRUCTURED_GRID data_type.
-    MetadataElement(name="cells", default=None, desc="Cells",
-                    readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="cells", default=None, desc="Cells", readonly=True, optional=True, visible=True, no_value=None)
 
     # Additional elements not categorized by data_type.
-    MetadataElement(name="field_names", default=[], desc="Field names",
-                    readonly=True, optional=True, visible=True, no_value=[])
+    MetadataElement(name="field_names", default=[], desc="Field names", readonly=True, optional=True, visible=True, no_value=[])
     # The keys in the field_components map to the list of field_names in the above element
     # which ensures order for select list options that are built from it.
-    MetadataElement(name="field_components", default={}, desc="Field names and components",
-                    readonly=True, optional=True, visible=True, no_value={})
+    MetadataElement(
+        name="field_components", default={}, desc="Field names and components", readonly=True, optional=True, visible=True, no_value={})
 
     @abc.abstractmethod
     def __init__(self, **kwd):

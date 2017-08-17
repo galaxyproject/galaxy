@@ -4,10 +4,8 @@ import six
 
 from galaxy.util import (
     asbool,
-    xml_text,
-)
+    xml_text, )
 from galaxy.util.oset import OrderedSet
-
 
 DEFAULT_REQUIREMENT_TYPE = "package"
 DEFAULT_REQUIREMENT_VERSION = None
@@ -20,6 +18,7 @@ class ToolRequirement(object):
     run (for example, a program, package, or library).  Requirements can
     optionally assert a specific version.
     """
+
     def __init__(self, name=None, type=None, version=None, specs=[]):
         self.name = name
         self.type = type
@@ -94,11 +93,13 @@ class ToolRequirements(object):
     """
     Represents all requirements (packages, env vars) needed to run a tool.
     """
+
     def __init__(self, tool_requirements=None):
         if tool_requirements:
             if not isinstance(tool_requirements, list):
                 raise ToolRequirementsException('ToolRequirements Constructor expects a list')
-            self.tool_requirements = OrderedSet([r if isinstance(r, ToolRequirement) else ToolRequirement.from_dict(r) for r in tool_requirements])
+            self.tool_requirements = OrderedSet(
+                [r if isinstance(r, ToolRequirement) else ToolRequirement.from_dict(r) for r in tool_requirements])
         else:
             self.tool_requirements = OrderedSet()
 
@@ -153,14 +154,12 @@ DEFAULT_CONTAINER_SHELL = "/bin/sh"  # Galaxy assumes bash, but containers are u
 
 @six.python_2_unicode_compatible
 class ContainerDescription(object):
-
     def __init__(
-        self,
-        identifier=None,
-        type=DEFAULT_CONTAINER_TYPE,
-        resolve_dependencies=DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
-        shell=DEFAULT_CONTAINER_SHELL,
-    ):
+            self,
+            identifier=None,
+            type=DEFAULT_CONTAINER_TYPE,
+            resolve_dependencies=DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
+            shell=DEFAULT_CONTAINER_SHELL, ):
         self.identifier = identifier
         self.type = type
         self.resolve_dependencies = resolve_dependencies
@@ -171,8 +170,7 @@ class ContainerDescription(object):
             identifier=self.identifier,
             type=self.type,
             resolve_dependencies=self.resolve_dependencies,
-            shell=self.shell,
-        )
+            shell=self.shell, )
 
     @staticmethod
     def from_dict(dict):
@@ -184,8 +182,7 @@ class ContainerDescription(object):
             identifier=identifier,
             type=type,
             resolve_dependencies=resolve_dependencies,
-            shell=shell,
-        )
+            shell=shell, )
 
     def __str__(self):
         return "ContainerDescription[identifier=%s,type=%s]" % (self.identifier, self.type)
@@ -252,6 +249,5 @@ def container_from_element(container_elem):
         identifier=identifier,
         type=type,
         resolve_dependencies=resolve_dependencies,
-        shell=shell,
-    )
+        shell=shell, )
     return container

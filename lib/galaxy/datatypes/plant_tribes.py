@@ -80,7 +80,14 @@ class PlantTribes(Html):
     PlantTribes abstract class.
     """
     composite_type = 'basic'
-    MetadataElement(name="num_files", default=0, desc="Number of files in files_path directory", param=MetadataParameter, readonly=True, visible=False, no_value=0)
+    MetadataElement(
+        name="num_files",
+        default=0,
+        desc="Number of files in files_path directory",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        no_value=0)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         try:
@@ -93,7 +100,13 @@ class PlantTribes(Html):
 
 class PlantTribesKsComponents(Tabular):
     file_ext = "ptkscmp"
-    MetadataElement(name="number_comp", default=0, desc="Number of significant components in the Ks distribution", readonly=True, visible=True, no_value=0)
+    MetadataElement(
+        name="number_comp",
+        default=0,
+        desc="Number of significant components in the Ks distribution",
+        readonly=True,
+        visible=True,
+        no_value=0)
 
     def display_peek(self, dataset):
         try:

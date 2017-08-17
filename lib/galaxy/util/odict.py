@@ -14,6 +14,7 @@ class odict(UserDict):
     added. Calling keys(), values(), items(), etc. will return results in this
     order.
     """
+
     def __init__(self, dict=None):
         item = dict
         self._keys = []

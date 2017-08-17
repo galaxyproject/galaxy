@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Dan Blankenberg
-
 """
 A wrapper script for converting SAM to BAM, with sorting.
 %prog input_filename.sam output_filename.bam
@@ -13,7 +12,7 @@ import sys
 import tempfile
 from distutils.version import LooseVersion
 
-CHUNK_SIZE = 2 ** 20  # 1mb
+CHUNK_SIZE = 2**20  # 1mb
 
 
 def cleanup_before_exit(tmp_dir):
@@ -34,9 +33,7 @@ def _get_samtools_version():
     if not cmd_exists('samtools'):
         raise Exception('This tool needs samtools, but it is not on PATH.')
     # Get the version of samtools via --version-only, if available
-    p = subprocess.Popen(['samtools', '--version-only'],
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    p = subprocess.Popen(['samtools', '--version-only'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = p.communicate()
 
     # --version-only is available

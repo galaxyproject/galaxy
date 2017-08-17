@@ -68,8 +68,8 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
                     if len(file_list):
                         dataset_extra_files_path = 'datasets/extra_files_path_%s' % dataset_hid
                         for fname in file_list:
-                            history_archive.add(os.path.join(extra_files_path, fname),
-                                                arcname=(os.path.join(dataset_extra_files_path, fname)))
+                            history_archive.add(
+                                os.path.join(extra_files_path, fname), arcname=(os.path.join(dataset_extra_files_path, fname)))
                         dataset_attrs['extra_files_path'] = dataset_extra_files_path
                     else:
                         dataset_attrs['extra_files_path'] = ''

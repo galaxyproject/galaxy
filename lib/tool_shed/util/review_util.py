@@ -16,9 +16,7 @@ def can_browse_repository_reviews(app, user, repository):
     if user:
         for review in repository.reviews:
             for component_review in review.component_reviews:
-                if app.security_agent.user_can_browse_component_review(app,
-                                                                       repository,
-                                                                       component_review, user):
+                if app.security_agent.user_can_browse_component_review(app, repository, component_review, user):
                     return True
     return False
 

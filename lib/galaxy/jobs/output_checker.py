@@ -41,22 +41,18 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
             max_error_level = StdioErrorLevel.NO_ERROR
             if tool_exit_code is not None:
                 for stdio_exit_code in tool.stdio_exit_codes:
-                    if (tool_exit_code >= stdio_exit_code.range_start and
-                            tool_exit_code <= stdio_exit_code.range_end):
+                    if (tool_exit_code >= stdio_exit_code.range_start and tool_exit_code <= stdio_exit_code.range_end):
                         # Tack on a generic description of the code
                         # plus a specific code description. For example,
                         # this might prepend "Job 42: Warning (Out of Memory)\n".
                         code_desc = stdio_exit_code.desc
                         if None is code_desc:
                             code_desc = ""
-                        tool_msg = ("%s: Exit code %d (%s)" % (
-                            StdioErrorLevel.desc(stdio_exit_code.error_level),
-                            tool_exit_code,
-                            code_desc))
+                        tool_msg = ("%s: Exit code %d (%s)" % (StdioErrorLevel.desc(stdio_exit_code.error_level), tool_exit_code,
+                                                               code_desc))
                         log.info("Job %s: %s" % (job.get_id_tag(), tool_msg))
                         stderr = tool_msg + "\n" + stderr
-                        max_error_level = max(max_error_level,
-                                              stdio_exit_code.error_level)
+                        max_error_level = max(max_error_level, stdio_exit_code.error_level)
                         if max_error_level >= StdioErrorLevel.FATAL:
                             break
 
@@ -78,28 +74,22 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
                     # Repeat the stdout stuff for stderr.
                     # TODO: Collapse this into a single function.
                     if regex.stdout_match:
-                        regex_match = re.search(regex.match, stdout,
-                                                re.IGNORECASE)
+                        regex_match = re.search(regex.match, stdout, re.IGNORECASE)
                         if regex_match:
                             rexmsg = __regex_err_msg(regex_match, regex)
-                            log.info("Job %s: %s"
-                                     % (job.get_id_tag(), rexmsg))
+                            log.info("Job %s: %s" % (job.get_id_tag(), rexmsg))
                             stdout = rexmsg + "\n" + stdout
-                            max_error_level = max(max_error_level,
-                                                  regex.error_level)
+                            max_error_level = max(max_error_level, regex.error_level)
                             if max_error_level >= StdioErrorLevel.FATAL:
                                 break
 
                     if regex.stderr_match:
-                        regex_match = re.search(regex.match, stderr,
-                                                re.IGNORECASE)
+                        regex_match = re.search(regex.match, stderr, re.IGNORECASE)
                         if regex_match:
                             rexmsg = __regex_err_msg(regex_match, regex)
-                            log.info("Job %s: %s"
-                                     % (job.get_id_tag(), rexmsg))
+                            log.info("Job %s: %s" % (job.get_id_tag(), rexmsg))
                             stderr = rexmsg + "\n" + stderr
-                            max_error_level = max(max_error_level,
-                                                  regex.error_level)
+                            max_error_level = max(max_error_level, regex.error_level)
                             if max_error_level >= StdioErrorLevel.FATAL:
                                 break
 
@@ -128,8 +118,7 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
     # On any exception, return True.
     except:
         tb = traceback.format_exc()
-        log.warning("Tool check encountered unexpected exception; " +
-                    "assuming tool was successful: " + tb)
+        log.warning("Tool check encountered unexpected exception; " + "assuming tool was successful: " + tb)
         success = True
 
     # Store the modified stdout and stderr in the job:
@@ -157,7 +146,7 @@ def __regex_err_msg(match, regex):
         err_msg += "Matched on "
         # TODO: Move the constant 256 somewhere else besides here.
         if mend - mstart > 256:
-            err_msg += match.string[mstart : mstart + 256] + "..."
+            err_msg += match.string[mstart:mstart + 256] + "..."
         else:
-            err_msg += match.string[mstart: mend]
+            err_msg += match.string[mstart:mend]
     return err_msg

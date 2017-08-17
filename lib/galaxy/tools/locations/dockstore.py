@@ -7,8 +7,7 @@ import yaml
 from six.moves.urllib.parse import quote
 
 from ..locations import (
-    ToolLocationResolver,
-)
+    ToolLocationResolver, )
 
 
 class DockStoreResolver(ToolLocationResolver):
@@ -30,7 +29,6 @@ class DockStoreResolver(ToolLocationResolver):
 
 
 class _Ga4ghToolClient(object):
-
     def __init__(self, base_url="https://www.dockstore.org:8443/api"):
         self.base_url = base_url
 
@@ -66,4 +64,4 @@ class _Ga4ghToolClient(object):
         return requests
 
 
-__all__ = ("DockStoreResolver",)
+__all__ = ("DockStoreResolver", )

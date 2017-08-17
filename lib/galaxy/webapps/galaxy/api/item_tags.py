@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 class BaseItemTagsController(BaseAPIController, UsesTagsMixin):
     """
     """
+
     @expose_api
     def index(self, trans, **kwd):
         """
@@ -72,5 +73,6 @@ class WorkflowTagsController(BaseItemTagsController):
     controller_name = "workflow_tags"
     tagged_item_class = "StoredWorkflow"
     tagged_item_id = "workflow_id"
+
 
 # TODO: Visualization and Pages once APIs for those are available

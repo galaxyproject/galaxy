@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 def resolve_path(path, root):
     """If 'path' is relative make absolute by prepending 'root'"""
-    if not(os.path.isabs(path)):
+    if not (os.path.isabs(path)):
         path = os.path.join(root, path)
     return path
 
@@ -26,7 +26,6 @@ class ConfigurationError(Exception):
 
 
 class Configuration(object):
-
     def __init__(self, **kwargs):
         self.config_dict = kwargs
         self.root = kwargs.get('root_dir', '.')
@@ -73,8 +72,10 @@ class Configuration(object):
         self.tool_data_path = resolve_path(kwargs.get("tool_data_path", "shed-tool-data"), os.getcwd())
         self.tool_data_table_config_path = None
         self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.root)
-        self.builds_file_path = resolve_path(kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')), self.root)
-        self.len_file_path = resolve_path(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
+        self.builds_file_path = resolve_path(
+            kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')), self.root)
+        self.len_file_path = resolve_path(
+            kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.update_integrated_tool_panel = False
         # Galaxy flavor Docker Image
@@ -168,8 +169,7 @@ class Configuration(object):
         defaults = dict(
             auth_config_file=['config/auth_conf.xml', 'config/auth_conf.xml.sample'],
             datatypes_config_file=['config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample'],
-            shed_tool_data_table_config=['shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml'],
-        )
+            shed_tool_data_table_config=['shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml'], )
 
         for var, defaults in defaults.items():
             if kwargs.get(var, None) is not None:

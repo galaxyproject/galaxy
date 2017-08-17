@@ -30,7 +30,6 @@ log = logging.getLogger(__name__)
 
 STOP_SIGNAL = object()
 
-
 JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE = "Invalid job runner parameter for this plugin: %s"
 JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE = "Job runner parameter '%s' value '%s' could not be converted to the correct type"
 JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE = "Job runner parameter %s failed validation"
@@ -40,7 +39,6 @@ GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" !=
 
 
 class RunnerParams(ParamsWithSpecs):
-
     def _param_unknown_error(self, name):
         raise Exception(JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE % name)
 
@@ -145,8 +143,7 @@ class BaseJobRunner(object):
         """
         raise NotImplementedError()
 
-    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
-                    modify_command_for_container=True):
+    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True, modify_command_for_container=True):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do
         """
         job_id = job_wrapper.get_id_tag()
@@ -172,8 +169,7 @@ class BaseJobRunner(object):
                 job_wrapper,
                 include_metadata=include_metadata,
                 include_work_dir_outputs=include_work_dir_outputs,
-                modify_command_for_container=modify_command_for_container
-            )
+                modify_command_for_container=modify_command_for_container)
         except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
             job_wrapper.fail(e.message if hasattr(e, 'message') else "Job preparation failed", exception=True)
@@ -195,8 +191,7 @@ class BaseJobRunner(object):
     def recover(self, job, job_wrapper):
         raise NotImplementedError()
 
-    def build_command_line(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
-                           modify_command_for_container=True):
+    def build_command_line(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True, modify_command_for_container=True):
         container = self._find_container(job_wrapper)
         if not container and job_wrapper.requires_containerization:
             raise Exception("Failed to find a container when required, contact Galaxy admin.")
@@ -206,8 +201,7 @@ class BaseJobRunner(object):
             include_metadata=include_metadata,
             include_work_dir_outputs=include_work_dir_outputs,
             modify_command_for_container=modify_command_for_container,
-            container=container
-        )
+            container=container)
 
     def get_work_dir_outputs(self, job_wrapper, job_working_directory=None, tool_working_directory=None):
         """
@@ -247,7 +241,8 @@ class BaseJobRunner(object):
                         output_pairs.append((source_file, destination))
                     else:
                         # Security violation.
-                        log.exception("from_work_dir specified a location not in the working directory: %s, %s", source_file, job_wrapper.working_directory)
+                        log.exception("from_work_dir specified a location not in the working directory: %s, %s", source_file,
+                                      job_wrapper.working_directory)
         return output_pairs
 
     def _walk_dataset_outputs(self, job):
@@ -272,24 +267,23 @@ class BaseJobRunner(object):
         if job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED] and job_wrapper.output_paths:
             lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
             venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
-            external_metadata_script = job_wrapper.setup_external_metadata(output_fnames=job_wrapper.get_output_fnames(),
-                                                                           set_extension=True,
-                                                                           tmp_dir=job_wrapper.working_directory,
-                                                                           # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
-                                                                           kwds={'overwrite' : False})
+            external_metadata_script = job_wrapper.setup_external_metadata(
+                output_fnames=job_wrapper.get_output_fnames(),
+                set_extension=True,
+                tmp_dir=job_wrapper.working_directory,
+                # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
+                kwds={'overwrite': False})
             external_metadata_script = "%s %s %s" % (lib_adjust, venv, external_metadata_script)
             if resolve_requirements:
-                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(job_directory=job_wrapper.working_directory)
+                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(
+                    job_directory=job_wrapper.working_directory)
                 if dependency_shell_commands:
                     if isinstance(dependency_shell_commands, list):
                         dependency_shell_commands = "&&".join(dependency_shell_commands)
                     external_metadata_script = "%s&&%s" % (dependency_shell_commands, external_metadata_script)
             log.debug('executing external set_meta script for job %d: %s' % (job_wrapper.job_id, external_metadata_script))
-            external_metadata_proc = subprocess.Popen(args=external_metadata_script,
-                                                      shell=True,
-                                                      cwd=job_wrapper.working_directory,
-                                                      env=os.environ,
-                                                      preexec_fn=os.setpgrp)
+            external_metadata_proc = subprocess.Popen(
+                args=external_metadata_script, shell=True, cwd=job_wrapper.working_directory, env=os.environ, preexec_fn=os.setpgrp)
             job_wrapper.external_output_metadata.set_job_runner_external_pid(external_metadata_proc.pid, self.sa_session)
             external_metadata_proc.wait()
             log.debug('execution of external set_meta for job %d finished' % job_wrapper.job_id)
@@ -314,8 +308,7 @@ class BaseJobRunner(object):
             working_directory=os.path.abspath(job_wrapper.working_directory),
             command=command_line,
             shell=job_wrapper.shell,
-            preserve_python_environment=job_wrapper.tool.requires_galaxy_python_environment,
-        )
+            preserve_python_environment=job_wrapper.tool.requires_galaxy_python_environment, )
         # Additional logging to enable if debugging from_work_dir handling, metadata
         # commands, etc... (or just peak in the job script.)
         job_id = job_wrapper.job_id
@@ -327,12 +320,11 @@ class BaseJobRunner(object):
         write_script(path, contents, self.app.config, mode=mode)
 
     def _find_container(
-        self,
-        job_wrapper,
-        compute_working_directory=None,
-        compute_tool_directory=None,
-        compute_job_directory=None,
-    ):
+            self,
+            job_wrapper,
+            compute_working_directory=None,
+            compute_tool_directory=None,
+            compute_job_directory=None, ):
         job_directory_type = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
             compute_working_directory = job_wrapper.tool_working_directory
@@ -350,15 +342,10 @@ class BaseJobRunner(object):
             compute_working_directory,
             compute_tool_directory,
             compute_job_directory,
-            job_directory_type,
-        )
+            job_directory_type, )
 
         destination_info = job_wrapper.job_destination.params
-        return self.app.container_finder.find_container(
-            tool_info,
-            destination_info,
-            job_info
-        )
+        return self.app.container_finder.find_container(tool_info, destination_info, job_info)
 
     def _handle_runner_state(self, runner_state, job_state):
         try:
@@ -396,8 +383,7 @@ class JobState(object):
         MEMORY_LIMIT_REACHED='memory_limit_reached',
         UNKNOWN_ERROR='unknown_error',
         GLOBAL_WALLTIME_REACHED='global_walltime_reached',
-        OUTPUT_SIZE_LIMIT='output_size_limit'
-    )
+        OUTPUT_SIZE_LIMIT='output_size_limit')
 
     def __init__(self, job_wrapper, job_destination):
         self.runner_state_handled = False
@@ -450,7 +436,16 @@ class AsynchronousJobState(JobState):
     to communicate with distributed resource manager.
     """
 
-    def __init__(self, files_dir=None, job_wrapper=None, job_id=None, job_file=None, output_file=None, error_file=None, exit_code_file=None, job_name=None, job_destination=None):
+    def __init__(self,
+                 files_dir=None,
+                 job_wrapper=None,
+                 job_id=None,
+                 job_file=None,
+                 output_file=None,
+                 error_file=None,
+                 exit_code_file=None,
+                 job_name=None,
+                 job_destination=None):
         super(AsynchronousJobState, self).__init__(job_wrapper, job_destination)
         self.old_state = None
         self._running = False
@@ -595,8 +590,18 @@ class AsynchronousJobRunner(BaseJobRunner):
         which_try = 0
         while which_try < (self.app.config.retry_job_output_collection + 1):
             try:
-                stdout = shrink_stream_by_size(open(job_state.output_file, "r"), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-                stderr = shrink_stream_by_size(open(job_state.error_file, "r"), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+                stdout = shrink_stream_by_size(
+                    open(job_state.output_file, "r"),
+                    DATABASE_MAX_STRING_SIZE,
+                    join_by="\n..\n",
+                    left_larger=True,
+                    beginning_on_size_error=True)
+                stderr = shrink_stream_by_size(
+                    open(job_state.error_file, "r"),
+                    DATABASE_MAX_STRING_SIZE,
+                    join_by="\n..\n",
+                    left_larger=True,
+                    beginning_on_size_error=True)
                 which_try = (self.app.config.retry_job_output_collection + 1)
             except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:

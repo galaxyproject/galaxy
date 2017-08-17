@@ -11,12 +11,7 @@ from inspect import isclass
 from paste import httpexceptions
 
 from galaxy.util import asbool
-from galaxy.webapps.util import (
-    MiddlewareWrapUnsupported,
-    build_template_error_formatters,
-    wrap_if_allowed,
-    wrap_if_allowed_or_fail
-)
+from galaxy.webapps.util import (MiddlewareWrapUnsupported, build_template_error_formatters, wrap_if_allowed, wrap_if_allowed_or_fail)
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework.webapp
@@ -54,10 +49,7 @@ def add_ui_controllers(webapp, app):
 def app_factory(global_conf, load_app_kwds={}, **kwargs):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy application unless passed in
-    kwargs = load_app_properties(
-        kwds=kwargs,
-        **load_app_kwds
-    )
+    kwargs = load_app_properties(kwds=kwargs, **load_app_kwds)
     if 'app' in kwargs:
         app = kwargs.pop('app')
     else:
@@ -75,9 +67,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     if kwargs.get('middleware', True):
         webapp = wrap_in_middleware(webapp, global_conf, app.application_stack, **kwargs)
     if asbool(kwargs.get('static_enabled', True)):
-        webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
-                                 args=(global_conf,),
-                                 kwargs=kwargs)
+        webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static, args=(global_conf, ), kwargs=kwargs)
     # Close any pooled database connections before forking
     try:
         galaxy.model.mapping.metadata.bind.dispose()
@@ -97,12 +87,12 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # First put into place httpexceptions, which must be most closely
     # wrapped around the application (it can interact poorly with
     # other middleware):
-    app = wrap_if_allowed(app, stack, httpexceptions.make_middleware, name='paste.httpexceptions', args=(conf,))
+    app = wrap_if_allowed(app, stack, httpexceptions.make_middleware, name='paste.httpexceptions', args=(conf, ))
     # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
         from paste import recursive
-        app = wrap_if_allowed(app, stack, recursive.RecursiveMiddleware, args=(conf,))
+        app = wrap_if_allowed(app, stack, recursive.RecursiveMiddleware, args=(conf, ))
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance
@@ -110,33 +100,36 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         # Middleware to check for WSGI compliance
         if asbool(conf.get('use_lint', True)):
             from paste import lint
-            app = wrap_if_allowed(app, stack, lint.make_middleware, name='paste.lint', args=(conf,))
+            app = wrap_if_allowed(app, stack, lint.make_middleware, name='paste.lint', args=(conf, ))
         # Middleware to run the python profiler on each request
         if asbool(conf.get('use_profile', False)):
             import profile
-            app = wrap_if_allowed(app, stack, profile.ProfileMiddleware, args=(conf,))
+            app = wrap_if_allowed(app, stack, profile.ProfileMiddleware, args=(conf, ))
         # Middleware that intercepts print statements and shows them on the
         # returned page
         if asbool(conf.get('use_printdebug', True)):
             from paste.debug import prints
-            app = wrap_if_allowed(app, stack, prints.PrintDebugMiddleware, args=(conf,))
+            app = wrap_if_allowed(app, stack, prints.PrintDebugMiddleware, args=(conf, ))
     if debug and asbool(conf.get('use_interactive', False)):
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
         try:
             from weberror import evalexception
-            app = wrap_if_allowed_or_fail(app, stack, evalexception.EvalException,
-                                          args=(conf,),
-                                          kwargs=dict(templating_formatters=build_template_error_formatters()))
+            app = wrap_if_allowed_or_fail(
+                app,
+                stack,
+                evalexception.EvalException,
+                args=(conf, ),
+                kwargs=dict(templating_formatters=build_template_error_formatters()))
         except MiddlewareWrapUnsupported as exc:
             log.warning(str(exc))
             import galaxy.web.framework.middleware.error
-            app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
+            app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf, ))
     else:
         # Not in interactive debug mode, just use the regular error middleware
         import galaxy.web.framework.middleware.error
-        app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
+        app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf, ))
     # Transaction logging (apache access.log style)
     if asbool(conf.get('use_translogger', True)):
         from paste.translogger import TransLogger

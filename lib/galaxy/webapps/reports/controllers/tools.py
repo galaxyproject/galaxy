@@ -1,4 +1,3 @@
-
 import collections
 import logging
 import galaxy.model
@@ -76,25 +75,26 @@ class Tools(BaseUIController):
         sort_by = kwd.get('sorting', 'Tool')
         sorting = 0 if sort_by == 'Tool' else 1 if sort_by == 'ok' else 2
         descending = 1 if kwd.get('descending', 'desc') == 'desc' else -1
-        sort_functions = (lambda first, second: descending if first.lower() > second.lower() else -descending,
-                          lambda first, second: -descending if tools_and_jobs_ok.get(first, 0) > tools_and_jobs_ok.get(second) else descending,
-                          lambda first, second: -descending if tools_and_jobs_error.get(first, 0) > tools_and_jobs_error.get(second, 0) else descending)
+        sort_functions = (
+            lambda first, second: descending if first.lower() > second.lower() else -descending,
+            lambda first, second: -descending if tools_and_jobs_ok.get(first, 0) > tools_and_jobs_ok.get(second) else descending,
+            lambda first, second: -descending if tools_and_jobs_error.get(first, 0) > tools_and_jobs_error.get(second, 0) else descending)
 
         data = collections.OrderedDict()
 
         # select count(id), tool_id from job where state='ok' group by tool_id;
-        tools_and_jobs_ok = sa.select((galaxy.model.Job.table.c.tool_id .label('tool'),
-                                       sa.func.count(galaxy.model.Job.table.c.id).label('job')),
-                                      from_obj=[galaxy.model.Job.table],
-                                      whereclause=(galaxy.model.Job.table.c.state == 'ok'),
-                                      group_by=['tool'])
+        tools_and_jobs_ok = sa.select(
+            (galaxy.model.Job.table.c.tool_id.label('tool'), sa.func.count(galaxy.model.Job.table.c.id).label('job')),
+            from_obj=[galaxy.model.Job.table],
+            whereclause=(galaxy.model.Job.table.c.state == 'ok'),
+            group_by=['tool'])
 
         # select count(id), tool_id from job where state='error' group by tool_id;
-        tools_and_jobs_error = sa.select((galaxy.model.Job.table.c.tool_id .label('tool'),
-                                          sa.func.count(galaxy.model.Job.table.c.id).label('job')),
-                                         from_obj=[galaxy.model.Job.table],
-                                         whereclause=(galaxy.model.Job.table.c.state == 'error'),
-                                         group_by=['tool'])
+        tools_and_jobs_error = sa.select(
+            (galaxy.model.Job.table.c.tool_id.label('tool'), sa.func.count(galaxy.model.Job.table.c.id).label('job')),
+            from_obj=[galaxy.model.Job.table],
+            whereclause=(galaxy.model.Job.table.c.state == 'error'),
+            group_by=['tool'])
 
         tools_and_jobs_ok = dict(list(tools_and_jobs_ok.execute()))
         tools_and_jobs_error = dict(list(tools_and_jobs_error.execute()))
@@ -106,12 +106,13 @@ class Tools(BaseUIController):
         for tool in tools:
             data[tool] = (str(tools_and_jobs_ok.get(tool, '-')), str(tools_and_jobs_error.get(tool, '-')))
 
-        return trans.fill_template('/webapps/reports/tools_and_job_state.mako',
-                                   data=data,
-                                   user_cutoff=user_cutoff,
-                                   sorting=sorting,
-                                   descending=descending,
-                                   message=message)
+        return trans.fill_template(
+            '/webapps/reports/tools_and_job_state.mako',
+            data=data,
+            user_cutoff=user_cutoff,
+            sorting=sorting,
+            descending=descending,
+            message=message)
 
     @web.expose
     def tools_and_job_state_per_month(self, trans, **kwd):
@@ -137,18 +138,18 @@ class Tools(BaseUIController):
         data = collections.OrderedDict()
 
         # select count(id), create_time from job where state='ok' and tool_id=$tool group by date;
-        date_and_jobs_ok = sa.select((sa.func.date(galaxy.model.Job.table.c.create_time).label('date'),
-                                      sa.func.count(galaxy.model.Job.table.c.id).label('job')),
-                                     from_obj=[galaxy.model.Job.table],
-                                     whereclause=and_(galaxy.model.Job.table.c.state == 'ok', galaxy.model.Job.table.c.tool_id == tool),
-                                     group_by=['date'])
+        date_and_jobs_ok = sa.select(
+            (sa.func.date(galaxy.model.Job.table.c.create_time).label('date'), sa.func.count(galaxy.model.Job.table.c.id).label('job')),
+            from_obj=[galaxy.model.Job.table],
+            whereclause=and_(galaxy.model.Job.table.c.state == 'ok', galaxy.model.Job.table.c.tool_id == tool),
+            group_by=['date'])
 
         # select count(id), create_time from job where state='error' and tool_id=$tool group by date;
-        date_and_jobs_error = sa.select((sa.func.date(galaxy.model.Job.table.c.create_time).label('date'),
-                                         sa.func.count(galaxy.model.Job.table.c.id).label('job')),
-                                        from_obj=[galaxy.model.Job.table],
-                                        whereclause=and_(galaxy.model.Job.table.c.state == 'error', galaxy.model.Job.table.c.tool_id == tool),
-                                        group_by=['date'])
+        date_and_jobs_error = sa.select(
+            (sa.func.date(galaxy.model.Job.table.c.create_time).label('date'), sa.func.count(galaxy.model.Job.table.c.id).label('job')),
+            from_obj=[galaxy.model.Job.table],
+            whereclause=and_(galaxy.model.Job.table.c.state == 'error', galaxy.model.Job.table.c.tool_id == tool),
+            group_by=['date'])
 
         # sort_functions = (lambda first, second: descending if first.lower() > second.lower() else -descending,
         #  lambda first, second: -descending if tools_and_jobs_ok.get( first, 0 ) >
@@ -170,11 +171,8 @@ class Tools(BaseUIController):
                 data[date_key][0] += int(date_and_jobs_ok.get(date, 0))
                 data[date_key][1] += int(date_and_jobs_error.get(date, 0))
 
-        return trans.fill_template('/webapps/reports/tools_and_job_state_per_month.mako',
-                                   data=data,
-                                   tool=tool,
-                                   user_cutoff=user_cutoff,
-                                   message=message)
+        return trans.fill_template(
+            '/webapps/reports/tools_and_job_state_per_month.mako', data=data, tool=tool, user_cutoff=user_cutoff, message=message)
 
     @web.expose
     def tool_execution_time(self, trans, **kwd):
@@ -201,15 +199,15 @@ class Tools(BaseUIController):
 
         sort_functions = [
             lambda first, second: -descending if first.lower() < second.lower() else descending,
-            lambda first, second: field_sort(first, second, "avg"),
-            lambda first, second: field_sort(first, second, "min"),
-            lambda first, second: field_sort(first, second, "max")]
+            lambda first, second: field_sort(first, second, "avg"), lambda first, second: field_sort(first, second, "min"),
+            lambda first, second: field_sort(first, second, "max")
+        ]
 
-        jobs_times = sa.select((galaxy.model.Job.table.c.tool_id.label("name"),
-                                galaxy.model.Job.table.c.create_time.label("create_time"),
-                                galaxy.model.Job.table.c.update_time.label("update_time"),
-                                galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
-                               from_obj=[galaxy.model.Job.table])
+        jobs_times = sa.select(
+            (galaxy.model.Job.table.c.tool_id.label("name"), galaxy.model.Job.table.c.create_time.label("create_time"),
+             galaxy.model.Job.table.c.update_time.label("update_time"),
+             galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
+            from_obj=[galaxy.model.Job.table])
 
         jobs_times = [(name, (create, update, time)) for name, create, update, time in jobs_times.execute()]
         for tool, attr in jobs_times:
@@ -231,16 +229,15 @@ class Tools(BaseUIController):
             tools = tools[:user_cutoff]
         tools.sort(sort_functions[sort_by])
         for tool in tools:
-            ordered_data[tool] = {"min": self.formatted(data[tool]["min"], color),
-                                  "max": self.formatted(data[tool]["max"], color),
-                                  "avg": self.formatted(data[tool]["avg"], color),
-                                  "last": self.formatted(data[tool]["last"], color)}
+            ordered_data[tool] = {
+                "min": self.formatted(data[tool]["min"], color),
+                "max": self.formatted(data[tool]["max"], color),
+                "avg": self.formatted(data[tool]["avg"], color),
+                "last": self.formatted(data[tool]["last"], color)
+            }
 
-        return trans.fill_template('/webapps/reports/tool_execution_time.mako',
-                                   data=ordered_data,
-                                   descending=descending,
-                                   user_cutoff=user_cutoff,
-                                   sort_by=sort_by)
+        return trans.fill_template(
+            '/webapps/reports/tool_execution_time.mako', data=ordered_data, descending=descending, user_cutoff=user_cutoff, sort_by=sort_by)
 
     @web.expose
     def tool_execution_time_per_month(self, trans, **kwd):
@@ -265,13 +262,14 @@ class Tools(BaseUIController):
         ordered_data = collections.OrderedDict()
         sort_functions = [(lambda first, second, i=i: descending if first[i] < second[i] else -descending) for i in range(4)]
 
-        jobs_times = sa.select((sa.func.date_trunc('month', galaxy.model.Job.table.c.create_time).label('date'),
-                                sa.func.max(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
-                                sa.func.avg(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
-                                sa.func.min(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time)),
-                               from_obj=[galaxy.model.Job.table],
-                               whereclause=galaxy.model.Job.table.c.tool_id == tool,
-                               group_by=['date'])
+        jobs_times = sa.select(
+            (sa.func.date_trunc('month', galaxy.model.Job.table.c.create_time).label('date'),
+             sa.func.max(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
+             sa.func.avg(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
+             sa.func.min(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time)),
+            from_obj=[galaxy.model.Job.table],
+            whereclause=galaxy.model.Job.table.c.tool_id == tool,
+            group_by=['date'])
 
         months = list(jobs_times.execute())
         months.sort(sort_functions[sort_by])
@@ -279,16 +277,16 @@ class Tools(BaseUIController):
             months = months[:user_cutoff]
 
         for month in months:
-            ordered_data[str(month[0]).split(' ')[0][:-3]] = (self.formatted(month[1], color),
-                                                              self.formatted(month[2], color),
+            ordered_data[str(month[0]).split(' ')[0][:-3]] = (self.formatted(month[1], color), self.formatted(month[2], color),
                                                               self.formatted(month[3], color))
 
-        return trans.fill_template('/webapps/reports/tool_execution_time_per_month.mako',
-                                   data=ordered_data,
-                                   tool=tool,
-                                   descending=descending,
-                                   user_cutoff=user_cutoff,
-                                   sort_by=sort_by)
+        return trans.fill_template(
+            '/webapps/reports/tool_execution_time_per_month.mako',
+            data=ordered_data,
+            tool=tool,
+            descending=descending,
+            user_cutoff=user_cutoff,
+            sort_by=sort_by)
 
     @web.expose
     def tool_error_messages(self, trans, **kwd):
@@ -301,11 +299,13 @@ class Tools(BaseUIController):
 
         if tool_name is None:
             raise ValueError("Tool can't be none")
-        tool_errors = [[unicode(a), b] for a, b in
-                       sa.select((galaxy.model.Job.table.c.stderr, galaxy.model.Job.table.c.create_time),
-                        from_obj=[galaxy.model.Job.table],
-                        whereclause=and_(galaxy.model.Job.table.c.tool_id == tool_name,
-                                         galaxy.model.Job.table.c.state == 'error')).execute()]
+        tool_errors = [
+            [unicode(a), b]
+            for a, b in sa.select(
+                (galaxy.model.Job.table.c.stderr, galaxy.model.Job.table.c.create_time),
+                from_obj=[galaxy.model.Job.table],
+                whereclause=and_(galaxy.model.Job.table.c.tool_id == tool_name, galaxy.model.Job.table.c.state == 'error')).execute()
+        ]
 
         counter = {}
         for error in tool_errors:
@@ -357,9 +357,10 @@ class Tools(BaseUIController):
                         new_key = new_key.replace(sentence, '</br>' + word + " [this line in %d times]" % (count))
             data[new_key] = counter[key]
 
-        return trans.fill_template("/webapps/reports/tool_error_messages.mako",
-                                   data=data,
-                                   descending=descending,
-                                   tool_name=tool_name,
-                                   sort_by=sort_by,
-                                   user_cutoff=cutoff)
+        return trans.fill_template(
+            "/webapps/reports/tool_error_messages.mako",
+            data=data,
+            descending=descending,
+            tool_name=tool_name,
+            sort_by=sort_by,
+            user_cutoff=cutoff)

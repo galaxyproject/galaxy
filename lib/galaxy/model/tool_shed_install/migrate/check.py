@@ -2,15 +2,8 @@ import logging
 import os.path
 import sys
 
-from migrate.versioning import (
-    repository,
-    schema
-)
-from sqlalchemy import (
-    create_engine,
-    MetaData,
-    Table
-)
+from migrate.versioning import (repository, schema)
+from sqlalchemy import (create_engine, MetaData, Table)
 from sqlalchemy.exc import NoSuchTableError
 
 log = logging.getLogger(__name__)
@@ -65,7 +58,8 @@ def create_or_verify_database(url, engine_options={}, app=None):
     # Verify that the code and the DB are in sync
     db_schema = schema.ControlledSchema(engine, migrate_repository)
     if migrate_repository.versions.latest != db_schema.version:
-        exception_msg = "Your database has version '%d' but this code expects version '%d'.  " % (db_schema.version, migrate_repository.versions.latest)
+        exception_msg = "Your database has version '%d' but this code expects version '%d'.  " % (db_schema.version,
+                                                                                                  migrate_repository.versions.latest)
         exception_msg += "Back up your database and then migrate the schema by running the following from your Galaxy installation directory:"
         exception_msg += "\n\nsh manage_db.sh upgrade install\n"
 

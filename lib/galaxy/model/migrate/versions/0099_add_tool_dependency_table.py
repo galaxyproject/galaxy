@@ -31,8 +31,7 @@ ToolDependency_table = Table("tool_dependency", metadata,
                              Column("installed_changeset_revision", TrimmedString(255)),
                              Column("name", TrimmedString(255)),
                              Column("version", TrimmedString(40)),
-                             Column("type", TrimmedString(40)),
-                             Column("uninstalled", Boolean, default=False))
+                             Column("type", TrimmedString(40)), Column("uninstalled", Boolean, default=False))
 
 
 def upgrade(migrate_engine):

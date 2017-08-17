@@ -2,10 +2,7 @@ import logging
 import os
 import string
 
-from abc import (
-    ABCMeta,
-    abstractmethod
-)
+from abc import (ABCMeta, abstractmethod)
 
 import six
 
@@ -19,8 +16,7 @@ from .container_resolvers.mulled import (
     BuildMulledSingularityContainerResolver,
     CachedMulledDockerContainerResolver,
     CachedMulledSingularityContainerResolver,
-    MulledDockerContainerResolver,
-)
+    MulledDockerContainerResolver, )
 from .requirements import ContainerDescription
 from .requirements import DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES, DEFAULT_CONTAINER_SHELL
 from ..deps import docker_util
@@ -58,7 +54,6 @@ EOF
 
 
 class ContainerFinder(object):
-
     def __init__(self, app_info):
         self.app_info = app_info
         self.container_registry = ContainerRegistry(app_info)
@@ -90,8 +85,7 @@ class ContainerFinder(object):
                 tool_info,
                 destination_info,
                 job_info,
-                container_description,
-            )
+                container_description, )
             return container
 
         if "container_override" in destination_info:
@@ -187,7 +181,6 @@ class ContainerFinder(object):
 
 
 class NullContainerFinder(object):
-
     def find_container(self, tool_info, destination_info, job_info):
         return []
 
@@ -249,19 +242,17 @@ class ContainerRegistry(object):
 
 
 class AppInfo(object):
-
     def __init__(
-        self,
-        galaxy_root_dir=None,
-        default_file_path=None,
-        outputs_to_working_directory=False,
-        container_image_cache_path=None,
-        library_import_dir=None,
-        enable_beta_mulled_containers=False,
-        containers_resolvers_config_file=None,
-        involucro_path=None,
-        involucro_auto_init=True,
-    ):
+            self,
+            galaxy_root_dir=None,
+            default_file_path=None,
+            outputs_to_working_directory=False,
+            container_image_cache_path=None,
+            library_import_dir=None,
+            enable_beta_mulled_containers=False,
+            containers_resolvers_config_file=None,
+            involucro_path=None,
+            involucro_auto_init=True, ):
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
         # TODO: Vary default value for docker_volumes based on this...
@@ -287,7 +278,6 @@ class ToolInfo(object):
 
 
 class JobInfo(object):
-
     def __init__(self, working_directory, tool_directory, job_directory, job_directory_type):
         self.working_directory = working_directory
         self.job_directory = job_directory
@@ -299,7 +289,6 @@ class JobInfo(object):
 
 @six.add_metaclass(ABCMeta)
 class Container(object):
-
     def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description):
         self.container_id = container_id
         self.app_info = app_info
@@ -456,8 +445,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             docker_cmd=prop("cmd", docker_util.DEFAULT_DOCKER_COMMAND),
             sudo=asbool(prop("sudo", docker_util.DEFAULT_SUDO)),
             sudo_cmd=prop("sudo_cmd", docker_util.DEFAULT_SUDO_COMMAND),
-            host=prop("host", docker_util.DEFAULT_HOST),
-        )
+            host=prop("host", docker_util.DEFAULT_HOST), )
 
         cached_image_file = self.__get_cached_image_file()
         if not cached_image_file:
@@ -476,8 +464,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             auto_rm=asbool(prop("auto_rm", docker_util.DEFAULT_AUTO_REMOVE)),
             set_user=prop("set_user", docker_util.DEFAULT_SET_USER),
             run_extra_arguments=prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
-            **docker_host_props
-        )
+            **docker_host_props)
         return "%s\n%s" % (cache_command, run_command)
 
     def __cache_from_file_command(self, cached_image_file, docker_host_props):
@@ -485,10 +472,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         load_cmd = docker_util.build_docker_load_command(**docker_host_props)
 
         return string.Template(LOAD_CACHED_IMAGE_COMMAND_TEMPLATE).safe_substitute(
-            cached_image_file=cached_image_file,
-            images_cmd=images_cmd,
-            load_cmd=load_cmd
-        )
+            cached_image_file=cached_image_file, images_cmd=images_cmd, load_cmd=load_cmd)
 
     def __get_cached_image_file(self):
         container_id = self.container_id
@@ -542,8 +526,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         singularity_target_kwds = dict(
             singularity_cmd=prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
             sudo=asbool(prop("sudo", singularity_util.DEFAULT_SUDO)),
-            sudo_cmd=prop("sudo_cmd", singularity_util.DEFAULT_SUDO_COMMAND),
-        )
+            sudo_cmd=prop("sudo_cmd", singularity_util.DEFAULT_SUDO_COMMAND), )
         run_command = singularity_util.build_singularity_run_command(
             command,
             self.container_id,
@@ -551,24 +534,22 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             env=env,
             working_directory=working_directory,
             run_extra_arguments=prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
-            **singularity_target_kwds
-        )
+            **singularity_target_kwds)
         return run_command
 
 
 CONTAINER_CLASSES = dict(
     docker=DockerContainer,
-    singularity=SingularityContainer,
-)
+    singularity=SingularityContainer, )
 
 
 class NullContainer(object):
-
     def __init__(self):
         pass
 
     def __bool__(self):
         return False
+
     __nonzero__ = __bool__
 
 

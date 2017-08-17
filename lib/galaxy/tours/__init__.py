@@ -27,16 +27,16 @@ def tour_loader(contents_dict):
 
 
 class ToursRegistry(object):
-
     def __init__(self, tour_directories):
         self.tour_directories = util.config_directories_from_setting(tour_directories)
         self.load_tours()
 
     def tours_by_id_with_description(self):
-        return [{'id': k,
-                 'description': self.tours[k].get('description', None),
-                 'name': self.tours[k].get('name', None)}
-                for k in self.tours.keys()]
+        return [{
+            'id': k,
+            'description': self.tours[k].get('description', None),
+            'name': self.tours[k].get('name', None)
+        } for k in self.tours.keys()]
 
     def load_tour(self, tour_id):
         for tour_dir in self.tour_directories:

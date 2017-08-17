@@ -22,7 +22,6 @@ except ImportError:
 
 
 class _Memoized(object):
-
     def __init__(self, func):
         self.func = func
         self.cache = {}
@@ -87,7 +86,6 @@ def raw_metadata(recipe_dir):
 
 
 class _MetaData(object):
-
     def __init__(self, input_dir):
         self.meta = raw_metadata(input_dir)
 
@@ -106,7 +104,4 @@ class _MetaData(object):
 if MetaData is None:
     MetaData = _MetaData
 
-__all__ = (
-    "MetaData",
-    "raw_metadata",
-)
+__all__ = ("MetaData", "raw_metadata", )

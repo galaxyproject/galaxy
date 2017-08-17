@@ -7,12 +7,10 @@ from sqlalchemy import false
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy import web
 
-
 log = logging.getLogger(__name__)
 
 
 class GroupAPIController(BaseAPIController):
-
     @web.expose_api
     @web.require_admin
     def index(self, trans, **kwd):

@@ -91,20 +91,13 @@ class ToolsController(BaseAPIController):
 
         tool_search = ToolSearch()
 
-        Boosts = namedtuple('Boosts', ['tool_name_boost',
-                                       'tool_description_boost',
-                                       'tool_help_boost',
-                                       'tool_repo_owner_username_boost'])
-        boosts = Boosts(float(conf.get('tool_name_boost', 1.2)),
-                        float(conf.get('tool_description_boost', 0.6)),
-                        float(conf.get('tool_help_boost', 0.4)),
-                        float(conf.get('tool_repo_owner_username_boost', 0.3)))
+        Boosts = namedtuple('Boosts', ['tool_name_boost', 'tool_description_boost', 'tool_help_boost', 'tool_repo_owner_username_boost'])
+        boosts = Boosts(
+            float(conf.get('tool_name_boost', 1.2)),
+            float(conf.get('tool_description_boost', 0.6)),
+            float(conf.get('tool_help_boost', 0.4)), float(conf.get('tool_repo_owner_username_boost', 0.3)))
 
-        results = tool_search.search(trans,
-                                     search_term,
-                                     page,
-                                     page_size,
-                                     boosts)
+        results = tool_search.search(trans, search_term, page, page_size, boosts)
         results['hostname'] = web.url_for('/', qualified=True)
         return results
 
@@ -138,10 +131,7 @@ class ToolsController(BaseAPIController):
         toolshed_base_url = str(web.url_for('/', qualified=True)).rstrip('/')
         rb = relation_builder.RelationBuilder(trans.app, repository, repository_metadata, toolshed_base_url)
         repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
-        containers_dict = tsucm.build_repository_containers(repository,
-                                                            changeset,
-                                                            repository_dependencies,
-                                                            repository_metadata)
+        containers_dict = tsucm.build_repository_containers(repository, changeset, repository_dependencies, repository_metadata)
         found_tool = None
         for folder in containers_dict['valid_tools'].folders:
             if hasattr(folder, 'valid_tools'):
@@ -157,9 +147,7 @@ class ToolsController(BaseAPIController):
             return {'status': 'error', 'message': message}
 
         tv = tool_validator.ToolValidator(trans.app)
-        repository, tool, message = tv.load_tool_from_changeset_revision(tsr_id,
-                                                                         changeset,
-                                                                         found_tool.tool_config)
+        repository, tool, message = tv.load_tool_from_changeset_revision(tsr_id, changeset, found_tool.tool_config)
         if message:
             status = 'error'
             return dict(message=message, status=status)
@@ -171,14 +159,17 @@ class ToolsController(BaseAPIController):
         tool_dict['inputs'] = {}
         tool.populate_model(trans, tool.inputs, {}, tool_dict['inputs'])
         tool_dict.update({
-            'help'          : tool_help,
-            'citations'     : bool(tool.citations),
-            'biostar_url'   : trans.app.config.biostar_url,
-            'requirements'  : [{'name' : r.name, 'version' : r.version} for r in tool.requirements],
-            'state_inputs'  : params_to_strings(tool.inputs, {}, trans.app),
-            'display'       : tool.display_interface,
-            'action'        : web.url_for(tool.action),
-            'method'        : tool.method,
-            'enctype'       : tool.enctype
+            'help': tool_help,
+            'citations': bool(tool.citations),
+            'biostar_url': trans.app.config.biostar_url,
+            'requirements': [{
+                'name': r.name,
+                'version': r.version
+            } for r in tool.requirements],
+            'state_inputs': params_to_strings(tool.inputs, {}, trans.app),
+            'display': tool.display_interface,
+            'action': web.url_for(tool.action),
+            'method': tool.method,
+            'enctype': tool.enctype
         })
         return json.dumps(tool_dict)

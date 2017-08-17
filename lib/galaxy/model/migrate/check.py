@@ -4,11 +4,7 @@ import sys
 
 from migrate.versioning import repository, schema
 
-from sqlalchemy import (
-    create_engine,
-    MetaData,
-    Table
-)
+from sqlalchemy import (create_engine, MetaData, Table)
 from sqlalchemy.exc import NoSuchTableError
 
 log = logging.getLogger(__name__)
@@ -93,8 +89,9 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
         config_arg = ''
         if galaxy_config_file and os.path.abspath(os.path.join(os.getcwd(), 'config', 'galaxy.ini')) != galaxy_config_file:
             config_arg = ' -c %s' % galaxy_config_file.replace(os.path.abspath(os.getcwd()), '.')
-        raise Exception("Your database has version '%d' but this code expects version '%d'.  Please backup your database and then migrate the schema by running 'sh manage_db.sh%s upgrade'."
-                        % (db_schema.version, migrate_repository.versions.latest, config_arg))
+        raise Exception(
+            "Your database has version '%d' but this code expects version '%d'.  Please backup your database and then migrate the schema by running 'sh manage_db.sh%s upgrade'."
+            % (db_schema.version, migrate_repository.versions.latest, config_arg))
     else:
         log.info("At database version %d" % db_schema.version)
 
@@ -120,6 +117,7 @@ def migrate_to_current_version(engine, schema):
 
             def flush(self):
                 pass
+
         sys.stdout = FakeStdout()
         try:
             schema.runchange(ver, change, changeset.step)

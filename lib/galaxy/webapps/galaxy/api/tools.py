@@ -190,6 +190,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         Return diagnostic information to help debug panel
         and dependency related problems.
         """
+
         # TODO: Move this into tool.
         def to_dict(x):
             return x.to_dict()
@@ -259,17 +260,18 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool_ngram_minsize = self.app.config.get('tool_ngram_minsize', 3)
         tool_ngram_maxsize = self.app.config.get('tool_ngram_maxsize', 4)
 
-        results = self.app.toolbox_search.search(q=q,
-                                                 tool_name_boost=tool_name_boost,
-                                                 tool_section_boost=tool_section_boost,
-                                                 tool_description_boost=tool_description_boost,
-                                                 tool_label_boost=tool_label_boost,
-                                                 tool_stub_boost=tool_stub_boost,
-                                                 tool_help_boost=tool_help_boost,
-                                                 tool_search_limit=tool_search_limit,
-                                                 tool_enable_ngram_search=tool_enable_ngram_search,
-                                                 tool_ngram_minsize=tool_ngram_minsize,
-                                                 tool_ngram_maxsize=tool_ngram_maxsize)
+        results = self.app.toolbox_search.search(
+            q=q,
+            tool_name_boost=tool_name_boost,
+            tool_section_boost=tool_section_boost,
+            tool_description_boost=tool_description_boost,
+            tool_label_boost=tool_label_boost,
+            tool_stub_boost=tool_stub_boost,
+            tool_help_boost=tool_help_boost,
+            tool_search_limit=tool_search_limit,
+            tool_enable_ngram_search=tool_enable_ngram_search,
+            tool_ngram_minsize=tool_ngram_minsize,
+            tool_ngram_maxsize=tool_ngram_maxsize)
         return results
 
     @expose_api_anonymous_and_sessionless
@@ -311,7 +313,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             if not trans.user:
                 log.warning("Anonymous user attempts to execute tool, but account activation is turned on.")
             elif not trans.user.active:
-                log.warning("User \"%s\" attempts to execute tool, but account activation is turned on and user account is not active." % trans.user.email)
+                log.warning("User \"%s\" attempts to execute tool, but account activation is turned on and user account is not active." %
+                            trans.user.email)
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
@@ -466,7 +469,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # TODO: need to handle updates to conditional parameters; conditional
         # params are stored in dicts (and dicts within dicts).
         new_inputs = payload['inputs']
-        tool_params.update(dict([(key, dumps(value)) for key, value in new_inputs.items() if key in tool.inputs and new_inputs[key] is not None]))
+        tool_params.update(
+            dict([(key, dumps(value)) for key, value in new_inputs.items() if key in tool.inputs and new_inputs[key] is not None]))
         tool_params = tool.params_from_strings(tool_params, self.app)
 
         #
@@ -479,8 +483,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             for jida in original_job.input_datasets:
                 input_dataset = jida.dataset
                 data_provider = data_provider_registry.get_data_provider(trans, original_dataset=input_dataset, source='data')
-                if data_provider and (not data_provider.converted_dataset or
-                                      data_provider.converted_dataset.state != trans.app.model.Dataset.states.OK):
+                if data_provider and (not data_provider.converted_dataset
+                                      or data_provider.converted_dataset.state != trans.app.model.Dataset.states.OK):
                     # Can convert but no converted dataset yet, so return message about why.
                     data_sources = input_dataset.datatype.data_sources
                     msg = input_dataset.convert_dataset(trans, data_sources['data'])
@@ -586,13 +590,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
                     input_dataset.get_converted_dataset_deps(trans, data_source)
 
                     # Create new HDA for input dataset's subset.
-                    new_dataset = trans.app.model.HistoryDatasetAssociation(extension=input_dataset.ext,
-                                                                            dbkey=input_dataset.dbkey,
-                                                                            create_dataset=True,
-                                                                            sa_session=trans.sa_session,
-                                                                            name="Subset [%s] of data %i" %
-                                                                            (regions_str, input_dataset.hid),
-                                                                            visible=False)
+                    new_dataset = trans.app.model.HistoryDatasetAssociation(
+                        extension=input_dataset.ext,
+                        dbkey=input_dataset.dbkey,
+                        create_dataset=True,
+                        sa_session=trans.sa_session,
+                        name="Subset [%s] of data %i" % (regions_str, input_dataset.hid),
+                        visible=False)
                     target_history.add_dataset(new_dataset)
                     trans.sa_session.add(new_dataset)
                     trans.app.security_agent.set_all_dataset_permissions(new_dataset.dataset, hda_permissions)
@@ -609,11 +613,15 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
                     # Set metadata.
                     # TODO: set meta internally if dataset is small enough?
-                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool,
-                                                                                                trans, incoming={'input1': new_dataset},
-                                                                                                overwrite=False, job_params={"source": "trackster"})
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                        trans.app.datatypes_registry.set_external_metadata_tool,
+                        trans,
+                        incoming={'input1': new_dataset},
+                        overwrite=False,
+                        job_params={"source": "trackster"})
                     # Add HDA subset association.
-                    subset_association = trans.app.model.HistoryDatasetAssociationSubset(hda=input_dataset, subset=new_dataset, location=regions_str)
+                    subset_association = trans.app.model.HistoryDatasetAssociationSubset(
+                        hda=input_dataset, subset=new_dataset, location=regions_str)
                     trans.sa_session.add(subset_association)
 
                     subset_dataset = new_dataset
@@ -628,9 +636,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # Execute tool and handle outputs.
         #
         try:
-            subset_job, subset_job_outputs = tool.execute(trans, incoming=tool_params,
-                                                          history=target_history,
-                                                          job_params={"source": "trackster"})
+            subset_job, subset_job_outputs = tool.execute(
+                trans, incoming=tool_params, history=target_history, job_params={"source": "trackster"})
         except Exception as e:
             # Lots of things can go wrong when trying to execute tool.
             return {"error": True, "message": e.__class__.__name__ + ": " + str(e)}

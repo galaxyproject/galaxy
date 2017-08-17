@@ -7,7 +7,6 @@ from .type_description import map_over_collection_type
 
 
 class Leaf(object):
-
     def __len__(self):
         return 1
 
@@ -26,7 +25,6 @@ leaf = Leaf()
 
 
 class Tree(object):
-
     def __init__(self, children, collection_type_description):
         self.children = children
         self.collection_type_description = collection_type_description
@@ -37,7 +35,8 @@ class Tree(object):
         for element in dataset_collection.elements:
             if collection_type_description.has_subcollections():
                 child_collection = element.child_collection
-                subcollection_type_description = collection_type_description.subcollection_type_description()  # Type description of children
+                subcollection_type_description = collection_type_description.subcollection_type_description(
+                )  # Type description of children
                 tree = Tree.for_dataset_collection(child_collection, collection_type_description=subcollection_type_description)
                 children.append((element.element_identifier, tree))
             else:
@@ -49,6 +48,7 @@ class Tree(object):
 
     def _walk_collections(self, collection_dict):
         for index, (identifier, substructure) in enumerate(self.children):
+
             def element(collection):
                 return collection[index]
 
@@ -104,8 +104,7 @@ class Tree(object):
         return dict(
             src="new_collection",
             collection_type=collection_type,
-            element_identifiers=element_identifiers,
-        )
+            element_identifiers=element_identifiers, )
 
     def multiply(self, other_structure):
         if other_structure.is_leaf:

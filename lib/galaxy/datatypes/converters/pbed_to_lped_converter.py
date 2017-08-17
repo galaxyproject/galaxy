@@ -11,7 +11,6 @@ import subprocess
 import sys
 import time
 
-
 prog = os.path.split(sys.argv[0])[-1]
 myversion = 'Oct 10 2009'
 

@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 
 
 class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin):
-
     @expose_api
     def index(self, trans, page_id, **kwd):
         """

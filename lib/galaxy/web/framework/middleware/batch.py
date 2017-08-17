@@ -51,8 +51,8 @@ class BatchMiddleware(object):
       * `contentType` content-type request header (defaults to application/json)
     """
     DEFAULT_CONFIG = {
-        'route' : '/api/batch',
-        'allowed_routes' : [
+        'route': '/api/batch',
+        'allowed_routes': [
             '^api\/users.*',
             '^api\/histories.*',
             '^api\/jobs.*',
@@ -115,11 +115,12 @@ class BatchMiddleware(object):
         return True
 
     def _disallowed_route_response(self, route):
-        return dict(status=403, headers=self._default_headers(), body={
-            'err_msg'   : 'Disallowed route used for batch operation',
-            'route'     : route,
-            'allowed'   : self.config['allowed_routes']
-        })
+        return dict(
+            status=403,
+            headers=self._default_headers(),
+            body={'err_msg': 'Disallowed route used for batch operation',
+                  'route': route,
+                  'allowed': self.config['allowed_routes']})
 
     def _build_request_environ(self, original_environ, request):
         """
@@ -132,9 +133,7 @@ class BatchMiddleware(object):
         # TODO: for now, do not overwrite the other headers used in the main api/batch request
         request_environ['CONTENT_TYPE'] = request.get('contentType', 'application/json')
         request_environ['REQUEST_METHOD'] = request.get('method', request.get('type', 'GET'))
-        url = '{0}://{1}{2}'.format(request_environ.get('wsgi.url_scheme'),
-                                    request_environ.get('HTTP_HOST'),
-                                    request['url'])
+        url = '{0}://{1}{2}'.format(request_environ.get('wsgi.url_scheme'), request_environ.get('HTTP_HOST'), request['url'])
         parsed = urlparse(url)
         request_environ['PATH_INFO'] = parsed.path
         request_environ['QUERY_STRING'] = parsed.query
@@ -169,17 +168,10 @@ class BatchMiddleware(object):
         # this is a dummy renderer that does not call start_response
         # See 'We have to re-create the handle request method...' in _process_batch_request above
         return dict(
-            status=trans.response.status,
-            headers=trans.response.headers,
-            body=json.loads(self.galaxy.make_body_iterable(trans, body)[0])
-        )
+            status=trans.response.status, headers=trans.response.headers, body=json.loads(self.galaxy.make_body_iterable(trans, body)[0]))
 
     def _default_headers(self):
-        return {
-            'x-frame-options': 'SAMEORIGIN',
-            'content-type'   : 'application/json',
-            'cache-control'  : 'max-age=0,no-cache,no-store'
-        }
+        return {'x-frame-options': 'SAMEORIGIN', 'content-type': 'application/json', 'cache-control': 'max-age=0,no-cache,no-store'}
 
     def handle_exception(self, environ):
         return False

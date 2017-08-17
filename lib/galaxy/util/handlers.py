@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 
 
 class ConfiguresHandlers:
-
     def _init_handlers(self, config_element):
         # Parse handlers
         if config_element is not None:
@@ -22,7 +21,7 @@ class ConfiguresHandlers:
                     log.error("Handler '%s' overlaps handler with the same name, ignoring" % handler_id)
                 else:
                     log.debug("Read definition for handler '%s'" % handler_id)
-                    self.handlers[handler_id] = (handler_id,)
+                    self.handlers[handler_id] = (handler_id, )
                     self._parse_handler(handler_id, handler)
                     if handler.get('tags', None) is not None:
                         for tag in [x.strip() for x in handler.get('tags').split(',')]:
@@ -82,7 +81,7 @@ class ConfiguresHandlers:
         """
         rval = []
         if attribs is None:
-            attribs = ('id',)
+            attribs = ('id', )
         for elem in parent.findall(match):
             for attrib in attribs:
                 if attrib not in elem.attrib:

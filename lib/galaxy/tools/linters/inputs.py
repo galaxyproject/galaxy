@@ -65,10 +65,7 @@ def lint_inputs(tool_xml, lint_ctx):
             select_options = _find_with_attribute(first_param, 'option', 'value')
             option_ids = [option.get('value') for option in select_options]
         else:  # boolean
-            option_ids = [
-                first_param.get('truevalue', 'true'),
-                first_param.get('falsevalue', 'false')
-            ]
+            option_ids = [first_param.get('truevalue', 'true'), first_param.get('falsevalue', 'false')]
 
         if string_as_bool(first_param.get('optional', False)):
             lint_ctx.warn("Conditional test parameter cannot be optional")
@@ -81,7 +78,8 @@ def lint_inputs(tool_xml, lint_ctx):
 
         for option_id in option_ids:
             if option_id not in when_ids:
-                lint_ctx.warn("No <when /> block found for %s option '%s' inside conditional '%s'" % (first_param_type, option_id, conditional_name))
+                lint_ctx.warn("No <when /> block found for %s option '%s' inside conditional '%s'" % (first_param_type, option_id,
+                                                                                                      conditional_name))
 
         for when_id in when_ids:
             if when_id not in option_ids:

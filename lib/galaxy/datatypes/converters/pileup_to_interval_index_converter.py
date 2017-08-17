@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Convert from pileup file to interval index file.
 

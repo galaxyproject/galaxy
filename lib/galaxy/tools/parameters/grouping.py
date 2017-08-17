@@ -5,21 +5,13 @@ import logging
 import os
 import unicodedata
 
-from six import (
-    StringIO,
-    text_type
-)
+from six import (StringIO, text_type)
 
 from galaxy.datatypes import sniff
 from galaxy.exceptions import (
     AdminRequiredException,
-    ConfigDoesNotAllowException,
-)
-from galaxy.util import (
-    inflector,
-    relpath,
-    sanitize_for_filename
-)
+    ConfigDoesNotAllowException, )
+from galaxy.util import (inflector, relpath, sanitize_for_filename)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
@@ -298,6 +290,7 @@ class UploadDataset(Group):
                 file_name = file_name.split('\\')[-1]
                 file_name = file_name.split('/')[-1]
                 return file_name
+
             try:
                 # Use the existing file
                 if not dataset_name and 'filename' in data_file:
@@ -386,15 +379,16 @@ class UploadDataset(Group):
                             if ftp_filename == filename:
                                 path = relpath(os.path.join(dirpath, filename), user_ftp_dir)
                                 if not os.path.islink(os.path.join(dirpath, filename)):
-                                    ftp_data_file = {'local_filename' : os.path.abspath(os.path.join(user_ftp_dir, path)),
-                                                     'filename' : os.path.basename(path)}
+                                    ftp_data_file = {
+                                        'local_filename': os.path.abspath(os.path.join(user_ftp_dir, path)),
+                                        'filename': os.path.basename(path)
+                                    }
                                     purge = getattr(trans.app.config, 'ftp_upload_purge', True)
                                     file_bunch = get_data_file_filename(
                                         ftp_data_file,
                                         override_name=name,
                                         override_info=info,
-                                        purge=purge,
-                                    )
+                                        purge=purge, )
                                     if file_bunch.path:
                                         break
                         if file_bunch.path:
@@ -466,8 +460,10 @@ class UploadDataset(Group):
                     log.warning('User passed an invalid file path in ftp_files: %s' % ftp_file)
                     continue
                     # TODO: warning to the user (could happen if file is already imported)
-                ftp_data_file = {'local_filename' : os.path.abspath(os.path.join(user_ftp_dir, ftp_file)),
-                                 'filename' : os.path.basename(ftp_file)}
+                ftp_data_file = {
+                    'local_filename': os.path.abspath(os.path.join(user_ftp_dir, ftp_file)),
+                    'filename': os.path.basename(ftp_file)
+                }
                 purge = getattr(trans.app.config, 'ftp_upload_purge', True)
                 file_bunch = get_data_file_filename(ftp_data_file, override_name=name, override_info=info, purge=purge)
                 if file_bunch.path:
@@ -476,6 +472,7 @@ class UploadDataset(Group):
                     file_bunch.space_to_tab = space_to_tab
                     rval.append(file_bunch)
             return rval
+
         file_type = self.get_file_type(context)
         d_type = self.get_datatype(trans, context)
         dbkey = context.get('dbkey', None)
@@ -501,7 +498,10 @@ class UploadDataset(Group):
             dataset.tag_using_filenames = None
             # load metadata
             files_metadata = context.get(self.metadata_ref, {})
-            metadata_name_substition_default_dict = dict((composite_file.substitute_name_with_metadata, d_type.metadata_spec[composite_file.substitute_name_with_metadata].default) for composite_file in d_type.composite_files.values() if composite_file.substitute_name_with_metadata)
+            metadata_name_substition_default_dict = dict((composite_file.substitute_name_with_metadata,
+                                                          d_type.metadata_spec[composite_file.substitute_name_with_metadata].default)
+                                                         for composite_file in d_type.composite_files.values()
+                                                         if composite_file.substitute_name_with_metadata)
             for meta_name, meta_spec in d_type.metadata_spec.items():
                 if meta_spec.set_in_upload:
                     if meta_name in files_metadata:
@@ -512,7 +512,8 @@ class UploadDataset(Group):
             dataset.precreated_name = dataset.name = self.get_composite_dataset_name(context)
             if dataset.datatype.composite_type == 'auto_primary_file':
                 # replace sniff here with just creating an empty file
-                temp_name, is_multi_byte = sniff.stream_to_file(StringIO(d_type.generate_primary_file(dataset)), prefix='upload_auto_primary_file')
+                temp_name, is_multi_byte = sniff.stream_to_file(
+                    StringIO(d_type.generate_primary_file(dataset)), prefix='upload_auto_primary_file')
                 dataset.primary_file = temp_name
                 dataset.to_posix_lines = True
                 dataset.auto_decompress = True
@@ -528,7 +529,7 @@ class UploadDataset(Group):
             if dataset.primary_file is None:  # remove this before finish, this should create an empty dataset
                 raise Exception('No primary dataset file was available for composite upload')
             keys = [value.name for value in writable_files.values()]
-            for i, group_incoming in enumerate(groups_incoming[writable_files_offset :]):
+            for i, group_incoming in enumerate(groups_incoming[writable_files_offset:]):
                 key = keys[i + writable_files_offset]
                 if group_incoming is None and not writable_files[list(writable_files.keys())[keys.index(key)]].optional:
                     dataset.warnings.append("A required composite file (%s) was not specified." % (key))

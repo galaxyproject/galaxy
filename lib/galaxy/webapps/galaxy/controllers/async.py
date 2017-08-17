@@ -14,7 +14,6 @@ log = logging.getLogger(__name__)
 
 
 class ASync(BaseUIController):
-
     @web.expose
     def default(self, trans, tool_id=None, data_id=None, data_secret=None, **kwd):
         """Catches the tool id and redirects as needed"""
@@ -134,11 +133,14 @@ class ASync(BaseUIController):
             # history.datasets.add_dataset( data )
 
             data = trans.app.model.HistoryDatasetAssociation(create_dataset=True, sa_session=trans.sa_session, extension=GALAXY_TYPE)
-            trans.app.security_agent.set_all_dataset_permissions(data.dataset, trans.app.security_agent.history_get_default_permissions(trans.history))
+            trans.app.security_agent.set_all_dataset_permissions(data.dataset,
+                                                                 trans.app.security_agent.history_get_default_permissions(trans.history))
             data.name = GALAXY_NAME
             data.dbkey = GALAXY_BUILD
             data.info = GALAXY_INFO
-            trans.sa_session.add(data)  # Need to add data to session before setting state (setting state requires that the data object is in the session, but this may change)
+            trans.sa_session.add(
+                data
+            )  # Need to add data to session before setting state (setting state requires that the data object is in the session, but this may change)
             data.state = data.states.NEW
             open(data.file_name, 'wb').close()  # create the file
             trans.history.add_dataset(data, genome_build=GALAXY_BUILD)

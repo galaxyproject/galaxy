@@ -19,10 +19,7 @@ CloudImage_table = Table("cloud_image", metadata,
                          Column("provider_type", TEXT),
                          Column("image_id", TEXT, nullable=False),
                          Column("manifest", TEXT),
-                         Column("state", TEXT),
-                         Column("architecture", TEXT),
-                         Column("deleted", Boolean, default=False))
-
+                         Column("state", TEXT), Column("architecture", TEXT), Column("deleted", Boolean, default=False))
 """ UserConfiguredInstance (UCI) table """
 UCI_table = Table("cloud_uci", metadata,
                   Column("id", Integer, primary_key=True),
@@ -35,9 +32,7 @@ UCI_table = Table("cloud_uci", metadata,
                   Column("name", TEXT),
                   Column("state", TEXT),
                   Column("error", TEXT),
-                  Column("total_size", Integer),
-                  Column("launch_time", DateTime),
-                  Column("deleted", Boolean, default=False))
+                  Column("total_size", Integer), Column("launch_time", DateTime), Column("deleted", Boolean, default=False))
 
 CloudInstance_table = Table("cloud_instance", metadata,
                             Column("id", Integer, primary_key=True),
@@ -54,9 +49,7 @@ CloudInstance_table = Table("cloud_instance", metadata,
                             Column("state", TEXT),
                             Column("error", TEXT),
                             Column("public_dns", TEXT),
-                            Column("private_dns", TEXT),
-                            Column("security_group", TEXT),
-                            Column("availability_zone", TEXT))
+                            Column("private_dns", TEXT), Column("security_group", TEXT), Column("availability_zone", TEXT))
 
 CloudStore_table = Table("cloud_store", metadata,
                          Column("id", Integer, primary_key=True),
@@ -71,9 +64,7 @@ CloudStore_table = Table("cloud_store", metadata,
                          Column("inst_id", Integer, ForeignKey("cloud_instance.id")),
                          Column("status", TEXT),
                          Column("device", TEXT),
-                         Column("space_consumed", Integer),
-                         Column("error", TEXT),
-                         Column("deleted", Boolean, default=False))
+                         Column("space_consumed", Integer), Column("error", TEXT), Column("deleted", Boolean, default=False))
 
 CloudSnapshot_table = Table("cloud_snapshot", metadata,
                             Column("id", Integer, primary_key=True),
@@ -84,9 +75,7 @@ CloudSnapshot_table = Table("cloud_snapshot", metadata,
                             Column("store_id", Integer, ForeignKey("cloud_store.id"), index=True, nullable=False),
                             Column("snapshot_id", TEXT),
                             Column("status", TEXT),
-                            Column("description", TEXT),
-                            Column("error", TEXT),
-                            Column("deleted", Boolean, default=False))
+                            Column("description", TEXT), Column("error", TEXT), Column("deleted", Boolean, default=False))
 
 CloudUserCredentials_table = Table("cloud_user_credentials", metadata,
                                    Column("id", Integer, primary_key=True),
@@ -95,9 +84,7 @@ CloudUserCredentials_table = Table("cloud_user_credentials", metadata,
                                    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=False),
                                    Column("provider_id", Integer, ForeignKey("cloud_provider.id"), index=True, nullable=False),
                                    Column("name", TEXT),
-                                   Column("access_key", TEXT),
-                                   Column("secret_key", TEXT),
-                                   Column("deleted", Boolean, default=False))
+                                   Column("access_key", TEXT), Column("secret_key", TEXT), Column("deleted", Boolean, default=False))
 
 CloudProvider_table = Table("cloud_provider", metadata,
                             Column("id", Integer, primary_key=True),
@@ -117,9 +104,7 @@ CloudProvider_table = Table("cloud_provider", metadata,
                             Column("proxy_user", TEXT),
                             Column("proxy_pass", TEXT),
                             Column("debug", Integer),
-                            Column("https_connection_factory", TEXT),
-                            Column("path", TEXT),
-                            Column("deleted", Boolean, default=False))
+                            Column("https_connection_factory", TEXT), Column("path", TEXT), Column("deleted", Boolean, default=False))
 
 
 def upgrade(migrate_engine):

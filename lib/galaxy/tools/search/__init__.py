@@ -8,16 +8,8 @@ import tempfile
 
 from whoosh import analysis
 from whoosh.analysis import StandardAnalyzer
-from whoosh.fields import (
-    KEYWORD,
-    Schema,
-    STORED,
-    TEXT
-)
-from whoosh.filedb.filestore import (
-    FileStorage,
-    RamStorage
-)
+from whoosh.fields import (KEYWORD, Schema, STORED, TEXT)
+from whoosh.filedb.filestore import (FileStorage, RamStorage)
 from whoosh.qparser import MultifieldParser
 from whoosh.scoring import BM25F
 
@@ -37,13 +29,14 @@ class ToolBoxSearch(object):
         """
         Create a searcher for `toolbox`.
         """
-        self.schema = Schema(id=STORED,
-                             stub=KEYWORD,
-                             name=TEXT(analyzer=analysis.SimpleAnalyzer()),
-                             description=TEXT,
-                             section=TEXT,
-                             help=TEXT,
-                             labels=KEYWORD)
+        self.schema = Schema(
+            id=STORED,
+            stub=KEYWORD,
+            name=TEXT(analyzer=analysis.SimpleAnalyzer()),
+            description=TEXT,
+            section=TEXT,
+            help=TEXT,
+            labels=KEYWORD)
         self.rex = analysis.RegexTokenizer()
         self.toolbox = toolbox
         self.storage, self.index = self._index_setup()
@@ -97,7 +90,7 @@ class ToolBoxSearch(object):
         if tool.guid:
             # Create a stub consisting of owner, repo, and tool from guid
             slash_indexes = [m.start() for m in re.finditer('/', tool.guid)]
-            id_stub = tool.guid[(slash_indexes[1] + 1): slash_indexes[4]]
+            id_stub = tool.guid[(slash_indexes[1] + 1):slash_indexes[4]]
             add_doc_kwds['stub'] = (' ').join([token.text for token in self.rex(to_unicode(id_stub))])
         else:
             add_doc_kwds['stub'] = to_unicode(id)
@@ -112,21 +105,20 @@ class ToolBoxSearch(object):
                 pass
         return add_doc_kwds
 
-    def search(self, q, tool_name_boost, tool_section_boost, tool_description_boost, tool_label_boost, tool_stub_boost, tool_help_boost, tool_search_limit, tool_enable_ngram_search, tool_ngram_minsize, tool_ngram_maxsize):
+    def search(self, q, tool_name_boost, tool_section_boost, tool_description_boost, tool_label_boost, tool_stub_boost, tool_help_boost,
+               tool_search_limit, tool_enable_ngram_search, tool_ngram_minsize, tool_ngram_maxsize):
         """
         Perform search on the in-memory index. Weight in the given boosts.
         """
         # Change field boosts for searcher
-        searcher = self.index.searcher(
-            weighting=BM25F(
-                field_B={'name_B': float(tool_name_boost),
-                         'section_B': float(tool_section_boost),
-                         'description_B': float(tool_description_boost),
-                         'labels_B': float(tool_label_boost),
-                         'stub_B': float(tool_stub_boost),
-                         'help_B': float(tool_help_boost)}
-            )
-        )
+        searcher = self.index.searcher(weighting=BM25F(field_B={
+            'name_B': float(tool_name_boost),
+            'section_B': float(tool_section_boost),
+            'description_B': float(tool_description_boost),
+            'labels_B': float(tool_label_boost),
+            'stub_B': float(tool_stub_boost),
+            'help_B': float(tool_help_boost)
+        }))
         # Set query to search name, description, section, help, and labels.
         parser = MultifieldParser(['name', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema)
         # Hyphens are wildcards in Whoosh causing bad things

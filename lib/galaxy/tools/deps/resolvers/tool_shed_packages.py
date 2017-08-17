@@ -39,24 +39,15 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
     def _get_package_installed_dependency_path(self, installed_tool_dependency, name, version):
         tool_shed_repository = installed_tool_dependency.tool_shed_repository
         base_path = self.base_path
-        return join(
-            base_path,
-            name,
-            version,
-            tool_shed_repository.owner,
-            tool_shed_repository.name,
-            tool_shed_repository.installed_changeset_revision
-        )
+        return join(base_path, name, version, tool_shed_repository.owner, tool_shed_repository.name,
+                    tool_shed_repository.installed_changeset_revision)
 
     def _get_set_environment_installed_dependency_script_path(self, installed_tool_dependency, name):
         tool_shed_repository = installed_tool_dependency.tool_shed_repository
         base_path = self.base_path
-        path = abspath(join(base_path,
-                            'environment_settings',
-                            name,
-                            tool_shed_repository.owner,
-                            tool_shed_repository.name,
-                            tool_shed_repository.installed_changeset_revision))
+        path = abspath(
+            join(base_path, 'environment_settings', name, tool_shed_repository.owner, tool_shed_repository.name,
+                 tool_shed_repository.installed_changeset_revision))
         if exists(path):
             script = join(path, 'env.sh')
             return ToolShedDependency(script, path, None, name, True)

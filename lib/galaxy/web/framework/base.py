@@ -34,10 +34,21 @@ def __resource_with_deleted(self, member_name, collection_name, **kwargs):
     """
     collection_path = kwargs.get('path_prefix', '') + '/' + collection_name + '/deleted'
     member_path = collection_path + '/{id}'
-    self.connect('deleted_' + collection_name, collection_path, controller=collection_name, action='index', deleted=True, conditions=dict(method=['GET']))
-    self.connect('deleted_' + member_name, member_path, controller=collection_name, action='show', deleted=True, conditions=dict(method=['GET']))
-    self.connect('undelete_deleted_' + member_name, member_path + '/undelete', controller=collection_name, action='undelete',
-                 conditions=dict(method=['POST']))
+    self.connect(
+        'deleted_' + collection_name,
+        collection_path,
+        controller=collection_name,
+        action='index',
+        deleted=True,
+        conditions=dict(method=['GET']))
+    self.connect(
+        'deleted_' + member_name, member_path, controller=collection_name, action='show', deleted=True, conditions=dict(method=['GET']))
+    self.connect(
+        'undelete_deleted_' + member_name,
+        member_path + '/undelete',
+        controller=collection_name,
+        action='undelete',
+        conditions=dict(method=['POST']))
     self.resource(member_name, collection_name, **kwargs)
 
 
@@ -52,6 +63,7 @@ class WebApplication(object):
     complicated encoding of arguments in the PATH_INFO can be performed
     with routes.
     """
+
     def __init__(self):
         """
         Create a new web application object. To actually connect some
@@ -76,13 +88,11 @@ class WebApplication(object):
         methods which handle web requests. To connect a URL to a controller's
         method use `add_route`.
         """
-        log.debug("Enabling '%s' controller, class: %s",
-                  controller_name, controller.__class__.__name__)
+        log.debug("Enabling '%s' controller, class: %s", controller_name, controller.__class__.__name__)
         self.controllers[controller_name] = controller
 
     def add_api_controller(self, controller_name, controller):
-        log.debug("Enabling '%s' API controller, class: %s",
-                  controller_name, controller.__class__.__name__)
+        log.debug("Enabling '%s' API controller, class: %s", controller_name, controller.__class__.__name__)
         self.api_controllers[controller_name] = controller
 
     def add_route(self, route, **kwargs):
@@ -195,7 +205,8 @@ class WebApplication(object):
         try:
             # We don't use default methods if there's a clientside match for this route.
             use_default = client_match is None
-            controller_name, controller, action, method = self._resolve_map_match(map_match, path_info, controllers, use_default=use_default)
+            controller_name, controller, action, method = self._resolve_map_match(
+                map_match, path_info, controllers, use_default=use_default)
         except httpexceptions.HTTPNotFound:
             # Failed, let's check client routes
             if not environ['is_api_request'] and client_match is not None:
@@ -204,7 +215,8 @@ class WebApplication(object):
                 raise
         trans.controller = controller_name
         trans.action = action
-        environ['controller_action_key'] = "%s.%s.%s" % ('api' if environ['is_api_request'] else 'web', controller_name, action or 'default')
+        environ['controller_action_key'] = "%s.%s.%s" % ('api'
+                                                         if environ['is_api_request'] else 'web', controller_name, action or 'default')
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update(map_match)
@@ -231,12 +243,10 @@ class WebApplication(object):
         elif isinstance(body, tarfile.ExFileObject):
             # Stream the tarfile member back to the browser
             body = iterate_file(body)
-            start_response(trans.response.wsgi_status(),
-                           trans.response.wsgi_headeritems())
+            start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
             return body
         else:
-            start_response(trans.response.wsgi_status(),
-                           trans.response.wsgi_headeritems())
+            start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
             return self.make_body_iterable(trans, body)
 
     def make_body_iterable(self, trans, body):
@@ -263,6 +273,7 @@ class WSGIEnvironmentProperty(object):
     associated object (provides property style access to keys in the WSGI
     environment)
     """
+
     def __init__(self, key, default=''):
         self.key = key
         self.default = default
@@ -278,6 +289,7 @@ class LazyProperty(object):
     Property that replaces itself with a calculated value the first time
     it is used.
     """
+
     def __init__(self, func):
         self.func = func
 
@@ -299,6 +311,7 @@ class DefaultWebTransaction(object):
     TODO: Provide hooks to allow application specific state to be included
           in here.
     """
+
     def __init__(self, environ):
         self.environ = environ
         self.request = Request(environ)
@@ -343,12 +356,14 @@ class Request(webob.Request):
     """
     Encapsulates an HTTP request.
     """
+
     def __init__(self, environ):
         """
         Create a new request wrapping the WSGI environment `environ`
         """
         #  self.environ = environ
         webob.Request.__init__(self, environ, charset='utf-8', decode_param_names=False)
+
     # Properties that are computed and cached on first use
 
     @lazy_property
@@ -406,6 +421,7 @@ class Response(object):
     Describes an HTTP response. Currently very simple since the actual body
     of the request is handled separately.
     """
+
     def __init__(self):
         """
         Create a new Response defaulting to HTML content and "200 OK" status
@@ -453,7 +469,7 @@ class Response(object):
 
 # ---- Utilities ------------------------------------------------------------
 
-CHUNK_SIZE = 2 ** 16
+CHUNK_SIZE = 2**16
 
 
 def send_file(start_response, trans, body):
@@ -470,8 +486,7 @@ def send_file(start_response, trans, body):
     # Fall back on sending the file in chunks
     else:
         body = iterate_file(body)
-    start_response(trans.response.wsgi_status(),
-                   trans.response.wsgi_headeritems())
+    start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
     return body
 
 

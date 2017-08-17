@@ -39,40 +39,26 @@ class Requests(BaseUIController):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "edit":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='edit_basic_request_info',
-                                                                cntrller='requests',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='edit_basic_request_info', cntrller='requests', **kwd))
             if operation == "add_samples":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='add_samples',
-                                                                cntrller='requests',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='add_samples', cntrller='requests', **kwd))
             if operation == "edit_samples":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='edit_samples',
-                                                                cntrller='requests',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='edit_samples', cntrller='requests', **kwd))
             if operation == "view_request":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='view_request',
-                                                                cntrller='requests',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='view_request', cntrller='requests', **kwd))
             if operation == "delete":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='delete_request',
-                                                                cntrller='requests',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='delete_request', cntrller='requests', **kwd))
             if operation == "undelete":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='undelete_request',
-                                                                cntrller='requests',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='undelete_request', cntrller='requests', **kwd))
             if operation == "view_request_history":
-                return trans.response.send_redirect(web.url_for(controller='requests_common',
-                                                                action='view_request_history',
-                                                                cntrller='requests',
-                                                                **kwd))
+                return trans.response.send_redirect(
+                    web.url_for(controller='requests_common', action='view_request_history', cntrller='requests', **kwd))
 
         # If there are requests that have been rejected, show a message as a reminder to the user
         rejected = 0
@@ -89,9 +75,9 @@ class Requests(BaseUIController):
         # Allow the user to create a new request only if they have permission to access a request type.
         accessible_request_types = trans.app.security_agent.get_accessible_request_types(trans, trans.user)
         if accessible_request_types:
-            self.request_grid.global_actions = [grids.GridAction("Create new request", dict(controller='requests_common',
-                                                                                            action='create_request',
-                                                                                            cntrller='requests'))]
+            self.request_grid.global_actions = [
+                grids.GridAction("Create new request", dict(controller='requests_common', action='create_request', cntrller='requests'))
+            ]
         else:
             self.request_grid.global_actions = []
         # Render the list view

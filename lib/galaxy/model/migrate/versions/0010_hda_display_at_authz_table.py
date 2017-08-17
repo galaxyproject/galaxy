@@ -33,7 +33,11 @@ HistoryDatasetAssociationDisplayAtAuthorization_table = Table("history_dataset_a
                                                               Column("id", Integer, primary_key=True),
                                                               Column("create_time", DateTime, default=now),
                                                               Column("update_time", DateTime, index=True, default=now, onupdate=now),
-                                                              Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+                                                              Column(
+                                                                  "history_dataset_association_id",
+                                                                  Integer,
+                                                                  ForeignKey("history_dataset_association.id"),
+                                                                  index=True),
                                                               Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                                                               Column("site", TrimmedString(255)))
 

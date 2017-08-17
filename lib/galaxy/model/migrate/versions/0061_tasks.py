@@ -26,8 +26,7 @@ Task_table = Table("task", metadata,
                    Column("traceback", TEXT),
                    Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
                    Column("part_file", String(1024)),
-                   Column("task_runner_name", String(255)),
-                   Column("task_runner_external_id", String(255)))
+                   Column("task_runner_name", String(255)), Column("task_runner_external_id", String(255)))
 
 tables = [Task_table]
 

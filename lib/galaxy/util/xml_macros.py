@@ -3,7 +3,6 @@ import os
 from copy import deepcopy
 from xml.etree import ElementInclude, ElementTree
 
-
 REQUIRED_PARAMETER = object()
 
 
@@ -68,9 +67,7 @@ def _macros_of_type(root, type, el_func):
     macro_dict = {}
     if macros_el is not None:
         macro_els = macros_el.findall('macro')
-        filtered_els = [(macro_el.get("name"), el_func(macro_el))
-                        for macro_el in macro_els
-                        if macro_el.get('type') == type]
+        filtered_els = [(macro_el.get("name"), el_func(macro_el)) for macro_el in macro_els if macro_el.get('type') == type]
         macro_dict = dict(filtered_els)
     return macro_dict
 
@@ -254,7 +251,6 @@ def _xml_replace(query, targets, parent_map):
 
 
 class XmlMacroDef(object):
-
     def __init__(self, el):
         self.elements = list(el)
         parameters = {}

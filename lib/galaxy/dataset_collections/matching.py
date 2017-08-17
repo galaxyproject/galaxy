@@ -1,10 +1,7 @@
 from galaxy import exceptions
 from galaxy.util import bunch
 
-from .structure import (
-    get_structure,
-    leaf
-)
+from .structure import (get_structure, leaf)
 
 CANNOT_MATCH_ERROR_MESSAGE = "Cannot match collection types."
 
@@ -21,8 +18,7 @@ class CollectionsToMatch(object):
         self.collections[input_name] = bunch.Bunch(
             hdca=hdca,
             subcollection_type=subcollection_type,
-            linked=linked,
-        )
+            linked=linked, )
 
     def has_collections(self):
         return len(self.collections) > 0

@@ -17,11 +17,10 @@ except ImportError:
     class FakeConsumer(object):
         def __getattr__(x, y):
             return None
+
     consumer = FakeConsumer()
 
-
-OPENID_IMPORT_MESSAGE = ('The Python openid package is required to use this '
-                         'feature, please install it')
+OPENID_IMPORT_MESSAGE = ('The Python openid package is required to use this ' 'feature, please install it')
 
 log = logging.getLogger(__name__)
 

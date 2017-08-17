@@ -67,10 +67,12 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
     if check_accessible:
         if type(item) in (trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset):
             if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), item, trans.user):
-                raise exceptions.ItemAccessibilityException("%s is not accessible to the current user" % item.__class__.__name__, type='error')
+                raise exceptions.ItemAccessibilityException(
+                    "%s is not accessible to the current user" % item.__class__.__name__, type='error')
         else:
             if (item.user != trans.user) and (not item.importable) and (trans.user not in item.users_shared_with_dot_users):
-                raise exceptions.ItemAccessibilityException("%s is not accessible to the current user" % item.__class__.__name__, type='error')
+                raise exceptions.ItemAccessibilityException(
+                    "%s is not accessible to the current user" % item.__class__.__name__, type='error')
     return item
 
 
@@ -146,11 +148,9 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
     if check_ownership or check_accessible:
         security_check(trans, item, check_ownership, check_accessible)
     if deleted is True and not item.deleted:
-        raise exceptions.ItemDeletionException('%s "%s" is not deleted'
-                                               % (class_name, getattr(item, 'name', id)), type="warning")
+        raise exceptions.ItemDeletionException('%s "%s" is not deleted' % (class_name, getattr(item, 'name', id)), type="warning")
     elif deleted is False and item.deleted:
-        raise exceptions.ItemDeletionException('%s "%s" is deleted'
-                                               % (class_name, getattr(item, 'name', id)), type="warning")
+        raise exceptions.ItemDeletionException('%s "%s" is deleted' % (class_name, getattr(item, 'name', id)), type="warning")
     return item
 
 
@@ -328,8 +328,7 @@ class ModelManager(object):
         orm_filters, fn_filters = self._split_filters(filters)
         if not fn_filters:
             # if no fn_filtering required, we can use the 'all orm' version with limit offset
-            return self._orm_list(filters=orm_filters, order_by=order_by,
-                limit=limit, offset=offset, **kwargs)
+            return self._orm_list(filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs)
 
         # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
         query = self.query(filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs)
@@ -498,8 +497,8 @@ class ModelManager(object):
     #    return item
 
 
-# ---- code for classes that use one *main* model manager
-# TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
+    # ---- code for classes that use one *main* model manager
+    # TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
 class HasAModelManager(object):
     """
     Mixin used where serializers, deserializers, filter parsers, etc.
@@ -509,6 +508,7 @@ class HasAModelManager(object):
 
     #: the class used to create this serializer's generically accessible model_manager
     model_manager_class = None
+
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
 
@@ -597,9 +597,9 @@ class ModelSerializer(HasAModelManager):
         the attribute.
         """
         self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
+            'id': self.serialize_id,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
         })
 
     def add_view(self, view_name, key_list, include_keys_from=None):
@@ -736,6 +736,7 @@ class ModelDeserializer(HasAModelManager):
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.
     """
+
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
     def __init__(self, app, validator=None, **kwargs):
@@ -772,7 +773,7 @@ class ModelDeserializer(HasAModelManager):
                 new_dict[key] = self.deserializers[key](item, key, val, **context)
             # !important: don't error on unreg. keys -- many clients will add weird ass keys onto the model
 
-        # TODO:?? add and flush here or in manager?
+            # TODO:?? add and flush here or in manager?
         if flush and len(new_dict):
             sa_session.add(item)
             sa_session.flush()
@@ -899,7 +900,7 @@ class ModelValidator(HasAModelManager):
     #    pass
 
 
-# ==== Building query filters based on model data
+    # ==== Building query filters based on model data
 class ModelFilterParser(HasAModelManager):
     """
     Converts string tuples (partially converted query string params) of
@@ -956,11 +957,23 @@ class ModelFilterParser(HasAModelManager):
         # note: these are the default filters for all models
         self.orm_filter_parsers.update({
             # (prob.) applicable to all models
-            'id'            : {'op': ('in')},
-            'encoded_id'    : {'column' : 'id', 'op': ('in'), 'val': self.parse_id_list},
+            'id': {
+                'op': ('in')
+            },
+            'encoded_id': {
+                'column': 'id',
+                'op': ('in'),
+                'val': self.parse_id_list
+            },
             # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
-            'create_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
-            'update_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
+            'create_time': {
+                'op': ('le', 'ge'),
+                'val': self.parse_date
+            },
+            'update_time': {
+                'op': ('le', 'ge'),
+                'val': self.parse_date
+            },
         })
 
     def parse_filters(self, filter_tuple_list):
@@ -996,8 +1009,8 @@ class ModelFilterParser(HasAModelManager):
 
         # by convention, assume most val parsers raise ValueError
         except ValueError as val_err:
-            raise exceptions.RequestParameterInvalidException('unparsable value for filter',
-                column=attr, operation=op, value=val, ValueError=str(val_err))
+            raise exceptions.RequestParameterInvalidException(
+                'unparsable value for filter', column=attr, operation=op, value=val, ValueError=str(val_err))
 
         # if neither of the above work, raise an error with how-to info
         # TODO: send back all valid filter keys in exception for added user help
@@ -1092,9 +1105,9 @@ class ModelFilterParser(HasAModelManager):
     # ---- preset fn_filters: dictionaries of standard filter ops for standard datatypes
     def string_standard_ops(self, key):
         return {
-            'op' : {
-                'eq'        : lambda i, v: v == getattr(i, key),
-                'contains'  : lambda i, v: v in getattr(i, key),
+            'op': {
+                'eq': lambda i, v: v == getattr(i, key),
+                'contains': lambda i, v: v in getattr(i, key),
             }
         }
 

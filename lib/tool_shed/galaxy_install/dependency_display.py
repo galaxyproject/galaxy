@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 
 
 class DependencyDisplayer(object):
-
     def __init__(self, app):
         self.app = app
 
@@ -41,12 +40,7 @@ class DependencyDisplayer(object):
                 root_dir = self.app.config.tool_dependency_dir
             else:
                 root_dir = '<set your tool_dependency_dir in your Galaxy configuration file>'
-            install_dir = os.path.join(root_dir,
-                                       dependency_name,
-                                       version,
-                                       repository_owner,
-                                       repository_name,
-                                       changeset_revision)
+            install_dir = os.path.join(root_dir, dependency_name, version, repository_owner, repository_name, changeset_revision)
             requirements_dict['install_dir'] = install_dir
             tool_dependencies[dependency_key] = requirements_dict
         return tool_dependencies
@@ -198,10 +192,7 @@ class DependencyDisplayer(object):
                         name = td_info_dict['name']
                         version = None
                         type = td_info_dict['type']
-                        tool_dependency = tool_dependency_util.get_tool_dependency_by_name_type_repository(self.app,
-                                                                                                           repository,
-                                                                                                           name,
-                                                                                                           type)
+                        tool_dependency = tool_dependency_util.get_tool_dependency_by_name_type_repository(self.app, repository, name, type)
                         if tool_dependency:
                             td_info_dict['repository_id'] = repository.id
                             td_info_dict['tool_dependency_id'] = tool_dependency.id
@@ -219,11 +210,8 @@ class DependencyDisplayer(object):
                     name = val['name']
                     version = val['version']
                     type = val['type']
-                    tool_dependency = tool_dependency_util.get_tool_dependency_by_name_version_type_repository(self.app,
-                                                                                                               repository,
-                                                                                                               name,
-                                                                                                               version,
-                                                                                                               type)
+                    tool_dependency = tool_dependency_util.get_tool_dependency_by_name_version_type_repository(
+                        self.app, repository, name, version, type)
                     if tool_dependency:
                         val['repository_id'] = repository.id
                         val['tool_dependency_id'] = tool_dependency.id
@@ -250,15 +238,16 @@ class DependencyDisplayer(object):
         they have previously been merged into the installed dependencies.  This method will merge the
         dependencies entries into a single container and return it for display.
         """
-        new_containers_dict = dict(readme_files=None,
-                                   datatypes=None,
-                                   missing_repository_dependencies=None,
-                                   repository_dependencies=None,
-                                   missing_tool_dependencies=None,
-                                   tool_dependencies=None,
-                                   invalid_tools=None,
-                                   valid_tools=None,
-                                   workflows=None)
+        new_containers_dict = dict(
+            readme_files=None,
+            datatypes=None,
+            missing_repository_dependencies=None,
+            repository_dependencies=None,
+            missing_tool_dependencies=None,
+            tool_dependencies=None,
+            invalid_tools=None,
+            valid_tools=None,
+            workflows=None)
         if containers_dicts:
             lock = threading.Lock()
             lock.acquire(True)
@@ -272,15 +261,11 @@ class DependencyDisplayer(object):
                     old_container_repository_dependencies_root = old_container_dict['repository_dependencies']
                     if old_container_repository_dependencies_root:
                         if repository_dependencies_root_folder is None:
-                            repository_dependencies_root_folder = utility_container_manager.Folder(id=folder_id,
-                                                                                                   key='root',
-                                                                                                   label='root',
-                                                                                                   parent=None)
+                            repository_dependencies_root_folder = utility_container_manager.Folder(
+                                id=folder_id, key='root', label='root', parent=None)
                             folder_id += 1
-                            repository_dependencies_folder = utility_container_manager.Folder(id=folder_id,
-                                                                                              key='merged',
-                                                                                              label='Repository dependencies',
-                                                                                              parent=repository_dependencies_root_folder)
+                            repository_dependencies_folder = utility_container_manager.Folder(
+                                id=folder_id, key='merged', label='Repository dependencies', parent=repository_dependencies_root_folder)
                             folder_id += 1
                         # The old_container_repository_dependencies_root will be a root folder containing a single sub_folder.
                         old_container_repository_dependencies_folder = old_container_repository_dependencies_root.folders[0]
@@ -298,15 +283,11 @@ class DependencyDisplayer(object):
                     old_container_tool_dependencies_root = old_container_dict['tool_dependencies']
                     if old_container_tool_dependencies_root:
                         if tool_dependencies_root_folder is None:
-                            tool_dependencies_root_folder = utility_container_manager.Folder(id=folder_id,
-                                                                                             key='root',
-                                                                                             label='root',
-                                                                                             parent=None)
+                            tool_dependencies_root_folder = utility_container_manager.Folder(
+                                id=folder_id, key='root', label='root', parent=None)
                             folder_id += 1
-                            tool_dependencies_folder = utility_container_manager.Folder(id=folder_id,
-                                                                                        key='merged',
-                                                                                        label='Tool dependencies',
-                                                                                        parent=tool_dependencies_root_folder)
+                            tool_dependencies_folder = utility_container_manager.Folder(
+                                id=folder_id, key='merged', label='Tool dependencies', parent=tool_dependencies_root_folder)
                             folder_id += 1
                         else:
                             td_list = [td.listify for td in tool_dependencies_folder.tool_dependencies]
@@ -391,9 +372,14 @@ class DependencyDisplayer(object):
         containers_dict['missing_tool_dependencies'] = None
         return containers_dict
 
-    def populate_containers_dict_for_new_install(self, tool_shed_url, tool_path, readme_files_dict,
-                                                 installed_repository_dependencies, missing_repository_dependencies,
-                                                 installed_tool_dependencies, missing_tool_dependencies,
+    def populate_containers_dict_for_new_install(self,
+                                                 tool_shed_url,
+                                                 tool_path,
+                                                 readme_files_dict,
+                                                 installed_repository_dependencies,
+                                                 missing_repository_dependencies,
+                                                 installed_tool_dependencies,
+                                                 missing_tool_dependencies,
                                                  updating=False):
         """
         Return the populated containers for a repository being installed for the first time
@@ -408,21 +394,22 @@ class DependencyDisplayer(object):
                                                   required_repo_info_dicts=None)
         # Most of the repository contents are set to None since we don't yet know what they are.
         gucm = GalaxyUtilityContainerManager(self.app)
-        containers_dict = gucm.build_repository_containers(repository=None,
-                                                           datatypes=None,
-                                                           invalid_tools=None,
-                                                           missing_repository_dependencies=missing_repository_dependencies,
-                                                           missing_tool_dependencies=missing_tool_dependencies,
-                                                           readme_files_dict=readme_files_dict,
-                                                           repository_dependencies=installed_repository_dependencies,
-                                                           tool_dependencies=installed_tool_dependencies,
-                                                           valid_tools=None,
-                                                           workflows=None,
-                                                           valid_data_managers=None,
-                                                           invalid_data_managers=None,
-                                                           data_managers_errors=None,
-                                                           new_install=True,
-                                                           reinstalling=False)
+        containers_dict = gucm.build_repository_containers(
+            repository=None,
+            datatypes=None,
+            invalid_tools=None,
+            missing_repository_dependencies=missing_repository_dependencies,
+            missing_tool_dependencies=missing_tool_dependencies,
+            readme_files_dict=readme_files_dict,
+            repository_dependencies=installed_repository_dependencies,
+            tool_dependencies=installed_tool_dependencies,
+            valid_tools=None,
+            workflows=None,
+            valid_data_managers=None,
+            invalid_data_managers=None,
+            data_managers_errors=None,
+            new_install=True,
+            reinstalling=False)
         if not updating:
             # If we installing a new repository and not updaing an installed repository, we can merge
             # the missing_repository_dependencies container contents to the installed_repository_dependencies
@@ -433,7 +420,11 @@ class DependencyDisplayer(object):
             containers_dict = self.merge_missing_tool_dependencies_to_installed_container(containers_dict)
         return containers_dict
 
-    def populate_containers_dict_from_repository_metadata(self, tool_shed_url, tool_path, repository, reinstalling=False,
+    def populate_containers_dict_from_repository_metadata(self,
+                                                          tool_shed_url,
+                                                          tool_path,
+                                                          repository,
+                                                          reinstalling=False,
                                                           required_repo_info_dicts=None):
         """
         Retrieve necessary information from the received repository's metadata to populate the
@@ -454,16 +445,16 @@ class DependencyDisplayer(object):
                      self.app.install_model.ToolShedRepository.installation_status.INSTALLED]:
                     # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
                     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_shed_url)
-                    params = dict(name=str(repository.name),
-                                  owner=str(repository.owner),
-                                  changeset_revision=str(repository.installed_changeset_revision))
+                    params = dict(
+                        name=str(repository.name),
+                        owner=str(repository.owner),
+                        changeset_revision=str(repository.installed_changeset_revision))
                     pathspec = ['repository', 'get_readme_files']
-                    raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+                    raw_text = util.url_get(
+                        tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
                     readme_files_dict = json.loads(raw_text)
                 else:
-                    readme_files_dict = readme_util.build_readme_files_dict(self.app,
-                                                                            repository,
-                                                                            repository.changeset_revision,
+                    readme_files_dict = readme_util.build_readme_files_dict(self.app, repository, repository.changeset_revision,
                                                                             repository.metadata, tool_path)
             else:
                 readme_files_dict = None
@@ -504,29 +495,31 @@ class DependencyDisplayer(object):
                 invalid_data_managers = metadata['data_manager'].get('invalid_data_managers', None)
                 data_managers_errors = metadata['data_manager'].get('messages', None)
             gucm = GalaxyUtilityContainerManager(self.app)
-            containers_dict = gucm.build_repository_containers(repository=repository,
-                                                               datatypes=datatypes,
-                                                               invalid_tools=invalid_tools,
-                                                               missing_repository_dependencies=missing_repository_dependencies,
-                                                               missing_tool_dependencies=missing_tool_dependencies,
-                                                               readme_files_dict=readme_files_dict,
-                                                               repository_dependencies=installed_repository_dependencies,
-                                                               tool_dependencies=installed_tool_dependencies,
-                                                               valid_tools=valid_tools,
-                                                               workflows=workflows,
-                                                               valid_data_managers=valid_data_managers,
-                                                               invalid_data_managers=invalid_data_managers,
-                                                               data_managers_errors=data_managers_errors,
-                                                               new_install=False,
-                                                               reinstalling=reinstalling)
+            containers_dict = gucm.build_repository_containers(
+                repository=repository,
+                datatypes=datatypes,
+                invalid_tools=invalid_tools,
+                missing_repository_dependencies=missing_repository_dependencies,
+                missing_tool_dependencies=missing_tool_dependencies,
+                readme_files_dict=readme_files_dict,
+                repository_dependencies=installed_repository_dependencies,
+                tool_dependencies=installed_tool_dependencies,
+                valid_tools=valid_tools,
+                workflows=workflows,
+                valid_data_managers=valid_data_managers,
+                invalid_data_managers=invalid_data_managers,
+                data_managers_errors=data_managers_errors,
+                new_install=False,
+                reinstalling=reinstalling)
         else:
-            containers_dict = dict(datatypes=None,
-                                   invalid_tools=None,
-                                   readme_files_dict=None,
-                                   repository_dependencies=None,
-                                   tool_dependencies=None,
-                                   valid_tools=None,
-                                   workflows=None)
+            containers_dict = dict(
+                datatypes=None,
+                invalid_tools=None,
+                readme_files_dict=None,
+                repository_dependencies=None,
+                tool_dependencies=None,
+                valid_tools=None,
+                workflows=None)
         return containers_dict
 
     def populate_tool_dependencies_dicts(self, tool_shed_url, tool_path, repository_installed_tool_dependencies,

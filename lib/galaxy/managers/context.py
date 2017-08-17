@@ -150,8 +150,7 @@ class ProvidesUserContext(object):
             template = self.app.config.ftp_upload_dir_template
             path = string.Template(template).safe_substitute(dict(
                 ftp_upload_dir=base_dir,
-                ftp_upload_dir_identifier=identifier_value,
-            ))
+                ftp_upload_dir_identifier=identifier_value, ))
             return path
 
 

@@ -6,7 +6,6 @@ import logging
 from galaxy.util import listify
 from galaxy.util.properties import find_config_file, load_app_properties
 
-
 log = logging.getLogger(__name__)
 
 DEFAULT_CONFIG_FILE = 'config/galaxy.ini'
@@ -14,30 +13,27 @@ DEFAULT_CONFIG_PREFIX = ''
 DEFAULT_DATABASE = 'galaxy'
 
 DATABASE = {
-    "galaxy":
-        {
-            'repo': 'lib/galaxy/model/migrate',
-            'old_config_files': ['universe_wsgi.ini'],
-            'default_sqlite_file': './database/universe.sqlite',
-            'config_override': 'GALAXY_CONFIG_',
-        },
-    "tool_shed":
-        {
-            'repo': 'lib/galaxy/webapps/tool_shed/model/migrate',
-            'config_file': 'config/tool_shed.yml',
-            'old_config_files': ['config/tool_shed.ini', 'tool_shed_wsgi.ini'],
-            'default_sqlite_file': './database/community.sqlite',
-            'config_override': 'TOOL_SHED_CONFIG_',
-            'config_section': 'tool_shed',
-        },
-    "install":
-        {
-            'repo': 'lib/galaxy/model/tool_shed_install/migrate',
-            'old_config_files': ['universe_wsgi.ini'],
-            'config_prefix': 'install_',
-            'default_sqlite_file': './database/install.sqlite',
-            'config_override': 'GALAXY_INSTALL_CONFIG_',
-        },
+    "galaxy": {
+        'repo': 'lib/galaxy/model/migrate',
+        'old_config_files': ['universe_wsgi.ini'],
+        'default_sqlite_file': './database/universe.sqlite',
+        'config_override': 'GALAXY_CONFIG_',
+    },
+    "tool_shed": {
+        'repo': 'lib/galaxy/webapps/tool_shed/model/migrate',
+        'config_file': 'config/tool_shed.yml',
+        'old_config_files': ['config/tool_shed.ini', 'tool_shed_wsgi.ini'],
+        'default_sqlite_file': './database/community.sqlite',
+        'config_override': 'TOOL_SHED_CONFIG_',
+        'config_section': 'tool_shed',
+    },
+    "install": {
+        'repo': 'lib/galaxy/model/tool_shed_install/migrate',
+        'old_config_files': ['universe_wsgi.ini'],
+        'config_prefix': 'install_',
+        'default_sqlite_file': './database/install.sqlite',
+        'config_override': 'GALAXY_INSTALL_CONFIG_',
+    },
 }
 
 

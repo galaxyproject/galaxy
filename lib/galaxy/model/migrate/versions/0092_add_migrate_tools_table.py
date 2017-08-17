@@ -22,9 +22,7 @@ log.addHandler(handler)
 metadata = MetaData()
 
 MigrateTools_table = Table("migrate_tools", metadata,
-                           Column("repository_id", TrimmedString(255)),
-                           Column("repository_path", TEXT),
-                           Column("version", Integer))
+                           Column("repository_id", TrimmedString(255)), Column("repository_path", TEXT), Column("version", Integer))
 
 
 def upgrade(migrate_engine):

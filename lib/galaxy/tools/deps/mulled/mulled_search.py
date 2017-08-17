@@ -26,6 +26,7 @@ class QuaySearch():
     """
     Tool to search within a quay organization for a given software name.
     """
+
     def __init__(self, organization):
         self.index = None
         self.organization = organization
@@ -38,8 +39,7 @@ class QuaySearch():
         # given organization in self.organization
 
         parameters = {'public': 'true', 'namespace': self.organization}
-        r = requests.get(QUAY_API_URL, headers={'Accept-encoding': 'gzip'}, params=parameters,
-                         timeout=12)
+        r = requests.get(QUAY_API_URL, headers={'Accept-encoding': 'gzip'}, params=parameters, timeout=12)
 
         tmp_dir = tempfile.mkdtemp()
         schema = Schema(title=TEXT(stored=True), content=STORED)
@@ -93,7 +93,8 @@ class QuaySearch():
                 for row in out:
                     name = row[0]
                     version = row[1]
-                    sys.stdout.write("".join(word.ljust(col_width) for word in row) + "docker pull quay.io/%s/%s:%s\n" % (self.organization, name, version))
+                    sys.stdout.write("".join(word.ljust(col_width)
+                                             for word in row) + "docker pull quay.io/%s/%s:%s\n" % (self.organization, name, version))
             else:
                 sys.stdout.write("No results found for %s in quay.io/%s.\n" % (search_string, self.organization))
 
@@ -112,13 +113,15 @@ class QuaySearch():
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Searches in a given quay organization for a repository')
-    parser.add_argument('-o', '--organization', dest='organization_string', default="biocontainers",
-                        help='Change organization. Default is biocontainers.')
-    parser.add_argument('--non-strict', dest='non_strict', action="store_true",
-                        help='Autocorrection of typos activated. Lists more results but can be confusing.\
+    parser.add_argument(
+        '-o', '--organization', dest='organization_string', default="biocontainers", help='Change organization. Default is biocontainers.')
+    parser.add_argument(
+        '--non-strict',
+        dest='non_strict',
+        action="store_true",
+        help='Autocorrection of typos activated. Lists more results but can be confusing.\
                         For too many queries quay.io blocks the request and the results can be incomplete.')
-    parser.add_argument('-s', '--search', required=True,
-                        help='The name of the tool you want to search for.')
+    parser.add_argument('-s', '--search', required=True, help='The name of the tool you want to search for.')
     args = parser.parse_args()
 
     quay = QuaySearch(args.organization_string)
