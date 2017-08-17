@@ -45,6 +45,7 @@ class ConfigSerializer(base.ModelSerializer):
             'search_url'                        : _defaults_to(self.app.config.wiki_url.rstrip("/") + "/search/"),
             'mailing_lists'                     : _defaults_to(self.app.config.wiki_url.rstrip("/") + "/mailing-lists/"),
             'screencasts_url'                   : _defaults_to("https://vimeo.com/galaxyproject"),
+            'genomespace_ui_url'                : _defaults_to(None),
             'citation_url'                      : _defaults_to(self.app.config.citation_url),
             'support_url'                       : _defaults_to(self.app.config.support_url),
             'lims_doc_url'                      : _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
