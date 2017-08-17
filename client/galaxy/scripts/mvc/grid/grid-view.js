@@ -632,6 +632,7 @@ return Backbone.View.extend({
                 // backup
                 var embedded = self.grid.get('embedded');
                 var insert = self.grid.get('insert');
+                var advanced_search = self.grid.get('advanced_search');
 
                 // request new configuration
                 var json = self.dict_format ? response_text : $.parseJSON(response_text);
@@ -639,6 +640,7 @@ return Backbone.View.extend({
                 // update
                 json.embedded = embedded;
                 json.insert = insert;
+                json.advanced_search = advanced_search;
 
                 // Initialize new grid config
                 self.init_grid(json);
