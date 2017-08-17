@@ -43,7 +43,7 @@ return Backbone.View.extend({
                     url     : grid_config.url_base + '?' + $.param( url_data ),
                     success : function( response ) {
                         response.embedded = grid_config.embedded;
-                        response.filters  = grid_config.filters;
+                        response.filters  = grid_config.filters || {};
                         self.init_grid( response );
                     }
                 });
@@ -632,7 +632,7 @@ return Backbone.View.extend({
                 // backup
                 var embedded = self.grid.get('embedded');
                 var insert = self.grid.get('insert');
-                var advanced_search = self.grid.get('advanced_search');
+                var advanced_search = self.$el.find('#advanced-search').is(':visible');
 
                 // request new configuration
                 var json = self.dict_format ? response_text : $.parseJSON(response_text);
