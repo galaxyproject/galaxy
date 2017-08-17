@@ -21,20 +21,24 @@ class GraphiteMiddleware(object):
     instance.
     """
 
-    def __init__(self,
-                 application,
-                 graphite_host,
-                 graphite_port,
+    def __init__(self, application, graphite_host, graphite_port,
                  graphite_prefix):
         if not graphitesend:
-            raise ImportError("graphite middleware configured, but no graphite python module found. "
-                              "Please install the python graphitesend module to use this functionality.")
+            raise ImportError(
+                "graphite middleware configured, but no graphite python module found. "
+                "Please install the python graphitesend module to use this functionality."
+            )
         self.application = application
         try:
-            self.graphite_client = graphitesend.init(graphite_server=graphite_host, graphite_port=int(graphite_port), prefix=graphite_prefix.rstrip('.'))
+            self.graphite_client = graphitesend.init(
+                graphite_server=graphite_host,
+                graphite_port=int(graphite_port),
+                prefix=graphite_prefix.rstrip('.'))
         except graphitesend.graphitesend.GraphiteSendException:
             self.graphite_client = None
-            log.exception("Could not instantiate graphite metrics logger. It will be disabled until Galaxy restart")
+            log.exception(
+                "Could not instantiate graphite metrics logger. It will be disabled until Galaxy restart"
+            )
 
     def __call__(self, environ, start_response):
         start_time = time.time()
@@ -45,7 +49,9 @@ class GraphiteMiddleware(object):
 
         dt = int((time.time() - start_time) * 1000)
         try:
-            self.graphite_client.send(environ.get('controller_action_key', None) or environ.get('PATH_INFO', "NOPATH").strip('/').replace('/', '.'), dt)
+            self.graphite_client.send(
+                environ.get('controller_action_key', None) or environ.get(
+                    'PATH_INFO', "NOPATH").strip('/').replace('/', '.'), dt)
         except graphitesend.GraphiteSendException:
             log.exception("Graphite Error")
         return req

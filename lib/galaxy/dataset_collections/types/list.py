@@ -15,6 +15,5 @@ class ListDatasetCollectionType(BaseDatasetCollectionType):
         for identifier, element in elements.items():
             association = DatasetCollectionElement(
                 element=element,
-                element_identifier=identifier,
-            )
+                element_identifier=identifier, )
             yield association

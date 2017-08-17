@@ -29,24 +29,29 @@ class System(BaseUIController):
             deleted_datasets_days = params.deleted_datasets_days
         else:
             deleted_datasets_days = '60'
-        file_path, disk_usage, datasets, file_size_str = self.disk_usage(trans, **kwd)
+        file_path, disk_usage, datasets, file_size_str = self.disk_usage(
+            trans, **kwd)
         if 'action' in kwd:
             if kwd['action'] == "userless_histories":
-                userless_histories_days, message = self.userless_histories(trans, **kwd)
+                userless_histories_days, message = self.userless_histories(
+                    trans, **kwd)
             elif kwd['action'] == "deleted_histories":
-                deleted_histories_days, message = self.deleted_histories(trans, **kwd)
+                deleted_histories_days, message = self.deleted_histories(
+                    trans, **kwd)
             elif kwd['action'] == "deleted_datasets":
-                deleted_datasets_days, message = self.deleted_datasets(trans, **kwd)
-        return trans.fill_template('/webapps/reports/system.mako',
-                                   file_path=file_path,
-                                   disk_usage=disk_usage,
-                                   datasets=datasets,
-                                   file_size_str=file_size_str,
-                                   userless_histories_days=userless_histories_days,
-                                   deleted_histories_days=deleted_histories_days,
-                                   deleted_datasets_days=deleted_datasets_days,
-                                   message=message,
-                                   nice_size=nice_size)
+                deleted_datasets_days, message = self.deleted_datasets(
+                    trans, **kwd)
+        return trans.fill_template(
+            '/webapps/reports/system.mako',
+            file_path=file_path,
+            disk_usage=disk_usage,
+            datasets=datasets,
+            file_size_str=file_size_str,
+            userless_histories_days=userless_histories_days,
+            deleted_histories_days=deleted_histories_days,
+            deleted_datasets_days=deleted_datasets_days,
+            message=message,
+            nice_size=nice_size)
 
     def userless_histories(self, trans, **kwd):
         """The number of userless histories and associated datasets that have not been updated for the specified number of days."""
@@ -54,7 +59,8 @@ class System(BaseUIController):
         message = ''
         if params.userless_histories_days:
             userless_histories_days = int(params.userless_histories_days)
-            cutoff_time = datetime.utcnow() - timedelta(days=userless_histories_days)
+            cutoff_time = datetime.utcnow() - timedelta(
+                days=userless_histories_days)
             history_count = 0
             dataset_count = 0
             for history in trans.sa_session.query(model.History) \
@@ -65,7 +71,8 @@ class System(BaseUIController):
                     if not dataset.deleted:
                         dataset_count += 1
                 history_count += 1
-            message = "%d userless histories ( including a total of %d datasets ) have not been updated for at least %d days." % (history_count, dataset_count, userless_histories_days)
+            message = "%d userless histories ( including a total of %d datasets ) have not been updated for at least %d days." % (
+                history_count, dataset_count, userless_histories_days)
         else:
             message = "Enter the number of days."
         return str(userless_histories_days), message
@@ -79,7 +86,8 @@ class System(BaseUIController):
         message = ''
         if params.deleted_histories_days:
             deleted_histories_days = int(params.deleted_histories_days)
-            cutoff_time = datetime.utcnow() - timedelta(days=deleted_histories_days)
+            cutoff_time = datetime.utcnow() - timedelta(
+                days=deleted_histories_days)
             history_count = 0
             dataset_count = 0
             disk_space = 0
@@ -110,7 +118,8 @@ class System(BaseUIController):
         message = ''
         if params.deleted_datasets_days:
             deleted_datasets_days = int(params.deleted_datasets_days)
-            cutoff_time = datetime.utcnow() - timedelta(days=deleted_datasets_days)
+            cutoff_time = datetime.utcnow() - timedelta(
+                days=deleted_datasets_days)
             dataset_count = 0
             disk_space = 0
             for dataset in trans.sa_session.query(model.Dataset) \
@@ -131,7 +140,8 @@ class System(BaseUIController):
     @web.expose
     def dataset_info(self, trans, **kwd):
         message = ''
-        dataset = trans.sa_session.query(model.Dataset).get(trans.security.decode_id(kwd.get('id', '')))
+        dataset = trans.sa_session.query(model.Dataset).get(
+            trans.security.decode_id(kwd.get('id', '')))
         # Get all associated hdas and lddas that use the same disk file.
         associated_hdas = trans.sa_session.query(trans.model.HistoryDatasetAssociation) \
             .filter(and_(trans.model.HistoryDatasetAssociation.deleted == false(),
@@ -141,11 +151,12 @@ class System(BaseUIController):
             .filter(and_(trans.model.LibraryDatasetDatasetAssociation.deleted == false(),
             trans.model.LibraryDatasetDatasetAssociation.dataset_id == dataset.id)) \
             .all()
-        return trans.fill_template('/webapps/reports/dataset_info.mako',
-                                   dataset=dataset,
-                                   associated_hdas=associated_hdas,
-                                   associated_lddas=associated_lddas,
-                                   message=message)
+        return trans.fill_template(
+            '/webapps/reports/dataset_info.mako',
+            dataset=dataset,
+            associated_hdas=associated_hdas,
+            associated_lddas=associated_lddas,
+            message=message)
 
     def get_disk_usage(self, file_path):
         df_cmd = 'df -h ' + file_path
@@ -164,26 +175,29 @@ class System(BaseUIController):
                         mount = df_line
                     else:
                         try:
-                            disk_size, disk_used, disk_avail, disk_cap_pct, file_system = df_line.split()
+                            disk_size, disk_used, disk_avail, disk_cap_pct, file_system = df_line.split(
+                            )
                             break
                         except:
                             pass
                 else:
                     try:
-                        file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_line.split()
+                        file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_line.split(
+                        )
                         break
                     except:
                         pass
             else:
                 break  # EOF
         df_file.close()
-        return (file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount)
+        return (file_system, disk_size, disk_used, disk_avail, disk_cap_pct,
+                mount)
 
     @web.expose
     def disk_usage(self, trans, **kwd):
         file_path = trans.app.config.file_path
         disk_usage = self.get_disk_usage(file_path)
-        min_file_size = 2 ** 32  # 4 Gb
+        min_file_size = 2**32  # 4 Gb
         file_size_str = nice_size(min_file_size)
         datasets = trans.sa_session.query(model.Dataset) \
                                    .filter(and_(model.Dataset.table.c.purged == false(),

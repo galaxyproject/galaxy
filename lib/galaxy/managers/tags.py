@@ -77,17 +77,20 @@ class TagManager(object):
             return []
         # Build select statement.
         cols_to_select = [item_tag_assoc_class.table.c.tag_id, func.count('*')]
-        from_obj = item_tag_assoc_class.table.join(item_class.table).join(galaxy.model.Tag.table)
-        where_clause = (self.get_id_col_in_item_tag_assoc_table(item_class) == item.id)
+        from_obj = item_tag_assoc_class.table.join(item_class.table).join(
+            galaxy.model.Tag.table)
+        where_clause = (
+            self.get_id_col_in_item_tag_assoc_table(item_class) == item.id)
         order_by = [func.count("*").desc()]
         group_by = item_tag_assoc_class.table.c.tag_id
         # Do query and get result set.
-        query = select(columns=cols_to_select,
-                       from_obj=from_obj,
-                       whereclause=where_clause,
-                       group_by=group_by,
-                       order_by=order_by,
-                       limit=limit)
+        query = select(
+            columns=cols_to_select,
+            from_obj=from_obj,
+            whereclause=where_clause,
+            group_by=group_by,
+            order_by=order_by,
+            limit=limit)
         result_set = self.sa_session.execute(query)
         # Return community tags.
         community_tags = []
@@ -97,8 +100,9 @@ class TagManager(object):
         return community_tags
 
     def get_tool_tags(self):
-        query = select(columns=[galaxy.model.ToolTagAssociation.table.c.tag_id],
-                       from_obj=galaxy.model.ToolTagAssociation.table).distinct()
+        query = select(
+            columns=[galaxy.model.ToolTagAssociation.table.c.tag_id],
+            from_obj=galaxy.model.ToolTagAssociation.table).distinct()
         result_set = self.sa_session.execute(query)
 
         tags = []
@@ -147,7 +151,8 @@ class TagManager(object):
         item_tag_assoc = self._get_item_tag_assoc(user, item, lc_name)
         # If the association does not exist, or if it has a different value, add another.
         # We do allow multiple associations with different values.
-        if not item_tag_assoc or (item_tag_assoc and item_tag_assoc.value != value):
+        if not item_tag_assoc or (item_tag_assoc
+                                  and item_tag_assoc.value != value):
             # Create item-tag association.
             # Create tag; if None, skip the tag (and log error).
             tag = self._get_or_create_tag(lc_name)
@@ -194,12 +199,14 @@ class TagManager(object):
 
     def get_tag_by_id(self, tag_id):
         """Get a Tag object from a tag id."""
-        return self.sa_session.query(galaxy.model.Tag).filter_by(id=tag_id).first()
+        return self.sa_session.query(galaxy.model.Tag).filter_by(
+            id=tag_id).first()
 
     def get_tag_by_name(self, tag_name):
         """Get a Tag object from a tag name (string)."""
         if tag_name:
-            return self.sa_session.query(galaxy.model.Tag).filter_by(name=tag_name.lower()).first()
+            return self.sa_session.query(galaxy.model.Tag).filter_by(
+                name=tag_name.lower()).first()
         return None
 
     def _create_tag(self, tag_str):
@@ -210,7 +217,8 @@ class TagManager(object):
         for sub_tag in tag_hierarchy:
             # Get or create subtag.
             tag_name = tag_prefix + self._scrub_tag_name(sub_tag)
-            tag = self.sa_session.query(galaxy.model.Tag).filter_by(name=tag_name).first()
+            tag = self.sa_session.query(galaxy.model.Tag).filter_by(
+                name=tag_name).first()
             if not tag:
                 tag = galaxy.model.Tag(type=0, name=tag_name)
             # Set tag parent.
@@ -240,7 +248,8 @@ class TagManager(object):
         """
         scrubbed_tag_name = self._scrub_tag_name(tag_name)
         for item_tag_assoc in item.tags:
-            if (item_tag_assoc.user == user) and (item_tag_assoc.user_tname == scrubbed_tag_name):
+            if (item_tag_assoc.user == user) and (
+                    item_tag_assoc.user_tname == scrubbed_tag_name):
                 return item_tag_assoc
         return None
 
@@ -287,7 +296,8 @@ class TagManager(object):
         if scrubbed_name.startswith(self.hierarchy_separator):
             scrubbed_name = scrubbed_name[1:]
         # If name is too short or too long, return None.
-        if len(scrubbed_name) < self.min_tag_len or len(scrubbed_name) > self.max_tag_len:
+        if len(scrubbed_name) < self.min_tag_len or len(
+                scrubbed_name) > self.max_tag_len:
             return None
         return scrubbed_name
 
@@ -313,9 +323,9 @@ class GalaxyTagManager(TagManager):
     def __init__(self, sa_session):
         from galaxy import model
         TagManager.__init__(self, sa_session)
-        self.item_tag_assoc_info["History"] = ItemTagAssocInfo(model.History,
-                                                               model.HistoryTagAssociation,
-                                                               model.HistoryTagAssociation.table.c.history_id)
+        self.item_tag_assoc_info["History"] = ItemTagAssocInfo(
+            model.History, model.HistoryTagAssociation,
+            model.HistoryTagAssociation.table.c.history_id)
         self.item_tag_assoc_info["HistoryDatasetAssociation"] = \
             ItemTagAssocInfo(model.HistoryDatasetAssociation,
                              model.HistoryDatasetAssociationTagAssociation,
@@ -328,15 +338,15 @@ class GalaxyTagManager(TagManager):
             ItemTagAssocInfo(model.LibraryDatasetDatasetAssociation,
                              model.LibraryDatasetDatasetAssociationTagAssociation,
                              model.LibraryDatasetDatasetAssociationTagAssociation.table.c.library_dataset_dataset_association_id)
-        self.item_tag_assoc_info["Page"] = ItemTagAssocInfo(model.Page,
-                                                            model.PageTagAssociation,
-                                                            model.PageTagAssociation.table.c.page_id)
-        self.item_tag_assoc_info["StoredWorkflow"] = ItemTagAssocInfo(model.StoredWorkflow,
-                                                                      model.StoredWorkflowTagAssociation,
-                                                                      model.StoredWorkflowTagAssociation.table.c.stored_workflow_id)
-        self.item_tag_assoc_info["Visualization"] = ItemTagAssocInfo(model.Visualization,
-                                                                     model.VisualizationTagAssociation,
-                                                                     model.VisualizationTagAssociation.table.c.visualization_id)
+        self.item_tag_assoc_info["Page"] = ItemTagAssocInfo(
+            model.Page, model.PageTagAssociation,
+            model.PageTagAssociation.table.c.page_id)
+        self.item_tag_assoc_info["StoredWorkflow"] = ItemTagAssocInfo(
+            model.StoredWorkflow, model.StoredWorkflowTagAssociation,
+            model.StoredWorkflowTagAssociation.table.c.stored_workflow_id)
+        self.item_tag_assoc_info["Visualization"] = ItemTagAssocInfo(
+            model.Visualization, model.VisualizationTagAssociation,
+            model.VisualizationTagAssociation.table.c.visualization_id)
 
 
 class CommunityTagManager(TagManager):

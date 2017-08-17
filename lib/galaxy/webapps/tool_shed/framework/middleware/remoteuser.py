@@ -38,7 +38,12 @@ errorpage = """
 
 
 class RemoteUser(object):
-    def __init__(self, app, maildomain=None, display_servers=None, admin_users=None, remote_user_secret_header=None):
+    def __init__(self,
+                 app,
+                 maildomain=None,
+                 display_servers=None,
+                 admin_users=None,
+                 remote_user_secret_header=None):
         self.app = app
         self.maildomain = maildomain
         self.display_servers = display_servers or []
@@ -51,11 +56,13 @@ class RemoteUser(object):
         if self.display_servers and 'REMOTE_ADDR' in environ:
             try:
                 host = socket.gethostbyaddr(environ['REMOTE_ADDR'])[0]
-            except(socket.error, socket.herror, socket.gaierror, socket.timeout):
+            except (socket.error, socket.herror, socket.gaierror,
+                    socket.timeout):
                 # in the event of a lookup failure, deny access
                 host = None
             if host in self.display_servers:
-                environ['HTTP_REMOTE_USER'] = 'remote_display_server@%s' % (self.maildomain or 'example.org')
+                environ['HTTP_REMOTE_USER'] = 'remote_display_server@%s' % (
+                    self.maildomain or 'example.org')
                 return self.app(environ, start_response)
 
         # If the secret header is enabled, we expect upstream to send along some key
@@ -71,7 +78,8 @@ class RemoteUser(object):
         # Galaxy would not have access to Galaxy itself, and be attempting to
         # attack the system
         if self.config_secret_header is not None:
-            if not safe_str_cmp(environ.get('HTTP_GX_SECRET'), self.config_secret_header):
+            if not safe_str_cmp(
+                    environ.get('HTTP_GX_SECRET'), self.config_secret_header):
                 title = "Access to Galaxy is denied"
                 message = """
                 Galaxy is configured to authenticate users via an external
@@ -121,6 +129,9 @@ class RemoteUser(object):
             """
             return self.error(start_response, title, message)
 
-    def error(self, start_response, title="Access denied", message="Contact your local Galaxy tool shed administrator."):
+    def error(self,
+              start_response,
+              title="Access denied",
+              message="Contact your local Galaxy tool shed administrator."):
         start_response('403 Forbidden', [('Content-type', 'text/html')])
         return [errorpage % (title, message)]

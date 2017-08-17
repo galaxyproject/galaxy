@@ -24,14 +24,38 @@ class Ply(object):
     """
     subtype = ''
     # Add metadata elements.
-    MetadataElement(name="file_format", default=None, desc="File format",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="vertex", default=None, desc="Vertex",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="face", default=None, desc="Face",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="other_elements", default=[], desc="Other elements",
-                    readonly=True, optional=True, visible=True, no_value=[])
+    MetadataElement(
+        name="file_format",
+        default=None,
+        desc="File format",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
+    MetadataElement(
+        name="vertex",
+        default=None,
+        desc="Vertex",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
+    MetadataElement(
+        name="face",
+        default=None,
+        desc="Face",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
+    MetadataElement(
+        name="other_elements",
+        default=[],
+        desc="Other elements",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=[])
 
     @abc.abstractmethod
     def __init__(self, **kwd):
@@ -98,12 +122,15 @@ class Ply(object):
                             dataset.metadata.vertex = int(items[2])
                         else:
                             element_tuple = (items[1], int(items[2]))
-                            dataset.metadata.other_elements.append(element_tuple)
+                            dataset.metadata.other_elements.append(
+                                element_tuple)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
-            dataset.blurb = "Faces: %s, Vertices: %s" % (str(dataset.metadata.face), str(dataset.metadata.vertex))
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.blurb = "Faces: %s, Vertices: %s" % (
+                str(dataset.metadata.face), str(dataset.metadata.vertex))
         else:
             dataset.peek = 'File does not exist'
             dataset.blurb = 'File purged from disc'
@@ -160,44 +187,128 @@ class Vtk(object):
     """
     subtype = ''
     # Add metadata elements.
-    MetadataElement(name="vtk_version", default=None, desc="Vtk version",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="file_format", default=None, desc="File format",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="dataset_type", default=None, desc="Dataset type",
-                    readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(
+        name="vtk_version",
+        default=None,
+        desc="Vtk version",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
+    MetadataElement(
+        name="file_format",
+        default=None,
+        desc="File format",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
+    MetadataElement(
+        name="dataset_type",
+        default=None,
+        desc="Dataset type",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
 
     # STRUCTURED_GRID data_type.
-    MetadataElement(name="dimensions", default=[], desc="Dimensions",
-                    readonly=True, optional=True, visible=True, no_value=[])
-    MetadataElement(name="origin", default=[], desc="Origin",
-                    readonly=True, optional=True, visible=True, no_value=[])
-    MetadataElement(name="spacing", default=[], desc="Spacing",
-                    readonly=True, optional=True, visible=True, no_value=[])
+    MetadataElement(
+        name="dimensions",
+        default=[],
+        desc="Dimensions",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=[])
+    MetadataElement(
+        name="origin",
+        default=[],
+        desc="Origin",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=[])
+    MetadataElement(
+        name="spacing",
+        default=[],
+        desc="Spacing",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=[])
 
     # POLYDATA data_type (Points element is also a component of UNSTRUCTURED_GRID..
-    MetadataElement(name="points", default=None, desc="Points",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="vertices", default=None, desc="Vertices",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="lines", default=None, desc="Lines",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="polygons", default=None, desc="Polygons",
-                    readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="triangle_strips", default=None, desc="Triangle strips",
-                    readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(
+        name="points",
+        default=None,
+        desc="Points",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
+    MetadataElement(
+        name="vertices",
+        default=None,
+        desc="Vertices",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
+    MetadataElement(
+        name="lines",
+        default=None,
+        desc="Lines",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
+    MetadataElement(
+        name="polygons",
+        default=None,
+        desc="Polygons",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
+    MetadataElement(
+        name="triangle_strips",
+        default=None,
+        desc="Triangle strips",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
 
     # UNSTRUCTURED_GRID data_type.
-    MetadataElement(name="cells", default=None, desc="Cells",
-                    readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(
+        name="cells",
+        default=None,
+        desc="Cells",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=None)
 
     # Additional elements not categorized by data_type.
-    MetadataElement(name="field_names", default=[], desc="Field names",
-                    readonly=True, optional=True, visible=True, no_value=[])
+    MetadataElement(
+        name="field_names",
+        default=[],
+        desc="Field names",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value=[])
     # The keys in the field_components map to the list of field_names in the above element
     # which ensures order for select list options that are built from it.
-    MetadataElement(name="field_components", default={}, desc="Field names and components",
-                    readonly=True, optional=True, visible=True, no_value={})
+    MetadataElement(
+        name="field_components",
+        default={},
+        desc="Field names and components",
+        readonly=True,
+        optional=True,
+        visible=True,
+        no_value={})
 
     @abc.abstractmethod
     def __init__(self, **kwd):
@@ -267,7 +378,8 @@ class Vtk(object):
                         continue
                     if i < 3:
                         dataset = self.set_initial_metadata(i, line, dataset)
-                    elif dataset.metadata.file_format == 'ASCII' or not util.is_binary(line):
+                    elif dataset.metadata.file_format == 'ASCII' or not util.is_binary(
+                            line):
                         if dataset_structure_complete:
                             """
                             The final part of legacy VTK files describes the dataset attributes.
@@ -303,8 +415,11 @@ class Vtk(object):
                                     num_components = int(items[-1])
                                 except:
                                     num_components = 1
-                                field_component_indexes = [str(i) for i in range(num_components)]
-                                field_components[field_name] = field_component_indexes
+                                field_component_indexes = [
+                                    str(i) for i in range(num_components)
+                                ]
+                                field_components[
+                                    field_name] = field_component_indexes
                             elif items[0] == 'FIELD':
                                 # The dataset consists of CELL_DATA.
                                 # FIELD FieldData 2
@@ -323,10 +438,15 @@ class Vtk(object):
                                         # Line consists of arrayName numComponents numTuples dataType.
                                         # Example: surface_field1 1 12 double
                                         field_name = items[0]
-                                        dataset.metadata.field_names.append(field_name)
+                                        dataset.metadata.field_names.append(
+                                            field_name)
                                         num_components = int(items[1])
-                                        field_component_indexes = [str(i) for i in range(num_components)]
-                                        field_components[field_name] = field_component_indexes
+                                        field_component_indexes = [
+                                            str(i)
+                                            for i in range(num_components)
+                                        ]
+                                        field_components[
+                                            field_name] = field_component_indexes
                                         fields_processed.append(field_name)
                         elif line.startswith('CELL_DATA'):
                             # CELL_DATA 3188
@@ -337,7 +457,8 @@ class Vtk(object):
                             dataset_structure_complete = True
                             dataset.metadata.points = int(line.split()[1])
                         else:
-                            dataset, dataset_type = self.set_structure_metadata(line, dataset, dataset_type)
+                            dataset, dataset_type = self.set_structure_metadata(
+                                line, dataset, dataset_type)
             if len(field_components) > 0:
                 dataset.metadata.field_components = field_components
 
@@ -429,7 +550,8 @@ class Vtk(object):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = self.get_blurb(dataset)
         else:
             dataset.peek = 'File does not exist'

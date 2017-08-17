@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Convert from GFF file to interval index file.
 
@@ -23,7 +22,8 @@ def main():
     # Do conversion.
     index = Indexes()
     offset = 0
-    reader_wrapper = GFFReaderWrapper(fileinput.FileInput(input_fname), fix_strand=True)
+    reader_wrapper = GFFReaderWrapper(
+        fileinput.FileInput(input_fname), fix_strand=True)
     for feature in list(reader_wrapper):
         # Add feature; index expects BED coordinates.
         if isinstance(feature, GenomicInterval):

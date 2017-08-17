@@ -33,7 +33,12 @@ def upgrade(migrate_engine):
 
         if migrate_engine.name != 'sqlite':
             try:
-                col = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=True)
+                col = Column(
+                    "user_id",
+                    Integer,
+                    ForeignKey("galaxy_user.id"),
+                    index=True,
+                    nullable=True)
                 col.create(Job_table, index_name='ix_job_user_id')
                 assert col is Job_table.c.user_id
             except Exception:
@@ -51,16 +56,22 @@ def upgrade(migrate_engine):
                 + "FROM job " \
                 + "JOIN galaxy_session ON job.session_id = galaxy_session.id;"
             job_users = migrate_engine.execute(cmd).fetchall()
-            print("Updating user_id column in job table for ", len(job_users), " rows...")
+            print("Updating user_id column in job table for ",
+                  len(job_users), " rows...")
             print("")
             update_count = 0
             for row in job_users:
                 if row.galaxy_user_id:
-                    cmd = "UPDATE job SET user_id = %d WHERE id = %d" % (int(row.galaxy_user_id), int(row.galaxy_job_id))
+                    cmd = "UPDATE job SET user_id = %d WHERE id = %d" % (
+                        int(row.galaxy_user_id), int(row.galaxy_job_id))
                     update_count += 1
                 migrate_engine.execute(cmd)
-            print("Updated the user_id column for ", update_count, " rows in the job table.  ")
-            print(len(job_users) - update_count, " rows have no user_id since the value was NULL in the galaxy_session table.")
+            print("Updated the user_id column for ", update_count,
+                  " rows in the job table.  ")
+            print(
+                len(job_users) - update_count,
+                " rows have no user_id since the value was NULL in the galaxy_session table."
+            )
             print("")
         except Exception:
             log.exception("Updating job.user_id column failed.")

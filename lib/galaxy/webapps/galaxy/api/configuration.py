@@ -19,7 +19,6 @@ log = logging.getLogger(__name__)
 
 
 class ConfigurationController(BaseAPIController):
-
     def __init__(self, app):
         super(ConfigurationController, self).__init__(app)
         self.config_serializer = configuration.ConfigSerializer(app)
@@ -61,14 +60,22 @@ class ConfigurationController(BaseAPIController):
         """
         extra = {}
         try:
-            version_file = os.environ.get("GALAXY_VERSION_JSON_FILE", self.app.container_finder.app_info.galaxy_root_dir + "/version.json")
+            version_file = os.environ.get(
+                "GALAXY_VERSION_JSON_FILE",
+                self.app.container_finder.app_info.galaxy_root_dir +
+                "/version.json")
             with open(version_file, "r") as f:
                 extra = json.load(f)
         except Exception:
             pass
         return {"version_major": self.app.config.version_major, "extra": extra}
 
-    def get_config_dict(self, trans, return_admin=False, view=None, keys=None, default_view='all'):
+    def get_config_dict(self,
+                        trans,
+                        return_admin=False,
+                        view=None,
+                        keys=None,
+                        default_view='all'):
         """
         Return a dictionary with (a subset of) current Galaxy settings.
 
@@ -81,7 +88,8 @@ class ConfigurationController(BaseAPIController):
             # TODO: this should probably just be under a different route: 'admin/configuration'
             serializer = self.admin_config_serializer
 
-        serialized = serializer.serialize_to_view(self.app.config, view=view, keys=keys, default_view=default_view)
+        serialized = serializer.serialize_to_view(
+            self.app.config, view=view, keys=keys, default_view=default_view)
         return serialized
 
     @expose_api
@@ -100,10 +108,7 @@ class ConfigurationController(BaseAPIController):
             else:
                 lineage_dict = None
 
-            entry = dict(
-                id=id,
-                lineage=lineage_dict
-            )
+            entry = dict(id=id, lineage=lineage_dict)
             rval.append(entry)
         return rval
 
@@ -120,5 +125,4 @@ class ConfigurationController(BaseAPIController):
 def _tool_conf_to_dict(conf):
     return dict(
         config_filename=conf['config_filename'],
-        tool_path=conf['tool_path'],
-    )
+        tool_path=conf['tool_path'], )

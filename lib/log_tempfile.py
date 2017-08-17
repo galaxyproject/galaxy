@@ -16,7 +16,8 @@ class TempFile(object):
     def NamedTemporaryFile(self, *args, **kwargs):
         f = tempfile._NamedTemporaryFile(*args, **kwargs)
         try:
-            log.debug(("Opened tempfile %s with NamedTemporaryFile:\n" % f.name) + "".join(traceback.format_stack()))
+            log.debug(("Opened tempfile %s with NamedTemporaryFile:\n" %
+                       f.name) + "".join(traceback.format_stack()))
         except AttributeError:
             pass
         return f
@@ -24,7 +25,8 @@ class TempFile(object):
     def mkstemp(self, *args, **kwargs):
         f = tempfile._mkstemp(*args, **kwargs)
         try:
-            log.debug(("Opened tempfile %s with mkstemp:\n" % f[1]) + "".join(traceback.format_stack()))
+            log.debug(("Opened tempfile %s with mkstemp:\n" % f[1]) +
+                      "".join(traceback.format_stack()))
         except TypeError:
             pass
         return f

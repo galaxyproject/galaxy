@@ -9,13 +9,12 @@ from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
     safe_relpath,
-    umask_fix_perms,
-)
+    umask_fix_perms, )
 from ..objectstore import ObjectStore
 
 try:
-    from kamaki.clients import (
-        astakos, pithos, utils, ClientError, Client as KamakiClient)
+    from kamaki.clients import (astakos, pithos, utils, ClientError, Client as
+                                KamakiClient)
 except ImportError:
     KamakiClient = None
 
@@ -35,9 +34,12 @@ def parse_config_xml(config_xml):
     """
     r = dict()
     try:
-        for tag, required_attrs, optional_attrs in (
-                ('auth', ('url', 'token', ), ('ca_certs', 'ignore_ssl', )),
-                ('container', ('name', ), ('project', )), ):
+        for tag, required_attrs, optional_attrs in (('auth', ('url',
+                                                              'token', ),
+                                                     ('ca_certs',
+                                                      'ignore_ssl', )),
+                                                    ('container', ('name', ),
+                                                     ('project', )), ):
             element = config_xml.findall(tag)[0]
             required = tuple((k, element.get(k)) for k in required_attrs)
             for k, v in required:
@@ -57,15 +59,15 @@ def parse_config_xml(config_xml):
             log.error(msg)
             raise Exception(msg)
         r['extra_dirs'] = [
-            dict(((k, e.get(k)) for k in attrs)) for e in extra_dirs]
+            dict(((k, e.get(k)) for k in attrs)) for e in extra_dirs
+        ]
         if 'job_work' not in (d['type'] for d in r['extra_dirs']):
             msg = 'No value for {0}:type="job_work" in XML tree'.format(tag)
             log.error(msg)
             raise Exception(msg)
     except Exception:
-        log.exception(
-            "Malformed PithosObjectStore Configuration XML -- "
-            "unable to continue")
+        log.exception("Malformed PithosObjectStore Configuration XML -- "
+                      "unable to continue")
         raise
     return r
 
@@ -75,6 +77,7 @@ class PithosObjectStore(ObjectStore):
     Object store that stores objects as items in a Pithos+ container.
     Cache is ignored for the time being.
     """
+
     def __init__(self, config, config_xml):
         if KamakiClient is None:
             raise Exception(NO_KAMAKI_ERROR_MESSAGE)
@@ -91,8 +94,8 @@ class PithosObjectStore(ObjectStore):
         self._init_pithos()
 
         log.info('Define extra_dirs')
-        self.extra_dirs = dict(
-            (e['type'], e['path']) for e in self.config_dict['extra_dirs'])
+        self.extra_dirs = dict((e['type'], e['path'])
+                               for e in self.config_dict['extra_dirs'])
 
     def _authenticate(self):
         auth = self.config_dict['auth']
@@ -123,10 +126,15 @@ class PithosObjectStore(ObjectStore):
         if project and c.get('x-container-policy-project') != project:
             self.pithos.reassign_container(project)
 
-    def _construct_path(
-            self, obj,
-            base_dir=None, dir_only=None, extra_dir=None,
-            extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
+    def _construct_path(self,
+                        obj,
+                        base_dir=None,
+                        dir_only=None,
+                        extra_dir=None,
+                        extra_dir_at_root=False,
+                        alt_name=None,
+                        obj_dir=False,
+                        **kwargs):
         """Construct path from object and parameters"""
         # param extra_dir: should never be constructed from provided data but
         # just make sure there are no shenannigans afoot
@@ -137,9 +145,8 @@ class PithosObjectStore(ObjectStore):
         # result in a path not contained in the directory path constructed here
         if alt_name:
             if not safe_relpath(alt_name):
-                log.warning(
-                    'alt_name would locate path outside dir: {0}'.format(
-                        alt_name))
+                log.warning('alt_name would locate path outside dir: {0}'.
+                            format(alt_name))
                 raise ObjectInvalid("The requested object is invalid")
             # alt_name can contain parent directory references, but S3 will not
             # follow them, so if they are valid we normalize them out
@@ -185,8 +192,8 @@ class PithosObjectStore(ObjectStore):
                 # Ignore symlinks
                 if os.path.islink(path):
                     continue
-                umask_fix_perms(
-                    path, self.config.umask, 0o666, self.config.gid)
+                umask_fix_perms(path, self.config.umask, 0o666,
+                                self.config.gid)
 
     def _pull_into_cache(self, rel_path):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
@@ -262,9 +269,8 @@ class PithosObjectStore(ObjectStore):
                 self.pithos.upload_from_string(
                     rel_path, '', content_type='application/directory')
             else:
-                rel_path = os.path.join(
-                    rel_path,
-                    alt_name if alt_name else 'dataset_{0}.dat'.format(obj.id))
+                rel_path = os.path.join(rel_path, alt_name if alt_name else
+                                        'dataset_{0}.dat'.format(obj.id))
                 new_file = os.path.join(self.staging_path, rel_path)
                 open(new_file, 'w').close()
                 self.pithos.upload_from_string(rel_path, '')
@@ -291,9 +297,9 @@ class PithosObjectStore(ObjectStore):
             try:
                 return os.path.getsize(self._get_cache_path(path))
             except OSError as ex:
-                log.warning(
-                    'Could not get size of file {path} in local cache,'
-                    'will try Pithos. Error: {err}'.format(path=path, err=ex))
+                log.warning('Could not get size of file {path} in local cache,'
+                            'will try Pithos. Error: {err}'.format(
+                                path=path, err=ex))
         try:
             file = self.pithos.get_object_info(path)
         except ClientError as ce:
@@ -371,9 +377,8 @@ class PithosObjectStore(ObjectStore):
             if not dir_only:
                 self._pull_into_cache(path)
                 return cache_path
-        raise ObjectNotFound(
-            'objectstore.get_filename, no cache_path: {obj}, '
-            'kwargs: {kwargs}'.format(obj, kwargs))
+        raise ObjectNotFound('objectstore.get_filename, no cache_path: {obj}, '
+                             'kwargs: {kwargs}'.format(obj, kwargs))
 
     def update_from_file(self, obj, **kwargs):
         """Update the store when a file is updated"""

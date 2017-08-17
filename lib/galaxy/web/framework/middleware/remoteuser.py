@@ -40,9 +40,14 @@ errorpage = """
 
 
 class RemoteUser(object):
-
-    def __init__(self, app, maildomain=None, display_servers=None, admin_users=None,
-                 single_user=None, remote_user_header=None, remote_user_secret_header=None,
+    def __init__(self,
+                 app,
+                 maildomain=None,
+                 display_servers=None,
+                 admin_users=None,
+                 single_user=None,
+                 remote_user_header=None,
+                 remote_user_secret_header=None,
                  normalize_remote_user_email=False):
         self.app = app
         self.maildomain = maildomain
@@ -58,11 +63,14 @@ class RemoteUser(object):
         if self.display_servers and 'REMOTE_ADDR' in environ:
             try:
                 host = socket.gethostbyaddr(environ['REMOTE_ADDR'])[0]
-            except(socket.error, socket.herror, socket.gaierror, socket.timeout):
+            except (socket.error, socket.herror, socket.gaierror,
+                    socket.timeout):
                 # in the event of a lookup failure, deny access
                 host = None
             if host in self.display_servers:
-                environ[self.remote_user_header] = 'remote_display_server@%s' % (self.maildomain or 'example.org')
+                environ[
+                    self.remote_user_header] = 'remote_display_server@%s' % (
+                        self.maildomain or 'example.org')
                 return self.app(environ, start_response)
 
         if self.single_user:
@@ -74,14 +82,18 @@ class RemoteUser(object):
             # Apache sets REMOTE_USER to the string '(null)' when using the
             # Rewrite* method for passing REMOTE_USER and a user is not authenticated.
             # Any other possible values need to go here as well.
-            log.debug("Discarding invalid remote user header %s:%s.", self.remote_user_header, environ.get(self.remote_user_header, None))
+            log.debug("Discarding invalid remote user header %s:%s.",
+                      self.remote_user_header,
+                      environ.get(self.remote_user_header, None))
             environ.pop(self.remote_user_header)
         if self.remote_user_header in environ:
             # process remote user with configuration options.
             if self.normalize_remote_user_email:
-                environ[self.remote_user_header] = environ[self.remote_user_header].lower()
+                environ[self.remote_user_header] = environ[
+                    self.remote_user_header].lower()
             if self.maildomain and '@' not in environ[self.remote_user_header]:
-                environ[self.remote_user_header] = "%s@%s" % (environ[self.remote_user_header], self.maildomain)
+                environ[self.remote_user_header] = "%s@%s" % (
+                    environ[self.remote_user_header], self.maildomain)
 
         path_info = environ.get('PATH_INFO', '')
 
@@ -116,7 +128,9 @@ class RemoteUser(object):
                 access Galaxy.
                 """
                 return self.error(start_response, title, message)
-            if not safe_str_cmp(environ.get('HTTP_GX_SECRET', ''), self.config_secret_header):
+            if not safe_str_cmp(
+                    environ.get('HTTP_GX_SECRET', ''),
+                    self.config_secret_header):
                 title = "Access to Galaxy is denied"
                 message = """
                 Galaxy is configured to authenticate users via an external
@@ -147,25 +161,17 @@ class RemoteUser(object):
                         before you may access Galaxy.
                     """
                     return self.error(start_response, title, message)
-            user_accessible_paths = (
-                '/users',
-                '/user/api_key',
-                '/user/edit_username',
-                '/user/dbkeys',
-                '/user/logout',
-                '/user/toolbox_filters',
-                '/user/set_default_permissions',
-                '/user/change_communication',
-            )
+            user_accessible_paths = ('/users', '/user/api_key',
+                                     '/user/edit_username', '/user/dbkeys',
+                                     '/user/logout', '/user/toolbox_filters',
+                                     '/user/set_default_permissions',
+                                     '/user/change_communication', )
 
-            admin_accessible_paths = (
-                '/user/create',
-                '/user/logout',
-                '/user/manage_user_info',
-                '/user/edit_info',
-                '/userskeys/all_users',
-                '/userskeys/admin_api_keys',
-            )
+            admin_accessible_paths = ('/user/create', '/user/logout',
+                                      '/user/manage_user_info',
+                                      '/user/edit_info',
+                                      '/userskeys/all_users',
+                                      '/userskeys/admin_api_keys', )
 
             if not path_info.startswith('/user'):
                 # shortcut the following whitelist for non-user-controller
@@ -175,7 +181,10 @@ class RemoteUser(object):
                     any([path_info.startswith(prefix) for prefix in admin_accessible_paths]):
                 # If the user is an admin user, and any of the admin accessible paths match..., allow them to execute that action.
                 pass
-            elif any([path_info.startswith(prefix) for prefix in user_accessible_paths]):
+            elif any([
+                    path_info.startswith(prefix)
+                    for prefix in user_accessible_paths
+            ]):
                 # If the user is allowed to access the path, pass
                 pass
             elif path_info == '/user' or path_info == '/user/':
@@ -190,7 +199,8 @@ class RemoteUser(object):
                 return self.error(start_response, title, message)
             return self.app(environ, start_response)
         else:
-            log.debug("Unable to identify user.  %s not found" % self.remote_user_header)
+            log.debug("Unable to identify user.  %s not found" %
+                      self.remote_user_header)
             for k, v in environ.iteritems():
                 log.debug("%s = %s", k, v)
 
@@ -204,6 +214,9 @@ class RemoteUser(object):
             """
             return self.error(start_response, title, message)
 
-    def error(self, start_response, title="Access denied", message="Please contact your local Galaxy administrator."):
+    def error(self,
+              start_response,
+              title="Access denied",
+              message="Please contact your local Galaxy administrator."):
         start_response('403 Forbidden', [('Content-type', 'text/html')])
         return [errorpage % (title, message)]

@@ -15,16 +15,18 @@ class ErrorReports(object):
     def __init__(self, conf_file=None, **kwargs):
         """Load :class:`ErrorPlugin` objects from specified configuration file."""
         self.plugin_classes = self.__plugins_dict()
-        self.default_error_plugin = ErrorPlugin.from_file(self.plugin_classes, conf_file, **kwargs)
-        self.error_plugin = collections.defaultdict(lambda: self.default_error_plugin)
+        self.default_error_plugin = ErrorPlugin.from_file(
+            self.plugin_classes, conf_file, **kwargs)
+        self.error_plugin = collections.defaultdict(
+            lambda: self.default_error_plugin)
 
     def __plugins_dict(self):
         import galaxy.tools.error_reports.plugins
-        return plugin_config.plugins_dict(galaxy.tools.error_reports.plugins, 'plugin_type')
+        return plugin_config.plugins_dict(galaxy.tools.error_reports.plugins,
+                                          'plugin_type')
 
 
 class NullErrorPlugin(object):
-
     def submit_report(self, dataset, job, tool, **kwargs):
         return "Submitted Bug Report"
 
@@ -33,7 +35,6 @@ NULL_ERROR_PLUGIN = NullErrorPlugin()
 
 
 class ErrorPlugin(object):
-
     def __init__(self, plugin_classes, plugins_source, **kwargs):
         self.extra_kwargs = kwargs
         self.app = kwargs['app']
@@ -45,26 +46,40 @@ class ErrorPlugin(object):
             roles = user.all_roles()
         else:
             roles = []
-        return self.app.security_agent.can_access_dataset(roles, dataset.dataset)
+        return self.app.security_agent.can_access_dataset(
+            roles, dataset.dataset)
 
-    def submit_report(self, dataset, job, tool, user=None, user_submission=False, **kwargs):
+    def submit_report(self,
+                      dataset,
+                      job,
+                      tool,
+                      user=None,
+                      user_submission=False,
+                      **kwargs):
         if user_submission:
-            assert self._can_access_dataset(dataset, user), Exception("You are not allowed to access this dataset.")
+            assert self._can_access_dataset(
+                dataset,
+                user), Exception("You are not allowed to access this dataset.")
 
         responses = []
         for plugin in self.plugins:
             if user_submission == plugin.user_submission:
                 try:
-                    response = plugin.submit_report(dataset, job, tool, **kwargs)
-                    log.debug("Bug report plugin %s generated response %s", plugin, response)
+                    response = plugin.submit_report(dataset, job, tool,
+                                                    **kwargs)
+                    log.debug("Bug report plugin %s generated response %s",
+                              plugin, response)
                     if plugin.verbose and response:
                         responses.append(response)
                 except Exception:
-                    log.exception("Failed to generate submit_report commands for plugin %s", plugin)
+                    log.exception(
+                        "Failed to generate submit_report commands for plugin %s",
+                        plugin)
         return responses
 
     def __plugins_from_source(self, plugins_source):
-        return plugin_config.load_plugins(self.plugin_classes, plugins_source, self.extra_kwargs)
+        return plugin_config.load_plugins(self.plugin_classes, plugins_source,
+                                          self.extra_kwargs)
 
     @staticmethod
     def from_file(plugin_classes, conf_file, **kwargs):

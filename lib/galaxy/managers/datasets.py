@@ -20,7 +20,8 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
+class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin,
+                     deletable.PurgableManagerMixin):
     """
     Manipulate datasets: the components contained in DatasetAssociations/DatasetInstances/HDAs/LDDAs
     """
@@ -35,12 +36,17 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
         # needed for admin test
         self.user_manager = users.UserManager(app)
 
-    def create(self, manage_roles=None, access_roles=None, flush=True, **kwargs):
+    def create(self,
+               manage_roles=None,
+               access_roles=None,
+               flush=True,
+               **kwargs):
         """
         Create and return a new Dataset object.
         """
         # default to NEW state on new datasets
-        kwargs.update(dict(state=(kwargs.get('state', model.Dataset.states.NEW))))
+        kwargs.update(
+            dict(state=(kwargs.get('state', model.Dataset.states.NEW))))
         dataset = model.Dataset(**kwargs)
         self.session().add(dataset)
 
@@ -100,11 +106,10 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
     # TODO: datatypes?
     # .... data, object_store
 
+    # TODO: SecurityAgentDatasetRBACPermissions( object ):
 
-# TODO: SecurityAgentDatasetRBACPermissions( object ):
 
 class DatasetRBACPermissions(object):
-
     def __init__(self, app):
         self.app = app
         self.access = rbac_secured.AccessDatasetRBACPermission(app)
@@ -112,7 +117,8 @@ class DatasetRBACPermissions(object):
 
     # TODO: temporary facade over security_agent
     def available_roles(self, trans, dataset, controller='root'):
-        return self.app.security_agent.get_legitimate_roles(trans, dataset, controller)
+        return self.app.security_agent.get_legitimate_roles(
+            trans, dataset, controller)
 
     def get(self, dataset, flush=True):
         manage = self.manage.by_dataset(dataset)
@@ -136,7 +142,8 @@ class DatasetRBACPermissions(object):
         return ([manage], access)
 
 
-class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
+class DatasetSerializer(base.ModelSerializer,
+                        deletable.PurgableSerializerMixin):
     model_manager_class = DatasetManager
 
     def __init__(self, app):
@@ -146,21 +153,23 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
         self.user_manager = users.UserManager(app)
 
         self.default_view = 'summary'
-        self.add_view('summary', [
-            'id',
-            'create_time',
-            'update_time',
-            'state',
-            'deleted',
-            'purged',
-            'purgable',
-            # 'object_store_id',
-            # 'external_filename',
-            # 'extra_files_path',
-            'file_size',
-            'total_size',
-            'uuid',
-        ])
+        self.add_view(
+            'summary',
+            [
+                'id',
+                'create_time',
+                'update_time',
+                'state',
+                'deleted',
+                'purged',
+                'purgable',
+                # 'object_store_id',
+                # 'external_filename',
+                # 'extra_files_path',
+                'file_size',
+                'total_size',
+                'uuid',
+            ])
         # could do visualizations and/or display_apps
 
     def add_serializers(self):
@@ -168,16 +177,22 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
-
-            'uuid'          : lambda i, k, **c: str(i.uuid) if i.uuid else None,
-            'file_name'     : self.serialize_file_name,
-            'extra_files_path' : self.serialize_extra_files_path,
-            'permissions'   : self.serialize_permissions,
-
-            'total_size'    : lambda i, k, **c: int(i.get_total_size()),
-            'file_size'     : lambda i, k, **c: int(i.get_size())
+            'create_time':
+            self.serialize_date,
+            'update_time':
+            self.serialize_date,
+            'uuid':
+            lambda i, k, **c: str(i.uuid) if i.uuid else None,
+            'file_name':
+            self.serialize_file_name,
+            'extra_files_path':
+            self.serialize_extra_files_path,
+            'permissions':
+            self.serialize_permissions,
+            'total_size':
+            lambda i, k, **c: int(i.get_total_size()),
+            'file_size':
+            lambda i, k, **c: int(i.get_size())
         })
 
     def serialize_file_name(self, dataset, key, user=None, **context):
@@ -206,19 +221,29 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
     def serialize_permissions(self, dataset, key, user=None, **context):
         """
         """
-        if not self.dataset_manager.permissions.manage.is_permitted(dataset, user):
+        if not self.dataset_manager.permissions.manage.is_permitted(
+                dataset, user):
             self.skip()
 
-        management_permissions = self.dataset_manager.permissions.manage.by_dataset(dataset)
-        access_permissions = self.dataset_manager.permissions.access.by_dataset(dataset)
+        management_permissions = self.dataset_manager.permissions.manage.by_dataset(
+            dataset)
+        access_permissions = self.dataset_manager.permissions.access.by_dataset(
+            dataset)
         permissions = {
-            'manage' : [self.app.security.encode_id(perm.role.id) for perm in management_permissions],
-            'access' : [self.app.security.encode_id(perm.role.id) for perm in access_permissions],
+            'manage': [
+                self.app.security.encode_id(perm.role.id)
+                for perm in management_permissions
+            ],
+            'access': [
+                self.app.security.encode_id(perm.role.id)
+                for perm in access_permissions
+            ],
         }
         return permissions
 
 
-class DatasetDeserializer(base.ModelDeserializer, deletable.PurgableDeserializerMixin):
+class DatasetDeserializer(base.ModelDeserializer,
+                          deletable.PurgableDeserializerMixin):
     model_manager_class = DatasetManager
 
     def __init__(self, app):
@@ -232,10 +257,15 @@ class DatasetDeserializer(base.ModelDeserializer, deletable.PurgableDeserializer
         deletable.PurgableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update({
-            'permissions' : self.deserialize_permissions,
+            'permissions': self.deserialize_permissions,
         })
 
-    def deserialize_permissions(self, dataset, key, permissions, user=None, **context):
+    def deserialize_permissions(self,
+                                dataset,
+                                key,
+                                permissions,
+                                user=None,
+                                **context):
         """
         Create permissions for each list of encoded role ids in the (validated)
         `permissions` dictionary, where `permissions` is in the form::
@@ -252,21 +282,24 @@ class DatasetDeserializer(base.ModelDeserializer, deletable.PurgableDeserializer
     def _validate_permissions(self, permissions, **context):
         self.validate.type('permissions', permissions, dict)
         for permission_key in ('manage', 'access'):
-            if(not isinstance(permissions.get(permission_key, None), list)):
-                msg = 'permissions requires "{0}" as a list of role ids'.format(permission_key)
+            if (not isinstance(permissions.get(permission_key, None), list)):
+                msg = 'permissions requires "{0}" as a list of role ids'.format(
+                    permission_key)
                 raise exceptions.RequestParameterInvalidException(msg)
 
         # TODO: push down into permissions?
         manage_permissions = permissions['manage']
         if len(manage_permissions) < 1:
-            raise exceptions.RequestParameterInvalidException('At least one managing role is required')
+            raise exceptions.RequestParameterInvalidException(
+                'At least one managing role is required')
 
         return permissions
 
     def _list_of_roles_from_ids(self, id_list):
         # TODO: this may make more sense inside rbac_secured
         # note: no checking of valid roles is made
-        return self.role_manager.by_ids([self.app.security.decode_id(id_) for id_ in id_list])
+        return self.role_manager.by_ids(
+            [self.app.security.decode_id(id_) for id_ in id_list])
 
 
 # ============================================================================= AKA DatasetInstanceManager
@@ -336,7 +369,8 @@ class DatasetAssociationManager(base.ModelManager,
         """
         Stops an dataset_assoc's creating job if all the job's other outputs are deleted.
         """
-        if dataset_assoc.parent_id is None and len(dataset_assoc.creating_job_associations) > 0:
+        if dataset_assoc.parent_id is None and len(
+                dataset_assoc.creating_job_associations) > 0:
             # Mark associated job for deletion
             job = dataset_assoc.creating_job_associations[0].job
             if not job.finished:
@@ -353,75 +387,77 @@ class DatasetAssociationManager(base.ModelManager,
 
         .. note:: see also (whereever we keep information on composite datatypes?)
         """
-        return dataset_assoc.extension in self.app.datatypes_registry.get_composite_extensions()
+        return dataset_assoc.extension in self.app.datatypes_registry.get_composite_extensions(
+        )
 
     def extra_files(self, dataset_assoc):
         """Return a list of file paths for composite files, an empty list otherwise."""
         if not self.is_composite(dataset_assoc):
             return []
-        return glob.glob(os.path.join(dataset_assoc.dataset.extra_files_path, '*'))
+        return glob.glob(
+            os.path.join(dataset_assoc.dataset.extra_files_path, '*'))
 
 
-class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
-                                                       deletable.PurgableSerializerMixin):
-
+class _UnflattenedMetadataDatasetAssociationSerializer(
+        base.ModelSerializer, deletable.PurgableSerializerMixin):
     def __init__(self, app):
         self.dataset_serializer = DatasetSerializer(app)
-        super(_UnflattenedMetadataDatasetAssociationSerializer, self).__init__(app)
+        super(_UnflattenedMetadataDatasetAssociationSerializer,
+              self).__init__(app)
 
     def add_serializers(self):
-        super(_UnflattenedMetadataDatasetAssociationSerializer, self).add_serializers()
+        super(_UnflattenedMetadataDatasetAssociationSerializer,
+              self).add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
 
-        self.serializers.update({
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
+        self.serializers.update(
+            {
+                'create_time': self.serialize_date,
+                'update_time': self.serialize_date,
 
-            # underlying dataset
-            'dataset'       : lambda i, k, **c: self.dataset_serializer.serialize_to_view(i.dataset, view='summary', **c),
-            'dataset_id'    : self._proxy_to_dataset(key='id'),
-            # TODO: why is this named uuid!? The da doesn't have a uuid - it's the underlying dataset's uuid!
-            'uuid'          : self._proxy_to_dataset(key='uuid'),
-            # 'dataset_uuid'  : self._proxy_to_dataset( key='uuid' ),
-            'file_name'     : self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_file_name),
-            'extra_files_path' : self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_extra_files_path),
-            'permissions'   : self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_permissions),
-            # TODO: do the sizes proxy accurately/in the same way?
-            'size'          : lambda i, k, **c: int(i.get_size()),
-            'file_size'     : lambda i, k, **c: self.serializers['size'](i, k, **c),
-            'nice_size'     : lambda i, k, **c: i.get_size(nice_size=True),
+                # underlying dataset
+                'dataset': lambda i, k, **c: self.dataset_serializer.serialize_to_view(i.dataset, view='summary', **c),
+                'dataset_id': self._proxy_to_dataset(key='id'),
+                # TODO: why is this named uuid!? The da doesn't have a uuid - it's the underlying dataset's uuid!
+                'uuid': self._proxy_to_dataset(key='uuid'),
+                # 'dataset_uuid'  : self._proxy_to_dataset( key='uuid' ),
+                'file_name': self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_file_name),
+                'extra_files_path': self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_extra_files_path),
+                'permissions': self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_permissions),
+                # TODO: do the sizes proxy accurately/in the same way?
+                'size': lambda i, k, **c: int(i.get_size()),
+                'file_size': lambda i, k, **c: self.serializers['size'](i, k, **c),
+                'nice_size': lambda i, k, **c: i.get_size(nice_size=True),
 
-            # common to lddas and hdas - from mapping.py
-            'copied_from_history_dataset_association_id'        : self.serialize_id,
-            'copied_from_library_dataset_dataset_association_id': self.serialize_id,
-            'info'          : lambda i, k, **c: i.info.strip() if isinstance(i.info, string_types) else i.info,
-            'blurb'         : lambda i, k, **c: i.blurb,
-            'peek'          : lambda i, k, **c: i.display_peek() if i.peek and i.peek != 'no peek' else None,
+                # common to lddas and hdas - from mapping.py
+                'copied_from_history_dataset_association_id': self.serialize_id,
+                'copied_from_library_dataset_dataset_association_id': self.serialize_id,
+                'info': lambda i, k, **c: i.info.strip() if isinstance(i.info, string_types) else i.info,
+                'blurb': lambda i, k, **c: i.blurb,
+                'peek': lambda i, k, **c: i.display_peek() if i.peek and i.peek != 'no peek' else None,
+                'meta_files': self.serialize_meta_files,
+                'metadata': self.serialize_metadata,
+                'creating_job': self.serialize_creating_job,
+                'rerunnable': self.serialize_rerunnable,
+                'parent_id': self.serialize_id,
+                'designation': lambda i, k, **c: i.designation,
 
-            'meta_files'    : self.serialize_meta_files,
-            'metadata'      : self.serialize_metadata,
+                # 'extended_metadata'     : self.serialize_extended_metadata,
+                # 'extended_metadata_id'  : self.serialize_id,
 
-            'creating_job'  : self.serialize_creating_job,
-            'rerunnable'    : self.serialize_rerunnable,
+                # remapped
+                'genome_build': lambda i, k, **c: i.dbkey,
 
-            'parent_id'     : self.serialize_id,
-            'designation'   : lambda i, k, **c: i.designation,
-
-            # 'extended_metadata'     : self.serialize_extended_metadata,
-            # 'extended_metadata_id'  : self.serialize_id,
-
-            # remapped
-            'genome_build'  : lambda i, k, **c: i.dbkey,
-
-            # derived (not mapped) attributes
-            'data_type'     : lambda i, k, **c: i.datatype.__class__.__module__ + '.' + i.datatype.__class__.__name__,
-
-            'converted'     : self.serialize_converted_datasets,
-            # TODO: metadata/extra files
-        })
+                # derived (not mapped) attributes
+                'data_type': lambda i, k, **c: i.datatype.__class__.__module__ + '.' + i.datatype.__class__.__name__,
+                'converted': self.serialize_converted_datasets,
+                # TODO: metadata/extra files
+            }
+        )
         # this an abstract superclass, so no views created
         # because of that: we need to add a few keys that will use the default serializer
-        self.serializable_keyset.update(['name', 'state', 'tool_version', 'extension', 'visible', 'dbkey'])
+        self.serializable_keyset.update(
+            ['name', 'state', 'tool_version', 'extension', 'visible', 'dbkey'])
 
     def _proxy_to_dataset(self, serializer=None, key=None):
         # dataset associations are (rough) proxies to datasets - access their serializer using this remapping fn
@@ -439,13 +475,18 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         """
         meta_files = []
         for meta_type in dataset_assoc.metadata.spec.keys():
-            if isinstance(dataset_assoc.metadata.spec[meta_type].param, galaxy.datatypes.metadata.FileParameter):
+            if isinstance(dataset_assoc.metadata.spec[meta_type].param,
+                          galaxy.datatypes.metadata.FileParameter):
                 meta_files.append(
-                    dict(file_type=meta_type,
-                         download_url=self.url_for('history_contents_metadata_file',
-                                                   history_id=self.app.security.encode_id(dataset_assoc.history_id),
-                                                   history_content_id=self.app.security.encode_id(dataset_assoc.id),
-                                                   metadata_file=meta_type)))
+                    dict(
+                        file_type=meta_type,
+                        download_url=self.url_for(
+                            'history_contents_metadata_file',
+                            history_id=self.app.security.encode_id(
+                                dataset_assoc.history_id),
+                            history_content_id=self.app.security.encode_id(
+                                dataset_assoc.id),
+                            metadata_file=meta_type)))
         return meta_files
 
     def serialize_metadata(self, dataset_assoc, key, excluded=None, **context):
@@ -491,7 +532,8 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         (e.g. upload).
         """
         if dataset.creating_job:
-            tool = self.app.toolbox.get_tool(dataset.creating_job.tool_id, dataset.creating_job.tool_version)
+            tool = self.app.toolbox.get_tool(dataset.creating_job.tool_id,
+                                             dataset.creating_job.tool_version)
             if tool and tool.is_workflow_compatible:
                 return True
         return False
@@ -506,11 +548,13 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         id_map = {}
         for converted in dataset_assoc.implicitly_converted_datasets:
             if not converted.deleted and converted.dataset:
-                id_map[converted.type] = self.serialize_id(converted.dataset, 'id')
+                id_map[converted.type] = self.serialize_id(
+                    converted.dataset, 'id')
         return id_map
 
 
-class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSerializer):
+class DatasetAssociationSerializer(
+        _UnflattenedMetadataDatasetAssociationSerializer):
     # TODO: remove this class - metadata should be a sub-object instead as in the superclass
 
     def add_serializers(self):
@@ -526,7 +570,8 @@ class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSeriali
         # TODO: remove these when metadata is sub-object
         KEYS_HANDLED_SEPARATELY = ('metadata', )
         left_to_handle = self._pluck_from_list(keys, KEYS_HANDLED_SEPARATELY)
-        serialized = super(DatasetAssociationSerializer, self).serialize(dataset_assoc, keys, **context)
+        serialized = super(DatasetAssociationSerializer, self).serialize(
+            dataset_assoc, keys, **context)
 
         # add metadata directly to the dict instead of as a sub-object
         if 'metadata' in left_to_handle:
@@ -564,26 +609,29 @@ class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSeriali
         return prefixed
 
 
-class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableDeserializerMixin):
-
+class DatasetAssociationDeserializer(base.ModelDeserializer,
+                                     deletable.PurgableDeserializerMixin):
     def add_deserializers(self):
         super(DatasetAssociationDeserializer, self).add_deserializers()
         deletable.PurgableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update({
-            'name' : self.deserialize_basestring,
-            'info' : self.deserialize_basestring,
+            'name': self.deserialize_basestring,
+            'info': self.deserialize_basestring,
         })
         self.deserializable_keyset.update(self.deserializers.keys())
 
 # TODO: untested
-    def deserialize_metadata(self, dataset_assoc, metadata_key, metadata_dict, **context):
+
+    def deserialize_metadata(self, dataset_assoc, metadata_key, metadata_dict,
+                             **context):
         """
         """
         self.validate.type(metadata_key, metadata_dict, dict)
         returned = {}
         for key, val in metadata_dict.items():
-            returned[key] = self.deserialize_metadatum(dataset_assoc, key, val, **context)
+            returned[key] = self.deserialize_metadatum(dataset_assoc, key, val,
+                                                       **context)
         return returned
 
     def deserialize_metadatum(self, dataset_assoc, key, val, **context):
@@ -600,23 +648,32 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         return unwrapped_val
 
 
-class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMixin):
-
+class DatasetAssociationFilterParser(base.ModelFilterParser,
+                                     deletable.PurgableFiltersMixin):
     def _add_parsers(self):
         super(DatasetAssociationFilterParser, self)._add_parsers()
         deletable.PurgableFiltersMixin._add_parsers(self)
 
         self.orm_filter_parsers.update({
-            'name'      : {'op': ('eq', 'contains', 'like')},
-            'state'     : {'column' : '_state', 'op': ('eq', 'in')},
-            'visible'   : {'op': ('eq'), 'val': self.parse_bool},
+            'name': {
+                'op': ('eq', 'contains', 'like')
+            },
+            'state': {
+                'column': '_state',
+                'op': ('eq', 'in')
+            },
+            'visible': {
+                'op': ('eq'),
+                'val': self.parse_bool
+            },
         })
         self.fn_filter_parsers.update({
-            'genome_build' : self.string_standard_ops('dbkey'),
-            'data_type' : {
+            'genome_build':
+            self.string_standard_ops('dbkey'),
+            'data_type': {
                 'op': {
-                    'eq' : self.eq_datatype,
-                    'isinstance' : self.isinstance_datatype
+                    'eq': self.eq_datatype,
+                    'isinstance': self.isinstance_datatype
                 }
             }
         })
@@ -625,9 +682,10 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
         """
         Is the `dataset_assoc` datatype equal to the registered datatype `class_str`?
         """
-        comparison_class = self.app.datatypes_registry.get_datatype_class_by_name(class_str)
-        return (comparison_class and
-            dataset_assoc.datatype.__class__ == comparison_class)
+        comparison_class = self.app.datatypes_registry.get_datatype_class_by_name(
+            class_str)
+        return (comparison_class
+                and dataset_assoc.datatype.__class__ == comparison_class)
 
     def isinstance_datatype(self, dataset_assoc, class_strs):
         """
@@ -640,5 +698,5 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
             datatype_class = parse_datatype_fn(class_str)
             if datatype_class:
                 comparison_classes.append(datatype_class)
-        return (comparison_classes and
-            isinstance(dataset_assoc.datatype, comparison_classes))
+        return (comparison_classes
+                and isinstance(dataset_assoc.datatype, comparison_classes))

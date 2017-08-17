@@ -35,11 +35,9 @@ from logging.config import fileConfig
 
 from .loadwsgi import loadapp, loadserver
 
-
 difflib = None
 
 # ---- from paste.script.bool_optparse --------------------------------
-
 """
 A subclass of ``optparse.OptionParser`` that allows boolean long
 options (like ``--verbose``) to also take arguments (like
@@ -53,7 +51,6 @@ except AttributeError:
 
 
 class BoolOptionParser(optparse.OptionParser):
-
     def _process_long_opt(self, rargs, values):
         arg = rargs.pop(0)
 
@@ -75,8 +72,8 @@ class BoolOptionParser(optparse.OptionParser):
                 if nargs == 1:
                     self.error(_("%s option requires an argument") % opt)
                 else:
-                    self.error(_("%s option requires %d arguments")
-                               % (opt, nargs))
+                    self.error(
+                        _("%s option requires %d arguments") % (opt, nargs))
             elif nargs == 1:
                 value = rargs.pop(0)
             else:
@@ -92,12 +89,15 @@ class BoolOptionParser(optparse.OptionParser):
                 # Don't process
                 return
             else:
-                self.error(_('%s option takes a boolean value only (true/false)') % opt)
+                self.error(
+                    _('%s option takes a boolean value only (true/false)') %
+                    opt)
 
         else:
             value = None
 
         option.process(opt, value, values, self)
+
 
 # ---- from paste.script.command --------------------------------------
 
@@ -106,7 +106,6 @@ class BoolOptionParser(optparse.OptionParser):
 
 
 class BadCommand(Exception):
-
     def __init__(self, message, exit_code=2):
         self.message = message
         self.exit_code = exit_code
@@ -135,7 +134,6 @@ class NoDefault(object):
 
 # run and invoke methods moved below ServeCommand
 class Command(object):
-
     def __init__(self, name):
         self.command_name = name
 
@@ -174,10 +172,8 @@ class Command(object):
         self.parse_args(args)
 
         # Setup defaults:
-        for name, default in [('verbose', 0),
-                              ('quiet', 0),
-                              ('interactive', False),
-                              ('overwrite', False)]:
+        for name, default in [('verbose', 0), ('quiet', 0),
+                              ('interactive', False), ('overwrite', False)]:
             if not hasattr(self.options, name):
                 setattr(self.options, name, default)
         if getattr(self.options, 'simulate', False):
@@ -193,7 +189,8 @@ class Command(object):
         self.simulate = getattr(self.options, 'simulate', False)
 
         # For #! situations:
-        if (os.environ.get('PASTE_CONFIG_FILE') and self.takes_config_file is not None):
+        if (os.environ.get('PASTE_CONFIG_FILE')
+                and self.takes_config_file is not None):
             take = self.takes_config_file
             filename = os.environ.get('PASTE_CONFIG_FILE')
             if take == 1:
@@ -202,8 +199,8 @@ class Command(object):
                 self.args.append(filename)
             else:
                 assert 0, (
-                    "Value takes_config_file must be None, 1, or -1 (not %r)"
-                    % take)
+                    "Value takes_config_file must be None, 1, or -1 (not %r)" %
+                    take)
 
         if (os.environ.get('PASTE_DEFAULT_QUIET')):
             self.verbose = 0
@@ -211,12 +208,14 @@ class Command(object):
         # Validate:
         if self.min_args is not None and len(self.args) < self.min_args:
             raise BadCommand(
-                self.min_args_error % {'min_args': self.min_args,
-                                       'actual_args': len(self.args)})
+                self.min_args_error %
+                {'min_args': self.min_args,
+                 'actual_args': len(self.args)})
         if self.max_args is not None and len(self.args) > self.max_args:
             raise BadCommand(
-                self.max_args_error % {'max_args': self.max_args,
-                                       'actual_args': len(self.args)})
+                self.max_args_error %
+                {'max_args': self.max_args,
+                 'actual_args': len(self.args)})
         for var_name, option_name in self.required_args:
             if not getattr(self.options, var_name, None):
                 raise BadCommand(
@@ -232,8 +231,7 @@ class Command(object):
             usage = ' ' + self.usage
         else:
             usage = ''
-        self.parser.usage = "%%prog [options]%s\n%s" % (
-            usage, self.summary)
+        self.parser.usage = "%%prog [options]%s\n%s" % (usage, self.summary)
         self.parser.prog = self._prog_name()
         if self.description:
             desc = self.description
@@ -256,7 +254,8 @@ class Command(object):
         else:
             return ' ' * (length - len(s)) + s
 
-    def standard_parser(cls, verbose=True,
+    def standard_parser(cls,
+                        verbose=True,
                         interactive=False,
                         no_interactive=False,
                         simulate=False,
@@ -275,35 +274,40 @@ class Command(object):
         """
         parser = BoolOptionParser()
         if verbose:
-            parser.add_option('-v', '--verbose',
-                              action='count',
-                              dest='verbose',
-                              default=0)
+            parser.add_option(
+                '-v', '--verbose', action='count', dest='verbose', default=0)
         if quiet:
-            parser.add_option('-q', '--quiet',
-                              action='count',
-                              dest='quiet',
-                              default=0)
+            parser.add_option(
+                '-q', '--quiet', action='count', dest='quiet', default=0)
         if no_interactive:
-            parser.add_option('--no-interactive',
-                              action="count",
-                              dest="no_interactive",
-                              default=0)
+            parser.add_option(
+                '--no-interactive',
+                action="count",
+                dest="no_interactive",
+                default=0)
         if interactive:
-            parser.add_option('-i', '--interactive',
-                              action='count',
-                              dest='interactive',
-                              default=0)
+            parser.add_option(
+                '-i',
+                '--interactive',
+                action='count',
+                dest='interactive',
+                default=0)
         if simulate:
-            parser.add_option('-n', '--simulate',
-                              action='store_true',
-                              dest='simulate',
-                              default=False)
+            parser.add_option(
+                '-n',
+                '--simulate',
+                action='store_true',
+                dest='simulate',
+                default=False)
         if overwrite:
-            parser.add_option('-f', '--overwrite',
-                              dest="overwrite",
-                              action="store_true",
-                              help="Overwrite files (warnings will be emitted for non-matching files otherwise)")
+            parser.add_option(
+                '-f',
+                '--overwrite',
+                dest="overwrite",
+                action="store_true",
+                help=
+                "Overwrite files (warnings will be emitted for non-matching files otherwise)"
+            )
         return parser
 
     standard_parser = classmethod(standard_parser)
@@ -337,8 +341,7 @@ class Command(object):
         for arg in args:
             if '=' not in arg:
                 raise BadCommand(
-                    'Variable assignment %r invalid (no "=")'
-                    % arg)
+                    'Variable assignment %r invalid (no "=")' % arg)
             name, value = arg.split('=', 1)
             result[name] = value
         return result
@@ -355,15 +358,16 @@ class Command(object):
         parser.read([config_file])
         if parser.has_section('loggers'):
             config_file = os.path.abspath(config_file)
-            fileConfig(config_file, dict(__file__=config_file,
-                                         here=os.path.dirname(config_file)))
+            fileConfig(config_file,
+                       dict(
+                           __file__=config_file,
+                           here=os.path.dirname(config_file)))
 
 
 class NotFoundCommand(Command):
-
     def run(self, args):
-        print('Command %r not known (you may need to run setup.py egg_info)'
-              % self.command_name)
+        print('Command %r not known (you may need to run setup.py egg_info)' %
+              self.command_name)
         commands = list()
         commands.sort()
         if not commands:
@@ -411,69 +415,92 @@ class ServeCommand(Command):
     requires_config_file = True
 
     parser = Command.standard_parser(quiet=True)
-    parser.add_option('-n', '--app-name',
-                      dest='app_name',
-                      metavar='NAME',
-                      help="Load the named application (default main)")
-    parser.add_option('-s', '--server',
-                      dest='server',
-                      metavar='SERVER_TYPE',
-                      help="Use the named server.")
-    parser.add_option('--server-name',
-                      dest='server_name',
-                      metavar='SECTION_NAME',
-                      help="Use the named server as defined in the configuration file (default: main)")
+    parser.add_option(
+        '-n',
+        '--app-name',
+        dest='app_name',
+        metavar='NAME',
+        help="Load the named application (default main)")
+    parser.add_option(
+        '-s',
+        '--server',
+        dest='server',
+        metavar='SERVER_TYPE',
+        help="Use the named server.")
+    parser.add_option(
+        '--server-name',
+        dest='server_name',
+        metavar='SECTION_NAME',
+        help=
+        "Use the named server as defined in the configuration file (default: main)"
+    )
     if hasattr(os, 'fork'):
-        parser.add_option('--daemon',
-                          dest="daemon",
-                          action="store_true",
-                          help="Run in daemon (background) mode")
-    parser.add_option('--pid-file',
-                      dest='pid_file',
-                      metavar='FILENAME',
-                      help="Save PID to file (default to paster.pid if running in daemon mode)")
-    parser.add_option('--log-file',
-                      dest='log_file',
-                      metavar='LOG_FILE',
-                      help="Save output to the given log file (redirects stdout)")
-    parser.add_option('--reload',
-                      dest='reload',
-                      action='store_true',
-                      help="Use auto-restart file monitor")
-    parser.add_option('--reload-interval',
-                      dest='reload_interval',
-                      default=1,
-                      help="Seconds between checking files (low number can cause significant CPU usage)")
-    parser.add_option('--monitor-restart',
-                      dest='monitor_restart',
-                      action='store_true',
-                      help="Auto-restart server if it dies")
-    parser.add_option('--status',
-                      action='store_true',
-                      dest='show_status',
-                      help="Show the status of the (presumably daemonized) server")
+        parser.add_option(
+            '--daemon',
+            dest="daemon",
+            action="store_true",
+            help="Run in daemon (background) mode")
+    parser.add_option(
+        '--pid-file',
+        dest='pid_file',
+        metavar='FILENAME',
+        help=
+        "Save PID to file (default to paster.pid if running in daemon mode)")
+    parser.add_option(
+        '--log-file',
+        dest='log_file',
+        metavar='LOG_FILE',
+        help="Save output to the given log file (redirects stdout)")
+    parser.add_option(
+        '--reload',
+        dest='reload',
+        action='store_true',
+        help="Use auto-restart file monitor")
+    parser.add_option(
+        '--reload-interval',
+        dest='reload_interval',
+        default=1,
+        help=
+        "Seconds between checking files (low number can cause significant CPU usage)"
+    )
+    parser.add_option(
+        '--monitor-restart',
+        dest='monitor_restart',
+        action='store_true',
+        help="Auto-restart server if it dies")
+    parser.add_option(
+        '--status',
+        action='store_true',
+        dest='show_status',
+        help="Show the status of the (presumably daemonized) server")
 
     if hasattr(os, 'setuid'):
         # I don't think these are available on Windows
-        parser.add_option('--user',
-                          dest='set_user',
-                          metavar="USERNAME",
-                          help="Set the user (usually only possible when run as root)")
-        parser.add_option('--group',
-                          dest='set_group',
-                          metavar="GROUP",
-                          help="Set the group (usually only possible when run as root)")
+        parser.add_option(
+            '--user',
+            dest='set_user',
+            metavar="USERNAME",
+            help="Set the user (usually only possible when run as root)")
+        parser.add_option(
+            '--group',
+            dest='set_group',
+            metavar="GROUP",
+            help="Set the group (usually only possible when run as root)")
 
-    parser.add_option('--stop-daemon',
-                      dest='stop_daemon',
-                      action='store_true',
-                      help='Stop a daemonized server (given a PID file, or default paster.pid file)')
+    parser.add_option(
+        '--stop-daemon',
+        dest='stop_daemon',
+        action='store_true',
+        help=
+        'Stop a daemonized server (given a PID file, or default paster.pid file)'
+    )
 
     if jython:
-        parser.add_option('--disable-jython-reloader',
-                          action='store_true',
-                          dest='disable_jython_reloader',
-                          help="Disable the Jython reloader")
+        parser.add_option(
+            '--disable-jython-reloader',
+            action='store_true',
+            dest='disable_jython_reloader',
+            help="Disable the Jython reloader")
 
     _scheme_re = re.compile(r'^[a-z][a-z]+:', re.I)
 
@@ -492,14 +519,14 @@ class ServeCommand(Command):
             # Windows case:
             self.options.set_user = self.options.set_group = None
         # @@: Is this the right stage to set the user at?
-        self.change_user_group(
-            self.options.set_user, self.options.set_group)
+        self.change_user_group(self.options.set_user, self.options.set_group)
 
         if self.requires_config_file:
             if not self.args:
                 raise BadCommand('You must give a config file')
             app_spec = self.args[0]
-            if (len(self.args) > 1 and self.args[1] in self.possible_subcommands):
+            if (len(self.args) > 1
+                    and self.args[1] in self.possible_subcommands):
                 cmd = self.args[1]
                 restvars = self.args[2:]
             else:
@@ -514,9 +541,10 @@ class ServeCommand(Command):
                 cmd = None
                 restvars = self.args[:]
 
-        if (getattr(self.options, 'daemon', False) and
-                getattr(self.options, 'reload', False)):
-            raise BadCommand('The --daemon and --reload options may not be used together')
+        if (getattr(self.options, 'daemon', False)
+                and getattr(self.options, 'reload', False)):
+            raise BadCommand(
+                'The --daemon and --reload options may not be used together')
 
         jython_monitor = False
         if self.options.reload:
@@ -530,8 +558,8 @@ class ServeCommand(Command):
                 except ImportError:
                     pass
                 else:
-                    jython_monitor = JythonMonitor(poll_interval=int(
-                        self.options.reload_interval))
+                    jython_monitor = JythonMonitor(
+                        poll_interval=int(self.options.reload_interval))
                     if self.requires_config_file:
                         jython_monitor.watch_file(self.args[0])
 
@@ -613,8 +641,8 @@ class ServeCommand(Command):
                     print(str(ex))
                 return
 
-        if (self.options.monitor_restart and not
-                os.environ.get(self._monitor_environ_key)):
+        if (self.options.monitor_restart
+                and not os.environ.get(self._monitor_environ_key)):
             return self.restart_with_monitor()
 
         if self.options.pid_file:
@@ -635,9 +663,11 @@ class ServeCommand(Command):
             log_fn = os.path.join(base, log_fn)
             self.logging_file_config(log_fn)
 
-        server = loadserver(server_spec, name=server_name, relative_to=base, global_conf=vars)
+        server = loadserver(
+            server_spec, name=server_name, relative_to=base, global_conf=vars)
 
-        app = loadapp(app_spec, name=app_name, relative_to=base, global_conf=vars)
+        app = loadapp(
+            app_spec, name=app_name, relative_to=base, global_conf=vars)
 
         if self.verbose > 0:
             if hasattr(os, 'getpid'):
@@ -659,7 +689,9 @@ class ServeCommand(Command):
                 print('Exiting%s (-v to see traceback)' % msg)
             except AttributeError as e:
                 # Capturing bad error response from paste
-                if str(e) == "'WSGIThreadPoolServer' object has no attribute 'thread_pool'":
+                if str(
+                        e
+                ) == "'WSGIThreadPoolServer' object has no attribute 'thread_pool'":
                     import socket
                     raise socket.error(98, 'Address already in use')
                 else:
@@ -677,8 +709,8 @@ class ServeCommand(Command):
         pid = live_pidfile(self.options.pid_file)
         if pid:
             raise DaemonizeException(
-                "Daemon is already running (PID: %s from PID file %s)"
-                % (pid, self.options.pid_file))
+                "Daemon is already running (PID: %s from PID file %s)" %
+                (pid, self.options.pid_file))
 
         if self.verbose > 0:
             print('Entering daemon mode')
@@ -802,8 +834,7 @@ class ServeCommand(Command):
                         raise
                     return 1
             finally:
-                if (proc is not None and
-                        hasattr(os, 'kill')):
+                if (proc is not None and hasattr(os, 'kill')):
                     import signal
                     try:
                         os.kill(proc.pid, signal.SIGTERM)
@@ -849,13 +880,13 @@ class ServeCommand(Command):
                 gid = entry.pw_gid
             uid = entry.pw_uid
         if self.verbose > 0:
-            print('Changing user to %s:%s (%s:%s)' % (
-                user, group or '(unknown)', uid, gid))
+            print('Changing user to %s:%s (%s:%s)' %
+                  (user, group or '(unknown)', uid, gid))
         if hasattr(os, 'initgroups'):
             os.initgroups(user, gid)
         else:
-            os.setgroups([e.gr_gid for e in grp.getgrall()
-                          if user in e.gr_mem] + [gid])
+            os.setgroups(
+                [e.gr_gid for e in grp.getgrall() if user in e.gr_mem] + [gid])
         if gid:
             os.setgid(gid)
         if uid:
@@ -863,7 +894,6 @@ class ServeCommand(Command):
 
 
 class LazyWriter(object):
-
     """
     File-like object that opens a file lazily when it is first written
     to.
@@ -946,8 +976,8 @@ def _remove_pid_file(written_pid, filename, verbosity):
         pass
     else:
         if pid_in_file != current_pid:
-            print("PID file %s contains %s, not expected PID %s" % (
-                filename, pid_in_file, current_pid))
+            print("PID file %s contains %s, not expected PID %s" %
+                  (filename, pid_in_file, current_pid))
             return
     if verbosity > 0:
         print("Removing PID file %s" % filename)
@@ -978,8 +1008,11 @@ def ensure_port_cleanup(bound_addresses, maxtries=30, sleeptime=2):
         import paste.script
         ensure_port_cleanup([80, 443])
     """
-    atexit.register(_cleanup_ports, bound_addresses, maxtries=maxtries,
-                    sleeptime=sleeptime)
+    atexit.register(
+        _cleanup_ports,
+        bound_addresses,
+        maxtries=maxtries,
+        sleeptime=sleeptime)
 
 
 def _cleanup_ports(bound_addresses, maxtries=30, sleeptime=2):
@@ -1013,19 +1046,22 @@ def _turn_sigterm_into_systemexit():
 
     def handle_term(signo, frame):
         raise SystemExit
+
     signal.signal(signal.SIGTERM, handle_term)
 
 
 # ---- from paste.script.command --------------------------------------
 python_version = sys.version.splitlines()[0].strip()
 
-parser = optparse.OptionParser(add_help_option=False,
-                               # version='%s from %s (python %s)'
-                               # % (dist, dist.location, python_version),
-                               usage='%prog [paster_options] COMMAND [command_options]')
+parser = optparse.OptionParser(
+    add_help_option=False,
+    # version='%s from %s (python %s)'
+    # % (dist, dist.location, python_version),
+    usage='%prog [paster_options] COMMAND [command_options]')
 
 parser.add_option(
-    '-h', '--help',
+    '-h',
+    '--help',
     action='store_true',
     dest='do_help',
     help="Show this help message")
@@ -1033,16 +1069,13 @@ parser.disable_interspersed_args()
 
 # @@: Add an option to run this in another Python interpreter
 
-commands = {
-    'serve': ServeCommand
-}
+commands = {'serve': ServeCommand}
 
 
 def run(args=None):
-    if (not args and
-        len(sys.argv) >= 2 and
-            os.environ.get('_') and sys.argv[0] != os.environ['_'] and
-            os.environ['_'] == sys.argv[1]):
+    if (not args and len(sys.argv) >= 2 and os.environ.get('_')
+            and sys.argv[0] != os.environ['_']
+            and os.environ['_'] == sys.argv[1]):
         # probably it's an exe execution
         args = ['exe', os.environ['_']] + sys.argv[2:]
     if args is None:

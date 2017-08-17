@@ -51,8 +51,8 @@ class BatchMiddleware(object):
       * `contentType` content-type request header (defaults to application/json)
     """
     DEFAULT_CONFIG = {
-        'route' : '/api/batch',
-        'allowed_routes' : [
+        'route': '/api/batch',
+        'allowed_routes': [
             '^api\/users.*',
             '^api\/histories.*',
             '^api\/jobs.*',
@@ -85,11 +85,14 @@ class BatchMiddleware(object):
         responses = []
         for request in requests:
             if not self._is_allowed_route(request['url']):
-                responses.append(self._disallowed_route_response(request['url']))
+                responses.append(
+                    self._disallowed_route_response(request['url']))
                 continue
 
-            request_environ = self._build_request_environ(batch_environ, request)
-            response = self._process_batch_request(request, request_environ, start_response)
+            request_environ = self._build_request_environ(
+                batch_environ, request)
+            response = self._process_batch_request(request, request_environ,
+                                                   start_response)
             responses.append(response)
 
         batch_response_body = json.dumps(responses)
@@ -110,16 +113,22 @@ class BatchMiddleware(object):
     def _is_allowed_route(self, route):
         if self.config.get('allowed_routes', None):
             shortened_route = route.replace(self.base_url, '', 1)
-            matches = [re.match(allowed, shortened_route) for allowed in self.config['allowed_routes']]
+            matches = [
+                re.match(allowed, shortened_route)
+                for allowed in self.config['allowed_routes']
+            ]
             return any(matches)
         return True
 
     def _disallowed_route_response(self, route):
-        return dict(status=403, headers=self._default_headers(), body={
-            'err_msg'   : 'Disallowed route used for batch operation',
-            'route'     : route,
-            'allowed'   : self.config['allowed_routes']
-        })
+        return dict(
+            status=403,
+            headers=self._default_headers(),
+            body={
+                'err_msg': 'Disallowed route used for batch operation',
+                'route': route,
+                'allowed': self.config['allowed_routes']
+            })
 
     def _build_request_environ(self, original_environ, request):
         """
@@ -130,11 +139,13 @@ class BatchMiddleware(object):
         # copy the original environ and reconstruct a fake version for each batched request
         request_environ = original_environ.copy()
         # TODO: for now, do not overwrite the other headers used in the main api/batch request
-        request_environ['CONTENT_TYPE'] = request.get('contentType', 'application/json')
-        request_environ['REQUEST_METHOD'] = request.get('method', request.get('type', 'GET'))
-        url = '{0}://{1}{2}'.format(request_environ.get('wsgi.url_scheme'),
-                                    request_environ.get('HTTP_HOST'),
-                                    request['url'])
+        request_environ['CONTENT_TYPE'] = request.get('contentType',
+                                                      'application/json')
+        request_environ['REQUEST_METHOD'] = request.get(
+            'method', request.get('type', 'GET'))
+        url = '{0}://{1}{2}'.format(
+            request_environ.get('wsgi.url_scheme'),
+            request_environ.get('HTTP_HOST'), request['url'])
         parsed = urlparse(url)
         request_environ['PATH_INFO'] = parsed.path
         request_environ['QUERY_STRING'] = parsed.query
@@ -159,10 +170,12 @@ class BatchMiddleware(object):
         # File "./eggs/Paste-1.7.5.1-py2.7.egg/paste/httpserver.py", line 166, in wsgi_start_response
         #     assert 0, "Attempt to set headers a second time w/o an exc_info"
         try:
-            response = self.galaxy.handle_request(environ, start_response, body_renderer=self.body_renderer)
+            response = self.galaxy.handle_request(
+                environ, start_response, body_renderer=self.body_renderer)
         # handle errors from galaxy.handle_request (only 404s)
         except httpexceptions.HTTPNotFound:
-            response = dict(status=404, headers=self._default_headers(), body={})
+            response = dict(
+                status=404, headers=self._default_headers(), body={})
         return response
 
     def body_renderer(self, trans, body, environ, start_response):
@@ -171,14 +184,13 @@ class BatchMiddleware(object):
         return dict(
             status=trans.response.status,
             headers=trans.response.headers,
-            body=json.loads(self.galaxy.make_body_iterable(trans, body)[0])
-        )
+            body=json.loads(self.galaxy.make_body_iterable(trans, body)[0]))
 
     def _default_headers(self):
         return {
             'x-frame-options': 'SAMEORIGIN',
-            'content-type'   : 'application/json',
-            'cache-control'  : 'max-age=0,no-cache,no-store'
+            'content-type': 'application/json',
+            'cache-control': 'max-age=0,no-cache,no-store'
         }
 
     def handle_exception(self, environ):

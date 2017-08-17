@@ -41,8 +41,7 @@ class CollectionBuilder(object):
             raise AssertionError(message)
         if identifier not in self._current_elements:
             subcollection_builder = CollectionBuilder(
-                self._subcollection_type_description
-            )
+                self._subcollection_type_description)
             self._current_elements[identifier] = subcollection_builder
 
         return self._current_elements[identifier]
@@ -67,7 +66,8 @@ class CollectionBuilder(object):
 
     @property
     def _subcollection_type_description(self):
-        return self._collection_type_description.subcollection_type_description()
+        return self._collection_type_description.subcollection_type_description(
+        )
 
     @property
     def _nested_collection(self):
@@ -80,8 +80,11 @@ class BoundCollectionBuilder(CollectionBuilder):
     def __init__(self, dataset_collection, collection_type_description):
         self.dataset_collection = dataset_collection
         if dataset_collection.populated:
-            raise Exception("Cannot reset elements of an already populated dataset collection.")
-        super(BoundCollectionBuilder, self).__init__(collection_type_description)
+            raise Exception(
+                "Cannot reset elements of an already populated dataset collection."
+            )
+        super(BoundCollectionBuilder,
+              self).__init__(collection_type_description)
 
     def populate(self):
         elements = self.build_elements()

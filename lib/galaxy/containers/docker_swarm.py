@@ -13,10 +13,8 @@ from galaxy.containers.docker_model import (
     DockerNode,
     DockerService,
     DockerTask,
-    IMAGE_CONSTRAINT,
-)
+    IMAGE_CONSTRAINT, )
 from galaxy.exceptions import ContainerRunError
-
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +46,8 @@ class DockerSwarmInterface(DockerInterface):
         if kwopts.get('publish_all_ports', False):
             # not supported for services
             # TODO: inspect image (or query registry if possible) for port list
-            if kwopts.get('publish_port_random', False) or kwopts.get('ports', False):
+            if kwopts.get('publish_port_random', False) or kwopts.get(
+                    'ports', False):
                 # assume this covers for publish_all_ports
                 del kwopts['publish_all_ports']
             else:
@@ -56,14 +55,12 @@ class DockerSwarmInterface(DockerInterface):
                     "Publishing all ports is not supported in Docker swarm"
                     " mode, use `publish_port_random` or `ports`",
                     image=image,
-                    command=command
-                )
+                    command=command)
         if not kwopts.get('detach', True):
             raise ContainerRunError(
                 "Running attached containers is not supported in Docker swarm mode",
                 image=image,
-                command=command
-            )
+                command=command)
         elif kwopts.get('detach', None):
             del kwopts['detach']
         if kwopts.get('volumes', None):
@@ -71,8 +68,8 @@ class DockerSwarmInterface(DockerInterface):
                 log.warning(
                     "'volumes' kwopt is set and not supported in Docker swarm "
                     "mode, volumes will not be passed (set 'ignore_volumes: "
-                    "False' in containers config to fail instead): %s" % kwopts['volumes']
-                )
+                    "False' in containers config to fail instead): %s" %
+                    kwopts['volumes'])
                 del kwopts['volumes']
             else:
                 raise ContainerRunError(
@@ -80,8 +77,7 @@ class DockerSwarmInterface(DockerInterface):
                     "mode (set 'ignore_volumes: True' in containers config to "
                     "warn instead): %s" % kwopts['volumes'],
                     image=image,
-                    command=command
-                )
+                    command=command)
         service = self.service_create(command, image=image, **kwopts)
         self._run_swarm_manager()
         return service
@@ -92,7 +88,12 @@ class DockerSwarmInterface(DockerInterface):
 
     def _run_swarm_manager(self):
         if self._conf.managed and self._conf.manager_autostart:
-            docker_swarm_manager.main(argv=['--containers-config-file', self.containers_config_file, '--swarm', self.key], fork=True)
+            docker_swarm_manager.main(
+                argv=[
+                    '--containers-config-file', self.containers_config_file,
+                    '--swarm', self.key
+                ],
+                fork=True)
 
     def _get_image(self, image):
         """Get the image string, either from the argument, or from the
@@ -151,16 +152,19 @@ class DockerSwarmInterface(DockerInterface):
     def service_tasks(self, service):
         for task_dict in self.service_ps(service.id):
             if task_dict['NAME'].strip().startswith('\_'):
-                continue    # historical task
+                continue  # historical task
             yield DockerTask.from_cli(self, task_dict, service=service)
 
     def nodes(self, id=None, name=None):
         for node_dict in self.node_ls(id=id, name=name):
             node_id = node_dict['ID'].strip(' *')
             node_name = node_dict['HOSTNAME']
-            if self._node_prefix and not node_name.startswith(self._node_prefix):
+            if self._node_prefix and not node_name.startswith(
+                    self._node_prefix):
                 continue
-            task_list = filter(lambda x: x['NAME'].startswith(self._name_prefix), self.node_ps(node_id))
+            task_list = filter(
+                lambda x: x['NAME'].startswith(self._name_prefix),
+                self.node_ps(node_id))
             yield DockerNode.from_cli(self, node_dict, task_list)
 
     def node(self, name):
@@ -182,7 +186,8 @@ class DockerSwarmInterface(DockerInterface):
         return self.services_in_state('Running', 'Pending')
 
     def services_waiting_by_constraints(self):
-        return self._objects_by_attribute(self.services_waiting(), 'constraints')
+        return self._objects_by_attribute(self.services_waiting(),
+                                          'constraints')
 
     def services_completed(self):
         return self.services_in_state('Shutdown', 'Complete')
@@ -191,7 +196,8 @@ class DockerSwarmInterface(DockerInterface):
         return self.nodes_in_state('Ready', 'Active')
 
     def nodes_active_by_constraints(self):
-        return self._objects_by_attribute(self.nodes_active(), 'labels_as_constraints')
+        return self._objects_by_attribute(self.nodes_active(),
+                                          'labels_as_constraints')
 
     #
     # operations
@@ -199,10 +205,13 @@ class DockerSwarmInterface(DockerInterface):
 
     def services_clean(self):
         cleaned_services = []
-        services = [x for x in self.services_completed()]  # returns a generator, should probably fix this
+        services = [x for x in self.services_completed()
+                    ]  # returns a generator, should probably fix this
         if services:
-            cleaned_service_ids = self.service_rm([x.id for x in services]).splitlines()
-            cleaned_services = filter(lambda x: x.id in cleaned_service_ids, services)
+            cleaned_service_ids = self.service_rm(
+                [x.id for x in services]).splitlines()
+            cleaned_services = filter(lambda x: x.id in cleaned_service_ids,
+                                      services)
         return cleaned_services
 
 
@@ -211,20 +220,59 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
     container_type = 'docker_swarm_cli'
     option_map = {
         # `service create` options
-        'constraint': {'flag': '--constraint', 'type': 'list_of_kovtrips'},
-        'replicas': {'flag': '--replicas', 'type': 'string'},
-        'restart_condition': {'flag': '--restart-condition', 'type': 'string'},
-        'environment': {'flag': '--env', 'type': 'list_of_kvpairs'},
-        'name': {'flag': '--name', 'type': 'string'},
-        'publish_port_random': {'flag': '--publish', 'type': 'string'},
-        'cpu_limit': {'flag': '--limit-cpu', 'type': 'string'},
-        'mem_limit': {'flag': '--limit-memory', 'type': 'string'},
-        'cpu_reservation': {'flag': '--reserve-cpu', 'type': 'string'},
-        'mem_reservation': {'flag': '--reserve-memory', 'type': 'string'},
+        'constraint': {
+            'flag': '--constraint',
+            'type': 'list_of_kovtrips'
+        },
+        'replicas': {
+            'flag': '--replicas',
+            'type': 'string'
+        },
+        'restart_condition': {
+            'flag': '--restart-condition',
+            'type': 'string'
+        },
+        'environment': {
+            'flag': '--env',
+            'type': 'list_of_kvpairs'
+        },
+        'name': {
+            'flag': '--name',
+            'type': 'string'
+        },
+        'publish_port_random': {
+            'flag': '--publish',
+            'type': 'string'
+        },
+        'cpu_limit': {
+            'flag': '--limit-cpu',
+            'type': 'string'
+        },
+        'mem_limit': {
+            'flag': '--limit-memory',
+            'type': 'string'
+        },
+        'cpu_reservation': {
+            'flag': '--reserve-cpu',
+            'type': 'string'
+        },
+        'mem_reservation': {
+            'flag': '--reserve-memory',
+            'type': 'string'
+        },
         # `service update` options
-        'label_add': {'flag': '--label-add', 'type': 'list_of_kvpairs'},
-        'label_rm': {'flag': '--label-rm', 'type': 'list_of_kvpairs'},
-        'availability': {'flag': '--availability', 'type': 'string'},
+        'label_add': {
+            'flag': '--label-add',
+            'type': 'list_of_kvpairs'
+        },
+        'label_rm': {
+            'flag': '--label-rm',
+            'type': 'list_of_kvpairs'
+        },
+        'availability': {
+            'flag': '--availability',
+            'type': 'string'
+        },
     }
 
     def _filter_by_id_or_name(self, id, name):
@@ -239,7 +287,9 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
     #
 
     def service_create(self, command, image=None, **kwopts):
-        if ('service_create_image_constraint' in self._conf or 'service_create_cpus_constraint' in self._conf) and 'constraint' not in kwopts:
+        if ('service_create_image_constraint' in self._conf
+                or 'service_create_cpus_constraint' in self._conf
+            ) and 'constraint' not in kwopts:
             kwopts['constraint'] = []
         image = self._get_image(image)
         if self._conf.service_create_image_constraint:
@@ -257,9 +307,9 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
         args = '{kwopts} {image} {command}'.format(
             kwopts=self._stringify_kwopts(kwopts),
             image=image if image else '',
-            command=command if command else '',
-        ).strip()
-        service_id = self._run_docker(subcommand='service create', args=args, verbose=True)
+            command=command if command else '', ).strip()
+        service_id = self._run_docker(
+            subcommand='service create', args=args, verbose=True)
         return DockerService.from_id(self, service_id)
 
     @docker_json
@@ -268,11 +318,13 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
 
     @docker_columns
     def service_ls(self, id=None, name=None):
-        return self._run_docker(subcommand='service ls', args=self._filter_by_id_or_name(id, name))
+        return self._run_docker(
+            subcommand='service ls', args=self._filter_by_id_or_name(id, name))
 
     @docker_columns
     def service_ps(self, service_id):
-        return self._run_docker(subcommand='service ps', args='--no-trunc {}'.format(service_id))
+        return self._run_docker(
+            subcommand='service ps', args='--no-trunc {}'.format(service_id))
 
     def service_rm(self, service_ids):
         service_ids = ' '.join(service_ids)
@@ -284,17 +336,19 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
 
     @docker_columns
     def node_ls(self, id=None, name=None):
-        return self._run_docker(subcommand='node ls', args=self._filter_by_id_or_name(id, name))
+        return self._run_docker(
+            subcommand='node ls', args=self._filter_by_id_or_name(id, name))
 
     @docker_columns
     def node_ps(self, node_id):
-        return self._run_docker(subcommand='node ps', args='--no-trunc {}'.format(node_id))
+        return self._run_docker(
+            subcommand='node ps', args='--no-trunc {}'.format(node_id))
 
     def node_update(self, node_id, **kwopts):
-        return self._run_docker(subcommand='node update', args='{kwopts} {node_id}'.format(
-            kwopts=self._stringify_kwopts(kwopts),
-            node_id=node_id
-        ))
+        return self._run_docker(
+            subcommand='node update',
+            args='{kwopts} {node_id}'.format(
+                kwopts=self._stringify_kwopts(kwopts), node_id=node_id))
 
     @docker_json
     def task_inspect(self, task_id):

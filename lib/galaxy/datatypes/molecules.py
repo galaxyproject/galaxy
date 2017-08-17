@@ -3,17 +3,11 @@ import logging
 import os
 import subprocess
 
-from galaxy.datatypes import (
-    data,
-    metadata
-)
+from galaxy.datatypes import (data, metadata)
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import (
-    get_headers,
-    iter_headers
-)
+from galaxy.datatypes.sniff import (get_headers, iter_headers)
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.xml import GenericXml
 
@@ -44,9 +38,11 @@ def count_lines(filename, non_empty=False):
     """
     try:
         if non_empty:
-            out = subprocess.Popen(['grep', '-cve', '^\s*$', filename], stdout=subprocess.PIPE)
+            out = subprocess.Popen(
+                ['grep', '-cve', '^\s*$', filename], stdout=subprocess.PIPE)
         else:
-            out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
+            out = subprocess.Popen(
+                ['wc', '-l', filename], stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
     except:
         pass
@@ -57,16 +53,25 @@ class GenericMolFile(data.Text):
     """
         abstract class for most of the molecule files
     """
-    MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="number_of_molecules",
+        default=0,
+        desc="Number of molecules",
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value=0)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -101,7 +106,8 @@ class SDF(GenericMolFile):
         >>> SDF().sniff(fname)
         False
         """
-        counter = count_special_lines("^M\s*END", filename) + count_special_lines("^\$\$\$\$", filename)
+        counter = count_special_lines(
+            "^M\s*END", filename) + count_special_lines("^\$\$\$\$", filename)
         if counter > 0 and counter % 2 == 0:
             return True
         else:
@@ -111,7 +117,8 @@ class SDF(GenericMolFile):
         """
         Set the number of molecules in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines("^\$\$\$\$", dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines(
+            "^\$\$\$\$", dataset.file_name)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
@@ -121,16 +128,20 @@ class SDF(GenericMolFile):
             return None
 
         if len(input_datasets) > 1:
-            raise Exception("SD-file splitting does not support multiple files")
+            raise Exception(
+                "SD-file splitting does not support multiple files")
         input_files = [ds.file_name for ds in input_datasets]
 
         chunk_size = None
         if split_params['split_mode'] == 'number_of_parts':
-            raise Exception('Split mode "%s" is currently not implemented for SD-files.' % split_params['split_mode'])
+            raise Exception(
+                'Split mode "%s" is currently not implemented for SD-files.' %
+                split_params['split_mode'])
         elif split_params['split_mode'] == 'to_size':
             chunk_size = int(split_params['split_size'])
         else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+            raise Exception(
+                'Unsupported split mode %s' % split_params['split_mode'])
 
         def _read_sdf_records(filename):
             lines = []
@@ -143,7 +154,8 @@ class SDF(GenericMolFile):
 
         def _write_part_sdf_file(accumulated_lines):
             part_dir = subdir_generator_function()
-            part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
+            part_path = os.path.join(part_dir,
+                                     os.path.basename(input_files[0]))
             part_file = open(part_path, 'w')
             part_file.writelines(accumulated_lines)
             part_file.close()
@@ -161,6 +173,7 @@ class SDF(GenericMolFile):
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
+
     split = classmethod(split)
 
 
@@ -189,7 +202,8 @@ class MOL2(GenericMolFile):
         """
         Set the number of lines of data in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines("@<TRIPOS>MOLECULE", dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines(
+            "@<TRIPOS>MOLECULE", dataset.file_name)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
@@ -199,16 +213,20 @@ class MOL2(GenericMolFile):
             return None
 
         if len(input_datasets) > 1:
-            raise Exception("MOL2-file splitting does not support multiple files")
+            raise Exception(
+                "MOL2-file splitting does not support multiple files")
         input_files = [ds.file_name for ds in input_datasets]
 
         chunk_size = None
         if split_params['split_mode'] == 'number_of_parts':
-            raise Exception('Split mode "%s" is currently not implemented for MOL2-files.' % split_params['split_mode'])
+            raise Exception(
+                'Split mode "%s" is currently not implemented for MOL2-files.'
+                % split_params['split_mode'])
         elif split_params['split_mode'] == 'to_size':
             chunk_size = int(split_params['split_size'])
         else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+            raise Exception(
+                'Unsupported split mode %s' % split_params['split_mode'])
 
         def _read_mol2_records(filename):
             lines = []
@@ -225,7 +243,8 @@ class MOL2(GenericMolFile):
 
         def _write_part_mol2_file(accumulated_lines):
             part_dir = subdir_generator_function()
-            part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
+            part_path = os.path.join(part_dir,
+                                     os.path.basename(input_files[0]))
             part_file = open(part_path, 'w')
             part_file.writelines(accumulated_lines)
             part_file.close()
@@ -243,6 +262,7 @@ class MOL2(GenericMolFile):
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
+
     split = classmethod(split)
 
 
@@ -275,7 +295,8 @@ class FPS(GenericMolFile):
         """
         Set the number of lines of data in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines('^#', dataset.file_name, invert=True)
+        dataset.metadata.number_of_molecules = count_special_lines(
+            '^#', dataset.file_name, invert=True)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
@@ -285,20 +306,25 @@ class FPS(GenericMolFile):
             return None
 
         if len(input_datasets) > 1:
-            raise Exception("FPS-file splitting does not support multiple files")
+            raise Exception(
+                "FPS-file splitting does not support multiple files")
         input_files = [ds.file_name for ds in input_datasets]
 
         chunk_size = None
         if split_params['split_mode'] == 'number_of_parts':
-            raise Exception('Split mode "%s" is currently not implemented for MOL2-files.' % split_params['split_mode'])
+            raise Exception(
+                'Split mode "%s" is currently not implemented for MOL2-files.'
+                % split_params['split_mode'])
         elif split_params['split_mode'] == 'to_size':
             chunk_size = int(split_params['split_size'])
         else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+            raise Exception(
+                'Unsupported split mode %s' % split_params['split_mode'])
 
         def _write_part_fingerprint_file(accumulated_lines):
             part_dir = subdir_generator_function()
-            part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
+            part_path = os.path.join(part_dir,
+                                     os.path.basename(input_files[0]))
             part_file = open(part_path, 'w')
             part_file.writelines(accumulated_lines)
             part_file.close()
@@ -316,13 +342,15 @@ class FPS(GenericMolFile):
                     fingerprint_counter += 1
                     lines_accumulated.append(line)
                 if fingerprint_counter != 0 and fingerprint_counter % chunk_size == 0:
-                    _write_part_fingerprint_file(header_lines + lines_accumulated)
+                    _write_part_fingerprint_file(header_lines +
+                                                 lines_accumulated)
                     lines_accumulated = []
             if lines_accumulated:
                 _write_part_fingerprint_file(header_lines + lines_accumulated)
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
+
     split = classmethod(split)
 
     def merge(split_files, output_file):
@@ -334,8 +362,8 @@ class FPS(GenericMolFile):
             # For one file only, use base class method (move/copy)
             return data.Text.merge(split_files, output_file)
         if not split_files:
-            raise ValueError("No fps files given, %r, to merge into %s"
-                             % (split_files, output_file))
+            raise ValueError("No fps files given, %r, to merge into %s" %
+                             (split_files, output_file))
         out = open(output_file, "w")
         first = True
         for filename in split_files:
@@ -349,6 +377,7 @@ class FPS(GenericMolFile):
                         first = False
                         out.write(line)
         out.close()
+
     merge = staticmethod(merge)
 
 
@@ -358,8 +387,12 @@ class OBFS(Binary):
     composite_type = 'basic'
     allow_datatype_change = False
 
-    MetadataElement(name="base_name", default='OpenBabel Fastsearch Index',
-                    readonly=True, visible=True, optional=True,)
+    MetadataElement(
+        name="base_name",
+        default='OpenBabel Fastsearch Index',
+        readonly=True,
+        visible=True,
+        optional=True, )
 
     def __init__(self, **kwd):
         """
@@ -367,18 +400,35 @@ class OBFS(Binary):
             and a pointer the actual molecule file.
         """
         Binary.__init__(self, **kwd)
-        self.add_composite_file('molecule.fs', is_binary=True,
-                                description='OpenBabel Fastsearch Index')
-        self.add_composite_file('molecule.sdf', optional=True,
-                                is_binary=False, description='Molecule File')
-        self.add_composite_file('molecule.smi', optional=True,
-                                is_binary=False, description='Molecule File')
-        self.add_composite_file('molecule.inchi', optional=True,
-                                is_binary=False, description='Molecule File')
-        self.add_composite_file('molecule.mol2', optional=True,
-                                is_binary=False, description='Molecule File')
-        self.add_composite_file('molecule.cml', optional=True,
-                                is_binary=False, description='Molecule File')
+        self.add_composite_file(
+            'molecule.fs',
+            is_binary=True,
+            description='OpenBabel Fastsearch Index')
+        self.add_composite_file(
+            'molecule.sdf',
+            optional=True,
+            is_binary=False,
+            description='Molecule File')
+        self.add_composite_file(
+            'molecule.smi',
+            optional=True,
+            is_binary=False,
+            description='Molecule File')
+        self.add_composite_file(
+            'molecule.inchi',
+            optional=True,
+            is_binary=False,
+            description='Molecule File')
+        self.add_composite_file(
+            'molecule.mol2',
+            optional=True,
+            is_binary=False,
+            description='Molecule File')
+        self.add_composite_file(
+            'molecule.cml',
+            optional=True,
+            is_binary=False,
+            description='Molecule File')
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text."""
@@ -396,8 +446,13 @@ class OBFS(Binary):
         except:
             return "OpenBabel Fastsearch Index"
 
-    def display_data(self, trans, data, preview=False, filename=None,
-                     to_ext=None, **kwd):
+    def display_data(self,
+                     trans,
+                     data,
+                     preview=False,
+                     filename=None,
+                     to_ext=None,
+                     **kwd):
         """Apparently an old display method, but still gets called.
 
         This allows us to format the data shown in the central pane via the "eye" icon.
@@ -410,13 +465,15 @@ class OBFS(Binary):
 
     def merge(split_files, output_file, extra_merge_args):
         """Merging Fastsearch indices is not supported."""
-        raise NotImplementedError("Merging Fastsearch indices is not supported.")
+        raise NotImplementedError(
+            "Merging Fastsearch indices is not supported.")
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """Splitting Fastsearch indices is not supported."""
         if split_params is None:
             return None
-        raise NotImplementedError("Splitting Fastsearch indices is not possible.")
+        raise NotImplementedError(
+            "Splitting Fastsearch indices is not possible.")
 
 
 class DRF(GenericMolFile):
@@ -426,7 +483,8 @@ class DRF(GenericMolFile):
         """
         Set the number of lines of data in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines('\"ligand id\"', dataset.file_name, invert=True)
+        dataset.metadata.number_of_molecules = count_special_lines(
+            '\"ligand id\"', dataset.file_name, invert=True)
 
 
 class PHAR(GenericMolFile):
@@ -437,7 +495,8 @@ class PHAR(GenericMolFile):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = "pharmacophore"
         else:
             dataset.peek = 'file does not exist'
@@ -490,8 +549,10 @@ class PDB(GenericMolFile):
         if not dataset.dataset.purged:
             atom_numbers = count_special_lines("^ATOM", dataset.file_name)
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
-            dataset.blurb = "%s atoms and %s HET-atoms" % (atom_numbers, hetatm_numbers)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.blurb = "%s atoms and %s HET-atoms" % (atom_numbers,
+                                                           hetatm_numbers)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -541,8 +602,10 @@ class PDBQT(GenericMolFile):
         if not dataset.dataset.purged:
             root_numbers = count_special_lines("^ROOT", dataset.file_name)
             branch_numbers = count_special_lines("^BRANCH", dataset.file_name)
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
-            dataset.blurb = "%s roots and %s branches" % (root_numbers, branch_numbers)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.blurb = "%s roots and %s branches" % (root_numbers,
+                                                          branch_numbers)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -553,7 +616,8 @@ class grd(data.Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = "grids for docking"
         else:
             dataset.peek = 'file does not exist'
@@ -575,9 +639,27 @@ class grdtgz(Binary):
 class InChI(Tabular):
     file_ext = "inchi"
     column_names = ['InChI']
-    MetadataElement(name="columns", default=2, desc="Number of columns", readonly=True, visible=False)
-    MetadataElement(name="column_types", default=['str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
-    MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="columns",
+        default=2,
+        desc="Number of columns",
+        readonly=True,
+        visible=False)
+    MetadataElement(
+        name="column_types",
+        default=['str'],
+        param=metadata.ColumnTypesParameter,
+        desc="Column types",
+        readonly=True,
+        visible=False)
+    MetadataElement(
+        name="number_of_molecules",
+        default=0,
+        desc="Number of molecules",
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value=0)
 
     def set_meta(self, dataset, **kwd):
         """
@@ -587,12 +669,14 @@ class InChI(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -620,9 +704,27 @@ class InChI(Tabular):
 class SMILES(Tabular):
     file_ext = "smi"
     column_names = ['SMILES', 'TITLE']
-    MetadataElement(name="columns", default=2, desc="Number of columns", readonly=True, visible=False)
-    MetadataElement(name="column_types", default=['str', 'str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
-    MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="columns",
+        default=2,
+        desc="Number of columns",
+        readonly=True,
+        visible=False)
+    MetadataElement(
+        name="column_types",
+        default=['str', 'str'],
+        param=metadata.ColumnTypesParameter,
+        desc="Column types",
+        readonly=True,
+        visible=False)
+    MetadataElement(
+        name="number_of_molecules",
+        default=0,
+        desc="Number of molecules",
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value=0)
 
     def set_meta(self, dataset, **kwd):
         """
@@ -632,12 +734,14 @@ class SMILES(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             if dataset.metadata.number_of_molecules == 1:
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -683,22 +787,32 @@ class CML(GenericXml):
     http://cml.sourceforge.net/
     """
     file_ext = "cml"
-    MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="number_of_molecules",
+        default=0,
+        desc="Number of molecules",
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value=0)
 
     def set_meta(self, dataset, **kwd):
         """
         Set the number of lines of data in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines('^\s*<molecule', dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines(
+            '^\s*<molecule', dataset.file_name)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -736,16 +850,20 @@ class CML(GenericXml):
             return None
 
         if len(input_datasets) > 1:
-            raise Exception("CML-file splitting does not support multiple files")
+            raise Exception(
+                "CML-file splitting does not support multiple files")
         input_files = [ds.file_name for ds in input_datasets]
 
         chunk_size = None
         if split_params['split_mode'] == 'number_of_parts':
-            raise Exception('Split mode "%s" is currently not implemented for CML-files.' % split_params['split_mode'])
+            raise Exception(
+                'Split mode "%s" is currently not implemented for CML-files.' %
+                split_params['split_mode'])
         elif split_params['split_mode'] == 'to_size':
             chunk_size = int(split_params['split_size'])
         else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+            raise Exception(
+                'Unsupported split mode %s' % split_params['split_mode'])
 
         def _read_cml_records(filename):
             lines = []
@@ -754,18 +872,22 @@ class CML(GenericXml):
                     if line.lstrip().startswith('<?xml version="1.0"?>') or \
                        line.lstrip().startswith('<cml xmlns="http://www.xml-cml.org/schema') or \
                        line.lstrip().startswith('</cml>'):
-                            continue
+                        continue
                     lines.append(line)
                     if line.lstrip().startswith('</molecule>'):
                         yield lines
                         lines = []
 
-        header_lines = ['<?xml version="1.0"?>\n', '<cml xmlns="http://www.xml-cml.org/schema">\n']
+        header_lines = [
+            '<?xml version="1.0"?>\n',
+            '<cml xmlns="http://www.xml-cml.org/schema">\n'
+        ]
         footer_line = ['</cml>\n']
 
         def _write_part_cml_file(accumulated_lines):
             part_dir = subdir_generator_function()
-            part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
+            part_path = os.path.join(part_dir,
+                                     os.path.basename(input_files[0]))
             part_file = open(part_path, 'w')
             part_file.writelines(header_lines)
             part_file.writelines(accumulated_lines)
@@ -785,6 +907,7 @@ class CML(GenericXml):
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
+
     split = classmethod(split)
 
     def merge(split_files, output_file):
@@ -795,8 +918,8 @@ class CML(GenericXml):
             # For one file only, use base class method (move/copy)
             return data.Text.merge(split_files, output_file)
         if not split_files:
-            raise ValueError("Given no CML files, %r, to merge into %s"
-                             % (split_files, output_file))
+            raise ValueError("Given no CML files, %r, to merge into %s" %
+                             (split_files, output_file))
         with open(output_file, "w") as out:
             for filename in split_files:
                 with open(filename) as handle:
@@ -805,10 +928,12 @@ class CML(GenericXml):
                         raise ValueError("CML file %s was empty" % filename)
                     if not header.lstrip().startswith('<?xml version="1.0"?>'):
                         out.write(header)
-                        raise ValueError("%s is not a valid XML file!" % filename)
+                        raise ValueError(
+                            "%s is not a valid XML file!" % filename)
                     line = handle.readline()
                     header += line
-                    if not line.lstrip().startswith('<cml xmlns="http://www.xml-cml.org/schema'):
+                    if not line.lstrip().startswith(
+                            '<cml xmlns="http://www.xml-cml.org/schema'):
                         out.write(header)
                         raise ValueError("%s is not a CML file!" % filename)
                     molecule_found = False
@@ -821,4 +946,5 @@ class CML(GenericXml):
                         if molecule_found:
                             out.write(line)
             out.write("</cml>\n")
+
     merge = staticmethod(merge)

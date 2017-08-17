@@ -52,8 +52,7 @@ class PageSerializer(sharable.SharableModelSerializer):
 
     def add_serializers(self):
         super(PageSerializer, self).add_serializers()
-        self.serializers.update({
-        })
+        self.serializers.update({})
 
 
 class PageDeserializer(sharable.SharableModelDeserializer):
@@ -69,6 +68,5 @@ class PageDeserializer(sharable.SharableModelDeserializer):
 
     def add_deserializers(self):
         super(PageDeserializer, self).add_deserializers()
-        self.deserializers.update({
-        })
+        self.deserializers.update({})
         self.deserializable_keyset.update(self.deserializers.keys())

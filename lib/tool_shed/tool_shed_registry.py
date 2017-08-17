@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 
 
 class Registry(object):
-
     def __init__(self, root_dir=None, config=None):
         self.tool_sheds = odict()
         self.tool_sheds_auth = odict()
@@ -17,7 +16,9 @@ class Registry(object):
             # Parse tool_sheds_conf.xml
             tree, error_message = xml_util.parse_xml(config)
             if tree is None:
-                log.warning("Unable to load references to tool sheds defined in file %s" % str(config))
+                log.warning(
+                    "Unable to load references to tool sheds defined in file %s"
+                    % str(config))
             else:
                 root = tree.getroot()
                 log.debug('Loading references to tool sheds from %s' % config)
@@ -30,13 +31,18 @@ class Registry(object):
                         if name and url:
                             self.tool_sheds[name] = url
                             self.tool_sheds_auth[name] = None
-                            log.debug('Loaded reference to tool shed: %s' % name)
+                            log.debug(
+                                'Loaded reference to tool shed: %s' % name)
                         if name and url and username and password:
-                            pass_mgr = urlrequest.HTTPPasswordMgrWithDefaultRealm()
-                            pass_mgr.add_password(None, url, username, password)
+                            pass_mgr = urlrequest.HTTPPasswordMgrWithDefaultRealm(
+                            )
+                            pass_mgr.add_password(None, url, username,
+                                                  password)
                             self.tool_sheds_auth[name] = pass_mgr
                     except Exception as e:
-                        log.warning('Error loading reference to tool shed "%s", problem: %s' % (name, str(e)))
+                        log.warning(
+                            'Error loading reference to tool shed "%s", problem: %s'
+                            % (name, str(e)))
 
     def password_manager_for_url(self, url):
         """
@@ -49,10 +55,13 @@ class Registry(object):
         """
         url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(url)
         for shed_name, shed_url in self.tool_sheds.items():
-            shed_url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(shed_url)
+            shed_url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(
+                shed_url)
             if url_sans_protocol.startswith(shed_url_sans_protocol):
                 return self.tool_sheds_auth[shed_name]
-        log.debug("Invalid url '%s' received by tool shed registry's password_manager_for_url method." % str(url))
+        log.debug(
+            "Invalid url '%s' received by tool shed registry's password_manager_for_url method."
+            % str(url))
         return None
 
     def url_auth(self, url):

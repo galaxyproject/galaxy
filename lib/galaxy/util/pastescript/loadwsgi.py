@@ -15,11 +15,9 @@ from six.moves.urllib.parse import unquote
 
 from galaxy.util.properties import NicerConfigParser
 
-
 __all__ = ('loadapp', 'loadserver', 'loadfilter', 'appconfig')
 
 # ---- from paste.deploy.compat --------------------------------------
-
 """Python 2<->3 compatibility module"""
 
 
@@ -33,11 +31,14 @@ def print_(template, *args, **kwargs):
 
 
 if sys.version_info < (3, 0):
+
     def reraise(t, e, tb):
         exec('raise t, e, tb', dict(t=t, e=e, tb=tb))
 else:
+
     def reraise(t, e, tb):
         exec('raise e from tb', dict(e=e, tb=tb))
+
 
 # ---- from paste.deploy.util ----------------------------------------
 
@@ -58,9 +59,8 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
     """
     if exc_info is None:
         exc_info = sys.exc_info()
-    if (exc_info[0] != TypeError or
-            str(exc_info[1]).find('arguments') == -1 or
-            getattr(exc_info[1], '_type_error_fixed', False)):
+    if (exc_info[0] != TypeError or str(exc_info[1]).find('arguments') == -1
+            or getattr(exc_info[1], '_type_error_fixed', False)):
         return exc_info
     exc_info[1]._type_error_fixed = True
     argspec = inspect.formatargspec(*inspect.getargspec(callable))
@@ -72,7 +72,7 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
         args += ', '.join('%s=...' % n for n in kwargs)
     gotspec = '(%s)' % args
     msg = '%s; got %s, wanted %s' % (exc_info[1], gotspec, argspec)
-    exc_info[1].args = (msg,)
+    exc_info[1].args = (msg, )
     return exc_info
 
 
@@ -107,6 +107,7 @@ def lookup_object(spec):
         module = getattr(module, part)
 
     return module
+
 
 # ---- from paste.deploy.loadwsgi ------------------------------------
 
@@ -158,34 +159,39 @@ class _ObjectType(object):
     def __init__(self):
         # Normalize these variables:
         self.egg_protocols = [_aslist(p) for p in _aslist(self.egg_protocols)]
-        self.config_prefixes = [_aslist(p) for p in _aslist(self.config_prefixes)]
+        self.config_prefixes = [
+            _aslist(p) for p in _aslist(self.config_prefixes)
+        ]
 
     def __repr__(self):
-        return '<%s protocols=%r prefixes=%r>' % (
-            self.name, self.egg_protocols, self.config_prefixes)
+        return '<%s protocols=%r prefixes=%r>' % (self.name,
+                                                  self.egg_protocols,
+                                                  self.config_prefixes)
 
     def invoke(self, context):
         assert context.protocol in _flatten(self.egg_protocols)
-        return fix_call(context.object,
-                        context.global_conf, **context.local_conf)
+        return fix_call(context.object, context.global_conf,
+                        **context.local_conf)
 
 
 class _App(_ObjectType):
 
     name = 'application'
-    egg_protocols = ['paste.app_factory', 'paste.composite_factory',
-                     'paste.composit_factory']
+    egg_protocols = [
+        'paste.app_factory', 'paste.composite_factory',
+        'paste.composit_factory'
+    ]
     config_prefixes = [['app', 'application'], ['composite', 'composit'],
                        'pipeline', 'filter-app']
 
     def invoke(self, context):
         if context.protocol in ('paste.composit_factory',
                                 'paste.composite_factory'):
-            return fix_call(context.object,
-                            context.loader, context.global_conf,
-                            **context.local_conf)
+            return fix_call(context.object, context.loader,
+                            context.global_conf, **context.local_conf)
         elif context.protocol == 'paste.app_factory':
-            return fix_call(context.object, context.global_conf, **context.local_conf)
+            return fix_call(context.object, context.global_conf,
+                            **context.local_conf)
         else:
             assert 0, "Protocol %r unknown" % context.protocol
 
@@ -200,14 +206,15 @@ class _Filter(_ObjectType):
 
     def invoke(self, context):
         if context.protocol == 'paste.filter_factory':
-            return fix_call(context.object,
-                            context.global_conf, **context.local_conf)
+            return fix_call(context.object, context.global_conf,
+                            **context.local_conf)
         elif context.protocol == 'paste.filter_app_factory':
+
             def filter_wrapper(wsgi_app):
                 # This should be an object, so it has a nicer __repr__
-                return fix_call(context.object,
-                                wsgi_app, context.global_conf,
+                return fix_call(context.object, wsgi_app, context.global_conf,
                                 **context.local_conf)
+
             return filter_wrapper
         else:
             assert 0, "Protocol %r unknown" % context.protocol
@@ -223,14 +230,15 @@ class _Server(_ObjectType):
 
     def invoke(self, context):
         if context.protocol == 'paste.server_factory':
-            return fix_call(context.object,
-                            context.global_conf, **context.local_conf)
+            return fix_call(context.object, context.global_conf,
+                            **context.local_conf)
         elif context.protocol == 'paste.server_runner':
+
             def server_wrapper(wsgi_app):
                 # This should be an object, so it has a nicer __repr__
-                return fix_call(context.object,
-                                wsgi_app, context.global_conf,
+                return fix_call(context.object, wsgi_app, context.global_conf,
                                 **context.local_conf)
+
             return server_wrapper
         else:
             assert 0, "Protocol %r unknown" % context.protocol
@@ -280,6 +288,7 @@ class _FilterWith(_App):
             # filtering a filter
             def composed(app):
                 return filter_(filtered(app))
+
             return composed
 
 
@@ -303,24 +312,28 @@ def loadserver(uri, name=None, **kw):
 
 
 def appconfig(uri, name=None, relative_to=None, global_conf=None):
-    context = loadcontext(APP, uri, name=name,
-                          relative_to=relative_to,
-                          global_conf=global_conf)
+    context = loadcontext(
+        APP, uri, name=name, relative_to=relative_to, global_conf=global_conf)
     return context.config()
 
 
 _loaders = {}
 
 
-def loadobj(object_type, uri, name=None, relative_to=None,
-            global_conf=None):
+def loadobj(object_type, uri, name=None, relative_to=None, global_conf=None):
     context = loadcontext(
-        object_type, uri, name=name, relative_to=relative_to,
+        object_type,
+        uri,
+        name=name,
+        relative_to=relative_to,
         global_conf=global_conf)
     return context.create()
 
 
-def loadcontext(object_type, uri, name=None, relative_to=None,
+def loadcontext(object_type,
+                uri,
+                name=None,
+                relative_to=None,
                 global_conf=None):
     if '#' in uri:
         if name is None:
@@ -335,17 +348,18 @@ def loadcontext(object_type, uri, name=None, relative_to=None,
     scheme, path = uri.split(':', 1)
     scheme = scheme.lower()
     if scheme not in _loaders:
-        raise LookupError(
-            "URI scheme not known: %r (from %s)"
-            % (scheme, ', '.join(_loaders.keys())))
+        raise LookupError("URI scheme not known: %r (from %s)" %
+                          (scheme, ', '.join(_loaders.keys())))
     return _loaders[scheme](
         object_type,
-        uri, path, name=name, relative_to=relative_to,
+        uri,
+        path,
+        name=name,
+        relative_to=relative_to,
         global_conf=global_conf)
 
 
-def _loadconfig(object_type, uri, path, name, relative_to,
-                global_conf):
+def _loadconfig(object_type, uri, path, name, relative_to, global_conf):
     isabs = os.path.isabs(path)
     # De-Windowsify the paths:
     path = path.replace('\\', '/')
@@ -371,8 +385,7 @@ def _loadconfig(object_type, uri, path, name, relative_to,
 _loaders['config'] = _loadconfig
 
 
-def _loadegg(object_type, uri, spec, name, relative_to,
-             global_conf):
+def _loadegg(object_type, uri, spec, name, relative_to, global_conf):
     loader = EggLoader(spec)
     return loader.get_context(object_type, name, global_conf)
 
@@ -380,8 +393,7 @@ def _loadegg(object_type, uri, spec, name, relative_to,
 _loaders['egg'] = _loadegg
 
 
-def _loadfunc(object_type, uri, spec, name, relative_to,
-              global_conf):
+def _loadfunc(object_type, uri, spec, name, relative_to, global_conf):
 
     loader = FuncLoader(spec)
     return loader.get_context(object_type, name, global_conf)
@@ -395,30 +407,23 @@ _loaders['call'] = _loadfunc
 
 
 class _Loader(object):
-
     def get_app(self, name=None, global_conf=None):
-        return self.app_context(
-            name=name, global_conf=global_conf).create()
+        return self.app_context(name=name, global_conf=global_conf).create()
 
     def get_filter(self, name=None, global_conf=None):
-        return self.filter_context(
-            name=name, global_conf=global_conf).create()
+        return self.filter_context(name=name, global_conf=global_conf).create()
 
     def get_server(self, name=None, global_conf=None):
-        return self.server_context(
-            name=name, global_conf=global_conf).create()
+        return self.server_context(name=name, global_conf=global_conf).create()
 
     def app_context(self, name=None, global_conf=None):
-        return self.get_context(
-            APP, name=name, global_conf=global_conf)
+        return self.get_context(APP, name=name, global_conf=global_conf)
 
     def filter_context(self, name=None, global_conf=None):
-        return self.get_context(
-            FILTER, name=name, global_conf=global_conf)
+        return self.get_context(FILTER, name=name, global_conf=global_conf)
 
     def server_context(self, name=None, global_conf=None):
-        return self.get_context(
-            SERVER, name=name, global_conf=global_conf)
+        return self.get_context(SERVER, name=name, global_conf=global_conf)
 
     _absolute_re = re.compile(r'^[a-zA-Z]+:')
 
@@ -432,7 +437,6 @@ class _Loader(object):
 
 
 class ConfigLoader(_Loader):
-
     def __init__(self, filename):
         self.filename = filename = filename.strip()
         defaults = {
@@ -452,11 +456,12 @@ class ConfigLoader(_Loader):
 
     def get_context(self, object_type, name=None, global_conf=None):
         if self.absolute_name(name):
-            return loadcontext(object_type, name,
-                               relative_to=os.path.dirname(self.filename),
-                               global_conf=global_conf)
-        section = self.find_config_section(
-            object_type, name=name)
+            return loadcontext(
+                object_type,
+                name,
+                relative_to=os.path.dirname(self.filename),
+                global_conf=global_conf)
+        section = self.find_config_section(object_type, name=name)
         if global_conf is None:
             global_conf = {}
         else:
@@ -469,8 +474,8 @@ class ConfigLoader(_Loader):
         for option in self.parser.options(section):
             if option.startswith('set '):
                 name = option[4:].strip()
-                global_additions[name] = global_conf[name] = (
-                    self.parser.get(section, option))
+                global_additions[name] = global_conf[name] = (self.parser.get(
+                    section, option))
             elif option.startswith('get '):
                 name = option[4:].strip()
                 get_from_globals[name] = self.parser.get(section, option)
@@ -491,28 +496,35 @@ class ConfigLoader(_Loader):
             del local_conf['require']
         if section.startswith('filter-app:'):
             context = self._filter_app_context(
-                object_type, section, name=name,
-                global_conf=global_conf, local_conf=local_conf,
+                object_type,
+                section,
+                name=name,
+                global_conf=global_conf,
+                local_conf=local_conf,
                 global_additions=global_additions)
         elif section.startswith('pipeline:'):
             context = self._pipeline_app_context(
-                object_type, section, name=name,
-                global_conf=global_conf, local_conf=local_conf,
+                object_type,
+                section,
+                name=name,
+                global_conf=global_conf,
+                local_conf=local_conf,
                 global_additions=global_additions)
         elif 'use' in local_conf:
-            context = self._context_from_use(
-                object_type, local_conf, global_conf, global_additions,
-                section)
+            context = self._context_from_use(object_type, local_conf,
+                                             global_conf, global_additions,
+                                             section)
         else:
-            context = self._context_from_explicit(
-                object_type, local_conf, global_conf, global_additions,
-                section)
+            context = self._context_from_explicit(object_type, local_conf,
+                                                  global_conf,
+                                                  global_additions, section)
         if filter_with is not None:
             filter_with_context = LoaderContext(
                 obj=None,
                 object_type=FILTER_WITH,
                 protocol=None,
-                global_conf=global_conf, local_conf=local_conf,
+                global_conf=global_conf,
+                local_conf=local_conf,
                 loader=self)
             filter_with_context.filter_context = self.filter_context(
                 name=filter_with, global_conf=global_conf)
@@ -557,60 +569,53 @@ class ConfigLoader(_Loader):
                     possible.append((protocol, local_conf[protocol]))
                     break
         if len(possible) > 1:
-            raise LookupError(
-                "Multiple protocols given in section %r: %s"
-                % (section, possible))
+            raise LookupError("Multiple protocols given in section %r: %s" %
+                              (section, possible))
         if not possible:
-            raise LookupError(
-                "No loader given in section %r" % section)
+            raise LookupError("No loader given in section %r" % section)
         found_protocol, found_expr = possible[0]
         del local_conf[found_protocol]
         value = import_string(found_expr)
-        context = LoaderContext(
-            value, object_type, found_protocol,
-            global_conf, local_conf, self)
+        context = LoaderContext(value, object_type, found_protocol,
+                                global_conf, local_conf, self)
         return context
 
-    def _filter_app_context(self, object_type, section, name,
-                            global_conf, local_conf, global_additions):
+    def _filter_app_context(self, object_type, section, name, global_conf,
+                            local_conf, global_additions):
         if 'next' not in local_conf:
             raise LookupError(
-                "The [%s] section in %s is missing a 'next' setting"
-                % (section, self.filename))
+                "The [%s] section in %s is missing a 'next' setting" %
+                (section, self.filename))
         next_name = local_conf.pop('next')
         context = LoaderContext(None, FILTER_APP, None, global_conf,
                                 local_conf, self)
-        context.next_context = self.get_context(
-            APP, next_name, global_conf)
+        context.next_context = self.get_context(APP, next_name, global_conf)
         if 'use' in local_conf:
             context.filter_context = self._context_from_use(
-                FILTER, local_conf, global_conf, global_additions,
-                section)
+                FILTER, local_conf, global_conf, global_additions, section)
         else:
             context.filter_context = self._context_from_explicit(
-                FILTER, local_conf, global_conf, global_additions,
-                section)
+                FILTER, local_conf, global_conf, global_additions, section)
         return context
 
-    def _pipeline_app_context(self, object_type, section, name,
-                              global_conf, local_conf, global_additions):
+    def _pipeline_app_context(self, object_type, section, name, global_conf,
+                              local_conf, global_additions):
         if 'pipeline' not in local_conf:
             raise LookupError(
-                "The [%s] section in %s is missing a 'pipeline' setting"
-                % (section, self.filename))
+                "The [%s] section in %s is missing a 'pipeline' setting" %
+                (section, self.filename))
         pipeline = local_conf.pop('pipeline').split()
         if local_conf:
-            raise LookupError(
-                "The [%s] pipeline section in %s has extra "
-                "(disallowed) settings: %s"
-                % (', '.join(local_conf.keys())))
-        context = LoaderContext(None, PIPELINE, None, global_conf,
-                                local_conf, self)
-        context.app_context = self.get_context(
-            APP, pipeline[-1], global_conf)
+            raise LookupError("The [%s] pipeline section in %s has extra "
+                              "(disallowed) settings: %s" %
+                              (', '.join(local_conf.keys())))
+        context = LoaderContext(None, PIPELINE, None, global_conf, local_conf,
+                                self)
+        context.app_context = self.get_context(APP, pipeline[-1], global_conf)
         context.filter_contexts = [
             self.get_context(FILTER, pname, global_conf)
-            for pname in pipeline[:-1]]
+            for pname in pipeline[:-1]
+        ]
         return context
 
     def find_config_section(self, object_type, name=None):
@@ -625,24 +630,24 @@ class ConfigLoader(_Loader):
         possible = []
         for name_options in object_type.config_prefixes:
             for name_prefix in name_options:
-                found = self._find_sections(
-                    self.parser.sections(), name_prefix, name)
+                found = self._find_sections(self.parser.sections(),
+                                            name_prefix, name)
                 if found:
                     possible.extend(found)
                     break
         if not possible:
             raise LookupError(
-                "No section %r (prefixed by %s) found in config %s"
-                % (name,
-                   ' or '.join(map(repr, _flatten(object_type.config_prefixes))),
-                   self.filename))
+                "No section %r (prefixed by %s) found in config %s" %
+                (name,
+                 ' or '.join(map(repr, _flatten(object_type.config_prefixes))),
+                 self.filename))
         if len(possible) > 1:
             raise LookupError(
                 "Ambiguous section names %r for section %r (prefixed by %s) "
-                "found in config %s"
-                % (possible, name,
-                   ' or '.join(map(repr, _flatten(object_type.config_prefixes))),
-                   self.filename))
+                "found in config %s" %
+                (possible, name,
+                 ' or '.join(map(repr, _flatten(object_type.config_prefixes))),
+                 self.filename))
         return possible[0]
 
     def _find_sections(self, sections, name_prefix, name):
@@ -659,14 +664,12 @@ class ConfigLoader(_Loader):
 
 
 class EggLoader(_Loader):
-
     def __init__(self, spec):
         self.spec = spec
 
     def get_context(self, object_type, name=None, global_conf=None):
         if self.absolute_name(name):
-            return loadcontext(object_type, name,
-                               global_conf=global_conf)
+            return loadcontext(object_type, name, global_conf=global_conf)
         entry_point, protocol, ep_name = self.find_egg_entry_point(
             object_type, name=name)
         return LoaderContext(
@@ -689,10 +692,7 @@ class EggLoader(_Loader):
         for protocol_options in object_type.egg_protocols:
             for protocol in protocol_options:
                 pkg_resources.require(self.spec)
-                entry = pkg_resources.get_entry_info(
-                    self.spec,
-                    protocol,
-                    name)
+                entry = pkg_resources.get_entry_info(self.spec, protocol, name)
                 if entry is not None:
                     possible.append((entry.load(), protocol, entry.name))
                     break
@@ -701,17 +701,18 @@ class EggLoader(_Loader):
             dist = pkg_resources.get_distribution(self.spec)
             raise LookupError(
                 "Entry point %r not found in egg %r (dir: %s; protocols: %s; "
-                "entry_points: %s)"
-                % (name, self.spec,
-                    dist.location,
-                    ', '.join(_flatten(object_type.egg_protocols)),
-                    ', '.join(_flatten([
-                        list((pkg_resources.get_entry_info(self.spec, prot, name) or {}).keys())
-                        for prot in protocol_options] or '(no entry points)'))))
+                "entry_points: %s)" %
+                (name, self.spec, dist.location,
+                 ', '.join(_flatten(object_type.egg_protocols)), ', '.join(
+                     _flatten([
+                         list((pkg_resources.get_entry_info(
+                             self.spec, prot, name) or {}).keys())
+                         for prot in protocol_options
+                     ] or '(no entry points)'))))
         if len(possible) > 1:
             raise LookupError(
-                "Ambiguous entry points for %r in egg %r (protocols: %s)"
-                % (name, self.spec, ', '.join(_flatten(protocol_options))))
+                "Ambiguous entry points for %r in egg %r (protocols: %s)" %
+                (name, self.spec, ', '.join(_flatten(protocol_options))))
         return possible[0]
 
 
@@ -723,6 +724,7 @@ class FuncLoader(_Loader):
     Dot notation is supported in both the module and function name, e.g.:
         use = call:my.module.path:object.method
     """
+
     def __init__(self, spec):
         self.spec = spec
         if ':' not in spec:
@@ -736,15 +738,19 @@ class FuncLoader(_Loader):
             None,  # determine protocol from section type
             global_conf or {},
             {},
-            self,
-        )
+            self, )
 
 
 class LoaderContext(object):
-
-    def __init__(self, obj, object_type, protocol,
-                 global_conf, local_conf, loader,
-                 distribution=None, entry_point_name=None):
+    def __init__(self,
+                 obj,
+                 object_type,
+                 protocol,
+                 global_conf,
+                 local_conf,
+                 loader,
+                 distribution=None,
+                 entry_point_name=None):
         self.object = obj
         self.object_type = object_type
         self.protocol = protocol

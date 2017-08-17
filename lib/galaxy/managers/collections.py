@@ -16,7 +16,6 @@ from galaxy.util import validation
 import logging
 log = logging.getLogger(__name__)
 
-
 ERROR_INVALID_ELEMENTS_SPECIFICATION = "Create called with invalid parameters, must specify element identifiers."
 ERROR_NO_COLLECTION_TYPE = "Create called without specifing a collection type."
 
@@ -30,7 +29,8 @@ class DatasetCollectionManager(object):
 
     def __init__(self, app):
         self.type_registry = DatasetCollectionTypesRegistry(app)
-        self.collection_type_descriptions = CollectionTypeDescriptionFactory(self.type_registry)
+        self.collection_type_descriptions = CollectionTypeDescriptionFactory(
+            self.type_registry)
         self.model = app.model
         self.security = app.security
 
@@ -39,9 +39,17 @@ class DatasetCollectionManager(object):
         self.tag_manager = tags.GalaxyTagManager(app.model.context)
         self.ldda_manager = lddas.LDDAManager(app)
 
-    def create(self, trans, parent, name, collection_type, element_identifiers=None,
-               elements=None, implicit_collection_info=None, trusted_identifiers=None,
-               hide_source_items=False, tags=None):
+    def create(self,
+               trans,
+               parent,
+               name,
+               collection_type,
+               element_identifiers=None,
+               elements=None,
+               implicit_collection_info=None,
+               trusted_identifiers=None,
+               hide_source_items=False,
+               tags=None):
         """
         PRECONDITION: security checks on ability to add to parent
         occurred during load.
@@ -58,32 +66,38 @@ class DatasetCollectionManager(object):
             collection_type=collection_type,
             element_identifiers=element_identifiers,
             elements=elements,
-            hide_source_items=hide_source_items,
-        )
+            hide_source_items=hide_source_items, )
 
         if isinstance(parent, model.History):
             dataset_collection_instance = self.model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
-                name=name,
-            )
+                name=name, )
             if implicit_collection_info:
-                for input_name, input_collection in implicit_collection_info["implicit_inputs"]:
-                    dataset_collection_instance.add_implicit_input_collection(input_name, input_collection)
+                for input_name, input_collection in implicit_collection_info[
+                        "implicit_inputs"]:
+                    dataset_collection_instance.add_implicit_input_collection(
+                        input_name, input_collection)
                 for output_dataset in implicit_collection_info.get("outputs"):
                     if output_dataset not in trans.sa_session:
-                        output_dataset = trans.sa_session.query(type(output_dataset)).get(output_dataset.id)
-                    if isinstance(output_dataset, model.HistoryDatasetAssociation):
+                        output_dataset = trans.sa_session.query(
+                            type(output_dataset)).get(output_dataset.id)
+                    if isinstance(output_dataset,
+                                  model.HistoryDatasetAssociation):
                         output_dataset.hidden_beneath_collection_instance = dataset_collection_instance
-                    elif isinstance(output_dataset, model.HistoryDatasetCollectionAssociation):
-                        dataset_collection_instance.add_implicit_input_collection(input_name, input_collection)
+                    elif isinstance(output_dataset,
+                                    model.HistoryDatasetCollectionAssociation):
+                        dataset_collection_instance.add_implicit_input_collection(
+                            input_name, input_collection)
                     else:
                         # dataset collection, don't need to do anything...
                         pass
                     trans.sa_session.add(output_dataset)
 
-                dataset_collection_instance.implicit_output_name = implicit_collection_info["implicit_output_name"]
+                dataset_collection_instance.implicit_output_name = implicit_collection_info[
+                    "implicit_output_name"]
 
-            log.debug("Created collection with %d elements" % (len(dataset_collection_instance.collection.elements)))
+            log.debug("Created collection with %d elements" %
+                      (len(dataset_collection_instance.collection.elements)))
             # Handle setting hid
             parent.add_dataset_collection(dataset_collection_instance)
 
@@ -91,11 +105,11 @@ class DatasetCollectionManager(object):
             dataset_collection_instance = self.model.LibraryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 folder=parent,
-                name=name,
-            )
+                name=name, )
 
         else:
-            message = "Internal logic error - create called with unknown parent type %s" % type(parent)
+            message = "Internal logic error - create called with unknown parent type %s" % type(
+                parent)
             log.exception(message)
             raise MessageException(message)
         tags = tags or {}
@@ -108,24 +122,34 @@ class DatasetCollectionManager(object):
 
         return self.__persist(dataset_collection_instance)
 
-    def create_dataset_collection(self, trans, collection_type, element_identifiers=None, elements=None,
+    def create_dataset_collection(self,
+                                  trans,
+                                  collection_type,
+                                  element_identifiers=None,
+                                  elements=None,
                                   hide_source_items=None):
         if element_identifiers is None and elements is None:
-            raise RequestParameterInvalidException(ERROR_INVALID_ELEMENTS_SPECIFICATION)
+            raise RequestParameterInvalidException(
+                ERROR_INVALID_ELEMENTS_SPECIFICATION)
         if not collection_type:
             raise RequestParameterInvalidException(ERROR_NO_COLLECTION_TYPE)
-        collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
+        collection_type_description = self.collection_type_descriptions.for_collection_type(
+            collection_type)
         # If we have elements, this is an internal request, don't need to load
         # objects from identifiers.
         if elements is None:
             if collection_type_description.has_subcollections():
                 # Nested collection - recursively create collections and update identifiers.
-                self.__recursively_create_collections(trans, element_identifiers)
+                self.__recursively_create_collections(trans,
+                                                      element_identifiers)
             new_collection = False
             for element_identifier in element_identifiers:
-                if element_identifier.get("src") == "new_collection" and element_identifier.get('collection_type') == '':
+                if element_identifier.get(
+                        "src") == "new_collection" and element_identifier.get(
+                            'collection_type') == '':
                     new_collection = True
-                    elements = self.__load_elements(trans, element_identifier['element_identifiers'])
+                    elements = self.__load_elements(
+                        trans, element_identifier['element_identifiers'])
             if not new_collection:
                 elements = self.__load_elements(trans, element_identifiers)
 
@@ -133,9 +157,11 @@ class DatasetCollectionManager(object):
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
             type_plugin = collection_type_description.rank_type_plugin()
-            dataset_collection = builder.build_collection(type_plugin, elements)
+            dataset_collection = builder.build_collection(
+                type_plugin, elements)
             if hide_source_items:
-                log.debug("Hiding source items during dataset collection creation")
+                log.debug(
+                    "Hiding source items during dataset collection creation")
                 for dataset in dataset_collection.dataset_instances:
                     dataset.visible = False
         else:
@@ -145,39 +171,49 @@ class DatasetCollectionManager(object):
 
     def set_collection_elements(self, dataset_collection, dataset_instances):
         if dataset_collection.populated:
-            raise Exception("Cannot reset elements of an already populated dataset collection.")
+            raise Exception(
+                "Cannot reset elements of an already populated dataset collection."
+            )
 
         collection_type = dataset_collection.collection_type
-        collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
+        collection_type_description = self.collection_type_descriptions.for_collection_type(
+            collection_type)
         type_plugin = collection_type_description.rank_type_plugin()
-        builder.set_collection_elements(dataset_collection, type_plugin, dataset_instances)
+        builder.set_collection_elements(dataset_collection, type_plugin,
+                                        dataset_instances)
         dataset_collection.mark_as_populated()
 
         return dataset_collection
 
     def collection_builder_for(self, dataset_collection):
         collection_type = dataset_collection.collection_type
-        collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
-        return builder.BoundCollectionBuilder(dataset_collection, collection_type_description)
+        collection_type_description = self.collection_type_descriptions.for_collection_type(
+            collection_type)
+        return builder.BoundCollectionBuilder(dataset_collection,
+                                              collection_type_description)
 
     def delete(self, trans, instance_type, id):
-        dataset_collection_instance = self.get_dataset_collection_instance(trans, instance_type, id, check_ownership=True)
+        dataset_collection_instance = self.get_dataset_collection_instance(
+            trans, instance_type, id, check_ownership=True)
         dataset_collection_instance.deleted = True
         trans.sa_session.add(dataset_collection_instance)
         trans.sa_session.flush()
 
     def update(self, trans, instance_type, id, payload):
-        dataset_collection_instance = self.get_dataset_collection_instance(trans, instance_type, id, check_ownership=True)
+        dataset_collection_instance = self.get_dataset_collection_instance(
+            trans, instance_type, id, check_ownership=True)
         if trans.user is None:
             anon_allowed_payload = {}
             if 'deleted' in payload:
                 anon_allowed_payload['deleted'] = payload['deleted']
             if 'visible' in payload:
                 anon_allowed_payload['visible'] = payload['visible']
-            payload = self._validate_and_parse_update_payload(anon_allowed_payload)
+            payload = self._validate_and_parse_update_payload(
+                anon_allowed_payload)
         else:
             payload = self._validate_and_parse_update_payload(payload)
-        changed = self._set_from_dict(trans, dataset_collection_instance, payload)
+        changed = self._set_from_dict(trans, dataset_collection_instance,
+                                      payload)
         return changed
 
     def copy(self, trans, parent, source, encoded_source_id):
@@ -186,7 +222,8 @@ class DatasetCollectionManager(object):
         during load.
         """
         assert source == "hdca"  # for now
-        source_hdca = self.__get_history_collection_instance(trans, encoded_source_id)
+        source_hdca = self.__get_history_collection_instance(
+            trans, encoded_source_id)
         new_hdca = source_hdca.copy()
         tags_str = self.tag_manager.get_tags_str(source_hdca.tags)
         self.tag_manager.apply_item_tags(trans.get_user(), new_hdca, tags_str)
@@ -200,11 +237,16 @@ class DatasetCollectionManager(object):
         changed = dataset_collection_instance.set_from_dict(new_data)
         # the rest (often involving the trans) - do here
         if 'annotation' in new_data.keys() and trans.get_user():
-            dataset_collection_instance.add_item_annotation(trans.sa_session, trans.get_user(), dataset_collection_instance, new_data['annotation'])
+            dataset_collection_instance.add_item_annotation(
+                trans.sa_session,
+                trans.get_user(), dataset_collection_instance,
+                new_data['annotation'])
             changed['annotation'] = new_data['annotation']
         if 'tags' in new_data.keys() and trans.get_user():
             # set_tags_from_list will flush on its own, no need to add to 'changed' here and incur a second flush.
-            self.tag_manager.set_tags_from_list(trans.get_user(), dataset_collection_instance, new_data['tags'])
+            self.tag_manager.set_tags_from_list(trans.get_user(),
+                                                dataset_collection_instance,
+                                                new_data['tags'])
 
         if changed.keys():
             trans.sa_session.flush()
@@ -222,7 +264,9 @@ class DatasetCollectionManager(object):
             if key in ('deleted', 'visible'):
                 validated_payload[key] = validation.validate_boolean(key, val)
             elif key == 'tags':
-                validated_payload[key] = validation.validate_and_sanitize_basestring_list(key, val)
+                validated_payload[
+                    key] = validation.validate_and_sanitize_basestring_list(
+                        key, val)
         return validated_payload
 
     def history_dataset_collections(self, history, query):
@@ -260,7 +304,8 @@ class DatasetCollectionManager(object):
     def __load_elements(self, trans, element_identifiers):
         elements = odict.odict()
         for element_identifier in element_identifiers:
-            elements[element_identifier["name"]] = self.__load_element(trans, element_identifier)
+            elements[element_identifier["name"]] = self.__load_element(
+                trans, element_identifier)
         return elements
 
     def __load_element(self, trans, element_identifier):
@@ -276,14 +321,17 @@ class DatasetCollectionManager(object):
             if the_object is not None and the_object.id:
                 context = self.model.context
                 if the_object not in context:
-                    the_object = context.query(type(the_object)).get(the_object.id)
+                    the_object = context.query(type(the_object)).get(
+                        the_object.id)
             return the_object
 
         # dateset_identifier is dict {src=hda|ldda|hdca|new_collection, id=<encoded_id>}
         try:
             src_type = element_identifier.get('src', 'hda')
         except AttributeError:
-            raise MessageException("Dataset collection element definition (%s) not dictionary-like." % element_identifier)
+            raise MessageException(
+                "Dataset collection element definition (%s) not dictionary-like."
+                % element_identifier)
         encoded_id = element_identifier.get('id', None)
         if not src_type or not encoded_id:
             message_template = "Problem decoding element identifier %s - must contain a 'src' and a 'id'."
@@ -297,10 +345,12 @@ class DatasetCollectionManager(object):
             element = self.ldda_manager.get(trans, encoded_id)
         elif src_type == 'hdca':
             # TODO: Option to copy? Force copy? Copy or allow if not owned?
-            element = self.__get_history_collection_instance(trans, encoded_id).collection
+            element = self.__get_history_collection_instance(
+                trans, encoded_id).collection
         # TODO: ldca.
         else:
-            raise RequestParameterInvalidException("Unknown src_type parameter supplied '%s'." % src_type)
+            raise RequestParameterInvalidException(
+                "Unknown src_type parameter supplied '%s'." % src_type)
         return element
 
     def match_collections(self, collections_to_match):
@@ -308,9 +358,11 @@ class DatasetCollectionManager(object):
         May seem odd to place it here, but planning to grow sophistication and
         get plugin types involved so it will likely make sense in the future.
         """
-        return MatchingCollections.for_collections(collections_to_match, self.collection_type_descriptions)
+        return MatchingCollections.for_collections(
+            collections_to_match, self.collection_type_descriptions)
 
-    def get_dataset_collection_instance(self, trans, instance_type, id, **kwds):
+    def get_dataset_collection_instance(self, trans, instance_type, id,
+                                        **kwds):
         """
         """
         if instance_type == "history":
@@ -320,24 +372,49 @@ class DatasetCollectionManager(object):
 
     def get_dataset_collection(self, trans, encoded_id):
         collection_id = int(trans.app.security.decode_id(encoded_id))
-        collection = trans.sa_session.query(trans.app.model.DatasetCollection).get(collection_id)
+        collection = trans.sa_session.query(
+            trans.app.model.DatasetCollection).get(collection_id)
         return collection
 
-    def __get_history_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):
+    def __get_history_collection_instance(self,
+                                          trans,
+                                          id,
+                                          check_ownership=False,
+                                          check_accessible=True):
         instance_id = int(trans.app.security.decode_id(id))
-        collection_instance = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(instance_id)
+        collection_instance = trans.sa_session.query(
+            trans.app.model.HistoryDatasetCollectionAssociation).get(
+                instance_id)
         if check_ownership:
-            self.history_manager.error_unless_owner(collection_instance.history, trans.user, current_history=trans.history)
+            self.history_manager.error_unless_owner(
+                collection_instance.history,
+                trans.user,
+                current_history=trans.history)
         if check_accessible:
-            self.history_manager.error_unless_accessible(collection_instance.history, trans.user, current_history=trans.history)
+            self.history_manager.error_unless_accessible(
+                collection_instance.history,
+                trans.user,
+                current_history=trans.history)
         return collection_instance
 
-    def __get_library_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):
+    def __get_library_collection_instance(self,
+                                          trans,
+                                          id,
+                                          check_ownership=False,
+                                          check_accessible=True):
         if check_ownership:
-            raise NotImplemented("Functionality (getting library dataset collection with ownership check) unimplemented.")
+            raise NotImplemented(
+                "Functionality (getting library dataset collection with ownership check) unimplemented."
+            )
         instance_id = int(trans.security.decode_id(id))
-        collection_instance = trans.sa_session.query(trans.app.model.LibraryDatasetCollectionAssociation).get(instance_id)
+        collection_instance = trans.sa_session.query(
+            trans.app.model.LibraryDatasetCollectionAssociation).get(
+                instance_id)
         if check_accessible:
-            if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), collection_instance, trans.user):
-                raise ItemAccessibilityException("LibraryDatasetCollectionAssociation is not accessible to the current user", type='error')
+            if not trans.app.security_agent.can_access_library_item(
+                    trans.get_current_user_roles(), collection_instance,
+                    trans.user):
+                raise ItemAccessibilityException(
+                    "LibraryDatasetCollectionAssociation is not accessible to the current user",
+                    type='error')
         return collection_instance

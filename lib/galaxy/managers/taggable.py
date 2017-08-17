@@ -56,7 +56,8 @@ class TaggableManagerMixin(object):
         """
         Set an `item`'s tags from a list of strings.
         """
-        return _tags_from_strings(item, self.app.tag_handler, new_tags, user=user)
+        return _tags_from_strings(
+            item, self.app.tag_handler, new_tags, user=user)
 
     # def tags_by_user( self, user, **kwargs ):
     # TODO: here or TagManager
@@ -64,7 +65,6 @@ class TaggableManagerMixin(object):
 
 
 class TaggableSerializerMixin(object):
-
     def add_serializers(self):
         self.serializers['tags'] = self.serialize_tags
 
@@ -76,7 +76,6 @@ class TaggableSerializerMixin(object):
 
 
 class TaggableDeserializerMixin(object):
-
     def add_deserializers(self):
         self.deserializers['tags'] = self.deserialize_tags
 
@@ -87,12 +86,12 @@ class TaggableDeserializerMixin(object):
         Note: this will erase any previous tags.
         """
         new_tags_list = self.validate.basestring_list(key, val)
-        _tags_from_strings(item, self.app.tag_handler, new_tags_list, user=user)
+        _tags_from_strings(
+            item, self.app.tag_handler, new_tags_list, user=user)
         return item.tags
 
 
 class TaggableFilterMixin(object):
-
     def filter_has_partial_tag(self, item, val):
         """
         Return True if any tag partially contains `val`.
@@ -115,8 +114,8 @@ class TaggableFilterMixin(object):
         self.fn_filter_parsers.update({
             'tag': {
                 'op': {
-                    'eq'    : self.filter_has_tag,
-                    'has'   : self.filter_has_partial_tag,
+                    'eq': self.filter_has_tag,
+                    'has': self.filter_has_partial_tag,
                 }
             }
         })

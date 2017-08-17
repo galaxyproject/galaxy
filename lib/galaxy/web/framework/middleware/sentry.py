@@ -14,7 +14,6 @@ except:
 
 from galaxy.web.stack import register_postfork_function
 
-
 RAVEN_IMPORT_MESSAGE = ('The Python raven package is required to use this '
                         'feature, please install it')
 
@@ -24,6 +23,7 @@ class Sentry(object):
     A WSGI middleware which will attempt to capture any
     uncaught exceptions and send them to Sentry.
     """
+
     def __init__(self, application, dsn):
         assert Client is not None, RAVEN_IMPORT_MESSAGE
         self.application = application
@@ -50,7 +50,8 @@ class Sentry(object):
         finally:
             # wsgi spec requires iterable to call close if it exists
             # see http://blog.dscpl.com.au/2012/10/obligations-for-calling-close-on.html
-            if iterable and hasattr(iterable, 'close') and callable(iterable.close):
+            if iterable and hasattr(iterable,
+                                    'close') and callable(iterable.close):
                 try:
                     iterable.close()
                 except Exception:
@@ -89,10 +90,7 @@ class Sentry(object):
                 }
             },
             # Galaxy: add request id from environment if available
-            extra={
-                'request_id': environ.get('request_id', 'Unknown')
-            }
-        )
+            extra={'request_id': environ.get('request_id', 'Unknown')})
         # Galaxy: store event_id in environment so we can show it to the user
         environ['sentry_event_id'] = event_id
 

@@ -4,7 +4,6 @@ import sqlalchemy as sa
 
 
 class ReportQueryBuilder:
-
     def group_by_month(self, column):
         if self.app.targets_mysql:
             return [sa.func.year(column), sa.func.month(sa.func.date(column))]

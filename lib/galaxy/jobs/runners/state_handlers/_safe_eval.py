@@ -2,21 +2,56 @@ import re
 from ast import (
     Module,
     parse,
-    walk,
-)
+    walk, )
 
 AST_NODE_TYPE_WHITELIST = [
-    'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',
-    'Or', 'GtE', 'LtE', 'Lt', 'Gt', 'BinOp', 'Add', 'Div', 'Sub', 'Mult', 'Mod',
-    'Pow', 'LShift', 'GShift', 'BitAnd', 'BitOr', 'BitXor', 'UnaryOp', 'Invert',
-    'Not', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index', 'Subscript',
+    'Expr',
+    'Load',
+    'Str',
+    'Num',
+    'BoolOp',
+    'Compare',
+    'And',
+    'Eq',
+    'NotEq',
+    'Or',
+    'GtE',
+    'LtE',
+    'Lt',
+    'Gt',
+    'BinOp',
+    'Add',
+    'Div',
+    'Sub',
+    'Mult',
+    'Mod',
+    'Pow',
+    'LShift',
+    'GShift',
+    'BitAnd',
+    'BitOr',
+    'BitXor',
+    'UnaryOp',
+    'Invert',
+    'Not',
+    'NotIn',
+    'In',
+    'Is',
+    'IsNot',
+    'List',
+    'Index',
+    'Subscript',
     # Further checks
-    'Name', 'Call', 'Attribute',
+    'Name',
+    'Call',
+    'Attribute',
 ]
 
-
-BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split('|')
-STRING_AND_LIST_METHODS = [name for name in dir('') + dir([]) if not name.startswith('_')]
+BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split(
+    '|')
+STRING_AND_LIST_METHODS = [
+    name for name in dir('') + dir([]) if not name.startswith('_')
+]
 VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
 
 
@@ -137,5 +172,7 @@ def safe_eval(expression, variables):
     True
     """
     if not _check_expression(expression, allowed_variables=variables.keys()):
-        raise Exception("Invalid expression [%s], only a very simple subset of Python is allowed." % expression)
+        raise Exception(
+            "Invalid expression [%s], only a very simple subset of Python is allowed."
+            % expression)
     return eval(expression, globals(), variables)

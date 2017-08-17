@@ -11,7 +11,6 @@ import subprocess
 import sys
 import time
 
-
 prog = os.path.split(sys.argv[0])[-1]
 myversion = 'Oct 10 2009'
 
@@ -40,7 +39,8 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
     """
     basename = os.path.split(inpedfilepath)[-1]  # get basename
     outroot = os.path.join(outfilepath, basename)
-    cl = '%s --noweb --bfile %s --recode --out %s ' % (plink, inpedfilepath, outroot)
+    cl = '%s --noweb --bfile %s --recode --out %s ' % (plink, inpedfilepath,
+                                                       outroot)
     p = subprocess.Popen(cl, shell=True, cwd=outfilepath)
     p.wait()  # run plink
 
@@ -55,7 +55,9 @@ def main():
     """
     nparm = 4
     if len(sys.argv) < nparm:
-        sys.stderr.write('PBED to LPED converter called with %s - needs %d parameters \n' % (sys.argv, nparm))
+        sys.stderr.write(
+            'PBED to LPED converter called with %s - needs %d parameters \n' %
+            (sys.argv, nparm))
         sys.exit(1)
     inpedfilepath = sys.argv[1]
     outhtmlname = sys.argv[2]
@@ -69,11 +71,13 @@ def main():
     flist = os.listdir(outfilepath)
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
-        s = '## Rgenetics: http://bitbucket.org/rgalaxy Galaxy Tools %s %s' % (prog, timenow())  # becomes info
+        s = '## Rgenetics: http://bitbucket.org/rgalaxy Galaxy Tools %s %s' % (
+            prog, timenow())  # becomes info
         print(s)
         f.write('<div>%s\n<ol>' % (s))
         for i, data in enumerate(flist):
-            f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
+            f.write('<li><a href="%s">%s</a></li>\n' %
+                    (os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</ol></div></div></body></html>")
 
 

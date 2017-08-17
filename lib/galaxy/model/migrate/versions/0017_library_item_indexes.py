@@ -23,28 +23,37 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print(__doc__)
     LibraryFolder_table = Table("library_folder", metadata, autoload=True)
-    LibraryDatasetDatasetAssociation_table = Table("library_dataset_dataset_association", metadata, autoload=True)
+    LibraryDatasetDatasetAssociation_table = Table(
+        "library_dataset_dataset_association", metadata, autoload=True)
     LibraryDataset_table = Table("library_dataset", metadata, autoload=True)
     # Load existing tables
     metadata.reflect()
     # Add 1 index to the library_folder table
-    i = Index('ix_library_folder_name', LibraryFolder_table.c.name, mysql_length=200)
+    i = Index(
+        'ix_library_folder_name', LibraryFolder_table.c.name, mysql_length=200)
     try:
         i.create()
     except Exception:
-        log.exception("Adding index 'ix_library_folder_name' to library_folder table failed.")
+        log.exception(
+            "Adding index 'ix_library_folder_name' to library_folder table failed."
+        )
     # Add 1 index to the library_dataset_dataset_association table
-    i = Index('ix_library_dataset_dataset_association_name', LibraryDatasetDatasetAssociation_table.c.name)
+    i = Index('ix_library_dataset_dataset_association_name',
+              LibraryDatasetDatasetAssociation_table.c.name)
     try:
         i.create()
     except Exception:
-        log.exception("Adding index 'ix_library_dataset_dataset_association_name' to library_dataset_dataset_association table failed.")
+        log.exception(
+            "Adding index 'ix_library_dataset_dataset_association_name' to library_dataset_dataset_association table failed."
+        )
     # Add 1 index to the library_dataset table
     i = Index('ix_library_dataset_name', LibraryDataset_table.c.name)
     try:
         i.create()
     except Exception:
-        log.exception("Adding index 'ix_library_dataset_name' to library_dataset table failed.")
+        log.exception(
+            "Adding index 'ix_library_dataset_name' to library_dataset table failed."
+        )
 
 
 def downgrade(migrate_engine):

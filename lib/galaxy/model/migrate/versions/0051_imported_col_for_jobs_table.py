@@ -33,7 +33,8 @@ def upgrade(migrate_engine):
         c.create(Jobs_table, index_name="ix_job_imported")
         assert c is Jobs_table.c.imported
 
-        migrate_engine.execute("UPDATE job SET imported=%s" % engine_false(migrate_engine))
+        migrate_engine.execute(
+            "UPDATE job SET imported=%s" % engine_false(migrate_engine))
     except Exception:
         log.exception("Adding imported column to job table failed.")
 

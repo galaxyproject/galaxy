@@ -29,8 +29,11 @@ def upgrade(migrate_engine):
         c.create(Repository_table)
         assert c is Repository_table.c.long_description
     except Exception as e:
-        print "Adding long_description column to the repository table failed: %s" % str(e)
-        log.debug("Adding long_description column to the repository table failed: %s" % str(e))
+        print "Adding long_description column to the repository table failed: %s" % str(
+            e)
+        log.debug(
+            "Adding long_description column to the repository table failed: %s"
+            % str(e))
 
     c = Column("times_downloaded", Integer)
     try:
@@ -38,8 +41,11 @@ def upgrade(migrate_engine):
         c.create(Repository_table)
         assert c is Repository_table.c.times_downloaded
     except Exception as e:
-        print "Adding times_downloaded column to the repository table failed: %s" % str(e)
-        log.debug("Adding times_downloaded column to the repository table failed: %s" % str(e))
+        print "Adding times_downloaded column to the repository table failed: %s" % str(
+            e)
+        log.debug(
+            "Adding times_downloaded column to the repository table failed: %s"
+            % str(e))
 
     cmd = "UPDATE repository SET long_description = ''"
     migrate_engine.execute(cmd)
@@ -55,10 +61,16 @@ def downgrade(migrate_engine):
     try:
         Repository_table.c.long_description.drop()
     except Exception as e:
-        print "Dropping column long_description from the repository table failed: %s" % str(e)
-        log.debug("Dropping column long_description from the repository table failed: %s" % str(e))
+        print "Dropping column long_description from the repository table failed: %s" % str(
+            e)
+        log.debug(
+            "Dropping column long_description from the repository table failed: %s"
+            % str(e))
     try:
         Repository_table.c.times_downloaded.drop()
     except Exception as e:
-        print "Dropping column times_downloaded from the repository table failed: %s" % str(e)
-        log.debug("Dropping column times_downloaded from the repository table failed: %s" % str(e))
+        print "Dropping column times_downloaded from the repository table failed: %s" % str(
+            e)
+        log.debug(
+            "Dropping column times_downloaded from the repository table failed: %s"
+            % str(e))

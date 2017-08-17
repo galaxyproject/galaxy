@@ -10,7 +10,6 @@ import pstats
 
 from paste import response
 
-
 template = """
 <script>
 function show_profile_output()
@@ -39,7 +38,6 @@ show profile output: <a href="javascript:show_inline();">inline</a> | <a href="j
 
 
 class ProfileMiddleware(object):
-
     """
     Middleware that profiles all requests.
 
@@ -64,6 +62,7 @@ class ProfileMiddleware(object):
 
         def run_app():
             body.extend(self.app(environ, replace_start_response))
+
         # Run in profiler
         prof = cProfile.Profile()
         prof.runctx("run_app()", globals(), locals())
@@ -88,8 +87,9 @@ def pstats_as_html(stats, *sel_list):
     """
     rval = []
     # Number of function calls, primitive calls, total time
-    rval.append("<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>"
-                % (stats.total_calls, stats.prim_calls, stats.total_tt))
+    rval.append(
+        "<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>" %
+        (stats.total_calls, stats.prim_calls, stats.total_tt))
     # Extract functions that match 'sel_list'
     funcs, order_message, select_message = get_func_list(stats, sel_list)
     # Deal with any ordering or selection messages
@@ -155,7 +155,8 @@ def get_func_list(stats, sel_list):
     # Do the selection and accumulate messages
     select_message = ""
     for selection in sel_list:
-        list, select_message = stats.eval_print_amount(selection, list, select_message)
+        list, select_message = stats.eval_print_amount(selection, list,
+                                                       select_message)
     # Return the list of functions selected and the message
     return list, order_message, select_message
 

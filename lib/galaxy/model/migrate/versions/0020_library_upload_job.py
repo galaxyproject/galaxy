@@ -24,11 +24,15 @@ log.addHandler(handler)
 
 metadata = MetaData()
 
-JobToOutputLibraryDatasetAssociation_table = Table("job_to_output_library_dataset", metadata,
-                                                   Column("id", Integer, primary_key=True),
-                                                   Column("job_id", Integer, ForeignKey("job.id"), index=True),
-                                                   Column("ldda_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True),
-                                                   Column("name", String(255)))
+JobToOutputLibraryDatasetAssociation_table = Table(
+    "job_to_output_library_dataset", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True),
+    Column(
+        "ldda_id",
+        Integer,
+        ForeignKey("library_dataset_dataset_association.id"),
+        index=True), Column("name", String(255)))
 
 
 def upgrade(migrate_engine):
@@ -53,9 +57,11 @@ def upgrade(migrate_engine):
             col.create(Job_table, index_name='ix_job_library_folder_id')
             assert col is Job_table.c.library_folder_id
         except Exception:
-            log.exception("Adding column 'library_folder_id' to job table failed.")
+            log.exception(
+                "Adding column 'library_folder_id' to job table failed.")
         try:
-            LibraryFolder_table = Table("library_folder", metadata, autoload=True)
+            LibraryFolder_table = Table(
+                "library_folder", metadata, autoload=True)
         except NoSuchTableError:
             LibraryFolder_table = None
             log.debug("Failed loading table library_folder")
@@ -64,13 +70,16 @@ def upgrade(migrate_engine):
             # Sqlite can't alter-table-add-foreign-key
             if Job_table is not None and LibraryFolder_table is not None:
                 try:
-                    cons = ForeignKeyConstraint([Job_table.c.library_folder_id],
-                                                [LibraryFolder_table.c.id],
-                                                name='job_library_folder_id_fk')
+                    cons = ForeignKeyConstraint(
+                        [Job_table.c.library_folder_id],
+                        [LibraryFolder_table.c.id],
+                        name='job_library_folder_id_fk')
                     # Create the constraint
                     cons.create()
                 except Exception:
-                    log.exception("Adding foreign key constraint 'job_library_folder_id_fk' to table 'library_folder' failed.")
+                    log.exception(
+                        "Adding foreign key constraint 'job_library_folder_id_fk' to table 'library_folder' failed."
+                    )
     # Create the ix_dataset_state index
     try:
         Dataset_table = Table("dataset", metadata, autoload=True)
@@ -81,7 +90,8 @@ def upgrade(migrate_engine):
     try:
         i.create()
     except Exception:
-        log.exception("Adding index 'ix_dataset_state' to dataset table failed.")
+        log.exception(
+            "Adding index 'ix_dataset_state' to dataset table failed.")
 
 
 def downgrade(migrate_engine):
@@ -98,7 +108,8 @@ def downgrade(migrate_engine):
             col = Job_table.c.library_folder_id
             col.drop()
         except Exception:
-            log.exception("Dropping column 'library_folder_id' from job table failed.")
+            log.exception(
+                "Dropping column 'library_folder_id' from job table failed.")
     # Drop the job_to_output_library_dataset table
     try:
         JobToOutputLibraryDatasetAssociation_table.drop()
@@ -114,4 +125,5 @@ def downgrade(migrate_engine):
     try:
         i.drop()
     except Exception:
-        log.exception("Dropping index 'ix_dataset_state' from dataset table failed.")
+        log.exception(
+            "Dropping index 'ix_dataset_state' from dataset table failed.")

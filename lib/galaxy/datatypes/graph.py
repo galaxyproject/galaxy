@@ -5,12 +5,7 @@ import logging
 
 from galaxy.util import simplegraph
 
-from . import (
-    data,
-    dataproviders,
-    tabular,
-    xml
-)
+from . import (data, dataproviders, tabular, xml)
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +23,8 @@ class Xgmml(xml.GenericXml):
         Set the peek and blurb text
         """
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = 'XGMML data'
         else:
             dataset.peek = 'file does not exist'
@@ -46,12 +42,14 @@ class Xgmml(xml.GenericXml):
         Merging multiple XML files is non-trivial and must be done in subclasses.
         """
         if len(split_files) > 1:
-            raise NotImplementedError("Merging multiple XML files is non-trivial " +
-                                      "and must be implemented for each XML type")
+            raise NotImplementedError(
+                "Merging multiple XML files is non-trivial " +
+                "and must be implemented for each XML type")
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
 
-    @dataproviders.decorators.dataprovider_factory('node-edge', dataproviders.hierarchy.XMLDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'node-edge', dataproviders.hierarchy.XMLDataProvider.settings)
     def node_edge_dataprovider(self, dataset, **settings):
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return XGMMLGraphDataProvider(dataset_source, **settings)
@@ -74,7 +72,8 @@ class Sif(tabular.Tabular):
         Set the peek and blurb text
         """
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = 'SIF data'
         else:
             dataset.peek = 'file does not exist'
@@ -90,7 +89,8 @@ class Sif(tabular.Tabular):
     def merge(split_files, output_file):
         data.Text.merge(split_files, output_file)
 
-    @dataproviders.decorators.dataprovider_factory('node-edge', dataproviders.column.ColumnarDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'node-edge', dataproviders.column.ColumnarDataProvider.settings)
     def node_edge_dataprovider(self, dataset, **settings):
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return SIFGraphDataProvider(dataset_source, **settings)
@@ -106,6 +106,7 @@ class XGMMLGraphDataProvider(dataproviders.hierarchy.XMLDataProvider):
         'edges': contains objects of the form:
             { 'source' : <an index into nodes>, 'target': <an index into nodes>, 'data': <any extra data> }
     """
+
     def __iter__(self):
         # use simple graph to store nodes and links, later providing them as a dict
         #   essentially this is a form of aggregation
@@ -139,6 +140,7 @@ class SIFGraphDataProvider(dataproviders.column.ColumnarDataProvider):
         'edges': contains objects of the form:
             { 'source' : <an index into nodes>, 'target': <an index into nodes>, 'data': <any extra data> }
     """
+
     def __iter__(self):
         # use simple graph to store nodes and links, later providing them as a dict
         #   essentially this is a form of aggregation

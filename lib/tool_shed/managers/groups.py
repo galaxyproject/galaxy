@@ -37,17 +37,22 @@ class GroupManager(object):
         :rtype:     Group
         """
         if decoded_group_id is None and name is None:
-            raise RequestParameterInvalidException('You must supply either ID or a name of the group.')
+            raise RequestParameterInvalidException(
+                'You must supply either ID or a name of the group.')
 
-        name_query = trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == name)
-        id_query = trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.id == decoded_group_id)
+        name_query = trans.sa_session.query(trans.app.model.Group).filter(
+            trans.app.model.Group.table.c.name == name)
+        id_query = trans.sa_session.query(trans.app.model.Group).filter(
+            trans.app.model.Group.table.c.id == decoded_group_id)
 
         try:
             group = id_query.one() if decoded_group_id else name_query.one()
         except MultipleResultsFound:
-            raise InconsistentDatabase('Multiple groups found with the same identifier.')
+            raise InconsistentDatabase(
+                'Multiple groups found with the same identifier.')
         except NoResultFound:
-            raise ObjectNotFound('No group found with the identifier provided.')
+            raise ObjectNotFound(
+                'No group found with the identifier provided.')
         except Exception:
             raise InternalServerError('Error loading from the database.')
         return group
@@ -57,10 +62,13 @@ class GroupManager(object):
         Create a new group.
         """
         if not trans.user_is_admin:
-            raise ItemAccessibilityException('Only administrators can create groups.')
+            raise ItemAccessibilityException(
+                'Only administrators can create groups.')
         else:
             if self.get(trans, name=name):
-                raise Conflict('Group with the given name already exists. Name: ' + str(name))
+                raise Conflict(
+                    'Group with the given name already exists. Name: ' +
+                    str(name))
             # TODO add description field to the model
             group = trans.app.model.Group(name=name)
             trans.sa_session.add(group)
@@ -73,9 +81,11 @@ class GroupManager(object):
         """
         changed = False
         if not trans.user_is_admin():
-            raise ItemAccessibilityException('Only administrators can update groups.')
+            raise ItemAccessibilityException(
+                'Only administrators can update groups.')
         if group.deleted:
-            raise RequestParameterInvalidException('You cannot modify a deleted group. Undelete it first.')
+            raise RequestParameterInvalidException(
+                'You cannot modify a deleted group. Undelete it first.')
         if name is not None:
             group.name = name
             changed = True
@@ -92,7 +102,8 @@ class GroupManager(object):
         Mark given group deleted/undeleted based on the flag.
         """
         if not trans.user_is_admin():
-            raise ItemAccessibilityException('Only administrators can delete and undelete groups.')
+            raise ItemAccessibilityException(
+                'Only administrators can delete and undelete groups.')
         if undelete:
             group.deleted = False
         else:
@@ -115,9 +126,12 @@ class GroupManager(object):
                 #  Flag is not specified, do not filter on it.
                 pass
             elif deleted:
-                query = query.filter(trans.app.model.Group.table.c.deleted == true())
+                query = query.filter(
+                    trans.app.model.Group.table.c.deleted == true())
             else:
-                query = query.filter(trans.app.model.Group.table.c.deleted == false())
+                query = query.filter(
+                    trans.app.model.Group.table.c.deleted == false())
         else:
-            query = query.filter(trans.app.model.Group.table.c.deleted == false())
+            query = query.filter(
+                trans.app.model.Group.table.c.deleted == false())
         return query

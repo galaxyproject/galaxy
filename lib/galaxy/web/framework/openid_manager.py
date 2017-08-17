@@ -17,8 +17,8 @@ except ImportError:
     class FakeConsumer(object):
         def __getattr__(x, y):
             return None
-    consumer = FakeConsumer()
 
+    consumer = FakeConsumer()
 
 OPENID_IMPORT_MESSAGE = ('The Python openid package is required to use this '
                          'feature, please install it')
@@ -45,13 +45,15 @@ class OpenIDManager(object):
         self.store = filestore.FileOpenIDStore(self.store_path)
 
     def get_session(self, trans):
-        session_file = os.path.join(self.session_path, str(trans.galaxy_session.id))
+        session_file = os.path.join(self.session_path,
+                                    str(trans.galaxy_session.id))
         if not os.path.exists(session_file):
             pickle.dump(dict(), open(session_file, 'w'))
         return pickle.load(open(session_file))
 
     def persist_session(self, trans, oidconsumer):
-        session_file = os.path.join(self.session_path, str(trans.galaxy_session.id))
+        session_file = os.path.join(self.session_path,
+                                    str(trans.galaxy_session.id))
         pickle.dump(oidconsumer.session, open(session_file, 'w'))
 
     def get_consumer(self, trans):

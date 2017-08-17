@@ -1,5 +1,3 @@
-
-
 # These determine stdio-based error levels from matching on regular expressions
 # and exit codes. They are meant to be used comparatively, such as showing
 # that warning < fatal. This is really meant to just be an enum.

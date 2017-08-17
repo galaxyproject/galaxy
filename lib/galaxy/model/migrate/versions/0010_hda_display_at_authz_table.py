@@ -29,13 +29,18 @@ handler.setFormatter(formatter)
 log.addHandler(handler)
 metadata = MetaData()
 
-HistoryDatasetAssociationDisplayAtAuthorization_table = Table("history_dataset_association_display_at_authorization", metadata,
-                                                              Column("id", Integer, primary_key=True),
-                                                              Column("create_time", DateTime, default=now),
-                                                              Column("update_time", DateTime, index=True, default=now, onupdate=now),
-                                                              Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-                                                              Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                                                              Column("site", TrimmedString(255)))
+HistoryDatasetAssociationDisplayAtAuthorization_table = Table(
+    "history_dataset_association_display_at_authorization", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, index=True, default=now, onupdate=now),
+    Column(
+        "history_dataset_association_id",
+        Integer,
+        ForeignKey("history_dataset_association.id"),
+        index=True),
+    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column("site", TrimmedString(255)))
 
 
 def upgrade(migrate_engine):
@@ -46,7 +51,9 @@ def upgrade(migrate_engine):
     try:
         HistoryDatasetAssociationDisplayAtAuthorization_table.create()
     except Exception:
-        log.exception("Creating history_dataset_association_display_at_authorization table failed.")
+        log.exception(
+            "Creating history_dataset_association_display_at_authorization table failed."
+        )
 
 
 def downgrade(migrate_engine):
@@ -56,4 +63,6 @@ def downgrade(migrate_engine):
     try:
         HistoryDatasetAssociationDisplayAtAuthorization_table.drop()
     except Exception:
-        log.exception("Dropping history_dataset_association_display_at_authorization table failed.")
+        log.exception(
+            "Dropping history_dataset_association_display_at_authorization table failed."
+        )

@@ -34,7 +34,8 @@ def build_tool_panel_section_select_field(app):
     options = []
     for section_id, section_name in app.toolbox.get_sections():
         options.append((section_name, section_id))
-    select_field = SelectField(name='tool_panel_section_id', field_id='tool_panel_section_select')
+    select_field = SelectField(
+        name='tool_panel_section_id', field_id='tool_panel_section_select')
     for option_tup in options:
         select_field.add_option(option_tup[0], option_tup[1])
     return select_field
@@ -61,7 +62,11 @@ def copy_sample_file(app, filename, dest_path=None):
         shutil.copy(full_source_path, os.path.join(dest_path, copied_file))
 
 
-def copy_sample_files(app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None):
+def copy_sample_files(app,
+                      sample_files,
+                      tool_path=None,
+                      sample_files_copied=None,
+                      dest_path=None):
     """
     Copy all appropriate files to dest_path in the local Galaxy environment that have not
     already been copied.  Those that have been copied are contained in sample_files_copied.
@@ -81,7 +86,11 @@ def copy_sample_files(app, sample_files, tool_path=None, sample_files_copied=Non
                 copy_sample_file(app, filename, dest_path=dest_path)
 
 
-def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metadata_dict, as_html=True,
+def generate_message_for_invalid_tools(app,
+                                       invalid_file_tups,
+                                       repository,
+                                       metadata_dict,
+                                       as_html=True,
                                        displaying_invalid_tool=False):
     if as_html:
         new_line = '<br/>'
@@ -121,8 +130,11 @@ def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metad
             if as_html:
                 correction_msg = exception_msg
             else:
-                correction_msg = exception_msg.replace('<br/>', new_line).replace('<b>', bold_start).replace('</b>', bold_end)
-        message += "%s%s%s - %s%s" % (bold_start, tool_file, bold_end, correction_msg, new_line)
+                correction_msg = exception_msg.replace(
+                    '<br/>', new_line).replace('<b>', bold_start).replace(
+                        '</b>', bold_end)
+        message += "%s%s%s - %s%s" % (bold_start, tool_file, bold_end,
+                                      correction_msg, new_line)
     return message
 
 
@@ -140,24 +152,28 @@ def get_headers(fname, sep, count=60, is_multi_byte=False):
     return headers
 
 
-def get_tool_path_install_dir(partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems):
+def get_tool_path_install_dir(partial_install_dir, shed_tool_conf_dict,
+                              tool_dict, config_elems):
     for elem in config_elems:
         if elem.tag == 'tool':
             if elem.get('guid') == tool_dict['guid']:
                 tool_path = shed_tool_conf_dict['tool_path']
-                relative_install_dir = os.path.join(tool_path, partial_install_dir)
+                relative_install_dir = os.path.join(tool_path,
+                                                    partial_install_dir)
                 return tool_path, relative_install_dir
         elif elem.tag == 'section':
             for section_elem in elem:
                 if section_elem.tag == 'tool':
                     if section_elem.get('guid') == tool_dict['guid']:
                         tool_path = shed_tool_conf_dict['tool_path']
-                        relative_install_dir = os.path.join(tool_path, partial_install_dir)
+                        relative_install_dir = os.path.join(
+                            tool_path, partial_install_dir)
                         return tool_path, relative_install_dir
     return None, None
 
 
-def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tups, sample_files_copied):
+def handle_missing_index_file(app, tool_path, sample_files,
+                              repository_tools_tups, sample_files_copied):
     """
     Inspect each tool to see if it has any input parameters that are dynamically
     generated select lists that depend on a .loc file.  This method is not called
@@ -168,7 +184,8 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
         params_with_missing_index_file = repository_tool.params_with_missing_index_file
         for param in params_with_missing_index_file:
             options = param.options
-            missing_file_name = basic_util.strip_path(options.missing_index_file)
+            missing_file_name = basic_util.strip_path(
+                options.missing_index_file)
             if missing_file_name not in sample_files_copied:
                 # The repository must contain the required xxx.loc.sample file.
                 for sample_file in sample_files:
@@ -176,11 +193,13 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
                     if sample_file_name == '%s.sample' % missing_file_name:
                         copy_sample_file(app, sample_file)
                         if options.tool_data_table and options.tool_data_table.missing_index_file:
-                            options.tool_data_table.handle_found_index_file(options.missing_index_file)
+                            options.tool_data_table.handle_found_index_file(
+                                options.missing_index_file)
                         sample_files_copied.append(options.missing_index_file)
                         break
         # Reload the tool into the local list of repository_tools_tups.
-        repository_tool = app.toolbox.load_tool(os.path.join(tool_path, tup_path), guid=guid, use_cached=False)
+        repository_tool = app.toolbox.load_tool(
+            os.path.join(tool_path, tup_path), guid=guid, use_cached=False)
         repository_tools_tups[index] = (tup_path, guid, repository_tool)
     return repository_tools_tups, sample_files_copied
 
@@ -243,7 +262,9 @@ def new_state(trans, tool, invalid=False):
         return tool.new_state(trans)
     except Exception as e:
         # Fall back to building tool state as below
-        log.debug('Failed to build tool state for tool "%s" using standard method, will try to fall back on custom method: %s', tool.id, e)
+        log.debug(
+            'Failed to build tool state for tool "%s" using standard method, will try to fall back on custom method: %s',
+            tool.id, e)
     inputs = tool.inputs_by_page[0]
     context = ExpressionContext(state.inputs, parent=None)
     for input in inputs.values():

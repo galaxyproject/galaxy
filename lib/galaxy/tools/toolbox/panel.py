@@ -8,13 +8,11 @@ from galaxy.util.odict import odict
 
 from .parser import ensure_tool_conf_item
 
-
 panel_item_types = bunch.Bunch(
     TOOL="TOOL",
     WORKFLOW="WORKFLOW",
     SECTION="SECTION",
-    LABEL="LABEL",
-)
+    LABEL="LABEL", )
 
 
 class HasPanelItems:
@@ -75,10 +73,7 @@ class ToolSection(Dictifiable, HasPanelItems, object):
 
         section_dict = super(ToolSection, self).to_dict()
         section_elts = []
-        kwargs = dict(
-            trans=trans,
-            link_details=link_details
-        )
+        kwargs = dict(trans=trans, link_details=link_details)
         for elt in self.elems.values():
             section_elts.append(elt.to_dict(**kwargs))
         section_dict['elems'] = section_elts

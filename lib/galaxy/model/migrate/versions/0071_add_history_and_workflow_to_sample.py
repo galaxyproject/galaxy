@@ -20,13 +20,15 @@ def upgrade(migrate_engine):
     try:
         Sample_table = Table("sample", metadata, autoload=True)
         c1 = Column("workflow", JSONType, nullable=True)
-        c2 = Column("history_id", Integer, ForeignKey("history.id"), nullable=True)
+        c2 = Column(
+            "history_id", Integer, ForeignKey("history.id"), nullable=True)
         c1.create(Sample_table)
         c2.create(Sample_table)
         assert c1 is Sample_table.c.workflow
         assert c2 is Sample_table.c.history_id
     except Exception:
-        log.exception("Adding history and workflow columns to sample table failed.")
+        log.exception(
+            "Adding history and workflow columns to sample table failed.")
 
 
 def downgrade(migrate_engine):

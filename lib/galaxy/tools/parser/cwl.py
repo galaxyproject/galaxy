@@ -17,7 +17,6 @@ log = logging.getLogger(__name__)
 
 
 class CwlToolSource(ToolSource):
-
     def __init__(self, tool_file, strict_cwl_validation=True):
         self._cwl_tool_file = tool_file
         self._id, _ = os.path.splitext(os.path.basename(tool_file))
@@ -28,7 +27,9 @@ class CwlToolSource(ToolSource):
     @property
     def tool_proxy(self):
         if self._tool_proxy is None:
-            self._tool_proxy = tool_proxy(self._source_path, strict_cwl_validation=self._strict_cwl_validation)
+            self._tool_proxy = tool_proxy(
+                self._source_path,
+                strict_cwl_validation=self._strict_cwl_validation)
         return self._tool_proxy
 
     def parse_tool_type(self):
@@ -138,19 +139,20 @@ class CwlToolSource(ToolSource):
         containers = []
         docker_identifier = self.tool_proxy.docker_identifier()
         if docker_identifier:
-            containers.append({"type": "docker",
-                               "identifier": docker_identifier})
-        return requirements.parse_requirements_from_dict(dict(
-            requirements=[],  # TODO: enable via extensions
-            containers=containers,
-        ))
+            containers.append({
+                "type": "docker",
+                "identifier": docker_identifier
+            })
+        return requirements.parse_requirements_from_dict(
+            dict(
+                requirements=[],  # TODO: enable via extensions
+                containers=containers, ))
 
     def parse_profile(self):
         return "16.04"
 
 
 class CwlPageSource(PageSource):
-
     def __init__(self, tool_proxy):
         cwl_instances = tool_proxy.input_instances()
         self._input_list = map(self._to_input_source, cwl_instances)

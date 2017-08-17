@@ -21,12 +21,14 @@ class HgController(BaseUIController):
         def make_web_app():
             hgwebapp = hgwebdir(hgweb_config)
             return hgwebapp
+
         wsgi_app = wsgiapplication(make_web_app)
         if cmd == 'getbundle':
             path_info = kwd.get('path_info', None)
             if path_info:
                 owner, name = path_info.split('/')
-                repository = get_repository_by_name_and_owner(trans.app, name, owner)
+                repository = get_repository_by_name_and_owner(
+                    trans.app, name, owner)
                 if repository:
                     times_downloaded = repository.times_downloaded
                     times_downloaded += 1

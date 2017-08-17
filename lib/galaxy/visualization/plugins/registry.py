@@ -15,7 +15,6 @@ from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins import plugin as vis_plugins
 from galaxy.visualization.plugins import utils as vis_utils
 
-
 import logging
 log = logging.getLogger(__name__)
 
@@ -37,10 +36,7 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
     # TODO: change/remove if/when they can be updated to use this system
     #: any built in visualizations that have their own render method in ctrls/visualization
     BUILT_IN_VISUALIZATIONS = [
-        'trackster',
-        'circster',
-        'sweepster',
-        'phyloviz'
+        'trackster', 'circster', 'sweepster', 'phyloviz'
     ]
 
     def __str__(self):
@@ -49,7 +45,8 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
     def __init__(self, app, skip_bad_plugins=True, **kwargs):
         self.app = weakref.ref(app)
         self.config_parser = config_parser.VisualizationsConfigParser()
-        super(VisualizationsRegistry, self).__init__(app, skip_bad_plugins=skip_bad_plugins, **kwargs)
+        super(VisualizationsRegistry, self).__init__(
+            app, skip_bad_plugins=skip_bad_plugins, **kwargs)
 
     def is_plugin(self, plugin_path):
         """
@@ -70,7 +67,8 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
         if 'config' not in os.listdir(plugin_path):
             return False
         expected_config_filename = '%s.xml' % (os.path.split(plugin_path)[1])
-        if not os.path.isfile(os.path.join(plugin_path, 'config', expected_config_filename)):
+        if not os.path.isfile(
+                os.path.join(plugin_path, 'config', expected_config_filename)):
             return False
         return True
 
@@ -86,7 +84,8 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
         """
         plugin_name = os.path.split(plugin_path)[1]
         # TODO: this is the standard/older way to config
-        config_file = os.path.join(plugin_path, 'config', (plugin_name + '.xml'))
+        config_file = os.path.join(plugin_path, 'config',
+                                   (plugin_name + '.xml'))
         config = self.config_parser.parse_file(config_file)
         # config file is required, otherwise skip this visualization
         if not config:
@@ -109,11 +108,15 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
         elif config['entry_point']['type'] == 'html':
             plugin_class = vis_plugins.StaticFileVisualizationPlugin
 
-        plugin = plugin_class(self.app(), plugin_path, plugin_name, config, context=dict(
-            base_url=self.base_url,
-            template_cache_dir=self.template_cache_dir,
-            additional_template_paths=self.additional_template_paths
-        ))
+        plugin = plugin_class(
+            self.app(),
+            plugin_path,
+            plugin_name,
+            config,
+            context=dict(
+                base_url=self.base_url,
+                template_cache_dir=self.template_cache_dir,
+                additional_template_paths=self.additional_template_paths))
         return plugin
 
     def get_plugin(self, key):
@@ -121,7 +124,8 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
         Wrap to throw error if plugin not in registry.
         """
         if key not in self.plugins:
-            raise galaxy.exceptions.ObjectNotFound('Unknown or invalid visualization: ' + key)
+            raise galaxy.exceptions.ObjectNotFound(
+                'Unknown or invalid visualization: ' + key)
         return self.plugins[key]
 
     # -- building links to visualizations from objects --
@@ -161,20 +165,23 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
 
             # TODO: not true: must have test currently
             tests = data_source['tests']
-            if tests and not self.is_object_applicable(trans, target_object, tests):
+            if tests and not self.is_object_applicable(trans, target_object,
+                                                       tests):
                 continue
             # log.debug( '\t passed tests' )
 
             param_data = data_source['to_params']
-            url = self.get_visualization_url(trans, target_object, visualization, param_data)
+            url = self.get_visualization_url(trans, target_object,
+                                             visualization, param_data)
             display_name = visualization.config.get('name', None)
-            render_target = visualization.config.get('render_target', 'galaxy_main')
+            render_target = visualization.config.get('render_target',
+                                                     'galaxy_main')
             embeddable = visualization.config.get('embeddable', False)
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
             return {
-                'href'      : url,
-                'html'      : display_name,
-                'target'    : render_target,
+                'href': url,
+                'html': display_name,
+                'target': render_target,
                 'embeddable': embeddable
             }
 
@@ -199,7 +206,8 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
                 if result_type == 'datatype':
                     # convert datatypes to their actual classes (for use with isinstance)
                     datatype_class_name = test_result
-                    test_result = trans.app.datatypes_registry.get_datatype_class_by_name(datatype_class_name)
+                    test_result = trans.app.datatypes_registry.get_datatype_class_by_name(
+                        datatype_class_name)
                     if not test_result:
                         # but continue (with other tests) if can't find class by that name
                         # if self.debug:
@@ -215,7 +223,8 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
 
         return False
 
-    def get_visualization_url(self, trans, target_object, visualization, param_data):
+    def get_visualization_url(self, trans, target_object, visualization,
+                              param_data):
         """
         Generates a url for the visualization with `visualization`
         for use with the given `target_object` with a query string built
@@ -229,12 +238,22 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
         #   so generate their urls differently
         url = None
         if visualization.name in self.BUILT_IN_VISUALIZATIONS:
-            url = url_for(controller='visualization', action=visualization.name, **params)
+            url = url_for(
+                controller='visualization',
+                action=visualization.name,
+                **params)
         # TODO: needs to be split off as it's own registry
-        elif isinstance(visualization, vis_plugins.InteractiveEnvironmentPlugin):
-            url = url_for('interactive_environment_plugin', visualization_name=visualization.name, **params)
+        elif isinstance(visualization,
+                        vis_plugins.InteractiveEnvironmentPlugin):
+            url = url_for(
+                'interactive_environment_plugin',
+                visualization_name=visualization.name,
+                **params)
         else:
-            url = url_for(self.NAMED_ROUTE, visualization_name=visualization.name, **params)
+            url = url_for(
+                self.NAMED_ROUTE,
+                visualization_name=visualization.name,
+                **params)
 
         # TODO:?? not sure if embedded would fit/used here? or added in client...
         return url
@@ -253,8 +272,10 @@ class VisualizationsRegistry(pluginframework.PageServingPluginManager):
             # assign takes precedence (goes last, overwrites)?
             # NOTE this is only one level
 
-            if target_attr and vis_utils.hasattr_recursive(target_object, target_attr):
-                params[to_param_name] = vis_utils.getattr_recursive(target_object, target_attr)
+            if target_attr and vis_utils.hasattr_recursive(
+                    target_object, target_attr):
+                params[to_param_name] = vis_utils.getattr_recursive(
+                    target_object, target_attr)
 
             if assign:
                 params[to_param_name] = assign

@@ -14,17 +14,18 @@ RUNTIME_SECONDS_KEY = "runtime_seconds"
 
 
 class CorePluginFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         value = int(value)
         if key == GALAXY_SLOTS_KEY:
             return ("Cores Allocated", "%d" % value)
         elif key == RUNTIME_SECONDS_KEY:
-            return ("Job Runtime (Wall Clock)", formatting.seconds_to_str(value))
+            return ("Job Runtime (Wall Clock)",
+                    formatting.seconds_to_str(value))
         else:
             # TODO: Use localized version of this from galaxy.ini
             title = "Job Start Time" if key == START_EPOCH_KEY else "Job End Time"
-            return (title, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(value)))
+            return (title, time.strftime('%Y-%m-%d %H:%M:%S',
+                                         time.localtime(value)))
 
 
 class CorePlugin(InstrumentPlugin):
@@ -40,12 +41,14 @@ class CorePlugin(InstrumentPlugin):
     def pre_execute_instrument(self, job_directory):
         commands = []
         commands.append(self.__record_galaxy_slots_command(job_directory))
-        commands.append(self.__record_seconds_since_epoch_to_file(job_directory, "start"))
+        commands.append(
+            self.__record_seconds_since_epoch_to_file(job_directory, "start"))
         return commands
 
     def post_execute_instrument(self, job_directory):
         commands = []
-        commands.append(self.__record_seconds_since_epoch_to_file(job_directory, "end"))
+        commands.append(
+            self.__record_seconds_since_epoch_to_file(job_directory, "end"))
         return commands
 
     def job_properties(self, job_id, job_directory):

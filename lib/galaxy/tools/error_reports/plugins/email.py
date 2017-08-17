@@ -19,17 +19,23 @@ class EmailPlugin(ErrorPlugin):
     def __init__(self, **kwargs):
         self.app = kwargs['app']
         self.verbose = string_as_bool(kwargs.get('verbose', True))
-        self.user_submission = string_as_bool(kwargs.get('user_submission', True))
+        self.user_submission = string_as_bool(
+            kwargs.get('user_submission', True))
 
     def submit_report(self, dataset, job, tool, **kwargs):
         """Send report as an email
         """
         try:
             error_reporter = EmailErrorReporter(dataset.id, self.app)
-            error_reporter.send_report(user=job.get_user(), email=kwargs.get('email', None), message=kwargs.get('message', None))
+            error_reporter.send_report(
+                user=job.get_user(),
+                email=kwargs.get('email', None),
+                message=kwargs.get('message', None))
             return ("Your error report has been sent", "success")
         except Exception as e:
-            return ("An error occurred sending the report by email: %s" % str(e), "danger")
+            return (
+                "An error occurred sending the report by email: %s" % str(e),
+                "danger")
 
 
 __all__ = ('EmailPlugin', )

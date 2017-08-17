@@ -8,7 +8,7 @@ from . import data
 log = logging.getLogger(__name__)
 
 
-class QualityScore (data.Text):
+class QualityScore(data.Text):
     """
     until we know more about quality score formats
     """
@@ -17,7 +17,7 @@ class QualityScore (data.Text):
     file_ext = "qual"
 
 
-class QualityScoreSOLiD (QualityScore):
+class QualityScoreSOLiD(QualityScore):
     """
     until we know more about quality score formats
     """
@@ -46,16 +46,19 @@ class QualityScoreSOLiD (QualityScore):
                     else:
                         break  # EOF
                 line = line.strip()
-                if line and not line.startswith('#'):  # first non-empty non-comment line
+                if line and not line.startswith(
+                        '#'):  # first non-empty non-comment line
                     if line.startswith('>'):
                         line = fh.readline().strip()
                         if line == '' or line.startswith('>'):
                             break
                         try:
                             [int(x) for x in line.split()]
-                            if not(readlen):
+                            if not (readlen):
                                 readlen = len(line.split())
-                            assert len(line.split()) == readlen  # SOLiD reads should be of the same length
+                            assert len(
+                                line.split()
+                            ) == readlen  # SOLiD reads should be of the same length
                         except:
                             break
                         goodblock += 1
@@ -69,13 +72,14 @@ class QualityScoreSOLiD (QualityScore):
         return False
 
     def set_meta(self, dataset, **kwd):
-        if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+        if self.max_optional_metadata_filesize >= 0 and dataset.get_size(
+        ) > self.max_optional_metadata_filesize:
             dataset.metadata.data_lines = None
             return
         return QualityScore.set_meta(self, dataset, **kwd)
 
 
-class QualityScore454 (QualityScore):
+class QualityScore454(QualityScore):
     """
     until we know more about quality score formats
     """
@@ -99,7 +103,8 @@ class QualityScore454 (QualityScore):
                 if not line:
                     break  # EOF
                 line = line.strip()
-                if line and not line.startswith('#'):  # first non-empty non-comment line
+                if line and not line.startswith(
+                        '#'):  # first non-empty non-comment line
                     if line.startswith('>'):
                         line = fh.readline().strip()
                         if line == '' or line.startswith('>'):
@@ -117,7 +122,7 @@ class QualityScore454 (QualityScore):
         return False
 
 
-class QualityScoreSolexa (QualityScore):
+class QualityScoreSolexa(QualityScore):
     """
     until we know more about quality score formats
     """
@@ -125,7 +130,7 @@ class QualityScoreSolexa (QualityScore):
     file_ext = "qualsolexa"
 
 
-class QualityScoreIllumina (QualityScore):
+class QualityScoreIllumina(QualityScore):
     """
     until we know more about quality score formats
     """

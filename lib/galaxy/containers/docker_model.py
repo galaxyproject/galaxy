@@ -7,7 +7,6 @@ import logging
 
 from galaxy.containers import Container, ContainerPort
 
-
 CPUS_LABEL = '_galaxy_cpus'
 IMAGE_LABEL = '_galaxy_image'
 CPUS_CONSTRAINT = 'node.labels.' + CPUS_LABEL
@@ -17,7 +16,6 @@ log = logging.getLogger(__name__)
 
 
 class DockerAttributeContainer(object):
-
     def __init__(self, members=None):
         if members is None:
             members = set()
@@ -63,7 +61,6 @@ class DockerAttributeContainer(object):
 
 
 class DockerContainer(Container):
-
     def __init__(self, interface, id, name=None, inspect=None):
         super(DockerContainer, self).__init__(interface, id, name=name)
         self._inspect = inspect
@@ -88,12 +85,12 @@ class DockerContainer(Container):
         port_mappings = self.inspect[0]['NetworkSettings']['Ports']
         for port_name in port_mappings:
             for binding in port_mappings[port_name]:
-                rval.append(ContainerPort(
-                    int(port_name.split('/')[0]),
-                    port_name.split('/')[1],
-                    self.address,
-                    int(binding['HostPort']),
-                ))
+                rval.append(
+                    ContainerPort(
+                        int(port_name.split('/')[0]),
+                        port_name.split('/')[1],
+                        self.address,
+                        int(binding['HostPort']), ))
         return rval
 
     @property
@@ -123,7 +120,6 @@ class DockerContainer(Container):
 
 
 class DockerService(Container):
-
     def __init__(self, interface, id, name=None, image=None, inspect=None):
         self._interface = interface
         self._id = id
@@ -137,11 +133,14 @@ class DockerService(Container):
 
     @classmethod
     def from_cli(cls, docker_interface, s, task_list):
-        service = cls(docker_interface, s['ID'], name=s['NAME'], image=s['IMAGE'])
+        service = cls(
+            docker_interface, s['ID'], name=s['NAME'], image=s['IMAGE'])
         for task_dict in task_list:
             if task_dict['NAME'].strip().startswith('\_'):
-                continue    # historical task
-            service.task_add(DockerTask.from_cli(docker_interface, task_dict, service=service))
+                continue  # historical task
+            service.task_add(
+                DockerTask.from_cli(
+                    docker_interface, task_dict, service=service))
         return service
 
     @classmethod
@@ -167,12 +166,12 @@ class DockerService(Container):
         rval = []
         port_mappings = self.inspect[0]['Endpoint']['Ports']
         for binding in port_mappings:
-            rval.append(ContainerPort(
-                binding['TargetPort'],
-                binding['Protocol'],
-                self.address,               # use the routing mesh
-                binding['PublishedPort']
-            ))
+            rval.append(
+                ContainerPort(
+                    binding['TargetPort'],
+                    binding['Protocol'],
+                    self.address,  # use the routing mesh
+                    binding['PublishedPort']))
         return rval
 
     @property
@@ -214,13 +213,15 @@ class DockerService(Container):
     @property
     def image(self):
         if self._image is None:
-            self._image = self.inspect[0]['Spec']['TaskTemplate']['ContainerSpec']['Image']
+            self._image = self.inspect[0]['Spec']['TaskTemplate'][
+                'ContainerSpec']['Image']
         return self._image
 
     @property
     def cpus(self):
         try:
-            cpus = self.inspect[0]['Spec']['TaskTemplate']['Resources']['Limits']['NanoCPUs'] / 1000000000.0
+            cpus = self.inspect[0]['Spec']['TaskTemplate']['Resources'][
+                'Limits']['NanoCPUs'] / 1000000000.0
             if cpus == int(cpus):
                 cpus = int(cpus)
             return cpus
@@ -229,8 +230,10 @@ class DockerService(Container):
 
     @property
     def constraints(self):
-        constraints = self.inspect[0]['Spec']['TaskTemplate']['Placement'].get('Constraints', [])
-        return DockerServiceConstraints.from_constraint_string_list(constraints)
+        constraints = self.inspect[0]['Spec']['TaskTemplate']['Placement'].get(
+            'Constraints', [])
+        return DockerServiceConstraints.from_constraint_string_list(
+            constraints)
 
     def in_state(self, desired, current):
         try:
@@ -251,7 +254,6 @@ class DockerService(Container):
 
 
 class DockerServiceConstraint(object):
-
     def __init__(self, name=None, op=None, value=None):
         self._name = name
         self._op = op
@@ -269,7 +271,8 @@ class DockerServiceConstraint(object):
         return hash((self._name, self._op, self._value))
 
     def __repr__(self):
-        return '%s(%s%s%s)' % (self.__class__.__name__, self._name, self._op, self._value)
+        return '%s(%s%s%s)' % (self.__class__.__name__, self._name, self._op,
+                               self._value)
 
     def __str__(self):
         return '%s%s%s' % (self._name, self._op, self._value)
@@ -282,12 +285,14 @@ class DockerServiceConstraint(object):
             if len(t[0]) < len(constraint[0]):
                 constraint = t
         if constraint[0] == constraint_str:
-            raise Exception('Unable to parse constraint string: %s' % constraint_str)
+            raise Exception(
+                'Unable to parse constraint string: %s' % constraint_str)
         return [x.strip() for x in constraint]
 
     @classmethod
     def from_str(cls, constraint_str):
-        name, op, value = DockerServiceConstraint.split_constraint_string(constraint_str)
+        name, op, value = DockerServiceConstraint.split_constraint_string(
+            constraint_str)
         return cls(name=name, op=op, value=value)
 
     @property
@@ -305,9 +310,7 @@ class DockerServiceConstraint(object):
     @property
     def label(self):
         return DockerNodeLabel(
-            name=self.name.replace('node.labels.', ''),
-            value=self.value
-        )
+            name=self.name.replace('node.labels.', ''), value=self.value)
 
 
 class DockerServiceConstraints(DockerAttributeContainer):
@@ -327,9 +330,13 @@ class DockerServiceConstraints(DockerAttributeContainer):
 
 
 class DockerNode(object):
-
-    def __init__(self, interface, id=None, name=None, status=None,
-                 availability=None, manager=False):
+    def __init__(self,
+                 interface,
+                 id=None,
+                 name=None,
+                 status=None,
+                 availability=None,
+                 manager=False):
         self._interface = interface
         self._id = id
         self._name = name
@@ -341,10 +348,16 @@ class DockerNode(object):
 
     @classmethod
     def from_cli(cls, docker_interface, n, task_list):
-        node = cls(docker_interface, id=n['ID'], name=n['HOSTNAME'], status=n['STATUS'],
-                   availability=n['AVAILABILITY'], manager=True if n['MANAGER STATUS'] else False)
+        node = cls(
+            docker_interface,
+            id=n['ID'],
+            name=n['HOSTNAME'],
+            status=n['STATUS'],
+            availability=n['AVAILABILITY'],
+            manager=True if n['MANAGER STATUS'] else False)
         for task_dict in task_list:
-            node.task_add(DockerTask.from_cli(docker_interface, task_dict, node=node))
+            node.task_add(
+                DockerTask.from_cli(docker_interface, task_dict, node=node))
         return node
 
     def task_add(self, task):
@@ -361,7 +374,8 @@ class DockerNode(object):
     @property
     def inspect(self):
         if not self._inspect:
-            self._inspect = self._interface.node_inspect(self._id or self._name)
+            self._inspect = self._interface.node_inspect(
+                self._id or self._name)
         return self._inspect
 
     @property
@@ -370,7 +384,8 @@ class DockerNode(object):
 
     @property
     def cpus(self):
-        return self.inspect[0]['Description']['Resources']['NanoCPUs'] / 1000000000
+        return self.inspect[0]['Description']['Resources'][
+            'NanoCPUs'] / 1000000000
 
     @property
     def labels(self):
@@ -383,16 +398,20 @@ class DockerNode(object):
     @property
     def labels_as_constraints(self):
         constraints_strings = [x.constraint_string for x in self.labels]
-        return DockerServiceConstraints.from_constraint_string_list(constraints_strings)
+        return DockerServiceConstraints.from_constraint_string_list(
+            constraints_strings)
 
     def set_labels_for_constraints(self, constraints):
         for label in self._constraints_to_label_args(constraints):
             if label not in self.labels:
-                log.info("setting node '%s' label '%s' to '%s'", self.name, label.name, label.value)
+                log.info("setting node '%s' label '%s' to '%s'", self.name,
+                         label.name, label.value)
                 self.label_add(label.name, label.value)
 
     def _constraints_to_label_args(self, constraints):
-        constraints = filter(lambda x: x.name.startswith('node.labels.') and x.op == '==', constraints)
+        constraints = filter(
+            lambda x: x.name.startswith('node.labels.') and x.op == '==',
+            constraints)
         labels = map(lambda x: DockerNodeLabel(name=x.name.replace('node.labels.', '', 1), value=x.value), constraints)
         return labels
 
@@ -405,7 +424,8 @@ class DockerNode(object):
         return len(self._tasks)
 
     def in_state(self, status, availability):
-        return self._status.lower() == status.lower() and self._availability.lower() == availability.lower()
+        return self._status.lower() == status.lower(
+        ) and self._availability.lower() == availability.lower()
 
     def is_ok(self):
         return self.in_state('Ready', 'Active')
@@ -421,7 +441,6 @@ class DockerNode(object):
 
 
 class DockerNodeLabel(object):
-
     def __init__(self, name=None, value=None):
         self._name = name
         self._value = value
@@ -437,7 +456,8 @@ class DockerNodeLabel(object):
         return hash((self._name, self._value))
 
     def __repr__(self):
-        return '%s(%s: %s)' % (self.__class__.__name__, self._name, self._value)
+        return '%s(%s: %s)' % (self.__class__.__name__, self._name,
+                               self._value)
 
     def __str__(self):
         return '%s: %s' % (self._name, self._value)
@@ -452,15 +472,15 @@ class DockerNodeLabel(object):
 
     @property
     def constraint_string(self):
-        return 'node.labels.{name}=={value}'.format(name=self.name, value=self.value)
+        return 'node.labels.{name}=={value}'.format(
+            name=self.name, value=self.value)
 
     @property
     def constraint(self):
         return DockerServiceConstraint(
             name='node.labels.{name}'.format(name=self.name),
             op='==',
-            value=self.value
-        )
+            value=self.value)
 
 
 class DockerNodeLabels(DockerAttributeContainer):
@@ -476,13 +496,22 @@ class DockerNodeLabels(DockerAttributeContainer):
 
     @property
     def constraints(self):
-        return DockerServiceConstraints(members=[x.constraint for x in self.members])
+        return DockerServiceConstraints(
+            members=[x.constraint for x in self.members])
 
 
 class DockerTask(object):
-
-    def __init__(self, interface, id=None, name=None, image=None, desired_state=None,
-                 state=None, error=None, ports=None, service=None, node=None):
+    def __init__(self,
+                 interface,
+                 id=None,
+                 name=None,
+                 image=None,
+                 desired_state=None,
+                 state=None,
+                 error=None,
+                 ports=None,
+                 service=None,
+                 node=None):
         self._interface = interface
         self._id = id
         self._name = name
@@ -498,9 +527,17 @@ class DockerTask(object):
     @classmethod
     def from_cli(cls, docker_interface, t, service=None, node=None):
         state = t['CURRENT STATE'].split()[0]
-        return cls(docker_interface, id=t['ID'], name=t['NAME'], image=t['IMAGE'],
-                   desired_state=t['DESIRED STATE'], state=state, error=t['ERROR'],
-                   ports=t['PORTS'], service=service, node=node)
+        return cls(
+            docker_interface,
+            id=t['ID'],
+            name=t['NAME'],
+            image=t['IMAGE'],
+            desired_state=t['DESIRED STATE'],
+            state=state,
+            error=t['ERROR'],
+            ports=t['PORTS'],
+            service=service,
+            node=node)
 
     @property
     def id(self):
@@ -519,7 +556,8 @@ class DockerTask(object):
     @property
     def cpus(self):
         try:
-            cpus = self.inspect[0]['Spec']['Resources']['Reservations']['NanoCPUs'] / 1000000000.0
+            cpus = self.inspect[0]['Spec']['Resources']['Reservations'][
+                'NanoCPUs'] / 1000000000.0
             if cpus == int(cpus):
                 cpus = int(cpus)
             return cpus
@@ -531,4 +569,5 @@ class DockerTask(object):
         return ('%s-%s' % (self._desired_state, self._state)).lower()
 
     def in_state(self, desired, current):
-        return self._desired_state.lower() == desired.lower() and self._state.lower() == current.lower()
+        return self._desired_state.lower() == desired.lower(
+        ) and self._state.lower() == current.lower()

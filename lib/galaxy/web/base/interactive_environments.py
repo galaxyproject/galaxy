@@ -18,7 +18,6 @@ from galaxy.tools.deps.docker_util import DockerVolume
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 
-
 IS_OS_X = _platform == "darwin"
 
 CONTAINER_NAME_PREFIX = 'gie_'
@@ -27,7 +26,6 @@ log = logging.getLogger(__name__)
 
 
 class InteractiveEnvironmentRequest(object):
-
     def __init__(self, trans, plugin):
         self.trans = trans
         self.log = log
@@ -36,7 +34,8 @@ class InteractiveEnvironmentRequest(object):
         self.attr.viz_id = plugin.name
         self.attr.history_id = trans.security.encode_id(trans.history.id)
         self.attr.galaxy_config = trans.app.config
-        self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
+        self.attr.galaxy_root_dir = os.path.abspath(
+            self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
         self.attr.app_root = self.attr.root + "plugins/interactive_environments/" + self.attr.viz_id + "/static/"
         self.attr.import_volume = True
@@ -52,36 +51,39 @@ class InteractiveEnvironmentRequest(object):
         self.load_allowed_images()
         self.load_container_interface()
 
-        self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
-        raw_docker_connect_port = self.attr.viz_config.get("docker", "docker_connect_port")
-        self.attr.docker_connect_port = int(raw_docker_connect_port) if raw_docker_connect_port else None
+        self.attr.docker_hostname = self.attr.viz_config.get(
+            "docker", "docker_hostname")
+        raw_docker_connect_port = self.attr.viz_config.get(
+            "docker", "docker_connect_port")
+        self.attr.docker_connect_port = int(
+            raw_docker_connect_port) if raw_docker_connect_port else None
 
         # Generate per-request passwords the IE plugin can use to configure
         # the destination container.
         self.notebook_pw_salt = self.generate_password(length=12)
         self.notebook_pw = self.generate_password(length=24)
 
-        ie_parent_temp_dir = self.attr.viz_config.get("docker", "docker_galaxy_temp_dir") or None
-        self.temp_dir = os.path.abspath(tempfile.mkdtemp(dir=ie_parent_temp_dir))
+        ie_parent_temp_dir = self.attr.viz_config.get(
+            "docker", "docker_galaxy_temp_dir") or None
+        self.temp_dir = os.path.abspath(
+            tempfile.mkdtemp(dir=ie_parent_temp_dir))
 
         if self.attr.viz_config.getboolean("docker", "wx_tempdir"):
             # Ensure permissions are set
             try:
-                os.chmod(self.temp_dir, os.stat(self.temp_dir).st_mode | stat.S_IXOTH)
+                os.chmod(self.temp_dir,
+                         os.stat(self.temp_dir).st_mode | stat.S_IXOTH)
             except Exception:
-                log.error("Could not change permissions of tmpdir %s" % self.temp_dir)
+                log.error("Could not change permissions of tmpdir %s" %
+                          self.temp_dir)
                 # continue anyway
 
-        # This duplicates the logic in the proxy manager
+            # This duplicates the logic in the proxy manager
         if self.attr.galaxy_config.dynamic_proxy_external_proxy:
             self.attr.proxy_prefix = '/'.join(
-                (
-                    '',
-                    self.attr.galaxy_config.cookie_path.strip('/'),
-                    self.attr.galaxy_config.dynamic_proxy_prefix.strip('/'),
-                    self.attr.viz_id,
-                )
-            )
+                ('', self.attr.galaxy_config.cookie_path.strip('/'),
+                 self.attr.galaxy_config.dynamic_proxy_prefix.strip('/'),
+                 self.attr.viz_id, ))
         else:
             self.attr.proxy_prefix = ''
         # If cookie_path is unset (thus '/'), the proxy prefix ends up with
@@ -96,25 +98,35 @@ class InteractiveEnvironmentRequest(object):
             "Error: Container interface requires publish port list but docker_connect_port is not set"
 
     def load_allowed_images(self):
-        if os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.yml')):
+        if os.path.exists(
+                os.path.join(self.attr.our_config_dir, 'allowed_images.yml')):
             fn = os.path.join(self.attr.our_config_dir, 'allowed_images.yml')
-        elif os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.yml.sample')):
-            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.yml.sample')
+        elif os.path.exists(
+                os.path.join(self.attr.our_config_dir,
+                             'allowed_images.yml.sample')):
+            fn = os.path.join(self.attr.our_config_dir,
+                              'allowed_images.yml.sample')
         else:
             # If we don't have an allowed images, then we fall back to image
             # name specified in the .ini file
             try:
-                self.allowed_images = [self.attr.viz_config.get('docker', 'image')]
-                self.default_image = self.attr.viz_config.get('docker', 'image')
+                self.allowed_images = [
+                    self.attr.viz_config.get('docker', 'image')
+                ]
+                self.default_image = self.attr.viz_config.get(
+                    'docker', 'image')
                 return
             except AttributeError:
-                raise Exception("[{0}] Could not find allowed_images.yml, or image tag in {0}.ini file for ".format(self.attr.viz_id))
+                raise Exception(
+                    "[{0}] Could not find allowed_images.yml, or image tag in {0}.ini file for ".
+                    format(self.attr.viz_id))
 
         with open(fn, 'r') as handle:
             self.allowed_images = [x['image'] for x in yaml.load(handle)]
 
             if len(self.allowed_images) == 0:
-                raise Exception("No allowed images specified for " + self.attr.viz_id)
+                raise Exception("No allowed images specified for " +
+                                self.attr.viz_id)
 
             self.default_image = self.allowed_images[0]
 
@@ -126,14 +138,16 @@ class InteractiveEnvironmentRequest(object):
         default_dict = {
             'container_interface': None,
             'command': 'docker {docker_args}',
-            'command_inject': '-e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=120',
+            'command_inject':
+            '-e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=120',
             'docker_hostname': 'localhost',
             'wx_tempdir': 'False',
             'docker_galaxy_temp_dir': None,
             'docker_connect_port': None,
         }
         viz_config = configparser.SafeConfigParser(default_dict)
-        conf_path = os.path.join(self.attr.our_config_dir, self.attr.viz_id + ".ini")
+        conf_path = os.path.join(self.attr.our_config_dir,
+                                 self.attr.viz_id + ".ini")
         if not os.path.exists(conf_path):
             conf_path = "%s.sample" % conf_path
         viz_config.read(conf_path)
@@ -154,7 +168,9 @@ class InteractiveEnvironmentRequest(object):
     def load_container_interface(self):
         self.attr.container_interface = None
         key = None
-        if string_as_bool_or_none(self.attr.viz_config.get("main", "container_interface")) is not None:
+        if string_as_bool_or_none(
+                self.attr.viz_config.get("main",
+                                         "container_interface")) is not None:
             key = self.attr.viz_config.get("main", "container_interface")
         elif self.attr.galaxy_config.enable_beta_containers_interface:
             # TODO: don't hardcode this, and allow for mapping
@@ -162,12 +178,13 @@ class InteractiveEnvironmentRequest(object):
         if key:
             containers = build_container_interfaces(
                 self.attr.galaxy_config.containers_config_file,
-                containers_conf=self.attr.galaxy_config.containers_conf,
-            )
+                containers_conf=self.attr.galaxy_config.containers_conf, )
             try:
                 self.attr.container_interface = containers[key]
             except KeyError:
-                log.error("Unable to load '%s' container interface: invalid key", key)
+                log.error(
+                    "Unable to load '%s' container interface: invalid key",
+                    key)
 
     def get_conf_dict(self):
         """
@@ -177,7 +194,8 @@ class InteractiveEnvironmentRequest(object):
         """
         trans = self.trans
         request = trans.request
-        api_key = api_keys.ApiKeyManager(trans.app).get_or_create_api_key(trans.user)
+        api_key = api_keys.ApiKeyManager(trans.app).get_or_create_api_key(
+            trans.user)
         conf_file = {
             'history_id': self.attr.history_id,
             'api_key': api_key,
@@ -189,12 +207,17 @@ class InteractiveEnvironmentRequest(object):
         }
 
         web_port = self.attr.galaxy_config.galaxy_infrastructure_web_port
-        conf_file['galaxy_web_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
+        conf_file[
+            'galaxy_web_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port(
+            )
 
         if self.attr.viz_config.has_option("docker", "galaxy_url"):
-            conf_file['galaxy_url'] = self.attr.viz_config.get("docker", "galaxy_url")
+            conf_file['galaxy_url'] = self.attr.viz_config.get(
+                "docker", "galaxy_url")
         elif self.attr.galaxy_config.galaxy_infrastructure_url_set:
-            conf_file['galaxy_url'] = self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/') + '/'
+            conf_file[
+                'galaxy_url'] = self.attr.galaxy_config.galaxy_infrastructure_url.rstrip(
+                    '/') + '/'
         else:
             conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'
             # Galaxy paster port is deprecated
@@ -203,13 +226,16 @@ class InteractiveEnvironmentRequest(object):
         return conf_file
 
     def generate_hex(self, length):
-        return ''.join(random.choice('0123456789abcdef') for _ in range(length))
+        return ''.join(
+            random.choice('0123456789abcdef') for _ in range(length))
 
     def generate_password(self, length):
         """
             Generate a random alphanumeric password
         """
-        return ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(length))
+        return ''.join(
+            random.choice('0123456789abcdefghijklmnopqrstuvwxyz')
+            for _ in range(length))
 
     def javascript_boolean(self, python_boolean):
         """
@@ -270,9 +296,13 @@ class InteractiveEnvironmentRequest(object):
             volumes = []
         env = self._get_env_for_run(env_override)
         import_volume_def = self._get_import_volume_for_run()
-        env_str = ' '.join('-e "%s=%s"' % (key, item) for key, item in env.items())
-        volume_str = ' '.join('-v "%s"' % volume for volume in volumes) if self.use_volumes else ''
-        import_volume_str = '-v "{import_volume}"'.format(import_volume=import_volume_def) if import_volume_def else ''
+        env_str = ' '.join('-e "%s=%s"' % (key, item)
+                           for key, item in env.items())
+        volume_str = ' '.join(
+            '-v "%s"' % volume
+            for volume in volumes) if self.use_volumes else ''
+        import_volume_str = '-v "{import_volume}"'.format(
+            import_volume=import_volume_def) if import_volume_def else ''
         name = None
         # This is the basic docker command such as "sudo -u docker docker {docker_args}"
         # or just "docker {docker_args}"
@@ -284,7 +314,10 @@ class InteractiveEnvironmentRequest(object):
         # --name should really not be set, but we'll try to honor it anyway
         if '--name' not in command_inject:
             name = self._get_name_for_run()
-        command = command.format(docker_args='run {command_inject} {name} {environment} -d -P {import_volume_str} {volume_str} {image}')
+        command = command.format(
+            docker_args=
+            'run {command_inject} {name} {environment} -d -P {import_volume_str} {volume_str} {image}'
+        )
 
         # Once that's available, we format again with all of our arguments
         command = command.format(
@@ -293,8 +326,7 @@ class InteractiveEnvironmentRequest(object):
             environment=env_str,
             import_volume_str=import_volume_str,
             volume_str=volume_str,
-            image=image,
-        )
+            image=image, )
         return command
 
     @property
@@ -302,7 +334,8 @@ class InteractiveEnvironmentRequest(object):
         if self.attr.container_interface and not self.attr.container_interface.supports_volumes:
             return False
         elif self.attr.viz_config.has_option("docker", "use_volumes"):
-            return string_as_bool_or_none(self.attr.viz_config.get("docker", "use_volumes"))
+            return string_as_bool_or_none(
+                self.attr.viz_config.get("docker", "use_volumes"))
         else:
             return True
 
@@ -337,9 +370,12 @@ class InteractiveEnvironmentRequest(object):
         volumes = []
         for id in ids:
             decoded_id = self.trans.security.decode_id(id)
-            dataset = self.trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_id)
+            dataset = self.trans.sa_session.query(
+                model.HistoryDatasetAssociation).get(decoded_id)
             # TODO: do we need to check if the user has access?
-            volumes.append(self.volume(dataset.get_file_name(), '/import/[{0}] {1}.{2}'.format(dataset.id, dataset.name, dataset.ext)))
+            volumes.append(
+                self.volume(dataset.get_file_name(), '/import/[{0}] {1}.{2}'.
+                            format(dataset.id, dataset.name, dataset.ext)))
         return volumes
 
     def _find_port_mapping(self, port_mappings):
@@ -351,7 +387,9 @@ class InteractiveEnvironmentRequest(object):
                         port_mapping = _port_mapping
                         break
             else:
-                log.warning("Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first. Please set 'docker_connect_port' in your config file to be more specific.")
+                log.warning(
+                    "Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first. Please set 'docker_connect_port' in your config file to be more specific."
+                )
         elif len(port_mappings) == 0:
             log.warning("No exposed ports to map! Images MUST EXPOSE")
             return None
@@ -363,13 +401,13 @@ class InteractiveEnvironmentRequest(object):
     def _launch_legacy(self, image, env_override, volumes):
         """Legacy launch method for use when the container interface is not enabled
         """
-        raw_cmd = self.docker_cmd(image, env_override=env_override, volumes=volumes)
+        raw_cmd = self.docker_cmd(
+            image, env_override=env_override, volumes=volumes)
 
-        log.info("Starting docker container for IE {0} with command [{1}]".format(
-            self.attr.viz_id,
-            raw_cmd
-        ))
-        p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        log.info("Starting docker container for IE {0} with command [{1}]".
+                 format(self.attr.viz_id, raw_cmd))
+        p = Popen(
+            raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
             log.error("%s\n%s" % (stdout, stderr))
@@ -381,7 +419,8 @@ class InteractiveEnvironmentRequest(object):
             port_mappings = self.get_container_port_mapping(inspect_data)
             self.attr.docker_hostname = self.get_container_host(inspect_data)
             host_port = self._find_port_mapping(port_mappings)[-1]
-            log.debug("Container host/port: %s:%s", self.attr.docker_hostname, host_port)
+            log.debug("Container host/port: %s:%s", self.attr.docker_hostname,
+                      host_port)
 
             # Now we configure our proxy_requst object and we manually specify
             # the port to map to and ensure the proxy is available.
@@ -391,8 +430,7 @@ class InteractiveEnvironmentRequest(object):
                 port=host_port,
                 proxy_prefix=self.attr.proxy_prefix,
                 route_name=self.attr.viz_id,
-                container_ids=[container_id],
-            )
+                container_ids=[container_id], )
             # These variables then become available for use in templating URLs
             self.attr.proxy_url = self.attr.proxy_request['proxy_url']
             # Commented out because it needs to be documented and visible that
@@ -408,9 +446,11 @@ class InteractiveEnvironmentRequest(object):
         """Launch method for use when the container interface is enabled
         """
         run_args = self.container_run_args(image, env_override, volumes)
-        container = self.attr.container_interface.run_in_container(None, **run_args)
+        container = self.attr.container_interface.run_in_container(
+            None, **run_args)
         container_port = self._find_port_mapping(container.ports)
-        log.debug("Container '%s' accessible at: %s:%s", container.id, container_port.hostaddr, container_port.hostport)
+        log.debug("Container '%s' accessible at: %s:%s", container.id,
+                  container_port.hostaddr, container_port.hostport)
         self.attr.proxy_request = self.trans.app.proxy_manager.setup_proxy(
             self.trans,
             host=container_port.hostaddr,
@@ -418,11 +458,14 @@ class InteractiveEnvironmentRequest(object):
             proxy_prefix=self.attr.proxy_prefix,
             route_name=self.attr.viz_id,
             container_ids=[container.id],
-            container_interface=self.attr.container_interface.key
-        )
+            container_interface=self.attr.container_interface.key)
         self.attr.proxy_url = self.attr.proxy_request['proxy_url']
 
-    def launch(self, image=None, additional_ids=None, env_override=None, volumes=None):
+    def launch(self,
+               image=None,
+               additional_ids=None,
+               env_override=None,
+               volumes=None):
         """Launch a docker image.
 
         :type image: str
@@ -450,8 +493,9 @@ class InteractiveEnvironmentRequest(object):
         if image not in self.allowed_images:
             # Now that we're allowing users to specify images, we need to ensure that they aren't
             # requesting images we have not specifically allowed.
-            raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]"
-                            % (image, ', '.join(self.allowed_images)))
+            raise Exception(
+                "Attempting to launch disallowed image! %s not in list of allowed images [%s]"
+                % (image, ', '.join(self.allowed_images)))
 
         # Do not allow a None volumes
         if not volumes:
@@ -476,11 +520,10 @@ class InteractiveEnvironmentRequest(object):
         command = self.attr.viz_config.get("docker", "command")
         command = command.format(docker_args="inspect %s" % container_id)
         log.info("Inspecting docker container {0} with command [{1}]".format(
-            container_id,
-            command
-        ))
+            container_id, command))
 
-        p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        p = Popen(
+            command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
             log.error("%s\n%s" % (stdout, stderr))
@@ -536,9 +579,7 @@ class InteractiveEnvironmentRequest(object):
         port_mappings = inspect_data[0]['NetworkSettings']['Ports']
         for port_name in port_mappings:
             for binding in port_mappings[port_name]:
-                mappings.append((
-                    int(port_name.replace('/tcp', '').replace('/udp', '')),
-                    binding['HostIp'],
-                    int(binding['HostPort'])
-                ))
+                mappings.append(
+                    (int(port_name.replace('/tcp', '').replace('/udp', '')),
+                     binding['HostIp'], int(binding['HostPort'])))
         return mappings

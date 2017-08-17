@@ -2,8 +2,7 @@
 from abc import (
     ABCMeta,
     abstractmethod,
-    abstractproperty,
-)
+    abstractproperty, )
 
 import six
 
@@ -23,7 +22,8 @@ class ContainerResolver(Dictifiable, object):
         self.app_info = app_info
         self.resolver_kwds = kwds
 
-    def _get_config_option(self, key, default=None, config_prefix=None, **kwds):
+    def _get_config_option(self, key, default=None, config_prefix=None,
+                           **kwds):
         """Look in resolver-specific settings for option and then fallback to
         global settings.
         """
@@ -47,7 +47,8 @@ class ContainerResolver(Dictifiable, object):
     def resolver_type(self):
         """Short label for the type of container resolution."""
 
-    def _container_type_enabled(self, container_description, enabled_container_types):
+    def _container_type_enabled(self, container_description,
+                                enabled_container_types):
         """Return a boolean indicating if the specified container type is enabled."""
         return container_description.type in enabled_container_types
 

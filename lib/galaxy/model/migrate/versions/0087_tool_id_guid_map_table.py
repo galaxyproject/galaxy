@@ -26,7 +26,11 @@ metadata = MetaData()
 ToolIdGuidMap_table = Table("tool_id_guid_map", metadata,
                             Column("id", Integer, primary_key=True),
                             Column("create_time", DateTime, default=now),
-                            Column("update_time", DateTime, default=now, onupdate=now),
+                            Column(
+                                "update_time",
+                                DateTime,
+                                default=now,
+                                onupdate=now),
                             Column("tool_id", String(255)),
                             Column("tool_version", TEXT),
                             Column("tool_shed", TrimmedString(255)),

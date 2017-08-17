@@ -11,7 +11,7 @@ from galaxy import util
 
 from ..collectl import stats
 
-if sys.version_info > (3,):
+if sys.version_info > (3, ):
     long = int
 
 log = logging.getLogger(__name__)
@@ -101,13 +101,17 @@ def parse_process_statistics(statistics):
     # Check for validity...
     for statistic in statistics:
         if statistic[0] not in STATISTIC_TYPES:
-            raise Exception("Unknown statistic type encountered %s" % statistic[0])
+            raise Exception(
+                "Unknown statistic type encountered %s" % statistic[0])
         if statistic[1] not in PROCESS_COLUMNS:
-            raise Exception("Unknown process column encountered %s" % statistic[1])
+            raise Exception(
+                "Unknown process column encountered %s" % statistic[1])
     return statistics
 
 
-def generate_process_statistics(collectl_playback_cli, pid, statistics=DEFAULT_STATISTICS):
+def generate_process_statistics(collectl_playback_cli,
+                                pid,
+                                statistics=DEFAULT_STATISTICS):
     """ Playback collectl file and generate summary statistics.
     """
     with tempfile.NamedTemporaryFile() as tmp_tsv:
@@ -124,7 +128,9 @@ def _read_process_statistics(tsv_file, pid, statistics):
         if current_interval is None:
             for header, expected_header in zip(row, PROCESS_COLUMNS):
                 if header.lower() != expected_header.lower():
-                    raise Exception("Unknown header value encountered while processing collectl playback - %s" % header)
+                    raise Exception(
+                        "Unknown header value encountered while processing collectl playback - %s"
+                        % header)
 
             # First row, check contains correct header.
             current_interval = CollectlProcessInterval()
@@ -144,13 +150,13 @@ def _read_process_statistics(tsv_file, pid, statistics):
 
 
 class CollectlProcessSummarizer(object):
-
     def __init__(self, pid, statistics):
         self.pid = pid
         self.statistics = statistics
         self.columns_of_interest = set([s[1] for s in statistics])
         self.tree_statistics = collections.defaultdict(stats.StatisticsTracker)
-        self.process_accum_statistics = collections.defaultdict(stats.StatisticsTracker)
+        self.process_accum_statistics = collections.defaultdict(
+            stats.StatisticsTracker)
         self.interval_count = 0
 
     def handle_interval(self, interval):
@@ -163,7 +169,8 @@ class CollectlProcessSummarizer(object):
                 # Should not sum this across pids each interval, sum max at end...
                 for r in rows:
                     pid_seconds = self.__time_to_seconds(r[column_index])
-                    self.process_accum_statistics[r[PID_INDEX]].track(pid_seconds)
+                    self.process_accum_statistics[r[PID_INDEX]].track(
+                        pid_seconds)
             else:
                 # All other stastics should be summed across whole process tree
                 # at each interval I guess.
@@ -188,7 +195,8 @@ class CollectlProcessSummarizer(object):
                     log.warning("Only statistic max makes sense for AccumT")
                     continue
 
-                value = sum(v.max for v in self.process_accum_statistics.values())
+                value = sum(v.max
+                            for v in self.process_accum_statistics.values())
             else:
                 statistics_tracker = self.tree_statistics[column]
                 value = getattr(statistics_tracker, statistic_type)
@@ -223,7 +231,7 @@ class CollectlProcessSummarizer(object):
         parts = minutes_str.split(":")
         seconds = 0.0
         for i, val in enumerate(parts):
-            seconds += float(val) * (60 ** (len(parts) - (i + 1)))
+            seconds += float(val) * (60**(len(parts) - (i + 1)))
         return seconds
 
 

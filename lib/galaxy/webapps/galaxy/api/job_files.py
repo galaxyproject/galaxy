@@ -11,7 +11,6 @@ from galaxy.web.base.controller import BaseAPIController
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 
-
 import logging
 log = logging.getLogger(__name__)
 
@@ -94,8 +93,7 @@ class JobFilesAPIController(BaseAPIController):
                  " directory (%s)" % (file_path, upload_store))
             input_file = open(file_path)
         else:
-            input_file = payload.get("file",
-                                     payload.get("__file", None)).file
+            input_file = payload.get("file", payload.get("__file", None)).file
         try:
             shutil.move(input_file.name, path)
         finally:
@@ -116,7 +114,8 @@ class JobFilesAPIController(BaseAPIController):
         job_id = trans.security.decode_id(encoded_job_id)
         job_key = trans.security.encode_id(job_id, kind="jobs_files")
         if not util.safe_str_cmp(kwargs["job_key"], job_key):
-            raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
+            raise exceptions.ItemAccessibilityException(
+                "Invalid job_key supplied.")
 
         # Verify job is active. Don't update the contents of complete jobs.
         job = trans.sa_session.query(model.Job).get(job_id)
@@ -135,15 +134,19 @@ class JobFilesAPIController(BaseAPIController):
         https://gist.github.com/jmchilton/9103619.)
         """
         in_work_dir = self.__in_working_directory(job, path, trans.app)
-        allow_temp_dir_file = self.__is_allowed_temp_dir_file(trans.app, job, path)
-        if not in_work_dir and not allow_temp_dir_file and not self.__is_output_dataset_path(job, path):
-            raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+        allow_temp_dir_file = self.__is_allowed_temp_dir_file(
+            trans.app, job, path)
+        if not in_work_dir and not allow_temp_dir_file and not self.__is_output_dataset_path(
+                job, path):
+            raise exceptions.ItemAccessibilityException(
+                "Job is not authorized to write to supplied path.")
 
     def __is_allowed_temp_dir_file(self, app, job, path):
         # grrr.. need to get away from new_file_path - these should be written
         # to job working directory like metadata files.
         in_temp_dir = util.in_directory(path, app.config.new_file_path)
-        return in_temp_dir and os.path.split(path)[-1].startswith("GALAXY_VERSION_")
+        return in_temp_dir and os.path.split(path)[-1].startswith(
+            "GALAXY_VERSION_")
 
     def __is_output_dataset_path(self, job, path):
         """ Check if is an output path for this job or a file in the an
@@ -162,5 +165,6 @@ class JobFilesAPIController(BaseAPIController):
         return False
 
     def __in_working_directory(self, job, path, app):
-        working_directory = app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
+        working_directory = app.object_store.get_filename(
+            job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
         return util.in_directory(path, working_directory)

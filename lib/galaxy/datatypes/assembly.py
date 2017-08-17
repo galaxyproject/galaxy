@@ -144,34 +144,81 @@ class Roadmaps(data.Text):
 
 
 class Velvet(Html):
-    MetadataElement(name="base_name", desc="base name for velveth dataset", default="velvet", readonly=True, set_in_upload=True)
-    MetadataElement(name="paired_end_reads", desc="has paired-end reads", default="False", readonly=False, set_in_upload=True)
-    MetadataElement(name="long_reads", desc="has long reads", default="False", readonly=False, set_in_upload=True)
-    MetadataElement(name="short2_reads", desc="has 2nd short reads", default="False", readonly=False, set_in_upload=True)
+    MetadataElement(
+        name="base_name",
+        desc="base name for velveth dataset",
+        default="velvet",
+        readonly=True,
+        set_in_upload=True)
+    MetadataElement(
+        name="paired_end_reads",
+        desc="has paired-end reads",
+        default="False",
+        readonly=False,
+        set_in_upload=True)
+    MetadataElement(
+        name="long_reads",
+        desc="has long reads",
+        default="False",
+        readonly=False,
+        set_in_upload=True)
+    MetadataElement(
+        name="short2_reads",
+        desc="has 2nd short reads",
+        default="False",
+        readonly=False,
+        set_in_upload=True)
     composite_type = 'auto_primary_file'
     allow_datatype_change = False
     file_ext = 'velvet'
 
     def __init__(self, **kwd):
         Html.__init__(self, **kwd)
-        self.add_composite_file('Sequences', mimetype='text/html', description='Sequences', substitute_name_with_metadata=None, is_binary=False)
-        self.add_composite_file('Roadmaps', mimetype='text/html', description='Roadmaps', substitute_name_with_metadata=None, is_binary=False)
-        self.add_composite_file('Log', mimetype='text/html', description='Log', optional='True', substitute_name_with_metadata=None, is_binary=False)
+        self.add_composite_file(
+            'Sequences',
+            mimetype='text/html',
+            description='Sequences',
+            substitute_name_with_metadata=None,
+            is_binary=False)
+        self.add_composite_file(
+            'Roadmaps',
+            mimetype='text/html',
+            description='Roadmaps',
+            substitute_name_with_metadata=None,
+            is_binary=False)
+        self.add_composite_file(
+            'Log',
+            mimetype='text/html',
+            description='Log',
+            optional='True',
+            substitute_name_with_metadata=None,
+            is_binary=False)
 
     def generate_primary_file(self, dataset=None):
-        log.debug("Velvet log info  %s %s" % ('JJ generate_primary_file', dataset))
-        rval = ['<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>']
-        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+        log.debug("Velvet log info  %s %s" % ('JJ generate_primary_file',
+                                              dataset))
+        rval = [
+            '<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>'
+        ]
+        rval.append(
+            '<div>This composite dataset is composed of the following files:<p/><ul>'
+        )
+        for composite_name, composite_file in self.get_composite_files(
+                dataset=dataset).items():
             fn = composite_name
-            log.debug("Velvet log info  %s %s %s" % ('JJ generate_primary_file', fn, composite_file))
+            log.debug("Velvet log info  %s %s %s" %
+                      ('JJ generate_primary_file', fn, composite_file))
             opt_text = ''
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                rval.append(
+                    '<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' %
+                    (fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+                rval.append(
+                    '<li><a href="%s" type="text/plain">%s</a>%s</li>' %
+                    (fn, fn, opt_text))
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -189,13 +236,15 @@ class Velvet(Html):
             f.close()
             log_msg = re.sub('/\S*/', '', log_content)
             log.debug("Velveth log info  %s" % log_msg)
-            paired_end_reads = re.search('-(short|long)Paired', log_msg) is not None
+            paired_end_reads = re.search('-(short|long)Paired',
+                                         log_msg) is not None
             dataset.metadata.paired_end_reads = paired_end_reads
             long_reads = re.search('-long', log_msg) is not None
             dataset.metadata.long_reads = long_reads
             short2_reads = re.search('-short(Paired)?2', log_msg) is not None
             dataset.metadata.short2_reads = short2_reads
-            dataset.info = re.sub('.*velveth \S+', 'hash_length', re.sub('\n', ' ', log_msg))
+            dataset.info = re.sub('.*velveth \S+', 'hash_length',
+                                  re.sub('\n', ' ', log_msg))
             if paired_end_reads:
                 gen_msg = gen_msg + ' Paired-End Reads'
             if long_reads:
@@ -205,21 +254,30 @@ class Velvet(Html):
         except:
             log.debug("Velveth could not read Log file in %s" % efp)
         log.debug("Velveth log info  %s" % gen_msg)
-        rval = ['<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>']
+        rval = [
+            '<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>'
+        ]
         # rval.append('<div>Generated:<p/><code> %s </code></div>' %(re.sub('\n','<br>',log_msg)))
         rval.append('<div>Generated:<p/> %s </div>' % (gen_msg))
         rval.append('<div>Velveth dataset:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+        for composite_name, composite_file in self.get_composite_files(
+                dataset=dataset).items():
             fn = composite_name
-            log.debug("Velvet log info  %s %s %s" % ('JJ regenerate_primary_file', fn, composite_file))
+            log.debug("Velvet log info  %s %s %s" %
+                      ('JJ regenerate_primary_file', fn, composite_file))
             if re.search('Log', fn) is None:
                 opt_text = ''
                 if composite_file.optional:
                     opt_text = ' (optional)'
                 if composite_file.get('description'):
-                    rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                    rval.append(
+                        '<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>'
+                        % (fn, fn, composite_file.get('description'),
+                           opt_text))
                 else:
-                    rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+                    rval.append(
+                        '<li><a href="%s" type="text/plain">%s</a>%s</li>' %
+                        (fn, fn, opt_text))
         rval.append('</ul></div></html>')
         with open(dataset.file_name, 'w') as f:
             f.write("\n".join(rval))

@@ -57,20 +57,34 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
     # Verify ownership: there is a current user and that user is the same as the item's
     if check_ownership:
         if not trans.user:
-            raise exceptions.ItemOwnershipException("Must be logged in to manage Galaxy items", type='error')
+            raise exceptions.ItemOwnershipException(
+                "Must be logged in to manage Galaxy items", type='error')
         if item.user != trans.user:
-            raise exceptions.ItemOwnershipException("%s is not owned by the current user" % item.__class__.__name__, type='error')
+            raise exceptions.ItemOwnershipException(
+                "%s is not owned by the current user" %
+                item.__class__.__name__,
+                type='error')
 
     # Verify accessible:
     #   if it's part of a lib - can they access via security
     #   if it's something else (sharable) have they been added to the item's users_shared_with_dot_users
     if check_accessible:
-        if type(item) in (trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset):
-            if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), item, trans.user):
-                raise exceptions.ItemAccessibilityException("%s is not accessible to the current user" % item.__class__.__name__, type='error')
+        if type(item) in (trans.app.model.LibraryFolder,
+                          trans.app.model.LibraryDatasetDatasetAssociation,
+                          trans.app.model.LibraryDataset):
+            if not trans.app.security_agent.can_access_library_item(
+                    trans.get_current_user_roles(), item, trans.user):
+                raise exceptions.ItemAccessibilityException(
+                    "%s is not accessible to the current user" %
+                    item.__class__.__name__,
+                    type='error')
         else:
-            if (item.user != trans.user) and (not item.importable) and (trans.user not in item.users_shared_with_dot_users):
-                raise exceptions.ItemAccessibilityException("%s is not accessible to the current user" % item.__class__.__name__, type='error')
+            if (item.user != trans.user) and (not item.importable) and (
+                    trans.user not in item.users_shared_with_dot_users):
+                raise exceptions.ItemAccessibilityException(
+                    "%s is not accessible to the current user" %
+                    item.__class__.__name__,
+                    type='error')
     return item
 
 
@@ -126,7 +140,12 @@ def decode_id(app, id):
         raise exceptions.MalformedId(msg, id=str(id))
 
 
-def get_object(trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
+def get_object(trans,
+               id,
+               class_name,
+               check_ownership=False,
+               check_accessible=False,
+               deleted=None):
     """
     Convenience method to get a model object with the specified checks. This is
     a generic method for dealing with objects uniformly from the older
@@ -141,16 +160,19 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
         assert item is not None
     except Exception:
         log.exception("Invalid %s id ( %s ) specified." % (class_name, id))
-        raise exceptions.MessageException("Invalid %s id ( %s ) specified" % (class_name, id), type="error")
+        raise exceptions.MessageException(
+            "Invalid %s id ( %s ) specified" % (class_name, id), type="error")
 
     if check_ownership or check_accessible:
         security_check(trans, item, check_ownership, check_accessible)
     if deleted is True and not item.deleted:
-        raise exceptions.ItemDeletionException('%s "%s" is not deleted'
-                                               % (class_name, getattr(item, 'name', id)), type="warning")
+        raise exceptions.ItemDeletionException(
+            '%s "%s" is not deleted' % (class_name, getattr(item, 'name', id)),
+            type="warning")
     elif deleted is False and item.deleted:
-        raise exceptions.ItemDeletionException('%s "%s" is deleted'
-                                               % (class_name, getattr(item, 'name', id)), type="warning")
+        raise exceptions.ItemDeletionException(
+            '%s "%s" is deleted' % (class_name, getattr(item, 'name', id)),
+            type="warning")
     return item
 
 
@@ -214,7 +236,13 @@ class ModelManager(object):
             query = query.enable_eagerloads(False)
         return self._filter_and_order_query(query, **kwargs)
 
-    def _filter_and_order_query(self, query, filters=None, order_by=None, limit=None, offset=None, **kwargs):
+    def _filter_and_order_query(self,
+                                query,
+                                filters=None,
+                                order_by=None,
+                                limit=None,
+                                offset=None,
+                                **kwargs):
         # TODO: not a lot of functional cohesion here
         query = self._apply_orm_filters(query, filters)
         query = self._apply_order_by(query, order_by)
@@ -293,9 +321,11 @@ class ModelManager(object):
         try:
             return query.one()
         except sqlalchemy.orm.exc.NoResultFound:
-            raise exceptions.ObjectNotFound(self.model_class.__name__ + ' not found')
+            raise exceptions.ObjectNotFound(self.model_class.__name__ +
+                                            ' not found')
         except sqlalchemy.orm.exc.MultipleResultsFound:
-            raise exceptions.InconsistentDatabase('found more than one ' + self.model_class.__name__)
+            raise exceptions.InconsistentDatabase('found more than one ' +
+                                                  self.model_class.__name__)
 
     def _one_or_none(self, query):
         """
@@ -317,7 +347,12 @@ class ModelManager(object):
         return self.one(filters=id_filter, **kwargs)
 
     # .... multirow queries
-    def list(self, filters=None, order_by=None, limit=None, offset=None, **kwargs):
+    def list(self,
+             filters=None,
+             order_by=None,
+             limit=None,
+             offset=None,
+             **kwargs):
         """
         Returns all objects matching the given filters
         """
@@ -328,11 +363,20 @@ class ModelManager(object):
         orm_filters, fn_filters = self._split_filters(filters)
         if not fn_filters:
             # if no fn_filtering required, we can use the 'all orm' version with limit offset
-            return self._orm_list(filters=orm_filters, order_by=order_by,
-                limit=limit, offset=offset, **kwargs)
+            return self._orm_list(
+                filters=orm_filters,
+                order_by=order_by,
+                limit=limit,
+                offset=offset,
+                **kwargs)
 
         # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
-        query = self.query(filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs)
+        query = self.query(
+            filters=orm_filters,
+            order_by=order_by,
+            limit=None,
+            offset=None,
+            **kwargs)
         items = query.all()
 
         # apply limit, offset after SQL filtering
@@ -409,7 +453,8 @@ class ModelManager(object):
         if not ids:
             return []
         ids_filter = self.model_class.id.in_(ids)
-        found = self.list(filters=self._munge_filters(ids_filter, filters), **kwargs)
+        found = self.list(
+            filters=self._munge_filters(ids_filter, filters), **kwargs)
         # TODO: this does not order by the original 'ids' array
 
         # ...could use get (supposedly since found are in the session, the db won't be hit twice)
@@ -486,20 +531,25 @@ class ModelManager(object):
         foreign_key_name = foreign_key_name or self.foreign_key_name
         return getattr(associated_model_class, foreign_key_name)
 
-    def query_associated(self, associated_model_class, item, foreign_key_name=None):
+    def query_associated(self,
+                         associated_model_class,
+                         item,
+                         foreign_key_name=None):
         """
         Generically query other items that have been associated with this `item`.
         """
-        foreign_key = self._foreign_key(associated_model_class, foreign_key_name=foreign_key_name)
-        return self.session().query(associated_model_class).filter(foreign_key == item)
+        foreign_key = self._foreign_key(
+            associated_model_class, foreign_key_name=foreign_key_name)
+        return self.session().query(associated_model_class).filter(
+            foreign_key == item)
 
     # a rename of sql DELETE to differentiate from the Galaxy notion of mark_as_deleted
     # def destroy( self, item, **kwargs ):
     #    return item
 
 
-# ---- code for classes that use one *main* model manager
-# TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
+    # ---- code for classes that use one *main* model manager
+    # TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
 class HasAModelManager(object):
     """
     Mixin used where serializers, deserializers, filter parsers, etc.
@@ -509,6 +559,7 @@ class HasAModelManager(object):
 
     #: the class used to create this serializer's generically accessible model_manager
     model_manager_class = None
+
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
 
@@ -597,9 +648,9 @@ class ModelSerializer(HasAModelManager):
         the attribute.
         """
         self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
+            'id': self.serialize_id,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
         })
 
     def add_view(self, view_name, key_list, include_keys_from=None):
@@ -686,10 +737,16 @@ class ModelSerializer(HasAModelManager):
             return None
         split = type_id.split(TYPE_ID_SEP, 1)
         # Note: it may not be best to encode the id at this layer
-        return TYPE_ID_SEP.join([split[0], self.app.security.encode_id(split[1])])
+        return TYPE_ID_SEP.join(
+            [split[0], self.app.security.encode_id(split[1])])
 
     # serializing to a view where a view is a predefied list of keys to serialize
-    def serialize_to_view(self, item, view=None, keys=None, default_view=None, **context):
+    def serialize_to_view(self,
+                          item,
+                          view=None,
+                          keys=None,
+                          default_view=None,
+                          **context):
         """
         Use a predefined list of keys (the string `view`) and any additional keys
         listed in `keys`.
@@ -727,7 +784,8 @@ class ModelSerializer(HasAModelManager):
         if view is None:
             view = self.default_view
         if view not in self.views:
-            raise ModelSerializingError('unknown view', view=view, available_views=self.views)
+            raise ModelSerializingError(
+                'unknown view', view=view, available_views=self.views)
         return self.views[view][:]
 
 
@@ -736,6 +794,7 @@ class ModelDeserializer(HasAModelManager):
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.
     """
+
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
     def __init__(self, app, validator=None, **kwargs):
@@ -769,10 +828,11 @@ class ModelDeserializer(HasAModelManager):
         new_dict = {}
         for key, val in data.items():
             if key in self.deserializers:
-                new_dict[key] = self.deserializers[key](item, key, val, **context)
+                new_dict[key] = self.deserializers[key](item, key, val,
+                                                        **context)
             # !important: don't error on unreg. keys -- many clients will add weird ass keys onto the model
 
-        # TODO:?? add and flush here or in manager?
+            # TODO:?? add and flush here or in manager?
         if flush and len(new_dict):
             sa_session.add(item)
             sa_session.flush()
@@ -792,8 +852,14 @@ class ModelDeserializer(HasAModelManager):
             setattr(item, key, val)
         return val
 
-    def deserialize_basestring(self, item, key, val, convert_none_to_empty=False, **context):
-        val = '' if (convert_none_to_empty and val is None) else self.validate.basestring(key, val)
+    def deserialize_basestring(self,
+                               item,
+                               key,
+                               val,
+                               convert_none_to_empty=False,
+                               **context):
+        val = '' if (convert_none_to_empty
+                     and val is None) else self.validate.basestring(key, val)
         return self.default_deserializer(item, key, val, **context)
 
     def deserialize_bool(self, item, key, val, **context):
@@ -835,7 +901,8 @@ class ModelValidator(HasAModelManager):
         """
         if not isinstance(val, types):
             msg = 'must be a type: %s' % (str(types))
-            raise exceptions.RequestParameterInvalidException(msg, key=key, val=val)
+            raise exceptions.RequestParameterInvalidException(
+                msg, key=key, val=val)
         return val
 
     # validators for primitives and compounds of primitives
@@ -860,9 +927,11 @@ class ModelValidator(HasAModelManager):
         """
         val = self.type(key, val, int)
         if min is not None and val < min:
-            raise exceptions.RequestParameterInvalidException("less than minimum", key=key, val=val, min=min)
+            raise exceptions.RequestParameterInvalidException(
+                "less than minimum", key=key, val=val, min=min)
         if max is not None and val > max:
-            raise exceptions.RequestParameterInvalidException("greater than maximum", key=key, val=val, max=max)
+            raise exceptions.RequestParameterInvalidException(
+                "greater than maximum", key=key, val=val, max=max)
         return val
 
     def basestring_list(self, key, val):
@@ -899,7 +968,7 @@ class ModelValidator(HasAModelManager):
     #    pass
 
 
-# ==== Building query filters based on model data
+    # ==== Building query filters based on model data
 class ModelFilterParser(HasAModelManager):
     """
     Converts string tuples (partially converted query string params) of
@@ -936,7 +1005,9 @@ class ModelFilterParser(HasAModelManager):
         self.app = app
 
         #: regex for testing/dicing iso8601 date strings, with optional time and ms, but allowing only UTC timezone
-        self.date_string_re = re.compile(r'^(\d{4}\-\d{2}\-\d{2})[T| ]{0,1}(\d{2}:\d{2}:\d{2}(?:\.\d{1,6}){0,1}){0,1}Z{0,1}$')
+        self.date_string_re = re.compile(
+            r'^(\d{4}\-\d{2}\-\d{2})[T| ]{0,1}(\d{2}:\d{2}:\d{2}(?:\.\d{1,6}){0,1}){0,1}Z{0,1}$'
+        )
 
         # dictionary containing parsing data for ORM/SQLAlchemy-based filters
         # ..note: although kind of a pain in the ass and verbose, opt-in/whitelisting allows more control
@@ -956,11 +1027,23 @@ class ModelFilterParser(HasAModelManager):
         # note: these are the default filters for all models
         self.orm_filter_parsers.update({
             # (prob.) applicable to all models
-            'id'            : {'op': ('in')},
-            'encoded_id'    : {'column' : 'id', 'op': ('in'), 'val': self.parse_id_list},
+            'id': {
+                'op': ('in')
+            },
+            'encoded_id': {
+                'column': 'id',
+                'op': ('in'),
+                'val': self.parse_id_list
+            },
             # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
-            'create_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
-            'update_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
+            'create_time': {
+                'op': ('le', 'ge'),
+                'val': self.parse_date
+            },
+            'update_time': {
+                'op': ('le', 'ge'),
+                'val': self.parse_date
+            },
         })
 
     def parse_filters(self, filter_tuple_list):
@@ -996,12 +1079,17 @@ class ModelFilterParser(HasAModelManager):
 
         # by convention, assume most val parsers raise ValueError
         except ValueError as val_err:
-            raise exceptions.RequestParameterInvalidException('unparsable value for filter',
-                column=attr, operation=op, value=val, ValueError=str(val_err))
+            raise exceptions.RequestParameterInvalidException(
+                'unparsable value for filter',
+                column=attr,
+                operation=op,
+                value=val,
+                ValueError=str(val_err))
 
         # if neither of the above work, raise an error with how-to info
         # TODO: send back all valid filter keys in exception for added user help
-        raise exceptions.RequestParameterInvalidException('bad filter', column=attr, operation=op)
+        raise exceptions.RequestParameterInvalidException(
+            'bad filter', column=attr, operation=op)
 
     # ---- fn filters
     def _parse_fn_filter(self, attr, op, val):
@@ -1092,9 +1180,9 @@ class ModelFilterParser(HasAModelManager):
     # ---- preset fn_filters: dictionaries of standard filter ops for standard datatypes
     def string_standard_ops(self, key):
         return {
-            'op' : {
-                'eq'        : lambda i, v: v == getattr(i, key),
-                'contains'  : lambda i, v: v in getattr(i, key),
+            'op': {
+                'eq': lambda i, v: v == getattr(i, key),
+                'contains': lambda i, v: v in getattr(i, key),
             }
         }
 
@@ -1116,7 +1204,10 @@ class ModelFilterParser(HasAModelManager):
         Split `id_list_string` at `sep`.
         """
         # TODO: move id decoding out
-        id_list = [self.app.security.decode_id(id_) for id_ in id_list_string.split(sep)]
+        id_list = [
+            self.app.security.decode_id(id_)
+            for id_ in id_list_string.split(sep)
+        ]
         return id_list
 
     def parse_int_list(self, int_list_string, sep=','):
@@ -1144,6 +1235,8 @@ class ModelFilterParser(HasAModelManager):
 
         match = self.date_string_re.match(date_string)
         if match:
-            date_string = ' '.join([group for group in match.groups() if group])
+            date_string = ' '.join(
+                [group for group in match.groups() if group])
             return date_string
-        raise ValueError('datetime strings must be in the ISO 8601 format and in the UTC')
+        raise ValueError(
+            'datetime strings must be in the ISO 8601 format and in the UTC')

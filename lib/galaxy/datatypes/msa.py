@@ -17,7 +17,8 @@ class Hmmer(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = "HMMER Database"
         else:
             dataset.peek = 'file does not exist'
@@ -100,22 +101,32 @@ class Stockholm_1_0(Text):
     edam_format = "format_1961"
     file_ext = "stockholm"
 
-    MetadataElement(name="number_of_models", default=0, desc="Number of multiple alignments", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="number_of_models",
+        default=0,
+        desc="Number of multiple alignments",
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value=0)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_models == 1):
                 dataset.blurb = "1 alignment"
             else:
                 dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
     def sniff(self, filename):
-        if generic_util.count_special_lines('^#[[:space:]+]STOCKHOLM[[:space:]+]1.0', filename) > 0:
+        if generic_util.count_special_lines(
+                '^#[[:space:]+]STOCKHOLM[[:space:]+]1.0', filename) > 0:
             return True
         else:
             return False
@@ -125,7 +136,8 @@ class Stockholm_1_0(Text):
 
         Set the number of models in dataset.
         """
-        dataset.metadata.number_of_models = generic_util.count_special_lines('^#[[:space:]+]STOCKHOLM[[:space:]+]1.0', dataset.file_name)
+        dataset.metadata.number_of_models = generic_util.count_special_lines(
+            '^#[[:space:]+]STOCKHOLM[[:space:]+]1.0', dataset.file_name)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
@@ -136,16 +148,20 @@ class Stockholm_1_0(Text):
             return None
 
         if len(input_datasets) > 1:
-            raise Exception("STOCKHOLM-file splitting does not support multiple files")
+            raise Exception(
+                "STOCKHOLM-file splitting does not support multiple files")
         input_files = [ds.file_name for ds in input_datasets]
 
         chunk_size = None
         if split_params['split_mode'] == 'number_of_parts':
-            raise Exception('Split mode "%s" is currently not implemented for STOCKHOLM-files.' % split_params['split_mode'])
+            raise Exception(
+                'Split mode "%s" is currently not implemented for STOCKHOLM-files.'
+                % split_params['split_mode'])
         elif split_params['split_mode'] == 'to_size':
             chunk_size = int(split_params['split_size'])
         else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+            raise Exception(
+                'Unsupported split mode %s' % split_params['split_mode'])
 
         def _read_stockholm_records(filename):
             lines = []
@@ -158,7 +174,8 @@ class Stockholm_1_0(Text):
 
         def _write_part_stockholm_file(accumulated_lines):
             part_dir = subdir_generator_function()
-            part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
+            part_path = os.path.join(part_dir,
+                                     os.path.basename(input_files[0]))
             part_file = open(part_path, 'w')
             part_file.writelines(accumulated_lines)
             part_file.close()
@@ -167,7 +184,8 @@ class Stockholm_1_0(Text):
 
             stockholm_records = _read_stockholm_records(input_files[0])
             stockholm_lines_accumulated = []
-            for counter, stockholm_record in enumerate(stockholm_records, start=1):
+            for counter, stockholm_record in enumerate(
+                    stockholm_records, start=1):
                 stockholm_lines_accumulated.extend(stockholm_record)
                 if counter % chunk_size == 0:
                     _write_part_stockholm_file(stockholm_lines_accumulated)
@@ -177,22 +195,32 @@ class Stockholm_1_0(Text):
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
+
     split = classmethod(split)
 
 
 class MauveXmfa(Text):
     file_ext = "xmfa"
 
-    MetadataElement(name="number_of_models", default=0, desc="Number of alignmened sequences", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(
+        name="number_of_models",
+        default=0,
+        desc="Number of alignmened sequences",
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value=0)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_models == 1):
                 dataset.blurb = "1 alignment"
             else:
                 dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(
+                dataset.file_name, is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
@@ -203,4 +231,5 @@ class MauveXmfa(Text):
         return False
 
     def set_meta(self, dataset, **kwd):
-        dataset.metadata.number_of_models = generic_util.count_special_lines('^#Sequence([[:digit:]]+)Entry', dataset.file_name)
+        dataset.metadata.number_of_models = generic_util.count_special_lines(
+            '^#Sequence([[:digit:]]+)Entry', dataset.file_name)

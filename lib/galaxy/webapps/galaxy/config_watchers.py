@@ -1,12 +1,10 @@
 from galaxy.queue_worker import (
     reload_data_managers,
-    reload_toolbox,
-)
+    reload_toolbox, )
 from galaxy.tools.toolbox.watcher import (
     get_tool_conf_watcher,
     get_tool_data_dir_watcher,
-    get_tool_watcher,
-)
+    get_tool_watcher, )
 
 
 class ConfigWatchers(object):
@@ -21,24 +19,39 @@ class ConfigWatchers(object):
         # If there are multiple ToolConfWatcher objects for the same handler or web process a race condition occurs between the two cache_cleanup functions.
         # If the reload_data_managers callback wins, the cache will miss the tools that had been removed from the cache
         # and will be blind to further changes in these tools.
-        self.tool_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_toolbox(self.app), tool_cache=self.app.tool_cache)
-        self.data_manager_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_data_managers(self.app))
-        self.tool_data_watcher = get_tool_data_dir_watcher(self.app.tool_data_tables, config=self.app.config)
+        self.tool_config_watcher = get_tool_conf_watcher(
+            reload_callback=lambda: reload_toolbox(self.app),
+            tool_cache=self.app.tool_cache)
+        self.data_manager_config_watcher = get_tool_conf_watcher(
+            reload_callback=lambda: reload_data_managers(self.app))
+        self.tool_data_watcher = get_tool_data_dir_watcher(
+            self.app.tool_data_tables, config=self.app.config)
         self.tool_watcher = get_tool_watcher(self, app.config)
         self.start()
 
     def start(self):
-        [self.tool_config_watcher.watch_file(config) for config in self.tool_config_paths]
-        [self.data_manager_config_watcher.watch_file(config) for config in self.data_manager_configs]
-        [self.tool_data_watcher.watch_directory(tool_data_path) for tool_data_path in self.tool_data_paths]
+        [
+            self.tool_config_watcher.watch_file(config)
+            for config in self.tool_config_paths
+        ]
+        [
+            self.data_manager_config_watcher.watch_file(config)
+            for config in self.data_manager_configs
+        ]
+        [
+            self.tool_data_watcher.watch_directory(tool_data_path)
+            for tool_data_path in self.tool_data_paths
+        ]
 
     @property
     def data_manager_configs(self):
         data_manager_configs = []
         if hasattr(self.app.config, 'data_manager_config_file'):
-            data_manager_configs.append(self.app.config.data_manager_config_file)
+            data_manager_configs.append(
+                self.app.config.data_manager_config_file)
         if hasattr(self.app.config, 'shed_data_manager_config_file'):
-            data_manager_configs.append(self.app.config.shed_data_manager_config_file)
+            data_manager_configs.append(
+                self.app.config.shed_data_manager_config_file)
         return data_manager_configs
 
     @property

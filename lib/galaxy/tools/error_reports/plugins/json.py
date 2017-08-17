@@ -21,7 +21,8 @@ class JsonPlugin(ErrorPlugin):
     def __init__(self, **kwargs):
         self.app = kwargs['app']
         self.verbose = string_as_bool(kwargs.get('verbose', False))
-        self.user_submission = string_as_bool(kwargs.get('user_submission', False))
+        self.user_submission = string_as_bool(
+            kwargs.get('user_submission', False))
         self.report_directory = kwargs.get("directory", tempfile.gettempdir())
         if not os.path.exists(self.report_directory):
             os.makedirs(self.report_directory)
@@ -32,10 +33,10 @@ class JsonPlugin(ErrorPlugin):
         path = os.path.join(self.report_directory, str(dataset.id))
         with open(path, 'w') as handle:
             data = {
-                'info' : job.info,
-                'id' : job.id,
-                'command_line' : job.command_line,
-                'stderr' : job.stderr,
+                'info': job.info,
+                'id': job.id,
+                'command_line': job.command_line,
+                'stderr': job.stderr,
                 'traceback': job.traceback,
                 'exit_code': job.exit_code,
                 'stdout': job.stdout,

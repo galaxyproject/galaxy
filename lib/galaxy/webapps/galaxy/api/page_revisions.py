@@ -11,8 +11,8 @@ from galaxy.util.sanitize_html import sanitize_html
 log = logging.getLogger(__name__)
 
 
-class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin):
-
+class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin,
+                              UsesAnnotations, SharableMixin):
     @expose_api
     def index(self, trans, page_id, **kwd):
         """
@@ -28,7 +28,8 @@ class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, Uses
         page = self._get_page(trans, page_id)
         self._verify_page_ownership(trans, page)
 
-        r = trans.sa_session.query(trans.app.model.PageRevision).filter_by(page_id=trans.security.decode_id(page_id))
+        r = trans.sa_session.query(trans.app.model.PageRevision).filter_by(
+            page_id=trans.security.decode_id(page_id))
         out = []
         for page in r:
             out.append(self.encode_all_ids(trans, page.to_dict(), True))
@@ -51,7 +52,8 @@ class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, Uses
         """
         content = payload.get("content", None)
         if not content:
-            raise exceptions.ObjectAttributeMissingException("content undefined or empty")
+            raise exceptions.ObjectAttributeMissingException(
+                "content undefined or empty")
 
         page = self._get_page(trans, page_id)
         self._verify_page_ownership(trans, page)
@@ -78,7 +80,8 @@ class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, Uses
     def _get_page(self, trans, page_id):
         page = None
         try:
-            page = trans.sa_session.query(trans.app.model.Page).get(trans.security.decode_id(page_id))
+            page = trans.sa_session.query(trans.app.model.Page).get(
+                trans.security.decode_id(page_id))
         except Exception:
             pass
         if not page:

@@ -6,7 +6,6 @@ from json import loads
 
 from pkg_resources import resource_string
 
-
 # Error codes are provided as a convience to Galaxy API clients, but at this
 # time they do represent part of the more stable interface. They can change
 # without warning between releases.
@@ -27,7 +26,8 @@ class ErrorCode(object):
 
     def __repr__(self):
         """Return object representation of this error code."""
-        return "ErrorCode[code=%d,message=%s]" % (self.code, str(self.default_error_message))
+        return "ErrorCode[code=%d,message=%s]" % (
+            self.code, str(self.default_error_message))
 
     def __int__(self):
         """Return the error code integer."""
@@ -42,7 +42,8 @@ def _from_dict(entry):
     return (name, ErrorCode(code, message))
 
 
-error_codes_json = resource_string(__name__, 'error_codes.json').decode("UTF-8")
+error_codes_json = resource_string(__name__,
+                                   'error_codes.json').decode("UTF-8")
 for entry in loads(error_codes_json):
     name, error_code_obj = _from_dict(entry)
     globals()[name] = error_code_obj

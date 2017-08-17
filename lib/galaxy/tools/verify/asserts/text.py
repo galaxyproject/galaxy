@@ -4,20 +4,25 @@ import re
 def assert_has_text(output, text):
     """ Asserts specified output contains the substring specified by
     the argument text."""
-    assert output.find(text) >= 0, "Output file did not contain expected text '%s' (output '%s')" % (text, output)
+    assert output.find(
+        text
+    ) >= 0, "Output file did not contain expected text '%s' (output '%s')" % (
+        text, output)
 
 
 def assert_not_has_text(output, text):
     """ Asserts specified output does not contain the substring
     specified the argument text."""
-    assert output.find(text) < 0, "Output file contains unexpected text '%s'" % text
+    assert output.find(
+        text) < 0, "Output file contains unexpected text '%s'" % text
 
 
 def assert_has_line(output, line):
     """ Asserts the specified output contains the line specified the
     argument line."""
     match = re.search("^%s$" % re.escape(line), output, flags=re.MULTILINE)
-    assert match is not None, "No line of output file was '%s' (output was '%s') " % (line, output)
+    assert match is not None, "No line of output file was '%s' (output was '%s') " % (
+        line, output)
 
 
 def assert_has_text_matching(output, expression):

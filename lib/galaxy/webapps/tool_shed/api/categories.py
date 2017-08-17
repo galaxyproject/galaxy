@@ -17,7 +17,8 @@ class CategoriesController(BaseAPIController):
     """RESTful controller for interactions with categories in the Tool Shed."""
 
     def __get_repository_count(self, trans, category_name):
-        return self.app.repository_registry.viewable_repositories_and_suites_by_category.get(category_name, 0)
+        return self.app.repository_registry.viewable_repositories_and_suites_by_category.get(
+            category_name, 0)
 
     def __get_value_mapper(self, trans):
         value_mapper = {'id': trans.security.encode_id}
@@ -46,20 +47,27 @@ class CategoriesController(BaseAPIController):
                 # Default the description to the name.
                 description = name
             if suc.get_category_by_name(self.app, name):
-                raise exceptions.Conflict('A category with that name already exists.')
+                raise exceptions.Conflict(
+                    'A category with that name already exists.')
             else:
                 # Create the category
-                category = self.app.model.Category(name=name, description=description)
+                category = self.app.model.Category(
+                    name=name, description=description)
                 trans.sa_session.add(category)
                 trans.sa_session.flush()
-                category_dict = category.to_dict(view='element',
-                                                 value_mapper=self.__get_value_mapper(trans))
-                category_dict['message'] = "Category '%s' has been created" % str(category.name)
-                category_dict['url'] = web.url_for(controller='categories',
-                                                   action='show',
-                                                   id=trans.security.encode_id(category.id))
+                category_dict = category.to_dict(
+                    view='element',
+                    value_mapper=self.__get_value_mapper(trans))
+                category_dict[
+                    'message'] = "Category '%s' has been created" % str(
+                        category.name)
+                category_dict['url'] = web.url_for(
+                    controller='categories',
+                    action='show',
+                    id=trans.security.encode_id(category.id))
         else:
-            raise exceptions.RequestParameterMissingException('Missing required parameter "name".')
+            raise exceptions.RequestParameterMissingException(
+                'Missing required parameter "name".')
         return category_dict
 
     @expose_api_anonymous_and_sessionless
@@ -75,15 +83,19 @@ class CategoriesController(BaseAPIController):
         installable = util.asbool(kwd.get('installable', 'false'))
         category = suc.get_category(self.app, category_id)
         if category is None:
-            category_dict = dict(message='Unable to locate category record for id %s.' % (str(id)),
-                                 status='error')
+            category_dict = dict(
+                message='Unable to locate category record for id %s.' %
+                (str(id)),
+                status='error')
             return category_dict
-        category_dict = category.to_dict(view='element',
-                                         value_mapper=self.__get_value_mapper(trans))
-        category_dict['url'] = web.url_for(controller='categories',
-                                           action='show',
-                                           id=trans.security.encode_id(category.id))
-        repositories = repository_util.get_repositories_by_category(self.app, category.id, installable=installable)
+        category_dict = category.to_dict(
+            view='element', value_mapper=self.__get_value_mapper(trans))
+        category_dict['url'] = web.url_for(
+            controller='categories',
+            action='show',
+            id=trans.security.encode_id(category.id))
+        repositories = repository_util.get_repositories_by_category(
+            self.app, category.id, installable=installable)
         category_dict['repositories'] = repositories
         return category_dict
 
@@ -100,16 +112,20 @@ class CategoriesController(BaseAPIController):
         category_dicts = []
         deleted = util.asbool(deleted)
         if deleted and not trans.user_is_admin():
-            raise exceptions.AdminRequiredException('Only administrators can query deleted categories.')
+            raise exceptions.AdminRequiredException(
+                'Only administrators can query deleted categories.')
         for category in trans.sa_session.query(self.app.model.Category) \
                                         .filter(self.app.model.Category.table.c.deleted == deleted) \
                                         .order_by(self.app.model.Category.table.c.name):
-            category_dict = category.to_dict(view='collection',
-                                             value_mapper=self.__get_value_mapper(trans))
-            category_dict['url'] = web.url_for(controller='categories',
-                                               action='show',
-                                               id=trans.security.encode_id(category.id))
-            category_dict['repositories'] = self.app.repository_registry.viewable_repositories_and_suites_by_category.get(category.name, 0)
+            category_dict = category.to_dict(
+                view='collection', value_mapper=self.__get_value_mapper(trans))
+            category_dict['url'] = web.url_for(
+                controller='categories',
+                action='show',
+                id=trans.security.encode_id(category.id))
+            category_dict[
+                'repositories'] = self.app.repository_registry.viewable_repositories_and_suites_by_category.get(
+                    category.name, 0)
             category_dicts.append(category_dict)
         return category_dicts
 
@@ -125,12 +141,15 @@ class CategoriesController(BaseAPIController):
         """
         category = suc.get_category(self.app, id)
         if category is None:
-            category_dict = dict(message='Unable to locate category record for id %s.' % (str(id)),
-                                 status='error')
+            category_dict = dict(
+                message='Unable to locate category record for id %s.' %
+                (str(id)),
+                status='error')
             return category_dict
-        category_dict = category.to_dict(view='element',
-                                         value_mapper=self.__get_value_mapper(trans))
-        category_dict['url'] = web.url_for(controller='categories',
-                                           action='show',
-                                           id=trans.security.encode_id(category.id))
+        category_dict = category.to_dict(
+            view='element', value_mapper=self.__get_value_mapper(trans))
+        category_dict['url'] = web.url_for(
+            controller='categories',
+            action='show',
+            id=trans.security.encode_id(category.id))
         return category_dict

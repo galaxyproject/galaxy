@@ -24,7 +24,8 @@ class LazyProcess(object):
 
     def __start(self):
         with self.thread_lock:
-            self.process = subprocess.Popen(self.command_and_args, close_fds=True)
+            self.process = subprocess.Popen(
+                self.command_and_args, close_fds=True)
 
     def shutdown(self):
         with self.thread_lock:

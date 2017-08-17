@@ -35,10 +35,8 @@ class WebhooksController(BaseAPIController):
         Returns a random webhook for a given type
         """
         webhooks = [
-            webhook
-            for webhook in self.app.webhooks_registry.webhooks
-            if webhook_type in webhook.type and
-            webhook.activate is True
+            webhook for webhook in self.app.webhooks_registry.webhooks
+            if webhook_type in webhook.type and webhook.activate is True
         ]
         return random.choice(webhooks).to_dict() if webhooks else {}
 
@@ -66,13 +64,11 @@ class WebhooksController(BaseAPIController):
             params[key] = value
 
         webhook = [
-            webhook
-            for webhook in self.app.webhooks_registry.webhooks
+            webhook for webhook in self.app.webhooks_registry.webhooks
             if webhook.name == webhook_name
         ]
 
         return imp.load_source('helper', webhook[0].helper).main(
             trans,
             webhook[0],
-            params,
-        ) if webhook and webhook[0].helper != '' else {}
+            params, ) if webhook and webhook[0].helper != '' else {}

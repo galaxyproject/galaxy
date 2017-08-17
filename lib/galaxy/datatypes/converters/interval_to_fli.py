@@ -91,7 +91,8 @@ def main():
     entries = []
     for name in sorted(name_loc_dict.keys()):
         loc = name_loc_dict[name]
-        entry = '%s\t%s\t%s' % (name.lower(), name, '%s:%i-%i' % (loc['contig'], loc['start'], loc['end']))
+        entry = '%s\t%s\t%s' % (name.lower(), name, '%s:%i-%i' %
+                                (loc['contig'], loc['start'], loc['end']))
         if len(entry) > max_len:
             max_len = len(entry)
         entries.append(entry)

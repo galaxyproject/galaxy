@@ -15,12 +15,12 @@ from galaxy.managers import hdas
 # from galaxy.managers import hdcas
 from galaxy.managers import history_contents
 
-
 import logging
 log = logging.getLogger(__name__)
 
 
-class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin):
+class HistoryManager(sharable.SharableModelManager,
+                     deletable.PurgableManagerMixin):
 
     model_class = model.History
     foreign_key_name = 'history'
@@ -76,11 +76,15 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         and the current history is deleted, return None.
         """
         if self.user_manager.is_anonymous(user):
-            return None if (not current_history or current_history.deleted) else current_history
+            return None if (not current_history
+                            or current_history.deleted) else current_history
         desc_update_time = desc(self.model_class.table.c.update_time)
-        filters = self._munge_filters(filters, self.model_class.user_id == user.id)
+        filters = self._munge_filters(filters,
+                                      self.model_class.user_id == user.id)
         # TODO: normalize this return value
-        return self.query(filters=filters, order_by=desc_update_time, limit=1, **kwargs).first()
+        return self.query(
+            filters=filters, order_by=desc_update_time, limit=1,
+            **kwargs).first()
 
     # .... purgable
     def purge(self, history, flush=True, **kwargs):
@@ -147,7 +151,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         # TODO: add functional/non-orm orders (such as rating)
         if default:
             return self.parse_order_by(default)
-        raise glx_exceptions.RequestParameterInvalidException('Unkown order_by', order_by=order_by_string,
+        raise glx_exceptions.RequestParameterInvalidException(
+            'Unkown order_by',
+            order_by=order_by_string,
             available=['create_time', 'update_time', 'name', 'size'])
 
     def non_ready_jobs(self, history):
@@ -158,13 +164,14 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         # TODO: defer to jobModelManager (if there was one)
         # TODO: genericize the params to allow other filters
-        jobs = (self.session().query(model.Job)
-            .filter(model.Job.history == history)
-            .filter(model.Job.state.in_(model.Job.non_ready_states)))
+        jobs = (self.session().query(model.Job).filter(
+            model.Job.history == history).filter(
+                model.Job.state.in_(model.Job.non_ready_states)))
         return jobs
 
 
-class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSerializerMixin):
+class HistorySerializer(sharable.SharableModelSerializer,
+                        deletable.PurgableSerializerMixin):
     """
     Interface/service object for serializing histories into dictionaries.
     """
@@ -177,85 +184,91 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         self.history_manager = self.manager
         self.hda_manager = hdas.HDAManager(app)
         self.hda_serializer = hdas.HDASerializer(app)
-        self.history_contents_serializer = history_contents.HistoryContentsSerializer(app)
+        self.history_contents_serializer = history_contents.HistoryContentsSerializer(
+            app)
 
         self.default_view = 'summary'
-        self.add_view('summary', [
-            'id',
-            'model_class',
-            'name',
-            'deleted',
-            'purged',
-            # 'count'
-            'url',
-            # TODO: why these?
-            'published',
-            'annotation',
-            'tags',
-        ])
-        self.add_view('detailed', [
-            'contents_url',
-            'empty',
-            'size',
-            'user_id',
-            'create_time',
-            'update_time',
-            'importable',
-            'slug',
-            'username_and_slug',
-            'genome_build',
-            # TODO: remove the next three - instead getting the same info from the 'hdas' list
-            'state',
-            'state_details',
-            'state_ids',
-            # 'community_rating',
-            # 'user_rating',
-        ], include_keys_from='summary')
+        self.add_view(
+            'summary',
+            [
+                'id',
+                'model_class',
+                'name',
+                'deleted',
+                'purged',
+                # 'count'
+                'url',
+                # TODO: why these?
+                'published',
+                'annotation',
+                'tags',
+            ])
+        self.add_view(
+            'detailed',
+            [
+                'contents_url',
+                'empty',
+                'size',
+                'user_id',
+                'create_time',
+                'update_time',
+                'importable',
+                'slug',
+                'username_and_slug',
+                'genome_build',
+                # TODO: remove the next three - instead getting the same info from the 'hdas' list
+                'state',
+                'state_details',
+                'state_ids',
+                # 'community_rating',
+                # 'user_rating',
+            ],
+            include_keys_from='summary')
         # in the Historys' case, each of these views includes the keys from the previous
 
         #: ..note: this is a custom view for newer (2016/3) UI and should be considered volatile
-        self.add_view('dev-detailed', [
-            'contents_url',
-            'size',
-            'user_id',
-            'create_time',
-            'update_time',
-            'importable',
-            'slug',
-            'username_and_slug',
-            'genome_build',
-            # 'contents_states',
-            'contents_active',
-            'hid_counter',
-        ], include_keys_from='summary')
+        self.add_view(
+            'dev-detailed',
+            [
+                'contents_url',
+                'size',
+                'user_id',
+                'create_time',
+                'update_time',
+                'importable',
+                'slug',
+                'username_and_slug',
+                'genome_build',
+                # 'contents_states',
+                'contents_active',
+                'hid_counter',
+            ],
+            include_keys_from='summary')
 
     # assumes: outgoing to json.dumps and sanitized
     def add_serializers(self):
         super(HistorySerializer, self).add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
 
-        self.serializers.update({
-            'model_class'   : lambda *a, **c: 'History',
-            'size'          : lambda i, k, **c: int(i.disk_size),
-            'nice_size'     : lambda i, k, **c: i.disk_nice_size,
-            'state'         : self.serialize_history_state,
-
-            'url'           : lambda i, k, **c: self.url_for('history', id=self.app.security.encode_id(i.id)),
-            'contents_url'  : lambda i, k, **c: self.url_for('history_contents',
-                                                             history_id=self.app.security.encode_id(i.id)),
-
-            'empty'         : lambda i, k, **c: (len(i.datasets) + len(i.dataset_collections)) <= 0,
-            'count'         : lambda i, k, **c: len(i.datasets),
-            'hdas'          : lambda i, k, **c: [self.app.security.encode_id(hda.id) for hda in i.datasets],
-            'state_details' : self.serialize_state_counts,
-            'state_ids'     : self.serialize_state_ids,
-            'contents'      : self.serialize_contents,
-            'non_ready_jobs': lambda i, k, **c: [self.app.security.encode_id(job.id) for job
-                                                 in self.manager.non_ready_jobs(i)],
-
-            'contents_states': self.serialize_contents_states,
-            'contents_active': self.serialize_contents_active,
-        })
+        self.serializers.update(
+            {
+                'model_class': lambda *a, **c: 'History',
+                'size': lambda i, k, **c: int(i.disk_size),
+                'nice_size': lambda i, k, **c: i.disk_nice_size,
+                'state': self.serialize_history_state,
+                'url': lambda i, k, **c: self.url_for('history', id=self.app.security.encode_id(i.id)),
+                'contents_url': lambda i, k, **c: self.url_for('history_contents', history_id=self.app.security.encode_id(i.id)),
+                'empty': lambda i, k, **c: (len(i.datasets) + len(i.dataset_collections)) <= 0,
+                'count': lambda i, k, **c: len(i.datasets),
+                'hdas': lambda i, k, **c: [self.app.security.encode_id(hda.id) for hda in i.datasets],
+                'state_details': self.serialize_state_counts,
+                'state_ids': self.serialize_state_ids,
+                'contents': self.serialize_contents,
+                'non_ready_jobs': lambda i, k, **c: [self.app.security.encode_id(job.id) for job in self.manager.non_ready_jobs(i)],
+                'contents_states': self.serialize_contents_states,
+                'contents_active': self.serialize_contents_active,
+            }
+        )
 
     # remove this
     def serialize_state_ids(self, history, key, **context):
@@ -275,7 +288,12 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         return state_ids
 
     # remove this
-    def serialize_state_counts(self, history, key, exclude_deleted=True, exclude_hidden=False, **context):
+    def serialize_state_counts(self,
+                               history,
+                               key,
+                               exclude_deleted=True,
+                               exclude_hidden=False,
+                               **context):
         """
         Return a dictionary keyed to possible dataset states and valued with the number
         of datasets in this history that have those states.
@@ -304,33 +322,40 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         state = states.ERROR
         # TODO: history_state and state_counts are classically calc'd at the same time
         #   so this is rel. ineff. - if we keep this...
-        hda_state_counts = self.serialize_state_counts(history, 'counts', exclude_deleted=True, **context)
+        hda_state_counts = self.serialize_state_counts(
+            history, 'counts', exclude_deleted=True, **context)
         num_hdas = sum(hda_state_counts.values())
         if num_hdas == 0:
             state = states.NEW
 
         else:
-            if (hda_state_counts[states.RUNNING] > 0 or
-                    hda_state_counts[states.SETTING_METADATA] > 0 or
-                    hda_state_counts[states.UPLOAD] > 0):
+            if (hda_state_counts[states.RUNNING] > 0
+                    or hda_state_counts[states.SETTING_METADATA] > 0
+                    or hda_state_counts[states.UPLOAD] > 0):
                 state = states.RUNNING
             # TODO: this method may be more useful if we *also* polled the histories jobs here too
-            elif (hda_state_counts[states.QUEUED] > 0 or
-                    hda_state_counts[states.NEW] > 0):
+            elif (hda_state_counts[states.QUEUED] > 0
+                  or hda_state_counts[states.NEW] > 0):
                 state = states.QUEUED
-            elif (hda_state_counts[states.ERROR] > 0 or
-                    hda_state_counts[states.FAILED_METADATA] > 0):
+            elif (hda_state_counts[states.ERROR] > 0
+                  or hda_state_counts[states.FAILED_METADATA] > 0):
                 state = states.ERROR
             elif hda_state_counts[states.OK] == num_hdas:
                 state = states.OK
 
         return state
 
-    def serialize_contents(self, history, key, trans=None, user=None, **context):
+    def serialize_contents(self,
+                           history,
+                           key,
+                           trans=None,
+                           user=None,
+                           **context):
         returned = []
-        for content in self.manager.contents_manager._union_of_contents_query(history).all():
-            serialized = self.history_contents_serializer.serialize_to_view(content,
-                view='summary', trans=trans, user=user)
+        for content in self.manager.contents_manager._union_of_contents_query(
+                history).all():
+            serialized = self.history_contents_serializer.serialize_to_view(
+                content, view='summary', trans=trans, user=user)
             returned.append(serialized)
         return returned
 
@@ -354,7 +379,8 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         return self.manager.contents_manager.active_counts(history)
 
 
-class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.PurgableDeserializerMixin):
+class HistoryDeserializer(sharable.SharableModelDeserializer,
+                          deletable.PurgableDeserializerMixin):
     """
     Interface/service object for validating and deserializing dictionaries into histories.
     """
@@ -369,12 +395,15 @@ class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.Purgable
         deletable.PurgableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update({
-            'name'          : self.deserialize_basestring,
-            'genome_build'  : self.deserialize_genome_build,
+            'name':
+            self.deserialize_basestring,
+            'genome_build':
+            self.deserialize_genome_build,
         })
 
 
-class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMixin):
+class HistoryFilters(sharable.SharableModelFilters,
+                     deletable.PurgableFiltersMixin):
     model_class = model.History
     model_manager_class = HistoryManager
 
@@ -383,6 +412,10 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
         deletable.PurgableFiltersMixin._add_parsers(self)
         self.orm_filter_parsers.update({
             # history specific
-            'name'          : {'op': ('eq', 'contains', 'like')},
-            'genome_build'  : {'op': ('eq', 'contains', 'like')},
+            'name': {
+                'op': ('eq', 'contains', 'like')
+            },
+            'genome_build': {
+                'op': ('eq', 'contains', 'like')
+            },
         })

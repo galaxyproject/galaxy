@@ -2,8 +2,7 @@
 from abc import (
     ABCMeta,
     abstractmethod,
-    abstractproperty,
-)
+    abstractproperty, )
 
 import six
 import yaml
@@ -19,7 +18,10 @@ class DependencyResolver(Dictifiable, object):
     """Abstract description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
-    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies', 'can_uninstall_dependencies']
+    dict_collection_visible_keys = [
+        'resolver_type', 'resolves_simple_dependencies',
+        'can_uninstall_dependencies'
+    ]
     # A "simple" dependency is one that does not depend on the the tool
     # resolving the dependency. Classic tool shed dependencies are non-simple
     # because the repository install context is used in dependency resolution
@@ -86,12 +88,15 @@ class MappableDependencyResolver:
     """
 
     def _setup_mapping(self, dependency_manager, **kwds):
-        mapping_files = dependency_manager.get_resolver_option(self, "mapping_files", explicit_resolver_options=kwds)
+        mapping_files = dependency_manager.get_resolver_option(
+            self, "mapping_files", explicit_resolver_options=kwds)
         mappings = []
         if mapping_files:
             mapping_files = listify(mapping_files)
             for mapping_file in mapping_files:
-                mappings.extend(MappableDependencyResolver._mapping_file_to_list(mapping_file))
+                mappings.extend(
+                    MappableDependencyResolver._mapping_file_to_list(
+                        mapping_file))
         self._mappings = mappings
 
     @staticmethod
@@ -113,7 +118,6 @@ FROM_UNVERSIONED = object()
 
 
 class RequirementMapping(object):
-
     def __init__(self, from_name, from_version, to_name, to_version):
         self.from_name = from_name
         self.from_version = from_version
@@ -155,12 +159,14 @@ class RequirementMapping(object):
             raw_version = from_raw.get("version", None)
             unversioned = from_raw.get("unversioned", False)
             if unversioned and raw_version:
-                raise Exception("Cannot define both version and set unversioned to True.")
+                raise Exception(
+                    "Cannot define both version and set unversioned to True.")
 
             if unversioned:
                 from_version = FROM_UNVERSIONED
             else:
-                from_version = str(raw_version) if raw_version is not None else raw_version
+                from_version = str(
+                    raw_version) if raw_version is not None else raw_version
         else:
             from_name = from_raw
             from_version = None
@@ -235,7 +241,9 @@ class InstallableDependencyResolver:
 
 @six.add_metaclass(ABCMeta)
 class Dependency(Dictifiable, object):
-    dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version', 'cacheable']
+    dict_collection_visible_keys = [
+        'dependency_type', 'exact', 'name', 'version', 'cacheable'
+    ]
     cacheable = False
 
     @abstractmethod
@@ -255,7 +263,8 @@ class Dependency(Dictifiable, object):
         """
         Return a message describing this dependency
         """
-        return "Using dependency %s version %s of type %s" % (self.name, self.version, self.dependency_type)
+        return "Using dependency %s version %s of type %s" % (
+            self.name, self.version, self.dependency_type)
 
 
 class NullDependency(Dependency):

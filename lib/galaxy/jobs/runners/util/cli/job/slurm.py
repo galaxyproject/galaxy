@@ -10,28 +10,22 @@ try:
 except ImportError:
     # Not in Galaxy, map Galaxy job states to Pulsar ones.
     from galaxy.util import enum
-    job_states = enum(RUNNING='running', OK='complete', QUEUED='queued', ERROR="failed")
+    job_states = enum(
+        RUNNING='running', OK='complete', QUEUED='queued', ERROR="failed")
 
 log = getLogger(__name__)
 
-argmap = {
-    'time': '-t',
-    'ncpus': '-c',
-    'partition': '-p'
-}
+argmap = {'time': '-t', 'ncpus': '-c', 'partition': '-p'}
 
 
 class Slurm(BaseJobExec):
-
     def __init__(self, **params):
         self.params = {}
         for k, v in params.items():
             self.params[k] = v
 
     def job_script_kwargs(self, ofile, efile, job_name):
-        scriptargs = {'-o': ofile,
-                      '-e': efile,
-                      '-J': job_name}
+        scriptargs = {'-o': ofile, '-e': efile, '-J': job_name}
 
         # Map arguments using argmap.
         for k, v in self.params.items():
@@ -42,7 +36,9 @@ class Slurm(BaseJobExec):
                     k = argmap[k]
                 scriptargs[k] = v
             except:
-                log.warning('Unrecognized long argument passed to Slurm CLI plugin: %s' % k)
+                log.warning(
+                    'Unrecognized long argument passed to Slurm CLI plugin: %s'
+                    % k)
 
         # Generated template.
         template_scriptargs = ''
@@ -91,7 +87,8 @@ class Slurm(BaseJobExec):
                 'CD': job_states.OK
             }.get(state)
         except KeyError:
-            raise KeyError("Failed to map slurm status code [%s] to job state." % state)
+            raise KeyError(
+                "Failed to map slurm status code [%s] to job state." % state)
 
 
-__all__ = ('Slurm',)
+__all__ = ('Slurm', )

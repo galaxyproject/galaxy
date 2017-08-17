@@ -31,7 +31,8 @@ def nextval(migrate_engine, table, col='id'):
     elif migrate_engine.name in ['mysql', 'sqlite']:
         return "null"
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception('Unable to convert data for unknown database type: %s'
+                        % migrate_engine.name)
 
 
 def localtimestamp(migrate_engine):
@@ -40,20 +41,40 @@ def localtimestamp(migrate_engine):
     elif migrate_engine.name == 'sqlite':
         return "current_date || ' ' || current_time"
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception('Unable to convert data for unknown database type: %s'
+                        % migrate_engine.name)
 
 
 ToolVersion_table = Table("tool_version", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("tool_id", String(255)),
-    Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True, nullable=True))
+                          Column("id", Integer, primary_key=True),
+                          Column("create_time", DateTime, default=now),
+                          Column(
+                              "update_time",
+                              DateTime,
+                              default=now,
+                              onupdate=now),
+                          Column("tool_id", String(255)),
+                          Column(
+                              "tool_shed_repository_id",
+                              Integer,
+                              ForeignKey("tool_shed_repository.id"),
+                              index=True,
+                              nullable=True))
 
 ToolVersionAssociation_table = Table("tool_version_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("tool_id", Integer, ForeignKey("tool_version.id"), index=True, nullable=False),
-    Column("parent_id", Integer, ForeignKey("tool_version.id"), index=True, nullable=False))
+                                     Column("id", Integer, primary_key=True),
+                                     Column(
+                                         "tool_id",
+                                         Integer,
+                                         ForeignKey("tool_version.id"),
+                                         index=True,
+                                         nullable=False),
+                                     Column(
+                                         "parent_id",
+                                         Integer,
+                                         ForeignKey("tool_version.id"),
+                                         index=True,
+                                         nullable=False))
 
 
 def upgrade(migrate_engine):
@@ -100,15 +121,19 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
 
     ToolIdGuidMap_table = Table("tool_id_guid_map", metadata,
-        Column("id", Integer, primary_key=True),
-        Column("create_time", DateTime, default=now),
-        Column("update_time", DateTime, default=now, onupdate=now),
-        Column("tool_id", String(255)),
-        Column("tool_version", TEXT),
-        Column("tool_shed", TrimmedString(255)),
-        Column("repository_owner", TrimmedString(255)),
-        Column("repository_name", TrimmedString(255)),
-        Column("guid", TEXT, index=True, unique=True))
+                                Column("id", Integer, primary_key=True),
+                                Column("create_time", DateTime, default=now),
+                                Column(
+                                    "update_time",
+                                    DateTime,
+                                    default=now,
+                                    onupdate=now),
+                                Column("tool_id", String(255)),
+                                Column("tool_version", TEXT),
+                                Column("tool_shed", TrimmedString(255)),
+                                Column("repository_owner", TrimmedString(255)),
+                                Column("repository_name", TrimmedString(255)),
+                                Column("guid", TEXT, index=True, unique=True))
 
     metadata.reflect()
     try:

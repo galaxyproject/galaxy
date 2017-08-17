@@ -41,8 +41,8 @@ from galaxy.util.odict import odict as OrderedDict
 
 class CycleError(Exception):
     def __init__(self, sofar, numpreds, succs):
-        Exception.__init__(self, "cycle in constraints",
-                           sofar, numpreds, succs)
+        Exception.__init__(self, "cycle in constraints", sofar, numpreds,
+                           succs)
         self.preds = None
 
     # return as much of the total ordering as topsort was able to
@@ -130,7 +130,7 @@ class CycleError(Exception):
 
 
 def _numpreds_and_successors_from_pairlist(pairlist):
-    numpreds = OrderedDict()   # elt -> # of predecessors
+    numpreds = OrderedDict()  # elt -> # of predecessors
     successors = OrderedDict()  # elt -> list of successors
     for first, second in pairlist:
         # make sure every elt is a key in numpreds

@@ -4,7 +4,6 @@ from ...metrics import formatting
 
 
 class UnameFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         return "Operating System", value
 
@@ -20,7 +19,8 @@ class UnamePlugin(InstrumentPlugin):
         self.uname_args = kwargs.get("args", "-a")
 
     def pre_execute_instrument(self, job_directory):
-        return "uname %s > '%s'" % (self.uname_args, self.__instrument_uname_path(job_directory))
+        return "uname %s > '%s'" % (
+            self.uname_args, self.__instrument_uname_path(job_directory))
 
     def job_properties(self, job_id, job_directory):
         properties = {}

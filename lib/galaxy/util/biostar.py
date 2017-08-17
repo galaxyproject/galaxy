@@ -30,10 +30,27 @@ DEFAULT_PAYLOAD = {
 }
 
 BIOSTAR_ACTIONS = {
-    None: {'url': lambda x: '', 'uses_payload': False},
-    'new_post': {'url': lambda x: 'p/new/external/post/', 'uses_payload': True, 'hmac_values': {'content': 'digest'}},
-    'show_tags': {'url': lambda x: 't/%s/' % ("+".join((x.get('tag_val') or DEFAULT_GALAXY_TAG).split(','))), 'uses_payload': False},
-    'log_out': {'url': lambda x: 'site/logout/', 'uses_payload': False}
+    None: {
+        'url': lambda x: '',
+        'uses_payload': False
+    },
+    'new_post': {
+        'url': lambda x: 'p/new/external/post/',
+        'uses_payload': True,
+        'hmac_values': {
+            'content': 'digest'
+        }
+    },
+    'show_tags': {
+        'url':
+        lambda x: 't/%s/' % ("+".join((x.get('tag_val') or DEFAULT_GALAXY_TAG).split(','))),
+        'uses_payload':
+        False
+    },
+    'log_out': {
+        'url': lambda x: 'site/logout/',
+        'uses_payload': False
+    }
 }
 
 DEFAULT_BIOSTAR_COOKIE_AGE = 1
@@ -67,12 +84,19 @@ def get_biostar_url(app, payload=None, biostar_action=None):
     payload = payload or {}
     payload = dict(DEFAULT_PAYLOAD, **payload)
     payload['name'] = app.config.biostar_key_name
-    for hmac_value_name, hmac_parameter_name in biostar_action.get('hmac_values', {}).items():
+    for hmac_value_name, hmac_parameter_name in biostar_action.get(
+            'hmac_values', {}).items():
         # Biostar requires ascii only on HMAC'd things
-        payload[hmac_value_name] = smart_str(payload.get(hmac_value_name, ''), encoding='ascii', errors='replace')
-        payload[hmac_parameter_name] = hmac.new(app.config.biostar_key, payload[hmac_value_name]).hexdigest()
+        payload[hmac_value_name] = smart_str(
+            payload.get(hmac_value_name, ''),
+            encoding='ascii',
+            errors='replace')
+        payload[hmac_parameter_name] = hmac.new(
+            app.config.biostar_key, payload[hmac_value_name]).hexdigest()
     # generate url, can parse payload info
-    url = str(urlparse.urljoin(app.config.biostar_url, biostar_action.get('url')(payload)))
+    url = str(
+        urlparse.urljoin(app.config.biostar_url,
+                         biostar_action.get('url')(payload)))
     if not biostar_action.get('uses_payload'):
         payload = {}
     url = url_for(url)
@@ -107,10 +131,13 @@ def populate_tool_payload(payload=None, tool=None):
     if tool.tool_shed_repository:
         tool_url = tool.tool_shed_repository.get_sharable_url(tool.app)
         if tool_url:
-            tool_url = '</br>ToolShed URL: <a href="%s">%s</a>' % (tool_url, tool_url)
+            tool_url = '</br>ToolShed URL: <a href="%s">%s</a>' % (tool_url,
+                                                                   tool_url)
     if not tool_url:
         tool_url = ''
-    payload['content'] = '<br /><hr /><p>Tool name: %s</br>Tool version: %s</br>Tool ID: %s%s</p></br>' % (tool.name, tool.version, tool.id, tool_url)
+    payload[
+        'content'] = '<br /><hr /><p>Tool name: %s</br>Tool version: %s</br>Tool ID: %s%s</p></br>' % (
+            tool.name, tool.version, tool.id, tool_url)
     return payload
 
 
@@ -129,9 +156,16 @@ def determine_cookie_domain(galaxy_hostname, biostar_hostname):
     return galaxy_hostname
 
 
-def create_cookie(trans, key_name, key, email, age=DEFAULT_BIOSTAR_COOKIE_AGE, override_never_authenticate=False):
+def create_cookie(trans,
+                  key_name,
+                  key,
+                  email,
+                  age=DEFAULT_BIOSTAR_COOKIE_AGE,
+                  override_never_authenticate=False):
     if trans.app.config.biostar_never_authenticate and not override_never_authenticate:
-        log.debug('A BioStar link was clicked, but never authenticate has been enabled, so we will not create the login cookie.')
+        log.debug(
+            'A BioStar link was clicked, but never authenticate has been enabled, so we will not create the login cookie.'
+        )
         return
     digest = hmac.new(key, email).hexdigest()
     value = "%s:%s" % (email, digest)
@@ -139,13 +173,20 @@ def create_cookie(trans, key_name, key, email, age=DEFAULT_BIOSTAR_COOKIE_AGE, o
     # We need to explicitly set the domain here, in order to allow for biostar in a subdomain to work
     galaxy_hostname = urlparse.urlsplit(url_for('/', qualified=True)).hostname
     biostar_hostname = urlparse.urlsplit(trans.app.config.biostar_url).hostname
-    trans.response.cookies[key_name]['domain'] = determine_cookie_domain(galaxy_hostname, biostar_hostname)
+    trans.response.cookies[key_name]['domain'] = determine_cookie_domain(
+        galaxy_hostname, biostar_hostname)
 
 
 def delete_cookie(trans, key_name):
     # Set expiration of Cookie to time in past, to cause browser to delete
     if key_name in trans.request.cookies:
-        create_cookie(trans, trans.app.config.biostar_key_name, '', '', age=-90, override_never_authenticate=True)
+        create_cookie(
+            trans,
+            trans.app.config.biostar_key_name,
+            '',
+            '',
+            age=-90,
+            override_never_authenticate=True)
 
 
 def biostar_logged_in(trans):
@@ -164,9 +205,13 @@ def biostar_logout(trans):
 
 class BiostarErrorReporter(ErrorReporter):
     def _send_report(self, user, email=None, message=None, **kwd):
-        assert biostar_enabled(self.app), ValueError("Biostar is not configured for this galaxy instance")
-        assert self.app.config.biostar_enable_bug_reports, ValueError("Biostar is not configured to allow bug reporting for this galaxy instance")
-        assert self._can_access_dataset(user), Exception("You are not allowed to access this dataset.")
+        assert biostar_enabled(self.app), ValueError(
+            "Biostar is not configured for this galaxy instance")
+        assert self.app.config.biostar_enable_bug_reports, ValueError(
+            "Biostar is not configured to allow bug reporting for this galaxy instance"
+        )
+        assert self._can_access_dataset(user), Exception(
+            "You are not allowed to access this dataset.")
         tool_version_select_field, tools, tool = \
             self.app.toolbox.get_tool_components(self.tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=True)
 
@@ -186,9 +231,11 @@ class BiostarErrorReporter(ErrorReporter):
         # Get footer for email from here
         payload2 = populate_tool_payload(tool=tool)
         if 'content' in payload2:
-            payload['content'] = "%s<br />%s" % (payload['content'], payload2['content'])
+            payload['content'] = "%s<br />%s" % (payload['content'],
+                                                 payload2['content'])
         if 'tag_val' in payload2:
-            payload['tag_val'] = ','.join([payload2['tag_val'], payload['tag_val']])
+            payload['tag_val'] = ','.join(
+                [payload2['tag_val'], payload['tag_val']])
         if 'action' not in payload:
             payload['action'] = 1  # Automatically post bug reports to biostar
         return payload

@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 
 
 class RepositoryDependencyAttributeHandler(object):
-
     def __init__(self, app, unpopulate):
         self.app = app
         self.file_name = REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
@@ -65,7 +64,8 @@ class RepositoryDependencyAttributeHandler(object):
         # to be set to False and included in the <repository> tag when a repository was exported along with
         # its dependencies.  The following will eliminate this problematic attribute upon import.
         prior_installation_required = elem.get('prior_installation_required')
-        if prior_installation_required is not None and not asbool(prior_installation_required):
+        if prior_installation_required is not None and not asbool(
+                prior_installation_required):
             del elem.attrib['prior_installation_required']
         sub_elems = [child_elem for child_elem in list(elem)]
         if len(sub_elems) > 0:
@@ -91,10 +91,14 @@ class RepositoryDependencyAttributeHandler(object):
                 attributes = odict()
                 attributes['name'] = name
                 attributes['owner'] = owner
-                prior_installation_required = elem.get('prior_installation_required')
+                prior_installation_required = elem.get(
+                    'prior_installation_required')
                 if asbool(prior_installation_required):
                     attributes['prior_installation_required'] = 'True'
-                new_elem = xml_util.create_element('repository', attributes=attributes, sub_elements=sub_elements)
+                new_elem = xml_util.create_element(
+                    'repository',
+                    attributes=attributes,
+                    sub_elements=sub_elements)
                 altered = True
             return altered, new_elem, error_message
         # From here on we're populating the toolshed and changeset_revision attributes if necessary.
@@ -107,23 +111,28 @@ class RepositoryDependencyAttributeHandler(object):
             # Populate the changeset_revision attribute with the latest installable metadata revision for
             # the defined repository.  We use the latest installable revision instead of the latest metadata
             # revision to ensure that the contents of the revision are valid.
-            repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
+            repository = repository_util.get_repository_by_name_and_owner(
+                self.app, name, owner)
             if repository:
-                repo = hg_util.get_repo_for_repository(self.app,
-                                                       repository=repository,
-                                                       repo_path=None,
-                                                       create=False)
+                repo = hg_util.get_repo_for_repository(
+                    self.app,
+                    repository=repository,
+                    repo_path=None,
+                    create=False)
                 lastest_installable_changeset_revision = \
                     metadata_util.get_latest_downloadable_changeset_revision(self.app, repository, repo)
                 if lastest_installable_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
-                    elem.attrib['changeset_revision'] = lastest_installable_changeset_revision
+                    elem.attrib[
+                        'changeset_revision'] = lastest_installable_changeset_revision
                     altered = True
                 else:
                     error_message = 'Invalid latest installable changeset_revision %s ' % \
                         str(lastest_installable_changeset_revision)
-                    error_message += 'retrieved for repository %s owned by %s.  ' % (str(name), str(owner))
+                    error_message += 'retrieved for repository %s owned by %s.  ' % (
+                        str(name), str(owner))
             else:
-                error_message = 'Unable to locate repository with name %s and owner %s.  ' % (str(name), str(owner))
+                error_message = 'Unable to locate repository with name %s and owner %s.  ' % (
+                    str(name), str(owner))
         return altered, elem, error_message
 
     def handle_sub_elem(self, parent_elem, elem_index, elem):
@@ -170,7 +179,8 @@ class RepositoryDependencyAttributeHandler(object):
                 # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
                 altered, new_elem, error_message = self.handle_elem(elem)
                 if error_message:
-                    error_message = 'The %s file contains an invalid <repository> tag.  %s' % (self.file_name, error_message)
+                    error_message = 'The %s file contains an invalid <repository> tag.  %s' % (
+                        self.file_name, error_message)
                     return False, None, error_message
                 if altered:
                     if not root_altered:
@@ -180,7 +190,6 @@ class RepositoryDependencyAttributeHandler(object):
 
 
 class ToolDependencyAttributeHandler(object):
-
     def __init__(self, app, unpopulate):
         self.app = app
         self.file_name = TOOL_DEPENDENCY_DEFINITION_FILENAME
@@ -192,7 +201,8 @@ class ToolDependencyAttributeHandler(object):
         tag defined within a tool_dependencies.xml file.
         """
         rdah = RepositoryDependencyAttributeHandler(self.app, self.unpopulate)
-        tah = tag_attribute_handler.TagAttributeHandler(self.app, rdah, self.unpopulate)
+        tah = tag_attribute_handler.TagAttributeHandler(
+            self.app, rdah, self.unpopulate)
         altered = False
         error_message = ''
         # Make sure we're looking at a valid tool_dependencies.xml file.
@@ -200,5 +210,6 @@ class ToolDependencyAttributeHandler(object):
         if tree is None:
             return False, None, error_message
         root = tree.getroot()
-        altered, new_root, error_message = tah.process_config(root, skip_actions_tags=False)
+        altered, new_root, error_message = tah.process_config(
+            root, skip_actions_tags=False)
         return altered, new_root, error_message

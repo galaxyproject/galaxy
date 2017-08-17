@@ -13,12 +13,7 @@ import galaxy.tools.deps.requirements
 from galaxy import util
 from galaxy.util import checkers
 from galaxy.web import url_for
-from tool_shed.util import (
-    basic_util,
-    common_util,
-    hg_util,
-    repository_util
-)
+from tool_shed.util import (basic_util, common_util, hg_util, repository_util)
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +78,8 @@ This message was sent from the Galaxy Tool Shed instance hosted on the server
 """
 
 
-def can_eliminate_repository_dependency(metadata_dict, tool_shed_url, name, owner):
+def can_eliminate_repository_dependency(metadata_dict, tool_shed_url, name,
+                                        owner):
     """
     Determine if the relationship between a repository_dependency record
     associated with a tool_shed_repository record on the Galaxy side
@@ -92,14 +88,16 @@ def can_eliminate_repository_dependency(metadata_dict, tool_shed_url, name, owne
     rd_dict = metadata_dict.get('repository_dependencies', {})
     rd_tups = rd_dict.get('repository_dependencies', [])
     for rd_tup in rd_tups:
-        tsu, n, o, none1, none2, none3 = common_util.parse_repository_dependency_tuple(rd_tup)
+        tsu, n, o, none1, none2, none3 = common_util.parse_repository_dependency_tuple(
+            rd_tup)
         if tsu == tool_shed_url and n == name and o == owner:
             # The repository dependency is current, so keep it.
             return False
     return True
 
 
-def can_eliminate_tool_dependency(metadata_dict, name, dependency_type, version):
+def can_eliminate_tool_dependency(metadata_dict, name, dependency_type,
+                                  version):
     """
     Determine if the relationship between a tool_dependency record
     associated with a tool_shed_repository record on the Galaxy side
@@ -124,7 +122,8 @@ def can_eliminate_tool_dependency(metadata_dict, name, dependency_type, version)
     return True
 
 
-def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, tool_shed_url):
+def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository,
+                                   tool_shed_url):
     """
     Repositories of type tool_dependency_definition allow for defining a
     package dependency at some point in the change log and then removing the
@@ -135,17 +134,22 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
     for rrda in tool_shed_repository.required_repositories:
         rd = rrda.repository_dependency
         r = rd.repository
-        if can_eliminate_repository_dependency(metadata_dict, tool_shed_url, r.name, r.owner):
+        if can_eliminate_repository_dependency(metadata_dict, tool_shed_url,
+                                               r.name, r.owner):
             message = "Repository dependency %s by owner %s is not required by repository %s, owner %s, "
             message += "removing from list of repository dependencies."
-            log.debug(message % (r.name, r.owner, tool_shed_repository.name, tool_shed_repository.owner))
+            log.debug(message % (r.name, r.owner, tool_shed_repository.name,
+                                 tool_shed_repository.owner))
             trans.install_model.context.delete(rrda)
             trans.install_model.context.flush()
     for td in tool_shed_repository.tool_dependencies:
-        if can_eliminate_tool_dependency(metadata_dict, td.name, td.type, td.version):
+        if can_eliminate_tool_dependency(metadata_dict, td.name, td.type,
+                                         td.version):
             message = "Tool dependency %s, version %s is not required by repository %s, owner %s, "
             message += "removing from list of tool dependencies."
-            log.debug(message % (td.name, td.version, tool_shed_repository.name, tool_shed_repository.owner))
+            log.debug(message %
+                      (td.name, td.version, tool_shed_repository.name,
+                       tool_shed_repository.owner))
             trans.install_model.context.delete(td)
             trans.install_model.context.flush()
 
@@ -156,7 +160,8 @@ def generate_tool_guid(repository_clone_url, tool):
     the tool in the Galaxy tool shed from which it is being installed.  The form of the guid is
     <tool shed host>/repos/<repository owner>/<repository name>/<tool id>/<tool version>
     """
-    tmp_url = common_util.remove_protocol_and_user_from_clone_url(repository_clone_url)
+    tmp_url = common_util.remove_protocol_and_user_from_clone_url(
+        repository_clone_url)
     return '%s/%s/%s' % (tmp_url, tool.id, tool.version)
 
 
@@ -184,7 +189,10 @@ def get_category_by_name(app, name):
         return None
 
 
-def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_info_dicts=None):
+def get_tool_shed_repo_requirements(app,
+                                    tool_shed_url,
+                                    repositories=None,
+                                    repo_info_dicts=None):
     """
     Contact tool_shed_url for a list of requirements for a repository or a list of repositories.
     Returns a list of requirements, where each requirement is a dictionary with name and version as keys.
@@ -194,9 +202,14 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
     if repositories:
         if not isinstance(repositories, list):
             repositories = [repositories]
-        repository_params = [{'name': repository.name,
-                             'owner': repository.owner,
-                             'changeset_revision': repository.changeset_revision} for repository in repositories]
+        repository_params = [{
+            'name':
+            repository.name,
+            'owner':
+            repository.owner,
+            'changeset_revision':
+            repository.changeset_revision
+        } for repository in repositories]
     else:
         if not isinstance(repo_info_dicts, list):
             repo_info_dicts = [repo_info_dicts]
@@ -206,17 +219,22 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
                 # repo_info_tuple is a list, but keep terminology
                 owner = repo_info_tuple[4]
                 changeset_revision = repo_info_tuple[2]
-                repository_params.append({'name': name,
-                                          'owner': owner,
-                                          'changeset_revision': changeset_revision})
+                repository_params.append({
+                    'name':
+                    name,
+                    'owner':
+                    owner,
+                    'changeset_revision':
+                    changeset_revision
+                })
     pathspec = ["api", "repositories", "get_repository_revision_install_info"]
     tools = []
     for params in repository_params:
-        response = util.url_get(tool_shed_url,
-                                password_mgr=app.tool_shed_registry.url_auth(tool_shed_url),
-                                pathspec=pathspec,
-                                params=params
-                                )
+        response = util.url_get(
+            tool_shed_url,
+            password_mgr=app.tool_shed_registry.url_auth(tool_shed_url),
+            pathspec=pathspec,
+            params=params)
         json_response = json.loads(response)
         valid_tools = json_response[1].get('valid_tools', [])
         if valid_tools:
@@ -225,14 +243,19 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
 
 
 def get_requirements_from_tools(tools):
-    return {tool['id']: galaxy.tools.deps.requirements.ToolRequirements.from_list(tool['requirements']) for tool in tools}
+    return {
+        tool['id']: galaxy.tools.deps.requirements.ToolRequirements.from_list(
+            tool['requirements'])
+        for tool in tools
+    }
 
 
 def get_requirements_from_repository(repository):
     if not repository.includes_tools:
         return {}
     else:
-        return get_requirements_from_tools(repository.metadata.get('tools', []))
+        return get_requirements_from_tools(
+            repository.metadata.get('tools', []))
 
 
 def get_ctx_rev(app, tool_shed_url, name, owner, changeset_revision):
@@ -240,14 +263,21 @@ def get_ctx_rev(app, tool_shed_url, name, owner, changeset_revision):
     Send a request to the tool shed to retrieve the ctx_rev for a repository defined by the
     combination of a name, owner and changeset revision.
     """
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
-    params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(
+        app, tool_shed_url)
+    params = dict(
+        name=name, owner=owner, changeset_revision=changeset_revision)
     pathspec = ['repository', 'get_ctx_rev']
-    ctx_rev = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    ctx_rev = util.url_get(
+        tool_shed_url,
+        password_mgr=app.tool_shed_registry.url_auth(tool_shed_url),
+        pathspec=pathspec,
+        params=params)
     return ctx_rev
 
 
-def get_next_prior_import_or_install_required_dict_entry(prior_required_dict, processed_tsr_ids):
+def get_next_prior_import_or_install_required_dict_entry(
+        prior_required_dict, processed_tsr_ids):
     """
     This method is used in the Tool Shed when exporting a repository and its dependencies, and in Galaxy
     when a repository and its dependencies are being installed.  The order in which the prior_required_dict
@@ -288,15 +318,19 @@ def get_repository_categories(app, id):
         .filter(app.model.RepositoryCategoryAssociation.table.c.repository_id == app.security.decode_id(id))
 
 
-def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
+def get_repository_file_contents(app, file_path, repository_id,
+                                 is_admin=False):
     """Return the display-safe contents of a repository file for display in a browser."""
     safe_str = ''
     if not is_path_browsable(app, file_path, repository_id, is_admin):
-        log.warning('Request tries to access a file outside of the repository location. File path: %s', file_path)
+        log.warning(
+            'Request tries to access a file outside of the repository location. File path: %s',
+            file_path)
         return 'Invalid file path'
     # Symlink targets are checked by is_path_browsable
     if os.path.islink(file_path):
-        safe_str = 'link to: ' + basic_util.to_html_string(os.readlink(file_path))
+        safe_str = 'link to: ' + basic_util.to_html_string(
+            os.readlink(file_path))
         return safe_str
     elif checkers.is_gzip(file_path):
         return '<br/>gzip compressed file<br/>'
@@ -323,11 +357,12 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
             join_by_str = \
                 "<br/><br/>...some text eliminated here because file size is larger than maximum viewing size of %s...<br/><br/>" % \
                 util.nice_size(basic_util.MAX_DISPLAY_SIZE)
-            safe_str = util.shrink_string_by_size(safe_str,
-                                                  basic_util.MAX_DISPLAY_SIZE,
-                                                  join_by=join_by_str,
-                                                  left_larger=True,
-                                                  beginning_on_size_error=True)
+            safe_str = util.shrink_string_by_size(
+                safe_str,
+                basic_util.MAX_DISPLAY_SIZE,
+                join_by=join_by_str,
+                left_larger=True,
+                beginning_on_size_error=True)
         return safe_str
 
 
@@ -354,8 +389,10 @@ def get_repository_from_refresh_on_change(app, **kwd):
     for k, v in kwd.items():
         changeset_revision_str = 'changeset_revision_'
         if k.startswith(changeset_revision_str):
-            repository_id = app.security.encode_id(int(k.lstrip(changeset_revision_str)))
-            repository = repository_util.get_repository_in_tool_shed(app, repository_id)
+            repository_id = app.security.encode_id(
+                int(k.lstrip(changeset_revision_str)))
+            repository = repository_util.get_repository_in_tool_shed(
+                app, repository_id)
             if repository.tip(app) != v:
                 return v, repository
     # This should never be reached - raise an exception?
@@ -367,23 +404,34 @@ def get_repository_type_from_tool_shed(app, tool_shed_url, name, owner):
     Send a request to the tool shed to retrieve the type for a repository defined by the
     combination of a name and owner.
     """
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(
+        app, tool_shed_url)
     params = dict(name=name, owner=owner)
     pathspec = ['repository', 'get_repository_type']
-    repository_type = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    repository_type = util.url_get(
+        tool_shed_url,
+        password_mgr=app.tool_shed_registry.url_auth(tool_shed_url),
+        pathspec=pathspec,
+        params=params)
     return repository_type
 
 
-def get_tool_dependency_definition_metadata_from_tool_shed(app, tool_shed_url, name, owner):
+def get_tool_dependency_definition_metadata_from_tool_shed(
+        app, tool_shed_url, name, owner):
     """
     Send a request to the tool shed to retrieve the current metadata for a
     repository of type tool_dependency_definition defined by the combination
     of a name and owner.
     """
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(
+        app, tool_shed_url)
     params = dict(name=name, owner=owner)
     pathspec = ['repository', 'get_tool_dependency_definition_metadata']
-    metadata = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    metadata = util.url_get(
+        tool_shed_url,
+        password_mgr=app.tool_shed_registry.url_auth(tool_shed_url),
+        pathspec=pathspec,
+        params=params)
     return metadata
 
 
@@ -393,16 +441,17 @@ def get_tool_panel_config_tool_path_install_dir(app, repository):
     the directory where the repository is installed.  This method assumes all repository tools are
     defined in a single shed-related tool panel config.
     """
-    tool_shed = common_util.remove_port_from_tool_shed_url(str(repository.tool_shed))
-    relative_install_dir = '%s/repos/%s/%s/%s' % (tool_shed,
-                                                  str(repository.owner),
-                                                  str(repository.name),
-                                                  str(repository.installed_changeset_revision))
+    tool_shed = common_util.remove_port_from_tool_shed_url(
+        str(repository.tool_shed))
+    relative_install_dir = '%s/repos/%s/%s/%s' % (
+        tool_shed, str(repository.owner), str(repository.name),
+        str(repository.installed_changeset_revision))
     # Get the relative tool installation paths from each of the shed tool configs.
     shed_config_dict = repository.get_shed_config_dict(app)
     if not shed_config_dict:
         # Just pick a semi-random shed config.
-        for shed_config_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
+        for shed_config_dict in app.toolbox.dynamic_confs(
+                include_migrated_tool_conf=True):
             if (repository.dist_to_shed and shed_config_dict['config_filename'] == app.config.migrated_tools_config) \
                     or (not repository.dist_to_shed and shed_config_dict['config_filename'] != app.config.migrated_tools_config):
                 break
@@ -416,7 +465,8 @@ def get_tool_path_by_shed_tool_conf_filename(app, shed_tool_conf):
     Return the tool_path config setting for the received shed_tool_conf file by searching the tool box's in-memory list of shed_tool_confs for the
     dictionary whose config_filename key has a value matching the received shed_tool_conf.
     """
-    for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
+    for shed_tool_conf_dict in app.toolbox.dynamic_confs(
+            include_migrated_tool_conf=True):
         config_filename = shed_tool_conf_dict['config_filename']
         if config_filename == shed_tool_conf:
             return shed_tool_conf_dict['tool_path']
@@ -433,7 +483,12 @@ def get_user(app, id):
     return sa_session.query(app.model.User).get(app.security.decode_id(id))
 
 
-def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_alert=False, admin_only=False):
+def handle_email_alerts(app,
+                        host,
+                        repository,
+                        content_alert_str='',
+                        new_repo_alert=False,
+                        admin_only=False):
     """
     There are 2 complementary features that enable a tool shed user to receive email notification:
     1. Within User Preferences, they can elect to receive email when the first (or first valid)
@@ -457,8 +512,10 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
        that was included in the change set.
     """
     sa_session = app.model.context.current
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
-    sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None)
+    repo = hg_util.get_repo_for_repository(
+        app, repository=repository, repo_path=None, create=False)
+    sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed(
+        repository, changeset_revision=None)
     smtp_server = app.config.smtp_server
     if smtp_server and (new_repo_alert or repository.email_alerts):
         # Send email alert to users that want them.
@@ -481,26 +538,29 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         else:
             template = email_alert_template
         display_date = hg_util.get_readable_ctx_date(ctx)
-        admin_body = string.Template(template).safe_substitute(host=host,
-                                                               sharable_link=sharable_link,
-                                                               repository_name=repository.name,
-                                                               revision='%s:%s' % (str(ctx.rev()), ctx),
-                                                               display_date=display_date,
-                                                               description=ctx.description(),
-                                                               username=username,
-                                                               content_alert_str=content_alert_str)
-        body = string.Template(template).safe_substitute(host=host,
-                                                         sharable_link=sharable_link,
-                                                         repository_name=repository.name,
-                                                         revision='%s:%s' % (str(ctx.rev()), ctx),
-                                                         display_date=display_date,
-                                                         description=ctx.description(),
-                                                         username=username,
-                                                         content_alert_str='')
+        admin_body = string.Template(template).safe_substitute(
+            host=host,
+            sharable_link=sharable_link,
+            repository_name=repository.name,
+            revision='%s:%s' % (str(ctx.rev()), ctx),
+            display_date=display_date,
+            description=ctx.description(),
+            username=username,
+            content_alert_str=content_alert_str)
+        body = string.Template(template).safe_substitute(
+            host=host,
+            sharable_link=sharable_link,
+            repository_name=repository.name,
+            revision='%s:%s' % (str(ctx.rev()), ctx),
+            display_date=display_date,
+            description=ctx.description(),
+            username=username,
+            content_alert_str='')
         admin_users = app.config.get("admin_users", "").split(",")
         frm = email_from
         if new_repo_alert:
-            subject = "Galaxy tool shed alert for new repository named %s" % str(repository.name)
+            subject = "Galaxy tool shed alert for new repository named %s" % str(
+                repository.name)
             subject = subject[:80]
             email_alerts = []
             for user in sa_session.query(app.model.User) \
@@ -512,7 +572,8 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
                 else:
                     email_alerts.append(user.email)
         else:
-            subject = "Galaxy tool shed update alert for repository named %s" % str(repository.name)
+            subject = "Galaxy tool shed update alert for repository named %s" % str(
+                repository.name)
             email_alerts = json.loads(repository.email_alerts)
         for email in email_alerts:
             to = email.strip()
@@ -523,7 +584,9 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
                 else:
                     util.send_mail(frm, to, subject, body, app.config)
             except Exception:
-                log.exception("An error occurred sending a tool shed repository update alert by email.")
+                log.exception(
+                    "An error occurred sending a tool shed repository update alert by email."
+                )
 
 
 def have_shed_tool_conf_for_install(app):
@@ -551,7 +614,8 @@ def is_path_within_dependency_dir(app, path):
     tool_dependency_dir = app.config.get('tool_dependency_dir', None)
     if tool_dependency_dir:
         dependency_path = os.path.abspath(tool_dependency_dir)
-        allowed = os.path.commonprefix([dependency_path, resolved_path]) == dependency_path
+        allowed = os.path.commonprefix([dependency_path,
+                                        resolved_path]) == dependency_path
     return allowed
 
 
@@ -560,18 +624,25 @@ def is_path_within_repo(app, path, repository_id):
     Detect whether the given path is within the repository folder on the disk.
     Use to filter malicious symlinks targeting outside paths.
     """
-    repo_path = os.path.abspath(repository_util.get_repository_by_id(app, repository_id).repo_path(app))
+    repo_path = os.path.abspath(
+        repository_util.get_repository_by_id(app, repository_id).repo_path(
+            app))
     resolved_path = os.path.realpath(path)
     return os.path.commonprefix([repo_path, resolved_path]) == repo_path
 
 
-def open_repository_files_folder(app, folder_path, repository_id, is_admin=False):
+def open_repository_files_folder(app,
+                                 folder_path,
+                                 repository_id,
+                                 is_admin=False):
     """
     Return a list of dictionaries, each of which contains information for a file or directory contained
     within a directory in a repository file hierarchy.
     """
     if not is_path_browsable(app, folder_path, repository_id, is_admin):
-        log.warning('Request tries to access a folder outside of the allowed locations. Folder path: %s', folder_path)
+        log.warning(
+            'Request tries to access a folder outside of the allowed locations. Folder path: %s',
+            folder_path)
         return []
     try:
         files_list = get_repository_files(folder_path)
@@ -586,18 +657,22 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
         is_link = os.path.islink(full_path)
         path_is_browsable = is_path_browsable(app, full_path, repository_id)
         if is_link and not path_is_browsable:
-            log.warning('Valid folder contains a symlink outside of the repository location. Link found in: ' + str(full_path))
+            log.warning(
+                'Valid folder contains a symlink outside of the repository location. Link found in: '
+                + str(full_path))
         if filename:
             if os.path.isdir(full_path) and path_is_browsable:
                 # Append a '/' character so that our jquery dynatree will function properly.
                 filename = '%s/' % filename
                 full_path = '%s/' % full_path
                 is_folder = True
-            node = {"title": filename,
-                    "isFolder": is_folder,
-                    "isLazy": is_folder,
-                    "tooltip": full_path,
-                    "key": full_path}
+            node = {
+                "title": filename,
+                "isFolder": is_folder,
+                "isLazy": is_folder,
+                "tooltip": full_path,
+                "key": full_path
+            }
             folder_contents.append(node)
     return folder_contents
 
@@ -624,12 +699,15 @@ def set_image_paths(app, encoded_repository_id, text):
         # settings like .. images:: http_files/images/help.png
         for match in re.findall('.. image:: (?!http)/?(.+)', text):
             text = text.replace(match, match.replace('/', '%2F'))
-        text = re.sub(r'\.\. image:: (?!https?://)/?(.+)', r'.. image:: %s/\1' % route_to_images, text)
+        text = re.sub(r'\.\. image:: (?!https?://)/?(.+)',
+                      r'.. image:: %s/\1' % route_to_images, text)
     return text
 
 
 def tool_shed_is_this_tool_shed(toolshed_base_url):
     """Determine if a tool shed is the current tool shed."""
-    cleaned_toolshed_base_url = common_util.remove_protocol_from_tool_shed_url(toolshed_base_url)
-    cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(str(url_for('/', qualified=True)))
+    cleaned_toolshed_base_url = common_util.remove_protocol_from_tool_shed_url(
+        toolshed_base_url)
+    cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(
+        str(url_for('/', qualified=True)))
     return cleaned_toolshed_base_url == cleaned_tool_shed

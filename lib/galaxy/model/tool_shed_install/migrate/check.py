@@ -2,21 +2,15 @@ import logging
 import os.path
 import sys
 
-from migrate.versioning import (
-    repository,
-    schema
-)
-from sqlalchemy import (
-    create_engine,
-    MetaData,
-    Table
-)
+from migrate.versioning import (repository, schema)
+from sqlalchemy import (create_engine, MetaData, Table)
 from sqlalchemy.exc import NoSuchTableError
 
 log = logging.getLogger(__name__)
 
 # path relative to galaxy
-migrate_repository_directory = os.path.abspath(os.path.dirname(__file__)).replace(os.getcwd() + os.path.sep, '', 1)
+migrate_repository_directory = os.path.abspath(
+    os.path.dirname(__file__)).replace(os.getcwd() + os.path.sep, '', 1)
 migrate_repository = repository.Repository(migrate_repository_directory)
 
 
@@ -29,7 +23,8 @@ def create_or_verify_database(url, engine_options={}, app=None):
     def migrate():
         try:
             # Declare the database to be under a repository's version control
-            db_schema = schema.ControlledSchema.create(engine, migrate_repository)
+            db_schema = schema.ControlledSchema.create(engine,
+                                                       migrate_repository)
         except:
             # The database is already under version control
             db_schema = schema.ControlledSchema(engine, migrate_repository)
@@ -58,14 +53,17 @@ def create_or_verify_database(url, engine_options={}, app=None):
         log.info("Adding version control to existing database")
         try:
             Table("metadata_file", meta, autoload=True)
-            schema.ControlledSchema.create(engine, migrate_repository, version=2)
+            schema.ControlledSchema.create(
+                engine, migrate_repository, version=2)
         except NoSuchTableError:
-            schema.ControlledSchema.create(engine, migrate_repository, version=1)
+            schema.ControlledSchema.create(
+                engine, migrate_repository, version=1)
 
     # Verify that the code and the DB are in sync
     db_schema = schema.ControlledSchema(engine, migrate_repository)
     if migrate_repository.versions.latest != db_schema.version:
-        exception_msg = "Your database has version '%d' but this code expects version '%d'.  " % (db_schema.version, migrate_repository.versions.latest)
+        exception_msg = "Your database has version '%d' but this code expects version '%d'.  " % (
+            db_schema.version, migrate_repository.versions.latest)
         exception_msg += "Back up your database and then migrate the schema by running the following from your Galaxy installation directory:"
         exception_msg += "\n\nsh manage_db.sh upgrade install\n"
 

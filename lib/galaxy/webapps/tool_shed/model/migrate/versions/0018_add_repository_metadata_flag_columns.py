@@ -33,7 +33,8 @@ def upgrade(migrate_engine):
         default_false = "false"
 
     try:
-        RepositoryMetadata_table = Table("repository_metadata", metadata, autoload=True)
+        RepositoryMetadata_table = Table(
+            "repository_metadata", metadata, autoload=True)
     except NoSuchTableError:
         RepositoryMetadata_table = None
         log.debug("Failed loading table repository_metadata.")
@@ -45,7 +46,9 @@ def upgrade(migrate_engine):
             col = RepositoryMetadata_table.c.tool_test_errors
             col.drop()
         except Exception as e:
-            log.debug("Dropping column 'tool_test_errors' from repository_metadata table failed: %s" % (str(e)))
+            log.debug(
+                "Dropping column 'tool_test_errors' from repository_metadata table failed: %s"
+                % (str(e)))
 
         # Create the tool_test_results column to replace the ill-named tool_test_errors column just dropped above.
         c = Column("tool_test_results", JSONType, nullable=True)
@@ -53,35 +56,45 @@ def upgrade(migrate_engine):
             c.create(RepositoryMetadata_table)
             assert c is RepositoryMetadata_table.c.tool_test_results
         except Exception as e:
-            print "Adding tool_test_results column to the repository_metadata table failed: %s" % str(e)
+            print "Adding tool_test_results column to the repository_metadata table failed: %s" % str(
+                e)
 
         # Create the missing_test_components column.
-        c = Column("missing_test_components", Boolean, default=False, index=True)
+        c = Column(
+            "missing_test_components", Boolean, default=False, index=True)
         try:
-            c.create(RepositoryMetadata_table, index_name="ix_repository_metadata_mtc")
+            c.create(
+                RepositoryMetadata_table,
+                index_name="ix_repository_metadata_mtc")
             assert c is RepositoryMetadata_table.c.missing_test_components
-            migrate_engine.execute("UPDATE repository_metadata SET missing_test_components=%s" % default_false)
+            migrate_engine.execute(
+                "UPDATE repository_metadata SET missing_test_components=%s" %
+                default_false)
         except Exception as e:
-            print "Adding missing_test_components column to the repository_metadata table failed: %s" % str(e)
+            print "Adding missing_test_components column to the repository_metadata table failed: %s" % str(
+                e)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     # Drop missing_test_components and tool_test_results from the repository_metadata table and add tool_test_errors to the repository_metadata table.
-    RepositoryMetadata_table = Table("repository_metadata", metadata, autoload=True)
+    RepositoryMetadata_table = Table(
+        "repository_metadata", metadata, autoload=True)
 
     # Drop the missing_test_components column.
     try:
         RepositoryMetadata_table.c.missing_test_components.drop()
     except Exception as e:
-        print "Dropping column missing_test_components from the repository_metadata table failed: %s" % str(e)
+        print "Dropping column missing_test_components from the repository_metadata table failed: %s" % str(
+            e)
 
     # Drop the tool_test_results column.
     try:
         RepositoryMetadata_table.c.tool_test_results.drop()
     except Exception as e:
-        print "Dropping column tool_test_results from the repository_metadata table failed: %s" % str(e)
+        print "Dropping column tool_test_results from the repository_metadata table failed: %s" % str(
+            e)
 
     # Create the tool_test_errors column.
     c = Column("tool_test_errors", JSONType, nullable=True)
@@ -89,4 +102,5 @@ def downgrade(migrate_engine):
         c.create(RepositoryMetadata_table)
         assert c is RepositoryMetadata_table.c.tool_test_errors
     except Exception as e:
-        print "Adding tool_test_errors column to the repository_metadata table failed: %s" % str(e)
+        print "Adding tool_test_errors column to the repository_metadata table failed: %s" % str(
+            e)

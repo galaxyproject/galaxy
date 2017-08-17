@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Uses pysam to bgzip a vcf file as-is.
 Headers, which are important, are kept.

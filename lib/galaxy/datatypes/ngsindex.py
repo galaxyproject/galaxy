@@ -15,8 +15,18 @@ class BowtieIndex(Html):
     base class for BowtieIndex
     is subclassed by BowtieColorIndex and BowtieBaseIndex
     """
-    MetadataElement(name="base_name", desc="base name for this index set", default='galaxy_generated_bowtie_index', set_in_upload=True, readonly=True)
-    MetadataElement(name="sequence_space", desc="sequence_space for this index set", default='unknown', set_in_upload=True, readonly=True)
+    MetadataElement(
+        name="base_name",
+        desc="base name for this index set",
+        default='galaxy_generated_bowtie_index',
+        set_in_upload=True,
+        readonly=True)
+    MetadataElement(
+        name="sequence_space",
+        desc="sequence_space for this index set",
+        default='unknown',
+        set_in_upload=True,
+        readonly=True)
 
     is_binary = True
     composite_type = 'auto_primary_file'
@@ -35,7 +45,10 @@ class BowtieIndex(Html):
         """
         bn = dataset.metadata.base_name
         flist = os.listdir(dataset.extra_files_path)
-        rval = ['<html><head><title>Files for Composite Dataset %s</title></head><p/>Comprises the following files:<p/><ul>' % (bn)]
+        rval = [
+            '<html><head><title>Files for Composite Dataset %s</title></head><p/>Comprises the following files:<p/><ul>'
+            % (bn)
+        ]
         for i, fname in enumerate(flist):
             sfname = os.path.split(fname)[-1]
             rval.append('<li><a href="%s">%s</a>' % (sfname, sfname))
@@ -46,7 +59,8 @@ class BowtieIndex(Html):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "Bowtie index file (%s)" % (dataset.metadata.sequence_space)
+            dataset.peek = "Bowtie index file (%s)" % (
+                dataset.metadata.sequence_space)
             dataset.blurb = "%s space" % (dataset.metadata.sequence_space)
         else:
             dataset.peek = 'file does not exist'
@@ -63,7 +77,12 @@ class BowtieColorIndex(BowtieIndex):
     """
     Bowtie color space index
     """
-    MetadataElement(name="sequence_space", desc="sequence_space for this index set", default='color', set_in_upload=True, readonly=True)
+    MetadataElement(
+        name="sequence_space",
+        desc="sequence_space for this index set",
+        default='color',
+        set_in_upload=True,
+        readonly=True)
 
     file_ext = 'bowtie_color_index'
 
@@ -72,6 +91,11 @@ class BowtieBaseIndex(BowtieIndex):
     """
     Bowtie base space index
     """
-    MetadataElement(name="sequence_space", desc="sequence_space for this index set", default='base', set_in_upload=True, readonly=True)
+    MetadataElement(
+        name="sequence_space",
+        desc="sequence_space for this index set",
+        default='base',
+        set_in_upload=True,
+        readonly=True)
 
     file_ext = 'bowtie_base_index'

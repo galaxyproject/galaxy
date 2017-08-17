@@ -11,8 +11,6 @@ from galaxy.model.custom_types import UUIDType
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
-
-
 """
 Because both workflow and job requests can be determined
 based the a fixed data structure, their IDs are based on

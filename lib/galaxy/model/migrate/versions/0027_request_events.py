@@ -25,12 +25,20 @@ log.addHandler(handler)
 metadata = MetaData()
 
 RequestEvent_table = Table('request_event', metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("request_id", Integer, ForeignKey("request.id"), index=True),
-    Column("state", TrimmedString(255), index=True),
-    Column("comment", TEXT))
+                           Column("id", Integer, primary_key=True),
+                           Column("create_time", DateTime, default=now),
+                           Column(
+                               "update_time",
+                               DateTime,
+                               default=now,
+                               onupdate=now),
+                           Column(
+                               "request_id",
+                               Integer,
+                               ForeignKey("request.id"),
+                               index=True),
+                           Column("state", TrimmedString(255), index=True),
+                           Column("comment", TEXT))
 
 
 def upgrade(migrate_engine):
@@ -43,7 +51,9 @@ def upgrade(migrate_engine):
         elif migrate_engine.name == 'sqlite':
             return "current_date || ' ' || current_time"
         else:
-            raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+            raise Exception(
+                'Unable to convert data for unknown database type: %s' %
+                migrate_engine.name)
 
     def nextval(table, col='id'):
         if migrate_engine.name in ['postgres', 'postgresql']:
@@ -51,7 +61,10 @@ def upgrade(migrate_engine):
         elif migrate_engine.name in ['mysql', 'sqlite']:
             return "null"
         else:
-            raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+            raise Exception(
+                'Unable to convert data for unknown database type: %s' %
+                migrate_engine.name)
+
     # Load existing tables
     metadata.reflect()
     # Add new request_event table
@@ -70,7 +83,8 @@ def upgrade(migrate_engine):
         "request.state AS state," + \
         "'%s' AS comment " + \
         "FROM request;"
-    cmd = cmd % (nextval('request_event'), localtimestamp(), localtimestamp(), 'Imported from request table')
+    cmd = cmd % (nextval('request_event'), localtimestamp(), localtimestamp(),
+                 'Imported from request table')
     migrate_engine.execute(cmd)
 
     if migrate_engine.name != 'sqlite':
@@ -84,7 +98,8 @@ def upgrade(migrate_engine):
             try:
                 Request_table.c.state.drop()
             except Exception:
-                log.exception("Deleting column 'state' to request table failed.")
+                log.exception(
+                    "Deleting column 'state' to request table failed.")
 
 
 def downgrade(migrate_engine):

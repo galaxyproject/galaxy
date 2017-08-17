@@ -5,10 +5,7 @@ import time
 import traceback
 from xml.sax.saxutils import escape
 
-from .panel import (
-    panel_item_types,
-    ToolPanelElements
-)
+from .panel import (panel_item_types, ToolPanelElements)
 
 INTEGRATED_TOOL_PANEL_DESCRIPTION = """
 This is Galaxy's integrated tool panel and should be modified directly only for
@@ -26,14 +23,16 @@ its section) modify that file and restart Galaxy.
 
 
 class ManagesIntegratedToolPanelMixin:
-
     def _init_integrated_tool_panel(self, config):
         self.update_integrated_tool_panel = config.update_integrated_tool_panel
         self._integrated_tool_panel_config = config.integrated_tool_panel_config
-        self._integrated_tool_panel_tracking_directory = getattr(config, "integrated_tool_panel_tracking_directory", None)
+        self._integrated_tool_panel_tracking_directory = getattr(
+            config, "integrated_tool_panel_tracking_directory", None)
         # In-memory dictionary that defines the layout of the tool_panel.xml file on disk.
         self._integrated_tool_panel = ToolPanelElements()
-        self._integrated_tool_panel_config_has_contents = os.path.exists(self._integrated_tool_panel_config) and os.stat(self._integrated_tool_panel_config).st_size > 0
+        self._integrated_tool_panel_config_has_contents = os.path.exists(
+            self._integrated_tool_panel_config
+        ) and os.stat(self._integrated_tool_panel_config).st_size > 0
         if self._integrated_tool_panel_config_has_contents:
             self._load_integrated_tool_panel_keys()
 
@@ -63,9 +62,11 @@ class ManagesIntegratedToolPanelMixin:
         os.write(fd, '<?xml version="1.0"?>\n')
         os.write(fd, '<toolbox>\n')
         os.write(fd, '    <!--\n    ')
-        os.write(fd, '\n    '.join([l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l]))
+        os.write(fd, '\n    '.join(
+            [l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l]))
         os.write(fd, '\n    -->\n')
-        for key, item_type, item in self._integrated_tool_panel.panel_items_iter():
+        for key, item_type, item in self._integrated_tool_panel.panel_items_iter(
+        ):
             if item:
                 if item_type == panel_item_types.TOOL:
                     os.write(fd, '    <tool id="%s" />\n' % item.id)
@@ -75,31 +76,43 @@ class ManagesIntegratedToolPanelMixin:
                     label_id = item.id or ''
                     label_text = item.text or ''
                     label_version = item.version or ''
-                    os.write(fd, '    <label id="%s" text="%s" version="%s" />\n' % (label_id, label_text, label_version))
+                    os.write(fd,
+                             '    <label id="%s" text="%s" version="%s" />\n' %
+                             (label_id, label_text, label_version))
                 elif item_type == panel_item_types.SECTION:
                     section_id = item.id or ''
                     section_name = item.name or ''
                     section_version = item.version or ''
-                    os.write(fd, '    <section id="%s" name="%s" version="%s">\n' % (escape(section_id), escape(section_name), section_version))
-                    for section_key, section_item_type, section_item in item.panel_items_iter():
+                    os.write(fd,
+                             '    <section id="%s" name="%s" version="%s">\n' %
+                             (escape(section_id), escape(section_name),
+                              section_version))
+                    for section_key, section_item_type, section_item in item.panel_items_iter(
+                    ):
                         if section_item_type == panel_item_types.TOOL:
                             if section_item:
-                                os.write(fd, '        <tool id="%s" />\n' % section_item.id)
+                                os.write(fd, '        <tool id="%s" />\n' %
+                                         section_item.id)
                         elif section_item_type == panel_item_types.WORKFLOW:
                             if section_item:
-                                os.write(fd, '        <workflow id="%s" />\n' % section_item.id)
+                                os.write(fd, '        <workflow id="%s" />\n' %
+                                         section_item.id)
                         elif section_item_type == panel_item_types.LABEL:
                             if section_item:
                                 label_id = section_item.id or ''
                                 label_text = section_item.text or ''
                                 label_version = section_item.version or ''
-                                os.write(fd, '        <label id="%s" text="%s" version="%s" />\n' % (label_id, label_text, label_version))
+                                os.write(
+                                    fd,
+                                    '        <label id="%s" text="%s" version="%s" />\n'
+                                    % (label_id, label_text, label_version))
                     os.write(fd, '    </section>\n')
         os.write(fd, '</toolbox>\n')
         os.close(fd)
         destination = os.path.abspath(self._integrated_tool_panel_config)
         if tracking_directory:
-            open(filename + ".stack", "w").write(''.join(traceback.format_stack()))
+            open(filename + ".stack",
+                 "w").write(''.join(traceback.format_stack()))
             shutil.copy(filename, filename + ".copy")
             filename = filename + ".copy"
         shutil.move(filename, destination)

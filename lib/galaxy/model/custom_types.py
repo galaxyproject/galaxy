@@ -9,12 +9,7 @@ from sys import getsizeof
 
 import sqlalchemy
 from sqlalchemy.ext.mutable import Mutable
-from sqlalchemy.types import (
-    CHAR,
-    LargeBinary,
-    String,
-    TypeDecorator
-)
+from sqlalchemy.types import (CHAR, LargeBinary, String, TypeDecorator)
 
 from galaxy import app
 from galaxy.util.aliaspickler import AliasPickleModule
@@ -66,7 +61,8 @@ class JSONType(sqlalchemy.types.TypeDecorator):
 
     def load_dialect_impl(self, dialect):
         if dialect.name == "mysql":
-            return dialect.type_descriptor(sqlalchemy.dialects.mysql.MEDIUMBLOB)
+            return dialect.type_descriptor(
+                sqlalchemy.dialects.mysql.MEDIUMBLOB)
         else:
             return self.impl
 
@@ -87,6 +83,7 @@ class MutationObj(Mutable):
 
     And other minor changes to make it work for us.
     """
+
     @classmethod
     def coerce(cls, key, value):
         if isinstance(value, dict) and not isinstance(value, MutationDict):
@@ -133,18 +130,24 @@ class MutationObj(Mutable):
                 for val in state_dict['ext.mutable.values']:
                     val._parents[state.obj()] = key
 
-        sqlalchemy.event.listen(parent_cls, 'load', load, raw=True, propagate=True)
-        sqlalchemy.event.listen(parent_cls, 'refresh', load, raw=True, propagate=True)
-        sqlalchemy.event.listen(attribute, 'set', set, raw=True, retval=True, propagate=True)
-        sqlalchemy.event.listen(parent_cls, 'pickle', pickle, raw=True, propagate=True)
-        sqlalchemy.event.listen(parent_cls, 'unpickle', unpickle, raw=True, propagate=True)
+        sqlalchemy.event.listen(
+            parent_cls, 'load', load, raw=True, propagate=True)
+        sqlalchemy.event.listen(
+            parent_cls, 'refresh', load, raw=True, propagate=True)
+        sqlalchemy.event.listen(
+            attribute, 'set', set, raw=True, retval=True, propagate=True)
+        sqlalchemy.event.listen(
+            parent_cls, 'pickle', pickle, raw=True, propagate=True)
+        sqlalchemy.event.listen(
+            parent_cls, 'unpickle', unpickle, raw=True, propagate=True)
 
 
 class MutationDict(MutationObj, dict):
     @classmethod
     def coerce(cls, key, value):
         """Convert plain dictionary to MutationDict"""
-        self = MutationDict((k, MutationObj.coerce(key, v)) for (k, v) in value.items())
+        self = MutationDict((k, MutationObj.coerce(key, v))
+                            for (k, v) in value.items())
         self._key = key
         return self
 
@@ -178,7 +181,8 @@ class MutationList(MutationObj, list):
         self.changed()
 
     def __setslice__(self, start, stop, values):
-        list.__setslice__(self, start, stop, (MutationObj.coerce(self._key, v) for v in values))
+        list.__setslice__(self, start, stop, (MutationObj.coerce(self._key, v)
+                                              for v in values))
         self.changed()
 
     def __delitem__(self, idx):
@@ -193,7 +197,8 @@ class MutationList(MutationObj, list):
         return MutationList(MutationObj.coerce(self._key, self[:]))
 
     def __deepcopy__(self, memo):
-        return MutationList(MutationObj.coerce(self._key, copy.deepcopy(self[:])))
+        return MutationList(
+            MutationObj.coerce(self._key, copy.deepcopy(self[:])))
 
     def append(self, value):
         list.append(self, MutationObj.coerce(self._key, value))
@@ -236,21 +241,24 @@ def total_size(o, handlers={}, verbose=False):
 
     Recipe from:  https://code.activestate.com/recipes/577504-compute-memory-footprint-of-an-object-and-its-cont/
     """
+
     def dict_handler(d):
         return chain.from_iterable(d.items())
 
-    all_handlers = {tuple: iter,
-                    list: iter,
-                    deque: iter,
-                    dict: dict_handler,
-                    set: iter,
-                    frozenset: iter}
-    all_handlers.update(handlers)     # user handlers take precedence
-    seen = set()                      # track which object id's have already been seen
-    default_size = getsizeof(0)       # estimate sizeof object without __sizeof__
+    all_handlers = {
+        tuple: iter,
+        list: iter,
+        deque: iter,
+        dict: dict_handler,
+        set: iter,
+        frozenset: iter
+    }
+    all_handlers.update(handlers)  # user handlers take precedence
+    seen = set()  # track which object id's have already been seen
+    default_size = getsizeof(0)  # estimate sizeof object without __sizeof__
 
     def sizeof(o):
-        if id(o) in seen:       # do not double count the same object
+        if id(o) in seen:  # do not double count the same object
             return 0
         seen.add(id(o))
         s = getsizeof(o, default_size)
@@ -277,7 +285,9 @@ class MetadataType(JSONType):
                     sz = total_size(v)
                     if sz > app.app.config.max_metadata_value_size:
                         del value[k]
-                        log.warning('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
+                        log.warning(
+                            'Refusing to bind metadata key %s due to size (%s)'
+                            % (k, sz))
             value = json_encoder.encode(value)
         return value
 

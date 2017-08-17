@@ -17,8 +17,16 @@ def all_control_queues_for_declare(config, application_stack):
 
     Refactor later to actually persist this somewhere instead of building it repeatedly.
     """
-    possible_stack_queues = [Queue("control.%s.%s" % (config.server_name.split('.')[0], wkr['id']), galaxy_exchange, routing_key='control') for wkr in application_stack.workers()]
-    return possible_stack_queues + [Queue('control.%s' % q, galaxy_exchange, routing_key='control') for q in config.server_names]
+    possible_stack_queues = [
+        Queue(
+            "control.%s.%s" % (config.server_name.split('.')[0], wkr['id']),
+            galaxy_exchange,
+            routing_key='control') for wkr in application_stack.workers()
+    ]
+    return possible_stack_queues + [
+        Queue('control.%s' % q, galaxy_exchange, routing_key='control')
+        for q in config.server_names
+    ]
 
 
 def control_queue_from_config(config):
@@ -26,9 +34,10 @@ def control_queue_from_config(config):
     Returns a Queue instance with the correct name and routing key for this
     galaxy process's config
     """
-    return Queue("control.%s" % config.server_name,
-                 galaxy_exchange,
-                 routing_key='control.%s' % config.server_name)
+    return Queue(
+        "control.%s" % config.server_name,
+        galaxy_exchange,
+        routing_key='control.%s' % config.server_name)
 
 
 def connection_from_config(config):

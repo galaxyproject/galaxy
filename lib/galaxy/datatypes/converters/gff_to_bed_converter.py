@@ -27,7 +27,8 @@ def __main__():
                 #
                 # Replace any spaces in the name with underscores so UCSC will not complain
                 name = elems[2].replace(" ", "_")
-                out.write("%s\t%s\t%s\t%s\t0\t%s\n" % (elems[0], start, elems[4], name, strand))
+                out.write("%s\t%s\t%s\t%s\t0\t%s\n" % (elems[0], start,
+                                                       elems[4], name, strand))
             except:
                 skipped_lines += 1
                 if not first_skipped_line:
@@ -39,7 +40,8 @@ def __main__():
     out.close()
     info_msg = "%i lines converted to BED.  " % (i + 1 - skipped_lines)
     if skipped_lines > 0:
-        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (skipped_lines, first_skipped_line)
+        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (
+            skipped_lines, first_skipped_line)
     print(info_msg)
 
 

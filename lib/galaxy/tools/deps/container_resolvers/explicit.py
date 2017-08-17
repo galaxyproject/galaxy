@@ -2,8 +2,7 @@
 import logging
 
 from ..container_resolvers import (
-    ContainerResolver,
-)
+    ContainerResolver, )
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +19,8 @@ class ExplicitContainerResolver(ContainerResolver):
         a correct container.
         """
         for container_description in tool_info.container_descriptions:
-            if self._container_type_enabled(container_description, enabled_container_types):
+            if self._container_type_enabled(container_description,
+                                            enabled_container_types):
                 return container_description
 
         return None

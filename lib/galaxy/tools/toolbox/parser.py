@@ -35,7 +35,6 @@ class ToolConfSource(object):
 
 
 class XmlToolConfSource(ToolConfSource):
-
     def __init__(self, config_filename):
         tree = parse_xml(config_filename)
         self.root = tree.getroot()
@@ -56,7 +55,6 @@ class XmlToolConfSource(ToolConfSource):
 
 
 class YamlToolConfSource(ToolConfSource):
-
     def __init__(self, config_filename):
         with open(config_filename, "r") as f:
             as_dict = yaml.load(f)
@@ -110,19 +108,21 @@ class ToolConfItem(object):
     @property
     def elem(self):
         if self._elem is None:
-            raise Exception("item.elem called on toolbox element from non-XML source")
+            raise Exception(
+                "item.elem called on toolbox element from non-XML source")
         return self._elem
 
     @property
     def labels(self):
         labels = None
         if "labels" in self.attributes:
-            labels = [label.strip() for label in self.attributes["labels"].split(",")]
+            labels = [
+                label.strip() for label in self.attributes["labels"].split(",")
+            ]
         return labels
 
 
 class ToolConfSection(ToolConfItem):
-
     def __init__(self, attributes, items, elem=None):
         super(ToolConfSection, self).__init__('section', attributes, elem)
         self.items = items
@@ -145,14 +145,12 @@ def ensure_tool_conf_item(xml_or_item):
 
 
 def get_toolbox_parser(config_filename):
-    is_yaml = any(config_filename.endswith(e) for e in [".yml", ".yaml", ".json"])
+    is_yaml = any(
+        config_filename.endswith(e) for e in [".yml", ".yaml", ".json"])
     if is_yaml:
         return YamlToolConfSource(config_filename)
     else:
         return XmlToolConfSource(config_filename)
 
 
-__all__ = (
-    "get_toolbox_parser",
-    "ensure_tool_conf_item",
-)
+__all__ = ("get_toolbox_parser", "ensure_tool_conf_item", )

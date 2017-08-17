@@ -18,13 +18,11 @@ ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND = "Galaxy misconfigured - no rule function
 
 
 class JobMappingException(Exception):
-
     def __init__(self, failure_message):
         self.failure_message = failure_message
 
 
 class JobNotReadyException(Exception):
-
     def __init__(self, job_state=None, message=None):
         self.job_state = job_state
         self.message = message
@@ -34,8 +32,7 @@ STOCK_RULES = dict(
     choose_one=stock_rules.choose_one,
     burst=stock_rules.burst,
     docker_dispatch=stock_rules.docker_dispatch,
-    dtd=map_tool_to_destination,
-)
+    dtd=map_tool_to_destination, )
 
 
 class JobRunnerMapper(object):
@@ -70,7 +67,8 @@ class JobRunnerMapper(object):
                 modules.append(module)
             except BaseException as exception:
                 exception_str = str(exception)
-                message = "%s rule module could not be loaded: %s" % (rule_module_name, exception_str)
+                message = "%s rule module could not be loaded: %s" % (
+                    rule_module_name, exception_str)
                 log.debug(message)
                 continue
         return modules
@@ -79,7 +77,7 @@ class JobRunnerMapper(object):
         rules_dir = self.rules_module.__path__[0]
         names = []
         for fname in os.listdir(rules_dir):
-            if not(fname.startswith("_")) and fname.endswith(".py"):
+            if not (fname.startswith("_")) and fname.endswith(".py"):
                 base_name = self.rules_module.__name__
                 rule_module_name = "%s.%s" % (base_name, fname[:-len(".py")])
                 names.append(rule_module_name)
@@ -102,16 +100,21 @@ class JobRunnerMapper(object):
         # Send through any job_conf.xml defined args to function
         for destination_param in destination_params.keys():
             if destination_param in function_arg_names:
-                actual_args[destination_param] = destination_params[destination_param]
+                actual_args[destination_param] = destination_params[
+                    destination_param]
 
         # Populate needed args
         for possible_arg_name in possible_args:
             if possible_arg_name in function_arg_names:
-                actual_args[possible_arg_name] = possible_args[possible_arg_name]
+                actual_args[possible_arg_name] = possible_args[
+                    possible_arg_name]
 
         # Don't hit the DB to load the job object if not needed
         require_db = False
-        for param in ["job", "user", "user_email", "resource_params", "workflow_invocation_uuid"]:
+        for param in [
+                "job", "user", "user_email", "resource_params",
+                "workflow_invocation_uuid"
+        ]:
             if param in function_arg_names:
                 require_db = True
                 break
@@ -130,12 +133,16 @@ class JobRunnerMapper(object):
                 actual_args["user_email"] = user_email
 
             if "resource_params" in function_arg_names:
-                actual_args["resource_params"] = self.job_wrapper.get_resource_parameters(job)
+                actual_args[
+                    "resource_params"] = self.job_wrapper.get_resource_parameters(
+                        job)
 
             if "workflow_invocation_uuid" in function_arg_names:
                 param_values = job.raw_param_dict()
-                workflow_invocation_uuid = param_values.get("__workflow_invocation_uuid__", None)
-                actual_args["workflow_invocation_uuid"] = workflow_invocation_uuid
+                workflow_invocation_uuid = param_values.get(
+                    "__workflow_invocation_uuid__", None)
+                actual_args[
+                    "workflow_invocation_uuid"] = workflow_invocation_uuid
 
         return expand_function(**actual_args)
 
@@ -169,12 +176,15 @@ class JobRunnerMapper(object):
         return expand_function_name
 
     def __get_expand_function(self, expand_function_name):
-        matching_rule_module = self.__last_rule_module_with_function(expand_function_name)
+        matching_rule_module = self.__last_rule_module_with_function(
+            expand_function_name)
         if matching_rule_module:
-            expand_function = getattr(matching_rule_module, expand_function_name)
+            expand_function = getattr(matching_rule_module,
+                                      expand_function_name)
             return expand_function
         else:
-            message = ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND % (expand_function_name)
+            message = ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND % (
+                expand_function_name)
             raise Exception(message)
 
     def __last_rule_module_with_function(self, function_name):
@@ -189,7 +199,8 @@ class JobRunnerMapper(object):
         expand_type = destination.params.get('type', "python")
         expand_function = None
         if expand_type == "python":
-            expand_function_name = self.__determine_expand_function_name(destination)
+            expand_function_name = self.__determine_expand_function_name(
+                destination)
             if not expand_function_name:
                 message = ERROR_MESSAGE_NO_RULE_FUNCTION % destination
                 raise Exception(message)
@@ -198,25 +209,32 @@ class JobRunnerMapper(object):
         elif expand_type in STOCK_RULES:
             expand_function = STOCK_RULES[expand_type]
         else:
-            raise Exception("Unhandled dynamic job runner type specified - %s" % expand_type)
+            raise Exception("Unhandled dynamic job runner type specified - %s"
+                            % expand_type)
 
         return self.__handle_rule(expand_function, destination)
 
     def __handle_rule(self, rule_function, destination):
-        job_destination = self.__invoke_expand_function(rule_function, destination.params)
+        job_destination = self.__invoke_expand_function(
+            rule_function, destination.params)
         if not isinstance(job_destination, galaxy.jobs.JobDestination):
-            job_destination_rep = str(job_destination)  # Should be either id or url
+            job_destination_rep = str(
+                job_destination)  # Should be either id or url
             if '://' in job_destination_rep:
-                job_destination = self.__convert_url_to_destination(job_destination_rep)
+                job_destination = self.__convert_url_to_destination(
+                    job_destination_rep)
             else:
-                job_destination = self.job_config.get_destination(job_destination_rep)
+                job_destination = self.job_config.get_destination(
+                    job_destination_rep)
         return job_destination
 
     def __cache_job_destination(self, params, raw_job_destination=None):
         if raw_job_destination is None:
-            raw_job_destination = self.job_wrapper.tool.get_job_destination(params)
+            raw_job_destination = self.job_wrapper.tool.get_job_destination(
+                params)
         if raw_job_destination.runner == DYNAMIC_RUNNER_NAME:
-            job_destination = self.__handle_dynamic_job_destination(raw_job_destination)
+            job_destination = self.__handle_dynamic_job_destination(
+                raw_job_destination)
         else:
             job_destination = raw_job_destination
         self.cached_job_destination = job_destination
@@ -230,5 +248,6 @@ class JobRunnerMapper(object):
         return self.cached_job_destination
 
     def cache_job_destination(self, raw_job_destination):
-        self.__cache_job_destination(None, raw_job_destination=raw_job_destination)
+        self.__cache_job_destination(
+            None, raw_job_destination=raw_job_destination)
         return self.cached_job_destination

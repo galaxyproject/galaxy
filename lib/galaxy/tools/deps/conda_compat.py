@@ -22,7 +22,6 @@ except ImportError:
 
 
 class _Memoized(object):
-
     def __init__(self, func):
         self.func = func
         self.cache = {}
@@ -51,7 +50,8 @@ def _render_jinja2(recipe_dir):
     try:
         import jinja2
     except ImportError:
-        raise Exception("Failed to import jinja2 for evaluating Conda recipe templates.")
+        raise Exception(
+            "Failed to import jinja2 for evaluating Conda recipe templates.")
 
     loaders = [jinja2.FileSystemLoader(recipe_dir)]
     env = jinja2.Environment(loader=jinja2.ChoiceLoader(loaders))
@@ -87,7 +87,6 @@ def raw_metadata(recipe_dir):
 
 
 class _MetaData(object):
-
     def __init__(self, input_dir):
         self.meta = raw_metadata(input_dir)
 
@@ -106,7 +105,4 @@ class _MetaData(object):
 if MetaData is None:
     MetaData = _MetaData
 
-__all__ = (
-    "MetaData",
-    "raw_metadata",
-)
+__all__ = ("MetaData", "raw_metadata", )

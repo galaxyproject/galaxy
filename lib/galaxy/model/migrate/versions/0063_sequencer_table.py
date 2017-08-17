@@ -15,17 +15,23 @@ log = logging.getLogger(__name__)
 metadata = MetaData()
 
 # Table to add
-Sequencer_table = Table('sequencer', metadata,
-                        Column("id", Integer, primary_key=True),
-                        Column("create_time", DateTime, default=now),
-                        Column("update_time", DateTime, default=now, onupdate=now),
-                        Column("name", TrimmedString(255), nullable=False),
-                        Column("description", TEXT),
-                        Column("sequencer_type_id", TrimmedString(255), nullable=False),
-                        Column("version", TrimmedString(255)),
-                        Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-                        Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-                        Column("deleted", Boolean, index=True, default=False))
+Sequencer_table = Table(
+    'sequencer', metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("name", TrimmedString(255), nullable=False),
+    Column("description", TEXT),
+    Column("sequencer_type_id", TrimmedString(255), nullable=False),
+    Column("version", TrimmedString(255)),
+    Column(
+        "form_definition_id",
+        Integer,
+        ForeignKey("form_definition.id"),
+        index=True),
+    Column(
+        "form_values_id", Integer, ForeignKey("form_values.id"), index=True),
+    Column("deleted", Boolean, index=True, default=False))
 
 
 def upgrade(migrate_engine):

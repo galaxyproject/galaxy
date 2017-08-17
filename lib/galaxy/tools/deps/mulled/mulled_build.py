@@ -34,8 +34,7 @@ from .util import (
     create_repository,
     quay_repository,
     v1_image_name,
-    v2_image_name,
-)
+    v2_image_name, )
 from ..conda_compat import MetaData
 
 DIRNAME = os.path.dirname(__file__)
@@ -91,9 +90,12 @@ def get_tests(args, pkg_path):
         if tests_commands:
             tests.append(' && '.join(tests_commands))
         if tests_imports and 'python' in requirements:
-            tests.append(' && '.join('python -c "import %s"' % imp for imp in tests_imports))
-        elif tests_imports and ('perl' in requirements or 'perl-threaded' in requirements):
-            tests.append(' && '.join('''perl -e "use %s;"''' % imp for imp in tests_imports))
+            tests.append(' && '.join('python -c "import %s"' % imp
+                                     for imp in tests_imports))
+        elif tests_imports and ('perl' in requirements
+                                or 'perl-threaded' in requirements):
+            tests.append(' && '.join('''perl -e "use %s;"''' % imp
+                                     for imp in tests_imports))
 
     tests = ' && '.join(tests)
     tests = tests.replace('$R ', 'Rscript ')
@@ -116,7 +118,8 @@ def get_affected_packages(args):
     """
     recipes_dir = args.recipes_dir
     hours = args.diff_hours
-    cmd = """cd '%s' && git log --diff-filter=ACMRTUXB --name-only --pretty="" --since="%s hours ago" | grep -E '^recipes/.*/meta.yaml' | sort | uniq""" % (recipes_dir, hours)
+    cmd = """cd '%s' && git log --diff-filter=ACMRTUXB --name-only --pretty="" --since="%s hours ago" | grep -E '^recipes/.*/meta.yaml' | sort | uniq""" % (
+        recipes_dir, hours)
     pkg_list = check_output(cmd, shell=True)
     ret = list()
     for pkg in pkg_list.strip().split('\n'):
@@ -148,14 +151,25 @@ class BuildExistsException(Exception):
 
 
 def mull_targets(
-    targets, involucro_context=None,
-    command="build", channels=DEFAULT_CHANNELS, namespace="biocontainers",
-    test='true', test_files=None, image_build=None, name_override=None,
-    repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
-    conda_version=None, verbose=False, binds=DEFAULT_BINDS, rebuild=True,
-    oauth_token=None, hash_func="v2", singularity=False,
-    singularity_image_dir="singularity_import",
-):
+        targets,
+        involucro_context=None,
+        command="build",
+        channels=DEFAULT_CHANNELS,
+        namespace="biocontainers",
+        test='true',
+        test_files=None,
+        image_build=None,
+        name_override=None,
+        repository_template=DEFAULT_REPOSITORY_TEMPLATE,
+        dry_run=False,
+        conda_version=None,
+        verbose=False,
+        binds=DEFAULT_BINDS,
+        rebuild=True,
+        oauth_token=None,
+        hash_func="v2",
+        singularity=False,
+        singularity_image_dir="singularity_import", ):
     targets = list(targets)
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -167,10 +181,14 @@ def mull_targets(
         image_build = "0"
 
     repo_template_kwds = {
-        "namespace": namespace,
-        "image": image_function(targets, image_build=image_build, name_override=name_override)
+        "namespace":
+        namespace,
+        "image":
+        image_function(
+            targets, image_build=image_build, name_override=name_override)
     }
-    repo = string.Template(repository_template).safe_substitute(repo_template_kwds)
+    repo = string.Template(repository_template).safe_substitute(
+        repo_template_kwds)
 
     if not rebuild or "push" in command:
         repo_name = repo_template_kwds["image"].split(":", 1)[0]
@@ -181,14 +199,18 @@ def mull_targets(
             target_tag = None
             if ":" in repo_template_kwds["image"]:
                 image_name_parts = repo_template_kwds["image"].split(":")
-                assert len(image_name_parts) == 2, ": not allowed in image name [%s]" % repo_template_kwds["image"]
+                assert len(
+                    image_name_parts
+                ) == 2, ": not allowed in image name [%s]" % repo_template_kwds[
+                    "image"]
                 target_tag = image_name_parts[1]
 
             if tags and (target_tag is None or target_tag in tags):
                 raise BuildExistsException()
         if "push" in command and "error_type" in repo_data and oauth_token:
             # Explicitly create the repository so it can be built as public.
-            create_repository(repo_template_kwds["namespace"], repo_name, oauth_token)
+            create_repository(repo_template_kwds["namespace"], repo_name,
+                              oauth_token)
 
     for channel in channels:
         if channel.startswith('file://'):
@@ -199,34 +221,52 @@ def mull_targets(
     target_str = ",".join(map(conda_build_target_str, targets))
     bind_str = ",".join(binds)
     involucro_args = [
-        '-f', '%s/invfile.lua' % DIRNAME,
-        '-set', "CHANNELS='%s'" % channels,
-        '-set', "TEST='%s'" % test,
-        '-set', "TARGETS='%s'" % target_str,
-        '-set', "REPO='%s'" % repo,
-        '-set', "BINDS='%s'" % bind_str,
+        '-f',
+        '%s/invfile.lua' % DIRNAME,
+        '-set',
+        "CHANNELS='%s'" % channels,
+        '-set',
+        "TEST='%s'" % test,
+        '-set',
+        "TARGETS='%s'" % target_str,
+        '-set',
+        "REPO='%s'" % repo,
+        '-set',
+        "BINDS='%s'" % bind_str,
     ]
 
     if DEST_BASE_IMAGE:
-        involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % DEST_BASE_IMAGE])
+        involucro_args.extend(
+            ["-set", "DEST_BASE_IMAGE='%s'" % DEST_BASE_IMAGE])
     if verbose:
         involucro_args.extend(["-set", "VERBOSE='1'"])
     if singularity:
         singularity_image_name = repo_template_kwds['image']
         involucro_args.extend(["-set", "SINGULARITY='1'"])
-        involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME='%s'" % singularity_image_name])
-        involucro_args.extend(["-set", "SINGULARITY_IMAGE_DIR='%s'" % singularity_image_dir])
-        involucro_args.extend(["-set", "USER_ID='%s:%s'" % (os.getuid(), os.getgid())])
+        involucro_args.extend(
+            ["-set",
+             "SINGULARITY_IMAGE_NAME='%s'" % singularity_image_name])
+        involucro_args.extend(
+            ["-set",
+             "SINGULARITY_IMAGE_DIR='%s'" % singularity_image_dir])
+        involucro_args.extend(
+            ["-set", "USER_ID='%s:%s'" % (os.getuid(), os.getgid())])
     if conda_version is not None:
         verbose = "--verbose" if verbose else "--quiet"
-        involucro_args.extend(["-set", "PREINSTALL='conda install %s --yes conda=%s'" % (verbose, conda_version)])
+        involucro_args.extend([
+            "-set",
+            "PREINSTALL='conda install %s --yes conda=%s'" % (verbose,
+                                                              conda_version)
+        ])
     involucro_args.append(command)
     if test_files:
         test_bind = []
         for test_file in test_files:
             if ':' not in test_file:
                 if os.path.exists(test_file):
-                    test_bind.append("%s:%s/%s" % (test_file, DEFAULT_WORKING_DIR, test_file))
+                    test_bind.append("%s:%s/%s" %
+                                     (test_file, DEFAULT_WORKING_DIR,
+                                      test_file))
             else:
                 if os.path.exists(test_file.split(':')[0]):
                     test_bind.append(test_file)
@@ -239,7 +279,9 @@ def mull_targets(
         if singularity:
             if not os.path.exists(singularity_image_dir):
                 safe_makedirs(singularity_image_dir)
-            with open(os.path.join(singularity_image_dir, 'Singularity'), 'w+') as sin_def:
+            with open(
+                    os.path.join(singularity_image_dir, 'Singularity'),
+                    'w+') as sin_def:
                 fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
                 sin_def.write(fill_template)
         ret = involucro_context.exec_command(involucro_args)
@@ -297,50 +339,102 @@ class InvolucroContext(installable.InstallableContext):
 
 
 def ensure_installed(involucro_context, auto_init):
-    return installable.ensure_installed(involucro_context, install_involucro, auto_init)
+    return installable.ensure_installed(involucro_context, install_involucro,
+                                        auto_init)
 
 
 def install_involucro(involucro_context=None, to_path=None):
     install_path = os.path.abspath(involucro_context.involucro_bin)
     involucro_context.involucro_bin = install_path
-    download_cmd = " ".join(commands.download_command(involucro_link(), to=install_path, quote_url=True))
+    download_cmd = " ".join(
+        commands.download_command(
+            involucro_link(), to=install_path, quote_url=True))
     full_cmd = "%s && chmod +x %s" % (download_cmd, install_path)
     return involucro_context.shell_exec(full_cmd)
 
 
 def add_build_arguments(parser):
     """Base arguments describing how to 'mull'."""
-    parser.add_argument('--involucro-path', dest="involucro_path", default=None,
-                        help="Path to involucro (if not set will look in working directory and on PATH).")
-    parser.add_argument('--dry-run', dest='dry_run', action="store_true",
-                        help='Just print commands instead of executing them.')
-    parser.add_argument('--verbose', dest='verbose', action="store_true",
-                        help='Cause process to be verbose.')
-    parser.add_argument('--singularity', action="store_true",
-                        help='Additionally build a singularity image.')
-    parser.add_argument('--singularity-image-dir', dest="singularity_image_dir",
-                        help="Directory to write singularity images too.")
-    parser.add_argument('-n', '--namespace', dest='namespace', default="biocontainers",
-                        help='quay.io namespace.')
-    parser.add_argument('-r', '--repository_template', dest='repository_template', default=DEFAULT_REPOSITORY_TEMPLATE,
-                        help='Docker repository target for publication (only quay.io or compat. API is currently supported).')
-    parser.add_argument('-c', '--channel', dest='channel', default=DEFAULT_CHANNEL,
-                        help='Target conda channel')
-    parser.add_argument('--extra-channels', dest='extra_channels', default=",".join(DEFAULT_EXTRA_CHANNELS),
-                        help='Dependent conda channels.')
-    parser.add_argument('--conda-version', dest="conda_version", default=None,
-                        help="Change to specified version of Conda before installing packages.")
-    parser.add_argument('--oauth-token', dest="oauth_token", default=None,
-                        help="If set, use this token when communicating with quay.io API.")
-    parser.add_argument('--check-published', dest="rebuild", action='store_false')
-    parser.add_argument('--hash', dest="hash", choices=["v1", "v2"], default="v2")
+    parser.add_argument(
+        '--involucro-path',
+        dest="involucro_path",
+        default=None,
+        help=
+        "Path to involucro (if not set will look in working directory and on PATH)."
+    )
+    parser.add_argument(
+        '--dry-run',
+        dest='dry_run',
+        action="store_true",
+        help='Just print commands instead of executing them.')
+    parser.add_argument(
+        '--verbose',
+        dest='verbose',
+        action="store_true",
+        help='Cause process to be verbose.')
+    parser.add_argument(
+        '--singularity',
+        action="store_true",
+        help='Additionally build a singularity image.')
+    parser.add_argument(
+        '--singularity-image-dir',
+        dest="singularity_image_dir",
+        help="Directory to write singularity images too.")
+    parser.add_argument(
+        '-n',
+        '--namespace',
+        dest='namespace',
+        default="biocontainers",
+        help='quay.io namespace.')
+    parser.add_argument(
+        '-r',
+        '--repository_template',
+        dest='repository_template',
+        default=DEFAULT_REPOSITORY_TEMPLATE,
+        help=
+        'Docker repository target for publication (only quay.io or compat. API is currently supported).'
+    )
+    parser.add_argument(
+        '-c',
+        '--channel',
+        dest='channel',
+        default=DEFAULT_CHANNEL,
+        help='Target conda channel')
+    parser.add_argument(
+        '--extra-channels',
+        dest='extra_channels',
+        default=",".join(DEFAULT_EXTRA_CHANNELS),
+        help='Dependent conda channels.')
+    parser.add_argument(
+        '--conda-version',
+        dest="conda_version",
+        default=None,
+        help="Change to specified version of Conda before installing packages."
+    )
+    parser.add_argument(
+        '--oauth-token',
+        dest="oauth_token",
+        default=None,
+        help="If set, use this token when communicating with quay.io API.")
+    parser.add_argument(
+        '--check-published', dest="rebuild", action='store_false')
+    parser.add_argument(
+        '--hash', dest="hash", choices=["v1", "v2"], default="v2")
 
 
 def add_single_image_arguments(parser):
-    parser.add_argument("--name-override", dest="name_override", default=None,
-                        help="Override mulled image name - this is not recommended since metadata will not be detectable from the name of resulting images")
-    parser.add_argument("--image-build", dest="image_build", default=None,
-                        help="Build a versioned variant of this image.")
+    parser.add_argument(
+        "--name-override",
+        dest="name_override",
+        default=None,
+        help=
+        "Override mulled image name - this is not recommended since metadata will not be detectable from the name of resulting images"
+    )
+    parser.add_argument(
+        "--image-build",
+        dest="image_build",
+        default=None,
+        help="Build a versioned variant of this image.")
 
 
 def target_str_to_targets(targets_raw):
@@ -406,19 +500,36 @@ def main(argv=None):
     parser = arg_parser(argv, globals())
     add_build_arguments(parser)
     add_single_image_arguments(parser)
-    parser.add_argument('command', metavar='COMMAND', help='Command (build-and-test, build, all)')
-    parser.add_argument('targets', metavar="TARGETS", default=None, help="Build a single container with specific package(s).")
-    parser.add_argument('--repository-name', dest="repository_name", default=None, help="Name of mulled container (leave blank to auto-generate based on packages - recommended).")
-    parser.add_argument('--test', help='Provide a test command for the container.')
-    parser.add_argument('--test-files', help='Provide test-files that may be required to run the test command. Individual mounts are separated by comma.'
-                                             'The source:dest docker syntax is respected. If relative file paths are given, files will be mounted in /source/<relative_file_path>')
+    parser.add_argument(
+        'command',
+        metavar='COMMAND',
+        help='Command (build-and-test, build, all)')
+    parser.add_argument(
+        'targets',
+        metavar="TARGETS",
+        default=None,
+        help="Build a single container with specific package(s).")
+    parser.add_argument(
+        '--repository-name',
+        dest="repository_name",
+        default=None,
+        help=
+        "Name of mulled container (leave blank to auto-generate based on packages - recommended)."
+    )
+    parser.add_argument(
+        '--test', help='Provide a test command for the container.')
+    parser.add_argument(
+        '--test-files',
+        help=
+        'Provide test-files that may be required to run the test command. Individual mounts are separated by comma.'
+        'The source:dest docker syntax is respected. If relative file paths are given, files will be mounted in /source/<relative_file_path>'
+    )
     args = parser.parse_args()
     targets = target_str_to_targets(args.targets)
     sys.exit(mull_targets(targets, **args_to_mull_targets_kwds(args)))
 
 
 __all__ = ("main", )
-
 
 if __name__ == '__main__':
     main()

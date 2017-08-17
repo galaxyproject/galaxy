@@ -21,10 +21,11 @@ log.addHandler(handler)
 
 metadata = MetaData()
 
-HistoryUserShareAssociation_table = Table("history_user_share_association", metadata,
-                                          Column("id", Integer, primary_key=True),
-                                          Column("history_id", Integer, ForeignKey("history.id"), index=True),
-                                          Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
+HistoryUserShareAssociation_table = Table(
+    "history_user_share_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("history_id", Integer, ForeignKey("history.id"), index=True),
+    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
 
 def upgrade(migrate_engine):
@@ -49,7 +50,8 @@ def upgrade(migrate_engine):
             col.create(History_table, index_name='ix_history_importable')
             assert col is History_table.c.importable
         except Exception:
-            log.exception("Adding column 'importable' to history table failed.")
+            log.exception(
+                "Adding column 'importable' to history table failed.")
 
 
 def downgrade(migrate_engine):
@@ -67,7 +69,8 @@ def downgrade(migrate_engine):
             col = History_table.c.importable
             col.drop()
         except Exception:
-            log.exception("Dropping column 'importable' from history table failed.")
+            log.exception(
+                "Dropping column 'importable' from history table failed.")
     # Drop the history_user_share_association table
     try:
         HistoryUserShareAssociation_table.drop()

@@ -27,7 +27,7 @@ class Base:
             If second parameter is set to 'first' it will only
             capitalize the first character of the title.'''
 
-        if(uppercase == 'first'):
+        if (uppercase == 'first'):
             return self.humanize(self.underscore(word)).capitalize()
         else:
             return self.humanize(self.underscore(word)).title()
@@ -37,7 +37,9 @@ class Base:
         Converts a word like "send_email" to "SendEmail". It
         will remove non alphanumeric character from the word, so
         "who's online" will be converted to "WhoSOnline"'''
-        return ''.join(w[0].upper() + w[1:] for w in re.sub('[^A-Z^a-z^0-9^:]+', ' ', word).split(' '))
+        return ''.join(
+            w[0].upper() + w[1:]
+            for w in re.sub('[^A-Z^a-z^0-9^:]+', ' ', word).split(' '))
 
     def underscore(self, word):
         ''' Converts a word "into_it_s_underscored_version"
@@ -47,7 +49,8 @@ class Base:
 
         return re.sub('[^A-Z^a-z^0-9^\/]+', '_',
                       re.sub('([a-z\d])([A-Z])', '\\1_\\2',
-                             re.sub('([A-Z]+)([A-Z][a-z])', '\\1_\\2', re.sub('::', '/', word)))).lower()
+                             re.sub('([A-Z]+)([A-Z][a-z])', '\\1_\\2',
+                                    re.sub('::', '/', word)))).lower()
 
     def humanize(self, word, uppercase=''):
         '''Returns a human-readable string from word
@@ -57,7 +60,7 @@ class Base:
         If you need to uppercase all the words you just have to
         pass 'all' as a second parameter.'''
 
-        if(uppercase == 'first'):
+        if (uppercase == 'first'):
             return re.sub('_id$', '', word).replace('_', ' ').capitalize()
         else:
             return re.sub('_id$', '', word).replace('_', ' ').title()
@@ -122,7 +125,9 @@ class Base:
     def modulize(self, module_description):
         return self.camelize(self.singularize(module_description))
 
-    def foreignKey(self, class_name, separate_class_name_and_id_with_underscore=1):
+    def foreignKey(self,
+                   class_name,
+                   separate_class_name_and_id_with_underscore=1):
         ''' Returns class_name in underscored form, with "_id" tacked on at the end.
         This is for use in dealing with the database.'''
         if separate_class_name_and_id_with_underscore:
@@ -132,7 +137,7 @@ class Base:
         return self.underscore(self.demodulize(class_name)) + tail
 
 
-class English (Base):
+class English(Base):
     """
     Inflector for pluralize and singularize English nouns.
 
@@ -142,28 +147,24 @@ class English (Base):
     def pluralize(self, word):
         '''Pluralizes English nouns.'''
 
-        rules = [
-            ['(?i)(quiz)$', '\\1zes'],
-            ['^(?i)(ox)$', '\\1en'],
-            ['(?i)([m|l])ouse$', '\\1ice'],
-            ['(?i)(matr|vert|ind)ix|ex$', '\\1ices'],
-            ['(?i)(x|ch|ss|sh)$', '\\1es'],
-            ['(?i)([^aeiouy]|qu)ies$', '\\1y'],
-            ['(?i)([^aeiouy]|qu)y$', '\\1ies'],
-            ['(?i)(hive)$', '\\1s'],
-            ['(?i)(?:([^f])fe|([lr])f)$', '\\1\\2ves'],
-            ['(?i)sis$', 'ses'],
-            ['(?i)([ti])um$', '\\1a'],
-            ['(?i)(buffal|tomat)o$', '\\1oes'],
-            ['(?i)(bu)s$', '\\1ses'],
-            ['(?i)(alias|status)', '\\1es'],
-            ['(?i)(octop|vir)us$', '\\1i'],
-            ['(?i)(ax|test)is$', '\\1es'],
-            ['(?i)s$', 's'],
-            ['(?i)$', 's']
-        ]
+        rules = [['(?i)(quiz)$', '\\1zes'], ['^(?i)(ox)$', '\\1en'], [
+            '(?i)([m|l])ouse$', '\\1ice'
+        ], ['(?i)(matr|vert|ind)ix|ex$',
+            '\\1ices'], ['(?i)(x|ch|ss|sh)$',
+                         '\\1es'], ['(?i)([^aeiouy]|qu)ies$', '\\1y'],
+                 ['(?i)([^aeiouy]|qu)y$', '\\1ies'], ['(?i)(hive)$', '\\1s'], [
+                     '(?i)(?:([^f])fe|([lr])f)$', '\\1\\2ves'
+                 ], ['(?i)sis$', 'ses'], ['(?i)([ti])um$', '\\1a'], [
+                     '(?i)(buffal|tomat)o$', '\\1oes'
+                 ], ['(?i)(bu)s$', '\\1ses'], ['(?i)(alias|status)', '\\1es'],
+                 ['(?i)(octop|vir)us$',
+                  '\\1i'], ['(?i)(ax|test)is$',
+                            '\\1es'], ['(?i)s$', 's'], ['(?i)$', 's']]
 
-        uncountable_words = ['equipment', 'information', 'rice', 'money', 'species', 'series', 'fish', 'sheep']
+        uncountable_words = [
+            'equipment', 'information', 'rice', 'money', 'species', 'series',
+            'fish', 'sheep'
+        ]
 
         irregular_words = {
             'person': 'people',
@@ -176,13 +177,17 @@ class English (Base):
         lower_cased_word = word.lower()
 
         for uncountable_word in uncountable_words:
-            if lower_cased_word[-1 * len(uncountable_word):] == uncountable_word:
+            if lower_cased_word[
+                    -1 * len(uncountable_word):] == uncountable_word:
                 return word
 
         for irregular in irregular_words.keys():
             match = re.search('(' + irregular + ')$', word, re.IGNORECASE)
             if match:
-                return re.sub('(?i)' + irregular + '$', match.expand('\\1')[0] + irregular_words[irregular][1:], word)
+                return re.sub(
+                    '(?i)' + irregular + '$',
+                    match.expand('\\1')[0] + irregular_words[irregular][1:],
+                    word)
 
         for rule in range(len(rules)):
             match = re.search(rules[rule][0], word, re.IGNORECASE)
@@ -190,7 +195,8 @@ class English (Base):
                 groups = match.groups()
                 for k in range(0, len(groups)):
                     if groups[k] is None:
-                        rules[rule][1] = rules[rule][1].replace('\\' + str(k + 1), '')
+                        rules[rule][1] = rules[rule][1].replace(
+                            '\\' + str(k + 1), '')
 
                 return re.sub(rules[rule][0], rules[rule][1], word)
 
@@ -220,13 +226,19 @@ class English (Base):
             ['(?i)(hive)s$', '\\1'],
             ['(?i)([^f])ves$', '\\1fe'],
             ['(?i)(^analy)ses$', '\\1sis'],
-            ['(?i)((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$', '\\1\\2sis'],
+            [
+                '(?i)((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$',
+                '\\1\\2sis'
+            ],
             ['(?i)([ti])a$', '\\1um'],
             ['(?i)(n)ews$', '\\1ews'],
             ['(?i)s$', ''],
         ]
 
-        uncountable_words = ['equipment', 'information', 'rice', 'money', 'species', 'series', 'fish', 'sheep', 'sms']
+        uncountable_words = [
+            'equipment', 'information', 'rice', 'money', 'species', 'series',
+            'fish', 'sheep', 'sms'
+        ]
 
         irregular_words = {
             'people': 'person',
@@ -238,13 +250,17 @@ class English (Base):
 
         lower_cased_word = word.lower()
         for uncountable_word in uncountable_words:
-            if lower_cased_word[-1 * len(uncountable_word):] == uncountable_word:
+            if lower_cased_word[
+                    -1 * len(uncountable_word):] == uncountable_word:
                 return word
 
         for irregular in irregular_words.keys():
             match = re.search('(' + irregular + ')$', word, re.IGNORECASE)
             if match:
-                return re.sub('(?i)' + irregular + '$', match.expand('\\1')[0] + irregular_words[irregular][1:], word)
+                return re.sub(
+                    '(?i)' + irregular + '$',
+                    match.expand('\\1')[0] + irregular_words[irregular][1:],
+                    word)
 
         for rule in range(len(rules)):
             match = re.search(rules[rule][0], word, re.IGNORECASE)
@@ -252,7 +268,8 @@ class English (Base):
                 groups = match.groups()
                 for k in range(0, len(groups)):
                     if groups[k] is None:
-                        rules[rule][1] = rules[rule][1].replace('\\' + str(k + 1), '')
+                        rules[rule][1] = rules[rule][1].replace(
+                            '\\' + str(k + 1), '')
 
                 return re.sub(rules[rule][0], rules[rule][1], word)
 
@@ -352,10 +369,13 @@ class Inflector:
     def modulize(self, module_description):
         return self.Inflector.modulize(module_description)
 
-    def foreignKey(self, class_name, separate_class_name_and_id_with_underscore=1):
+    def foreignKey(self,
+                   class_name,
+                   separate_class_name_and_id_with_underscore=1):
         ''' Returns class_name in underscored form, with "_id" tacked on at the end.
         This is for use in dealing with the database.'''
-        return self.Inflector.foreignKey(class_name, separate_class_name_and_id_with_underscore)
+        return self.Inflector.foreignKey(
+            class_name, separate_class_name_and_id_with_underscore)
 
 
 # Copyright (c) 2006 Bermi Ferrer Martinez

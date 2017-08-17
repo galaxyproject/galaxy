@@ -13,11 +13,11 @@ log = logging.getLogger(__name__)
 
 
 class AuthManager(object):
-
     def __init__(self, app):
         self.__app = app
         import galaxy.auth.providers
-        self.__plugins_dict = plugin_config.plugins_dict(galaxy.auth.providers, 'plugin_type')
+        self.__plugins_dict = plugin_config.plugins_dict(
+            galaxy.auth.providers, 'plugin_type')
         auth_config_file = app.config.auth_config_file
         # parse XML
         ct = xml.etree.ElementTree.parse(auth_config_file)
@@ -45,8 +45,7 @@ class AuthManager(object):
             authenticator = Authenticator(
                 plugin=plugin,
                 filter_template=filter_template,
-                options=options,
-            )
+                options=options, )
             authenticators.append(authenticator)
         self.authenticators = authenticators
 
@@ -54,10 +53,12 @@ class AuthManager(object):
         """Checks if the provided email/username is allowed to register."""
         message = ''
         status = 'done'
-        for provider, options in self.active_authenticators(email, username, password):
+        for provider, options in self.active_authenticators(
+                email, username, password):
             allow_reg = _get_tri_state(options, 'allow-register', True)
             if allow_reg is None:  # i.e. challenge
-                auth_result, msg = provider.authenticate(email, username, password, options)
+                auth_result, msg = provider.authenticate(
+                    email, username, password, options)
                 if auth_result is True:
                     break
                 if auth_result is None:
@@ -83,11 +84,13 @@ class AuthManager(object):
         else:
             email = None
             username = login
-        for provider, options in self.active_authenticators(email, username, password):
+        for provider, options in self.active_authenticators(
+                email, username, password):
             if provider is None:
                 log.debug("Unable to find module: %s" % options)
             else:
-                auth_result, auto_email, auto_username = provider.authenticate(email, username, password, options)
+                auth_result, auto_email, auto_username = provider.authenticate(
+                    email, username, password, options)
                 auto_email = str(auto_email).lower()
                 auto_username = str(auto_username).lower()
                 if auth_result is True:
@@ -95,26 +98,33 @@ class AuthManager(object):
                     if validate_publicname(trans, auto_username) != '':
                         i = 1
                         while i <= 10:  # stop after 10 tries
-                            if validate_publicname(trans, "%s-%i" % (auto_username, i)) == '':
+                            if validate_publicname(trans, "%s-%i" %
+                                                   (auto_username, i)) == '':
                                 auto_username = "%s-%i" % (auto_username, i)
                                 break
                             i += 1
                         else:
                             break  # end for loop if we can't make a unique username
-                    log.debug("Email: %s, auto-register with username: %s" % (auto_email, auto_username))
-                    return (_get_bool(options, 'auto-register', False), auto_email, auto_username)
+                    log.debug("Email: %s, auto-register with username: %s" %
+                              (auto_email, auto_username))
+                    return (_get_bool(options, 'auto-register', False),
+                            auto_email, auto_username)
                 elif auth_result is None:
-                    log.debug("Email: %s, Username %s, stopping due to failed non-continue" % (auto_email, auto_username))
+                    log.debug(
+                        "Email: %s, Username %s, stopping due to failed non-continue"
+                        % (auto_email, auto_username))
                     break  # end authentication (skip rest)
         return (False, '', '')
 
     def check_password(self, user, password):
         """Checks the username/email and password using auth providers."""
-        for provider, options in self.active_authenticators(user.email, user.username, password):
+        for provider, options in self.active_authenticators(
+                user.email, user.username, password):
             if provider is None:
                 log.debug("Unable to find module: %s" % options)
             else:
-                auth_result = provider.authenticate_user(user, password, options)
+                auth_result = provider.authenticate_user(
+                    user, password, options)
                 if auth_result is True:
                     return True  # accept user
                 elif auth_result is None:
@@ -125,11 +135,13 @@ class AuthManager(object):
         """Checks that auth provider allows password changes and current_password
         matches.
         """
-        for provider, options in self.active_authenticators(user.email, user.username, current_password):
+        for provider, options in self.active_authenticators(
+                user.email, user.username, current_password):
             if provider is None:
                 log.debug("Unable to find module: %s" % options)
             else:
-                auth_result = provider.authenticate_user(user, current_password, options)
+                auth_result = provider.authenticate_user(
+                    user, current_password, options)
                 if auth_result is True:
                     if _get_bool(options, "allow-password-change", False):
                         return (True, '')  # accept user
@@ -147,8 +159,10 @@ class AuthManager(object):
             for authenticator in self.authenticators:
                 filter_template = authenticator.filter_template
                 if filter_template:
-                    filter_str = filter_template.format(email=email, username=username, password=password)
-                    passed_filter = eval(filter_str, {"__builtins__": None}, {'str': str})
+                    filter_str = filter_template.format(
+                        email=email, username=username, password=password)
+                    passed_filter = eval(filter_str, {"__builtins__": None},
+                                         {'str': str})
                     if not passed_filter:
                         continue  # skip to next
                 yield authenticator.plugin, authenticator.options
@@ -157,7 +171,8 @@ class AuthManager(object):
             raise
 
 
-Authenticator = namedtuple('Authenticator', ['plugin', 'filter_template', 'options'])
+Authenticator = namedtuple('Authenticator',
+                           ['plugin', 'filter_template', 'options'])
 
 
 def _get_bool(d, k, o):

@@ -22,7 +22,8 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     # Create and initialize imported column in job table.
-    RepositoryMetadata_table = Table("repository_metadata", metadata, autoload=True)
+    RepositoryMetadata_table = Table(
+        "repository_metadata", metadata, autoload=True)
     c = Column("downloadable", Boolean, default=True)
     try:
         # Create
@@ -33,17 +34,21 @@ def upgrade(migrate_engine):
             default_true = "1"
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_true = "true"
-        migrate_engine.execute("UPDATE repository_metadata SET downloadable=%s" % default_true)
+        migrate_engine.execute(
+            "UPDATE repository_metadata SET downloadable=%s" % default_true)
     except Exception as e:
-        print "Adding downloadable column to the repository_metadata table failed: %s" % str(e)
+        print "Adding downloadable column to the repository_metadata table failed: %s" % str(
+            e)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     # Drop downloadable column from repository_metadata table.
-    RepositoryMetadata_table = Table("repository_metadata", metadata, autoload=True)
+    RepositoryMetadata_table = Table(
+        "repository_metadata", metadata, autoload=True)
     try:
         RepositoryMetadata_table.c.downloadable.drop()
     except Exception as e:
-        print "Dropping column downloadable from the repository_metadata table failed: %s" % str(e)
+        print "Dropping column downloadable from the repository_metadata table failed: %s" % str(
+            e)

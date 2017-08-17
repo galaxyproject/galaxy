@@ -3,40 +3,21 @@ Modules used in building workflows
 """
 import logging
 from json import loads
-from xml.etree.ElementTree import (
-    Element,
-    XML
-)
+from xml.etree.ElementTree import (Element, XML)
 
-from galaxy import (
-    exceptions,
-    model,
-    web
-)
+from galaxy import (exceptions, model, web)
 from galaxy.dataset_collections import matching
 from galaxy.exceptions import ToolMissingException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
-from galaxy.tools import (
-    DefaultToolState,
-    ToolInputsNotReadyException
-)
+from galaxy.tools import (DefaultToolState, ToolInputsNotReadyException)
 from galaxy.tools.execute import execute
-from galaxy.tools.parameters import (
-    check_param,
-    params_to_incoming,
-    visit_input_values
-)
+from galaxy.tools.parameters import (check_param, params_to_incoming,
+                                     visit_input_values)
 from galaxy.tools.parameters.basic import (
-    BooleanToolParameter,
-    DataCollectionToolParameter,
-    DataToolParameter,
-    parameter_types,
-    RuntimeValue,
-    SelectToolParameter,
-    TextToolParameter,
-    workflow_building_modes
-)
+    BooleanToolParameter, DataCollectionToolParameter, DataToolParameter,
+    parameter_types, RuntimeValue, SelectToolParameter, TextToolParameter,
+    workflow_building_modes)
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
@@ -55,7 +36,6 @@ NO_REPLACEMENT = object()
 
 
 class WorkflowModule(object):
-
     def __init__(self, trans, content_id=None, **kwds):
         self.trans = trans
         self.content_id = content_id
@@ -111,7 +91,8 @@ class WorkflowModule(object):
         """
         inputs = self.get_inputs()
         if inputs:
-            return self.state.encode(Bunch(inputs=inputs), self.trans.app, nested=nested)
+            return self.state.encode(
+                Bunch(inputs=inputs), self.trans.app, nested=nested)
         else:
             return self.state.inputs
 
@@ -161,8 +142,12 @@ class WorkflowModule(object):
     def get_config_form(self):
         """ Serializes input parameters of a module into input dictionaries. """
         return {
-            'title' : self.name,
-            'inputs': [param.to_dict(self.trans) for param in self.get_inputs().values()]
+            'title':
+            self.name,
+            'inputs': [
+                param.to_dict(self.trans)
+                for param in self.get_inputs().values()
+            ]
         }
 
     # ---- Run time ---------------------------------------------------------
@@ -194,24 +179,34 @@ class WorkflowModule(object):
 
             def update_value(input, context, prefixed_name, **kwargs):
                 if prefixed_name in step_updates:
-                    value, error = check_param(trans, input, step_updates.get(prefixed_name), context)
+                    value, error = check_param(trans, input,
+                                               step_updates.get(prefixed_name),
+                                               context)
                     if error is not None:
                         step_errors[prefixed_name] = error
                     return value
                 return NO_REPLACEMENT
 
-            visit_input_values(self.get_runtime_inputs(), state.inputs, update_value, no_replacement_value=NO_REPLACEMENT)
+            visit_input_values(
+                self.get_runtime_inputs(),
+                state.inputs,
+                update_value,
+                no_replacement_value=NO_REPLACEMENT)
 
         return state, step_errors
 
     def encode_runtime_state(self, runtime_state):
         """ Takes the computed runtime state and serializes it during run request creation. """
-        return runtime_state.encode(Bunch(inputs=self.get_runtime_inputs()), self.trans.app)
+        return runtime_state.encode(
+            Bunch(inputs=self.get_runtime_inputs()), self.trans.app)
 
     def decode_runtime_state(self, runtime_state):
         """ Takes the serialized runtime state and decodes it when running the workflow. """
         state = DefaultToolState()
-        state.decode(runtime_state, Bunch(inputs=self.get_runtime_inputs()), self.trans.app)
+        state.decode(
+            runtime_state,
+            Bunch(inputs=self.get_runtime_inputs()),
+            self.trans.app)
         return state
 
     def execute(self, trans, progress, invocation, step):
@@ -228,7 +223,9 @@ class WorkflowModule(object):
         be attached to the WorkflowInvocationStep and be available the next
         time the workflow scheduler visits the workflow.
         """
-        raise exceptions.RequestParameterInvalidException("Attempting to perform invocation step action on module that does not support actions.")
+        raise exceptions.RequestParameterInvalidException(
+            "Attempting to perform invocation step action on module that does not support actions."
+        )
 
     def recover_mapping(self, step, step_invocations, progress):
         """ Re-populate progress object with information about connections
@@ -251,14 +248,16 @@ class SubWorkflowModule(WorkflowModule):
             module.subworkflow = d["subworkflow"]
         elif "content_id" in d:
             from galaxy.managers.workflows import WorkflowsManager
-            module.subworkflow = WorkflowsManager(trans.app).get_owned_workflow(trans, d["content_id"])
+            module.subworkflow = WorkflowsManager(
+                trans.app).get_owned_workflow(trans, d["content_id"])
         else:
             raise Exception("Step associated subworkflow could not be found.")
         return module
 
     @classmethod
     def from_workflow_step(Class, trans, step, **kwds):
-        module = super(SubWorkflowModule, Class).from_workflow_step(trans, step, **kwds)
+        module = super(SubWorkflowModule, Class).from_workflow_step(
+            trans, step, **kwds)
         module.subworkflow = step.subworkflow
         return module
 
@@ -283,7 +282,8 @@ class SubWorkflowModule(WorkflowModule):
             for step in self.subworkflow.input_steps:
                 name = step.label
                 if not name:
-                    step_module = module_factory.from_workflow_step(self.trans, step)
+                    step_module = module_factory.from_workflow_step(
+                        self.trans, step)
                     name = "%s:%s" % (step.order_index, step_module.get_name())
                 step_type = step.type
                 assert step_type in step_to_input_type
@@ -293,8 +293,7 @@ class SubWorkflowModule(WorkflowModule):
                     label=name,
                     multiple=False,
                     extensions="input",
-                    input_type=step_to_input_type[step_type],
-                )
+                    input_type=step_to_input_type[step_type], )
                 inputs.append(input)
         return inputs
 
@@ -302,13 +301,16 @@ class SubWorkflowModule(WorkflowModule):
         outputs = []
         if hasattr(self.subworkflow, 'workflow_outputs'):
             for workflow_output in self.subworkflow.workflow_outputs:
-                if workflow_output.workflow_step.type in {'data_input', 'data_collection_input'}:
+                if workflow_output.workflow_step.type in {
+                        'data_input', 'data_collection_input'
+                }:
                     # It is just confusing to display the input data as output data in subworkflows
                     continue
                 output_step = workflow_output.workflow_step
                 label = workflow_output.label
                 if not label:
-                    label = "%s:%s" % (output_step.order_index, workflow_output.output_name)
+                    label = "%s:%s" % (output_step.order_index,
+                                       workflow_output.output_name)
                 output = dict(
                     name=label,
                     label=label,
@@ -331,8 +333,10 @@ class SubWorkflowModule(WorkflowModule):
         subworkflow_progress = subworkflow_invoker.progress
         outputs = {}
         for workflow_output in subworkflow.workflow_outputs:
-            workflow_output_label = workflow_output.label or "%s:%s" % (step.order_index, workflow_output.output_name)
-            replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
+            workflow_output_label = workflow_output.label or "%s:%s" % (
+                step.order_index, workflow_output.output_name)
+            replacement = subworkflow_progress.get_replacement_workflow_output(
+                workflow_output)
             outputs[workflow_output_label] = replacement
         progress.set_step_outputs(step, outputs)
         return None
@@ -344,7 +348,6 @@ class SubWorkflowModule(WorkflowModule):
 
 
 class InputModule(WorkflowModule):
-
     def get_runtime_state(self):
         state = DefaultToolState()
         state.inputs = dict(input=None)
@@ -404,7 +407,15 @@ class InputDataModule(InputModule):
         return ', '.join(filter_set)
 
     def get_runtime_inputs(self, connections=None):
-        return dict(input=DataToolParameter(None, Element("param", name="input", label=self.label, multiple=False, type="data", format=self.get_filter_set(connections)), self.trans))
+        return dict(input=DataToolParameter(
+            None,
+            Element(
+                "param",
+                name="input",
+                label=self.label,
+                multiple=False,
+                type="data",
+                format=self.get_filter_set(connections)), self.trans))
 
 
 class InputDataCollectionModule(InputModule):
@@ -414,9 +425,10 @@ class InputDataCollectionModule(InputModule):
     collection_type = default_collection_type
 
     def get_inputs(self):
-        collection_type = self.state.inputs.get("collection_type", self.default_collection_type)
-        input_collection_type = TextToolParameter(None, XML(
-            '''
+        collection_type = self.state.inputs.get("collection_type",
+                                                self.default_collection_type)
+        input_collection_type = TextToolParameter(None,
+                                                  XML('''
             <param name="collection_type" label="Collection type" type="text" value="%s">
                 <option value="list">List of Datasets</option>
                 <option value="paired">Dataset Pair</option>
@@ -426,9 +438,16 @@ class InputDataCollectionModule(InputModule):
         return dict(collection_type=input_collection_type)
 
     def get_runtime_inputs(self, **kwds):
-        collection_type = self.state.inputs.get("collection_type", self.default_collection_type)
-        input_element = Element("param", name="input", label=self.label, type="data_collection", collection_type=collection_type)
-        return dict(input=DataCollectionToolParameter(None, input_element, self.trans))
+        collection_type = self.state.inputs.get("collection_type",
+                                                self.default_collection_type)
+        input_element = Element(
+            "param",
+            name="input",
+            label=self.label,
+            type="data_collection",
+            collection_type=collection_type)
+        return dict(input=DataCollectionToolParameter(None, input_element,
+                                                      self.trans))
 
     def get_data_outputs(self):
         return [
@@ -436,8 +455,8 @@ class InputDataCollectionModule(InputModule):
                 name='output',
                 extensions=['input_collection'],
                 collection=True,
-                collection_type=self.state.inputs.get('collection_type', self.default_collection_type)
-            )
+                collection_type=self.state.inputs.get(
+                    'collection_type', self.default_collection_type))
         ]
 
 
@@ -451,10 +470,11 @@ class InputParameterModule(WorkflowModule):
 
     def get_inputs(self):
         # TODO: Use an external xml or yaml file to load the parameter definition
-        parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
+        parameter_type = self.state.inputs.get("parameter_type",
+                                               self.default_parameter_type)
         optional = self.state.inputs.get("optional", self.default_optional)
-        input_parameter_type = SelectToolParameter(None, XML(
-            '''
+        input_parameter_type = SelectToolParameter(None,
+                                                   XML('''
             <param name="parameter_type" label="Parameter type" type="select" value="%s">
                 <option value="text">Text</option>
                 <option value="integer">Integer</option>
@@ -464,20 +484,37 @@ class InputParameterModule(WorkflowModule):
             </param>
             ''' % parameter_type))
         return odict([("parameter_type", input_parameter_type),
-                      ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional)))])
+                      ("optional", BooleanToolParameter(
+                          None,
+                          Element(
+                              "param",
+                              name="optional",
+                              label="Optional",
+                              type="boolean",
+                              value=optional)))])
 
     def get_runtime_inputs(self, **kwds):
-        parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
+        parameter_type = self.state.inputs.get("parameter_type",
+                                               self.default_parameter_type)
         optional = self.state.inputs.get("optional", self.default_optional)
-        if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
-            raise ValueError("Invalid parameter type for workflow parameters encountered.")
+        if parameter_type not in [
+                "text", "boolean", "integer", "float", "color"
+        ]:
+            raise ValueError(
+                "Invalid parameter type for workflow parameters encountered.")
         parameter_class = parameter_types[parameter_type]
         parameter_kwds = {}
         if parameter_type in ["integer", "float"]:
             parameter_kwds["value"] = str(0)
 
         # TODO: Use a dict-based description from YAML tool source
-        element = Element("param", name="input", label=self.label, type=parameter_type, optional=str(optional), **parameter_kwds)
+        element = Element(
+            "param",
+            name="input",
+            label=self.label,
+            type=parameter_type,
+            optional=str(optional),
+            **parameter_kwds)
         input = parameter_class(None, element)
         return dict(input=input)
 
@@ -508,12 +545,14 @@ class PauseModule(WorkflowModule):
             label="Dataset for Review",
             multiple=False,
             extensions='input',
-            input_type="dataset",
-        )
+            input_type="dataset", )
         return [input]
 
     def get_data_outputs(self):
-        return [dict(name="output", label="Reviewed Dataset", extensions=['input'])]
+        return [
+            dict(
+                name="output", label="Reviewed Dataset", extensions=['input'])
+        ]
 
     def get_runtime_state(self):
         state = DefaultToolState()
@@ -553,13 +592,22 @@ class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
 
-    def __init__(self, trans, tool_id, tool_version=None, exact_tools=False, **kwds):
+    def __init__(self,
+                 trans,
+                 tool_id,
+                 tool_version=None,
+                 exact_tools=False,
+                 **kwds):
         super(ToolModule, self).__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
         self.tool_version = tool_version
-        self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools)
-        if self.tool and tool_version and exact_tools and str(self.tool.version) != str(tool_version):
-            log.info("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version))
+        self.tool = trans.app.toolbox.get_tool(
+            tool_id, tool_version=tool_version, exact=exact_tools)
+        if self.tool and tool_version and exact_tools and str(
+                self.tool.version) != str(tool_version):
+            log.info(
+                "Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]."
+                % (tool_id, tool_version))
             self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
@@ -572,19 +620,28 @@ class ToolModule(WorkflowModule):
     def from_dict(Class, trans, d, exact_tools=False, **kwds):
         tool_id = d.get('content_id') or d.get('tool_id')
         if tool_id is None:
-            raise exceptions.RequestParameterInvalidException("No tool id could be located for step [%s]." % d)
+            raise exceptions.RequestParameterInvalidException(
+                "No tool id could be located for step [%s]." % d)
         tool_version = d.get('tool_version')
         if tool_version:
             tool_version = str(tool_version)
-        module = super(ToolModule, Class).from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, exact_tools=exact_tools)
+        module = super(ToolModule, Class).from_dict(
+            trans,
+            d,
+            tool_id=tool_id,
+            tool_version=tool_version,
+            exact_tools=exact_tools)
         module.post_job_actions = d.get('post_job_actions', {})
         module.workflow_outputs = d.get('workflow_outputs', [])
         if module.tool:
             message = ""
             if tool_id != module.tool_id:
-                message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (tool_id, module.tool_id)
+                message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (
+                    tool_id, module.tool_id)
             if d.get('tool_version', 'Unspecified') != module.get_version():
-                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % (tool_id, module.get_version(), d.get('tool_version', 'Unspecified'))
+                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % (
+                    tool_id, module.get_version(),
+                    d.get('tool_version', 'Unspecified'))
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
@@ -594,7 +651,8 @@ class ToolModule(WorkflowModule):
     def from_workflow_step(Class, trans, step, **kwds):
         tool_id = trans.app.toolbox.get_tool_id(step.tool_id) or step.tool_id
         tool_version = step.tool_version
-        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version)
+        module = super(ToolModule, Class).from_workflow_step(
+            trans, step, tool_id=tool_id, tool_version=tool_version)
         module.workflow_outputs = step.workflow_outputs
         module.post_job_actions = {}
         for pja in step.post_job_actions:
@@ -604,16 +662,27 @@ class ToolModule(WorkflowModule):
             if step.tool_id != module.tool_id:  # This means the exact version of the tool is not installed. We inform the user.
                 old_tool_shed = step.tool_id.split("/repos/")[0]
                 if old_tool_shed not in tool_id:  # Only display the following warning if the tool comes from a different tool shed
-                    old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, old_tool_shed)
+                    old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(
+                        trans.app, old_tool_shed)
                     if not old_tool_shed_url:  # a tool from a different tool_shed has been found, but the original tool shed has been deactivated
                         old_tool_shed_url = "http://" + old_tool_shed  # let's just assume it's either http, or a http is forwarded to https.
-                    old_url = old_tool_shed_url + "/view/%s/%s/" % (module.tool.repository_owner, module.tool.repository_name)
-                    new_url = module.tool.tool_shed_repository.get_sharable_url(module.tool.app) + '/%s/' % module.tool.tool_shed_repository.changeset_revision
+                    old_url = old_tool_shed_url + "/view/%s/%s/" % (
+                        module.tool.repository_owner,
+                        module.tool.repository_name)
+                    new_url = module.tool.tool_shed_repository.get_sharable_url(
+                        module.tool.app
+                    ) + '/%s/' % module.tool.tool_shed_repository.changeset_revision
                     new_tool_shed_url = new_url.split("/view")[0]
-                    message += "The tool \'%s\', version %s by the owner %s installed from <a href=\"%s\" target=\"_blank\">%s</a> is not available. " % (module.tool.name, tool_version, module.tool.repository_owner, old_url, old_tool_shed_url)
-                    message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (new_url, new_tool_shed_url)
-            if step.tool_version and (step.tool_version != module.tool.version):
-                message += "<span title=\"tool id '%s'\">Using version '%s' instead of version '%s' specified in this workflow. " % (tool_id, module.tool.version, step.tool_version)
+                    message += "The tool \'%s\', version %s by the owner %s installed from <a href=\"%s\" target=\"_blank\">%s</a> is not available. " % (
+                        module.tool.name, tool_version,
+                        module.tool.repository_owner, old_url,
+                        old_tool_shed_url)
+                    message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (
+                        new_url, new_tool_shed_url)
+            if step.tool_version and (step.tool_version !=
+                                      module.tool.version):
+                message += "<span title=\"tool id '%s'\">Using version '%s' instead of version '%s' specified in this workflow. " % (
+                    tool_id, module.tool.version, step.tool_version)
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
@@ -642,7 +711,8 @@ class ToolModule(WorkflowModule):
 
     def get_tooltip(self, static_path=''):
         if self.tool and self.tool.help:
-            return self.tool.help.render(host_url=web.url_for('/'), static_path=static_path)
+            return self.tool.help.render(
+                host_url=web.url_for('/'), static_path=static_path)
 
     # ---- Configuration time -----------------------------------------------
 
@@ -659,21 +729,22 @@ class ToolModule(WorkflowModule):
             def callback(input, prefixed_name, prefixed_label, **kwargs):
                 if not hasattr(input, 'hidden') or not input.hidden:
                     if isinstance(input, DataToolParameter):
-                        data_inputs.append(dict(
-                            name=prefixed_name,
-                            label=prefixed_label,
-                            multiple=input.multiple,
-                            extensions=input.extensions,
-                            input_type="dataset", ))
+                        data_inputs.append(
+                            dict(
+                                name=prefixed_name,
+                                label=prefixed_label,
+                                multiple=input.multiple,
+                                extensions=input.extensions,
+                                input_type="dataset", ))
                     elif isinstance(input, DataCollectionToolParameter):
-                        data_inputs.append(dict(
-                            name=prefixed_name,
-                            label=prefixed_label,
-                            multiple=input.multiple,
-                            input_type="dataset_collection",
-                            collection_types=input.collection_types,
-                            extensions=input.extensions,
-                        ))
+                        data_inputs.append(
+                            dict(
+                                name=prefixed_name,
+                                label=prefixed_label,
+                                multiple=input.multiple,
+                                input_type="dataset_collection",
+                                collection_types=input.collection_types,
+                                extensions=input.extensions, ))
 
             visit_input_values(self.tool.inputs, self.state.inputs, callback)
         return data_inputs
@@ -685,10 +756,13 @@ class ToolModule(WorkflowModule):
                 extra_kwds = {}
                 if tool_output.collection:
                     extra_kwds["collection"] = True
-                    extra_kwds["collection_type"] = tool_output.structure.collection_type
+                    extra_kwds[
+                        "collection_type"] = tool_output.structure.collection_type
                     formats = ['input']  # TODO: fix
                 elif tool_output.format_source is not None:
-                    formats = ['input']  # default to special name "input" which remove restrictions on connections
+                    formats = [
+                        'input'
+                    ]  # default to special name "input" which remove restrictions on connections
                 else:
                     formats = [tool_output.format]
                 for change_elem in tool_output.change_format:
@@ -697,44 +771,54 @@ class ToolModule(WorkflowModule):
                         if format and format not in formats:
                             formats.append(format)
                 data_outputs.append(
-                    dict(
-                        name=name,
-                        extensions=formats,
-                        **extra_kwds
-                    )
-                )
+                    dict(name=name, extensions=formats, **extra_kwds))
         return data_outputs
 
     def get_config_form(self):
         if self.tool:
             self.add_dummy_datasets()
             incoming = {}
-            params_to_incoming(incoming, self.tool.inputs, self.state.inputs, self.trans.app)
-            return self.tool.to_json(self.trans, incoming, workflow_building_mode=True)
+            params_to_incoming(incoming, self.tool.inputs, self.state.inputs,
+                               self.trans.app)
+            return self.tool.to_json(
+                self.trans, incoming, workflow_building_mode=True)
 
     def check_and_update_state(self):
         if self.tool:
-            return self.tool.check_and_update_param_values(self.state.inputs, self.trans, workflow_building_mode=True)
+            return self.tool.check_and_update_param_values(
+                self.state.inputs, self.trans, workflow_building_mode=True)
 
     def add_dummy_datasets(self, connections=None, steps=None):
         if self.tool:
             if connections:
                 # Store connections by input name
-                input_connections_by_name = dict((conn.input_name, conn) for conn in connections)
+                input_connections_by_name = dict((conn.input_name, conn)
+                                                 for conn in connections)
             else:
                 input_connections_by_name = {}
 
             # Any input needs to have value RuntimeValue or obtain the value from connected steps
             def callback(input, prefixed_name, context, **kwargs):
-                if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
+                if isinstance(input, DataToolParameter) or isinstance(
+                        input, DataCollectionToolParameter):
                     if connections is not None and steps is not None and self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
                         if prefixed_name in input_connections_by_name:
-                            connection = input_connections_by_name[prefixed_name]
-                            output_step = next(output_step for output_step in steps if connection.output_step_id == output_step.id)
+                            connection = input_connections_by_name[
+                                prefixed_name]
+                            output_step = next(
+                                output_step for output_step in steps
+                                if connection.output_step_id == output_step.id)
                             if output_step.type.startswith('data'):
-                                output_inputs = output_step.module.get_runtime_inputs(connections=connections)
-                                output_value = output_inputs['input'].get_initial_value(self.trans, context)
-                                if isinstance(input, DataToolParameter) and isinstance(output_value, self.trans.app.model.HistoryDatasetCollectionAssociation):
+                                output_inputs = output_step.module.get_runtime_inputs(
+                                    connections=connections)
+                                output_value = output_inputs[
+                                    'input'].get_initial_value(
+                                        self.trans, context)
+                                if isinstance(
+                                        input, DataToolParameter
+                                ) and isinstance(
+                                        output_value, self.trans.app.model.
+                                        HistoryDatasetCollectionAssociation):
                                     return output_value.to_hda_representative()
                                 return output_value
                             return RuntimeValue()
@@ -742,9 +826,11 @@ class ToolModule(WorkflowModule):
                             return input.get_initial_value(self.trans, context)
                     elif connections is None or prefixed_name in input_connections_by_name:
                         return RuntimeValue()
+
             visit_input_values(self.tool.inputs, self.state.inputs, callback)
         else:
-            raise ToolMissingException("Tool %s missing. Cannot add dummy datasets." % self.tool_id)
+            raise ToolMissingException(
+                "Tool %s missing. Cannot add dummy datasets." % self.tool_id)
 
     def get_post_job_actions(self, incoming):
         return ActionBox.handle_incoming(incoming)
@@ -766,14 +852,20 @@ class ToolModule(WorkflowModule):
             state = self.state
             self.runtime_post_job_actions = {}
             if step_updates:
-                state, step_errors = super(ToolModule, self).compute_runtime_state(trans, step_updates)
-                self.runtime_post_job_actions = step_updates.get(RUNTIME_POST_JOB_ACTIONS_KEY, {})
+                state, step_errors = super(ToolModule,
+                                           self).compute_runtime_state(
+                                               trans, step_updates)
+                self.runtime_post_job_actions = step_updates.get(
+                    RUNTIME_POST_JOB_ACTIONS_KEY, {})
                 step_metadata_runtime_state = self.__step_meta_runtime_state()
                 if step_metadata_runtime_state:
-                    state.inputs[RUNTIME_STEP_META_STATE_KEY] = step_metadata_runtime_state
+                    state.inputs[
+                        RUNTIME_STEP_META_STATE_KEY] = step_metadata_runtime_state
             return state, step_errors
         else:
-            raise ToolMissingException("Tool %s missing. Cannot compute runtime state." % self.tool_id)
+            raise ToolMissingException(
+                "Tool %s missing. Cannot compute runtime state." %
+                self.tool_id)
 
     def decode_runtime_state(self, runtime_state):
         """ Take runtime state from persisted invocation and convert it
@@ -782,22 +874,28 @@ class ToolModule(WorkflowModule):
         if self.tool:
             state = super(ToolModule, self).decode_runtime_state(runtime_state)
             if RUNTIME_STEP_META_STATE_KEY in runtime_state:
-                self.__restore_step_meta_runtime_state(loads(runtime_state[RUNTIME_STEP_META_STATE_KEY]))
+                self.__restore_step_meta_runtime_state(
+                    loads(runtime_state[RUNTIME_STEP_META_STATE_KEY]))
             return state
         else:
-            raise ToolMissingException("Tool %s missing. Cannot recover runtime state." % self.tool_id)
+            raise ToolMissingException(
+                "Tool %s missing. Cannot recover runtime state." %
+                self.tool_id)
 
     def execute(self, trans, progress, invocation, step):
-        tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version)
+        tool = trans.app.toolbox.get_tool(
+            step.tool_id, tool_version=step.tool_version)
         tool_state = step.state
         # Not strictly needed - but keep Tool state clean by stripping runtime
         # metadata parameters from it.
         if RUNTIME_STEP_META_STATE_KEY in tool_state.inputs:
             del tool_state.inputs[RUNTIME_STEP_META_STATE_KEY]
-        collections_to_match = self._find_collections_to_match(tool, progress, step)
+        collections_to_match = self._find_collections_to_match(
+            tool, progress, step)
         # Have implicit collections...
         if collections_to_match.has_collections():
-            collection_info = self.trans.app.dataset_collections_service.match_collections(collections_to_match)
+            collection_info = self.trans.app.dataset_collections_service.match_collections(
+                collections_to_match)
         else:
             collection_info = None
 
@@ -815,25 +913,37 @@ class ToolModule(WorkflowModule):
             # Connect up
             def callback(input, prefixed_name, **kwargs):
                 replacement = NO_REPLACEMENT
-                if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
+                if isinstance(input, DataToolParameter) or isinstance(
+                        input, DataCollectionToolParameter):
                     if iteration_elements and prefixed_name in iteration_elements:
                         if isinstance(input, DataToolParameter):
                             # Pull out dataset instance from element.
-                            replacement = iteration_elements[prefixed_name].dataset_instance
-                            if hasattr(iteration_elements[prefixed_name], u'element_identifier') and iteration_elements[prefixed_name].element_identifier:
-                                replacement.element_identifier = iteration_elements[prefixed_name].element_identifier
+                            replacement = iteration_elements[
+                                prefixed_name].dataset_instance
+                            if hasattr(
+                                    iteration_elements[prefixed_name],
+                                    u'element_identifier'
+                            ) and iteration_elements[prefixed_name].element_identifier:
+                                replacement.element_identifier = iteration_elements[
+                                    prefixed_name].element_identifier
                         else:
                             # If collection - just use element model object.
                             replacement = iteration_elements[prefixed_name]
                     else:
-                        replacement = progress.replacement_for_tool_input(step, input, prefixed_name)
+                        replacement = progress.replacement_for_tool_input(
+                            step, input, prefixed_name)
                 else:
-                    replacement = progress.replacement_for_tool_input(step, input, prefixed_name)
+                    replacement = progress.replacement_for_tool_input(
+                        step, input, prefixed_name)
                 return replacement
 
             try:
                 # Replace DummyDatasets with historydatasetassociations
-                visit_input_values(tool.inputs, execution_state.inputs, callback, no_replacement_value=NO_REPLACEMENT)
+                visit_input_values(
+                    tool.inputs,
+                    execution_state.inputs,
+                    callback,
+                    no_replacement_value=NO_REPLACEMENT)
             except KeyError as k:
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
                 message = message_template % (tool.name, k.message)
@@ -847,8 +957,7 @@ class ToolModule(WorkflowModule):
                 param_combinations=param_combinations,
                 history=invocation.history,
                 collection_info=collection_info,
-                workflow_invocation_uuid=invocation.uuid.hex
-            )
+                workflow_invocation_uuid=invocation.uuid.hex)
         except ToolInputsNotReadyException:
             delayed_why = "tool [%s] inputs are not ready, this special tool requires inputs to be ready" % tool.id
             raise DelayedWorkflowEvaluation(why=delayed_why)
@@ -861,12 +970,14 @@ class ToolModule(WorkflowModule):
         progress.set_step_outputs(step, step_outputs)
         jobs = execution_tracker.successful_jobs
         for job in jobs:
-            self._handle_post_job_actions(step, job, invocation.replacement_dict)
+            self._handle_post_job_actions(step, job,
+                                          invocation.replacement_dict)
         if execution_tracker.execution_errors:
             failed_count = len(execution_tracker.execution_errors)
             success_count = len(execution_tracker.successful_jobs)
             all_count = failed_count + success_count
-            message = "Failed to create %d out of %s job(s) for workflow step." % (failed_count, all_count)
+            message = "Failed to create %d out of %s job(s) for workflow step." % (
+                failed_count, all_count)
             raise Exception(message)
         return jobs
 
@@ -898,17 +1009,25 @@ class ToolModule(WorkflowModule):
         def callback(input, prefixed_name, **kwargs):
             is_data_param = isinstance(input, DataToolParameter)
             if is_data_param and not input.multiple:
-                data = progress.replacement_for_tool_input(step, input, prefixed_name)
+                data = progress.replacement_for_tool_input(
+                    step, input, prefixed_name)
                 if isinstance(data, model.HistoryDatasetCollectionAssociation):
                     collections_to_match.add(prefixed_name, data)
 
-            is_data_collection_param = isinstance(input, DataCollectionToolParameter)
+            is_data_collection_param = isinstance(input,
+                                                  DataCollectionToolParameter)
             if is_data_collection_param and not input.multiple:
-                data = progress.replacement_for_tool_input(step, input, prefixed_name)
+                data = progress.replacement_for_tool_input(
+                    step, input, prefixed_name)
                 history_query = input._history_query(self.trans)
-                subcollection_type_description = history_query.can_map_over(data)
+                subcollection_type_description = history_query.can_map_over(
+                    data)
                 if subcollection_type_description:
-                    collections_to_match.add(prefixed_name, data, subcollection_type=subcollection_type_description.collection_type)
+                    collections_to_match.add(
+                        prefixed_name,
+                        data,
+                        subcollection_type=subcollection_type_description.
+                        collection_type)
 
         visit_input_values(tool.inputs, step.state.inputs, callback)
         return collections_to_match
@@ -926,7 +1045,8 @@ class ToolModule(WorkflowModule):
             effective_post_job_actions.append(self.__to_pja(key, value, None))
         for pja in effective_post_job_actions:
             if pja.action_type in ActionBox.immediate_actions:
-                ActionBox.execute(self.trans.app, self.trans.sa_session, pja, job, replacement_dict)
+                ActionBox.execute(self.trans.app, self.trans.sa_session, pja,
+                                  job, replacement_dict)
             else:
                 pjaa = model.PostJobActionAssociation(pja, job_id=job.id)
                 self.trans.sa_session.add(pjaa)
@@ -936,7 +1056,8 @@ class ToolModule(WorkflowModule):
 
     def __restore_step_meta_runtime_state(self, step_runtime_state):
         if RUNTIME_POST_JOB_ACTIONS_KEY in step_runtime_state:
-            self.runtime_post_job_actions = step_runtime_state[RUNTIME_POST_JOB_ACTIONS_KEY]
+            self.runtime_post_job_actions = step_runtime_state[
+                RUNTIME_POST_JOB_ACTIONS_KEY]
 
     def __step_meta_runtime_state(self):
         """ Build a dictionary a of meta-step runtime state (state about how
@@ -954,11 +1075,11 @@ class ToolModule(WorkflowModule):
             action_arguments = value['action_arguments']
         else:
             action_arguments = None
-        return PostJobAction(value['action_type'], step, output_name, action_arguments)
+        return PostJobAction(value['action_type'], step, output_name,
+                             action_arguments)
 
 
 class WorkflowModuleFactory(object):
-
     def __init__(self, module_types):
         self.module_types = module_types
 
@@ -988,8 +1109,7 @@ module_types = dict(
     parameter_input=InputParameterModule,
     pause=PauseModule,
     tool=ToolModule,
-    subworkflow=SubWorkflowModule,
-)
+    subworkflow=SubWorkflowModule, )
 module_factory = WorkflowModuleFactory(module_types)
 
 
@@ -999,8 +1119,10 @@ def load_module_sections(trans):
     """
     module_sections = {}
     module_sections['inputs'] = {
-        "name": "inputs",
-        "title": "Inputs",
+        "name":
+        "inputs",
+        "title":
+        "Inputs",
         "modules": [
             {
                 "name": "data_input",
@@ -1017,8 +1139,10 @@ def load_module_sections(trans):
 
     if trans.app.config.enable_beta_workflow_modules:
         module_sections['experimental'] = {
-            "name": "experimental",
-            "title": "Experimental",
+            "name":
+            "experimental",
+            "title":
+            "Experimental",
             "modules": [
                 {
                     "name": "pause",
@@ -1037,7 +1161,6 @@ def load_module_sections(trans):
 
 
 class DelayedWorkflowEvaluation(Exception):
-
     def __init__(self, why=None):
         self.why = why
 
@@ -1073,35 +1196,50 @@ class WorkflowModuleInjector(object):
         step.setup_input_connections_by_name()
 
         # Populate module.
-        module = step.module = module_factory.from_workflow_step(self.trans, step)
+        module = step.module = module_factory.from_workflow_step(
+            self.trans, step)
 
         # Fix any missing parameters
         step.upgrade_messages = module.check_and_update_state()
 
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
-        module.add_dummy_datasets(connections=step.input_connections, steps=steps)
-        state, step_errors = module.compute_runtime_state(self.trans, step_args)
+        module.add_dummy_datasets(
+            connections=step.input_connections, steps=steps)
+        state, step_errors = module.compute_runtime_state(
+            self.trans, step_args)
         step.state = state
         if step.type == "subworkflow":
             subworkflow = step.subworkflow
-            populate_module_and_state(self.trans, subworkflow, param_map={}, )
+            populate_module_and_state(
+                self.trans,
+                subworkflow,
+                param_map={}, )
         return step_errors
 
 
-def populate_module_and_state(trans, workflow, param_map, allow_tool_state_corrections=False, module_injector=None):
+def populate_module_and_state(trans,
+                              workflow,
+                              param_map,
+                              allow_tool_state_corrections=False,
+                              module_injector=None):
     """ Used by API but not web controller, walks through a workflow's steps
     and populates transient module and state attributes on each.
     """
     if module_injector is None:
-        module_injector = WorkflowModuleInjector(trans, allow_tool_state_corrections)
+        module_injector = WorkflowModuleInjector(trans,
+                                                 allow_tool_state_corrections)
     for step in workflow.steps:
         step_args = param_map.get(step.id, {})
         step_errors = module_injector.inject(step, step_args=step_args)
         if step_errors:
-            raise exceptions.MessageException(step_errors, err_data={step.order_index: step_errors})
+            raise exceptions.MessageException(
+                step_errors, err_data={step.order_index: step_errors})
         if step.upgrade_messages:
             if allow_tool_state_corrections:
-                log.debug('Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages)
+                log.debug('Workflow step "%i" had upgrade messages: %s',
+                          step.id, step.upgrade_messages)
             else:
-                raise exceptions.MessageException(step.upgrade_messages, err_data={step.order_index: step.upgrade_messages})
+                raise exceptions.MessageException(
+                    step.upgrade_messages,
+                    err_data={step.order_index: step.upgrade_messages})

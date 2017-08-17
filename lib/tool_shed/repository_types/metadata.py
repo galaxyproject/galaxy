@@ -7,7 +7,6 @@ log = logging.getLogger(__name__)
 
 
 class Metadata(object):
-
     def __init__(self):
         self.type = None
 
@@ -20,7 +19,6 @@ class Metadata(object):
 
 
 class TipOnly(Metadata):
-
     def __init__(self):
         self.type = None
 

@@ -12,20 +12,25 @@ log = logging.getLogger(__name__)
 
 
 class ConfiguresHandlers:
-
     def _init_handlers(self, config_element):
         # Parse handlers
         if config_element is not None:
-            for handler in self._findall_with_required(config_element, 'handler'):
+            for handler in self._findall_with_required(config_element,
+                                                       'handler'):
                 handler_id = handler.get('id')
                 if handler_id in self.handlers:
-                    log.error("Handler '%s' overlaps handler with the same name, ignoring" % handler_id)
+                    log.error(
+                        "Handler '%s' overlaps handler with the same name, ignoring"
+                        % handler_id)
                 else:
                     log.debug("Read definition for handler '%s'" % handler_id)
-                    self.handlers[handler_id] = (handler_id,)
+                    self.handlers[handler_id] = (handler_id, )
                     self._parse_handler(handler_id, handler)
                     if handler.get('tags', None) is not None:
-                        for tag in [x.strip() for x in handler.get('tags').split(',')]:
+                        for tag in [
+                                x.strip()
+                                for x in handler.get('tags').split(',')
+                        ]:
                             if tag in self.handlers:
                                 self.handlers[tag].append(handler_id)
                             else:
@@ -59,13 +64,19 @@ class ConfiguresHandlers:
         if rval is not None:
             # If the parent element has a 'default' attribute, use the id or tag in that attribute
             if rval not in names:
-                raise Exception("<%s> default attribute '%s' does not match a defined id or tag in a child element" % (parent.tag, rval))
-            log.debug("<%s> default set to child with id or tag '%s'" % (parent.tag, rval))
+                raise Exception(
+                    "<%s> default attribute '%s' does not match a defined id or tag in a child element"
+                    % (parent.tag, rval))
+            log.debug("<%s> default set to child with id or tag '%s'" %
+                      (parent.tag, rval))
         elif len(names) == 1:
-            log.info("Setting <%s> default to child with id '%s'" % (parent.tag, names[0]))
+            log.info("Setting <%s> default to child with id '%s'" %
+                     (parent.tag, names[0]))
             rval = names[0]
         else:
-            raise Exception("No <%s> default specified, please specify a valid id or tag with the 'default' attribute" % parent.tag)
+            raise Exception(
+                "No <%s> default specified, please specify a valid id or tag with the 'default' attribute"
+                % parent.tag)
         return rval
 
     def _findall_with_required(self, parent, match, attribs=None):
@@ -82,11 +93,13 @@ class ConfiguresHandlers:
         """
         rval = []
         if attribs is None:
-            attribs = ('id',)
+            attribs = ('id', )
         for elem in parent.findall(match):
             for attrib in attribs:
                 if attrib not in elem.attrib:
-                    log.warning("required '%s' attribute is missing from <%s> element" % (attrib, match))
+                    log.warning(
+                        "required '%s' attribute is missing from <%s> element"
+                        % (attrib, match))
                     break
             else:
                 rval.append(elem)

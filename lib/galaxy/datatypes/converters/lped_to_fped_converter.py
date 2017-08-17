@@ -33,16 +33,30 @@ def timenow():
 
 def rgConv(inpedfilepath, outhtmlname, outfilepath):
     """convert linkage ped/map to fbat"""
-    recode = {'A': '1', 'C': '2', 'G': '3', 'T': '4', 'N': '0', '0': '0', '1': '1', '2': '2', '3': '3', '4': '4'}
+    recode = {
+        'A': '1',
+        'C': '2',
+        'G': '3',
+        'T': '4',
+        'N': '0',
+        '0': '0',
+        '1': '1',
+        '2': '2',
+        '3': '3',
+        '4': '4'
+    }
     basename = os.path.split(inpedfilepath)[-1]  # get basename
     inmap = '%s.map' % inpedfilepath
     inped = '%s.ped' % inpedfilepath
     outf = '%s.ped' % basename  # note the fbat exe insists that this is the extension for the ped data
-    outfpath = os.path.join(outfilepath, outf)  # where to write the fbat format file to
+    outfpath = os.path.join(outfilepath,
+                            outf)  # where to write the fbat format file to
     try:
         mf = open(inmap, 'r')
     except:
-        sys.stderr.write('%s cannot open inmap file %s - do you have permission?\n' % (prog, inmap))
+        sys.stderr.write(
+            '%s cannot open inmap file %s - do you have permission?\n' %
+            (prog, inmap))
         sys.exit(1)
     try:
         rsl = [x.split()[1] for x in mf]
@@ -56,7 +70,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
     head = ' '.join(rsl)  # list of rs numbers
     # TODO add anno to rs but fbat will prolly barf?
     pedf = open(inped, 'r')
-    o = open(outfpath, 'w', 2 ** 20)
+    o = open(outfpath, 'w', 2**20)
     o.write(head)
     o.write('\n')
     for i, row in enumerate(pedf):
@@ -87,7 +101,8 @@ def main():
     """
     nparm = 3
     if len(sys.argv) < nparm:
-        sys.stderr.write('## %s called with %s - needs %d parameters \n' % (prog, sys.argv, nparm))
+        sys.stderr.write('## %s called with %s - needs %d parameters \n' %
+                         (prog, sys.argv, nparm))
         sys.exit(1)
     inpedfilepath = sys.argv[1]
     outhtmlname = sys.argv[2]
@@ -100,10 +115,14 @@ def main():
     flist = os.listdir(outfilepath)
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
-        print('## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow()))  # becomes info
-        f.write('<div>## Rgenetics: http://rgenetics.org Galaxy Tools %s %s\n<ol>' % (prog, timenow()))
+        print('## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' %
+              (prog, timenow()))  # becomes info
+        f.write(
+            '<div>## Rgenetics: http://rgenetics.org Galaxy Tools %s %s\n<ol>'
+            % (prog, timenow()))
         for i, data in enumerate(flist):
-            f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
+            f.write('<li><a href="%s">%s</a></li>\n' %
+                    (os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</div></body></html>")
 
 

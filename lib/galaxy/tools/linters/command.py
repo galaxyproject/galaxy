@@ -14,7 +14,9 @@ def lint_command(tool_xml, lint_ctx):
         return
 
     if len(commands) == 0:
-        lint_ctx.error("No command tag found, must specify a command template to execute.")
+        lint_ctx.error(
+            "No command tag found, must specify a command template to execute."
+        )
         return
 
     command = get_command(tool_xml)
@@ -29,9 +31,11 @@ def lint_command(tool_xml, lint_ctx):
         elif key == "detect_errors":
             detect_errors = value
             if detect_errors not in ["default", "exit_code", "aggressive"]:
-                lint_ctx.warn("Unknown detect_errors attribute [%s]" % detect_errors)
+                lint_ctx.warn(
+                    "Unknown detect_errors attribute [%s]" % detect_errors)
         else:
-            lint_ctx.warn("Unknown attribute [%s] encountered on command tag." % key)
+            lint_ctx.warn(
+                "Unknown attribute [%s] encountered on command tag." % key)
 
     interpreter_info = ""
     if interpreter_type:

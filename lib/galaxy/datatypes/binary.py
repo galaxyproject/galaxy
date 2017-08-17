@@ -21,7 +21,6 @@ from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElem
 from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
 from . import data, dataproviders
 
-
 log = logging.getLogger(__name__)
 
 # Currently these supported binary data types must be manually set on upload
@@ -35,7 +34,11 @@ class Binary(data.Data):
 
     @staticmethod
     def register_sniffable_binary_format(data_type, ext, type_class):
-        Binary.sniffable_binary_formats.append({"type": data_type, "ext": ext.lower(), "class": type_class})
+        Binary.sniffable_binary_formats.append({
+            "type": data_type,
+            "ext": ext.lower(),
+            "class": type_class
+        })
 
     @staticmethod
     def register_unsniffable_binary_ext(ext):
@@ -74,14 +77,26 @@ class Binary(data.Data):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+    def display_data(self,
+                     trans,
+                     dataset,
+                     preview=False,
+                     filename=None,
+                     to_ext=None,
+                     **kwd):
         trans.response.set_content_type(dataset.get_mime())
         trans.log_event("Display dataset id: %s" % str(dataset.id))
-        trans.response.headers['Content-Length'] = int(os.stat(dataset.file_name).st_size)
+        trans.response.headers['Content-Length'] = int(
+            os.stat(dataset.file_name).st_size)
         to_ext = dataset.extension
-        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
-        trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
+        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_'
+                        for c in dataset.name)[0:150]
+        trans.response.set_content_type(
+            "application/octet-stream"
+        )  # force octet-stream so Safari doesn't append mime extensions to filename
+        trans.response.headers[
+            "Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (
+                dataset.hid, fname, to_ext)
         return open(dataset.file_name)
 
 
@@ -103,7 +118,8 @@ class Ab1(Binary):
         try:
             return dataset.peek
         except:
-            return "Binary ab1 sequence file (%s)" % (nice_size(dataset.get_size()))
+            return "Binary ab1 sequence file (%s)" % (
+                nice_size(dataset.get_size()))
 
 
 Binary.register_unsniffable_binary_ext("ab1")
@@ -129,7 +145,6 @@ Binary.register_sniffable_binary_format("idat", "idat", Idat)
 
 
 class Cel(Binary):
-
     """Binary data in CEL format."""
     file_ext = "cel"
     edam_format = "format_1638"
@@ -180,7 +195,8 @@ class CompressedArchive(Binary):
         try:
             return dataset.peek
         except:
-            return "Compressed binary file (%s)" % (nice_size(dataset.get_size()))
+            return "Compressed binary file (%s)" % (
+                nice_size(dataset.get_size()))
 
 
 Binary.register_unsniffable_binary_ext("compressed_archive")
@@ -230,16 +246,98 @@ class Bam(Binary):
     track_type = "ReadTrack"
     data_sources = {"data": "bai", "index": "bigwig"}
 
-    MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
-    MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
-    MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
-    MetadataElement(name="read_groups", default=[], desc="Read Groups", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
-    MetadataElement(name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
-    MetadataElement(name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
-    MetadataElement(name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={})
-    MetadataElement(name="columns", default=12, desc="Number of columns", readonly=True, visible=False, no_value=0)
-    MetadataElement(name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
-    MetadataElement(name="column_names", default=['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'], desc="Column names", readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(
+        name="bam_index",
+        desc="BAM Index File",
+        param=metadata.FileParameter,
+        file_ext="bai",
+        readonly=True,
+        no_value=None,
+        visible=False,
+        optional=True)
+    MetadataElement(
+        name="bam_version",
+        default=None,
+        desc="BAM Version",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=None)
+    MetadataElement(
+        name="sort_order",
+        default=None,
+        desc="Sort Order",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=None)
+    MetadataElement(
+        name="read_groups",
+        default=[],
+        desc="Read Groups",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=[])
+    MetadataElement(
+        name="reference_names",
+        default=[],
+        desc="Chromosome Names",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=[])
+    MetadataElement(
+        name="reference_lengths",
+        default=[],
+        desc="Chromosome Lengths",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=[])
+    MetadataElement(
+        name="bam_header",
+        default={},
+        desc="Dictionary of BAM Headers",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value={})
+    MetadataElement(
+        name="columns",
+        default=12,
+        desc="Number of columns",
+        readonly=True,
+        visible=False,
+        no_value=0)
+    MetadataElement(
+        name="column_types",
+        default=[
+            'str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int',
+            'str', 'str', 'str'
+        ],
+        desc="Column types",
+        param=metadata.ColumnTypesParameter,
+        readonly=True,
+        visible=False,
+        no_value=[])
+    MetadataElement(
+        name="column_names",
+        default=[
+            'QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS',
+            'ISIZE', 'SEQ', 'QUAL', 'OPT'
+        ],
+        desc="Column names",
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=[])
 
     def _get_samtools_version(self):
         version = '0.0.0'
@@ -249,9 +347,10 @@ class Bam(Binary):
             raise Exception(message)
 
         # Get the version of samtools via --version-only, if available
-        p = subprocess.Popen(['samtools', '--version-only'],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        p = subprocess.Popen(
+            ['samtools', '--version-only'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
         output, error = p.communicate()
 
         # --version-only is available
@@ -260,7 +359,9 @@ class Bam(Binary):
             version = output.split('+')[0]
             return version
 
-        output = subprocess.Popen(['samtools'], stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[1]
+        output = subprocess.Popen(
+            ['samtools'], stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE).communicate()[1]
         lines = output.split('\n')
         for line in lines:
             if line.lower().startswith('version'):
@@ -273,7 +374,8 @@ class Bam(Binary):
     def merge(split_files, output_file):
 
         tmp_dir = tempfile.mkdtemp()
-        stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_merge_stderr").name
+        stderr_name = tempfile.NamedTemporaryFile(
+            dir=tmp_dir, prefix="bam_merge_stderr").name
         command = ["samtools", "merge", "-f", output_file] + split_files
         proc = subprocess.Popen(args=command, stderr=open(stderr_name, 'wb'))
         exit_code = proc.wait()
@@ -291,9 +393,12 @@ class Bam(Binary):
     def _is_coordinate_sorted(self, file_name):
         """See if the input BAM file is sorted from the header information."""
         params = ["samtools", "view", "-H", file_name]
-        output = subprocess.Popen(params, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[0]
+        output = subprocess.Popen(
+            params, stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE).communicate()[0]
         # find returns -1 if string is not found
-        return output.find("SO:coordinate") != -1 or output.find("SO:sorted") != -1
+        return output.find("SO:coordinate") != -1 or output.find(
+            "SO:sorted") != -1
 
     def dataset_content_needs_grooming(self, file_name):
         """See if file_name is a sorted BAM file"""
@@ -317,9 +422,11 @@ class Bam(Binary):
             if self._is_coordinate_sorted(file_name):
                 return False
             index_name = tempfile.NamedTemporaryFile(prefix="bam_index").name
-            stderr_name = tempfile.NamedTemporaryFile(prefix="bam_index_stderr").name
+            stderr_name = tempfile.NamedTemporaryFile(
+                prefix="bam_index_stderr").name
             command = 'samtools index %s %s' % (file_name, index_name)
-            proc = subprocess.Popen(args=command, shell=True, stderr=open(stderr_name, 'wb'))
+            proc = subprocess.Popen(
+                args=command, shell=True, stderr=open(stderr_name, 'wb'))
             proc.wait()
             stderr = open(stderr_name).read().strip()
             if stderr:
@@ -332,7 +439,8 @@ class Bam(Binary):
                 except OSError:
                     pass
                 # Return True if unsorted error condition is found (find returns -1 if string is not found).
-                return stderr.find("[bam_index_core] the alignment is not sorted") != -1
+                return stderr.find(
+                    "[bam_index_core] the alignment is not sorted") != -1
             try:
                 os.unlink(index_name)
             except OSError:
@@ -360,17 +468,24 @@ class Bam(Binary):
             return
         tmp_dir = tempfile.mkdtemp()
         tmp_sorted_dataset_file_name_prefix = os.path.join(tmp_dir, 'sorted')
-        stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_sort_stderr").name
+        stderr_name = tempfile.NamedTemporaryFile(
+            dir=tmp_dir, prefix="bam_sort_stderr").name
         samtools_created_sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix  # samtools accepts a prefix, not a filename, it always adds .bam to the prefix
-        command = "samtools sort %s %s" % (file_name, tmp_sorted_dataset_file_name_prefix)
-        proc = subprocess.Popen(args=command, shell=True, cwd=tmp_dir, stderr=open(stderr_name, 'wb'))
+        command = "samtools sort %s %s" % (file_name,
+                                           tmp_sorted_dataset_file_name_prefix)
+        proc = subprocess.Popen(
+            args=command,
+            shell=True,
+            cwd=tmp_dir,
+            stderr=open(stderr_name, 'wb'))
         exit_code = proc.wait()
         # Did sort succeed?
         stderr = open(stderr_name).read().strip()
         if stderr:
             if exit_code != 0:
                 shutil.rmtree(tmp_dir)  # clean up
-                raise Exception("Error Grooming BAM file contents: %s" % stderr)
+                raise Exception(
+                    "Error Grooming BAM file contents: %s" % stderr)
             else:
                 print(stderr)
         # Move samtools_created_sorted_file_name to our output dataset location
@@ -387,25 +502,34 @@ class Bam(Binary):
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.bam_index
         if not index_file:
-            index_file = dataset.metadata.spec['bam_index'].param.new_file(dataset=dataset)
+            index_file = dataset.metadata.spec['bam_index'].param.new_file(
+                dataset=dataset)
         # Create the Bam index
         # $ samtools index
         # Usage: samtools index <in.bam> [<out.index>]
-        stderr_name = tempfile.NamedTemporaryFile(prefix="bam_index_stderr").name
-        command = ['samtools', 'index', dataset.file_name, index_file.file_name]
-        exit_code = subprocess.call(args=command, stderr=open(stderr_name, 'wb'))
+        stderr_name = tempfile.NamedTemporaryFile(
+            prefix="bam_index_stderr").name
+        command = [
+            'samtools', 'index', dataset.file_name, index_file.file_name
+        ]
+        exit_code = subprocess.call(
+            args=command, stderr=open(stderr_name, 'wb'))
         # Did index succeed?
         if exit_code == -6:
             # SIGABRT, most likely samtools 1.0+ which does not accept the index name parameter.
-            dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
-                                           '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
+            dataset_symlink = os.path.join(
+                os.path.dirname(index_file.file_name), '__dataset_%d_%s' %
+                (dataset.id, os.path.basename(index_file.file_name)))
             os.symlink(dataset.file_name, dataset_symlink)
             try:
                 command = ['samtools', 'index', dataset_symlink]
-                exit_code = subprocess.call(args=command, stderr=open(stderr_name, 'wb'))
+                exit_code = subprocess.call(
+                    args=command, stderr=open(stderr_name, 'wb'))
                 shutil.move(dataset_symlink + '.bai', index_file.file_name)
             except Exception as e:
-                open(stderr_name, 'ab+').write('Galaxy attempted to build the BAM index with samtools 1.0+ but failed: %s\n' % e)
+                open(stderr_name, 'ab+').write(
+                    'Galaxy attempted to build the BAM index with samtools 1.0+ but failed: %s\n'
+                    % e)
                 exit_code = 1  # Make sure an exception raised by shutil.move() is re-raised below
             finally:
                 os.unlink(dataset_symlink)
@@ -421,13 +545,22 @@ class Bam(Binary):
         os.unlink(stderr_name)
         # Now use pysam with BAI index to determine additional metadata
         try:
-            bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb', index_filename=index_file.file_name)
+            bam_file = pysam.AlignmentFile(
+                dataset.file_name,
+                mode='rb',
+                index_filename=index_file.file_name)
             dataset.metadata.reference_names = list(bam_file.references)
             dataset.metadata.reference_lengths = list(bam_file.lengths)
             dataset.metadata.bam_header = bam_file.header
-            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
-            dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
-            dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
+            dataset.metadata.read_groups = [
+                read_group['ID']
+                for read_group in dataset.metadata.bam_header.get('RG', [])
+                if 'ID' in read_group
+            ]
+            dataset.metadata.sort_order = dataset.metadata.bam_header.get(
+                'HD', {}).get('SO', None)
+            dataset.metadata.bam_version = dataset.metadata.bam_header.get(
+                'HD', {}).get('VN', None)
         except:
             # Per Dan, don't log here because doing so will cause datasets that
             # fail metadata to end in the error state
@@ -456,20 +589,25 @@ class Bam(Binary):
         try:
             return dataset.peek
         except:
-            return "Binary bam alignments file (%s)" % (nice_size(dataset.get_size()))
+            return "Binary bam alignments file (%s)" % (
+                nice_size(dataset.get_size()))
 
     def to_archive(self, trans, dataset, name=""):
         rel_paths = []
         file_paths = []
-        rel_paths.append("%s.%s" % (name or dataset.file_name, dataset.extension))
+        rel_paths.append("%s.%s" % (name or dataset.file_name,
+                                    dataset.extension))
         file_paths.append(dataset.file_name)
-        rel_paths.append("%s.%s.bai" % (name or dataset.file_name, dataset.extension))
+        rel_paths.append("%s.%s.bai" % (name or dataset.file_name,
+                                        dataset.extension))
         file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
 
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
         index_file = dataset.metadata.bam_index
-        with pysam.AlignmentFile(dataset.file_name, "rb", index_filename=index_file.file_name) as bamfile:
+        with pysam.AlignmentFile(
+                dataset.file_name, "rb",
+                index_filename=index_file.file_name) as bamfile:
             ck_size = 300  # 300 lines
             ck_data = ""
             header_line_count = 0
@@ -478,7 +616,7 @@ class Bam(Binary):
                 header_line_count = bamfile.text.count('\n')
             else:
                 bamfile.seek(offset)
-            for line_number, alignment in enumerate(bamfile) :
+            for line_number, alignment in enumerate(bamfile):
                 # return only Header lines if 'header_line_count' exceeds 'ck_size'
                 # FIXME: Can be problematic if bam has million lines of header
                 offset = bamfile.tell()
@@ -488,17 +626,26 @@ class Bam(Binary):
                     bamline = alignment.tostring(bamfile)
                     # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
                     # Below code will remove spaces between each tag.
-                    bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
+                    bamline_modified = ('\t').join(bamline.split()[:11] + [(
+                        ' ').join(bamline.split()[11:])])
                     ck_data = "%s\n%s" % (ck_data, bamline_modified)
-        return dumps({'ck_data': util.unicodify(ck_data),
-                      'offset': offset})
+        return dumps({'ck_data': util.unicodify(ck_data), 'offset': offset})
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+    def display_data(self,
+                     trans,
+                     dataset,
+                     preview=False,
+                     filename=None,
+                     to_ext=None,
+                     offset=None,
+                     ck_size=None,
+                     **kwd):
         preview = util.string_as_bool(preview)
         if offset is not None:
             return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
-            return super(Bam, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
+            return super(Bam, self).display_data(trans, dataset, preview,
+                                                 filename, to_ext, **kwd)
         else:
             column_names = dataset.metadata.column_names
             if not column_names:
@@ -509,12 +656,13 @@ class Bam(Binary):
             column_number = dataset.metadata.columns
             if column_number is None:
                 column_number = 1
-            return trans.fill_template("/dataset/tabular_chunked.mako",
-                                       dataset=dataset,
-                                       chunk=self.get_chunk(trans, dataset, 0),
-                                       column_number=column_number,
-                                       column_names=column_names,
-                                       column_types=column_types)
+            return trans.fill_template(
+                "/dataset/tabular_chunked.mako",
+                dataset=dataset,
+                chunk=self.get_chunk(trans, dataset, 0),
+                column_number=column_number,
+                column_names=column_names,
+                column_types=column_types)
 
     # ------------- Dataproviders
     # pipe through samtools view
@@ -522,29 +670,37 @@ class Bam(Binary):
     # bam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
     # TODO:?? seems like there should be an easier way to do/inherit this - metadata.comment_char?
     # TODO: incorporate samtools options to control output: regions first, then flags, etc.
-    @dataproviders.decorators.dataprovider_factory('line', dataproviders.line.FilteredLineDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'line', dataproviders.line.FilteredLineDataProvider.settings)
     def line_dataprovider(self, dataset, **settings):
         samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
         settings['comment_char'] = '@'
-        return dataproviders.line.FilteredLineDataProvider(samtools_source, **settings)
+        return dataproviders.line.FilteredLineDataProvider(
+            samtools_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('regex-line', dataproviders.line.RegexLineDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'regex-line', dataproviders.line.RegexLineDataProvider.settings)
     def regex_line_dataprovider(self, dataset, **settings):
         samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
         settings['comment_char'] = '@'
-        return dataproviders.line.RegexLineDataProvider(samtools_source, **settings)
+        return dataproviders.line.RegexLineDataProvider(
+            samtools_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('column', dataproviders.column.ColumnarDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'column', dataproviders.column.ColumnarDataProvider.settings)
     def column_dataprovider(self, dataset, **settings):
         samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
         settings['comment_char'] = '@'
-        return dataproviders.column.ColumnarDataProvider(samtools_source, **settings)
+        return dataproviders.column.ColumnarDataProvider(
+            samtools_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('dict', dataproviders.column.DictDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'dict', dataproviders.column.DictDataProvider.settings)
     def dict_dataprovider(self, dataset, **settings):
         samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
         settings['comment_char'] = '@'
-        return dataproviders.column.DictDataProvider(samtools_source, **settings)
+        return dataproviders.column.DictDataProvider(samtools_source,
+                                                     **settings)
 
     # these can't be used directly - may need BamColumn, BamDict (Bam metadata -> column/dict)
     # OR - see genomic_region_dataprovider
@@ -558,20 +714,25 @@ class Bam(Binary):
     #    settings[ 'comment_char' ] = '@'
     #    return super( Sam, self ).dataset_dict_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory('header', dataproviders.line.RegexLineDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'header', dataproviders.line.RegexLineDataProvider.settings)
     def header_dataprovider(self, dataset, **settings):
         # in this case we can use an option of samtools view to provide just what we need (w/o regex)
-        samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset, '-H')
-        return dataproviders.line.RegexLineDataProvider(samtools_source, **settings)
+        samtools_source = dataproviders.dataset.SamtoolsDataProvider(
+            dataset, '-H')
+        return dataproviders.line.RegexLineDataProvider(
+            samtools_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('id-seq-qual', dataproviders.column.DictDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'id-seq-qual', dataproviders.column.DictDataProvider.settings)
     def id_seq_qual_dataprovider(self, dataset, **settings):
         settings['indeces'] = [0, 9, 10]
         settings['column_types'] = ['str', 'str', 'str']
         settings['column_names'] = ['id', 'seq', 'qual']
         return self.dict_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('genomic-region', dataproviders.column.ColumnarDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'genomic-region', dataproviders.column.ColumnarDataProvider.settings)
     def genomic_region_dataprovider(self, dataset, **settings):
         # GenomicRegionDataProvider currently requires a dataset as source - may not be necc.
         # TODO:?? consider (at least) the possible use of a kwarg: metadata_source (def. to source.dataset),
@@ -585,7 +746,8 @@ class Bam(Binary):
         settings['column_types'] = ['str', 'int', 'int']
         return self.column_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('genomic-region-dict', dataproviders.column.DictDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'genomic-region-dict', dataproviders.column.DictDataProvider.settings)
     def genomic_region_dict_dataprovider(self, dataset, **settings):
         settings['indeces'] = [2, 3, 3]
         settings['column_types'] = ['str', 'int', 'int']
@@ -596,7 +758,8 @@ class Bam(Binary):
     def samtools_dataprovider(self, dataset, **settings):
         """Generic samtools interface - all options available through settings."""
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.dataset.SamtoolsDataProvider(dataset_source, **settings)
+        return dataproviders.dataset.SamtoolsDataProvider(
+            dataset_source, **settings)
 
 
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
@@ -607,16 +770,34 @@ class CRAM(Binary):
     edam_format = "format_3462"
     edam_data = "format_0863"
 
-    MetadataElement(name="cram_version", default=None, desc="CRAM Version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
-    MetadataElement(name="cram_index", desc="CRAM Index File", param=metadata.FileParameter, file_ext="crai", readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(
+        name="cram_version",
+        default=None,
+        desc="CRAM Version",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=False,
+        no_value=None)
+    MetadataElement(
+        name="cram_index",
+        desc="CRAM Index File",
+        param=metadata.FileParameter,
+        file_ext="crai",
+        readonly=True,
+        no_value=None,
+        visible=False,
+        optional=True)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         major_version, minor_version = self.get_cram_version(dataset.file_name)
         if major_version != -1:
-            dataset.metadata.cram_version = str(major_version) + "." + str(minor_version)
+            dataset.metadata.cram_version = str(major_version) + "." + str(
+                minor_version)
 
         if not dataset.metadata.cram_index:
-            index_file = dataset.metadata.spec['cram_index'].param.new_file(dataset=dataset)
+            index_file = dataset.metadata.spec['cram_index'].param.new_file(
+                dataset=dataset)
             if self.set_index_file(dataset, index_file):
                 dataset.metadata.cram_index = index_file
 
@@ -637,7 +818,9 @@ class CRAM(Binary):
             # fixed in the dev branch:
             # xref: https://github.com/samtools/samtools/issues/199
 
-            dataset_symlink = os.path.join(os.path.dirname(index_file.file_name), '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
+            dataset_symlink = os.path.join(
+                os.path.dirname(index_file.file_name), '__dataset_%d_%s' %
+                (dataset.id, os.path.basename(index_file.file_name)))
             os.symlink(dataset.file_name, dataset_symlink)
             pysam.index(dataset_symlink)
 
@@ -647,7 +830,8 @@ class CRAM(Binary):
                 return index_file.file_name
             else:
                 os.unlink(dataset_symlink)
-                log.warning('%s, expected crai index not created for: %s', self, dataset.file_name)
+                log.warning('%s, expected crai index not created for: %s',
+                            self, dataset.file_name)
                 return False
         except Exception as exc:
             log.warning('%s, set_index_file Exception: %s', self, exc)
@@ -680,7 +864,15 @@ class Bcf(Binary):
     edam_data = "data_3498"
     file_ext = "bcf"
 
-    MetadataElement(name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(
+        name="bcf_index",
+        desc="BCF Index File",
+        param=metadata.FileParameter,
+        file_ext="csi",
+        readonly=True,
+        no_value=None,
+        visible=False,
+        optional=True)
 
     def sniff(self, filename):
         # BCF is compressed in the BGZF format, and must not be uncompressed in Galaxy.
@@ -698,23 +890,29 @@ class Bcf(Binary):
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.bcf_index
         if not index_file:
-            index_file = dataset.metadata.spec['bcf_index'].param.new_file(dataset=dataset)
+            index_file = dataset.metadata.spec['bcf_index'].param.new_file(
+                dataset=dataset)
         # Create the bcf index
         # $ bcftools index
         # Usage: bcftools index <in.bcf>
 
-        dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
-                                       '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
+        dataset_symlink = os.path.join(
+            os.path.dirname(index_file.file_name), '__dataset_%d_%s' %
+            (dataset.id, os.path.basename(index_file.file_name)))
         os.symlink(dataset.file_name, dataset_symlink)
 
-        stderr_name = tempfile.NamedTemporaryFile(prefix="bcf_index_stderr").name
+        stderr_name = tempfile.NamedTemporaryFile(
+            prefix="bcf_index_stderr").name
         command = ['bcftools', 'index', dataset_symlink]
         try:
             subprocess.check_call(args=command, stderr=open(stderr_name, 'wb'))
-            shutil.move(dataset_symlink + '.csi', index_file.file_name)  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
+            shutil.move(
+                dataset_symlink + '.csi', index_file.file_name
+            )  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
         except Exception as e:
             stderr = open(stderr_name).read().strip()
-            raise Exception('Error setting BCF metadata: %s' % (stderr or str(e)))
+            raise Exception('Error setting BCF metadata: %s' %
+                            (stderr or str(e)))
         finally:
             # Remove temp file and symlink
             os.remove(stderr_name)
@@ -790,7 +988,8 @@ class Scf(Binary):
         try:
             return dataset.peek
         except:
-            return "Binary scf sequence file (%s)" % (nice_size(dataset.get_size()))
+            return "Binary scf sequence file (%s)" % (
+                nice_size(dataset.get_size()))
 
 
 Binary.register_unsniffable_binary_ext("scf")
@@ -869,7 +1068,8 @@ class BigWig(Binary):
         try:
             return dataset.peek
         except:
-            return "Binary UCSC %s file (%s)" % (self._name, nice_size(dataset.get_size()))
+            return "Binary UCSC %s file (%s)" % (self._name,
+                                                 nice_size(dataset.get_size()))
 
 
 Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
@@ -890,7 +1090,7 @@ class BigBed(BigWig):
 Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 
 
-class TwoBit (Binary):
+class TwoBit(Binary):
     """Class describing a TwoBit format nucleotide file"""
     edam_format = "format_3009"
     edam_data = "data_0848"
@@ -919,18 +1119,40 @@ class TwoBit (Binary):
         try:
             return dataset.peek
         except:
-            return "Binary TwoBit format nucleotide file (%s)" % (nice_size(dataset.get_size()))
+            return "Binary TwoBit format nucleotide file (%s)" % (
+                nice_size(dataset.get_size()))
 
 
 Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)
 
 
 @dataproviders.decorators.has_dataproviders
-class SQlite (Binary):
+class SQlite(Binary):
     """Class describing a Sqlite database """
-    MetadataElement(name="tables", default=[], param=ListParameter, desc="Database Tables", readonly=True, visible=True, no_value=[])
-    MetadataElement(name="table_columns", default={}, param=DictParameter, desc="Database Table Columns", readonly=True, visible=True, no_value={})
-    MetadataElement(name="table_row_count", default={}, param=DictParameter, desc="Database Table Row Count", readonly=True, visible=True, no_value={})
+    MetadataElement(
+        name="tables",
+        default=[],
+        param=ListParameter,
+        desc="Database Tables",
+        readonly=True,
+        visible=True,
+        no_value=[])
+    MetadataElement(
+        name="table_columns",
+        default={},
+        param=DictParameter,
+        desc="Database Table Columns",
+        readonly=True,
+        visible=True,
+        no_value={})
+    MetadataElement(
+        name="table_row_count",
+        default={},
+        param=DictParameter,
+        desc="Database Table Row Count",
+        readonly=True,
+        visible=True,
+        no_value={})
     file_ext = "sqlite"
     edam_format = "format_3621"
 
@@ -985,7 +1207,9 @@ class SQlite (Binary):
             if dataset.metadata.tables:
                 for table in dataset.metadata.tables:
                     try:
-                        lines.append('%s [%s]' % (table, dataset.metadata.table_row_count[table]))
+                        lines.append('%s [%s]' %
+                                     (table,
+                                      dataset.metadata.table_row_count[table]))
                     except:
                         continue
             dataset.peek = '\n'.join(lines)
@@ -1000,20 +1224,26 @@ class SQlite (Binary):
         except:
             return "SQLite Database (%s)" % (nice_size(dataset.get_size()))
 
-    @dataproviders.decorators.dataprovider_factory('sqlite', dataproviders.dataset.SQliteDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'sqlite', dataproviders.dataset.SQliteDataProvider.settings)
     def sqlite_dataprovider(self, dataset, **settings):
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.dataset.SQliteDataProvider(dataset_source, **settings)
+        return dataproviders.dataset.SQliteDataProvider(
+            dataset_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('sqlite-table', dataproviders.dataset.SQliteDataTableProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'sqlite-table', dataproviders.dataset.SQliteDataTableProvider.settings)
     def sqlite_datatableprovider(self, dataset, **settings):
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.dataset.SQliteDataTableProvider(dataset_source, **settings)
+        return dataproviders.dataset.SQliteDataTableProvider(
+            dataset_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('sqlite-dict', dataproviders.dataset.SQliteDataDictProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'sqlite-dict', dataproviders.dataset.SQliteDataDictProvider.settings)
     def sqlite_datadictprovider(self, dataset, **settings):
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.dataset.SQliteDataDictProvider(dataset_source, **settings)
+        return dataproviders.dataset.SQliteDataDictProvider(
+            dataset_source, **settings)
 
 
 # Binary.register_sniffable_binary_format("sqlite", "sqlite", SQlite)
@@ -1021,8 +1251,14 @@ class SQlite (Binary):
 
 class GeminiSQLite(SQlite):
     """Class describing a Gemini Sqlite database """
-    MetadataElement(name="gemini_version", default='0.10.0', param=MetadataParameter, desc="Gemini Version",
-                    readonly=True, visible=True, no_value='0.10.0')
+    MetadataElement(
+        name="gemini_version",
+        default='0.10.0',
+        param=MetadataParameter,
+        desc="Gemini Version",
+        readonly=True,
+        visible=True,
+        no_value='0.10.0')
     file_ext = "gemini.sqlite"
     edam_format = "format_3622"
     edam_data = "data_3498"
@@ -1042,8 +1278,11 @@ class GeminiSQLite(SQlite):
 
     def sniff(self, filename):
         if super(GeminiSQLite, self).sniff(filename):
-            gemini_table_names = ["gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
-                                  "variant_impacts", "variants", "version"]
+            gemini_table_names = [
+                "gene_detailed", "gene_summary", "resources",
+                "sample_genotype_counts", "sample_genotypes", "samples",
+                "variant_impacts", "variants", "version"
+            ]
             try:
                 conn = sqlite.connect(filename)
                 c = conn.cursor()
@@ -1060,7 +1299,8 @@ class GeminiSQLite(SQlite):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or 'unknown')
+            dataset.peek = "Gemini SQLite Database, version %s" % (
+                dataset.metadata.gemini_version or 'unknown')
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
@@ -1070,7 +1310,8 @@ class GeminiSQLite(SQlite):
         try:
             return dataset.peek
         except:
-            return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or 'unknown')
+            return "Gemini SQLite Database, version %s" % (
+                dataset.metadata.gemini_version or 'unknown')
 
 
 class MzSQlite(SQlite):
@@ -1082,7 +1323,11 @@ class MzSQlite(SQlite):
 
     def sniff(self, filename):
         if super(MzSQlite, self).sniff(filename):
-            mz_table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
+            mz_table_names = [
+                "DBSequence", "Modification", "Peaks", "Peptide",
+                "PeptideEvidence", "Score", "SearchDatabase", "Source",
+                "SpectraData", "Spectrum", "SpectrumIdentification"
+            ]
             try:
                 conn = sqlite.connect(filename)
                 c = conn.cursor()
@@ -1117,7 +1362,10 @@ class IdpDB(SQlite):
 
     def sniff(self, filename):
         if super(IdpDB, self).sniff(filename):
-            mz_table_names = ["About", "Analysis", "AnalysisParameter", "PeptideSpectrumMatch", "Spectrum", "SpectrumSource"]
+            mz_table_names = [
+                "About", "Analysis", "AnalysisParameter",
+                "PeptideSpectrumMatch", "Spectrum", "SpectrumSource"
+            ]
             try:
                 conn = sqlite.connect(filename)
                 c = conn.cursor()
@@ -1144,10 +1392,12 @@ class IdpDB(SQlite):
         try:
             return dataset.peek
         except:
-            return "IDPickerDB SQLite file (%s)" % (nice_size(dataset.get_size()))
+            return "IDPickerDB SQLite file (%s)" % (
+                nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format("gemini.sqlite", "gemini.sqlite", GeminiSQLite)
+Binary.register_sniffable_binary_format("gemini.sqlite", "gemini.sqlite",
+                                        GeminiSQLite)
 Binary.register_sniffable_binary_format("idpdb", "idpdb", IdpDB)
 Binary.register_sniffable_binary_format("mz.sqlite", "mz.sqlite", MzSQlite)
 # FIXME: We need to register specialized sqlite formats before sqlite, since register_sniffable_binary_format and is_sniffable_binary called in upload.py
@@ -1164,7 +1414,10 @@ class Xlsx(Binary):
         try:
             if zipfile.is_zipfile(filename):
                 tempzip = zipfile.ZipFile(filename)
-                if "[Content_Types].xml" in tempzip.namelist() and tempzip.read("[Content_Types].xml").find(b'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml') != -1:
+                if "[Content_Types].xml" in tempzip.namelist(
+                ) and tempzip.read("[Content_Types].xml").find(
+                        b'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml'
+                ) != -1:
                     return True
             return False
         except:
@@ -1180,7 +1433,8 @@ class ExcelXls(Binary):
     edam_format = "format_3468"
 
     def sniff(self, filename):
-        mime_type = subprocess.check_output("file --mime-type '{}'".format(filename), shell=True).rstrip()
+        mime_type = subprocess.check_output(
+            "file --mime-type '{}'".format(filename), shell=True).rstrip()
         if mime_type.find("application/vnd.ms-excel") != -1:
             return True
         else:
@@ -1202,7 +1456,8 @@ class ExcelXls(Binary):
         try:
             return dataset.peek
         except:
-            return "Microsoft Excel XLS file (%s)" % (data.nice_size(dataset.get_size()))
+            return "Microsoft Excel XLS file (%s)" % (
+                data.nice_size(dataset.get_size()))
 
 
 Binary.register_sniffable_binary_format("excel.xls", "excel.xls", ExcelXls)
@@ -1265,7 +1520,6 @@ Binary.register_sniffable_binary_format('RData', 'RData', RData)
 
 
 class OxliBinary(Binary):
-
     @staticmethod
     def _sniff(filename, oxlitype):
         try:
@@ -1447,16 +1701,29 @@ Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
                                         OxliGraphLabels)
 
 
-class SearchGuiArchive (CompressedArchive):
+class SearchGuiArchive(CompressedArchive):
     """Class describing a SearchGUI archive """
-    MetadataElement(name="searchgui_version", default='1.28.0', param=MetadataParameter, desc="SearchGui Version",
-                    readonly=True, visible=True, no_value=None)
-    MetadataElement(name="searchgui_major_version", default='1', param=MetadataParameter, desc="SearchGui Major Version",
-                    readonly=True, visible=True, no_value=None)
+    MetadataElement(
+        name="searchgui_version",
+        default='1.28.0',
+        param=MetadataParameter,
+        desc="SearchGui Version",
+        readonly=True,
+        visible=True,
+        no_value=None)
+    MetadataElement(
+        name="searchgui_major_version",
+        default='1',
+        param=MetadataParameter,
+        desc="SearchGui Major Version",
+        readonly=True,
+        visible=True,
+        no_value=None)
     file_ext = "searchgui_archive"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(SearchGuiArchive, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super(SearchGuiArchive, self).set_meta(
+            dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and zipfile.is_zipfile(dataset.file_name):
                 tempzip = zipfile.ZipFile(dataset.file_name)
@@ -1466,7 +1733,8 @@ class SearchGuiArchive (CompressedArchive):
                         if line.startswith('searchgui.version'):
                             version = line.split('=')[1].strip()
                             dataset.metadata.searchgui_version = version
-                            dataset.metadata.searchgui_major_version = version.split('.')[0]
+                            dataset.metadata.searchgui_major_version = version.split(
+                                '.')[0]
                     fh.close()
                 tempzip.close()
         except Exception as e:
@@ -1485,7 +1753,8 @@ class SearchGuiArchive (CompressedArchive):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or 'unknown')
+            dataset.peek = "SearchGUI Archive, version %s" % (
+                dataset.metadata.searchgui_version or 'unknown')
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
@@ -1495,10 +1764,12 @@ class SearchGuiArchive (CompressedArchive):
         try:
             return dataset.peek
         except:
-            return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or 'unknown')
+            return "SearchGUI Archive, version %s" % (
+                dataset.metadata.searchgui_version or 'unknown')
 
 
-Binary.register_sniffable_binary_format("searchgui_archive", "searchgui_archive", SearchGuiArchive)
+Binary.register_sniffable_binary_format("searchgui_archive",
+                                        "searchgui_archive", SearchGuiArchive)
 
 
 class NetCDF(Binary):

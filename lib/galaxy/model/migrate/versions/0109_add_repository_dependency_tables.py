@@ -22,16 +22,35 @@ metadata = MetaData()
 
 RepositoryDependency_table = Table("repository_dependency", metadata,
                                    Column("id", Integer, primary_key=True),
-                                   Column("create_time", DateTime, default=now),
-                                   Column("update_time", DateTime, default=now, onupdate=now),
-                                   Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True, nullable=False))
+                                   Column(
+                                       "create_time", DateTime, default=now),
+                                   Column(
+                                       "update_time",
+                                       DateTime,
+                                       default=now,
+                                       onupdate=now),
+                                   Column(
+                                       "tool_shed_repository_id",
+                                       Integer,
+                                       ForeignKey("tool_shed_repository.id"),
+                                       index=True,
+                                       nullable=False))
 
-RepositoryRepositoryDependencyAssociation_table = Table("repository_repository_dependency_association", metadata,
-                                                        Column("id", Integer, primary_key=True),
-                                                        Column("create_time", DateTime, default=now),
-                                                        Column("update_time", DateTime, default=now, onupdate=now),
-                                                        Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True),
-                                                        Column("repository_dependency_id", Integer, ForeignKey("repository_dependency.id"), index=True))
+RepositoryRepositoryDependencyAssociation_table = Table(
+    "repository_repository_dependency_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    Column(
+        "tool_shed_repository_id",
+        Integer,
+        ForeignKey("tool_shed_repository.id"),
+        index=True),
+    Column(
+        "repository_dependency_id",
+        Integer,
+        ForeignKey("repository_dependency.id"),
+        index=True))
 
 
 def upgrade(migrate_engine):
@@ -45,7 +64,9 @@ def upgrade(migrate_engine):
     try:
         RepositoryRepositoryDependencyAssociation_table.create()
     except Exception:
-        log.exception("Creating repository_repository_dependency_association table failed.")
+        log.exception(
+            "Creating repository_repository_dependency_association table failed."
+        )
 
 
 def downgrade(migrate_engine):
@@ -54,7 +75,9 @@ def downgrade(migrate_engine):
     try:
         RepositoryRepositoryDependencyAssociation_table.drop()
     except Exception:
-        log.exception("Dropping repository_repository_dependency_association table failed.")
+        log.exception(
+            "Dropping repository_repository_dependency_association table failed."
+        )
     try:
         RepositoryDependency_table.drop()
     except Exception:

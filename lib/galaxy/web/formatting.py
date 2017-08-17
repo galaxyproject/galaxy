@@ -27,6 +27,5 @@ def expand_pretty_datetime_format(value):
         locale_format = DEFAULT_LOCALE_FORMAT
     stock_formats = dict(
         locale=locale_format,
-        iso8601=ISO_DATETIME_FORMAT,
-    )
+        iso8601=ISO_DATETIME_FORMAT, )
     return Template(value).safe_substitute(**stock_formats)

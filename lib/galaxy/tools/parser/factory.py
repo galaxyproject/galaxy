@@ -18,7 +18,10 @@ from ..fetcher import ToolLocationFetcher
 log = logging.getLogger(__name__)
 
 
-def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, tool_location_fetcher=None):
+def get_tool_source(config_file=None,
+                    xml_tree=None,
+                    enable_beta_formats=True,
+                    tool_location_fetcher=None):
     """Return a ToolSource object corresponding to supplied source.
 
     The supplied source may be specified as a file path (using the config_file
@@ -27,7 +30,8 @@ def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, t
     if xml_tree is not None:
         return XmlToolSource(xml_tree, source_path=config_file)
     elif config_file is None:
-        raise ValueError("get_tool_source called with invalid config_file None.")
+        raise ValueError(
+            "get_tool_source called with invalid config_file None.")
 
     if tool_location_fetcher is None:
         tool_location_fetcher = ToolLocationFetcher()
@@ -38,12 +42,16 @@ def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, t
         return XmlToolSource(tree, source_path=config_file)
 
     if config_file.endswith(".yml"):
-        log.info("Loading tool from YAML - this is experimental - tool will not function in future.")
+        log.info(
+            "Loading tool from YAML - this is experimental - tool will not function in future."
+        )
         with open(config_file, "r") as f:
             as_dict = ordered_load(f)
             return YamlToolSource(as_dict, source_path=config_file)
     elif config_file.endswith(".json") or config_file.endswith(".cwl"):
-        log.info("Loading CWL tool - this is experimental - tool likely will not function in future at least in same way.")
+        log.info(
+            "Loading CWL tool - this is experimental - tool likely will not function in future at least in same way."
+        )
         return CwlToolSource(config_file)
     else:
         tree = load_tool_xml(config_file)
@@ -59,8 +67,7 @@ def ordered_load(stream):
         return odict(loader.construct_pairs(node))
 
     OrderedLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        construct_mapping)
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
 
     return yaml.load(stream, OrderedLoader)
 

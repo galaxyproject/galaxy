@@ -3,7 +3,6 @@ import os
 from copy import deepcopy
 from xml.etree import ElementInclude, ElementTree
 
-
 REQUIRED_PARAMETER = object()
 
 
@@ -139,7 +138,11 @@ def _expand_macro(element, expand_el, macros, tokens):
 
 
 def _expand_yield_statements(macro_def, expand_el):
-    yield_els = [yield_el for macro_def_el in macro_def for yield_el in macro_def_el.findall('.//yield')]
+    yield_els = [
+        yield_el
+        for macro_def_el in macro_def
+        for yield_el in macro_def_el.findall('.//yield')
+    ]
 
     expand_el_children = list(expand_el)
     macro_def_parent_map = \
@@ -254,7 +257,6 @@ def _xml_replace(query, targets, parent_map):
 
 
 class XmlMacroDef(object):
-
     def __init__(self, el):
         self.elements = list(el)
         parameters = {}

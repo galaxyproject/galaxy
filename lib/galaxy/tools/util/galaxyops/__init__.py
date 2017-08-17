@@ -40,4 +40,5 @@ def default_printer(stream, exc, obj):
 
 def skipped(reader, filedesc=""):
     first_line, line_contents, problem = reader.skipped_lines[0]
-    return 'Skipped %d invalid lines%s, 1st line #%d: "%s", problem: %s' % (reader.skipped, filedesc, first_line, line_contents, problem)
+    return 'Skipped %d invalid lines%s, 1st line #%d: "%s", problem: %s' % (
+        reader.skipped, filedesc, first_line, line_contents, problem)

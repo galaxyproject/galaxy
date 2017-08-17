@@ -13,13 +13,21 @@ def choose_one(rule_helper, job, destination_ids, hash_by="job"):
     return rule_helper.choose_one(destination_id_list, hash_value=job_hash)
 
 
-def burst(rule_helper, job, from_destination_ids, to_destination_id, num_jobs, job_states=None):
+def burst(rule_helper,
+          job,
+          from_destination_ids,
+          to_destination_id,
+          num_jobs,
+          job_states=None):
     from_destination_ids = util.listify(from_destination_ids)
-    if rule_helper.should_burst(from_destination_ids, num_jobs=num_jobs, job_states=job_states):
+    if rule_helper.should_burst(
+            from_destination_ids, num_jobs=num_jobs, job_states=job_states):
         return to_destination_id
     else:
         return from_destination_ids[0]
 
 
-def docker_dispatch(rule_helper, tool, docker_destination_id, default_destination_id):
-    return docker_destination_id if rule_helper.supports_docker(tool) else default_destination_id
+def docker_dispatch(rule_helper, tool, docker_destination_id,
+                    default_destination_id):
+    return docker_destination_id if rule_helper.supports_docker(
+        tool) else default_destination_id

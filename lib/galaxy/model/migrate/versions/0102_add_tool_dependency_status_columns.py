@@ -35,13 +35,15 @@ def upgrade(migrate_engine):
         col.create(ToolDependency_table)
         assert col is ToolDependency_table.c.status
     except Exception:
-        log.exception("Adding status column to the tool_dependency table failed.")
+        log.exception(
+            "Adding status column to the tool_dependency table failed.")
     col = Column("error_message", TEXT)
     try:
         col.create(ToolDependency_table)
         assert col is ToolDependency_table.c.error_message
     except Exception:
-        log.exception("Adding error_message column to the tool_dependency table failed.")
+        log.exception(
+            "Adding error_message column to the tool_dependency table failed.")
 
     if migrate_engine.name != 'sqlite':
         # This breaks in sqlite due to failure to drop check constraint.
@@ -49,7 +51,9 @@ def upgrade(migrate_engine):
         try:
             ToolDependency_table.c.uninstalled.drop()
         except Exception:
-            log.exception("Dropping uninstalled column from the tool_dependency table failed.")
+            log.exception(
+                "Dropping uninstalled column from the tool_dependency table failed."
+            )
 
 
 def downgrade(migrate_engine):
@@ -59,14 +63,18 @@ def downgrade(migrate_engine):
     try:
         ToolDependency_table.c.status.drop()
     except Exception:
-        log.exception("Dropping column status from the tool_dependency table failed.")
+        log.exception(
+            "Dropping column status from the tool_dependency table failed.")
     try:
         ToolDependency_table.c.error_message.drop()
     except Exception:
-        log.exception("Dropping column error_message from the tool_dependency table failed.")
+        log.exception(
+            "Dropping column error_message from the tool_dependency table failed."
+        )
     col = Column("uninstalled", Boolean, default=False)
     try:
         col.create(ToolDependency_table)
         assert col is ToolDependency_table.c.uninstalled
     except Exception:
-        log.exception("Adding uninstalled column to the tool_dependency table failed.")
+        log.exception(
+            "Adding uninstalled column to the tool_dependency table failed.")

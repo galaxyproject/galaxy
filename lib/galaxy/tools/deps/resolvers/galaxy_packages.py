@@ -7,8 +7,7 @@ from os.path import (
     isdir,
     islink,
     join,
-    realpath,
-)
+    realpath, )
 
 from .resolver_mixins import UsesToolDependencyDirMixin
 
@@ -17,14 +16,15 @@ from ..resolvers import (
     DependencyResolver,
     ListableDependencyResolver,
     MappableDependencyResolver,
-    NullDependency,
-)
+    NullDependency, )
 
 log = logging.getLogger(__name__)
 
 
 class GalaxyPackageDependency(Dependency):
-    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['script', 'path', 'version', 'name']
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + [
+        'script', 'path', 'version', 'name'
+    ]
     dependency_type = 'galaxy_package'
 
     def __init__(self, script, path, version, name, exact=True):
@@ -41,12 +41,15 @@ class GalaxyPackageDependency(Dependency):
     def shell_commands(self, requirement):
         base_path = self.path
         if self.script is None and base_path is None:
-            log.warning("Failed to resolve dependency on '%s', ignoring", requirement.name)
+            log.warning("Failed to resolve dependency on '%s', ignoring",
+                        requirement.name)
             commands = None
         elif requirement.type == 'package' and self.script is None:
-            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % (base_path, base_path)
+            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % (
+                base_path, base_path)
         else:
-            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % (base_path, self.script)
+            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % (
+                base_path, self.script)
         return commands
 
 
@@ -54,8 +57,11 @@ class ToolShedDependency(GalaxyPackageDependency):
     dependency_type = 'tool_shed_package'
 
 
-class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependencyDirMixin):
-    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'versionless']
+class BaseGalaxyPackageDependencyResolver(DependencyResolver,
+                                          UsesToolDependencyDirMixin):
+    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + [
+        'base_path', 'versionless'
+    ]
     dependency_type = GalaxyPackageDependency
 
     def __init__(self, dependency_manager, **kwds):
@@ -64,7 +70,8 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
         # the tool shed so allow a fallback version of the Galaxy package
         # resolver that will just grab 'default' version of exact version
         # unavailable.
-        self.versionless = str(kwds.get('versionless', "false")).lower() == "true"
+        self.versionless = str(
+            kwds.get('versionless', "false")).lower() == "true"
         self._init_base_path(dependency_manager, **kwds)
 
     def resolve(self, requirement, **kwds):
@@ -91,7 +98,8 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
         if islink(path):
             real_path = realpath(path)
             real_version = basename(real_path)
-            return self._galaxy_package_dep(real_path, real_version, name, exact)
+            return self._galaxy_package_dep(real_path, real_version, name,
+                                            exact)
         else:
             return NullDependency(version=None, name=name)
 
@@ -104,16 +112,20 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
         return NullDependency(version=version, name=name)
 
 
-class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, ListableDependencyResolver, MappableDependencyResolver):
+class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver,
+                                      ListableDependencyResolver,
+                                      MappableDependencyResolver):
     resolver_type = "galaxy_packages"
 
     def __init__(self, dependency_manager, **kwds):
-        super(GalaxyPackageDependencyResolver, self).__init__(dependency_manager, **kwds)
+        super(GalaxyPackageDependencyResolver, self).__init__(
+            dependency_manager, **kwds)
         self._setup_mapping(dependency_manager, **kwds)
 
     def resolve(self, requirement, **kwds):
         requirement = self._expand_mappings(requirement)
-        return super(GalaxyPackageDependencyResolver, self).resolve(requirement, **kwds)
+        return super(GalaxyPackageDependencyResolver, self).resolve(
+            requirement, **kwds)
 
     def list_dependencies(self):
         base_path = self.base_path
@@ -133,8 +145,5 @@ def _is_dependency_directory(directory):
     return exists(join(directory, 'env.sh')) or exists(join(directory, 'bin'))
 
 
-__all__ = (
-    'GalaxyPackageDependency',
-    'GalaxyPackageDependencyResolver',
-    'ToolShedDependency'
-)
+__all__ = ('GalaxyPackageDependency', 'GalaxyPackageDependencyResolver',
+           'ToolShedDependency')

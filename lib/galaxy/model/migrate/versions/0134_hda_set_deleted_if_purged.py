@@ -20,7 +20,8 @@ def engine_true(migrate_engine):
 
 def upgrade(migrate_engine):
     print(__doc__)
-    cmd = 'UPDATE history_dataset_association SET deleted=%s WHERE purged;' % engine_true(migrate_engine)
+    cmd = 'UPDATE history_dataset_association SET deleted=%s WHERE purged;' % engine_true(
+        migrate_engine)
     try:
         migrate_engine.execute(cmd)
     except Exception:

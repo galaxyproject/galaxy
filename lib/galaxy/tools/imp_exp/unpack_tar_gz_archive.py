@@ -82,7 +82,8 @@ def main(options, args):
 
     # Get archive from URL.
     if is_url:
-        archive_file = url_to_file(archive_source, tempfile.NamedTemporaryFile(dir=dest_dir).name)
+        archive_file = url_to_file(
+            archive_source, tempfile.NamedTemporaryFile(dir=dest_dir).name)
     elif is_file:
         archive_file = archive_source
 
@@ -94,9 +95,25 @@ def main(options, args):
 if __name__ == "__main__":
     # Parse command line.
     parser = optparse.OptionParser()
-    parser.add_option('-U', '--url', dest='is_url', action="store_true", help='Source is a URL.')
-    parser.add_option('-F', '--file', dest='is_file', action="store_true", help='Source is a URL.')
-    parser.add_option('-e', '--encoded', dest='is_b64encoded', action="store_true", default=False, help='Source and destination dir values are base64 encoded.')
+    parser.add_option(
+        '-U',
+        '--url',
+        dest='is_url',
+        action="store_true",
+        help='Source is a URL.')
+    parser.add_option(
+        '-F',
+        '--file',
+        dest='is_file',
+        action="store_true",
+        help='Source is a URL.')
+    parser.add_option(
+        '-e',
+        '--encoded',
+        dest='is_b64encoded',
+        action="store_true",
+        default=False,
+        help='Source and destination dir values are base64 encoded.')
     (options, args) = parser.parse_args()
     try:
         main(options, args)

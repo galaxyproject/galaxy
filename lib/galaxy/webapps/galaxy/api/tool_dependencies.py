@@ -8,13 +8,11 @@ from galaxy.web.base.controller import BaseAPIController
 
 from galaxy.tools.deps import views
 
-
 import logging
 log = logging.getLogger(__name__)
 
 
 class ToolDependenciesAPIController(BaseAPIController):
-
     def __init__(self, app):
         super(ToolDependenciesAPIController, self).__init__(app)
         self._view = views.DependencyResolversView(app)

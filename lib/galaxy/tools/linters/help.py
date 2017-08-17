@@ -11,7 +11,9 @@ def lint_help(tool_xml, lint_ctx):
         return
 
     if len(helps) == 0:
-        lint_ctx.warn("No help section found, consider adding a help section to your tool.")
+        lint_ctx.warn(
+            "No help section found, consider adding a help section to your tool."
+        )
         return
 
     help = helps[0].text or ''
@@ -26,7 +28,8 @@ def lint_help(tool_xml, lint_ctx):
         lint_ctx.warn("Help contains TODO text.")
 
     if invalid_rst:
-        lint_ctx.warn("Invalid reStructuredText found in help - [%s]." % invalid_rst)
+        lint_ctx.warn(
+            "Invalid reStructuredText found in help - [%s]." % invalid_rst)
     else:
         lint_ctx.valid("Help contains valid reStructuredText.")
 

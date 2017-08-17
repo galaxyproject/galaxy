@@ -41,4 +41,6 @@ class ExternalServiceTemplateParameter(ExternalServiceParameter):
         return value
 
 
-parameter_type_to_class = {ExternalServiceTemplateParameter.type: ExternalServiceTemplateParameter}
+parameter_type_to_class = {
+    ExternalServiceTemplateParameter.type: ExternalServiceTemplateParameter
+}

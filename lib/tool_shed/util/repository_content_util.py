@@ -5,11 +5,12 @@ import tool_shed.repository_types.util as rt_util
 from tool_shed.util import commit_util, hg_util, xml_util
 
 
-def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar,
-               commit_message, new_repo_alert):
+def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point,
+               remove_repo_files_not_in_tar, commit_message, new_repo_alert):
     # Upload a tar archive of files.
     repo_dir = repository.repo_path(trans.app)
-    hg_util.get_repo_for_repository(trans.app, repository=None, repo_path=repo_dir, create=False)
+    hg_util.get_repo_for_repository(
+        trans.app, repository=None, repo_path=repo_dir, create=False)
     undesirable_dirs_removed = 0
     undesirable_files_removed = 0
     check_results = commit_util.check_archive(repository, tar)
@@ -33,32 +34,32 @@ def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, 
         uploaded_file.close()
         for filename in filenames_in_archive:
             uploaded_file_name = os.path.join(full_path, filename)
-            if os.path.split(uploaded_file_name)[-1] == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+            if os.path.split(uploaded_file_name)[
+                    -1] == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                 # Inspect the contents of the file to see if toolshed or changeset_revision attributes
                 # are missing and if so, set them appropriately.
-                altered, root_elem, error_message = rdah.handle_tag_attributes(uploaded_file_name)
+                altered, root_elem, error_message = rdah.handle_tag_attributes(
+                    uploaded_file_name)
                 if error_message:
                     return False, error_message, [], '', [], []
                 elif altered:
-                    tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
+                    tmp_filename = xml_util.create_and_write_tmp_file(
+                        root_elem)
                     shutil.move(tmp_filename, uploaded_file_name)
-            elif os.path.split(uploaded_file_name)[-1] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+            elif os.path.split(uploaded_file_name)[
+                    -1] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                 # Inspect the contents of the file to see if toolshed or changeset_revision
                 # attributes are missing and if so, set them appropriately.
-                altered, root_elem, error_message = tdah.handle_tag_attributes(uploaded_file_name)
+                altered, root_elem, error_message = tdah.handle_tag_attributes(
+                    uploaded_file_name)
                 if error_message:
                     return False, error_message, [], '', [], []
                 if altered:
-                    tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
+                    tmp_filename = xml_util.create_and_write_tmp_file(
+                        root_elem)
                     shutil.move(tmp_filename, uploaded_file_name)
-        return commit_util.handle_directory_changes(trans.app,
-                                                    trans.request.host,
-                                                    trans.user.username,
-                                                    repository,
-                                                    full_path,
-                                                    filenames_in_archive,
-                                                    remove_repo_files_not_in_tar,
-                                                    new_repo_alert,
-                                                    commit_message,
-                                                    undesirable_dirs_removed,
-                                                    undesirable_files_removed)
+        return commit_util.handle_directory_changes(
+            trans.app, trans.request.host, trans.user.username, repository,
+            full_path, filenames_in_archive, remove_repo_files_not_in_tar,
+            new_repo_alert, commit_message, undesirable_dirs_removed,
+            undesirable_files_removed)

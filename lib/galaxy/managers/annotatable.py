@@ -42,7 +42,8 @@ class AnnotatableManagerMixin(object):
             self._delete_annotation(item, user, flush=flush)
             return None
 
-        annotation_obj = item.add_item_annotation(self.session(), user, item, annotation)
+        annotation_obj = item.add_item_annotation(self.session(), user, item,
+                                                  annotation)
         if flush:
             self.session().flush()
         return annotation_obj
@@ -58,7 +59,6 @@ class AnnotatableManagerMixin(object):
 
 
 class AnnotatableSerializerMixin(object):
-
     def add_serializers(self):
         self.serializers['annotation'] = self.serialize_annotation
 
@@ -71,7 +71,6 @@ class AnnotatableSerializerMixin(object):
 
 
 class AnnotatableDeserializerMixin(object):
-
     def add_deserializers(self):
         self.deserializers['annotation'] = self.deserialize_annotation
 
@@ -86,7 +85,6 @@ class AnnotatableDeserializerMixin(object):
 
 # TODO: I'm not entirely convinced this (or tags) are a good idea for filters since they involve a/the user
 class AnnotatableFilterMixin(object):
-
     def _owner_annotation(self, item):
         """
         Get the annotation by the item's owner.
@@ -104,5 +102,9 @@ class AnnotatableFilterMixin(object):
 
     def _add_parsers(self):
         self.fn_filter_parsers.update({
-            'annotation'    : {'op': {'has': self.filter_annotation_contains, }},
+            'annotation': {
+                'op': {
+                    'has': self.filter_annotation_contains,
+                }
+            },
         })

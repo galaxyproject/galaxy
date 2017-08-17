@@ -13,29 +13,27 @@ from six.moves.urllib.parse import quote_plus
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import (
-    get_headers,
-    iter_headers
-)
+from galaxy.datatypes.sniff import (get_headers, iter_headers)
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
 from galaxy.web import url_for
 
-from . import (
-    data,
-    dataproviders
-)
+from . import (data, dataproviders)
 
 log = logging.getLogger(__name__)
 
 # Contains the meta columns and the words that map to it; list aliases on the
 # right side of the : in decreasing order of priority
 alias_spec = {
-    'chromCol'  : ['chrom', 'CHROMOSOME', 'CHROM', 'Chromosome Name'],
-    'startCol'  : ['start', 'START', 'chromStart', 'txStart', 'Start Position (bp)'],
-    'endCol'    : ['end', 'END', 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)'],
-    'strandCol' : ['strand', 'STRAND', 'Strand'],
-    'nameCol'   : ['name', 'NAME', 'Name', 'name2', 'NAME2', 'Name2', 'Ensembl Gene ID', 'Ensembl Transcript ID', 'Ensembl Peptide ID']
+    'chromCol': ['chrom', 'CHROMOSOME', 'CHROM', 'Chromosome Name'],
+    'startCol':
+    ['start', 'START', 'chromStart', 'txStart', 'Start Position (bp)'],
+    'endCol': ['end', 'END', 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)'],
+    'strandCol': ['strand', 'STRAND', 'Strand'],
+    'nameCol': [
+        'name', 'NAME', 'Name', 'name2', 'NAME2', 'Name2', 'Ensembl Gene ID',
+        'Ensembl Transcript ID', 'Ensembl Peptide ID'
+    ]
 }
 
 # a little faster lookup
@@ -60,24 +58,55 @@ class Interval(Tabular):
     line_class = "region"
     track_type = "FeatureTrack"
     data_sources = {"data": "tabix", "index": "bigwig"}
-
     """Add metadata elements"""
-    MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
-    MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
-    MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
-    MetadataElement(name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0)
-    MetadataElement(name="nameCol", desc="Name/Identifier column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0)
-    MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
+    MetadataElement(
+        name="chromCol",
+        default=1,
+        desc="Chrom column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="startCol",
+        default=2,
+        desc="Start column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="endCol",
+        default=3,
+        desc="End column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="strandCol",
+        desc="Strand column (click box & select)",
+        param=metadata.ColumnParameter,
+        optional=True,
+        no_value=0)
+    MetadataElement(
+        name="nameCol",
+        desc="Name/Identifier column (click box & select)",
+        param=metadata.ColumnParameter,
+        optional=True,
+        no_value=0)
+    MetadataElement(
+        name="columns",
+        default=3,
+        desc="Number of columns",
+        readonly=True,
+        visible=False)
 
     def __init__(self, **kwd):
         """Initialize interval datatype, by adding UCSC display apps"""
         Tabular.__init__(self, **kwd)
-        self.add_display_app('ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links')
+        self.add_display_app('ucsc', 'display at UCSC', 'as_ucsc_display_file',
+                             'ucsc_links')
 
     def init_meta(self, dataset, copy_from=None):
         Tabular.init_meta(self, dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset, overwrite=True, first_line_is_header=False, **kwd):
+    def set_meta(self,
+                 dataset,
+                 overwrite=True,
+                 first_line_is_header=False,
+                 **kwd):
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=0)
         if dataset.has_data():
@@ -94,7 +123,8 @@ class Interval(Tabular):
                             for header_val in header_list:
                                 if header_val in elems:
                                     # found highest priority header to meta_name
-                                    setattr(dataset.metadata, meta_name, elems.index(header_val) + 1)
+                                    setattr(dataset.metadata, meta_name,
+                                            elems.index(header_val) + 1)
                                     break  # next meta_name
                         break  # Our metadata is set, so break out of the outer loop
                     else:
@@ -105,17 +135,20 @@ class Interval(Tabular):
                         if len(elems) > 2:
                             for str in data.col1_startswith:
                                 if line.lower().startswith(str):
-                                    if overwrite or not dataset.metadata.element_is_set('chromCol'):
+                                    if overwrite or not dataset.metadata.element_is_set(
+                                            'chromCol'):
                                         dataset.metadata.chromCol = 1
                                     try:
                                         int(elems[1])
-                                        if overwrite or not dataset.metadata.element_is_set('startCol'):
+                                        if overwrite or not dataset.metadata.element_is_set(
+                                                'startCol'):
                                             dataset.metadata.startCol = 2
                                     except:
                                         pass  # Metadata default will be used
                                     try:
                                         int(elems[2])
-                                        if overwrite or not dataset.metadata.element_is_set('endCol'):
+                                        if overwrite or not dataset.metadata.element_is_set(
+                                                'endCol'):
                                             dataset.metadata.endCol = 3
                                     except:
                                         pass  # Metadata default will be used
@@ -127,15 +160,20 @@ class Interval(Tabular):
                                     #    except:
                                     #        if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
                                     #            dataset.metadata.nameCol = 4
-                                    if len(elems) < 6 or elems[5] not in data.valid_strand:
-                                        if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                    if len(
+                                            elems
+                                    ) < 6 or elems[5] not in data.valid_strand:
+                                        if overwrite or not dataset.metadata.element_is_set(
+                                                'strandCol'):
                                             dataset.metadata.strandCol = 0
                                     else:
-                                        if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                        if overwrite or not dataset.metadata.element_is_set(
+                                                'strandCol'):
                                             dataset.metadata.strandCol = 6
                                     metadata_is_set = True
                                     break
-                        if metadata_is_set or (i - empty_line_count) > num_check_lines:
+                        if metadata_is_set or (
+                                i - empty_line_count) > num_check_lines:
                             break  # Our metadata is set or we examined 100 non-empty lines, so break out of the outer loop
                 else:
                     empty_line_count += 1
@@ -152,10 +190,16 @@ class Interval(Tabular):
         except:
             return False
 
-    def get_estimated_display_viewport(self, dataset, chrom_col=None, start_col=None, end_col=None):
+    def get_estimated_display_viewport(self,
+                                       dataset,
+                                       chrom_col=None,
+                                       start_col=None,
+                                       end_col=None):
         """Return a chrom, start, stop tuple for viewing a file."""
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
-        max_line_count = max(viewport_feature_count, 500)  # maximum number of lines to check; includes comment lines
+        max_line_count = max(
+            viewport_feature_count,
+            500)  # maximum number of lines to check; includes comment lines
         if not self.displayable(dataset):
             return (None, None, None)
         try:
@@ -196,7 +240,9 @@ class Interval(Tabular):
                 # Make sure we are at the next new line
                 readline_count = VIEWPORT_MAX_READS_PER_LINE
                 while line.rstrip('\n\r') == line:
-                    assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                    assert readline_count > 0, Exception(
+                        'Viewport readline count exceeded for dataset %s.' %
+                        dataset.id)
                     line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
                     if not line:
                         break  # EOF
@@ -206,17 +252,21 @@ class Interval(Tabular):
                     # exceeded viewport or total line count to check
                     break
             if chrom is not None:
-                return (chrom, str(start), str(end))  # Necessary to return strings?
+                return (chrom, str(start),
+                        str(end))  # Necessary to return strings?
         except Exception:
             # Unexpected error, possibly missing metadata
-            log.exception("Exception caught attempting to generate viewport for dataset '%d'", dataset.id)
+            log.exception(
+                "Exception caught attempting to generate viewport for dataset '%d'",
+                dataset.id)
         return (None, None, None)
 
     def as_ucsc_display_file(self, dataset, **kwd):
         """Returns file contents with only the bed data"""
         fd, temp_name = tempfile.mkstemp()
         c, s, e, t, n = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol or 0, dataset.metadata.nameCol or 0
-        c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
+        c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(
+            n) - 1
         if t >= 0:  # strand column (should) exists
             for i, elems in enumerate(util.file_iter(dataset.file_name)):
                 strand = "+"
@@ -243,7 +293,15 @@ class Interval(Tabular):
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
-        return self.make_html_table(dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'endCol': 'End', 'strandCol': 'Strand', 'nameCol': 'Name'})
+        return self.make_html_table(
+            dataset,
+            column_parameter_alias={
+                'chromCol': 'Chrom',
+                'startCol': 'Start',
+                'endCol': 'End',
+                'strandCol': 'Strand',
+                'nameCol': 'Name'
+            })
 
     def ucsc_links(self, dataset, type, app, base_url):
         """
@@ -252,9 +310,12 @@ class Interval(Tabular):
         """
         # Filter UCSC sites to only those that are supported by this build and
         # enabled.
-        valid_sites = [(name, url)
-                       for name, url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey)
-                       if name in app.datatypes_registry.get_display_sites('ucsc')]
+        valid_sites = [
+            (name, url)
+            for name, url in app.datatypes_registry.get_legacy_sites_by_build(
+                'ucsc', dataset.dbkey)
+            if name in app.datatypes_registry.get_display_sites('ucsc')
+        ]
         if not valid_sites:
             return []
         # If there are any valid sites, we need to generate the estimated
@@ -265,13 +326,20 @@ class Interval(Tabular):
         # Accumulate links for valid sites
         ret_val = []
         for site_name, site_url in valid_sites:
-            internal_url = url_for(controller='dataset', dataset_id=dataset.id,
-                                   action='display_at', filename='ucsc_' + site_name)
-            display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
-                                     (base_url, url_for(controller='root'), dataset.id, type))
-            redirect_url = quote_plus("%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
-                                      (site_url, dataset.dbkey, chrom, start, stop))
-            link = '%s?redirect_url=%s&display_url=%s' % (internal_url, redirect_url, display_url)
+            internal_url = url_for(
+                controller='dataset',
+                dataset_id=dataset.id,
+                action='display_at',
+                filename='ucsc_' + site_name)
+            display_url = quote_plus(
+                "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
+                % (base_url, url_for(controller='root'), dataset.id, type))
+            redirect_url = quote_plus(
+                "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
+                (site_url, dataset.dbkey, chrom, start, stop))
+            link = '%s?redirect_url=%s&display_url=%s' % (internal_url,
+                                                          redirect_url,
+                                                          display_url)
             ret_val.append((site_name, link))
         return ret_val
 
@@ -282,11 +350,7 @@ class Interval(Tabular):
         c, s, e, t = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1
         infile = open(dataset.file_name, "r")
         reader = GenomicIntervalReader(
-            infile,
-            chrom_col=c,
-            start_col=s,
-            end_col=e,
-            strand_col=t)
+            infile, chrom_col=c, start_col=s, end_col=e, strand_col=t)
 
         while True:
             try:
@@ -341,24 +405,27 @@ class Interval(Tabular):
         return None
 
     # ------------- Dataproviders
-    @dataproviders.decorators.dataprovider_factory('genomic-region',
-                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'genomic-region',
+        dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dataprovider(self, dataset, **settings):
-        return dataproviders.dataset.GenomicRegionDataProvider(dataset, **settings)
+        return dataproviders.dataset.GenomicRegionDataProvider(
+            dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('genomic-region-dict',
-                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'genomic-region-dict',
+        dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dict_dataprovider(self, dataset, **settings):
         settings['named_columns'] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('interval',
-                                                   dataproviders.dataset.IntervalDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'interval', dataproviders.dataset.IntervalDataProvider.settings)
     def interval_dataprovider(self, dataset, **settings):
         return dataproviders.dataset.IntervalDataProvider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('interval-dict',
-                                                   dataproviders.dataset.IntervalDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'interval-dict', dataproviders.dataset.IntervalDataProvider.settings)
     def interval_dict_dataprovider(self, dataset, **settings):
         settings['named_columns'] = True
         return self.interval_dataprovider(dataset, **settings)
@@ -378,29 +445,73 @@ class BedGraph(Interval):
         """
         return open(dataset.file_name)
 
-    def get_estimated_display_viewport(self, dataset, chrom_col=0, start_col=1, end_col=2):
+    def get_estimated_display_viewport(self,
+                                       dataset,
+                                       chrom_col=0,
+                                       start_col=1,
+                                       end_col=2):
         """
             Set viewport based on dataset's first 100 lines.
         """
-        return Interval.get_estimated_display_viewport(self, dataset, chrom_col=chrom_col, start_col=start_col, end_col=end_col)
+        return Interval.get_estimated_display_viewport(
+            self,
+            dataset,
+            chrom_col=chrom_col,
+            start_col=start_col,
+            end_col=end_col)
 
 
 class Bed(Interval):
     """Tab delimited data in BED format"""
     edam_format = "format_3003"
     file_ext = "bed"
-    data_sources = {"data": "tabix", "index": "bigwig", "feature_search": "fli"}
+    data_sources = {
+        "data": "tabix",
+        "index": "bigwig",
+        "feature_search": "fli"
+    }
     track_type = Interval.track_type
 
-    column_names = ['Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'ThickStart', 'ThickEnd', 'ItemRGB', 'BlockCount', 'BlockSizes', 'BlockStarts']
-
+    column_names = [
+        'Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'ThickStart',
+        'ThickEnd', 'ItemRGB', 'BlockCount', 'BlockSizes', 'BlockStarts'
+    ]
     """Add metadata elements"""
-    MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
-    MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
-    MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
-    MetadataElement(name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0)
-    MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
-    MetadataElement(name="viz_filter_cols", desc="Score column for visualization", default=[4], param=metadata.ColumnParameter, optional=True, multiple=True)
+    MetadataElement(
+        name="chromCol",
+        default=1,
+        desc="Chrom column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="startCol",
+        default=2,
+        desc="Start column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="endCol",
+        default=3,
+        desc="End column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="strandCol",
+        desc="Strand column (click box & select)",
+        param=metadata.ColumnParameter,
+        optional=True,
+        no_value=0)
+    MetadataElement(
+        name="columns",
+        default=3,
+        desc="Number of columns",
+        readonly=True,
+        visible=False)
+    MetadataElement(
+        name="viz_filter_cols",
+        desc="Score column for visualization",
+        default=[4],
+        param=metadata.ColumnParameter,
+        optional=True,
+        multiple=True)
+
     # do we need to repeat these? they are the same as should be inherited from interval type
 
     def set_meta(self, dataset, overwrite=True, **kwd):
@@ -416,13 +527,16 @@ class Bed(Interval):
                         for startswith in data.col1_startswith:
                             if line.lower().startswith(startswith):
                                 if len(elems) > 3:
-                                    if overwrite or not dataset.metadata.element_is_set('nameCol'):
+                                    if overwrite or not dataset.metadata.element_is_set(
+                                            'nameCol'):
                                         dataset.metadata.nameCol = 4
                                 if len(elems) < 6:
-                                    if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                    if overwrite or not dataset.metadata.element_is_set(
+                                            'strandCol'):
                                         dataset.metadata.strandCol = 0
                                 else:
-                                    if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                    if overwrite or not dataset.metadata.element_is_set(
+                                            'strandCol'):
                                         dataset.metadata.strandCol = 6
                                 metadata_set = True
                                 break
@@ -440,22 +554,28 @@ class Bed(Interval):
             """check to see if this file doesn't conform to strict genome browser accepted bed"""
             try:
                 if len(fields) > 12:
-                    return Interval.as_ucsc_display_file(self, dataset)  # too many fields
+                    return Interval.as_ucsc_display_file(
+                        self, dataset)  # too many fields
                 if len(fields) > 6:
                     int(fields[6])
                     if len(fields) > 7:
                         int(fields[7])
                         if len(fields) > 8:
                             if int(fields[8]) != 0:
-                                return Interval.as_ucsc_display_file(self, dataset)
+                                return Interval.as_ucsc_display_file(
+                                    self, dataset)
                             if len(fields) > 9:
                                 int(fields[9])
                                 if len(fields) > 10:
-                                    fields2 = fields[10].rstrip(",").split(",")  # remove trailing comma and split on comma
+                                    fields2 = fields[10].rstrip(",").split(
+                                        ","
+                                    )  # remove trailing comma and split on comma
                                     for field in fields2:
                                         int(field)
                                     if len(fields) > 11:
-                                        fields2 = fields[11].rstrip(",").split(",")  # remove trailing comma and split on comma
+                                        fields2 = fields[11].rstrip(",").split(
+                                            ","
+                                        )  # remove trailing comma and split on comma
                                         for field in fields2:
                                             int(field)
             except:
@@ -564,7 +684,8 @@ class Bed(Interval):
                             block_starts = hdr[11].rstrip(',').split(',')
                         except:
                             return False
-                        if len(block_sizes) != block_count or len(block_starts) != block_count:
+                        if len(block_sizes) != block_count or len(
+                                block_starts) != block_count:
                             return False
                 else:
                     return False
@@ -582,19 +703,55 @@ class BedStrict(Bed):
     allow_datatype_change = False
 
     # Read only metadata elements
-    MetadataElement(name="chromCol", default=1, desc="Chrom column", readonly=True, param=metadata.MetadataParameter)
-    MetadataElement(name="startCol", default=2, desc="Start column", readonly=True, param=metadata.MetadataParameter)  # TODO: start and end should be able to be set to these or the proper thick[start/end]?
-    MetadataElement(name="endCol", default=3, desc="End column", readonly=True, param=metadata.MetadataParameter)
-    MetadataElement(name="strandCol", desc="Strand column (click box & select)", readonly=True, param=metadata.MetadataParameter, no_value=0, optional=True)
-    MetadataElement(name="nameCol", desc="Name/Identifier column (click box & select)", readonly=True, param=metadata.MetadataParameter, no_value=0, optional=True)
-    MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
+    MetadataElement(
+        name="chromCol",
+        default=1,
+        desc="Chrom column",
+        readonly=True,
+        param=metadata.MetadataParameter)
+    MetadataElement(
+        name="startCol",
+        default=2,
+        desc="Start column",
+        readonly=True,
+        param=metadata.MetadataParameter
+    )  # TODO: start and end should be able to be set to these or the proper thick[start/end]?
+    MetadataElement(
+        name="endCol",
+        default=3,
+        desc="End column",
+        readonly=True,
+        param=metadata.MetadataParameter)
+    MetadataElement(
+        name="strandCol",
+        desc="Strand column (click box & select)",
+        readonly=True,
+        param=metadata.MetadataParameter,
+        no_value=0,
+        optional=True)
+    MetadataElement(
+        name="nameCol",
+        desc="Name/Identifier column (click box & select)",
+        readonly=True,
+        param=metadata.MetadataParameter,
+        no_value=0,
+        optional=True)
+    MetadataElement(
+        name="columns",
+        default=3,
+        desc="Number of columns",
+        readonly=True,
+        visible=False)
 
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
-        self.clear_display_apps()  # only new style display applications for this datatype
+        self.clear_display_apps(
+        )  # only new style display applications for this datatype
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)  # need column count first
+        Tabular.set_meta(
+            self, dataset, overwrite=overwrite,
+            **kwd)  # need column count first
         if dataset.metadata.columns >= 4:
             dataset.metadata.nameCol = 4
             if dataset.metadata.columns >= 6:
@@ -617,17 +774,25 @@ class Bed12(BedStrict):
 
 
 class _RemoteCallMixin:
-    def _get_remote_call_url(self, redirect_url, site_name, dataset, type, app, base_url):
+    def _get_remote_call_url(self, redirect_url, site_name, dataset, type, app,
+                             base_url):
         """Retrieve the URL to call out to an external site and retrieve data.
         This routes our external URL through a local galaxy instance which makes
         the data available, followed by redirecting to the remote site with a
         link back to the available information.
         """
-        internal_url = "%s" % url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='%s_%s' % (type, site_name))
+        internal_url = "%s" % url_for(
+            controller='dataset',
+            dataset_id=dataset.id,
+            action='display_at',
+            filename='%s_%s' % (type, site_name))
         base_url = app.config.get("display_at_callback", base_url)
-        display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
-                                 (base_url, url_for(controller='root'), dataset.id, type))
-        link = '%s?redirect_url=%s&display_url=%s' % (internal_url, redirect_url, display_url)
+        display_url = quote_plus(
+            "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
+            (base_url, url_for(controller='root'), dataset.id, type))
+        link = '%s?redirect_url=%s&display_url=%s' % (internal_url,
+                                                      redirect_url,
+                                                      display_url)
         return link
 
 
@@ -638,23 +803,56 @@ class Gff(Tabular, _RemoteCallMixin):
     edam_format = "format_2305"
     file_ext = "gff"
     valid_gff_frame = ['.', '0', '1', '2']
-    column_names = ['Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group']
-    data_sources = {"data": "interval_index", "index": "bigwig", "feature_search": "fli"}
+    column_names = [
+        'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand',
+        'Frame', 'Group'
+    ]
+    data_sources = {
+        "data": "interval_index",
+        "index": "bigwig",
+        "feature_search": "fli"
+    }
     track_type = Interval.track_type
-
     """Add metadata elements"""
-    MetadataElement(name="columns", default=9, desc="Number of columns", readonly=True, visible=False)
-    MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'int', 'str', 'str', 'str'],
-                    param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
+    MetadataElement(
+        name="columns",
+        default=9,
+        desc="Number of columns",
+        readonly=True,
+        visible=False)
+    MetadataElement(
+        name="column_types",
+        default=[
+            'str', 'str', 'str', 'int', 'int', 'int', 'str', 'str', 'str'
+        ],
+        param=metadata.ColumnTypesParameter,
+        desc="Column types",
+        readonly=True,
+        visible=False)
 
-    MetadataElement(name="attributes", default=0, desc="Number of attributes", readonly=True, visible=False, no_value=0)
-    MetadataElement(name="attribute_types", default={}, desc="Attribute types", param=metadata.DictParameter, readonly=True, visible=False, no_value=[])
+    MetadataElement(
+        name="attributes",
+        default=0,
+        desc="Number of attributes",
+        readonly=True,
+        visible=False,
+        no_value=0)
+    MetadataElement(
+        name="attribute_types",
+        default={},
+        desc="Attribute types",
+        param=metadata.DictParameter,
+        readonly=True,
+        visible=False,
+        no_value=[])
 
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
-        self.add_display_app('ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links')
-        self.add_display_app('gbrowse', 'display in Gbrowse', 'as_gbrowse_display_file', 'gbrowse_links')
+        self.add_display_app('ucsc', 'display at UCSC', 'as_ucsc_display_file',
+                             'ucsc_links')
+        self.add_display_app('gbrowse', 'display in Gbrowse',
+                             'as_gbrowse_display_file', 'gbrowse_links')
 
     def set_attribute_metadata(self, dataset):
         """
@@ -671,7 +869,8 @@ class Gff(Tabular, _RemoteCallMixin):
                 if len(elems) == 9:
                     try:
                         # Loop through attributes to set types.
-                        for name, value in parse_gff_attributes(elems[8]).items():
+                        for name, value in parse_gff_attributes(
+                                elems[8]).items():
                             # Default type is string.
                             value_type = "str"
                             try:
@@ -722,7 +921,9 @@ class Gff(Tabular, _RemoteCallMixin):
         formats.  This function should correctly handle both...
         """
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
-        max_line_count = max(viewport_feature_count, 500)  # maximum number of lines to check; includes comment lines
+        max_line_count = max(
+            viewport_feature_count,
+            500)  # maximum number of lines to check; includes comment lines
         if self.displayable(dataset):
             try:
                 seqid = None
@@ -734,7 +935,9 @@ class Gff(Tabular, _RemoteCallMixin):
                     if not line:
                         break  # EOF
                     try:
-                        if line.startswith('##sequence-region'):  # ##sequence-region IV 6000000 6030000
+                        if line.startswith(
+                                '##sequence-region'
+                        ):  # ##sequence-region IV 6000000 6030000
                             elems = line.rstrip('\n\r').split()
                             if len(elems) > 3:
                                 # line looks like:
@@ -752,7 +955,9 @@ class Gff(Tabular, _RemoteCallMixin):
                                 stop = int(elems[1].split('..')[1])
                                 break  # use location declared in file
                             else:
-                                log.exception("line (%s) uses an unsupported ##sequence-region definition." % str(line))
+                                log.exception(
+                                    "line (%s) uses an unsupported ##sequence-region definition."
+                                    % str(line))
                                 # break #no break, if bad definition, we try another method
                         elif line.startswith("browser position"):
                             # Allow UCSC style browser and track info in the GFF file
@@ -760,7 +965,9 @@ class Gff(Tabular, _RemoteCallMixin):
                             seqid, startend = pos_info.split(":")
                             start, stop = map(int, startend.split("-"))
                             break  # use location declared in file
-                        elif True not in map(line.startswith, ('#', 'track', 'browser')):  # line.startswith() does not accept iterator in python2.4
+                        elif True not in map(
+                                line.startswith, ('#', 'track', 'browser')
+                        ):  # line.startswith() does not accept iterator in python2.4
                             viewport_feature_count -= 1
                             elems = line.rstrip('\n\r').split('\t')
                             if len(elems) > 3:
@@ -777,7 +984,9 @@ class Gff(Tabular, _RemoteCallMixin):
                     # make sure we are at the next new line
                     readline_count = VIEWPORT_MAX_READS_PER_LINE
                     while line.rstrip('\n\r') == line:
-                        assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                        assert readline_count > 0, Exception(
+                            'Viewport readline count exceeded for dataset %s.'
+                            % dataset.id)
                         line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
                         if not line:
                             break  # EOF
@@ -787,7 +996,8 @@ class Gff(Tabular, _RemoteCallMixin):
                         # exceeded viewport or total line count to check
                         break
                 if seqid is not None:
-                    return (seqid, str(start), str(stop))  # Necessary to return strings?
+                    return (seqid, str(start),
+                            str(stop))  # Necessary to return strings?
             except Exception as e:
                 # unexpected error
                 log.exception(str(e))
@@ -797,12 +1007,15 @@ class Gff(Tabular, _RemoteCallMixin):
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
-            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
-                if site_name in app.datatypes_registry.get_display_sites('ucsc'):
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build(
+                    'ucsc', dataset.dbkey):
+                if site_name in app.datatypes_registry.get_display_sites(
+                        'ucsc'):
                     redirect_url = quote_plus(
                         "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
                         (site_url, dataset.dbkey, seqid, start, stop))
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
+                    link = self._get_remote_call_url(
+                        redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
@@ -810,12 +1023,16 @@ class Gff(Tabular, _RemoteCallMixin):
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
-            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('gbrowse', dataset.dbkey):
-                if site_name in app.datatypes_registry.get_display_sites('gbrowse'):
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build(
+                    'gbrowse', dataset.dbkey):
+                if site_name in app.datatypes_registry.get_display_sites(
+                        'gbrowse'):
                     if seqid.startswith('chr') and len(seqid) > 3:
                         seqid = seqid[3:]
-                    redirect_url = quote_plus("%s/?q=%s:%s..%s&eurl=%%s" % (site_url, seqid, start, stop))
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
+                    redirect_url = quote_plus("%s/?q=%s:%s..%s&eurl=%%s" %
+                                              (site_url, seqid, start, stop))
+                    link = self._get_remote_call_url(
+                        redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
@@ -840,7 +1057,8 @@ class Gff(Tabular, _RemoteCallMixin):
         try:
             headers = iter_headers(filename, '\t')
             for hdr in headers:
-                if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
+                if hdr and hdr[0].startswith(
+                        '##gff-version') and hdr[0].find('2') < 0:
                     return False
                 if hdr and hdr[0] and not hdr[0].startswith('#'):
                     if len(hdr) != 9:
@@ -865,24 +1083,28 @@ class Gff(Tabular, _RemoteCallMixin):
 
     # ------------- Dataproviders
     # redefine bc super is Tabular
-    @dataproviders.decorators.dataprovider_factory('genomic-region',
-                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'genomic-region',
+        dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dataprovider(self, dataset, **settings):
-        return dataproviders.dataset.GenomicRegionDataProvider(dataset, 0, 3, 4, **settings)
+        return dataproviders.dataset.GenomicRegionDataProvider(
+            dataset, 0, 3, 4, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('genomic-region-dict',
-                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'genomic-region-dict',
+        dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dict_dataprovider(self, dataset, **settings):
         settings['named_columns'] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('interval',
-                                                   dataproviders.dataset.IntervalDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'interval', dataproviders.dataset.IntervalDataProvider.settings)
     def interval_dataprovider(self, dataset, **settings):
-        return dataproviders.dataset.IntervalDataProvider(dataset, 0, 3, 4, 6, 2, **settings)
+        return dataproviders.dataset.IntervalDataProvider(
+            dataset, 0, 3, 4, 6, 2, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('interval-dict',
-                                                   dataproviders.dataset.IntervalDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'interval-dict', dataproviders.dataset.IntervalDataProvider.settings)
     def interval_dict_dataprovider(self, dataset, **settings):
         settings['named_columns'] = True
         return self.interval_dataprovider(dataset, **settings)
@@ -894,12 +1116,21 @@ class Gff3(Gff):
     file_ext = "gff3"
     valid_gff3_strand = ['+', '-', '.', '?']
     valid_gff3_phase = Gff.valid_gff_frame
-    column_names = ['Seqid', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes']
+    column_names = [
+        'Seqid', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase',
+        'Attributes'
+    ]
     track_type = Interval.track_type
-
     """Add metadata elements"""
-    MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
-                    param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
+    MetadataElement(
+        name="column_types",
+        default=[
+            'str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'
+        ],
+        param=metadata.ColumnTypesParameter,
+        desc="Column types",
+        readonly=True,
+        visible=False)
 
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
@@ -972,9 +1203,11 @@ class Gff3(Gff):
         try:
             headers = iter_headers(filename, '\t')
             for hdr in headers:
-                if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('3') >= 0:
+                if hdr and hdr[0].startswith(
+                        '##gff-version') and hdr[0].find('3') >= 0:
                     return True
-                elif hdr and hdr[0].startswith('##gff-version') and hdr[0].find('3') < 0:
+                elif hdr and hdr[0].startswith(
+                        '##gff-version') and hdr[0].find('3') < 0:
                     return False
                 # Header comments may have been stripped, so inspect the data
                 if hdr and hdr[0] and not hdr[0].startswith('#'):
@@ -1009,13 +1242,27 @@ class Gtf(Gff):
     """Tab delimited data in Gtf format"""
     edam_format = "format_2306"
     file_ext = "gtf"
-    column_names = ['Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Attributes']
+    column_names = [
+        'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand',
+        'Frame', 'Attributes'
+    ]
     track_type = Interval.track_type
-
     """Add metadata elements"""
-    MetadataElement(name="columns", default=9, desc="Number of columns", readonly=True, visible=False)
-    MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
-                    param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
+    MetadataElement(
+        name="columns",
+        default=9,
+        desc="Number of columns",
+        readonly=True,
+        visible=False)
+    MetadataElement(
+        name="column_types",
+        default=[
+            'str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'
+        ],
+        param=metadata.ColumnTypesParameter,
+        desc="Column types",
+        readonly=True,
+        visible=False)
 
     def sniff(self, filename):
         """
@@ -1047,7 +1294,8 @@ class Gtf(Gff):
         try:
             headers = iter_headers(filename, '\t')
             for hdr in headers:
-                if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
+                if hdr and hdr[0].startswith(
+                        '##gff-version') and hdr[0].find('2') < 0:
                     return False
                 if hdr and hdr[0] and not hdr[0].startswith('#'):
                     if len(hdr) != 9:
@@ -1089,17 +1337,26 @@ class Wiggle(Tabular, _RemoteCallMixin):
     track_type = "LineTrack"
     data_sources = {"data": "bigwig", "index": "bigwig"}
 
-    MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
+    MetadataElement(
+        name="columns",
+        default=3,
+        desc="Number of columns",
+        readonly=True,
+        visible=False)
 
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
-        self.add_display_app('ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links')
-        self.add_display_app('gbrowse', 'display in Gbrowse', 'as_gbrowse_display_file', 'gbrowse_links')
+        self.add_display_app('ucsc', 'display at UCSC', 'as_ucsc_display_file',
+                             'ucsc_links')
+        self.add_display_app('gbrowse', 'display in Gbrowse',
+                             'as_gbrowse_display_file', 'gbrowse_links')
 
     def get_estimated_display_viewport(self, dataset):
         """Return a chrom, start, stop tuple for viewing a file."""
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
-        max_line_count = max(viewport_feature_count, 500)  # maximum number of lines to check; includes comment lines
+        max_line_count = max(
+            viewport_feature_count,
+            500)  # maximum number of lines to check; includes comment lines
         if self.displayable(dataset):
             try:
                 chrom = None
@@ -1119,15 +1376,23 @@ class Wiggle(Tabular, _RemoteCallMixin):
                             start, end = map(int, coords.split("-"))
                             break  # use the browser line
                         # variableStep chrom=chr20
-                        if line and (line.lower().startswith("variablestep") or line.lower().startswith("fixedstep")):
+                        if line and (line.lower().startswith("variablestep")
+                                     or line.lower().startswith("fixedstep")):
                             if chrom is not None:
                                 break  # different chrom or different section of the chrom
-                            chrom = line.rstrip('\n\r').split("chrom=")[1].split()[0]
+                            chrom = line.rstrip('\n\r').split("chrom=")[
+                                1].split()[0]
                             if 'span=' in line:
-                                span = int(line.rstrip('\n\r').split("span=")[1].split()[0])
+                                span = int(
+                                    line.rstrip('\n\r').split("span=")[1]
+                                    .split()[0])
                             if 'step=' in line:
-                                step = int(line.rstrip('\n\r').split("step=")[1].split()[0])
-                                start = int(line.rstrip('\n\r').split("start=")[1].split()[0])
+                                step = int(
+                                    line.rstrip('\n\r').split("step=")[1]
+                                    .split()[0])
+                                start = int(
+                                    line.rstrip('\n\r').split("start=")[1]
+                                    .split()[0])
                         else:
                             fields = line.rstrip('\n\r').split()
                             if fields:
@@ -1145,7 +1410,9 @@ class Wiggle(Tabular, _RemoteCallMixin):
                     # make sure we are at the next new line
                     readline_count = VIEWPORT_MAX_READS_PER_LINE
                     while line.rstrip('\n\r') == line:
-                        assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                        assert readline_count > 0, Exception(
+                            'Viewport readline count exceeded for dataset %s.'
+                            % dataset.id)
                         line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
                         if not line:
                             break  # EOF
@@ -1155,7 +1422,8 @@ class Wiggle(Tabular, _RemoteCallMixin):
                         # exceeded viewport or total line count to check
                         break
                 if chrom is not None:
-                    return (chrom, str(start), str(end))  # Necessary to return strings?
+                    return (chrom, str(start),
+                            str(end))  # Necessary to return strings?
             except Exception as e:
                 # unexpected error
                 log.exception(str(e))
@@ -1165,12 +1433,16 @@ class Wiggle(Tabular, _RemoteCallMixin):
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
-            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('gbrowse', dataset.dbkey):
-                if site_name in app.datatypes_registry.get_display_sites('gbrowse'):
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build(
+                    'gbrowse', dataset.dbkey):
+                if site_name in app.datatypes_registry.get_display_sites(
+                        'gbrowse'):
                     if chrom.startswith('chr') and len(chrom) > 3:
                         chrom = chrom[3:]
-                    redirect_url = quote_plus("%s/?q=%s:%s..%s&eurl=%%s" % (site_url, chrom, start, stop))
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
+                    redirect_url = quote_plus("%s/?q=%s:%s..%s&eurl=%%s" %
+                                              (site_url, chrom, start, stop))
+                    link = self._get_remote_call_url(
+                        redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
@@ -1178,10 +1450,15 @@ class Wiggle(Tabular, _RemoteCallMixin):
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
-            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
-                if site_name in app.datatypes_registry.get_display_sites('ucsc'):
-                    redirect_url = quote_plus("%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop))
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build(
+                    'ucsc', dataset.dbkey):
+                if site_name in app.datatypes_registry.get_display_sites(
+                        'ucsc'):
+                    redirect_url = quote_plus(
+                        "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
+                        (site_url, dataset.dbkey, chrom, start, stop))
+                    link = self._get_remote_call_url(
+                        redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
@@ -1197,7 +1474,9 @@ class Wiggle(Tabular, _RemoteCallMixin):
             if line and not line.startswith('#'):
                 elems = line.split('\t')
                 try:
-                    float(elems[0])  # "Wiggle track data values can be integer or real, positive or negative values"
+                    float(
+                        elems[0]
+                    )  # "Wiggle track data values can be integer or real, positive or negative values"
                     break
                 except:
                     do_break = False
@@ -1207,13 +1486,19 @@ class Wiggle(Tabular, _RemoteCallMixin):
                             break
                     if do_break:
                         break
-        if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+        if self.max_optional_metadata_filesize >= 0 and dataset.get_size(
+        ) > self.max_optional_metadata_filesize:
             # we'll arbitrarily only use the first 100 data lines in this wig file to calculate tabular attributes (column types)
             # this should be sufficient, except when we have mixed wig track types (bed, variable, fixed),
             #    but those cases are not a single table that would have consistant column definitions
             # optional metadata values set in Tabular class will be 'None'
             max_data_lines = 100
-        Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i, max_data_lines=max_data_lines)
+        Tabular.set_meta(
+            self,
+            dataset,
+            overwrite=overwrite,
+            skip=i,
+            max_data_lines=max_data_lines)
 
     def sniff(self, filename):
         """
@@ -1241,7 +1526,8 @@ class Wiggle(Tabular, _RemoteCallMixin):
         try:
             headers = iter_headers(filename, None)
             for hdr in headers:
-                if len(hdr) > 1 and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
+                if len(hdr) > 1 and hdr[0] == 'track' and hdr[1].startswith(
+                        'type=wiggle'):
                     return True
             return False
         except:
@@ -1250,26 +1536,30 @@ class Wiggle(Tabular, _RemoteCallMixin):
     def get_track_resolution(self, dataset, start, end):
         range = end - start
         # Determine appropriate resolution to plot ~1000 points
-        resolution = math.ceil(10 ** math.ceil(math.log10(range / 1000)))
+        resolution = math.ceil(10**math.ceil(math.log10(range / 1000)))
         # Restrict to valid range
         resolution = min(resolution, 100000)
         resolution = max(resolution, 1)
         return resolution
 
     # ------------- Dataproviders
-    @dataproviders.decorators.dataprovider_factory('wiggle', dataproviders.dataset.WiggleDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'wiggle', dataproviders.dataset.WiggleDataProvider.settings)
     def wiggle_dataprovider(self, dataset, **settings):
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.dataset.WiggleDataProvider(dataset_source, **settings)
+        return dataproviders.dataset.WiggleDataProvider(
+            dataset_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory('wiggle-dict', dataproviders.dataset.WiggleDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory(
+        'wiggle-dict', dataproviders.dataset.WiggleDataProvider.settings)
     def wiggle_dict_dataprovider(self, dataset, **settings):
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         settings['named_columns'] = True
-        return dataproviders.dataset.WiggleDataProvider(dataset_source, **settings)
+        return dataproviders.dataset.WiggleDataProvider(
+            dataset_source, **settings)
 
 
-class CustomTrack (Tabular):
+class CustomTrack(Tabular):
     """UCSC CustomTrack"""
     edam_format = "format_3588"
     file_ext = "customtrack"
@@ -1277,7 +1567,8 @@ class CustomTrack (Tabular):
     def __init__(self, **kwd):
         """Initialize interval datatype, by adding UCSC display app"""
         Tabular.__init__(self, **kwd)
-        self.add_display_app('ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links')
+        self.add_display_app('ucsc', 'display at UCSC', 'as_ucsc_display_file',
+                             'ucsc_links')
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=1)
@@ -1286,7 +1577,11 @@ class CustomTrack (Tabular):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, skipchars=['track', '#'])
 
-    def get_estimated_display_viewport(self, dataset, chrom_col=None, start_col=None, end_col=None):
+    def get_estimated_display_viewport(self,
+                                       dataset,
+                                       chrom_col=None,
+                                       start_col=None,
+                                       end_col=None):
         """Return a chrom, start, stop tuple for viewing a file."""
         # FIXME: only BED and WIG custom tracks are currently supported
         # As per previously existing behavior, viewport will only be over the first intervals
@@ -1307,14 +1602,23 @@ class CustomTrack (Tabular):
                                 fields = line.rstrip().split()
                                 if len(fields) == 2:
                                     start = int(fields[0])
-                                    return (chrom, str(start), str(start + span))
-                            elif line and (line.lower().startswith("variablestep") or line.lower().startswith("fixedstep")):
-                                chrom = line.rstrip('\n\r').split("chrom=")[1].split()[0]
+                                    return (chrom, str(start),
+                                            str(start + span))
+                            elif line and (
+                                    line.lower().startswith("variablestep")
+                                    or line.lower().startswith("fixedstep")):
+                                chrom = line.rstrip('\n\r').split("chrom=")[
+                                    1].split()[0]
                                 if 'span=' in line:
-                                    span = int(line.rstrip('\n\r').split("span=")[1].split()[0])
+                                    span = int(
+                                        line.rstrip('\n\r').split("span=")[1]
+                                        .split()[0])
                                 if 'start=' in line:
-                                    start = int(line.rstrip('\n\r').split("start=")[1].split()[0])
-                                    return (chrom, str(start), str(start + span))
+                                    start = int(
+                                        line.rstrip('\n\r').split("start=")[1]
+                                        .split()[0])
+                                    return (chrom, str(start),
+                                            str(start + span))
                                 else:
                                     variable_step_wig = True
                             else:
@@ -1330,7 +1634,9 @@ class CustomTrack (Tabular):
                     # make sure we are at the next new line
                     readline_count = VIEWPORT_MAX_READS_PER_LINE
                     while line.rstrip('\n\r') == line:
-                        assert readline_count > 0, Exception('Viewport readline count exceeded for dataset %s.' % dataset.id)
+                        assert readline_count > 0, Exception(
+                            'Viewport readline count exceeded for dataset %s.'
+                            % dataset.id)
                         line = fh.readline(VIEWPORT_READLINE_BUFFER_SIZE)
                         if not line:
                             break  # EOF
@@ -1348,12 +1654,25 @@ class CustomTrack (Tabular):
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
-            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
-                if site_name in app.datatypes_registry.get_display_sites('ucsc'):
-                    internal_url = "%s" % url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)
-                    display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for(controller='root'), dataset.id, type))
-                    redirect_url = quote_plus("%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop))
-                    link = '%s?redirect_url=%s&display_url=%s' % (internal_url, redirect_url, display_url)
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build(
+                    'ucsc', dataset.dbkey):
+                if site_name in app.datatypes_registry.get_display_sites(
+                        'ucsc'):
+                    internal_url = "%s" % url_for(
+                        controller='dataset',
+                        dataset_id=dataset.id,
+                        action='display_at',
+                        filename='ucsc_' + site_name)
+                    display_url = quote_plus(
+                        "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
+                        % (base_url, url_for(controller='root'), dataset.id,
+                           type))
+                    redirect_url = quote_plus(
+                        "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
+                        (site_url, dataset.dbkey, chrom, start, stop))
+                    link = '%s?redirect_url=%s&display_url=%s' % (internal_url,
+                                                                  redirect_url,
+                                                                  display_url)
                     ret_val.append((site_name, link))
         return ret_val
 
@@ -1426,15 +1745,39 @@ class ENCODEPeak(Interval):
     '''
     edam_format = "format_3612"
     file_ext = "encodepeak"
-    column_names = ['Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'SignalValue', 'pValue', 'qValue', 'Peak']
+    column_names = [
+        'Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'SignalValue',
+        'pValue', 'qValue', 'Peak'
+    ]
     data_sources = {"data": "tabix", "index": "bigwig"}
-
     """Add metadata elements"""
-    MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
-    MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
-    MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
-    MetadataElement(name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0)
-    MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
+    MetadataElement(
+        name="chromCol",
+        default=1,
+        desc="Chrom column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="startCol",
+        default=2,
+        desc="Start column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="endCol",
+        default=3,
+        desc="End column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="strandCol",
+        desc="Strand column (click box & select)",
+        param=metadata.ColumnParameter,
+        optional=True,
+        no_value=0)
+    MetadataElement(
+        name="columns",
+        default=3,
+        desc="Number of columns",
+        readonly=True,
+        visible=False)
 
     def sniff(self, filename):
         return False
@@ -1447,18 +1790,52 @@ class ChromatinInteractions(Interval):
     file_ext = "chrint"
     track_type = "DiagonalHeatmapTrack"
     data_sources = {"data": "tabix", "index": "bigwig"}
-    column_names = ['Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value']
-
+    column_names = [
+        'Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value'
+    ]
     """Add metadata elements"""
-    MetadataElement(name="chrom1Col", default=1, desc="Chrom1 column", param=metadata.ColumnParameter)
-    MetadataElement(name="start1Col", default=2, desc="Start1 column", param=metadata.ColumnParameter)
-    MetadataElement(name="end1Col", default=3, desc="End1 column", param=metadata.ColumnParameter)
-    MetadataElement(name="chrom2Col", default=4, desc="Chrom2 column", param=metadata.ColumnParameter)
-    MetadataElement(name="start2Col", default=5, desc="Start2 column", param=metadata.ColumnParameter)
-    MetadataElement(name="end2Col", default=6, desc="End2 column", param=metadata.ColumnParameter)
-    MetadataElement(name="valueCol", default=7, desc="Value column", param=metadata.ColumnParameter)
+    MetadataElement(
+        name="chrom1Col",
+        default=1,
+        desc="Chrom1 column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="start1Col",
+        default=2,
+        desc="Start1 column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="end1Col",
+        default=3,
+        desc="End1 column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="chrom2Col",
+        default=4,
+        desc="Chrom2 column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="start2Col",
+        default=5,
+        desc="Start2 column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="end2Col",
+        default=6,
+        desc="End2 column",
+        param=metadata.ColumnParameter)
+    MetadataElement(
+        name="valueCol",
+        default=7,
+        desc="Value column",
+        param=metadata.ColumnParameter)
 
-    MetadataElement(name="columns", default=7, desc="Number of columns", readonly=True, visible=False)
+    MetadataElement(
+        name="columns",
+        default=7,
+        desc="Number of columns",
+        readonly=True,
+        visible=False)
 
     def sniff(self, filename):
         return False
@@ -1477,8 +1854,20 @@ class ScIdx(Tabular):
     """
     file_ext = "scidx"
 
-    MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=False)
-    MetadataElement(name="column_types", default=[], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False, no_value=[])
+    MetadataElement(
+        name="columns",
+        default=0,
+        desc="Number of columns",
+        readonly=True,
+        visible=False)
+    MetadataElement(
+        name="column_types",
+        default=[],
+        param=metadata.ColumnTypesParameter,
+        desc="Column types",
+        readonly=True,
+        visible=False,
+        no_value=[])
 
     def __init__(self, **kwd):
         """

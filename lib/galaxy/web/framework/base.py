@@ -32,12 +32,29 @@ def __resource_with_deleted(self, member_name, collection_name, **kwargs):
     as resource() with the addition of standardized routes for handling
     elements in Galaxy's "deleted but not really deleted" fashion.
     """
-    collection_path = kwargs.get('path_prefix', '') + '/' + collection_name + '/deleted'
+    collection_path = kwargs.get('path_prefix',
+                                 '') + '/' + collection_name + '/deleted'
     member_path = collection_path + '/{id}'
-    self.connect('deleted_' + collection_name, collection_path, controller=collection_name, action='index', deleted=True, conditions=dict(method=['GET']))
-    self.connect('deleted_' + member_name, member_path, controller=collection_name, action='show', deleted=True, conditions=dict(method=['GET']))
-    self.connect('undelete_deleted_' + member_name, member_path + '/undelete', controller=collection_name, action='undelete',
-                 conditions=dict(method=['POST']))
+    self.connect(
+        'deleted_' + collection_name,
+        collection_path,
+        controller=collection_name,
+        action='index',
+        deleted=True,
+        conditions=dict(method=['GET']))
+    self.connect(
+        'deleted_' + member_name,
+        member_path,
+        controller=collection_name,
+        action='show',
+        deleted=True,
+        conditions=dict(method=['GET']))
+    self.connect(
+        'undelete_deleted_' + member_name,
+        member_path + '/undelete',
+        controller=collection_name,
+        action='undelete',
+        conditions=dict(method=['POST']))
     self.resource(member_name, collection_name, **kwargs)
 
 
@@ -52,6 +69,7 @@ class WebApplication(object):
     complicated encoding of arguments in the PATH_INFO can be performed
     with routes.
     """
+
     def __init__(self):
         """
         Create a new web application object. To actually connect some
@@ -62,7 +80,8 @@ class WebApplication(object):
         self.controllers = dict()
         self.api_controllers = dict()
         self.mapper = routes.Mapper()
-        self.clientside_routes = routes.Mapper(controller_scan=None, register=False)
+        self.clientside_routes = routes.Mapper(
+            controller_scan=None, register=False)
         # FIXME: The following two options are deprecated and should be
         # removed.  Consult the Routes documentation.
         self.mapper.minimization = True
@@ -76,13 +95,13 @@ class WebApplication(object):
         methods which handle web requests. To connect a URL to a controller's
         method use `add_route`.
         """
-        log.debug("Enabling '%s' controller, class: %s",
-                  controller_name, controller.__class__.__name__)
+        log.debug("Enabling '%s' controller, class: %s", controller_name,
+                  controller.__class__.__name__)
         self.controllers[controller_name] = controller
 
     def add_api_controller(self, controller_name, controller):
-        log.debug("Enabling '%s' API controller, class: %s",
-                  controller_name, controller.__class__.__name__)
+        log.debug("Enabling '%s' API controller, class: %s", controller_name,
+                  controller.__class__.__name__)
         self.api_controllers[controller_name] = controller
 
     def add_route(self, route, **kwargs):
@@ -98,7 +117,8 @@ class WebApplication(object):
         self.mapper.connect(route, **kwargs)
 
     def add_client_route(self, route, controller='root'):
-        self.clientside_routes.connect(route, controller=controller, action='client')
+        self.clientside_routes.connect(
+            route, controller=controller, action='client')
 
     def set_transaction_factory(self, transaction_factory):
         """
@@ -138,7 +158,11 @@ class WebApplication(object):
             if self.trace_logger:
                 self.trace_logger.context_remove("request_id")
 
-    def _resolve_map_match(self, map_match, path_info, controllers, use_default=True):
+    def _resolve_map_match(self,
+                           map_match,
+                           path_info,
+                           controllers,
+                           use_default=True):
         # Get the controller class
         controller_name = map_match.pop('controller', None)
         controller = controllers.get(controller_name, None)
@@ -160,10 +184,12 @@ class WebApplication(object):
             raise httpexceptions.HTTPNotFound("No action for " + path_info)
         # Is the method exposed
         if not getattr(method, 'exposed', False):
-            raise httpexceptions.HTTPNotFound("Action not exposed for " + path_info)
+            raise httpexceptions.HTTPNotFound("Action not exposed for " +
+                                              path_info)
         # Is the method callable
         if not callable(method):
-            raise httpexceptions.HTTPNotFound("Action not callable for " + path_info)
+            raise httpexceptions.HTTPNotFound("Action not callable for " +
+                                              path_info)
         return (controller_name, controller, action, method)
 
     def handle_request(self, environ, start_response, body_renderer=None):
@@ -195,16 +221,20 @@ class WebApplication(object):
         try:
             # We don't use default methods if there's a clientside match for this route.
             use_default = client_match is None
-            controller_name, controller, action, method = self._resolve_map_match(map_match, path_info, controllers, use_default=use_default)
+            controller_name, controller, action, method = self._resolve_map_match(
+                map_match, path_info, controllers, use_default=use_default)
         except httpexceptions.HTTPNotFound:
             # Failed, let's check client routes
             if not environ['is_api_request'] and client_match is not None:
-                controller_name, controller, action, method = self._resolve_map_match(client_match, path_info, controllers)
+                controller_name, controller, action, method = self._resolve_map_match(
+                    client_match, path_info, controllers)
             else:
                 raise
         trans.controller = controller_name
         trans.action = action
-        environ['controller_action_key'] = "%s.%s.%s" % ('api' if environ['is_api_request'] else 'web', controller_name, action or 'default')
+        environ['controller_action_key'] = "%s.%s.%s" % (
+            'api' if environ['is_api_request'] else 'web', controller_name,
+            action or 'default')
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update(map_match)
@@ -263,6 +293,7 @@ class WSGIEnvironmentProperty(object):
     associated object (provides property style access to keys in the WSGI
     environment)
     """
+
     def __init__(self, key, default=''):
         self.key = key
         self.default = default
@@ -278,6 +309,7 @@ class LazyProperty(object):
     Property that replaces itself with a calculated value the first time
     it is used.
     """
+
     def __init__(self, func):
         self.func = func
 
@@ -299,6 +331,7 @@ class DefaultWebTransaction(object):
     TODO: Provide hooks to allow application specific state to be included
           in here.
     """
+
     def __init__(self, environ):
         self.environ = environ
         self.request = Request(environ)
@@ -343,12 +376,15 @@ class Request(webob.Request):
     """
     Encapsulates an HTTP request.
     """
+
     def __init__(self, environ):
         """
         Create a new request wrapping the WSGI environment `environ`
         """
         #  self.environ = environ
-        webob.Request.__init__(self, environ, charset='utf-8', decode_param_names=False)
+        webob.Request.__init__(
+            self, environ, charset='utf-8', decode_param_names=False)
+
     # Properties that are computed and cached on first use
 
     @lazy_property
@@ -406,6 +442,7 @@ class Response(object):
     Describes an HTTP response. Currently very simple since the actual body
     of the request is handled separately.
     """
+
     def __init__(self):
         """
         Create a new Response defaulting to HTML content and "200 OK" status
@@ -427,7 +464,8 @@ class Response(object):
         """
         Send an HTTP redirect response to (target `url`)
         """
-        raise httpexceptions.HTTPFound(url.encode('utf-8'), headers=self.wsgi_headeritems())
+        raise httpexceptions.HTTPFound(
+            url.encode('utf-8'), headers=self.wsgi_headeritems())
 
     def wsgi_headeritems(self):
         """
@@ -453,7 +491,7 @@ class Response(object):
 
 # ---- Utilities ------------------------------------------------------------
 
-CHUNK_SIZE = 2 ** 16
+CHUNK_SIZE = 2**16
 
 
 def send_file(start_response, trans, body):

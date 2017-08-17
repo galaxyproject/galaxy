@@ -39,15 +39,18 @@ def upgrade(migrate_engine):
     StoredWorkflow_table = Table("stored_workflow", metadata, autoload=True)
     c = Column("published", Boolean, index=True)
     try:
-        c.create(StoredWorkflow_table, index_name='ix_stored_workflow_published')
+        c.create(
+            StoredWorkflow_table, index_name='ix_stored_workflow_published')
         assert c is StoredWorkflow_table.c.published
     except Exception:
-        log.exception("Adding published column to stored_workflow table failed.")
+        log.exception(
+            "Adding published column to stored_workflow table failed.")
 
     if migrate_engine.name != 'sqlite':
         # Create index for published column in stored workflows table.
         try:
-            i = Index("ix_stored_workflow_published", StoredWorkflow_table.c.published)
+            i = Index("ix_stored_workflow_published",
+                      StoredWorkflow_table.c.published)
             i.create()
         except:
             # Mysql doesn't have a named index, but alter should work
@@ -88,7 +91,8 @@ def downgrade(migrate_engine):
     try:
         StoredWorkflow_table.c.published.drop()
     except Exception:
-        log.exception("Dropping column published from stored_workflow table failed.")
+        log.exception(
+            "Dropping column published from stored_workflow table failed.")
 
     # Drop importable column from page table.
     Page_table = Table("page", metadata, autoload=True)

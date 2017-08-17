@@ -43,6 +43,7 @@ class ObjectInvalid(Exception):
     """ Accessed object store ID is invalid """
     pass
 
+
 # Please keep the exceptions ordered by status code
 
 
@@ -170,17 +171,17 @@ class ConfigurationError(Exception):
     err_code = error_codes.CONFIG_ERROR
 
 
-class InconsistentDatabase (MessageException):
+class InconsistentDatabase(MessageException):
     status_code = 500
     err_code = error_codes.INCONSISTENT_DATABASE
 
 
-class InternalServerError (MessageException):
+class InternalServerError(MessageException):
     status_code = 500
     err_code = error_codes.INTERNAL_SERVER_ERROR
 
 
-class NotImplemented (MessageException):
+class NotImplemented(MessageException):
     status_code = 501
     err_code = error_codes.NOT_IMPLEMENTED
 
@@ -189,8 +190,14 @@ class NotImplemented (MessageException):
 
 
 class ContainerCLIError(Exception):
-    def __init__(self, msg=None, stdout=None, stderr=None, returncode=None,
-                 command=None, subprocess_command=None, **kwargs):
+    def __init__(self,
+                 msg=None,
+                 stdout=None,
+                 stderr=None,
+                 returncode=None,
+                 command=None,
+                 subprocess_command=None,
+                 **kwargs):
         super(ContainerCLIError, self).__init__(msg, **kwargs)
         self.stdout = stdout
         self.stderr = stderr

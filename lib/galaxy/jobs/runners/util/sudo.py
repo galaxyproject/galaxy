@@ -1,8 +1,5 @@
 import logging
-from subprocess import (
-    PIPE,
-    Popen
-)
+from subprocess import (PIPE, Popen)
 
 SUDO_PATH = '/usr/bin/sudo'
 SUDO_PRESERVE_ENVIRONMENT_ARG = '-E'
@@ -21,6 +18,7 @@ def sudo_popen(*args, **kwargs):
     if user:
         full_command.extend([SUDO_USER_ARG, user])
     full_command.extend(args)
-    log.info("About to execute the following sudo command - [%s]" % ' '.join(full_command))
+    log.info("About to execute the following sudo command - [%s]" %
+             ' '.join(full_command))
     p = Popen(full_command, shell=False, stdout=PIPE, stderr=PIPE)
     return p

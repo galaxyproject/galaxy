@@ -34,7 +34,8 @@ def upgrade(migrate_engine):
         assert c_remote is Repository_table.c.remote_repository_url
         assert c_homepage is Repository_table.c.homepage_url
     except Exception as e:
-        print "Adding remote_repository_url and homepage_url columns to the repository table failed: %s" % str(e)
+        print "Adding remote_repository_url and homepage_url columns to the repository table failed: %s" % str(
+            e)
 
 
 def downgrade(migrate_engine):
@@ -46,4 +47,5 @@ def downgrade(migrate_engine):
         Repository_table.c.remote_repository_url.drop()
         Repository_table.c.homepage_url.drop()
     except Exception as e:
-        print "Dropping columns remote_repository_url and homepage_url from the repository table failed: %s" % str(e)
+        print "Dropping columns remote_repository_url and homepage_url from the repository table failed: %s" % str(
+            e)

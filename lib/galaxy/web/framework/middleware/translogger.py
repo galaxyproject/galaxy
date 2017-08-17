@@ -24,7 +24,8 @@ class TransLogger(object):
               '"%(REQUEST_METHOD)s %(REQUEST_URI)s %(HTTP_VERSION)s" '
               '%(status)s %(bytes)s "%(HTTP_REFERER)s" "%(HTTP_USER_AGENT)s"')
 
-    def __init__(self, application,
+    def __init__(self,
+                 application,
                  logger=None,
                  format=None,
                  logging_level=logging.INFO,
@@ -52,8 +53,8 @@ class TransLogger(object):
 
     def __call__(self, environ, start_response):
         start = time.localtime()
-        req_uri = urllib.quote(environ.get('SCRIPT_NAME', '') +
-                               environ.get('PATH_INFO', ''))
+        req_uri = urllib.quote(
+            environ.get('SCRIPT_NAME', '') + environ.get('PATH_INFO', ''))
         if environ.get('QUERY_STRING'):
             req_uri += '?' + environ['QUERY_STRING']
         method = environ['REQUEST_METHOD']
@@ -68,19 +69,20 @@ class TransLogger(object):
                     bytes = value
             self.write_log(environ, method, req_uri, start, status, bytes)
             return start_response(status, headers, exc_info)
+
         return self.application(environ, replacement_start_response)
 
     def write_log(self, environ, method, req_uri, start, status, bytes):
         if bytes is None:
             bytes = '-'
         if time.daylight:
-                offset = time.altzone / 60 / 60 * -100
+            offset = time.altzone / 60 / 60 * -100
         else:
-                offset = time.timezone / 60 / 60 * -100
+            offset = time.timezone / 60 / 60 * -100
         if offset >= 0:
-                offset = "+%0.4d" % (offset)
+            offset = "+%0.4d" % (offset)
         elif offset < 0:
-                offset = "%0.4d" % (offset)
+            offset = "%0.4d" % (offset)
         d = {
             'REMOTE_ADDR': environ.get('REMOTE_ADDR') or '-',
             'REMOTE_USER': environ.get('REMOTE_USER') or '-',
@@ -97,13 +99,13 @@ class TransLogger(object):
         self.logger.log(self.logging_level, message)
 
 
-def make_filter(
-        app, global_conf,
-        logger_name='wsgi',
-        format=None,
-        logging_level=logging.INFO,
-        setup_console_handler=True,
-        set_logger_level=logging.DEBUG):
+def make_filter(app,
+                global_conf,
+                logger_name='wsgi',
+                format=None,
+                logging_level=logging.INFO,
+                setup_console_handler=True,
+                set_logger_level=logging.DEBUG):
     from paste.util.converters import asbool
     if isinstance(logging_level, string_types):
         logging_level = logging._levelNames[logging_level]

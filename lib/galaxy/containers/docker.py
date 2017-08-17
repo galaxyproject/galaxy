@@ -13,7 +13,6 @@ from galaxy.containers.docker_decorators import docker_columns, docker_json
 from galaxy.containers.docker_model import DockerContainer
 from galaxy.exceptions import ContainerCLIError, ContainerImageNotFound, ContainerNotFound
 
-
 log = logging.getLogger(__name__)
 
 
@@ -29,14 +28,38 @@ class DockerInterface(ContainerInterface):
     }
     option_map = {
         # `run` options
-        'environment': {'flag': '--env', 'type': 'list_of_kvpairs'},
-        'volumes': {'flag': '--volume', 'type': 'docker_volumes'},
-        'name': {'flag': '--name', 'type': 'string'},
-        'detach': {'flag': '--detach', 'type': 'boolean'},
-        'publish_all_ports': {'flag': '--publish-all', 'type': 'boolean'},
-        'publish_port_random': {'flag': '--publish', 'type': 'string'},
-        'cpus': {'flag': '--cpus', 'type': 'string'},
-        'memory': {'flag': '--memory', 'type': 'string'},
+        'environment': {
+            'flag': '--env',
+            'type': 'list_of_kvpairs'
+        },
+        'volumes': {
+            'flag': '--volume',
+            'type': 'docker_volumes'
+        },
+        'name': {
+            'flag': '--name',
+            'type': 'string'
+        },
+        'detach': {
+            'flag': '--detach',
+            'type': 'boolean'
+        },
+        'publish_all_ports': {
+            'flag': '--publish-all',
+            'type': 'boolean'
+        },
+        'publish_port_random': {
+            'flag': '--publish',
+            'type': 'string'
+        },
+        'cpus': {
+            'flag': '--cpus',
+            'type': 'string'
+        },
+        'memory': {
+            'flag': '--memory',
+            'type': 'string'
+        },
     }
 
     def run_in_container(self, command, image=None, **kwopts):
@@ -87,8 +110,7 @@ class DockerCLIInterface(DockerInterface):
             executable=self._conf['executable'],
             global_kwopts=' '.join(global_kwopts),
             subcommand='{subcommand}',
-            args='{args}'
-        )
+            args='{args}')
 
     def _stringify_kwopt_docker_volumes(self, flag, val):
         """The docker API will take a volumes argument in many formats, try to
@@ -110,8 +132,7 @@ class DockerCLIInterface(DockerInterface):
                     l.append('{vol}:{bind}{mode}'.format(
                         vol=hostvol,
                         bind=guestopts['bind'],
-                        mode=':' + mode if mode else ''
-                    ))
+                        mode=':' + mode if mode else ''))
         return self._stringify_kwopt_list(flag, l)
 
     @property
@@ -120,7 +141,8 @@ class DockerCLIInterface(DockerInterface):
         return self._conf.image
 
     def _run_docker(self, subcommand, args=None, verbose=False):
-        command = self._docker_command.format(subcommand=subcommand, args=args or '')
+        command = self._docker_command.format(
+            subcommand=subcommand, args=args or '')
         return self._run_command(command, verbose=verbose)
 
     #
@@ -135,9 +157,9 @@ class DockerCLIInterface(DockerInterface):
         args = '{kwopts} {image} {command}'.format(
             kwopts=self._stringify_kwopts(kwopts),
             image=image or self._default_image,
-            command=command if command else ''
-        ).strip()
-        container_id = self._run_docker(subcommand='run', args=args, verbose=True)
+            command=command if command else '').strip()
+        container_id = self._run_docker(
+            subcommand='run', args=args, verbose=True)
         return DockerContainer.from_id(self, container_id)
 
     @docker_json
@@ -146,7 +168,8 @@ class DockerCLIInterface(DockerInterface):
             return self._run_docker(subcommand='inspect', args=container_id)
         except ContainerCLIError as exc:
             msg = "Invalid container id: %s" % container_id
-            if exc.stdout == '[]' and exc.stderr == 'Error: no such object: {container_id}'.format(container_id=container_id):
+            if exc.stdout == '[]' and exc.stderr == 'Error: no such object: {container_id}'.format(
+                    container_id=container_id):
                 log.warning(msg)
                 return []
             else:
@@ -158,7 +181,8 @@ class DockerCLIInterface(DockerInterface):
             return self._run_docker(subcommand='image inspect', args=image)
         except ContainerCLIError as exc:
             msg = "%s not pulled, cannot get digest" % image
-            if exc.stdout == '[]' and exc.stderr == 'Error: no such image: {image}'.format(image=image):
+            if exc.stdout == '[]' and exc.stderr == 'Error: no such image: {image}'.format(
+                    image=image):
                 log.warning(msg, image)
                 return []
             else:

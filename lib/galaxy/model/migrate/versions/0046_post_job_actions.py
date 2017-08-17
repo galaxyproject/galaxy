@@ -16,10 +16,16 @@ metadata = MetaData()
 
 PostJobAction_table = Table("post_job_action", metadata,
                             Column("id", Integer, primary_key=True),
-                            Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
+                            Column(
+                                "workflow_step_id",
+                                Integer,
+                                ForeignKey("workflow_step.id"),
+                                index=True,
+                                nullable=False),
                             Column("action_type", String(255), nullable=False),
                             Column("output_name", String(255), nullable=True),
-                            Column("action_arguments", JSONType, nullable=True))
+                            Column(
+                                "action_arguments", JSONType, nullable=True))
 
 # PostJobActionAssociation_table = Table("post_job_action_association", metadata,
 #     Column("id", Integer, primary_key=True),
@@ -37,7 +43,9 @@ def upgrade(migrate_engine):
         try:
             table.create()
         except Exception:
-            log.exception("Failed to create table '%s', ignoring (might result in wrong schema)" % table.name)
+            log.exception(
+                "Failed to create table '%s', ignoring (might result in wrong schema)"
+                % table.name)
 
 
 def downgrade(migrate_engine):

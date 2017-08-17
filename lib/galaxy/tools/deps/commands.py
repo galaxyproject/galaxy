@@ -51,8 +51,7 @@ def shell_process(cmds, env=None, **kwds):
     """
     sys = kwds.get("sys", _sys)
     popen_kwds = dict(
-        shell=True,
-    )
+        shell=True, )
     if kwds.get("stdout", None) is None and redirecting_io(sys=sys):
         popen_kwds["stdout"] = subprocess.PIPE
     if kwds.get("stderr", None) is None and redirecting_io(sys=sys):
@@ -72,7 +71,8 @@ def execute(cmds):
 
     Return the standard output if the commands are successful
     """
-    return _wait(cmds, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    return _wait(
+        cmds, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
 
 def argv_to_str(command_argv, quote=True):
@@ -92,7 +92,8 @@ def _wait(cmds, **popen_kwds):
     p = subprocess.Popen(cmds, **popen_kwds)
     stdout, stderr = p.communicate()
     if p.returncode != 0:
-        raise CommandLineException(argv_to_str(cmds), stdout, stderr, p.returncode)
+        raise CommandLineException(
+            argv_to_str(cmds), stdout, stderr, p.returncode)
     return stdout
 
 
@@ -134,22 +135,14 @@ class CommandLineException(Exception):
                         "-------->>end stderr<<--------\n"
                         "-------->>begin stdout<<--------\n"
                         "%s\n"
-                        "-------->>end stdout<<--------\n"
-                        ) % (command, stderr, stdout)
+                        "-------->>end stdout<<--------\n") % (command, stderr,
+                                                               stdout)
 
     def __str__(self):
         """Return a verbose error message indicating the command problem."""
         return self.message
 
 
-__all__ = (
-    'argv_to_str',
-    'CommandLineException',
-    'download_command',
-    'execute',
-    'redirect_aware_commmunicate',
-    'redirecting_io',
-    'shell',
-    'shell_process',
-    'which',
-)
+__all__ = ('argv_to_str', 'CommandLineException', 'download_command',
+           'execute', 'redirect_aware_commmunicate', 'redirecting_io', 'shell',
+           'shell_process', 'which', )

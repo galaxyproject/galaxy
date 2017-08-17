@@ -27,7 +27,9 @@ def find_config_file(default, old_defaults, explicit, cwd=None):
         if os.path.exists(explicit):
             config_file = explicit
         else:
-            raise Exception("Problem determining Galaxy's configuration - the specified configuration file cannot be found.")
+            raise Exception(
+                "Problem determining Galaxy's configuration - the specified configuration file cannot be found."
+            )
     else:
         config_file = None
         if os.path.exists(default):
@@ -43,21 +45,20 @@ def find_config_file(default, old_defaults, explicit, cwd=None):
     return config_file
 
 
-def load_app_properties(
-    kwds={},
-    ini_file=None,
-    ini_section=None,
-    config_file=None,
-    config_section=None,
-    config_prefix="GALAXY_CONFIG_"
-):
+def load_app_properties(kwds={},
+                        ini_file=None,
+                        ini_section=None,
+                        config_file=None,
+                        config_section=None,
+                        config_prefix="GALAXY_CONFIG_"):
     properties = kwds.copy() if kwds else {}
     if config_file is None:
         config_file = ini_file
         config_section = ini_section
 
     if config_file:
-        if not config_file.endswith(".yml") and not config_file.endswith(".yml.sample"):
+        if not config_file.endswith(".yml") and not config_file.endswith(
+                ".yml.sample"):
             if config_section is None:
                 config_section = "app:main"
             parser = nice_config_parser(config_file)
@@ -96,7 +97,6 @@ def nice_config_parser(path):
 
 
 class NicerConfigParser(ConfigParser):
-
     def __init__(self, filename, *args, **kw):
         ConfigParser.__init__(self, *args, **kw)
         self.filename = filename
@@ -119,8 +119,8 @@ class NicerConfigParser(ConfigParser):
     def _interpolate(self, section, option, rawval, vars):
         # Python < 3.2
         try:
-            return ConfigParser._interpolate(
-                self, section, option, rawval, vars)
+            return ConfigParser._interpolate(self, section, option, rawval,
+                                             vars)
         except Exception:
             e = sys.exc_info()[1]
             args = list(e.args)

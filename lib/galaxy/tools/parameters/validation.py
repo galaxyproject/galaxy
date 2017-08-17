@@ -6,10 +6,7 @@ import re
 
 from six import string_types
 
-from galaxy import (
-    model,
-    util
-)
+from galaxy import (model, util)
 
 log = logging.getLogger(__name__)
 
@@ -85,7 +82,9 @@ class ExpressionValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message'), elem.text, elem.get('substitute_value_in_message'))
+        return cls(
+            elem.get('message'), elem.text,
+            elem.get('substitute_value_in_message'))
 
     def __init__(self, message, expression, substitute_value_in_message):
         self.message = message
@@ -94,7 +93,7 @@ class ExpressionValidator(Validator):
         self.expression = compile(expression, '<string>', 'eval')
 
     def validate(self, value, trans=None):
-        if not(eval(self.expression, dict(value=value))):
+        if not (eval(self.expression, dict(value=value))):
             message = self.message
             if self.substitute_value_in_message:
                 message = message % value
@@ -126,11 +125,18 @@ class InRangeValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None), elem.get('min'),
-                   elem.get('max'), elem.get('exclude_min', 'false'),
-                   elem.get('exclude_max', 'false'))
+        return cls(
+            elem.get('message', None),
+            elem.get('min'),
+            elem.get('max'),
+            elem.get('exclude_min', 'false'), elem.get('exclude_max', 'false'))
 
-    def __init__(self, message, range_min, range_max, exclude_min=False, exclude_max=False):
+    def __init__(self,
+                 message,
+                 range_min,
+                 range_max,
+                 exclude_min=False,
+                 exclude_max=False):
         """
         When the optional exclude_min and exclude_max attributes are set
         to true, the range excludes the end points (i.e., min < value < max),
@@ -152,7 +158,8 @@ class InRangeValidator(Validator):
             op1 = '>'
         if self.exclude_max:
             op2 = '<'
-        self.message = message or "Value must be %s %s and %s %s" % (op1, self_min_str, op2, self_max_str)
+        self.message = message or "Value must be %s %s and %s %s" % (
+            op1, self_min_str, op2, self_max_str)
 
     def validate(self, value, trans=None):
         if self.exclude_min:
@@ -194,7 +201,9 @@ class LengthValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None), elem.get('min', None), elem.get('max', None))
+        return cls(
+            elem.get('message', None),
+            elem.get('min', None), elem.get('max', None))
 
     def __init__(self, message, length_min, length_max):
         self.message = message
@@ -207,9 +216,12 @@ class LengthValidator(Validator):
 
     def validate(self, value, trans=None):
         if self.min is not None and len(value) < self.min:
-            raise ValueError(self.message or ("Must have length of at least %d" % self.min))
+            raise ValueError(
+                self.message or ("Must have length of at least %d" % self.min))
         if self.max is not None and len(value) > self.max:
-            raise ValueError(self.message or ("Must have length no more than %d" % self.max))
+            raise ValueError(
+                self.message
+                or ("Must have length no more than %d" % self.max))
 
 
 class DatasetOkValidator(Validator):
@@ -233,6 +245,7 @@ class DatasetOkValidator(Validator):
 
 class DatasetEmptyValidator(Validator):
     """Validator that checks if a dataset has a positive file size."""
+
     def __init__(self, message=None):
         self.message = message
 
@@ -250,6 +263,7 @@ class DatasetEmptyValidator(Validator):
 
 class DatasetExtraFilesPathEmptyValidator(Validator):
     """Validator that checks if a dataset's extra_files_path exists and is not empty."""
+
     def __init__(self, message=None):
         self.message = message
 
@@ -278,7 +292,10 @@ class MetadataValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(message=elem.get('message', None), check=elem.get('check', ""), skip=elem.get('skip', ""))
+        return cls(
+            message=elem.get('message', None),
+            check=elem.get('check', ""),
+            skip=elem.get('skip', ""))
 
     def validate(self, value, trans=None):
         if value:
@@ -360,19 +377,29 @@ class MetadataInFileColumnValidator(Validator):
     def from_element(cls, param, elem):
         filename = elem.get("filename", None)
         if filename:
-            filename = "%s/%s" % (param.tool.app.config.tool_data_path, filename.strip())
+            filename = "%s/%s" % (param.tool.app.config.tool_data_path,
+                                  filename.strip())
         metadata_name = elem.get("metadata_name", None)
         if metadata_name:
             metadata_name = metadata_name.strip()
         metadata_column = int(elem.get("metadata_column", 0))
         split = elem.get("split", "\t")
-        message = elem.get("message", "Value for metadata %s was not found in %s." % (metadata_name, filename))
+        message = elem.get("message",
+                           "Value for metadata %s was not found in %s." %
+                           (metadata_name, filename))
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
-        return cls(filename, metadata_name, metadata_column, message, line_startswith, split)
+        return cls(filename, metadata_name, metadata_column, message,
+                   line_startswith, split)
 
-    def __init__(self, filename, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None, split="\t"):
+    def __init__(self,
+                 filename,
+                 metadata_name,
+                 metadata_column,
+                 message="Value for metadata not found.",
+                 line_startswith=None,
+                 split="\t"):
         self.metadata_name = metadata_name
         self.message = message
         self.valid_values = []
@@ -386,7 +413,9 @@ class MetadataInFileColumnValidator(Validator):
         if not value:
             return
         if hasattr(value, "metadata"):
-            if value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values:
+            if value.metadata.spec[self.metadata_name].param.to_string(
+                    value.metadata.get(
+                        self.metadata_name)) in self.valid_values:
                 return
         raise ValueError(self.message)
 
@@ -410,13 +439,21 @@ class MetadataInDataTableColumnValidator(Validator):
             metadata_column = int(metadata_column)
         except:
             pass
-        message = elem.get("message", "Value for metadata %s was not found in %s." % (metadata_name, table_name))
+        message = elem.get("message",
+                           "Value for metadata %s was not found in %s." %
+                           (metadata_name, table_name))
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
-        return cls(tool_data_table, metadata_name, metadata_column, message, line_startswith)
+        return cls(tool_data_table, metadata_name, metadata_column, message,
+                   line_startswith)
 
-    def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None):
+    def __init__(self,
+                 tool_data_table,
+                 metadata_name,
+                 metadata_column,
+                 message="Value for metadata not found.",
+                 line_startswith=None):
         self.metadata_name = metadata_name
         self.message = message
         self.valid_values = []
@@ -428,7 +465,8 @@ class MetadataInDataTableColumnValidator(Validator):
         self._load_values()
 
     def _load_values(self):
-        self._data_table_content_version, data_fields = self._tool_data_table.get_version_fields()
+        self._data_table_content_version, data_fields = self._tool_data_table.get_version_fields(
+        )
         self.valid_values = []
         for fields in data_fields:
             if self._metadata_column < len(fields):
@@ -438,27 +476,33 @@ class MetadataInDataTableColumnValidator(Validator):
         if not value:
             return
         if hasattr(value, "metadata"):
-            if not self._tool_data_table.is_current_version(self._data_table_content_version):
-                log.debug('MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
+            if not self._tool_data_table.is_current_version(
+                    self._data_table_content_version):
+                log.debug(
+                    'MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.',
+                    self._tool_data_table.name)
                 self._load_values()
-            if value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)) in self.valid_values:
+            if value.metadata.spec[self.metadata_name].param.to_string(
+                    value.metadata.get(
+                        self.metadata_name)) in self.valid_values:
                 return
         raise ValueError(self.message)
 
 
-validator_types = dict(expression=ExpressionValidator,
-                       regex=RegexValidator,
-                       in_range=InRangeValidator,
-                       length=LengthValidator,
-                       metadata=MetadataValidator,
-                       unspecified_build=UnspecifiedBuildValidator,
-                       no_options=NoOptionsValidator,
-                       empty_field=EmptyTextfieldValidator,
-                       empty_dataset=DatasetEmptyValidator,
-                       empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
-                       dataset_metadata_in_file=MetadataInFileColumnValidator,
-                       dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
-                       dataset_ok_validator=DatasetOkValidator, )
+validator_types = dict(
+    expression=ExpressionValidator,
+    regex=RegexValidator,
+    in_range=InRangeValidator,
+    length=LengthValidator,
+    metadata=MetadataValidator,
+    unspecified_build=UnspecifiedBuildValidator,
+    no_options=NoOptionsValidator,
+    empty_field=EmptyTextfieldValidator,
+    empty_dataset=DatasetEmptyValidator,
+    empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
+    dataset_metadata_in_file=MetadataInFileColumnValidator,
+    dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
+    dataset_ok_validator=DatasetOkValidator, )
 
 
 def get_suite():

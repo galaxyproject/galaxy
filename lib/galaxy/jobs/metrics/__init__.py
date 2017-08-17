@@ -21,7 +21,6 @@ from ..metrics import formatting
 
 log = logging.getLogger(__name__)
 
-
 DEFAULT_FORMATTER = formatting.JobMetricFormatter()
 
 
@@ -31,8 +30,10 @@ class JobMetrics(object):
     def __init__(self, conf_file=None, **kwargs):
         """Load :class:`JobInstrumenter` objects from specified configuration file."""
         self.plugin_classes = self.__plugins_dict()
-        self.default_job_instrumenter = JobInstrumenter.from_file(self.plugin_classes, conf_file, **kwargs)
-        self.job_instrumenters = collections.defaultdict(lambda: self.default_job_instrumenter)
+        self.default_job_instrumenter = JobInstrumenter.from_file(
+            self.plugin_classes, conf_file, **kwargs)
+        self.job_instrumenters = collections.defaultdict(
+            lambda: self.default_job_instrumenter)
 
     def format(self, plugin, key, value):
         """Find :class:`formatting.JobMetricFormatter` corresponding to instrumented plugin value."""
@@ -44,28 +45,32 @@ class JobMetrics(object):
         return formatter.format(key, value)
 
     def set_destination_conf_file(self, destination_id, conf_file):
-        instrumenter = JobInstrumenter.from_file(self.plugin_classes, conf_file)
+        instrumenter = JobInstrumenter.from_file(self.plugin_classes,
+                                                 conf_file)
         self.set_destination_instrumenter(destination_id, instrumenter)
 
     def set_destination_conf_element(self, destination_id, element):
         instrumenter = JobInstrumenter(self.plugin_classes, ('xml', element))
         self.set_destination_instrumenter(destination_id, instrumenter)
 
-    def set_destination_instrumenter(self, destination_id, job_instrumenter=None):
+    def set_destination_instrumenter(self,
+                                     destination_id,
+                                     job_instrumenter=None):
         if job_instrumenter is None:
             job_instrumenter = NULL_JOB_INSTRUMENTER
         self.job_instrumenters[destination_id] = job_instrumenter
 
     def collect_properties(self, destination_id, job_id, job_directory):
-        return self.job_instrumenters[destination_id].collect_properties(job_id, job_directory)
+        return self.job_instrumenters[destination_id].collect_properties(
+            job_id, job_directory)
 
     def __plugins_dict(self):
         import galaxy.jobs.metrics.instrumenters
-        return plugin_config.plugins_dict(galaxy.jobs.metrics.instrumenters, 'plugin_type')
+        return plugin_config.plugins_dict(galaxy.jobs.metrics.instrumenters,
+                                          'plugin_type')
 
 
 class NullJobInstrumenter(object):
-
     def pre_execute_commands(self, job_directory):
         return None
 
@@ -80,7 +85,6 @@ NULL_JOB_INSTRUMENTER = NullJobInstrumenter()
 
 
 class JobInstrumenter(object):
-
     def __init__(self, plugin_classes, plugins_source, **kwargs):
         self.extra_kwargs = kwargs
         self.plugin_classes = plugin_classes
@@ -94,7 +98,9 @@ class JobInstrumenter(object):
                 if plugin_commands:
                     commands.extend(util.listify(plugin_commands))
             except Exception:
-                log.exception("Failed to generate pre-execute commands for plugin %s", plugin)
+                log.exception(
+                    "Failed to generate pre-execute commands for plugin %s",
+                    plugin)
         return "\n".join([c for c in commands if c])
 
     def post_execute_commands(self, job_directory):
@@ -105,7 +111,9 @@ class JobInstrumenter(object):
                 if plugin_commands:
                     commands.extend(util.listify(plugin_commands))
             except Exception:
-                log.exception("Failed to generate post-execute commands for plugin %s", plugin)
+                log.exception(
+                    "Failed to generate post-execute commands for plugin %s",
+                    plugin)
         return "\n".join([c for c in commands if c])
 
     def collect_properties(self, job_id, job_directory):
@@ -116,11 +124,13 @@ class JobInstrumenter(object):
                 if properties:
                     per_plugin_properites[plugin.plugin_type] = properties
             except Exception:
-                log.exception("Failed to collect job properties for plugin %s", plugin)
+                log.exception("Failed to collect job properties for plugin %s",
+                              plugin)
         return per_plugin_properites
 
     def __plugins_from_source(self, plugins_source):
-        return plugin_config.load_plugins(self.plugin_classes, plugins_source, self.extra_kwargs)
+        return plugin_config.load_plugins(self.plugin_classes, plugins_source,
+                                          self.extra_kwargs)
 
     @staticmethod
     def from_file(plugin_classes, conf_file, **kwargs):

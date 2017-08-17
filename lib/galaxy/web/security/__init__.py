@@ -25,6 +25,7 @@ if os.path.exists("/dev/urandom"):
             value += os.read(random_fd, nbytes - len(value))
         return value.encode("hex")
 else:
+
     def get_random_bytes(nbytes):
         nbits = nbytes * 8
         random_pool = RandomPool(1064)
@@ -35,12 +36,12 @@ else:
 
 
 class SecurityHelper(object):
-
     def __init__(self, **config):
         self.id_secret = config['id_secret']
         self.id_cipher = Blowfish.new(self.id_secret)
 
-        per_kind_id_secret_base = config.get('per_kind_id_secret_base', self.id_secret)
+        per_kind_id_secret_base = config.get('per_kind_id_secret_base',
+                                             self.id_secret)
         self.id_ciphers_for_kind = _cipher_cache(per_kind_id_secret_base)
 
     def encode_id(self, obj_id, kind=None):
@@ -60,7 +61,9 @@ class SecurityHelper(object):
         (b) a key that ends with '_id'
         """
         for key, val in a_dict.items():
-            if key == 'id' or key.endswith('_id') and (skip_startswith is None or not key.startswith(skip_startswith)):
+            if key == 'id' or key.endswith('_id') and (
+                    skip_startswith is None
+                    or not key.startswith(skip_startswith)):
                 a_dict[key] = self.encode_id(val, kind=kind)
 
         return a_dict
@@ -74,7 +77,10 @@ class SecurityHelper(object):
         if not isinstance(rval, dict):
             return rval
         for k, v in rval.items():
-            if (k == 'id' or k.endswith('_id')) and v is not None and k not in ['tool_id', 'external_id']:
+            if (k == 'id'
+                    or k.endswith('_id')) and v is not None and k not in [
+                        'tool_id', 'external_id'
+                    ]:
                 try:
                     rval[k] = self.encode_id(v)
                 except Exception:
@@ -122,7 +128,6 @@ class SecurityHelper(object):
 
 
 class _cipher_cache(collections.defaultdict):
-
     def __init__(self, secret_base):
         self.secret_base = secret_base
 

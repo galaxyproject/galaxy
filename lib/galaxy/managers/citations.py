@@ -10,7 +10,6 @@ log = logging.getLogger(__name__)
 
 
 class CitationsManager(object):
-
     def __init__(self, app):
         self.app = app
         self.doi_cache = DoiCache(app.config)
@@ -35,18 +34,20 @@ class CitationsManager(object):
 
 
 class DoiCache(object):
-
     def __init__(self, config):
         cache_opts = {
             'cache.type': getattr(config, 'citation_cache_type', 'file'),
             'cache.data_dir': getattr(config, 'citation_cache_data_dir', None),
             'cache.lock_dir': getattr(config, 'citation_cache_lock_dir', None),
         }
-        self._cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('doi')
+        self._cache = CacheManager(
+            **parse_cache_config_options(cache_opts)).get_cache('doi')
 
     def _raw_get_bibtex(self, doi):
         dx_url = "http://dx.doi.org/" + doi
-        headers = {'Accept': 'text/bibliography; style=bibtex, application/x-bibtex'}
+        headers = {
+            'Accept': 'text/bibliography; style=bibtex, application/x-bibtex'
+        }
         req = urllib2.Request(dx_url, data="", headers=headers)
         response = urllib2.urlopen(req)
         bibtex = response.read()
@@ -71,7 +72,6 @@ def parse_citation(elem, directory, citation_manager):
 
 
 class CitationCollection(object):
-
     def __init__(self):
         self.citations = []
 
@@ -93,13 +93,11 @@ class CitationCollection(object):
 
 
 class BaseCitation(object):
-
     def to_dict(self, citation_format):
         if citation_format == "bibtex":
             return dict(
                 format="bibtex",
-                content=self.to_bibtex(),
-            )
+                content=self.to_bibtex(), )
         else:
             raise Exception("Unknown citation format %s" % citation_format)
 
@@ -115,7 +113,6 @@ class BaseCitation(object):
 
 
 class BibtexCitation(BaseCitation):
-
     def __init__(self, elem, directory, citation_manager):
         bibtex_file = elem.attrib.get("file", None)
         if bibtex_file:
@@ -163,5 +160,4 @@ class DoiCitation(BaseCitation):
 
 CITATION_CLASSES = dict(
     bibtex=BibtexCitation,
-    doi=DoiCitation,
-)
+    doi=DoiCitation, )

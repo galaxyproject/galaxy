@@ -24,7 +24,8 @@ def upgrade(migrate_engine):
             c.create(t, index_name="ix_%s_object_store_id" % t_name)
             assert c is t.c.object_store_id
         except Exception:
-            log.exception("Adding object_store_id column to %s table failed.", t_name)
+            log.exception("Adding object_store_id column to %s table failed.",
+                          t_name)
 
 
 def downgrade(migrate_engine):
@@ -35,4 +36,6 @@ def downgrade(migrate_engine):
         try:
             t.c.object_store_id.drop()
         except Exception:
-            log.exception("Dropping object_store_id column from %s table failed.", t_name)
+            log.exception(
+                "Dropping object_store_id column from %s table failed.",
+                t_name)

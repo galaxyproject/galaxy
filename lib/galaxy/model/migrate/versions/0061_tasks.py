@@ -24,7 +24,12 @@ Task_table = Table("task", metadata,
                    Column("stdout", TEXT),
                    Column("stderr", TEXT),
                    Column("traceback", TEXT),
-                   Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
+                   Column(
+                       "job_id",
+                       Integer,
+                       ForeignKey("job.id"),
+                       index=True,
+                       nullable=False),
                    Column("part_file", String(1024)),
                    Column("task_runner_name", String(255)),
                    Column("task_runner_external_id", String(255)))
@@ -40,7 +45,9 @@ def upgrade(migrate_engine):
         try:
             table.create()
         except:
-            log.warning("Failed to create table '%s', ignoring (might result in wrong schema)" % table.name)
+            log.warning(
+                "Failed to create table '%s', ignoring (might result in wrong schema)"
+                % table.name)
 
 
 def downgrade(migrate_engine):

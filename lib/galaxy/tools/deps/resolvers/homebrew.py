@@ -12,7 +12,6 @@ This is still an experimental module and there will almost certainly be backward
 incompatible changes coming.
 """
 
-
 from .resolver_mixins import UsesHomebrewMixin
 from ..resolvers import DependencyResolver, NullDependency
 
@@ -20,7 +19,8 @@ from ..resolvers import DependencyResolver, NullDependency
 PREFER_VERSION_LINKED = 'linked'
 PREFER_VERSION_LATEST = 'latest'
 UNKNOWN_PREFER_VERSION_MESSAGE_TEMPLATE = "HomebrewDependencyResolver prefer_version must be %s"
-UNKNOWN_PREFER_VERSION_MESSAGE = UNKNOWN_PREFER_VERSION_MESSAGE_TEMPLATE % (PREFER_VERSION_LATEST)
+UNKNOWN_PREFER_VERSION_MESSAGE = UNKNOWN_PREFER_VERSION_MESSAGE_TEMPLATE % (
+    PREFER_VERSION_LATEST)
 DEFAULT_PREFER_VERSION = PREFER_VERSION_LATEST
 
 
@@ -34,7 +34,9 @@ class HomebrewDependencyResolver(DependencyResolver, UsesHomebrewMixin):
         if self.prefer_version is None:
             self.prefer_version = DEFAULT_PREFER_VERSION
 
-        if self.versionless and self.prefer_version not in [PREFER_VERSION_LATEST]:
+        if self.versionless and self.prefer_version not in [
+                PREFER_VERSION_LATEST
+        ]:
             raise Exception(UNKNOWN_PREFER_VERSION_MESSAGE)
 
         self._init_homebrew(**kwds)

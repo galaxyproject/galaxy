@@ -14,9 +14,7 @@ log = logging.getLogger(__name__)
 
 
 class DeferredJobQueue(object):
-    job_states = Bunch(READY='ready',
-                       WAIT='wait',
-                       INVALID='invalid')
+    job_states = Bunch(READY='ready', WAIT='wait', INVALID='invalid')
 
     def __init__(self, app):
         self.app = app
@@ -40,24 +38,31 @@ class DeferredJobQueue(object):
                 try:
                     module = __import__(module_name)
                 except:
-                    log.exception('Deferred job plugin appears to exist but is not loadable: %s', module_name)
+                    log.exception(
+                        'Deferred job plugin appears to exist but is not loadable: %s',
+                        module_name)
                     continue
                 for comp in module_name.split(".")[1:]:
                     module = getattr(module, comp)
                 if '__all__' not in dir(module):
-                    log.error('Plugin "%s" does not contain a list of exported classes in __all__' % module_name)
+                    log.error(
+                        'Plugin "%s" does not contain a list of exported classes in __all__'
+                        % module_name)
                     continue
                 for obj in module.__all__:
                     display_name = ':'.join((module_name, obj))
                     plugin = getattr(module, obj)
                     for name in ('check_job', 'run_job'):
                         if name not in dir(plugin):
-                            log.error('Plugin "%s" does not contain required method "%s()"' % (display_name, name))
+                            log.error(
+                                'Plugin "%s" does not contain required method "%s()"'
+                                % (display_name, name))
                             break
                     else:
                         self.plugins[obj] = plugin(self.app)
                         self.plugins[obj].job_states = self.job_states
-                        log.debug('Loaded deferred job plugin: %s' % display_name)
+                        log.debug(
+                            'Loaded deferred job plugin: %s' % display_name)
 
     def __check_jobs_at_startup(self):
         waiting_jobs = self.sa_session.query(model.DeferredJob) \
@@ -107,18 +112,24 @@ class DeferredJobQueue(object):
                     job_state = self.plugins[job.plugin].check_job(job)
                 except Exception:
                     self.__fail_job(job)
-                    log.exception('Set deferred job %s to error because of an exception in check_job()' % job.id)
+                    log.exception(
+                        'Set deferred job %s to error because of an exception in check_job()'
+                        % job.id)
                     continue
                 if job_state == self.job_states.READY:
                     try:
                         self.plugins[job.plugin].run_job(job)
                     except Exception:
                         self.__fail_job(job)
-                        log.exception('Set deferred job %s to error because of an exception in run_job()' % job.id)
+                        log.exception(
+                            'Set deferred job %s to error because of an exception in run_job()'
+                            % job.id)
                         continue
                 elif job_state == self.job_states.INVALID:
                     self.__fail_job(job)
-                    log.error('Unable to run deferred job (id: %s): Plugin "%s" marked it as invalid' % (job.id, job.plugin))
+                    log.error(
+                        'Unable to run deferred job (id: %s): Plugin "%s" marked it as invalid'
+                        % (job.id, job.plugin))
                     continue
                 else:
                     new_waiting.append(job)
@@ -151,10 +162,12 @@ class DeferredJobQueue(object):
 
 class FakeTrans(object):
     """A fake trans for calling the external set metadata tool"""
+
     def __init__(self, app, history=None, user=None):
         class Dummy(object):
             def __init__(self):
                 self.id = None
+
         self.app = app
         self.sa_session = app.model.context.current
         self.dummy = Dummy()

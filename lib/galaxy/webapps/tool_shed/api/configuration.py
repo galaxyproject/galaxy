@@ -11,7 +11,6 @@ log = logging.getLogger(__name__)
 
 
 class ConfigurationController(BaseAPIController):
-
     def __init__(self, app):
         super(ConfigurationController, self).__init__(app)
 
@@ -25,4 +24,7 @@ class ConfigurationController(BaseAPIController):
         :rtype:     dict
         :returns:   dictionary with versions keyed as 'version_major' and 'version'
         """
-        return {"version_major": self.app.config.version_major, "version": self.app.config.version}
+        return {
+            "version_major": self.app.config.version_major,
+            "version": self.app.config.version
+        }

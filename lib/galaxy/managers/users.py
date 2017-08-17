@@ -61,7 +61,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if webapp_name == 'galaxy':
             # We set default user permissions, before we log in and set the default history permissions
             permissions = self.app.config.new_user_dataset_access_role_default_private
-            self.app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
+            self.app.security_agent.user_set_default_permissions(
+                user, default_access_private=permissions)
         return user
 
     def delete(self, user):
@@ -91,13 +92,19 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         except exceptions.ObjectNotFound:
             return None
 
-    def by_email_like(self, email_with_wildcards, filters=None, order_by=None, **kwargs):
+    def by_email_like(self,
+                      email_with_wildcards,
+                      filters=None,
+                      order_by=None,
+                      **kwargs):
         """
         Find a user searching with SQL wildcards.
         """
-        filters = self._munge_filters(self.model_class.email.like(email_with_wildcards), filters)
+        filters = self._munge_filters(
+            self.model_class.email.like(email_with_wildcards), filters)
         order_by = order_by or (model.User.email, )
-        return super(UserManager, self).list(filters=filters, order_by=order_by, **kwargs)
+        return super(UserManager, self).list(
+            filters=filters, order_by=order_by, **kwargs)
 
     # ---- admin
     def is_admin(self, user):
@@ -111,13 +118,17 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Return a list of admin email addresses from the config file.
         """
-        return [email.strip() for email in self.app.config.get("admin_users", "").split(",")]
+        return [
+            email.strip()
+            for email in self.app.config.get("admin_users", "").split(",")
+        ]
 
     def admins(self, filters=None, **kwargs):
         """
         Return a list of admin Users.
         """
-        filters = self._munge_filters(self.model_class.email.in_(self._admin_emails()), filters)
+        filters = self._munge_filters(
+            self.model_class.email.in_(self._admin_emails()), filters)
         return super(UserManager, self).list(filters=filters, **kwargs)
 
     def error_unless_admin(self, user, msg="Administrators only", **kwargs):
@@ -167,9 +178,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Return this most recent APIKey for this user or None if none have been created.
         """
-        query = (self.session().query(model.APIKeys)
-                 .filter_by(user=user)
-                 .order_by(sqlalchemy.desc(model.APIKeys.create_time)))
+        query = (self.session().query(model.APIKeys).filter_by(
+            user=user).order_by(sqlalchemy.desc(model.APIKeys.create_time)))
         all = query.all()
         if len(all):
             return all[0]
@@ -216,13 +226,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
         # get all the taggable model TagAssociations
         if not tag_models:
-            tag_models = [v.tag_assoc_class for v in self.app.tag_handler.item_tag_assoc_info.values()]
+            tag_models = [
+                v.tag_assoc_class
+                for v in self.app.tag_handler.item_tag_assoc_info.values()
+            ]
         # create a union of subqueries for each for this user - getting only the tname and user_value
         all_tags_query = None
         for tag_model in tag_models:
-            subq = (self.session().query(tag_model.user_tname, tag_model.user_value)
-                    .filter(tag_model.user == user))
-            all_tags_query = subq if all_tags_query is None else all_tags_query.union(subq)
+            subq = (self.session().query(tag_model.user_tname,
+                                         tag_model.user_value).filter(
+                                             tag_model.user == user))
+            all_tags_query = subq if all_tags_query is None else all_tags_query.union(
+                subq)
 
         # if nothing init'd the query, bail
         if all_tags_query is None:
@@ -238,7 +253,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         if self.is_anonymous(user):
             return False
-        request_types = self.app.security_agent.get_accessible_request_types(trans, user)
+        request_types = self.app.security_agent.get_accessible_request_types(
+            trans, user)
         return bool(user.requests or request_types)
 
 
@@ -253,47 +269,46 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
         self.user_manager = self.manager
 
         self.default_view = 'summary'
-        self.add_view('summary', [
-            'id', 'email', 'username'
-        ])
-        self.add_view('detailed', [
-            # 'update_time',
-            # 'create_time',
-            'is_admin',
-            'total_disk_usage',
-            'nice_total_disk_usage',
-            'quota_percent',
-            'quota',
-            'deleted',
-            'purged',
-            # 'active',
-
-            'preferences',
-            #  all tags
-            'tags_used',
-            # all annotations
-            # 'annotations'
-        ], include_keys_from='summary')
+        self.add_view('summary', ['id', 'email', 'username'])
+        self.add_view(
+            'detailed',
+            [
+                # 'update_time',
+                # 'create_time',
+                'is_admin',
+                'total_disk_usage',
+                'nice_total_disk_usage',
+                'quota_percent',
+                'quota',
+                'deleted',
+                'purged',
+                # 'active',
+                'preferences',
+                #  all tags
+                'tags_used',
+                # all annotations
+                # 'annotations'
+            ],
+            include_keys_from='summary')
 
     def add_serializers(self):
         super(UserSerializer, self).add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
 
-        self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
-            'is_admin'      : lambda i, k, **c: self.user_manager.is_admin(i),
-
-            'preferences'   : lambda i, k, **c: self.user_manager.preferences(i),
-
-            'total_disk_usage' : lambda i, k, **c: float(i.total_disk_usage),
-            'quota_percent' : lambda i, k, **c: self.user_manager.quota(i),
-            'quota'         : lambda i, k, **c: self.user_manager.quota(i, total=True),
-
-            'tags_used'     : lambda i, k, **c: self.user_manager.tags_used(i),
-            'has_requests'  : lambda i, k, trans=None, **c: self.user_manager.has_requests(i, trans)
-        })
+        self.serializers.update(
+            {
+                'id': self.serialize_id,
+                'create_time': self.serialize_date,
+                'update_time': self.serialize_date,
+                'is_admin': lambda i, k, **c: self.user_manager.is_admin(i),
+                'preferences': lambda i, k, **c: self.user_manager.preferences(i),
+                'total_disk_usage': lambda i, k, **c: float(i.total_disk_usage),
+                'quota_percent': lambda i, k, **c: self.user_manager.quota(i),
+                'quota': lambda i, k, **c: self.user_manager.quota(i, total=True),
+                'tags_used': lambda i, k, **c: self.user_manager.tags_used(i),
+                'has_requests': lambda i, k, trans=None, **c: self.user_manager.has_requests(i, trans)
+            }
+        )
 
 
 class UserDeserializer(base.ModelDeserializer):
@@ -306,16 +321,18 @@ class UserDeserializer(base.ModelDeserializer):
     def add_deserializers(self):
         super(UserDeserializer, self).add_deserializers()
         self.deserializers.update({
-            'username'  : self.deserialize_username,
+            'username': self.deserialize_username,
         })
 
     def deserialize_username(self, item, key, username, trans=None, **context):
         # TODO: validate_user_input requires trans and should(?) raise exceptions
         # move validation to UserValidator and use self.app, exceptions instead
-        validation_error = validate_user_input.validate_publicname(trans, username, user=item)
+        validation_error = validate_user_input.validate_publicname(
+            trans, username, user=item)
         if validation_error:
             raise base.ModelDeserializingError(validation_error)
-        return self.default_deserializer(item, key, username, trans=trans, **context)
+        return self.default_deserializer(
+            item, key, username, trans=trans, **context)
 
 
 class CurrentUserSerializer(UserSerializer):
@@ -330,7 +347,11 @@ class CurrentUserSerializer(UserSerializer):
             return self.serialize_current_anonymous_user(user, keys, **kwargs)
         return super(UserSerializer, self).serialize(user, keys, **kwargs)
 
-    def serialize_current_anonymous_user(self, user, keys, trans=None, **kwargs):
+    def serialize_current_anonymous_user(self,
+                                         user,
+                                         keys,
+                                         trans=None,
+                                         **kwargs):
         # use the current history if any to get usage stats for trans' anonymous user
         # TODO: might be better as sep. Serializer class
         usage = 0
@@ -338,15 +359,17 @@ class CurrentUserSerializer(UserSerializer):
 
         history = trans.history
         if history:
-            usage = self.app.quota_agent.get_usage(trans, history=trans.history)
-            percent = self.app.quota_agent.get_percent(trans=trans, usage=usage)
+            usage = self.app.quota_agent.get_usage(
+                trans, history=trans.history)
+            percent = self.app.quota_agent.get_percent(
+                trans=trans, usage=usage)
 
         # a very small subset of keys available
         values = {
-            'id'                    : None,
-            'total_disk_usage'      : float(usage),
-            'nice_total_disk_usage' : util.nice_size(usage),
-            'quota_percent'         : percent,
+            'id': None,
+            'total_disk_usage': float(usage),
+            'nice_total_disk_usage': util.nice_size(usage),
+            'quota_percent': percent,
         }
         serialized = {}
         for key in keys:
@@ -355,7 +378,8 @@ class CurrentUserSerializer(UserSerializer):
         return serialized
 
 
-class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMixin):
+class AdminUserFilterParser(base.ModelFilterParser,
+                            deletable.PurgableFiltersMixin):
     model_manager_class = UserManager
     model_class = model.User
 
@@ -365,11 +389,18 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
 
         # PRECONDITION: user making the query has been verified as an admin
         self.orm_filter_parsers.update({
-            'email'         : {'op': ('eq', 'contains', 'like')},
-            'username'      : {'op': ('eq', 'contains', 'like')},
-            'active'        : {'op': ('eq')},
-            'disk_usage'    : {'op': ('le', 'ge')}
+            'email': {
+                'op': ('eq', 'contains', 'like')
+            },
+            'username': {
+                'op': ('eq', 'contains', 'like')
+            },
+            'active': {
+                'op': ('eq')
+            },
+            'disk_usage': {
+                'op': ('le', 'ge')
+            }
         })
 
-        self.fn_filter_parsers.update({
-        })
+        self.fn_filter_parsers.update({})

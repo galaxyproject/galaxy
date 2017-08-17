@@ -11,7 +11,6 @@ try:
 except ImportError:
     FluentSender = None
 
-
 FLUENT_IMPORT_MESSAGE = ('The Python fluent package is required to use this '
                          'feature, please install it')
 
@@ -42,4 +41,6 @@ class FluentTraceLogger(object):
             kwargs.update(self.thread_local.context)
         self.lock.release()
         event_time = event_time or time.time()
-        self.sender.emit_with_time(label, int(event_time), json.dumps(kwargs, default=str))
+        self.sender.emit_with_time(label,
+                                   int(event_time),
+                                   json.dumps(kwargs, default=str))

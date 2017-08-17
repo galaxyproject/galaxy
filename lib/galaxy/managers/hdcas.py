@@ -20,13 +20,10 @@ log = logging.getLogger(__name__)
 
 
 # TODO: to DatasetCollectionInstanceManager
-class HDCAManager(
-        base.ModelManager,
-        secured.AccessibleManagerMixin,
-        secured.OwnableManagerMixin,
-        deletable.PurgableManagerMixin,
-        taggable.TaggableManagerMixin,
-        annotatable.AnnotatableManagerMixin):
+class HDCAManager(base.ModelManager, secured.AccessibleManagerMixin,
+                  secured.OwnableManagerMixin, deletable.PurgableManagerMixin,
+                  taggable.TaggableManagerMixin,
+                  annotatable.AnnotatableManagerMixin):
     """
     Interface/service object for interacting with HDCAs.
     """
@@ -51,12 +48,14 @@ class HDCAManager(
         """
         returned = []
         # lots of nesting going on within the nesting
-        collection = content.collection if hasattr(content, 'collection') else content
+        collection = content.collection if hasattr(content,
+                                                   'collection') else content
         this_parents = (content, ) + parents
         for element in collection.elements:
             next_parents = (element, ) + this_parents
             if element.is_collection:
-                processed_list = self.map_datasets(element.child_collection, fn, *next_parents)
+                processed_list = self.map_datasets(element.child_collection,
+                                                   fn, *next_parents)
                 returned.extend(processed_list)
             else:
                 processed = fn(element.dataset_instance, *next_parents)
@@ -66,8 +65,8 @@ class HDCAManager(
     # TODO: un-stub
 
 
-# serializers
-# -----------------------------------------------------------------------------
+    # serializers
+    # -----------------------------------------------------------------------------
 class DCESerializer(base.ModelSerializer):
     """
     Serializer for DatasetCollectionElements.
@@ -80,25 +79,26 @@ class DCESerializer(base.ModelSerializer):
 
         self.default_view = 'summary'
         self.add_view('summary', [
-            'id', 'model_class',
-            'element_index',
-            'element_identifier',
-            'element_type',
-            'object'
+            'id', 'model_class', 'element_index', 'element_identifier',
+            'element_type', 'object'
         ])
 
     def add_serializers(self):
         super(DCESerializer, self).add_serializers()
         self.serializers.update({
-            'model_class'   : lambda *a, **c: 'DatasetCollectionElement',
-            'object'        : self.serialize_object
+            'model_class':
+            lambda *a, **c: 'DatasetCollectionElement',
+            'object':
+            self.serialize_object
         })
 
     def serialize_object(self, item, key, **context):
         if item.hda:
-            return self.hda_serializer.serialize_to_view(item.hda, view='summary', **context)
+            return self.hda_serializer.serialize_to_view(
+                item.hda, view='summary', **context)
         if item.child_collection:
-            return self.dc_serializer.serialize_to_view(item.child_collection, view='detailed', **context)
+            return self.dc_serializer.serialize_to_view(
+                item.child_collection, view='detailed', **context)
         return 'object'
 
 
@@ -121,22 +121,24 @@ class DCSerializer(base.ModelSerializer):
             'populated_state',
             'populated_state_message',
         ])
-        self.add_view('detailed', [
-            'elements'
-        ], include_keys_from='summary')
+        self.add_view('detailed', ['elements'], include_keys_from='summary')
 
     def add_serializers(self):
         super(DCSerializer, self).add_serializers()
         self.serializers.update({
-            'model_class'   : lambda *a, **c: 'DatasetCollection',
-            'elements'      : self.serialize_elements,
-            'element_count' : self.serialize_element_count
+            'model_class':
+            lambda *a, **c: 'DatasetCollection',
+            'elements':
+            self.serialize_elements,
+            'element_count':
+            self.serialize_element_count
         })
 
     def serialize_elements(self, item, key, **context):
         returned = []
         for element in item.elements:
-            serialized = self.dce_serializer.serialize_to_view(element, view='summary', **context)
+            serialized = self.dce_serializer.serialize_to_view(
+                element, view='summary', **context)
             returned.append(serialized)
         return returned
 
@@ -144,9 +146,10 @@ class DCSerializer(base.ModelSerializer):
         """Return the count of elements for this collection."""
         # TODO: app.model.context -> session
         # TODO: to the container interface (dataset_collection_contents)
-        return (self.app.model.context.query(model.DatasetCollectionElement)
-            .filter(model.DatasetCollectionElement.dataset_collection_id == item.id)
-            .count())
+        return (self.app.model.context.query(
+            model.DatasetCollectionElement).filter(
+                model.DatasetCollectionElement.dataset_collection_id ==
+                item.id).count())
 
 
 class DCASerializer(base.ModelSerializer):
@@ -161,15 +164,14 @@ class DCASerializer(base.ModelSerializer):
         self.default_view = 'summary'
         self.add_view('summary', [
             'id',
-            'create_time', 'update_time',
+            'create_time',
+            'update_time',
             'collection_type',
             'populated',
             'populated_state',
             'populated_state_message',
         ])
-        self.add_view('detailed', [
-            'elements'
-        ], include_keys_from='summary')
+        self.add_view('detailed', ['elements'], include_keys_from='summary')
 
     def add_serializers(self):
         super(DCASerializer, self).add_serializers()
@@ -177,13 +179,8 @@ class DCASerializer(base.ModelSerializer):
         self.dc_serializer = DCSerializer(self.app)
         # then set the serializers to point to it for those attrs
         collection_keys = [
-            'create_time',
-            'update_time',
-            'collection_type',
-            'populated',
-            'populated_state',
-            'populated_state_message',
-            'elements',
+            'create_time', 'update_time', 'collection_type', 'populated',
+            'populated_state', 'populated_state_message', 'elements',
             'element_count'
         ]
         for key in collection_keys:
@@ -200,10 +197,8 @@ class DCASerializer(base.ModelSerializer):
         raise TypeError('kwarg serializer or key needed')
 
 
-class HDCASerializer(
-        DCASerializer,
-        taggable.TaggableSerializerMixin,
-        annotatable.AnnotatableSerializerMixin):
+class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin,
+                     annotatable.AnnotatableSerializerMixin):
     """
     Serializer for HistoryDatasetCollectionAssociations.
     """
@@ -213,33 +208,34 @@ class HDCASerializer(
         self.hdca_manager = HDCAManager(app)
 
         self.default_view = 'summary'
-        self.add_view('summary', [
-            'id',
-            'type_id',
-            'name',
-            'history_id', 'hid',
-            'history_content_type',
-
-            'collection_type',
-            'populated',
-            'populated_state',
-            'populated_state_message',
-
-            'name',
-            'type_id',
-            'history_id',
-            'hid',
-            'history_content_type',
-            'deleted',
-            # 'purged',
-            'visible',
-            'type', 'url',
-            'create_time', 'update_time',
-            'tags',  # TODO: detail view only (maybe)
-        ])
-        self.add_view('detailed', [
-            'elements'
-        ], include_keys_from='summary')
+        self.add_view(
+            'summary',
+            [
+                'id',
+                'type_id',
+                'name',
+                'history_id',
+                'hid',
+                'history_content_type',
+                'collection_type',
+                'populated',
+                'populated_state',
+                'populated_state_message',
+                'name',
+                'type_id',
+                'history_id',
+                'hid',
+                'history_content_type',
+                'deleted',
+                # 'purged',
+                'visible',
+                'type',
+                'url',
+                'create_time',
+                'update_time',
+                'tags',  # TODO: detail view only (maybe)
+            ])
+        self.add_view('detailed', ['elements'], include_keys_from='summary')
 
     def add_serializers(self):
         super(HDCASerializer, self).add_serializers()

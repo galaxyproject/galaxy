@@ -28,7 +28,9 @@ def check_html(file_path, chunk=None):
     # reworked.
     for line in temp:
         lineno += 1
-        matches = regexp1.search(line) or regexp2.search(line) or regexp3.search(line) or regexp4.search(line) or regexp5.search(line)
+        matches = regexp1.search(line) or regexp2.search(
+            line) or regexp3.search(line) or regexp4.search(
+                line) or regexp5.search(line)
         if matches:
             if chunk is None:
                 temp.close()
@@ -76,12 +78,12 @@ def check_gzip(file_path, check_content=True):
         if header == b'.sff':
             return (True, True)
     except:
-        return(False, False)
+        return (False, False)
 
     if not check_content:
         return (True, True)
 
-    CHUNK_SIZE = 2 ** 15  # 32Kb
+    CHUNK_SIZE = 2**15  # 32Kb
     gzipped_file = gzip.GzipFile(file_path, mode='rb')
     chunk = gzipped_file.read(CHUNK_SIZE)
     gzipped_file.close()
@@ -99,12 +101,12 @@ def check_bz2(file_path, check_content=True):
         if magic_check != util.bz2_magic:
             return (False, False)
     except:
-        return(False, False)
+        return (False, False)
 
     if not check_content:
         return (True, True)
 
-    CHUNK_SIZE = 2 ** 15  # reKb
+    CHUNK_SIZE = 2**15  # reKb
     bzipped_file = bz2.BZ2File(file_path, mode='rb')
     chunk = bzipped_file.read(CHUNK_SIZE)
     bzipped_file.close()
@@ -137,13 +139,5 @@ def check_image(file_path):
     return False
 
 
-__all__ = (
-    'check_binary',
-    'check_bz2',
-    'check_gzip',
-    'check_html',
-    'check_image',
-    'check_zip',
-    'is_gzip',
-    'is_bz2',
-)
+__all__ = ('check_binary', 'check_bz2', 'check_gzip', 'check_html',
+           'check_image', 'check_zip', 'is_gzip', 'is_bz2', )

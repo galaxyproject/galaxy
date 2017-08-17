@@ -1,15 +1,11 @@
 import os
 
-from paste import (
-    fileapp,
-    request
-)
+from paste import (fileapp, request)
 from paste.httpheaders import ETAG
 from paste.urlparser import StaticURLParser
 
 
 class CacheableStaticURLParser(StaticURLParser):
-
     def __init__(self, directory, cache_seconds=None):
         StaticURLParser.__init__(self, directory)
         self.cache_seconds = cache_seconds
@@ -18,7 +14,8 @@ class CacheableStaticURLParser(StaticURLParser):
         path_info = environ.get('PATH_INFO', '')
         if not path_info:
             # See if this is a static file hackishly mapped.
-            if os.path.exists(self.directory) and os.path.isfile(self.directory):
+            if os.path.exists(self.directory) and os.path.isfile(
+                    self.directory):
                 app = fileapp.FileApp(self.directory)
                 if self.cache_seconds:
                     app.cache_control(max_age=int(self.cache_seconds))

@@ -11,6 +11,7 @@ class DrmaaSessionFactory(object):
     """
     Abstraction used to production DrmaaSession wrappers.
     """
+
     def __init__(self):
         self.session_constructor = Session
 
@@ -44,7 +45,8 @@ class DrmaaSession(object):
             self.session.deleteJobTemplate(template)
 
     def kill(self, external_job_id):
-        return self.session.control(str(external_job_id), JobControlAction.TERMINATE)
+        return self.session.control(
+            str(external_job_id), JobControlAction.TERMINATE)
 
     def job_status(self, external_job_id):
         return self.session.jobStatus(str(external_job_id))

@@ -21,7 +21,9 @@ class MigrateToolsApplication(object, galaxy.config.ConfiguresGalaxyMixin):
             sys.argv.pop(pos)
             galaxy_config_file = sys.argv.pop(pos)
         if not os.path.exists(galaxy_config_file):
-            print("Galaxy config file does not exist (hint: use '-c config.ini' for non-standard locations): %s" % galaxy_config_file)
+            print(
+                "Galaxy config file does not exist (hint: use '-c config.ini' for non-standard locations): %s"
+                % galaxy_config_file)
             sys.exit(1)
         config_parser = configparser.ConfigParser({'here': os.getcwd()})
         config_parser.read(galaxy_config_file)
@@ -46,10 +48,12 @@ class MigrateToolsApplication(object, galaxy.config.ConfiguresGalaxyMixin):
 
         self._configure_tool_shed_registry()
 
-        self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(self)
+        self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(
+            self)
 
         # Get the latest tool migration script number to send to the Install manager.
-        latest_migration_script_number = int(tools_migration_config.split('_')[0])
+        latest_migration_script_number = int(
+            tools_migration_config.split('_')[0])
         # The value of migrated_tools_config is migrated_tools_conf.xml, and is reserved for
         # containing only those tools that have been eliminated from the distribution and moved
         # to the tool shed.  A side-effect of instantiating the ToolMigrationManager is the automatic

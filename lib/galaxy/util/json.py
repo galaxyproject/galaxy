@@ -10,7 +10,8 @@ import string
 
 from six import iteritems, string_types, text_type
 
-__all__ = ("safe_dumps", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response")
+__all__ = ("safe_dumps", "json_fix", "validate_jsonrpc_request",
+           "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response")
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +40,8 @@ def swap_inf_nan(val):
     elif isinstance(val, collections.Sequence):
         return [swap_inf_nan(v) for v in val]
     elif isinstance(val, collections.Mapping):
-        return dict([(swap_inf_nan(k), swap_inf_nan(v)) for (k, v) in iteritems(val)])
+        return dict([(swap_inf_nan(k), swap_inf_nan(v))
+                     for (k, v) in iteritems(val)])
     elif isinstance(val, float):
         if math.isnan(val):
             return "__NaN__"
@@ -87,14 +89,14 @@ def safe_dumps(*args, **kwargs):
 
 # Methods for handling JSON-RPC
 
+
 def validate_jsonrpc_request(request, regular_methods, notification_methods):
     try:
         request = json.loads(request)
     except Exception as e:
-        return False, request, jsonrpc_response(id=None,
-                                                error=dict(code=-32700,
-                                                           message='Parse error',
-                                                           data=str(e)))
+        return False, request, jsonrpc_response(
+            id=None,
+            error=dict(code=-32700, message='Parse error', data=str(e)))
     try:
         assert 'jsonrpc' in request, \
             'This server requires JSON-RPC 2.0 and no "jsonrpc" member was sent with the Request object as per the JSON-RPC 2.0 Specification.'
@@ -102,25 +104,27 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
             'Requested JSON-RPC version "%s" != required version "2.0".' % request['jsonrpc']
         assert 'method' in request, 'No "method" member was sent with the Request object'
     except AssertionError as e:
-        return False, request, jsonrpc_response(request=request,
-                                                error=dict(code=-32600,
-                                                           message='Invalid Request',
-                                                           data=str(e)))
+        return False, request, jsonrpc_response(
+            request=request,
+            error=dict(code=-32600, message='Invalid Request', data=str(e)))
     try:
         assert request['method'] in (regular_methods + notification_methods)
     except AssertionError as e:
-        return False, request, jsonrpc_response(request=request,
-                                                error=dict(code=-32601,
-                                                           message='Method not found',
-                                                           data='Valid methods are: %s' % ', '.join(regular_methods + notification_methods)))
+        return False, request, jsonrpc_response(
+            request=request,
+            error=dict(
+                code=-32601,
+                message='Method not found',
+                data='Valid methods are: %s' %
+                ', '.join(regular_methods + notification_methods)))
     try:
         if request['method'] in regular_methods:
-            assert 'id' in request, 'No "id" member was sent with the Request object and the requested method "%s" is not a notification method' % request['method']
+            assert 'id' in request, 'No "id" member was sent with the Request object and the requested method "%s" is not a notification method' % request[
+                'method']
     except AssertionError as e:
-        return False, request, jsonrpc_response(request=request,
-                                                error=dict(code=-32600,
-                                                           message='Invalid Request',
-                                                           data=str(e)))
+        return False, request, jsonrpc_response(
+            request=request,
+            error=dict(code=-32600, message='Invalid Request', data=str(e)))
     return True, request, None
 
 
@@ -149,7 +153,9 @@ def validate_jsonrpc_response(response, id=None):
         try:
             assert 'id' in response and response['id'] == id
         except Exception as e:
-            log.error('The response id "%s" does not match the request id "%s"' % (response['id'], id))
+            log.error(
+                'The response id "%s" does not match the request id "%s"' %
+                (response['id'], id))
             return False, response
     return True, response
 
@@ -162,13 +168,18 @@ def jsonrpc_request(method, params=None, id=None, jsonrpc='2.0'):
     if params:
         request['params'] = params
     if id is not None and id is True:
-        request['id'] = ''.join([random.choice(string.hexdigits) for i in range(16)])
+        request['id'] = ''.join(
+            [random.choice(string.hexdigits) for i in range(16)])
     elif id is not None:
         request['id'] = id
     return request
 
 
-def jsonrpc_response(request=None, id=None, result=None, error=None, jsonrpc='2.0'):
+def jsonrpc_response(request=None,
+                     id=None,
+                     result=None,
+                     error=None,
+                     jsonrpc='2.0'):
     if result:
         rval = dict(jsonrpc=jsonrpc, result=result)
     elif error:

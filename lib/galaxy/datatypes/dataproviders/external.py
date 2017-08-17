@@ -10,10 +10,7 @@ import tempfile
 from six.moves.urllib.parse import urlencode
 from six.moves.urllib.request import urlopen
 
-from . import (
-    base,
-    line
-)
+from . import (base, line)
 
 _TODO = """
 YAGNI: ftp, image, cryptos, sockets
@@ -30,6 +27,7 @@ class SubprocessDataProvider(base.DataProvider):
     Data provider that uses the output from an intermediate program and
     subprocess as its data source.
     """
+
     # TODO: need better ways of checking returncode, stderr for errors and raising
     def __init__(self, *args, **kwargs):
         """
@@ -52,8 +50,10 @@ class SubprocessDataProvider(base.DataProvider):
         """
         try:
             # how expensive is this?
-            popen = subprocess.Popen(command_list, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            log.info('opened subrocess (%s), PID: %s' % (str(command_list), str(popen.pid)))
+            popen = subprocess.Popen(
+                command_list, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            log.info('opened subrocess (%s), PID: %s' % (str(command_list),
+                                                         str(popen.pid)))
 
         except OSError as os_err:
             command_str = ' '.join(self.command)
@@ -64,14 +64,16 @@ class SubprocessDataProvider(base.DataProvider):
     def __exit__(self, *args):
         # poll the subrocess for an exit code
         self.exit_code = self.popen.poll()
-        log.info('%s.__exit__, exit_code: %s' % (str(self), str(self.exit_code)))
+        log.info('%s.__exit__, exit_code: %s' % (str(self),
+                                                 str(self.exit_code)))
         return super(SubprocessDataProvider, self).__exit__(*args)
 
     def __str__(self):
         # provide the pid and current return code
         source_str = ''
         if hasattr(self, 'popen'):
-            source_str = '%s:%s' % (str(self.popen.pid), str(self.popen.poll()))
+            source_str = '%s:%s' % (str(self.popen.pid),
+                                    str(self.popen.poll()))
         return '%s(%s)' % (self.__class__.__name__, str(source_str))
 
 
@@ -79,11 +81,13 @@ class RegexSubprocessDataProvider(line.RegexLineDataProvider):
     """
     RegexLineDataProvider that uses a SubprocessDataProvider as its data source.
     """
+
     # this is a conv. class and not really all that necc...
     def __init__(self, *args, **kwargs):
         # using subprocess as proxy data source in filtered line prov.
         subproc_provider = SubprocessDataProvider(*args)
-        super(RegexSubprocessDataProvider, self).__init__(subproc_provider, **kwargs)
+        super(RegexSubprocessDataProvider, self).__init__(
+            subproc_provider, **kwargs)
 
 
 # ----------------------------------------------------------------------------- other apis
@@ -135,19 +139,21 @@ class GzipDataProvider(base.DataProvider):
 
     This can be piped through other providers (column, map, genome region, etc.).
     """
+
     def __init__(self, source, **kwargs):
         unzipped = gzip.GzipFile(source, 'rb')
         super(GzipDataProvider, self).__init__(unzipped, **kwargs)
         # NOTE: the GzipFile is now accessible in self.source
 
 
-# ----------------------------------------------------------------------------- intermediate tempfile
+    # ----------------------------------------------------------------------------- intermediate tempfile
 class TempfileDataProvider(base.DataProvider):
     """
     Writes the data from the given source to a temp file, allowing
     it to be used as a source where a file_name is needed (e.g. as a parameter
     to a command line tool: samtools view -t <this_provider.source.file_name>)
     """
+
     def __init__(self, source, **kwargs):
         # TODO:
         raise NotImplementedError()

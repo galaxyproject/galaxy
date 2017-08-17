@@ -43,6 +43,7 @@ def json(func, pretty=False):
     Format the response as JSON and set the response content type to
     JSON_CONTENT_TYPE.
     """
+
     @wraps(func)
     def call_and_format(self, trans, *args, **kwargs):
         # pull out any callback argument to the api endpoint and set the content type to json or javascript
@@ -52,7 +53,8 @@ def json(func, pretty=False):
         else:
             trans.response.set_content_type(JSON_CONTENT_TYPE)
         rval = func(self, trans, *args, **kwargs)
-        return _format_return_as_json(rval, jsonp_callback, pretty=(pretty or trans.debug))
+        return _format_return_as_json(
+            rval, jsonp_callback, pretty=(pretty or trans.debug))
 
     if not hasattr(func, '_orig'):
         call_and_format._orig = func
@@ -66,7 +68,9 @@ def json_pretty(func):
     return json(func, pretty=True)
 
 
-def require_login(verb="perform this action", use_panels=False, webapp='galaxy'):
+def require_login(verb="perform this action",
+                  use_panels=False,
+                  webapp='galaxy'):
     def argcatcher(func):
         @wraps(func)
         def decorator(self, trans, *args, **kwargs):
@@ -75,8 +79,13 @@ def require_login(verb="perform this action", use_panels=False, webapp='galaxy')
             else:
                 return trans.show_error_message(
                     'You must be <a target="galaxy_main" href="%s">logged in</a> to %s.'
-                    % (url_for(controller='user', action='login', webapp=webapp), verb), use_panels=use_panels)
+                    %
+                    (url_for(controller='user', action='login', webapp=webapp),
+                     verb),
+                    use_panels=use_panels)
+
         return decorator
+
     return argcatcher
 
 
@@ -96,6 +105,7 @@ def require_admin(func):
             else:
                 return trans.show_error_message(msg)
         return func(self, trans, *args, **kwargs)
+
     return decorator
 
 
@@ -104,11 +114,13 @@ def expose_api(func, to_json=True, user_required=True):
     """
     Expose this function via the API.
     """
+
     @wraps(func)
     def decorator(self, trans, *args, **kwargs):
         def error(environ, start_response):
             start_response(error_status, [('Content-type', 'text/plain')])
             return error_message
+
         error_status = '403 Forbidden'
         if trans.error_message:
             return trans.error_message
@@ -117,7 +129,8 @@ def expose_api(func, to_json=True, user_required=True):
             return error
         if trans.request.body:
             try:
-                kwargs['payload'] = __extract_payload_from_request(trans, func, kwargs)
+                kwargs['payload'] = __extract_payload_from_request(
+                    trans, func, kwargs)
             except ValueError:
                 error_status = '400 Bad Request'
                 error_message = 'Your request did not appear to be valid JSON, please consult the API documentation'
@@ -139,12 +152,15 @@ def expose_api(func, to_json=True, user_required=True):
                 error_message = 'User does not have permissions to run jobs as another user'
                 return error
             try:
-                decoded_user_id = trans.security.decode_id(kwargs['payload']['run_as'])
+                decoded_user_id = trans.security.decode_id(
+                    kwargs['payload']['run_as'])
             except TypeError:
                 trans.response.status = 400
-                return "Malformed user id ( %s ) specified, unable to decode." % str(kwargs['payload']['run_as'])
+                return "Malformed user id ( %s ) specified, unable to decode." % str(
+                    kwargs['payload']['run_as'])
             try:
-                user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
+                user = trans.sa_session.query(
+                    trans.app.model.User).get(decoded_user_id)
                 trans.api_inherit_admin = trans.user_is_admin()
                 trans.set_user(user)
             except:
@@ -153,19 +169,23 @@ def expose_api(func, to_json=True, user_required=True):
         try:
             rval = func(self, trans, *args, **kwargs)
             if to_json:
-                rval = _format_return_as_json(rval, jsonp_callback, pretty=trans.debug)
+                rval = _format_return_as_json(
+                    rval, jsonp_callback, pretty=trans.debug)
             return rval
         except paste.httpexceptions.HTTPException:
             raise  # handled
         except:
             log.exception('Uncaught exception in exposed API method:')
             raise paste.httpexceptions.HTTPServerError()
+
     return expose(_save_orig_fn(decorator, func))
 
 
 def __extract_payload_from_request(trans, func, kwargs):
     content_type = trans.request.headers.get('content-type', '')
-    if content_type.startswith('application/x-www-form-urlencoded') or content_type.startswith('multipart/form-data'):
+    if content_type.startswith(
+            'application/x-www-form-urlencoded') or content_type.startswith(
+                'multipart/form-data'):
         # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
         # and loads all field values into kwargs. However, kwargs also contains formal method parameters etc. which
         # are not a part of the request body. This is a problem because it's not possible to differentiate between values
@@ -191,7 +211,8 @@ def __extract_payload_from_request(trans, func, kwargs):
         # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
         # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
         # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
-        payload = util.recursively_stringify_dictionary_keys(loads(trans.request.body))
+        payload = util.recursively_stringify_dictionary_keys(
+            loads(trans.request.body))
     return payload
 
 
@@ -220,36 +241,53 @@ def expose_api_anonymous(func, to_json=True):
 
 # ----------------------------------------------------------------------------- (new) api decorators
 # TODO: rename as expose_api and make default.
-def _future_expose_api(func, to_json=True, user_required=True, user_or_session_required=True, handle_jsonp=True):
+def _future_expose_api(func,
+                       to_json=True,
+                       user_required=True,
+                       user_or_session_required=True,
+                       handle_jsonp=True):
     """
     Expose this function via the API.
     """
+
     @wraps(func)
     def decorator(self, trans, *args, **kwargs):
         # errors passed in from trans._authenicate_api
         if trans.error_message:
-            return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
-                                        err_msg=trans.error_message)
+            return __api_error_response(
+                trans,
+                status_code=403,
+                err_code=error_codes.USER_NO_API_KEY,
+                err_msg=trans.error_message)
         if trans.anonymous:
             # error if anon and user required
             if user_required:
-                return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
-                                            err_msg="API authentication required for this request")
+                return __api_error_response(
+                    trans,
+                    status_code=403,
+                    err_code=error_codes.USER_NO_API_KEY,
+                    err_msg="API authentication required for this request")
             # error if anon and no session
             if not trans.galaxy_session and user_or_session_required:
-                return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
-                                            err_msg="API authentication required for this request")
+                return __api_error_response(
+                    trans,
+                    status_code=403,
+                    err_code=error_codes.USER_NO_API_KEY,
+                    err_msg="API authentication required for this request")
 
         if trans.request.body:
             try:
-                kwargs['payload'] = __extract_payload_from_request(trans, func, kwargs)
+                kwargs['payload'] = __extract_payload_from_request(
+                    trans, func, kwargs)
             except ValueError:
                 error_code = error_codes.USER_INVALID_JSON
-                return __api_error_response(trans, status_code=400, err_code=error_code)
+                return __api_error_response(
+                    trans, status_code=400, err_code=error_code)
 
         # pull out any callback argument to the api endpoint and set the content type to json or javascript
         # TODO: use handle_jsonp to NOT overwrite existing tool_shed JSONP
-        jsonp_callback = kwargs.pop(JSONP_CALLBACK_KEY, None) if handle_jsonp else None
+        jsonp_callback = kwargs.pop(JSONP_CALLBACK_KEY,
+                                    None) if handle_jsonp else None
         if jsonp_callback:
             trans.response.set_content_type(JSONP_CONTENT_TYPE)
         else:
@@ -263,28 +301,39 @@ def _future_expose_api(func, to_json=True, user_required=True, user_or_session_r
         if 'payload' in kwargs and 'run_as' in kwargs['payload']:
             if not trans.user_can_do_run_as():
                 error_code = error_codes.USER_CANNOT_RUN_AS
-                return __api_error_response(trans, err_code=error_code, status_code=403)
+                return __api_error_response(
+                    trans, err_code=error_code, status_code=403)
             try:
-                decoded_user_id = trans.security.decode_id(kwargs['payload']['run_as'])
+                decoded_user_id = trans.security.decode_id(
+                    kwargs['payload']['run_as'])
             except TypeError:
-                error_message = "Malformed user id ( %s ) specified, unable to decode." % str(kwargs['payload']['run_as'])
+                error_message = "Malformed user id ( %s ) specified, unable to decode." % str(
+                    kwargs['payload']['run_as'])
                 error_code = error_codes.USER_INVALID_RUN_AS
-                return __api_error_response(trans, err_code=error_code, err_msg=error_message, status_code=400)
+                return __api_error_response(
+                    trans,
+                    err_code=error_code,
+                    err_msg=error_message,
+                    status_code=400)
             try:
-                user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
+                user = trans.sa_session.query(
+                    trans.app.model.User).get(decoded_user_id)
                 trans.api_inherit_admin = trans.user_is_admin()
                 trans.set_user(user)
             except:
                 error_code = error_codes.USER_INVALID_RUN_AS
-                return __api_error_response(trans, err_code=error_code, status_code=400)
+                return __api_error_response(
+                    trans, err_code=error_code, status_code=400)
         try:
             rval = func(self, trans, *args, **kwargs)
             if to_json:
-                rval = _format_return_as_json(rval, jsonp_callback, pretty=trans.debug)
+                rval = _format_return_as_json(
+                    rval, jsonp_callback, pretty=trans.debug)
             return rval
         except MessageException as e:
             traceback_string = format_exc()
-            return __api_error_response(trans, exception=e, traceback=traceback_string)
+            return __api_error_response(
+                trans, exception=e, traceback=traceback_string)
         except paste.httpexceptions.HTTPException:
             # TODO: Allow to pass or format for the API???
             raise  # handled
@@ -298,8 +347,8 @@ def _future_expose_api(func, to_json=True, user_required=True, user_or_session_r
                 exception=e,
                 traceback=traceback_string,
                 err_msg=error_message,
-                err_code=error_codes.UNKNOWN
-            )
+                err_code=error_codes.UNKNOWN)
+
     if not hasattr(func, '_orig'):
         decorator._orig = func
     decorator.exposed = True
@@ -323,8 +372,10 @@ def __api_error_message(trans, **kwds):
     exception = kwds.get("exception", None)
     if exception:
         # If we are passed a MessageException use err_msg.
-        default_error_code = getattr(exception, "err_code", error_codes.UNKNOWN)
-        default_error_message = getattr(exception, "err_msg", default_error_code.default_error_message)
+        default_error_code = getattr(exception, "err_code",
+                                     error_codes.UNKNOWN)
+        default_error_message = getattr(
+            exception, "err_msg", default_error_code.default_error_message)
         extra_error_info = getattr(exception, 'extra_error_info', {})
         if not isinstance(extra_error_info, dict):
             extra_error_info = {}
@@ -344,7 +395,8 @@ def __api_error_message(trans, **kwds):
     # Would prefer the terminology of error_code and error_message, but
     # err_msg used a good number of places already. Might as well not change
     # it?
-    error_response = dict(err_msg=err_msg, err_code=error_code, **extra_error_info)
+    error_response = dict(
+        err_msg=err_msg, err_code=error_code, **extra_error_info)
     if trans.debug:  # TODO: Should admins get to see traceback as well?
         error_response["traceback"] = traceback_string
     return error_response
@@ -381,7 +433,11 @@ def _future_expose_api_anonymous_and_sessionless(func, to_json=True):
     """
     Expose this function via the API but don't require a user or a galaxy_session.
     """
-    return _future_expose_api(func, to_json=to_json, user_required=False, user_or_session_required=False)
+    return _future_expose_api(
+        func,
+        to_json=to_json,
+        user_required=False,
+        user_or_session_required=False)
 
 
 def _future_expose_api_raw(func):
@@ -399,5 +455,4 @@ def _future_expose_api_raw_anonymous_and_sessionless(func):
         to_json=False,
         user_required=False,
         user_or_session_required=False,
-        handle_jsonp=False
-    )
+        handle_jsonp=False)

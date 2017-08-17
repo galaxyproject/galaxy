@@ -30,7 +30,8 @@ def __main__():
     seq_title_startswith = ''
 
     for i, line in enumerate(open(infile_name)):
-        line = line.rstrip()  # eliminate trailing space and new line characters
+        line = line.rstrip(
+        )  # eliminate trailing space and new line characters
         if not line or line.startswith('#'):
             continue
         fastq_block_lines = (fastq_block_lines + 1) % 4
@@ -40,7 +41,8 @@ def __main__():
             if not seq_title_startswith:
                 seq_title_startswith = line_startswith
             if seq_title_startswith != line_startswith:
-                stop_err('Invalid fastqsolexa format at line %d: %s.' % (i + 1, line))
+                stop_err('Invalid fastqsolexa format at line %d: %s.' % (i + 1,
+                                                                         line))
             outfile.write('>%s\n' % line[1:])
         elif fastq_block_lines == 2:
             # line 2 is nucleotides
