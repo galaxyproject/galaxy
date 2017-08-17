@@ -224,7 +224,7 @@ class GenomespaceFileField(BaseField):
                          ' $(selector).val(config.destination + \'^\' + config.token); }} }});">'
                          'Browse</a>'.format(prefix, self.name, escape(str(self.value), quote=True)))
 
-    def to_dict( self ):
+    def to_dict(self):
         return dict(name=self.name,
                     token_field=self.token_field)
 

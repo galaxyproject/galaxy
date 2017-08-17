@@ -34,37 +34,37 @@ GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles',
                                  'gct': 'gct'}
 
 
-def _prepare_json_list( param_list ):
+def _prepare_json_list(param_list):
     """
     JSON serialization Support functions for exec_before_job hook
     """
     rval = []
     for value in param_list:
-        if isinstance( value, dict ):
-            rval.append( _prepare_json_param_dict( value ) )
-        elif isinstance( value, list ):
-            rval.append( _prepare_json_list( value ) )
+        if isinstance(value, dict):
+            rval.append(_prepare_json_param_dict(value))
+        elif isinstance(value, list):
+            rval.append(_prepare_json_list(value))
         else:
-            rval.append( str( value ) )
+            rval.append(str(value))
     return rval
 
 
-def _prepare_json_param_dict( param_dict ):
+def _prepare_json_param_dict(param_dict):
     """
     JSON serialization Support functions for exec_before_job hook
     """
     rval = {}
     for key, value in param_dict.iteritems():
-        if isinstance( value, dict ):
-            rval[ key ] = _prepare_json_param_dict( value )
-        elif isinstance( value, list ):
-            rval[ key ] = _prepare_json_list( value )
+        if isinstance(value, dict):
+            rval[key] = _prepare_json_param_dict(value)
+        elif isinstance(value, list):
+            rval[key] = _prepare_json_list(value)
         else:
-            rval[ key ] = str( value )
+            rval[key] = str(value)
     return rval
 
 
-def exec_before_job( app, inp_data, out_data, param_dict=None, tool=None ):
+def exec_before_job(app, inp_data, out_data, param_dict=None, tool=None):
     """
     Galaxy override hook
     See: https://wiki.galaxyproject.org/Admin/Tools/ToolConfigSyntax#A.3Ccode.3E_tag_set
@@ -77,22 +77,24 @@ def exec_before_job( app, inp_data, out_data, param_dict=None, tool=None ):
     if param_dict is None:
         param_dict = {}
     json_params = {}
-    json_params[ 'param_dict' ] = _prepare_json_param_dict( param_dict )
-    json_params[ 'output_data' ] = []
-    json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
+    json_params['param_dict'] = _prepare_json_param_dict(param_dict)
+    json_params['output_data'] = []
+    json_params['job_config'] = dict(GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'),
+                                     GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'),
+                                     TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
     json_filename = None
-    for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
+    for i, (out_name, data) in enumerate(out_data.iteritems()):
         file_name = data.get_file_name()
-        data_dict = dict( out_data_name=out_name,
-                          ext=data.ext,
-                          dataset_id=data.dataset.id,
-                          hda_id=data.id,
-                          file_name=file_name )
-        json_params[ 'output_data' ].append( data_dict )
+        data_dict = dict(out_data_name=out_name,
+                         ext=data.ext,
+                         dataset_id=data.dataset.id,
+                         hda_id=data.id,
+                         file_name=file_name)
+        json_params['output_data'].append(data_dict)
         if json_filename is None:
             json_filename = file_name
-    with open( json_filename, 'w' ) as out:
-        out.write( json.dumps( json_params ) )
+    with open(json_filename, 'w') as out:
+        out.write(json.dumps(json_params))
 
 
 def get_galaxy_ext_from_genomespace_format(format):
@@ -172,18 +174,18 @@ def save_result_metadata(output_filename, file_type, metadata, json_params,
     and associated metadata
     """
     dataset_id = json_params['output_data'][0]['dataset_id']
-    with open( json_params['job_config']['TOOL_PROVIDED_JOB_METADATA_FILE'], 'ab' ) as metadata_parameter_file:
+    with open(json_params['job_config']['TOOL_PROVIDED_JOB_METADATA_FILE'], 'ab') as metadata_parameter_file:
         if primary_dataset:
-            metadata_parameter_file.write( "%s\n" % json.dumps( dict( type='dataset',
-                                                                      dataset_id=dataset_id,
-                                                                      ext=file_type,
-                                                                      name="GenomeSpace importer on %s" % ( metadata.name ) ) ) )
+            metadata_parameter_file.write("%s\n" % json.dumps(dict(type='dataset',
+                                                                   dataset_id=dataset_id,
+                                                                   ext=file_type,
+                                                                   name="GenomeSpace importer on %s" % (metadata.name))))
         else:
-            metadata_parameter_file.write( "%s\n" % json.dumps( dict( type='new_primary_dataset',
-                                                                      base_dataset_id=dataset_id,
-                                                                      ext=file_type,
-                                                                      filename=output_filename,
-                                                                      name="GenomeSpace importer on %s" % ( metadata.name ) ) ) )
+            metadata_parameter_file.write("%s\n" % json.dumps(dict(type='new_primary_dataset',
+                                                                   base_dataset_id=dataset_id,
+                                                                   ext=file_type,
+                                                                   filename=output_filename,
+                                                                   name="GenomeSpace importer on %s" % (metadata.name))))
 
 
 def download_single_file(gs_client, input_url, json_params,
