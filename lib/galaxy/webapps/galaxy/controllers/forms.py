@@ -28,7 +28,6 @@ class FormsGrid(grids.Grid):
             return form.latest_form.type
     # Grid definition
     title = "Forms"
-    template = "admin/forms/grid.mako"
     model_class = model.FormDefinitionCurrent
     default_sort_key = "-create_time"
     num_rows_per_page = 50
