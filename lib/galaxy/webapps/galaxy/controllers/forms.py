@@ -26,6 +26,13 @@ class FormsGrid(grids.Grid):
     class TypeColumn(grids.TextColumn):
         def get_value(self, trans, grid, form):
             return form.latest_form.type
+
+    class StatusColumn(grids.GridColumn):
+        def get_value(self, trans, grid, user):
+            if user.deleted:
+                return "deleted"
+            return ""
+
     # Grid definition
     title = "Forms"
     model_class = model.FormDefinitionCurrent
@@ -47,6 +54,7 @@ class FormsGrid(grids.Grid):
                           model_class=model.FormDefinition,
                           filterable="advanced"),
         TypeColumn("Type"),
+        StatusColumn("Status"),
         grids.DeletedColumn("Deleted",
                             key="deleted",
                             visible=False,
@@ -85,22 +93,26 @@ class Forms(BaseUIController):
 
     @web.expose_api
     @web.require_admin
-    def browse_form_definitions(self, trans, payload=None, **kwd):
+    def forms_list(self, trans, payload=None, **kwd):
+        message = kwd.get('message', '')
+        status = kwd.get('status', '')
         if 'operation' in kwd:
+            id = kwd.get('id')
+            if not id:
+                return message_exception(trans, 'Invalid form id (%s) received.' % str(id))
+            ids = util.listify(id)
             operation = kwd['operation'].lower()
-            if not kwd.get('id', None):
-                return trans.response.send_redirect(web.url_for(controller='forms',
-                                                                action='browse_form_definitions',
-                                                                status='error',
-                                                                message="Invalid form ID"))
             if operation == "view_latest_form_definition":
                 return self.view_latest_form_definition(trans, **kwd)
-            elif operation == "delete":
-                return self.delete_form_definition(trans, **kwd)
+            elif operation == 'delete':
+                message, status = self._delete_form(trans, ids)
             elif operation == "undelete":
                 return self.undelete_form_definition(trans, **kwd)
             elif operation == "edit":
                 return self.edit_form_definition(trans, **kwd)
+        if message and status:
+            kwd['message'] = util.sanitize_text(message)
+            kwd['status'] = status
         kwd[ 'dict_format' ] = True
         return self.forms_grid( trans, **kwd )
 
@@ -374,23 +386,13 @@ class Forms(BaseUIController):
 
     @web.expose
     @web.require_admin
-    def delete_form_definition(self, trans, **kwd):
-        id_list = util.listify(kwd['id'])
-        for id in id_list:
-            try:
-                form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(id))
-            except:
-                return trans.response.send_redirect(web.url_for(controller='forms',
-                                                                action='browse_form_definitions',
-                                                                message='Invalid form',
-                                                                status='error'))
-            form_definition_current.deleted = True
-            trans.sa_session.add(form_definition_current)
+    def _delete_form(self, trans, ids):
+        for form_id in ids:
+            form = get_form(trans, form_id)
+            form.deleted = True
+            trans.sa_session.add(form)
             trans.sa_session.flush()
-        return trans.response.send_redirect(web.url_for(controller='forms',
-                                                        action='browse_form_definitions',
-                                                        message='%i forms have been deleted.' % len(id_list),
-                                                        status='done'))
+        return ('Deleted %i form(s).' % len(ids), 'done')
 
     @web.expose
     @web.require_admin
@@ -674,3 +676,26 @@ class Forms(BaseUIController):
             else:
                 form_type_select_field.add_option(ft[1], ft[1])
         return form_type_select_field
+
+# ---- Utility methods -------------------------------------------------------
+
+def build_select_input(name, label, options, value):
+    return {'type'      : 'select',
+            'multiple'  : True,
+            'optional'  : True,
+            'individual': True,
+            'name'      : name,
+            'label'     : label,
+            'options'   : options,
+            'value'     : value}
+
+def message_exception(trans, message):
+    trans.response.status = 400
+    return {'err_msg': util.sanitize_text(message)}
+
+def get_form(trans, form_id):
+    """Get a FormDefinition from the database by id."""
+    form = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(form_id))
+    if not form:
+        return trans.show_error_message("Form not found for id (%s)" % str(form_id))
+    return form

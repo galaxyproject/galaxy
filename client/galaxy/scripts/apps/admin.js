@@ -50,7 +50,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_forms: function() {
-            this.page.display( new GridView( { url_base: Galaxy.root + 'forms/browse_form_definitions', url_data: Galaxy.params, dict_format: true } ) );
+            this.page.display( new GridView( { url_base: Galaxy.root + 'forms/forms_list', url_data: Galaxy.params, dict_format: true } ) );
         },
 
         show_form : function( form_id ) {
