@@ -3902,7 +3902,7 @@ More information can be found on Planemo's documentation for
         <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort must not be set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="pattern" type="xs:string" use="required">
+    <xs:attribute name="pattern" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Regular expression used to find filenames and parse dynamic properties.</xs:documentation>
       </xs:annotation>
@@ -3950,7 +3950,12 @@ Galaxy, including:
 
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="pattern" type="xs:string" use="required">
+    <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort must not be set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="pattern" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Regular expression used to find filenames and parse dynamic properties.</xs:documentation>
       </xs:annotation>

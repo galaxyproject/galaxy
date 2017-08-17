@@ -44,7 +44,7 @@ class LegacyToolProvidedMetadata(object):
                 try:
                     line = json.loads(line)
                     assert 'type' in line
-                except:
+                except Exception:
                     log.exception('(%s) Got JSON data from tool, but data is improperly formatted or no "type" key in data' % job_wrapper.job_id)
                     log.debug('Offending data was: %s' % line)
                     continue
@@ -311,11 +311,11 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
     sa_session = tool.sa_session
     new_primary_datasets = {}
     try:
-        galaxy_json_path = os.path.join(job_working_directory, "working", jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+        galaxy_json_path = os.path.join(job_working_directory, "working", tool.provide_metadata_file)
         # LEGACY: Remove in 17.XX
         if not os.path.exists(galaxy_json_path):
             # Maybe this is a legacy job, use the job working directory instead
-            galaxy_json_path = os.path.join(job_working_directory, jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+            galaxy_json_path = os.path.join(job_working_directory, tool.provide_metadata_file)
         json_file = open(galaxy_json_path, 'r')
         for line in json_file:
             line = json.loads(line)
@@ -575,7 +575,7 @@ class JsonCollectedDatasetMatch(object):
 
     @property
     def designation(self):
-        # If collecting nested collection, grap identifier_0,
+        # If collecting nested collection, grab identifier_0,
         # identifier_1, etc... and join on : to build designation.
         element_identifiers = self.raw_element_identifiers
         if element_identifiers:
@@ -609,24 +609,15 @@ class JsonCollectedDatasetMatch(object):
     def name(self):
         """ Return name or None if not defined by the discovery pattern.
         """
-        name = None
-        if "name" in self.as_dict:
-            name = self.as_dict.get("name")
-        return name
+        return self.as_dict.get("name")
 
     @property
     def dbkey(self):
-        try:
-            return self.as_dict["dbkey"]
-        except KeyError:
-            return self.collector.default_dbkey
+        return self.as_dict.get("dbkey", self.collector.default_dbkey)
 
     @property
     def ext(self):
-        try:
-            return self.as_dict["ext"]
-        except KeyError:
-            return self.collector.default_ext
+        return self.as_dict.get("ext", self.collector.default_ext)
 
     @property
     def visible(self):
@@ -636,80 +627,12 @@ class JsonCollectedDatasetMatch(object):
             return self.collector.default_visible
 
 
-class RegexCollectedDatasetMatch(object):
-    # TODO: This could probably subclass JsonCollectedDatasetMatch if group dict is
-    # treated the same as the JSON dict.
+class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
 
     def __init__(self, re_match, collector, filename, path=None):
-        self.re_match = re_match
-        self.collector = collector
-        self.filename = filename
-        self.path = path
-
-    @property
-    def designation(self):
-        re_match = self.re_match
-        # If collecting nested collection, grap identifier_0,
-        # identifier_1, etc... and join on : to build designation.
-        element_identifiers = self.raw_element_identifiers
-        if element_identifiers:
-            return ":".join(element_identifiers)
-        elif "designation" in re_match.groupdict():
-            return re_match.group("designation")
-        elif "name" in re_match.groupdict():
-            return re_match.group("name")
-        else:
-            return None
-
-    @property
-    def element_identifiers(self):
-        return self.raw_element_identifiers or [self.designation]
-
-    @property
-    def raw_element_identifiers(self):
-        re_match = self.re_match
-        identifiers = []
-        i = 0
-        while True:
-            key = "identifier_%d" % i
-            if key in re_match.groupdict():
-                identifiers.append(re_match.group(key))
-            else:
-                break
-            i += 1
-
-        return identifiers
-
-    @property
-    def name(self):
-        """ Return name or None if not defined by the discovery pattern.
-        """
-        re_match = self.re_match
-        name = None
-        if "name" in re_match.groupdict():
-            name = re_match.group("name")
-        return name
-
-    @property
-    def dbkey(self):
-        try:
-            return self.re_match.group("dbkey")
-        except IndexError:
-            return self.collector.default_dbkey
-
-    @property
-    def ext(self):
-        try:
-            return self.re_match.group("ext")
-        except IndexError:
-            return self.collector.default_ext
-
-    @property
-    def visible(self):
-        try:
-            return self.re_match.group("visible").lower() == "visible"
-        except IndexError:
-            return self.collector.default_visible
+        super(RegexCollectedDatasetMatch, self).__init__(
+            re_match.groupdict(), collector, filename, path=path
+        )
 
 
 UNSET = object()

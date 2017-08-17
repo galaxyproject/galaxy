@@ -74,13 +74,13 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
 
     discover_via = "pattern"
 
-    def __init__( self, **kwargs ):
-        super(FilePatternDatasetCollectionDescription, self).__init__( **kwargs )
-        pattern = kwargs.get( "pattern", "__default__" )
+    def __init__(self, **kwargs):
+        super(FilePatternDatasetCollectionDescription, self).__init__(**kwargs)
+        pattern = kwargs.get("pattern", "__default__")
         if pattern in NAMED_PATTERNS:
-            pattern = NAMED_PATTERNS.get( pattern )
+            pattern = NAMED_PATTERNS.get(pattern)
         self.pattern = pattern
-        sort_by = kwargs.get( "sort_by", DEFAULT_SORT_BY )
+        sort_by = kwargs.get("sort_by", DEFAULT_SORT_BY)
         if sort_by.startswith("reverse_"):
             self.sort_reverse = True
             sort_by = sort_by[len("reverse_"):]

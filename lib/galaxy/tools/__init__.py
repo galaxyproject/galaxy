@@ -68,6 +68,7 @@ from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
     ExecutionTimer,
     listify,
+    Params,
     rst_to_html,
     string_as_bool,
     unicodify
@@ -809,19 +810,11 @@ class Tool(object, Dictifiable):
         return self.__tests
 
     def tool_provided_metadata(self, job_wrapper):
-<<<<<<< HEAD
-        meta_file = os.path.join(job_wrapper.tool_working_directory, galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
-=======
-        meta_file = os.path.join( job_wrapper.tool_working_directory, self.provided_metadata_file )
->>>>>>> 0df820586b... Allow override of provided metadata location.
+        meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
         # LEGACY: Remove in 17.XX
         if not os.path.exists(meta_file):
             # Maybe this is a legacy job, use the job working directory instead
-<<<<<<< HEAD
-            meta_file = os.path.join(job_wrapper.working_directory, galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
-=======
-            meta_file = os.path.join( job_wrapper.working_directory, self.provided_metadata_file )
->>>>>>> 0df820586b... Allow override of provided metadata location.
+            meta_file = os.path.join(job_wrapper.working_directory, self.provided_metadata_file)
 
         if not os.path.exists(meta_file):
             return output_collect.NullToolProvidedMetadata()
@@ -1836,7 +1829,7 @@ class Tool(object, Dictifiable):
                 raise exceptions.MessageException(str(e))
 
         # create parameter object
-        params = galaxy.util.Params(kwd, sanitize=False)
+        params = Params(kwd, sanitize=False)
 
         # expand incoming parameters (parameters might trigger multiple tool executions,
         # here we select the first execution only in order to resolve dynamic parameters)

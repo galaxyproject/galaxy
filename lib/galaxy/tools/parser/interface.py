@@ -151,7 +151,12 @@ class ToolSource(object):
     def parse_provided_metadata_style(self):
         """Return style of tool provided metadata file (e.g. galaxy.json).
 
-        Return "legacy" for older pre-17.09 default.
+        A value of of "default" indicates the newer galaxy.json style
+        (the default for XML-based tools with profile >= 17.09) and a value
+        of "legacy" indicates the older galaxy.json style.
+
+        A short description of these two styles can be found at
+        https://github.com/galaxyproject/galaxy/pull/4437.
         """
         return "default"
 
