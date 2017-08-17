@@ -687,6 +687,8 @@ class Tool(object, Dictifiable):
         )
         self.options = Bunch(** self.options)
 
+        self.provided_metadata_style = tool_source.parse_provided_metadata_style()
+
         # Parse tool inputs (if there are any required)
         self.parse_inputs(tool_source)
 
@@ -805,10 +807,6 @@ class Tool(object, Dictifiable):
             self.__tests_populated = True
         return self.__tests
 
-    @property
-    def _legacy_tool_provided_metadata_format(self):
-        return self.profile < 17.09
-
     def tool_provided_metadata(self, job_wrapper):
         meta_file = os.path.join(job_wrapper.tool_working_directory, galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
         # LEGACY: Remove in 17.XX
@@ -818,7 +816,7 @@ class Tool(object, Dictifiable):
 
         if not os.path.exists(meta_file):
             return output_collect.NullToolProvidedMetadata()
-        if self._legacy_tool_provided_metadata_format:
+        if self.provided_metadata_style == "legacy":
             return output_collect.LegacyToolProvidedMetadata(job_wrapper, meta_file)
         else:
             return output_collect.ToolProvidedMetadata(job_wrapper, meta_file)

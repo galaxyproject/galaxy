@@ -148,6 +148,13 @@ class ToolSource(object):
     def parse_input_pages(self):
         """ Return a PagesSource representing inputs by page for tool. """
 
+    def parse_provided_metadata_style(self):
+        """Return style of tool provided metadata file (e.g. galaxy.json).
+
+        Return "legacy" for older pre-17.09 default.
+        """
+        return "default"
+
     @abstractmethod
     def parse_outputs(self, tool):
         """ Return a pair of output and output collections ordered
