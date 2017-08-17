@@ -1213,7 +1213,7 @@ class Genbank(data.Text):
 
 class MemePsp(Sequence):
     """Class representing MEME Position Specific Priors"""
-    file_ext = "psp"
+    file_ext = "memepsp"
 
     def sniff( self, filename ):
         """
