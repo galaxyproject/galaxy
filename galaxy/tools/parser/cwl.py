@@ -116,7 +116,7 @@ class CwlToolSource(ToolSource):
     def _parse_output(self, tool, output_instance):
         name = output_instance.name
         # TODO: handle filters, actions, change_format
-        output = ToolOutput( name )
+        output = ToolOutput(name)
         if "File" in output_instance.output_data_type:
             output.format = "_sniff_"
         else:
@@ -131,7 +131,7 @@ class CwlToolSource(ToolSource):
         output.tool = tool
         output.hidden = ""
         output.dataset_collector_descriptions = []
-        output.actions = ToolOutputActionGroup( output, None )
+        output.actions = ToolOutputActionGroup(output, None)
         return output
 
     def parse_requirements_and_containers(self):

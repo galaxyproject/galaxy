@@ -479,8 +479,8 @@ class CondaDependency(Dependency):
             )
 
 
-def _string_as_bool( value ):
-    return str( value ).lower() == "true"
+def _string_as_bool(value):
+    return str(value).lower() == "true"
 
 
 __all__ = ('CondaDependencyResolver', 'DEFAULT_ENSURE_CHANNELS')

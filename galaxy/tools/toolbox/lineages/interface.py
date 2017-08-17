@@ -12,7 +12,7 @@ class ToolLineage(object):
     """
 
     @abstractmethod
-    def get_versions( self, reverse=False ):
+    def get_versions(self, reverse=False):
         """ Return an ordered list of lineages (ToolLineageVersion) in this
         chain, from oldest to newest.
         """
@@ -28,16 +28,16 @@ class ToolLineageVersion(object):
         self.version = version
 
     @staticmethod
-    def from_id_and_verion( id, version ):
+    def from_id_and_verion(id, version):
         assert version is not None
-        return ToolLineageVersion( id, version )
+        return ToolLineageVersion(id, version)
 
     @staticmethod
-    def from_guid( guid ):
-        return ToolLineageVersion( guid, None )
+    def from_guid(guid):
+        return ToolLineageVersion(guid, None)
 
     @property
-    def id_based( self ):
+    def id_based(self):
         """ Return True if the lineage is defined by GUIDs (in this
         case the indexer of the tools (i.e. the ToolBox) should ignore
         the tool_version (because it is encoded in the GUID and managed

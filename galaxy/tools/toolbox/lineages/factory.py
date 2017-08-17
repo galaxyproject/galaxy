@@ -2,7 +2,7 @@ from .stock import StockLineage
 from .tool_shed import ToolShedLineage
 
 
-def remove_version_from_guid( guid ):
+def remove_version_from_guid(guid):
     """
     Removes version from toolshed-derived tool_id(=guid).
     """
@@ -22,11 +22,11 @@ class LineageMap(object):
 
     def register(self, tool, from_toolshed=False):
         tool_id = tool.id
-        versionless_tool_id = remove_version_from_guid( tool_id )
+        versionless_tool_id = remove_version_from_guid(tool_id)
         if from_toolshed:
             lineage = ToolShedLineage.from_tool(self.app, tool)
         else:
-            lineage = StockLineage.from_tool( tool )
+            lineage = StockLineage.from_tool(tool)
         if versionless_tool_id and versionless_tool_id not in self.lineage_map:
             self.lineage_map[versionless_tool_id] = lineage
         if tool_id not in self.lineage_map:
@@ -35,7 +35,7 @@ class LineageMap(object):
 
     def get(self, tool_id):
         if tool_id not in self.lineage_map:
-            lineage = ToolShedLineage.from_tool_id( self.app, tool_id )
+            lineage = ToolShedLineage.from_tool_id(self.app, tool_id)
             if lineage:
                 self.lineage_map[tool_id] = lineage
 

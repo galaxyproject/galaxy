@@ -23,9 +23,9 @@ def find_config_file(default, old_default, explicit, cwd=None):
         else:
             raise Exception("Problem determining Galaxy's configuration - the specified configuration file cannot be found.")
     else:
-        if not os.path.exists( default ) and os.path.exists( old_default ):
+        if not os.path.exists(default) and os.path.exists(old_default):
             config_file = old_default
-        elif os.path.exists( default ):
+        elif os.path.exists(default):
             config_file = default
         else:
             config_file = default + ".sample"
@@ -49,17 +49,17 @@ def load_app_properties(
         with open(ini_file) as f:
             parser.read_file(f)
 
-        properties.update( dict( parser.items( ini_section ) ) )
+        properties.update(dict(parser.items(ini_section)))
 
     override_prefix = "%sOVERRIDE_" % config_prefix
     for key in os.environ:
-        if key.startswith( override_prefix ):
-            config_key = key[ len( override_prefix ): ].lower()
-            properties[ config_key ] = os.environ[ key ]
-        elif key.startswith( config_prefix ):
-            config_key = key[ len( config_prefix ): ].lower()
+        if key.startswith(override_prefix):
+            config_key = key[len(override_prefix):].lower()
+            properties[config_key] = os.environ[key]
+        elif key.startswith(config_prefix):
+            config_key = key[len(config_prefix):].lower()
             if config_key not in properties:
-                properties[ config_key ] = os.environ[ key ]
+                properties[config_key] = os.environ[key]
 
     return properties
 
