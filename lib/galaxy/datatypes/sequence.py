@@ -1215,7 +1215,7 @@ class MemePsp(Sequence):
     """Class representing MEME Position Specific Priors"""
     file_ext = "memepsp"
 
-    def sniff( self, filename ):
+    def sniff(self, filename):
         """
         The format of an entry in a PSP file is:
 
@@ -1251,10 +1251,10 @@ class MemePsp(Sequence):
                     return True
                 line = line.strip()
                 if line:
-                    if line.startswith( '>' ):
+                    if line.startswith('>'):
                         # The line must not be blank, nor start with '>'
                         line = fh.readline().strip()
-                        if line == '' or line.startswith( '>' ):
+                        if line == '' or line.startswith('>'):
                             return False
                         # All items within the line must be floats.
                         if not floats_verified(line):
