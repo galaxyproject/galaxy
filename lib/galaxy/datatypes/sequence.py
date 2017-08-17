@@ -29,6 +29,7 @@ from galaxy.util.checkers import (
     is_bz2,
     is_gzip
 )
+
 from galaxy.util.image_util import check_image_type
 
 from . import data
@@ -1208,3 +1209,67 @@ class Genbank(data.Text):
             pass
 
         return False
+
+
+class MemePsp(Sequence):
+    """Class representing MEME Position Specific Priors"""
+    file_ext = "memepsp"
+
+    def sniff( self, filename ):
+        """
+        The format of an entry in a PSP file is:
+
+        >ID WIDTH
+        PRIORS
+
+        For complete details see http://meme-suite.org/doc/psp-format.html
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('1.memepsp')
+        >>> MemePsp().sniff(fname)
+        True
+        >>> fname = get_test_fname('sequence.fasta')
+        >>> MemePsp().sniff(fname)
+        False
+        """
+        def floats_verified(l):
+            for item in l.split():
+                try:
+                    float(item)
+                except:
+                    return False
+            return True
+        try:
+            num_lines = 0
+            with open(filename) as fh:
+                line = fh.readline()
+                if not line:
+                    # EOF.
+                    return False
+                num_lines += 1
+                if num_lines > 100:
+                    return True
+                line = line.strip()
+                if line:
+                    if line.startswith( '>' ):
+                        # The line must not be blank, nor start with '>'
+                        line = fh.readline().strip()
+                        if line == '' or line.startswith( '>' ):
+                            return False
+                        # All items within the line must be floats.
+                        if not floats_verified(line):
+                            return False
+                        # If there is a second line within the ID section,
+                        # all items within the line must be floats.
+                        line = fh.readline().strip()
+                        if line:
+                            if not floats_verified(line):
+                                return False
+                    else:
+                        # We found a non-empty line,
+                        # but it's not a psp id width.
+                        return False
+        except:
+            return False
+        # We've reached EOF in less than 100 lines.
+        return True
