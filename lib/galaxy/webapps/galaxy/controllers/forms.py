@@ -106,8 +106,8 @@ class Forms(BaseUIController):
                 return self.view_latest_form_definition(trans, **kwd)
             elif operation == 'delete':
                 message, status = self._delete_form(trans, ids)
-            elif operation == "undelete":
-                return self.undelete_form_definition(trans, **kwd)
+            elif operation == 'undelete':
+                message, status = self._undelete_form(trans, ids)
             elif operation == "edit":
                 return self.edit_form_definition(trans, **kwd)
         if message and status:
@@ -396,23 +396,13 @@ class Forms(BaseUIController):
 
     @web.expose
     @web.require_admin
-    def undelete_form_definition(self, trans, **kwd):
-        id_list = util.listify(kwd['id'])
-        for id in id_list:
-            try:
-                form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(id))
-            except:
-                return trans.response.send_redirect(web.url_for(controller='forms',
-                                                                action='browse_form_definitions',
-                                                                message='Invalid form',
-                                                                status='error'))
-            form_definition_current.deleted = False
-            trans.sa_session.add(form_definition_current)
+    def _undelete_form(self, trans, ids):
+        for form_id in ids:
+            form = get_form(trans, form_id)
+            form.deleted = False
+            trans.sa_session.add(form)
             trans.sa_session.flush()
-        return trans.response.send_redirect(web.url_for(controller='forms',
-                                                        action='browse_form_definitions',
-                                                        message='%i forms have been undeleted.' % len(id_list),
-                                                        status='done'))
+        return ('Undeleted %i form(s).' % len(ids), 'done')
 
     def build_form_definition_field_widgets(self, trans, layout_grids, field_index, field, form_type):
         '''
