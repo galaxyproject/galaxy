@@ -28,8 +28,8 @@
         <data format="auto" name="output_log" />
     </outputs>
     <help>
-This Tool allows you to export data to GenomeSpace. Click the Browse button to select a file to import. The tool will automatically
-fetch your GenomeSpace token when you select a file from the import dialog.
+This Tool allows you to export data to GenomeSpace. Click the Browse button to select a file to export. The tool will automatically
+fetch your GenomeSpace token when you select a file from the export dialog.
 
 Alternatively, you can be logged in using your GenomeSpace OpenID, and the tool will use this ID if no token is entered.
 This allows you to simply paste the filepath into the location box and leave the token empty. 
