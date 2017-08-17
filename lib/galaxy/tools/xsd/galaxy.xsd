@@ -3572,6 +3572,17 @@ the ``<inputs>`` documentation.
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="provided_metadata_file" type="xs:string" default="galaxy.json">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+          Path relative to tool's working directory to load tool provided
+          metadata from. This metadata can describe dynamic datasets to load,
+          dynamic collection contents, as well as simple metadata (e.g. name, dbkey, etc...) and datatype specific metadata for declared outputs.
+          More information can be found [here](http://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata). The
+          default is galaxy.json.
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:group name="OutputsElement">
     <xs:choice>

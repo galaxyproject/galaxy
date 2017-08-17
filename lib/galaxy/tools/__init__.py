@@ -19,7 +19,6 @@ from paste import httpexceptions
 from six import string_types
 from six.moves.urllib.parse import unquote_plus
 
-import galaxy.jobs
 import tool_shed.util.repository_util as repository_util
 import tool_shed.util.shed_util_common
 
@@ -687,6 +686,8 @@ class Tool(object, Dictifiable):
         )
         self.options = Bunch(** self.options)
 
+        # Read in name of galaxy.json metadata file and how to parse it.
+        self.provided_metadata_file = tool_source.parse_provided_metadata_file()
         self.provided_metadata_style = tool_source.parse_provided_metadata_style()
 
         # Parse tool inputs (if there are any required)
@@ -808,11 +809,19 @@ class Tool(object, Dictifiable):
         return self.__tests
 
     def tool_provided_metadata(self, job_wrapper):
+<<<<<<< HEAD
         meta_file = os.path.join(job_wrapper.tool_working_directory, galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+=======
+        meta_file = os.path.join( job_wrapper.tool_working_directory, self.provided_metadata_file )
+>>>>>>> 0df820586b... Allow override of provided metadata location.
         # LEGACY: Remove in 17.XX
         if not os.path.exists(meta_file):
             # Maybe this is a legacy job, use the job working directory instead
+<<<<<<< HEAD
             meta_file = os.path.join(job_wrapper.working_directory, galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+=======
+            meta_file = os.path.join( job_wrapper.working_directory, self.provided_metadata_file )
+>>>>>>> 0df820586b... Allow override of provided metadata location.
 
         if not os.path.exists(meta_file):
             return output_collect.NullToolProvidedMetadata()
@@ -2082,7 +2091,7 @@ class OutputParameterJSONTool(Tool):
         json_params = {}
         json_params['param_dict'] = self._prepare_json_param_dict(param_dict)  # it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
         json_params['output_data'] = []
-        json_params['job_config'] = dict(GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'), GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'), TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+        json_params['job_config'] = dict(GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'), GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'), TOOL_PROVIDED_JOB_METADATA_FILE=self.provided_metadata_file)
         json_filename = None
         for i, (out_name, data) in enumerate(out_data.items()):
             # use wrapped dataset to access certain values
@@ -2134,7 +2143,7 @@ class DataSourceTool(OutputParameterJSONTool):
         json_params = {}
         json_params['param_dict'] = self._prepare_json_param_dict(param_dict)  # it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
         json_params['output_data'] = []
-        json_params['job_config'] = dict(GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'), GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'), TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+        json_params['job_config'] = dict(GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'), GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'), TOOL_PROVIDED_JOB_METADATA_FILE=self.provided_metadata_file)
         json_filename = None
         for i, (out_name, data) in enumerate(out_data.items()):
             # use wrapped dataset to access certain values

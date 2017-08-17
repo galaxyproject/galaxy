@@ -209,6 +209,14 @@ class XmlToolSource(ToolSource):
         assert style in ["legacy", "default"]
         return style
 
+    def parse_provided_metadata_file(self):
+        provided_metadata_file = "galaxy.json"
+        out_elem = self.root.find("outputs")
+        if out_elem and "provided_metadata_file" in out_elem.attrib:
+            provided_metadata_file = out_elem.attrib["provided_metadata_file"]
+
+        return provided_metadata_file
+
     def parse_outputs(self, tool):
         out_elem = self.root.find("outputs")
         outputs = odict()

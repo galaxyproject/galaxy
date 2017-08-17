@@ -155,6 +155,10 @@ class ToolSource(object):
         """
         return "default"
 
+    def parse_provided_metadata_file(self):
+        """Return location of provided metadata file (e.g. galaxy.json)."""
+        return "galaxy.json"
+
     @abstractmethod
     def parse_outputs(self, tool):
         """ Return a pair of output and output collections ordered
