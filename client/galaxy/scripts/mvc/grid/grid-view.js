@@ -18,6 +18,7 @@ return Backbone.View.extend({
 
     // Initialize
     initialize: function(grid_config) {
+        this.grid = new GridModel();
         this.dict_format = grid_config.dict_format;
         var self = this;
         window.add_tag_to_grid_filter = function( tag_name, tag_value ){
@@ -77,8 +78,7 @@ return Backbone.View.extend({
 
     // Initialize
     init_grid: function(grid_config) {
-        // link grid model
-        this.grid = new GridModel(grid_config);
+        this.grid.set( grid_config );
 
         // get options
         var options = this.grid.attributes;
