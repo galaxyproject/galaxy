@@ -268,6 +268,7 @@ class MockTool( object ):
         self._params = { "thresh": self.test_thresh_param() }
         self.options = Bunch(sanitize=False)
         self.check_values = True
+        self.parallelism = None
 
     def test_thresh_param( self ):
         elem = XML( '<param name="thresh" type="integer" value="5" />' )
