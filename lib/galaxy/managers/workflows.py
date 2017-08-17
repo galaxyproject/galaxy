@@ -196,7 +196,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # Put parameters in workflow mode
         trans.workflow_building_mode = True
         # If there's a source, put it in the workflow name.
-        if source:
+        if source and source != 'API':
             name = "%s (imported from %s)" % ( data['name'], source )
         else:
             name = data['name']

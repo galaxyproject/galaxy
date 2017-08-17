@@ -349,7 +349,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         upload_response = self._post( route, data=data )
         if assert_ok:
             self._assert_status_code_is( upload_response, 200 )
-            self._assert_user_has_workflow_with_name( "%s (imported from API)" % name )
+            self._assert_user_has_workflow_with_name( name )
         return upload_response
 
     def test_update( self ):
