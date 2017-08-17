@@ -304,7 +304,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
 
     def test_delete(self):
         workflow_id = self.workflow_populator.simple_workflow("test_delete")
-        workflow_name = "test_delete (imported from API)"
+        workflow_name = "test_delete"
         self._assert_user_has_workflow_with_name(workflow_name)
         workflow_url = self._api_url("workflows/%s" % workflow_id, use_key=True)
         delete_response = delete(workflow_url)
@@ -448,7 +448,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         with self._different_user():
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 200)
-            self._assert_user_has_workflow_with_name("imported: test_import_published_deprecated (imported from API)")
+            self._assert_user_has_workflow_with_name("imported: test_import_published_deprecated")
 
     def test_import_annotations(self):
         workflow_id = self.workflow_populator.simple_workflow("test_import_annotations", publish=True)
@@ -491,12 +491,12 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         with self._different_user():
             other_import_response = self.__import_workflow(workflow_id, deprecated_route=True)
             self._assert_status_code_is(other_import_response, 200)
-            self._assert_user_has_workflow_with_name("imported: test_import_published (imported from API)")
+            self._assert_user_has_workflow_with_name("imported: test_import_published")
 
     def test_export(self):
         uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export")
         downloaded_workflow = self._download_workflow(uploaded_workflow_id)
-        assert downloaded_workflow["name"] == "test_for_export (imported from API)"
+        assert downloaded_workflow["name"] == "test_for_export"
         assert len(downloaded_workflow["steps"]) == 3
         first_input = downloaded_workflow["steps"]["0"]["inputs"][0]
         assert first_input["name"] == "WorkflowInput1"
