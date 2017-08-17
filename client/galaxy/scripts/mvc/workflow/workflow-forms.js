@@ -234,7 +234,8 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                         }
                         if ( input.payload ) {
                             for ( var p_id in input.payload ) {
-                                input.payload[ input.name + '__' + p_id ] = p;input.payload[ p_id ];
+                                var p = input.payload[ p_id ];
+                                input.payload[ input.name + '__' + p_id ] = p;
                                 delete input.payload[ p_id ];
                             }
                         }
