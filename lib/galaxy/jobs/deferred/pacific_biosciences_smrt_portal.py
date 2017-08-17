@@ -57,25 +57,25 @@ class SMRTPortalPlugin(DataTransfer):
             self.sa_session.add(sample)
             self.sa_session.flush()
             params = {'type' : 'init_transfer',
-                       'protocol' : protocol,
-                       'sample_id' : sample.id,
-                       'results' : results,
-                       'smrt_host' : smrt_host,
-                       'smrt_job_id' : smrt_job_id}
+                      'protocol' : protocol,
+                      'sample_id' : sample.id,
+                      'results' : results,
+                      'smrt_host' : smrt_host,
+                      'smrt_job_id' : smrt_job_id}
             # Create a new SampleDataset for each run result dataset
             self._associate_untransferred_datasets_with_sample(sample, external_service, results)
         elif 'transfer_job_id' in kwd:
             params = {'type' : 'finish_transfer',
-                       'protocol' : kwd['result']['protocol'],
-                       'sample_id' : kwd['sample_id'],
-                       'result' : kwd['result'],
-                       'transfer_job_id' : kwd['transfer_job_id']}
+                      'protocol' : kwd['result']['protocol'],
+                      'sample_id' : kwd['sample_id'],
+                      'result' : kwd['result'],
+                      'transfer_job_id' : kwd['transfer_job_id']}
         else:
             log.error('No job was created because kwd does not include "secondary_analysis_job_id" or "transfer_job_id".')
             return
         deferred_job = self.app.model.DeferredJob(state=self.app.model.DeferredJob.states.NEW,
-                                                   plugin='SMRTPortalPlugin',
-                                                   params=params)
+                                                  plugin='SMRTPortalPlugin',
+                                                  params=params)
         self.sa_session.add(deferred_job)
         self.sa_session.flush()
         log.debug('Created a deferred job in the SMRTPortalPlugin of type: %s' % params['type'])
@@ -122,11 +122,11 @@ class SMRTPortalPlugin(DataTransfer):
             name = val['name']
             size = 'unknown'
             sample_dataset = self.app.model.SampleDataset(sample=sample,
-                                                           file_path=file_path,
-                                                           status=status,
-                                                           name=name,
-                                                           error_msg='',
-                                                           size=size,
-                                                           external_service=external_service)
+                                                          file_path=file_path,
+                                                          status=status,
+                                                          name=name,
+                                                          error_msg='',
+                                                          size=size,
+                                                          external_service=external_service)
             self.sa_session.add(sample_dataset)
             self.sa_session.flush()

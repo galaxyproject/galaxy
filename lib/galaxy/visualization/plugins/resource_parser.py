@@ -72,7 +72,7 @@ class ResourceParser(object):
                 try:
                     target_param_modifiers = params_that_modify_other_params.get(param_name, None)
                     resource = self.parse_parameter(trans, param_config,
-                                                     query_val, param_modifiers=target_param_modifiers)
+                                                    query_val, param_modifiers=target_param_modifiers)
 
                 except Exception as exception:
                     if trans.debug:
@@ -167,7 +167,7 @@ class ResourceParser(object):
         return self.parse_parameter(trans, param_config, default)
 
     def parse_parameter(self, trans, expected_param_data, query_param,
-                         recurse=True, param_modifiers=None):
+                        recurse=True, param_modifiers=None):
         """
         Use data in `expected_param_data` to parse `query_param` from a string into
         a resource usable directly by a template.

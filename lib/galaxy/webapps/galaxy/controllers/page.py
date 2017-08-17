@@ -290,7 +290,7 @@ class _PageContentProcessor(_BaseHTMLProcessor):
 
 
 class PageController(BaseUIController, SharableMixin,
-                      UsesStoredWorkflowMixin, UsesVisualizationMixin, UsesItemRatings):
+                     UsesStoredWorkflowMixin, UsesVisualizationMixin, UsesItemRatings):
 
     _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()
@@ -346,8 +346,8 @@ class PageController(BaseUIController, SharableMixin,
             .order_by(desc(model.Page.update_time)) \
             .all()
         return [{'username' : p.page.user.username,
-                    'slug'     : p.page.slug,
-                    'title'    : p.page.title} for p in shared_by_others]
+                 'slug'     : p.page.slug,
+                 'title'    : p.page.title} for p in shared_by_others]
 
     @web.expose
     @web.require_login("create pages")
@@ -391,13 +391,13 @@ class PageController(BaseUIController, SharableMixin,
             web.FormBuilder(web.url_for(controller='page', action='create'), "Create new page", submit_text="Submit")
             .add_text("page_title", "Page title", value=page_title, error=page_title_err)
             .add_text("page_slug", "Page identifier", value=page_slug, error=page_slug_err,
-                       help="""A unique identifier that will be used for
+                      help="""A unique identifier that will be used for
                             public links to this page. A default is generated
                             from the page title, but can be edited. This field
                             must contain only lowercase letters, numbers, and
                             the '-' character.""")
             .add_text("page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                       help="A description of the page; annotation is shown alongside published pages."),
+                      help="A description of the page; annotation is shown alongside published pages."),
             template="page/create.mako")
 
     @web.expose
@@ -442,13 +442,13 @@ class PageController(BaseUIController, SharableMixin,
             web.FormBuilder(web.url_for(controller='page', action='edit', id=encoded_id), "Edit page attributes", submit_text="Submit")
             .add_text("page_title", "Page title", value=page_title, error=page_title_err)
             .add_text("page_slug", "Page identifier", value=page_slug, error=page_slug_err,
-                       help="""A unique identifier that will be used for
+                      help="""A unique identifier that will be used for
                        public links to this page. A default is generated
                        from the page title, but can be edited. This field
                        must contain only lowercase letters, numbers, and
                        the '-' character.""")
             .add_text("page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                       help="A description of the page; annotation is shown alongside published pages."),
+                      help="A description of the page; annotation is shown alongside published pages."),
             template="page/create.mako")
 
     @web.expose
@@ -496,7 +496,7 @@ class PageController(BaseUIController, SharableMixin,
         session.flush()
 
         return trans.fill_template("/sharing_base.mako",
-                                    item=page, controller_list='pages', use_panels=True)
+                                   item=page, controller_list='pages', use_panels=True)
 
     @web.expose
     @web.require_login("use Galaxy pages")
@@ -507,7 +507,7 @@ class PageController(BaseUIController, SharableMixin,
         if email:
             other = trans.sa_session.query(model.User) \
                                     .filter(and_(model.User.table.c.email == email,
-                                                   model.User.table.c.deleted == false())) \
+                                                 model.User.table.c.deleted == false())) \
                                     .first()
             if not other:
                 mtype = "error"
@@ -532,11 +532,11 @@ class PageController(BaseUIController, SharableMixin,
                 trans.set_message("Page '%s' shared with user '%s'" % (page_title, other_email))
                 return trans.response.send_redirect(url_for(controller='page', action='sharing', id=id))
         return trans.fill_template("/ind_share_base.mako",
-                                    message=msg,
-                                    messagetype=mtype,
-                                    item=page,
-                                    email=email,
-                                    use_panels=use_panels)
+                                   message=msg,
+                                   messagetype=mtype,
+                                   item=page,
+                                   email=email,
+                                   use_panels=use_panels)
 
     @web.expose
     @web.require_login()
@@ -627,11 +627,11 @@ class PageController(BaseUIController, SharableMixin,
         # Output is string, so convert to unicode for display.
         page_content = unicodify(processor.output(), 'utf-8')
         return trans.fill_template_mako("page/display.mako", item=page,
-                                         item_data=page_content,
-                                         user_item_rating=user_item_rating,
-                                         ave_item_rating=ave_item_rating,
-                                         num_ratings=num_ratings,
-                                         content_only=True)
+                                        item_data=page_content,
+                                        user_item_rating=user_item_rating,
+                                        ave_item_rating=ave_item_rating,
+                                        num_ratings=num_ratings,
+                                        content_only=True)
 
     @web.expose
     @web.require_login("use Galaxy pages")
@@ -683,9 +683,9 @@ class PageController(BaseUIController, SharableMixin,
         if self.create_item_slug(trans.sa_session, page):
             trans.sa_session.flush()
         return_dict = {"name": page.title, "link": url_for(controller='page',
-                                                            action="display_by_username_and_slug",
-                                                            username=page.user.username,
-                                                            slug=page.slug)}
+                                                           action="display_by_username_and_slug",
+                                                           username=page.user.username,
+                                                           slug=page.slug)}
         return return_dict
 
     @web.expose
@@ -768,10 +768,10 @@ class PageController(BaseUIController, SharableMixin,
         history_dictionary['annotation'] = history.annotation
 
         filled = trans.fill_template("history/embed.mako",
-                                      item=history,
-                                      user_is_owner=user_is_owner,
-                                      history_dict=history_dictionary,
-                                      content_dicts=contents)
+                                     item=history,
+                                     user_is_owner=user_is_owner,
+                                     history_dict=history_dictionary,
+                                     content_dicts=contents)
         return filled
 
     def _get_embedded_visualization_html(self, trans, id):
@@ -791,9 +791,9 @@ class PageController(BaseUIController, SharableMixin,
             # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
             encoded_visualization_id = trans.security.encode_id(visualization.id)
             return trans.fill_template('visualization/embed_in_frame.mako',
-                                        item=visualization,
-                                        encoded_visualization_id=encoded_visualization_id,
-                                        content_only=True)
+                                       item=visualization,
+                                       encoded_visualization_id=encoded_visualization_id,
+                                       content_only=True)
 
         return trans.fill_template("visualization/embed.mako", item=visualization, item_data=None)
 

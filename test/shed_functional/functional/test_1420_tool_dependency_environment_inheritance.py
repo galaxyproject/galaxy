@@ -81,11 +81,11 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=package_lapack_repository_name,
-                                                    description=package_lapack_repository_description,
-                                                    long_description=package_lapack_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=package_lapack_repository_description,
+                                                   long_description=package_lapack_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Load the original tool dependency definition into memory, then fill in the __PATH__ placeholder with the
         # actual system path where the binary tarball is found.
         tool_dependency_path = self.generate_temp_path('1420_tool_dependency', additional_paths=['package_lapack_3_4_1420'])
@@ -96,14 +96,14 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         open(edited_tool_dependency_filename, 'w').write(tool_dependency_definition)
         # Upload the edited tool dependency definition to the package_lapack_3_4_1420 repository.
         self.upload_file(repository,
-                          filename='tool_dependencies.xml',
-                          filepath=tool_dependency_path,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_lapack_3_4_1420 with tool dependency definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='tool_dependencies.xml',
+                         filepath=tool_dependency_path,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate package_lapack_3_4_1420 with tool dependency definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_create_atlas_repository(self):
         '''Create and populate package_atlas_3_10_1420.'''
@@ -115,11 +115,11 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=package_atlas_repository_name,
-                                                    description=package_atlas_repository_description,
-                                                    long_description=package_atlas_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=package_atlas_repository_description,
+                                                   long_description=package_atlas_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Load the original tool dependency definition into memory, then fill in the __PATH__ placeholder with the
         # actual system path where the binary tarball is found.
         tool_dependency_path = self.generate_temp_path('1420_tool_dependency', additional_paths=['package_atlas_3_10_1420'])
@@ -130,14 +130,14 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         open(edited_tool_dependency_filename, 'w').write(tool_dependency_definition)
         # Upload the edited tool dependency definition to the package_atlas_3_10_1420 repository.
         self.upload_file(repository,
-                          filename='tool_dependencies.xml',
-                          filepath=tool_dependency_path,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_atlas_3_10_1420 with tool dependency definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='tool_dependencies.xml',
+                         filepath=tool_dependency_path,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate package_atlas_3_10_1420 with tool dependency definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0015_create_bzlib_repository(self):
         '''Create and populate package_bzlib_1_0_1420.'''
@@ -149,11 +149,11 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=package_bzlib_repository_name,
-                                                    description=package_bzlib_repository_description,
-                                                    long_description=package_bzlib_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=package_bzlib_repository_description,
+                                                   long_description=package_bzlib_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Load the original tool dependency definition into memory, then fill in the __PATH__ placeholder with the
         # actual system path where the binary tarball is found.
         tool_dependency_path = self.generate_temp_path('1420_tool_dependency', additional_paths=['package_bzlib_1_0_1420'])
@@ -164,14 +164,14 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         open(edited_tool_dependency_filename, 'w').write(tool_dependency_definition)
         # Upload the edited tool dependency definition to the package_bzlib_1_0_1420 repository.
         self.upload_file(repository,
-                          filename='tool_dependencies.xml',
-                          filepath=tool_dependency_path,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_bzlib_1_0_1420 with tool dependency definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='tool_dependencies.xml',
+                         filepath=tool_dependency_path,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate package_bzlib_1_0_1420 with tool dependency definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_create_boost_repository(self):
         '''Create and populate package_boost_1_53_1420.'''
@@ -183,11 +183,11 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=package_boost_repository_name,
-                                                    description=package_boost_repository_description,
-                                                    long_description=package_boost_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=package_boost_repository_description,
+                                                   long_description=package_boost_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Load the original tool dependency definition into memory, then fill in the __PATH__ placeholder with the
         # actual system path where the binary tarball is found.
         tool_dependency_path = self.generate_temp_path('1420_tool_dependency', additional_paths=['package_boost_1_53_1420'])
@@ -198,14 +198,14 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         open(edited_tool_dependency_filename, 'w').write(tool_dependency_definition)
         # Upload the edited tool dependency definition to the package_boost_1_53_1420 repository.
         self.upload_file(repository,
-                          filename='tool_dependencies.xml',
-                          filepath=tool_dependency_path,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_boost_1_53_1420 with tool dependency definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='tool_dependencies.xml',
+                         filepath=tool_dependency_path,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate package_boost_1_53_1420 with tool dependency definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0025_create_numpy_repository(self):
         '''Create and populate package_numpy_1_7_1420.'''
@@ -217,11 +217,11 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=package_numpy_repository_name,
-                                                    description=package_numpy_repository_description,
-                                                    long_description=package_numpy_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=package_numpy_repository_description,
+                                                   long_description=package_numpy_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Load the original tool dependency definition into memory, then fill in the __PATH__ placeholder with the
         # actual system path where the binary tarball is found.
         tool_dependency_path = self.generate_temp_path('1420_tool_dependency', additional_paths=['package_numpy_1_7_1420'])
@@ -232,14 +232,14 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         open(edited_tool_dependency_filename, 'w').write(tool_dependency_definition)
         # Upload the edited tool dependency definition to the package_numpy_1_7_1420 repository.
         self.upload_file(repository,
-                          filename='tool_dependencies.xml',
-                          filepath=tool_dependency_path,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_numpy_1_7_1420 with tool dependency definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='tool_dependencies.xml',
+                         filepath=tool_dependency_path,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate package_numpy_1_7_1420 with tool dependency definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0030_create_rdkit_repository(self):
         '''Create and populate package_rdkit_2012_12_1420.'''
@@ -251,11 +251,11 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=package_rdkit_repository_name,
-                                                    description=package_rdkit_repository_description,
-                                                    long_description=package_rdkit_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=package_rdkit_repository_description,
+                                                   long_description=package_rdkit_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Load the original tool dependency definition into memory, then fill in the __PATH__ placeholder with the
         # actual system path where the binary tarball is found.
         tool_dependency_path = self.generate_temp_path('1420_tool_dependency', additional_paths=['package_rdkit_2012_12_1420'])
@@ -266,14 +266,14 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         open(edited_tool_dependency_filename, 'w').write(tool_dependency_definition)
         # Upload the edited tool dependency definition to the package_rdkit_2012_12_1420 repository.
         self.upload_file(repository,
-                          filename='tool_dependencies.xml',
-                          filepath=tool_dependency_path,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_rdkit_2012_12_1420 with tool dependency definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='tool_dependencies.xml',
+                         filepath=tool_dependency_path,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate package_rdkit_2012_12_1420 with tool dependency definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0035_install_rdkit_2012_12_repository(self):
         '''Install the package_rdkit_2012_12_1420 repository into Galaxy.'''
@@ -287,12 +287,12 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         '''
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         post_submit_strings_displayed = ['package_rdkit_2012_12_1420', 'package_atlas_3_10_1420', 'package_bzlib_1_0_1420',
-                                          'package_numpy_1_7_1420', 'package_lapack_3_4_1420', 'package_boost_1_53_1420']
+                                         'package_numpy_1_7_1420', 'package_lapack_3_4_1420', 'package_boost_1_53_1420']
         self.install_repository('package_rdkit_2012_12_1420',
-                                 common.test_user_1_name,
-                                 category_name,
-                                 install_tool_dependencies=True,
-                                 post_submit_strings_displayed=post_submit_strings_displayed)
+                                common.test_user_1_name,
+                                category_name,
+                                install_tool_dependencies=True,
+                                post_submit_strings_displayed=post_submit_strings_displayed)
 
     def test_0040_verify_env_sh_contents(self):
         '''Check the env.sh file for the appropriate contents.'''
@@ -304,14 +304,14 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         package_numpy_repository = self.test_db_util.get_installed_repository_by_name_owner('package_numpy_1_7_1420', common.test_user_1_name)
         package_boost_repository = self.test_db_util.get_installed_repository_by_name_owner('package_boost_1_53_1420', common.test_user_1_name)
         rdkit_env_sh = self.get_env_sh_path(tool_dependency_name='rdkit',
-                                             tool_dependency_version='2012_12_1',
-                                             repository=package_rdkit_repository)
+                                            tool_dependency_version='2012_12_1',
+                                            repository=package_rdkit_repository)
         numpy_tool_dependency_path = self.get_tool_dependency_path(tool_dependency_name='numpy',
-                                                                    tool_dependency_version='1.7.1',
-                                                                    repository=package_numpy_repository)
+                                                                   tool_dependency_version='1.7.1',
+                                                                   repository=package_numpy_repository)
         boost_tool_dependency_path = self.get_tool_dependency_path(tool_dependency_name='boost',
-                                                                    tool_dependency_version='1.53.0',
-                                                                    repository=package_boost_repository)
+                                                                   tool_dependency_version='1.53.0',
+                                                                   repository=package_boost_repository)
         rdkit_env_file_contents = open(rdkit_env_sh, 'r').read()
         if numpy_tool_dependency_path not in rdkit_env_file_contents or boost_tool_dependency_path not in rdkit_env_file_contents:
             message = 'Environment file for package_rdkit_2012_12_1420 does not contain expected path.'

@@ -57,7 +57,7 @@ class DatasetCollectionsController(
             return
         dataset_collection_instance = self.__service(trans).create(trans=trans, **create_params)
         return dictify_dataset_collection_instance(dataset_collection_instance,
-                                                    security=trans.security, parent=create_params["parent"])
+                                                   security=trans.security, parent=create_params["parent"])
 
     @expose_api
     def show(self, trans, instance_type, id, **kwds):

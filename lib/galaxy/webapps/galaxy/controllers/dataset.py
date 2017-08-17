@@ -57,10 +57,10 @@ class HistoryDatasetAssociationListGrid(grids.Grid):
     default_sort_key = "-update_time"
     columns = [
         grids.TextColumn("Name", key="name",
-                          # Link name to dataset's history.
-                          link=(lambda item: iff(item.history.deleted, None, dict(operation="switch", id=item.id))), filterable="advanced", attach_popup=True),
+                         # Link name to dataset's history.
+                         link=(lambda item: iff(item.history.deleted, None, dict(operation="switch", id=item.id))), filterable="advanced", attach_popup=True),
         HistoryColumn("History", key="history", sortable=False, target="inbound",
-                       link=(lambda item: iff(item.history.deleted, None, dict(operation="switch_history", id=item.id)))),
+                      link=(lambda item: iff(item.history.deleted, None, dict(operation="switch_history", id=item.id)))),
         grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid"),
         StatusColumn("Status", key="deleted", attach_popup=False),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
@@ -753,9 +753,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, dataset)
 
                 return trans.fill_template_mako("/dataset/display.mako", item=dataset, item_data=dataset_data,
-                                                 truncated=truncated, user_item_rating=user_item_rating,
-                                                 ave_item_rating=ave_item_rating, num_ratings=num_ratings,
-                                                 first_chunk=first_chunk)
+                                                truncated=truncated, user_item_rating=user_item_rating,
+                                                ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+                                                first_chunk=first_chunk)
         else:
             raise web.httpexceptions.HTTPNotFound()
 
@@ -929,11 +929,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     else:
                         raise Exception('Attempted a view action (%s) on a non-ready display application' % app_action)
             return trans.fill_template_mako("dataset/display_application/display.mako",
-                                             msg=msg,
-                                             display_app=display_app,
-                                             display_link=display_link,
-                                             refresh=refresh,
-                                             preparable_steps=preparable_steps)
+                                            msg=msg,
+                                            display_app=display_app,
+                                            display_link=display_link,
+                                            refresh=refresh,
+                                            preparable_steps=preparable_steps)
         return trans.show_error_message('You do not have permission to view this dataset at an external display application.')
 
     def _delete(self, trans, dataset_id):
@@ -1156,8 +1156,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         params_objects = job.get_param_values(trans.app, ignore_errors=True)
                         # use different param_objects in the following line, since we want to display original values as much as possible
                         upgrade_messages = tool.check_and_update_param_values(job.get_param_values(trans.app, ignore_errors=True),
-                                                                               trans,
-                                                                               update_values=False)
+                                                                              trans,
+                                                                              update_values=False)
                         has_parameter_errors = True
                 except:
                     pass
@@ -1165,14 +1165,14 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return trans.show_error_message("Job information is not available for this dataset.")
         # TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
         return trans.fill_template("show_params.mako",
-                                    inherit_chain=inherit_chain,
-                                    history=trans.get_history(),
-                                    hda=hda,
-                                    job=job,
-                                    tool=tool,
-                                    params_objects=params_objects,
-                                    upgrade_messages=upgrade_messages,
-                                    has_parameter_errors=has_parameter_errors)
+                                   inherit_chain=inherit_chain,
+                                   history=trans.get_history(),
+                                   hda=hda,
+                                   job=job,
+                                   tool=tool,
+                                   params_objects=params_objects,
+                                   upgrade_messages=upgrade_messages,
+                                   has_parameter_errors=has_parameter_errors)
 
     @web.expose
     def copy_datasets(self, trans, source_history=None, source_content_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd):
@@ -1250,7 +1250,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 trans.sa_session.flush()
                 hist_names_str = ", ".join(['<a href="%s" target="_top">%s</a>' %
                                             (url_for(controller="history", action="switch_to_history",
-                                                       hist_id=trans.security.encode_id(hist.id)), escape(hist.name))
+                                                     hist_id=trans.security.encode_id(hist.id)), escape(hist.name))
                                             for hist in target_histories])
                 num_source = len(source_content_ids) - invalid_contents
                 num_target = len(target_histories)
@@ -1261,17 +1261,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if user:
             target_histories = user.active_histories
         return trans.fill_template("/dataset/copy_view.mako",
-                                    source_history=history,
-                                    current_history=current_history,
-                                    source_content_ids=source_content_ids,
-                                    target_history_id=target_history_id,
-                                    target_history_ids=target_history_ids,
-                                    source_contents=source_contents,
-                                    target_histories=target_histories,
-                                    new_history_name=new_history_name,
-                                    done_msg=done_msg,
-                                    error_msg=error_msg,
-                                    refresh_frames=refresh_frames)
+                                   source_history=history,
+                                   current_history=current_history,
+                                   source_content_ids=source_content_ids,
+                                   target_history_id=target_history_id,
+                                   target_history_ids=target_history_ids,
+                                   source_contents=source_contents,
+                                   target_histories=target_histories,
+                                   new_history_name=new_history_name,
+                                   done_msg=done_msg,
+                                   error_msg=error_msg,
+                                   refresh_frames=refresh_frames)
 
     def _copy_datasets(self, trans, dataset_ids, target_histories, imported=False):
         """ Helper method for copying datasets. """

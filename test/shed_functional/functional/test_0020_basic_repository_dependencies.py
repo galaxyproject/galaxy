@@ -38,14 +38,14 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
                                              category_id=self.security.encode_id(category.id),
                                              strings_displayed=[])
         self.upload_file(repository,
-                          filename='emboss/datatypes/datatypes_conf.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded datatypes_conf.xml.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/datatypes/datatypes_conf.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded datatypes_conf.xml.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0015_verify_datatypes_in_datatypes_repository(self):
         '''Verify that the emboss_datatypes repository contains datatype entries.'''
@@ -62,14 +62,14 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
                                              category_id=self.security.encode_id(category.id),
                                              strings_displayed=[])
         self.upload_file(repository,
-                          filename='emboss/emboss.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded emboss.tar',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/emboss.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded emboss.tar',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0025_generate_and_upload_repository_dependencies_xml(self):
         '''Generate and upload the repository_dependencies.xml file'''
@@ -85,13 +85,13 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         datatypes_repository = self.test_db_util.get_repository_by_name_and_owner(datatypes_repository_name, common.test_user_1_name)
         changeset_revision = self.get_repository_tip(datatypes_repository)
         strings_displayed = ['Tool dependencies',
-                              'emboss',
-                              '5.0.0',
-                              'package',
-                              'emboss_datatypes_0020',
-                              'user1',
-                              changeset_revision,
-                              'Repository dependencies']
+                             'emboss',
+                             '5.0.0',
+                             'package',
+                             'emboss_datatypes_0020',
+                             'user1',
+                             changeset_revision,
+                             'Repository dependencies']
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0040_verify_repository_metadata(self):

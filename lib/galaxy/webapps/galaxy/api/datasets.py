@@ -63,7 +63,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
                 rval = self._dataset_state(trans, dataset)
             elif data_type == 'converted_datasets_state':
                 rval = self._converted_datasets_state(trans, dataset, kwd.get('chrom', None),
-                                                       is_true(kwd.get('retry', False)))
+                                                      is_true(kwd.get('retry', False)))
             elif data_type == 'data':
                 rval = self._data(trans, dataset, **kwd)
             elif data_type == 'features':
@@ -78,7 +78,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
                 # Default: return dataset as dict.
                 if hda_ldda == 'hda':
                     return self.hda_serializer.serialize_to_view(dataset,
-                                                                  view=kwd.get('view', 'detailed'), user=trans.user, trans=trans)
+                                                                 view=kwd.get('view', 'detailed'), user=trans.user, trans=trans)
                 else:
                     rval = dataset.to_dict()
 
@@ -122,7 +122,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         # If there is a chrom, check for data on the chrom.
         if chrom:
             data_provider = trans.app.data_provider_registry.get_data_provider(trans,
-                                                                                original_dataset=dataset, source='index')
+                                                                               original_dataset=dataset, source='index')
             if not data_provider.has_data(chrom):
                 return dataset.conversion_messages.NO_DATA
 
@@ -223,8 +223,8 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
                 # spliced/gapped reads. Probably should provide refseq object
                 # directly to data provider.
                 region = self.app.genomes.reference(trans, dbkey=dataset.dbkey, chrom=chrom,
-                                                     low=(max(0, int(low) - 1000000)),
-                                                     high=(int(high) + 1000000))
+                                                    low=(max(0, int(low) - 1000000)),
+                                                    high=(int(high) + 1000000))
 
             # Get mean depth.
             if not indexer:
@@ -234,7 +234,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
         # Get and return data from data_provider.
         result = data_provider.get_data(chrom, int(low), int(high), int(start_val), int(max_vals),
-                                         ref_seq=region, mean_depth=mean_depth, **kwargs)
+                                        ref_seq=region, mean_depth=mean_depth, **kwargs)
         result.update({'dataset_type': data_provider.dataset_type, 'extra_info': extra_info})
         return result
 
@@ -278,7 +278,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
     @web.expose_api_raw_anonymous
     def display(self, trans, history_content_id, history_id,
-                 preview=False, filename=None, to_ext=None, raw=False, **kwd):
+                preview=False, filename=None, to_ext=None, raw=False, **kwd):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/display
         Displays history content (dataset).
@@ -297,8 +297,8 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             if raw:
                 if filename and filename != 'index':
                     file_path = trans.app.object_store.get_filename(hda.dataset,
-                                                                     extra_dir=('dataset_%s_files' % hda.dataset.id),
-                                                                     alt_name=filename)
+                                                                    extra_dir=('dataset_%s_files' % hda.dataset.id),
+                                                                    alt_name=filename)
                 else:
                     file_path = hda.file_name
                 rval = open(file_path)
@@ -311,7 +311,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
         except Exception as exception:
             log.error("Error getting display data for dataset (%s) from history (%s): %s",
-                       history_content_id, history_id, str(exception), exc_info=True)
+                      history_content_id, history_id, str(exception), exc_info=True)
             trans.response.status = 500
             rval = ("Could not get display data for dataset: " + str(exception))
 
@@ -330,7 +330,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             return open(hda.metadata.get(metadata_file).file_name)
         except Exception as exception:
             log.error("Error getting metadata_file (%s) for dataset (%s) from history (%s): %s",
-                       metadata_file, history_content_id, history_id, str(exception), exc_info=True)
+                      metadata_file, history_content_id, history_id, str(exception), exc_info=True)
             trans.response.status = 500
             rval = ("Could not get display data for dataset: " + str(exception))
         return rval

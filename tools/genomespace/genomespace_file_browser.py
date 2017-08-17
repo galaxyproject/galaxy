@@ -172,16 +172,16 @@ def download_from_genomespace_file_browser(json_parameter_file, genomespace_site
             output_filename = os.path.join(os.getcwd(), 'primary_%i_%s_visible_%s' % (hda_id, filename, galaxy_ext))
 
             metadata_dict = dict(type='new_primary_dataset',
-                                  base_dataset_id=dataset_id,
-                                  ext=galaxy_ext,
-                                  filename=output_filename,
-                                  name="GenomeSpace import on %s" % (original_filename))
+                                 base_dataset_id=dataset_id,
+                                 ext=galaxy_ext,
+                                 filename=output_filename,
+                                 name="GenomeSpace import on %s" % (original_filename))
         else:
             if dataset_id is not None:
                 metadata_dict = dict(type='dataset',
-                                      dataset_id=dataset_id,
-                                      ext=galaxy_ext,
-                                      name="GenomeSpace import on %s" % (filename))
+                                     dataset_id=dataset_id,
+                                     ext=galaxy_ext,
+                                     name="GenomeSpace import on %s" % (filename))
         output_file = open(output_filename, 'wb')
         chunk_write(target_download_url, output_file)
         output_file.close()

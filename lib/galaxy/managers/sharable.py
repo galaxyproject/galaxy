@@ -247,12 +247,12 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
 
     def _existing_set_of_slugs(self, user):
         query = (self.session().query(self.model_class.slug)
-                  .filter_by(user=user))
+                 .filter_by(user=user))
         return list(set(query.all()))
 
     def _slug_exists(self, user, slug):
         query = (self.session().query(self.model_class.slug)
-                  .filter_by(user=user, slug=slug))
+                 .filter_by(user=user, slug=slug))
         return query.count() != 0
 
     def _slugify(self, start_with):
@@ -289,8 +289,8 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         new_slug = slug_base
         count = 1
         while (self.session().query(item.__class__)
-                    .filter_by(user=item.user, slug=new_slug, importable=True)
-                    .count() != 0):
+               .filter_by(user=item.user, slug=new_slug, importable=True)
+               .count() != 0):
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
             new_slug = '%s-%i' % (slug_base, count)

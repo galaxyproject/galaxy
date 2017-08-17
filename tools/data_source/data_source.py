@@ -55,9 +55,9 @@ def __main__():
         enhanced_handling = False
         job_params = dict(param_dict=params)
         job_params['output_data'] = [dict(out_data_name='output',
-                                              ext='data',
-                                              file_name=filename,
-                                              extra_files_path=None)]
+                                          ext='data',
+                                          file_name=filename,
+                                          extra_files_path=None)]
         job_params['job_config'] = dict(GALAXY_ROOT_DIR=GALAXY_ROOT_DIR, GALAXY_DATATYPES_CONF_FILE=GALAXY_DATATYPES_CONF_FILE, TOOL_PROVIDED_JOB_METADATA_FILE=TOOL_PROVIDED_JOB_METADATA_FILE)
     else:
         enhanced_handling = True
@@ -109,8 +109,8 @@ def __main__():
             except Exception as e:
                 stop_err(str(e))
             info = dict(type='dataset',
-                         dataset_id=data_dict['dataset_id'],
-                         ext=ext)
+                        dataset_id=data_dict['dataset_id'],
+                        ext=ext)
 
             json_file.write("%s\n" % dumps(info))
 

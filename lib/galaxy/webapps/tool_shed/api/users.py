@@ -29,16 +29,16 @@ class UsersController(BaseAPIController):
         :param username (required): the public username of the user
         """
         user_dict = dict(message='',
-                          status='ok')
+                         status='ok')
         # Get the information about the user to be created from the payload.
         email = payload.get('email', '')
         password = payload.get('password', '')
         username = payload.get('username', '')
         message = self.__validate(trans,
-                                   email=email,
-                                   password=password,
-                                   confirm=password,
-                                   username=username)
+                                  email=email,
+                                  password=password,
+                                  confirm=password,
+                                  username=username)
         if message:
             message = 'email: %s, username: %s - %s' % (email, username, message)
             user_dict['message'] = message
@@ -47,11 +47,11 @@ class UsersController(BaseAPIController):
             # Create the user.
             user = self.__create_user(trans, email, username, password)
             user_dict = user.to_dict(view='element',
-                                      value_mapper=self.__get_value_mapper(trans))
+                                     value_mapper=self.__get_value_mapper(trans))
             user_dict['message'] = "User '%s' has been created." % str(user.username)
             user_dict['url'] = web.url_for(controller='users',
-                                              action='show',
-                                              id=trans.security.encode_id(user.id))
+                                           action='show',
+                                           id=trans.security.encode_id(user.id))
         return user_dict
 
     def __create_user(self, trans, email, username, password):
@@ -84,10 +84,10 @@ class UsersController(BaseAPIController):
                                     .filter(trans.app.model.User.table.c.deleted == deleted) \
                                     .order_by(trans.app.model.User.table.c.username):
             user_dict = user.to_dict(view='collection',
-                                      value_mapper=self.__get_value_mapper(trans))
+                                     value_mapper=self.__get_value_mapper(trans))
             user_dict['url'] = web.url_for(controller='users',
-                                              action='show',
-                                              id=trans.security.encode_id(user.id))
+                                           action='show',
+                                           id=trans.security.encode_id(user.id))
             user_dicts.append(user_dict)
         return user_dicts
 
@@ -109,13 +109,13 @@ class UsersController(BaseAPIController):
 
         if user is None:
             user_dict = dict(message='Unable to locate user record for id %s.' % (str(id)),
-                              status='error')
+                             status='error')
             return user_dict
         user_dict = user.to_dict(view='element',
-                                  value_mapper=self.__get_value_mapper(trans))
+                                 value_mapper=self.__get_value_mapper(trans))
         user_dict['url'] = web.url_for(controller='users',
-                                          action='show',
-                                          id=trans.security.encode_id(user.id))
+                                       action='show',
+                                       id=trans.security.encode_id(user.id))
         return user_dict
 
     def __validate(self, trans, email, password, confirm, username):

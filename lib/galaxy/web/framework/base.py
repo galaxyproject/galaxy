@@ -37,7 +37,7 @@ def __resource_with_deleted(self, member_name, collection_name, **kwargs):
     self.connect('deleted_' + collection_name, collection_path, controller=collection_name, action='index', deleted=True, conditions=dict(method=['GET']))
     self.connect('deleted_' + member_name, member_path, controller=collection_name, action='show', deleted=True, conditions=dict(method=['GET']))
     self.connect('undelete_deleted_' + member_name, member_path + '/undelete', controller=collection_name, action='undelete',
-                  conditions=dict(method=['POST']))
+                 conditions=dict(method=['POST']))
     self.resource(member_name, collection_name, **kwargs)
 
 
@@ -77,12 +77,12 @@ class WebApplication(object):
         method use `add_route`.
         """
         log.debug("Enabling '%s' controller, class: %s",
-                   controller_name, controller.__class__.__name__)
+                  controller_name, controller.__class__.__name__)
         self.controllers[controller_name] = controller
 
     def add_api_controller(self, controller_name, controller):
         log.debug("Enabling '%s' API controller, class: %s",
-                   controller_name, controller.__class__.__name__)
+                  controller_name, controller.__class__.__name__)
         self.api_controllers[controller_name] = controller
 
     def add_route(self, route, **kwargs):
@@ -232,11 +232,11 @@ class WebApplication(object):
             # Stream the tarfile member back to the browser
             body = iterate_file(body)
             start_response(trans.response.wsgi_status(),
-                            trans.response.wsgi_headeritems())
+                           trans.response.wsgi_headeritems())
             return body
         else:
             start_response(trans.response.wsgi_status(),
-                            trans.response.wsgi_headeritems())
+                           trans.response.wsgi_headeritems())
             return self.make_body_iterable(trans, body)
 
     def make_body_iterable(self, trans, body):
@@ -471,7 +471,7 @@ def send_file(start_response, trans, body):
     else:
         body = iterate_file(body)
     start_response(trans.response.wsgi_status(),
-                    trans.response.wsgi_headeritems())
+                   trans.response.wsgi_headeritems())
     return body
 
 

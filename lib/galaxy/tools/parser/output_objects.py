@@ -24,8 +24,8 @@ class ToolOutput(ToolOutputBase):
     dict_collection_visible_keys = ('name', 'format', 'label', 'hidden')
 
     def __init__(self, name, format=None, format_source=None, metadata_source=None,
-                  parent=None, label=None, filters=None, actions=None, hidden=False,
-                  implicit=False):
+                 parent=None, label=None, filters=None, actions=None, hidden=False,
+                 implicit=False):
         super(ToolOutput, self).__init__(name, label=label, filters=filters, hidden=hidden)
         self.format = format
         self.format_source = format_source

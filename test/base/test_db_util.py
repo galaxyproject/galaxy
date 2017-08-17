@@ -39,7 +39,7 @@ def flush(obj):
 def get_all_histories_for_user(user):
     return gx_context().query(galaxy.model.History) \
                        .filter(and_(galaxy.model.History.table.c.user_id == user.id,
-                                      galaxy.model.History.table.c.deleted == false())) \
+                                    galaxy.model.History.table.c.deleted == false())) \
                        .all()
 
 
@@ -94,8 +94,8 @@ def get_form(name):
 def get_folder(parent_id, name, description):
     return gx_context().query(galaxy.model.LibraryFolder) \
                        .filter(and_(galaxy.model.LibraryFolder.table.c.parent_id == parent_id,
-                                      galaxy.model.LibraryFolder.table.c.name == name,
-                                      galaxy.model.LibraryFolder.table.c.description == description)) \
+                                    galaxy.model.LibraryFolder.table.c.name == name,
+                                    galaxy.model.LibraryFolder.table.c.description == description)) \
                        .first()
 
 
@@ -130,7 +130,7 @@ def get_latest_hda():
 def get_latest_history_for_user(user):
     return gx_context().query(galaxy.model.History) \
                        .filter(and_(galaxy.model.History.table.c.deleted == false(),
-                                      galaxy.model.History.table.c.user_id == user.id)) \
+                                    galaxy.model.History.table.c.user_id == user.id)) \
                        .order_by(desc(galaxy.model.History.table.c.create_time)) \
                        .first()
 
@@ -138,7 +138,7 @@ def get_latest_history_for_user(user):
 def get_latest_ldda_by_name(name):
     return gx_context().query(galaxy.model.LibraryDatasetDatasetAssociation) \
                        .filter(and_(galaxy.model.LibraryDatasetDatasetAssociation.table.c.name == name,
-                                      galaxy.model.LibraryDatasetDatasetAssociation.table.c.deleted == false())) \
+                                    galaxy.model.LibraryDatasetDatasetAssociation.table.c.deleted == false())) \
                        .order_by(desc(galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time)) \
                        .first()
 
@@ -152,9 +152,9 @@ def get_latest_lddas(limit):
 def get_library(name, description, synopsis):
     return gx_context().query(galaxy.model.Library) \
                        .filter(and_(galaxy.model.Library.table.c.name == name,
-                                      galaxy.model.Library.table.c.description == description,
-                                      galaxy.model.Library.table.c.synopsis == synopsis,
-                                      galaxy.model.Library.table.c.deleted == false())) \
+                                    galaxy.model.Library.table.c.description == description,
+                                    galaxy.model.Library.table.c.synopsis == synopsis,
+                                    galaxy.model.Library.table.c.deleted == false())) \
                        .first()
 
 
@@ -168,7 +168,7 @@ def get_private_role(user):
 def get_request_by_name(name):
     return gx_context().query(galaxy.model.Request) \
                        .filter(and_(galaxy.model.Request.table.c.name == name,
-                                      galaxy.model.Request.table.c.deleted == false())) \
+                                    galaxy.model.Request.table.c.deleted == false())) \
                        .first()
 
 
@@ -192,8 +192,8 @@ def get_user(email):
 def get_user_address(user, short_desc):
     return gx_context().query(galaxy.model.UserAddress) \
                        .filter(and_(galaxy.model.UserAddress.table.c.user_id == user.id,
-                                      galaxy.model.UserAddress.table.c.desc == short_desc,
-                                      galaxy.model.UserAddress.table.c.deleted == false())) \
+                                    galaxy.model.UserAddress.table.c.desc == short_desc,
+                                    galaxy.model.UserAddress.table.c.deleted == false())) \
                        .order_by(desc(galaxy.model.UserAddress.table.c.create_time)) \
                        .first()
 

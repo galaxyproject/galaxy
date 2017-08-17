@@ -478,10 +478,10 @@ class PulsarJobRunner(AsynchronousJobRunner):
             cleanup_job = job_wrapper.cleanup_job
             client_outputs = self.__client_outputs(client, job_wrapper)
             finish_args = dict(client=client,
-                                job_completed_normally=completed_normally,
-                                cleanup_job=cleanup_job,
-                                client_outputs=client_outputs,
-                                pulsar_outputs=pulsar_outputs)
+                               job_completed_normally=completed_normally,
+                               cleanup_job=cleanup_job,
+                               client_outputs=client_outputs,
+                               pulsar_outputs=pulsar_outputs)
             failed = pulsar_finish_job(**finish_args)
             if failed:
                 job_wrapper.fail("Failed to find or download one or more job outputs from remote server.", exception=True)

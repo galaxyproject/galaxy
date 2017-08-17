@@ -44,10 +44,10 @@ def build_index(sa_session, whoosh_index_dir):
     lddas_indexed = 0
     for id, name, info, dbkey, message in get_lddas(sa_session):
         writer.add_document(id=id,
-                             name=to_unicode(name),
-                             info=to_unicode(info),
-                             dbkey=to_unicode(dbkey),
-                             message=to_unicode(message))
+                            name=to_unicode(name),
+                            info=to_unicode(info),
+                            dbkey=to_unicode(dbkey),
+                            message=to_unicode(message))
         lddas_indexed += 1
     writer.commit()
     print("Number of active library datasets indexed: ", lddas_indexed)

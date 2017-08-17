@@ -92,19 +92,19 @@ class ToolsController(BaseAPIController):
         tool_search = ToolSearch()
 
         Boosts = namedtuple('Boosts', ['tool_name_boost',
-                                         'tool_description_boost',
-                                         'tool_help_boost',
-                                         'tool_repo_owner_username_boost'])
+                                       'tool_description_boost',
+                                       'tool_help_boost',
+                                       'tool_repo_owner_username_boost'])
         boosts = Boosts(float(conf.get('tool_name_boost', 1.2)),
-                         float(conf.get('tool_description_boost', 0.6)),
-                         float(conf.get('tool_help_boost', 0.4)),
-                         float(conf.get('tool_repo_owner_username_boost', 0.3)))
+                        float(conf.get('tool_description_boost', 0.6)),
+                        float(conf.get('tool_help_boost', 0.4)),
+                        float(conf.get('tool_repo_owner_username_boost', 0.3)))
 
         results = tool_search.search(trans,
-                                      search_term,
-                                      page,
-                                      page_size,
-                                      boosts)
+                                     search_term,
+                                     page,
+                                     page_size,
+                                     boosts)
         results['hostname'] = web.url_for('/', qualified=True)
         return results
 
@@ -139,9 +139,9 @@ class ToolsController(BaseAPIController):
         rb = relation_builder.RelationBuilder(trans.app, repository, repository_metadata, toolshed_base_url)
         repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
         containers_dict = tsucm.build_repository_containers(repository,
-                                                             changeset,
-                                                             repository_dependencies,
-                                                             repository_metadata)
+                                                            changeset,
+                                                            repository_dependencies,
+                                                            repository_metadata)
         found_tool = None
         for folder in containers_dict['valid_tools'].folders:
             if hasattr(folder, 'valid_tools'):
@@ -158,8 +158,8 @@ class ToolsController(BaseAPIController):
 
         tv = tool_validator.ToolValidator(trans.app)
         repository, tool, message = tv.load_tool_from_changeset_revision(tsr_id,
-                                                                          changeset,
-                                                                          found_tool.tool_config)
+                                                                         changeset,
+                                                                         found_tool.tool_config)
         if message:
             status = 'error'
             return dict(message=message, status=status)

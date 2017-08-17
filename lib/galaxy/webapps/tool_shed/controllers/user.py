@@ -37,12 +37,12 @@ class User(BaseUser):
         message = escape(util.restore_text(params.get('message', '')))
         status = params.get('status', 'done')
         return trans.fill_template('/webapps/tool_shed/user/manage_info.mako',
-                                    cntrller=cntrller,
-                                    user=user,
-                                    email=email,
-                                    username=username,
-                                    message=message,
-                                    status=status)
+                                   cntrller=cntrller,
+                                   user=user,
+                                   email=email,
+                                   username=username,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_login()
@@ -55,10 +55,10 @@ class User(BaseUser):
             message = "Generated a new web API key"
             status = "done"
         return trans.fill_template('/webapps/tool_shed/user/api_keys.mako',
-                                    cntrller=cntrller,
-                                    user=trans.user,
-                                    message=message,
-                                    status=status)
+                                   cntrller=cntrller,
+                                   user=trans.user,
+                                   message=message,
+                                   status=status)
 
     # For REMOTE_USER, we need the ability to just edit the username
     @web.expose
@@ -85,11 +85,11 @@ class User(BaseUser):
                 trans.sa_session.flush()
                 message = 'The username has been updated with the changes.'
         return trans.fill_template('/webapps/tool_shed/user/username.mako',
-                                    cntrller=cntrller,
-                                    user=user,
-                                    username=user.username,
-                                    message=message,
-                                    status=status)
+                                   cntrller=cntrller,
+                                   user=user,
+                                   username=user.username,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     def edit_info(self, trans, cntrller, **kwd):
@@ -183,9 +183,9 @@ class User(BaseUser):
         if status:
             kwd['status'] = status
         return trans.response.send_redirect(web.url_for(controller='user',
-                                                          action='manage_user_info',
-                                                          cntrller=cntrller,
-                                                          **kwd))
+                                                        action='manage_user_info',
+                                                        cntrller=cntrller,
+                                                        **kwd))
 
     @web.expose
     def change_password(self, trans, token=None, **kwd):
@@ -231,8 +231,8 @@ class User(BaseUser):
                     # Invalidate all other sessions
                     for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
                                                      .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                                    trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                                    trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
+                                                                  trans.app.model.GalaxySession.table.c.is_valid == true(),
+                                                                  trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
                         other_galaxy_session.is_valid = False
                         trans.sa_session.add(other_galaxy_session)
                     trans.sa_session.add(user)
@@ -243,8 +243,8 @@ class User(BaseUser):
                     else:
                         return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
         return trans.fill_template('/webapps/tool_shed/user/change_password.mako',
-                                    token=token,
-                                    status=status,
-                                    message=message,
-                                    display_top=kwd.get('redirect_home', False)
+                                   token=token,
+                                   status=status,
+                                   message=message,
+                                   display_top=kwd.get('redirect_home', False)
                                     )

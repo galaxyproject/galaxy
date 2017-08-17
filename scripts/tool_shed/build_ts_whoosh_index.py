@@ -97,13 +97,13 @@ def build_index(sa_session, whoosh_index_dir, path_to_repositories):
         for tool in repo.get('tools_list'):
             # print tool
             tool_index_writer.add_document(id=to_unicode(tool.get('id')),
-                                            name=to_unicode(tool.get('name')),
-                                            version=to_unicode(tool.get('version')),
-                                            description=to_unicode(tool.get('description')),
-                                            help=to_unicode(tool.get('help')),
-                                            repo_owner_username=to_unicode(repo.get('repo_owner_username')),
-                                            repo_name=to_unicode(repo.get('name')),
-                                            repo_id=repo.get('id'))
+                                           name=to_unicode(tool.get('name')),
+                                           version=to_unicode(tool.get('version')),
+                                           description=to_unicode(tool.get('description')),
+                                           help=to_unicode(tool.get('help')),
+                                           repo_owner_username=to_unicode(repo.get('repo_owner_username')),
+                                           repo_name=to_unicode(repo.get('name')),
+                                           repo_id=repo.get('id'))
             tools_indexed += 1
             print tools_indexed, 'tools (', tool.get('id'), ')'
 
@@ -164,17 +164,17 @@ def get_repos(sa_session, path_to_repositories):
                     tools_list.extend(tools_in_dir)
 
         results.append(dict(id=repo_id,
-                             name=name,
-                             description=description,
-                             long_description=long_description,
-                             homepage_url=homepage_url,
-                             remote_repository_url=remote_repository_url,
-                             repo_owner_username=repo_owner_username,
-                             times_downloaded=times_downloaded,
-                             approved=approved,
-                             last_updated=last_updated,
-                             full_last_updated=full_last_updated,
-                             tools_list=tools_list))
+                            name=name,
+                            description=description,
+                            long_description=long_description,
+                            homepage_url=homepage_url,
+                            remote_repository_url=remote_repository_url,
+                            repo_owner_username=repo_owner_username,
+                            times_downloaded=times_downloaded,
+                            approved=approved,
+                            last_updated=last_updated,
+                            full_last_updated=full_last_updated,
+                            tools_list=tools_list))
     return results
 
 
@@ -191,8 +191,8 @@ def load_one_dir(path):
                 if root.find('description') is not None:
                     tool.update(dict(description=root.find('description').text))
                 tool.update(dict(id=root.attrib.get('id'),
-                                   name=root.attrib.get('name'),
-                                   version=root.attrib.get('version')))
+                                 name=root.attrib.get('name'),
+                                 version=root.attrib.get('version')))
                 tools_in_dir.append(tool)
     return tools_in_dir
 

@@ -44,11 +44,11 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         category = self.test_db_util.get_category_by_name('Test 0000 Basic Repository Features 1')
         strings_displayed = self.expect_repo_created_strings(repository_name)
         self.get_or_create_repository(name=repository_name,
-                                       description=repository_description,
-                                       long_description=repository_long_description,
-                                       owner=common.test_user_1_name,
-                                       category_id=self.security.encode_id(category.id),
-                                       strings_displayed=strings_displayed)
+                                      description=repository_description,
+                                      long_description=repository_long_description,
+                                      owner=common.test_user_1_name,
+                                      category_id=self.security.encode_id(category.id),
+                                      strings_displayed=strings_displayed)
 
     def test_0020_edit_repository(self):
         """Edit the repository name, description, and long description"""
@@ -62,8 +62,8 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         """Change the categories associated with the filtering repository"""
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.edit_repository_categories(repository,
-                                         categories_to_add=["Test 0000 Basic Repository Features 2"],
-                                         categories_to_remove=["Test 0000 Basic Repository Features 1"])
+                                        categories_to_add=["Test 0000 Basic Repository Features 2"],
+                                        categories_to_remove=["Test 0000 Basic Repository Features 1"])
 
     def test_0030_grant_write_access(self):
         '''Grant write access to another user'''
@@ -75,14 +75,14 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         """Upload filtering_1.1.0.tar to the repository"""
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(repository,
-                          filename='filtering/filtering_1.1.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=True,
-                          commit_message="Uploaded filtering 1.1.0",
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_1.1.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=True,
+                         commit_message="Uploaded filtering 1.1.0",
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0040_verify_repository(self):
         '''Display basic repository pages'''
@@ -93,42 +93,42 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         tip = self.get_repository_tip(repository)
         tool_guid = '%s/repos/user1/filtering_0000/Filter1/1.1.0' % self.url.replace('http://', '').rstrip('/')
         tool_metadata_strings_displayed = [tool_guid,
-                                            '1.1.0',  # The tool version.
-                                            'Filter1',  # The tool ID.
-                                            'Filter',  # The tool name.
-                                            'data on any column using simple expressions']  # The tool description.
+                                           '1.1.0',  # The tool version.
+                                           'Filter1',  # The tool ID.
+                                           'Filter',  # The tool name.
+                                           'data on any column using simple expressions']  # The tool description.
         tool_page_strings_displayed = ['Filter (version 1.1.0)']
         self.check_repository_tools_for_changeset_revision(repository,
-                                                            tip,
-                                                            tool_metadata_strings_displayed=tool_metadata_strings_displayed,
-                                                            tool_page_strings_displayed=tool_page_strings_displayed)
+                                                           tip,
+                                                           tool_metadata_strings_displayed=tool_metadata_strings_displayed,
+                                                           tool_page_strings_displayed=tool_page_strings_displayed)
         self.check_repository_metadata(repository, tip_only=False)
         self.browse_repository(repository, strings_displayed=["Repository '%s' revision" % repository.name, '(repository tip)'])
         self.display_repository_clone_page(common.test_user_1_name,
-                                            repository_name,
-                                            strings_displayed=['Uploaded filtering 1.1.0', latest_changeset_revision])
+                                           repository_name,
+                                           strings_displayed=['Uploaded filtering 1.1.0', latest_changeset_revision])
 
     def test_0045_alter_repository_states(self):
         '''Test toggling the malicious and deprecated repository flags.'''
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
         self.set_repository_malicious(repository,
-                                       set_malicious=True,
-                                       strings_displayed=['The repository tip has been defined as malicious.'])
+                                      set_malicious=True,
+                                      strings_displayed=['The repository tip has been defined as malicious.'])
         self.set_repository_malicious(repository,
-                                       set_malicious=False,
-                                       strings_displayed=['The repository tip has been defined as <b>not</b> malicious.'])
+                                      set_malicious=False,
+                                      strings_displayed=['The repository tip has been defined as <b>not</b> malicious.'])
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.set_repository_deprecated(repository,
-                                        strings_displayed=['has been marked as deprecated'])
+                                       strings_displayed=['has been marked as deprecated'])
         strings_displayed = ['This repository has been marked as deprecated', 'Mark repository as not deprecated']
         self.display_manage_repository_page(repository,
-                                             strings_displayed=strings_displayed,
-                                             strings_not_displayed=['Upload files', 'Reset all repository metadata'])
+                                            strings_displayed=strings_displayed,
+                                            strings_not_displayed=['Upload files', 'Reset all repository metadata'])
         self.browse_repository(repository, strings_not_displayed=['Upload files'])
         self.set_repository_deprecated(repository,
-                                        strings_displayed=['has been marked as not deprecated'],
-                                        set_deprecated=False)
+                                       strings_displayed=['has been marked as not deprecated'],
+                                       set_deprecated=False)
         strings_displayed = ['Mark repository as deprecated', 'Upload files', 'Reset all repository metadata']
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
@@ -136,56 +136,56 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         '''Display the contents of filtering.xml in the repository tip revision'''
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.display_repository_file_contents(repository=repository,
-                                               filename='filtering.xml',
-                                               filepath=None,
-                                               strings_displayed=['1.1.0'],
-                                               strings_not_displayed=[])
+                                              filename='filtering.xml',
+                                              filepath=None,
+                                              strings_displayed=['1.1.0'],
+                                              strings_not_displayed=[])
 
     def test_0055_upload_filtering_txt_file(self):
         '''Upload filtering.txt file associated with tool version 1.1.0.'''
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(repository,
-                          filename='filtering/filtering_0000.txt',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message="Uploaded filtering.txt",
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_0000.txt',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message="Uploaded filtering.txt",
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         self.display_manage_repository_page(repository, strings_displayed=['Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0'])
 
     def test_0060_upload_filtering_test_data(self):
         '''Upload filtering test data.'''
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(repository,
-                          filename='filtering/filtering_test_data.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message="Uploaded filtering test data",
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_test_data.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message="Uploaded filtering test data",
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         self.display_repository_file_contents(repository=repository,
-                                               filename='1.bed',
-                                               filepath='test-data',
-                                               strings_displayed=[],
-                                               strings_not_displayed=[])
+                                              filename='1.bed',
+                                              filepath='test-data',
+                                              strings_displayed=[],
+                                              strings_not_displayed=[])
         self.check_repository_metadata(repository, tip_only=True)
 
     def test_0065_upload_filtering_2_2_0(self):
         '''Upload filtering version 2.2.0'''
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(repository,
-                          filename='filtering/filtering_2.2.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message="Uploaded filtering 2.2.0",
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_2.2.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message="Uploaded filtering 2.2.0",
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0070_verify_filtering_repository(self):
         '''Verify the new tool versions and repository metadata.'''
@@ -197,34 +197,34 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.check_count_of_metadata_revisions_associated_with_repository(repository, metadata_count=2)
         tool_guid = '%s/repos/user1/filtering_0000/Filter1/2.2.0' % self.url.replace('http://', '').rstrip('/')
         tool_metadata_strings_displayed = [tool_guid,
-                                            '2.2.0',  # The tool version.
-                                            'Filter1',  # The tool ID.
-                                            'Filter',  # The tool name.
-                                            'data on any column using simple expressions']  # The tool description.
+                                           '2.2.0',  # The tool version.
+                                           'Filter1',  # The tool ID.
+                                           'Filter',  # The tool name.
+                                           'data on any column using simple expressions']  # The tool description.
         tool_page_strings_displayed = ['Filter (version 2.2.0)']
         self.check_repository_tools_for_changeset_revision(repository,
-                                                            tip,
-                                                            tool_metadata_strings_displayed=tool_metadata_strings_displayed,
-                                                            tool_page_strings_displayed=tool_page_strings_displayed)
+                                                           tip,
+                                                           tool_metadata_strings_displayed=tool_metadata_strings_displayed,
+                                                           tool_page_strings_displayed=tool_page_strings_displayed)
         self.check_repository_metadata(repository, tip_only=False)
 
     def test_0075_upload_readme_txt_file(self):
         '''Upload readme.txt file associated with tool version 2.2.0.'''
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(repository,
-                          filename='readme.txt',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message="Uploaded readme.txt",
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='readme.txt',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message="Uploaded readme.txt",
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         self.display_manage_repository_page(repository, strings_displayed=['This&nbsp;is&nbsp;a&nbsp;readme&nbsp;file.'])
         # Verify that there is a different readme file for each metadata revision.
         self.display_manage_repository_page(repository,
-                                             strings_displayed=['Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0',
-                                                                 'This&nbsp;is&nbsp;a&nbsp;readme&nbsp;file.'])
+                                            strings_displayed=['Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0',
+                                                               'This&nbsp;is&nbsp;a&nbsp;readme&nbsp;file.'])
 
     def test_0080_delete_readme_txt_file(self):
         '''Delete the readme.txt file.'''
@@ -250,11 +250,11 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         category = self.test_db_util.get_category_by_name('Test 0000 Basic Repository Features 1')
         error_message = 'The term <b>repos</b> is a reserved word in the tool shed, so it cannot be used as a repository name.'
         self.get_or_create_repository(name='repos',
-                                       description=repository_description,
-                                       long_description=repository_long_description,
-                                       owner=common.test_user_1_name,
-                                       category_id=self.security.encode_id(category.id),
-                                       strings_displayed=[error_message])
+                                      description=repository_description,
+                                      long_description=repository_long_description,
+                                      owner=common.test_user_1_name,
+                                      category_id=self.security.encode_id(category.id),
+                                      strings_displayed=[error_message])
 
     def test_0100_verify_reserved_username_handling(self):
         '''Check that reserved usernames are handled correctly.'''
@@ -278,9 +278,9 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         strings_displayed = ['Contact the owner of the repository named', repository.name, 'streamline appropriate communication']
         post_submit_strings_displayed = ['An error occurred sending your message by email']
         self.send_message_to_repository_owner(repository=repository,
-                                               message=message,
-                                               strings_displayed=strings_displayed,
-                                               post_submit_strings_displayed=post_submit_strings_displayed)
+                                              message=message,
+                                              strings_displayed=strings_displayed,
+                                              post_submit_strings_displayed=post_submit_strings_displayed)
 
     def test_0110_delete_filtering_repository(self):
         '''Delete the filtering_0000 repository and verify that it no longer has any downloadable revisions.'''
@@ -321,14 +321,14 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         # Upload readme.txt to the filtering_0000 repository and verify that it is now displayed.
         self.upload_file(repository,
-                          filename='filtering/readme.txt',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message="Uploaded new readme.txt with invalid ascii characters.",
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/readme.txt',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message="Uploaded new readme.txt with invalid ascii characters.",
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         self.display_manage_repository_page(repository, strings_displayed=['These&nbsp;characters&nbsp;should&nbsp;not'])
 
     def test_0130_verify_handling_of_invalid_characters(self):
@@ -347,7 +347,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         # Check for the changeset revision, repository name, owner username, 'repos' in the clone url, and the captured
         # unicode decoding error message.
         strings_displayed = ['%d:%s' % (revision_number, revision_hash), 'filtering_0000', 'user1', 'repos', 'added:',
-                              '+These&nbsp;characters&nbsp;should&nbsp;not']
+                             '+These&nbsp;characters&nbsp;should&nbsp;not']
         self.load_changeset_in_tool_shed(repository_id, changeset_revision, strings_displayed=strings_displayed)
 
     def test_0135_api_get_repositories_in_category(self):

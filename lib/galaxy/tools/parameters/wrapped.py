@@ -59,16 +59,16 @@ class WrappedParameters(object):
                 dataset_instances = DatasetListWrapper.to_dataset_instances(value)
                 input_values[input.name] = \
                     DatasetListWrapper(None,
-                                        dataset_instances,
-                                        datatypes_registry=trans.app.datatypes_registry,
-                                        tool=tool,
-                                        name=input.name)
+                                       dataset_instances,
+                                       datatypes_registry=trans.app.datatypes_registry,
+                                       tool=tool,
+                                       name=input.name)
             elif isinstance(input, DataToolParameter):
                 input_values[input.name] = \
                     DatasetFilenameWrapper(value,
-                                            datatypes_registry=trans.app.datatypes_registry,
-                                            tool=tool,
-                                            name=input.name)
+                                           datatypes_registry=trans.app.datatypes_registry,
+                                           tool=tool,
+                                           name=input.name)
             elif isinstance(input, SelectToolParameter):
                 input_values[input.name] = SelectToolParameterWrapper(input, input_values[input.name], other_values=incoming)
             elif isinstance(input, DataCollectionToolParameter):

@@ -46,21 +46,21 @@ class TestInstallDatatypesSniffers(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=repository_name,
-                                                    description=repository_description,
-                                                    long_description=repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=repository_description,
+                                                   long_description=repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         if self.repository_is_new(repository):
             self.upload_file(repository,
-                              filename='proteomics_datatypes/proteomics_datatypes.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded datatype and sniffer definitions.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='proteomics_datatypes/proteomics_datatypes.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=False,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded datatype and sniffer definitions.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
         repository_datatypes_count = self.get_repository_datatypes_count(repository)
 
     def test_0010_install_datatypes_repository(self):
@@ -77,14 +77,14 @@ class TestInstallDatatypesSniffers(ShedTwillTestCase):
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         strings_displayed = ['proteomics']
         self.install_repository('proteomics_datatypes_1450',
-                                 common.test_user_1_name,
-                                 category_name,
-                                 strings_displayed=strings_displayed,
-                                 new_tool_panel_section_label='test_1450')
+                                common.test_user_1_name,
+                                category_name,
+                                strings_displayed=strings_displayed,
+                                new_tool_panel_section_label='test_1450')
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner('proteomics_datatypes_1450', common.test_user_1_name)
         strings_displayed = ['user1',
-                              self.url.replace('http://', ''),
-                              installed_repository.installed_changeset_revision]
+                             self.url.replace('http://', ''),
+                             installed_repository.installed_changeset_revision]
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
 
     def test_0015_verify_datatypes_count(self):

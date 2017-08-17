@@ -338,9 +338,9 @@ def rods_connect():
     status, env = irods.getRodsEnv()
     assert status == 0, 'connect(): getRodsEnv() failed (%s): %s' % (status, irods.strerror(status))
     conn, err = irods.rcConnect(env.rodsHost,
-                                 env.rodsPort,
-                                 env.rodsUserName,
-                                 env.rodsZone)
+                                env.rodsPort,
+                                env.rodsUserName,
+                                env.rodsZone)
     assert err.status == 0, 'connect(): rcConnect() failed (%s): %s' % (err.status, err.msg)
     status, pw = irods.obfGetPw()
     assert status == 0, 'connect(): getting password with obfGetPw() failed (%s): %s' % (status, irods.strerror(status))

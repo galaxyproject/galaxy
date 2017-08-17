@@ -196,7 +196,7 @@ class BaseJobRunner(object):
         raise NotImplementedError()
 
     def build_command_line(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
-                            modify_command_for_container=True):
+                           modify_command_for_container=True):
         container = self._find_container(job_wrapper)
         if not container and job_wrapper.requires_containerization:
             raise Exception("Failed to find a container when required, contact Galaxy admin.")
@@ -273,10 +273,10 @@ class BaseJobRunner(object):
             lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
             venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
             external_metadata_script = job_wrapper.setup_external_metadata(output_fnames=job_wrapper.get_output_fnames(),
-                                                                            set_extension=True,
-                                                                            tmp_dir=job_wrapper.working_directory,
-                                                                            # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
-                                                                            kwds={'overwrite' : False})
+                                                                           set_extension=True,
+                                                                           tmp_dir=job_wrapper.working_directory,
+                                                                           # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
+                                                                           kwds={'overwrite' : False})
             external_metadata_script = "%s %s %s" % (lib_adjust, venv, external_metadata_script)
             if resolve_requirements:
                 dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(job_directory=job_wrapper.working_directory)
@@ -286,10 +286,10 @@ class BaseJobRunner(object):
                     external_metadata_script = "%s&&%s" % (dependency_shell_commands, external_metadata_script)
             log.debug('executing external set_meta script for job %d: %s' % (job_wrapper.job_id, external_metadata_script))
             external_metadata_proc = subprocess.Popen(args=external_metadata_script,
-                                                       shell=True,
-                                                       cwd=job_wrapper.working_directory,
-                                                       env=os.environ,
-                                                       preexec_fn=os.setpgrp)
+                                                      shell=True,
+                                                      cwd=job_wrapper.working_directory,
+                                                      env=os.environ,
+                                                      preexec_fn=os.setpgrp)
             job_wrapper.external_output_metadata.set_job_runner_external_pid(external_metadata_proc.pid, self.sa_session)
             external_metadata_proc.wait()
             log.debug('execution of external set_meta for job %d finished' % job_wrapper.job_id)

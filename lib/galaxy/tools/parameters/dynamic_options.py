@@ -443,14 +443,14 @@ class SortByColumnFilter(Filter):
 
 
 filter_types = dict(data_meta=DataMetaFilter,
-                     param_value=ParamValueFilter,
-                     static_value=StaticValueFilter,
-                     unique_value=UniqueValueFilter,
-                     multiple_splitter=MultipleSplitterFilter,
-                     attribute_value_splitter=AttributeValueSplitterFilter,
-                     add_value=AdditionalValueFilter,
-                     remove_value=RemoveValueFilter,
-                     sort_by=SortByColumnFilter)
+                    param_value=ParamValueFilter,
+                    static_value=StaticValueFilter,
+                    unique_value=UniqueValueFilter,
+                    multiple_splitter=MultipleSplitterFilter,
+                    attribute_value_splitter=AttributeValueSplitterFilter,
+                    add_value=AdditionalValueFilter,
+                    remove_value=RemoveValueFilter,
+                    sort_by=SortByColumnFilter)
 
 
 class DynamicOptions(object):

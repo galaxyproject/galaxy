@@ -43,10 +43,10 @@ def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_scrip
                 repository_name = elem.get('name')
                 changeset_revision = elem.get('changeset_revision')
                 tool_shed_accessible, repository_dependencies_dict = get_repository_dependencies(app,
-                                                                                                  tool_shed_url,
-                                                                                                  repository_name,
-                                                                                                  REPOSITORY_OWNER,
-                                                                                                  changeset_revision)
+                                                                                                 tool_shed_url,
+                                                                                                 repository_name,
+                                                                                                 REPOSITORY_OWNER,
+                                                                                                 changeset_revision)
                 if tool_shed_accessible:
                     # Accumulate all tool dependencies defined for repository dependencies for display to the user.
                     for rd_key, rd_tups in repository_dependencies_dict.items():
@@ -56,16 +56,16 @@ def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_scrip
                             tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                                 parse_repository_dependency_tuple(rd_tup)
                         tool_shed_accessible, tool_dependencies = get_tool_dependencies(app,
-                                                                                         tool_shed_url,
-                                                                                         name,
-                                                                                         owner,
-                                                                                         changeset_revision)
+                                                                                        tool_shed_url,
+                                                                                        name,
+                                                                                        owner,
+                                                                                        changeset_revision)
                         all_tool_dependencies = accumulate_tool_dependencies(tool_shed_accessible, tool_dependencies, all_tool_dependencies)
                     tool_shed_accessible, tool_dependencies = get_tool_dependencies(app,
-                                                                                     tool_shed_url,
-                                                                                     repository_name,
-                                                                                     REPOSITORY_OWNER,
-                                                                                     changeset_revision)
+                                                                                    tool_shed_url,
+                                                                                    repository_name,
+                                                                                    REPOSITORY_OWNER,
+                                                                                    changeset_revision)
                     all_tool_dependencies = accumulate_tool_dependencies(tool_shed_accessible, tool_dependencies, all_tool_dependencies)
                     for tool_elem in elem.findall('tool'):
                         tool_config_file_name = tool_elem.get('file')
@@ -74,7 +74,7 @@ def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_scrip
                             # installed to the user).  However, we'll store them in the following dictionary in case we choose to display them in the
                             # future.
                             dependencies_dict = dict(tool_dependencies=all_tool_dependencies,
-                                                      repository_dependencies=repository_dependencies)
+                                                     repository_dependencies=repository_dependencies)
                             migrated_tool_configs_dict[tool_config_file_name] = dependencies_dict
                 else:
                     break

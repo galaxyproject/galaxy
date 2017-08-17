@@ -44,58 +44,58 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=convert_repository_name,
-                                                    description=convert_repository_description,
-                                                    long_description=convert_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=convert_repository_description,
+                                                   long_description=convert_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='convert_chars/convert_chars.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded convert_chars tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='convert_chars/convert_chars.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded convert_chars tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_create_column_repository(self):
         '''Create and populate convert_chars_0160.'''
         category = self.create_category(name=category_name, description=category_description)
         repository = self.get_or_create_repository(name=column_repository_name,
-                                                    description=column_repository_description,
-                                                    long_description=column_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=column_repository_description,
+                                                   long_description=column_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='column_maker/column_maker.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded column_maker tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='column_maker/column_maker.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded column_maker tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0015_create_filtering_repository(self):
         '''Create and populate filtering_0160.'''
         category = self.create_category(name=category_name, description=category_description)
         repository = self.get_or_create_repository(name=filter_repository_name,
-                                                    description=filter_repository_description,
-                                                    long_description=filter_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=filter_repository_description,
+                                                   long_description=filter_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='filtering/filtering_1.1.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded filtering 1.1.0 tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_1.1.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded filtering 1.1.0 tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_create_repository_dependency(self):
         '''Create a repository dependency specifying convert_chars.'''
@@ -113,17 +113,17 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         convert_tuple = (self.url, convert_repository.name, convert_repository.user.username, convert_revision)
         filter_tuple = (self.url, filter_repository.name, filter_repository.user.username, filter_revision)
         self.create_repository_dependency(repository=column_repository,
-                                           repository_tuples=[convert_tuple, filter_tuple],
-                                           filepath=dependency_xml_path,
-                                           prior_installation_required=False)
+                                          repository_tuples=[convert_tuple, filter_tuple],
+                                          filepath=dependency_xml_path,
+                                          prior_installation_required=False)
         self.create_repository_dependency(repository=convert_repository,
-                                           repository_tuples=[column_tuple, filter_tuple],
-                                           filepath=dependency_xml_path,
-                                           prior_installation_required=False)
+                                          repository_tuples=[column_tuple, filter_tuple],
+                                          filepath=dependency_xml_path,
+                                          prior_installation_required=False)
         self.create_repository_dependency(repository=filter_repository,
-                                           repository_tuples=[convert_tuple, column_tuple],
-                                           filepath=dependency_xml_path,
-                                           prior_installation_required=True)
+                                          repository_tuples=[convert_tuple, column_tuple],
+                                          filepath=dependency_xml_path,
+                                          prior_installation_required=True)
 
     def test_0025_verify_repository_dependency(self):
         '''Verify that the previously generated repositiory dependency displays correctly.'''
@@ -131,26 +131,26 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         column_repository = self.test_db_util.get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         convert_repository = self.test_db_util.get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         self.check_repository_dependency(repository=column_repository,
-                                          depends_on_repository=convert_repository,
-                                          depends_on_changeset_revision=None,
-                                          changeset_revision=None)
+                                         depends_on_repository=convert_repository,
+                                         depends_on_changeset_revision=None,
+                                         changeset_revision=None)
         self.check_repository_dependency(repository=column_repository,
-                                          depends_on_repository=filter_repository,
-                                          depends_on_changeset_revision=None,
-                                          changeset_revision=None)
+                                         depends_on_repository=filter_repository,
+                                         depends_on_changeset_revision=None,
+                                         changeset_revision=None)
         self.check_repository_dependency(repository=convert_repository,
-                                          depends_on_repository=column_repository,
-                                          depends_on_changeset_revision=None,
-                                          changeset_revision=None)
+                                         depends_on_repository=column_repository,
+                                         depends_on_changeset_revision=None,
+                                         changeset_revision=None)
         self.check_repository_dependency(repository=convert_repository,
-                                          depends_on_repository=filter_repository,
-                                          depends_on_changeset_revision=None,
-                                          changeset_revision=None)
+                                         depends_on_repository=filter_repository,
+                                         depends_on_changeset_revision=None,
+                                         changeset_revision=None)
         self.check_repository_dependency(repository=filter_repository,
-                                          depends_on_repository=column_repository,
-                                          depends_on_changeset_revision=None,
-                                          changeset_revision=None)
+                                         depends_on_repository=column_repository,
+                                         depends_on_changeset_revision=None,
+                                         changeset_revision=None)
         self.check_repository_dependency(repository=filter_repository,
-                                          depends_on_repository=convert_repository,
-                                          depends_on_changeset_revision=None,
-                                          changeset_revision=None)
+                                         depends_on_repository=convert_repository,
+                                         depends_on_changeset_revision=None,
+                                         changeset_revision=None)

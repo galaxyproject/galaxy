@@ -24,21 +24,21 @@ CHUNK_SIZE = 2 ** 20  # 1Mb
 
 
 def generate_repository_archive_filename(tool_shed_url, name, owner, changeset_revision, file_type,
-                                          export_repository_dependencies, use_tmp_archive_dir=False):
+                                         export_repository_dependencies, use_tmp_archive_dir=False):
     tool_shed = remove_protocol_from_tool_shed_url(tool_shed_url)
     file_type_str = basic_util.get_file_type_str(changeset_revision, file_type)
     if export_repository_dependencies:
         repositories_archive_filename = '%s_%s_%s_%s_%s' % (CAPSULE_WITH_DEPENDENCIES_FILENAME,
-                                                             tool_shed,
-                                                             name,
-                                                             owner,
-                                                             file_type_str)
+                                                            tool_shed,
+                                                            name,
+                                                            owner,
+                                                            file_type_str)
     else:
         repositories_archive_filename = '%s_%s_%s_%s_%s' % (CAPSULE_FILENAME,
-                                                             tool_shed,
-                                                             name,
-                                                             owner,
-                                                             file_type_str)
+                                                            tool_shed,
+                                                            name,
+                                                            owner,
+                                                            file_type_str)
     if use_tmp_archive_dir:
         tmp_archive_dir = tempfile.mkdtemp(prefix="tmp-toolshed-arcdir")
         repositories_archive_filename = os.path.join(tmp_archive_dir, repositories_archive_filename)
@@ -89,12 +89,12 @@ def main(options):
             export_repository_dependencies = string_as_bool(options.export_repository_dependencies)
             repositories_archive_filename = \
                 generate_repository_archive_filename(base_tool_shed_url,
-                                                      options.name,
-                                                      options.owner,
-                                                      options.changeset_revision,
-                                                      file_type,
-                                                      export_repository_dependencies=export_repository_dependencies,
-                                                      use_tmp_archive_dir=False)
+                                                     options.name,
+                                                     options.owner,
+                                                     options.changeset_revision,
+                                                     file_type,
+                                                     export_repository_dependencies=export_repository_dependencies,
+                                                     use_tmp_archive_dir=False)
             download_url = export_dict['download_url']
             download_dir = os.path.abspath(options.download_dir)
             file_path = os.path.join(download_dir, repositories_archive_filename)

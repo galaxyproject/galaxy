@@ -30,11 +30,11 @@ class FormDefinitionFactory(object):
         if form_definition_current is None:
             form_definition_current = FormDefinitionCurrent()
         rval = FormDefinition(name=name,
-                               desc=description,
-                               form_type=self.form_types[form_type],
-                               form_definition_current=form_definition_current,
-                               layout=layout,
-                               fields=fields)
+                              desc=description,
+                              form_type=self.form_types[form_type],
+                              form_definition_current=form_definition_current,
+                              layout=layout,
+                              fields=fields)
         form_definition_current.latest_form = rval
         return rval
 
@@ -129,9 +129,9 @@ class FormDefinitionTextFieldFactory(FormDefinitionFieldFactory):
         Return new FormDefinition field.
         """
         rval = super(FormDefinitionTextFieldFactory, self).new(name=name, label=label,
-                                                                  required=required, helptext=helptext,
-                                                                  default=default, visible=visible,
-                                                                  layout=layout)
+                                                               required=required, helptext=helptext,
+                                                               default=default, visible=visible,
+                                                               layout=layout)
         rval['type'] = self.__get_stored_field_type(area)
         return rval
 
@@ -155,9 +155,9 @@ class FormDefinitionPasswordFieldFactory(FormDefinitionFieldFactory):
         Return new FormDefinition field.
         """
         rval = super(FormDefinitionPasswordFieldFactory, self).new(name=name, label=label,
-                                                                      required=required, helptext=helptext,
-                                                                      default=default, visible=visible,
-                                                                      layout=layout)
+                                                                   required=required, helptext=helptext,
+                                                                   default=default, visible=visible,
+                                                                   layout=layout)
         rval['type'] = self.__get_stored_field_type()
         return rval
 
@@ -181,9 +181,9 @@ class FormDefinitionAddressFieldFactory(FormDefinitionFieldFactory):
         Return new FormDefinition field.
         """
         rval = super(FormDefinitionAddressFieldFactory, self).new(name=name, label=label,
-                                                                     required=required, helptext=helptext,
-                                                                     default=default, visible=visible,
-                                                                     layout=layout)
+                                                                  required=required, helptext=helptext,
+                                                                  default=default, visible=visible,
+                                                                  layout=layout)
         rval['type'] = self.__get_stored_field_type()
         return rval
 
@@ -207,9 +207,9 @@ class FormDefinitionWorkflowFieldFactory(FormDefinitionFieldFactory):
         Return new FormDefinition field.
         """
         rval = super(FormDefinitionWorkflowFieldFactory, self).new(name=name, label=label,
-                                                                      required=required, helptext=helptext,
-                                                                      default=default, visible=visible,
-                                                                      layout=layout)
+                                                                   required=required, helptext=helptext,
+                                                                   default=default, visible=visible,
+                                                                   layout=layout)
         rval['type'] = self.__get_stored_field_type()
         return rval
 
@@ -233,9 +233,9 @@ class FormDefinitionWorkflowMappingFieldFactory(FormDefinitionFieldFactory):
         Return new FormDefinition field.
         """
         rval = super(FormDefinitionWorkflowMappingFieldFactory, self).new(name=name, label=label,
-                                                                             required=required, helptext=helptext,
-                                                                             default=default, visible=visible,
-                                                                             layout=layout)
+                                                                          required=required, helptext=helptext,
+                                                                          default=default, visible=visible,
+                                                                          layout=layout)
         rval['type'] = self.__get_stored_field_type()
         return rval
 
@@ -259,9 +259,9 @@ class FormDefinitionHistoryFieldFactory(FormDefinitionFieldFactory):
         Return new FormDefinition field.
         """
         rval = super(FormDefinitionHistoryFieldFactory, self).new(name=name, label=label,
-                                                                     required=required, helptext=helptext,
-                                                                     default=default, visible=visible,
-                                                                     layout=layout)
+                                                                  required=required, helptext=helptext,
+                                                                  default=default, visible=visible,
+                                                                  layout=layout)
         rval['type'] = self.__get_stored_field_type()
         return rval
 
@@ -288,9 +288,9 @@ class FormDefinitionSelectFieldFactory(FormDefinitionFieldFactory):
         Return new FormDefinition field.
         """
         rval = super(FormDefinitionSelectFieldFactory, self).new(name=name, label=label,
-                                                                    required=required, helptext=helptext,
-                                                                    default=default, visible=visible,
-                                                                    layout=layout)
+                                                                 required=required, helptext=helptext,
+                                                                 default=default, visible=visible,
+                                                                 layout=layout)
         rval['type'] = self.__get_stored_field_type(checkboxes)
         if options is None:
             options = []
@@ -313,11 +313,11 @@ class FormDefinitionSelectFieldFactory(FormDefinitionFieldFactory):
 
 
 field_type_factories = dict([(field.type, field()) for field in (FormDefinitionTextFieldFactory,
-                                                                      FormDefinitionPasswordFieldFactory,
-                                                                      FormDefinitionAddressFieldFactory,
-                                                                      FormDefinitionSelectFieldFactory,
-                                                                      FormDefinitionWorkflowFieldFactory,
-                                                                      FormDefinitionWorkflowMappingFieldFactory,
-                                                                      FormDefinitionHistoryFieldFactory)])
+                                                                 FormDefinitionPasswordFieldFactory,
+                                                                 FormDefinitionAddressFieldFactory,
+                                                                 FormDefinitionSelectFieldFactory,
+                                                                 FormDefinitionWorkflowFieldFactory,
+                                                                 FormDefinitionWorkflowMappingFieldFactory,
+                                                                 FormDefinitionHistoryFieldFactory)])
 
 form_factory = FormDefinitionFactory(FORM_TYPES, field_type_factories)

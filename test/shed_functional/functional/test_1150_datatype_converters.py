@@ -38,22 +38,22 @@ class TestDatatypeConverters(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         # Create a repository named bed_to_gff_0130 owned by user1.
         repository = self.get_or_create_repository(name=repository_name,
-                                                    description=repository_description,
-                                                    long_description=repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=repository_description,
+                                                   long_description=repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         if self.repository_is_new(repository):
             # Upload bed_to_gff_converter.tar to the repository, if the repository is new.
             self.upload_file(repository,
-                              filename='bed_to_gff_converter/bed_to_gff_converter.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded bed_to_gff_converter.tar.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='bed_to_gff_converter/bed_to_gff_converter.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=False,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded bed_to_gff_converter.tar.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0010_install_datatype_converter_to_galaxy(self):
         '''Install bed_to_gff_converter_0130 into the running Galaxy instance.'''
@@ -67,14 +67,14 @@ class TestDatatypeConverters(ShedTwillTestCase):
         strings_displayed = ['Your Galaxy instance is configured with', 'shed-related tool configuration file']
         strings_not_displayed = ['tool panel section']
         self.install_repository(repository_name,
-                                 common.test_user_1_name,
-                                 category_name,
-                                 install_tool_dependencies=False,
-                                 preview_strings_displayed=preview_strings_displayed,
-                                 strings_displayed=strings_displayed,
-                                 strings_not_displayed=strings_not_displayed,
-                                 post_submit_strings_displayed=[repository.name, 'New'],
-                                 includes_tools_for_display_in_tool_panel=False)
+                                common.test_user_1_name,
+                                category_name,
+                                install_tool_dependencies=False,
+                                preview_strings_displayed=preview_strings_displayed,
+                                strings_displayed=strings_displayed,
+                                strings_not_displayed=strings_not_displayed,
+                                post_submit_strings_displayed=[repository.name, 'New'],
+                                includes_tools_for_display_in_tool_panel=False)
 
     def test_0015_uninstall_and_verify_tool_panel_section(self):
         '''Uninstall bed_to_gff_converter_0130 and verify that the saved tool_panel_section is None.'''

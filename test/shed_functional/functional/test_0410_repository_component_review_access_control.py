@@ -56,7 +56,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         Make sure all the components we are to review are recorded in the database.
         """
         self.add_repository_review_component(name='Repository dependencies',
-                                              description='Repository dependencies defined in a file named repository_dependencies.xml included in the repository')
+                                             description='Repository dependencies defined in a file named repository_dependencies.xml included in the repository')
         strings_displayed = ['Data types', 'Functional tests', 'README', 'Repository dependencies', 'Tool dependencies', 'Tools', 'Workflows']
         self.manage_review_components(strings_displayed=strings_displayed)
 
@@ -71,38 +71,38 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = self.expect_repo_created_strings(repository_name)
         repository = self.get_or_create_repository(name=repository_name,
-                                                    description=repository_description,
-                                                    long_description=repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=strings_displayed)
+                                                   description=repository_description,
+                                                   long_description=repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=strings_displayed)
         self.upload_file(repository,
-                          filename='filtering/filtering_1.1.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded filtering 1.1.0 tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_1.1.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded filtering 1.1.0 tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         self.upload_file(repository,
-                          filename='filtering/filtering_test_data.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded filtering test data.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_test_data.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded filtering test data.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         self.upload_file(repository,
-                          filename='readme.txt',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded readme.txt.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='readme.txt',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded readme.txt.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_review_repository(self):
         '''Complete a review of the filtering repository.'''
@@ -113,12 +113,12 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         review_contents_dict = {'Data types': dict(),
-                                 'README': dict(rating=5, comment='Clear and concise readme file, a true pleasure to read.', approved='yes', private='no'),
-                                 'Functional tests': dict(rating=5, comment='A good set of functional tests.', approved='yes', private='no'),
-                                 'Repository dependencies': dict(),
-                                 'Tool dependencies': dict(),
-                                 'Tools': dict(rating=5, comment='Excellent tool, easy to use.', approved='yes', private='no'),
-                                 'Workflows': dict()}
+                                'README': dict(rating=5, comment='Clear and concise readme file, a true pleasure to read.', approved='yes', private='no'),
+                                'Functional tests': dict(rating=5, comment='A good set of functional tests.', approved='yes', private='no'),
+                                'Repository dependencies': dict(),
+                                'Tool dependencies': dict(),
+                                'Tools': dict(rating=5, comment='Excellent tool, easy to use.', approved='yes', private='no'),
+                                'Workflows': dict()}
         self.create_repository_review(repository, review_contents_dict)
 
     def test_0025_verify_repository_review(self):
@@ -181,9 +181,9 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         user = self.test_db_util.get_user(common.test_user_2_email)
         strings_displayed = ['A&nbsp;good&nbsp;set&nbsp;of&nbsp;functional&nbsp;tests.',
-                              'Clear&nbsp;and&nbsp;concise&nbsp;readme&nbsp;file',
-                              'a&nbsp;true&nbsp;pleasure&nbsp;to&nbsp;read.',
-                              'Excellent&nbsp;tool,&nbsp;easy&nbsp;to&nbsp;use.']
+                             'Clear&nbsp;and&nbsp;concise&nbsp;readme&nbsp;file',
+                             'a&nbsp;true&nbsp;pleasure&nbsp;to&nbsp;read.',
+                             'Excellent&nbsp;tool,&nbsp;easy&nbsp;to&nbsp;use.']
         changeset_revision = self.get_repository_tip(repository)
         review = self.test_db_util.get_repository_review_by_user_id_changeset_revision(user.id, repository.id, changeset_revision)
         self.browse_component_review(review, strings_displayed=strings_displayed)

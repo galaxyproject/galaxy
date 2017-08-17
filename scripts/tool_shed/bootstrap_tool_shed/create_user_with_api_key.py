@@ -35,9 +35,9 @@ class BootstrapApplication(object):
         print 'Using database connection: ', self.config.database_connection
         # Setup the database engine and ORM
         self.model = mapping.init(self.config.file_path,
-                                   self.config.database_connection,
-                                   engine_options={},
-                                   create_tables=False)
+                                  self.config.database_connection,
+                                  engine_options={},
+                                  create_tables=False)
         self.security = security.SecurityHelper(id_secret=self.config.id_secret)
         self.hgweb_config_manager = self.model.hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir

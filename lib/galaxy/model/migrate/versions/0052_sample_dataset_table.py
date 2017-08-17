@@ -67,14 +67,14 @@ def upgrade(migrate_engine):
                 if isinstance(df, dict):
                     cmd = "INSERT INTO sample_dataset VALUES (%s, %s, %s, %s, '%s', '%s', '%s', '%s', '%s')"
                     cmd = cmd % (nextval(migrate_engine, 'sample_dataset'),
-                                  localtimestamp(migrate_engine),
-                                  localtimestamp(migrate_engine),
-                                  str(sample_id),
-                                  df.get('name', ''),
-                                  df.get('filepath', ''),
-                                  df.get('status', '').replace('"', '').replace("'", ""),
-                                  "",
-                                  df.get('size', '').replace('"', '').replace("'", "").replace(df.get('filepath', ''), '').strip())
+                                 localtimestamp(migrate_engine),
+                                 localtimestamp(migrate_engine),
+                                 str(sample_id),
+                                 df.get('name', ''),
+                                 df.get('filepath', ''),
+                                 df.get('status', '').replace('"', '').replace("'", ""),
+                                 "",
+                                 df.get('size', '').replace('"', '').replace("'", "").replace(df.get('filepath', ''), '').strip())
                 migrate_engine.execute(cmd)
 
     # Delete the dataset_files column in the Sample table

@@ -404,10 +404,10 @@ class Tag(PageElement):
     """Represents a found HTML tag with its attributes and contents."""
 
     XML_ENTITIES_TO_CHARS = {'apos': "'",
-                              "quot": '"',
-                              "amp": "&",
-                              "lt": "<",
-                              "gt": ">"
+                             "quot": '"',
+                             "amp": "&",
+                             "lt": "<",
+                             "gt": ">"
                               }
     # An RE for finding ampersands that aren't the start of of a
     # numeric entity.
@@ -1341,11 +1341,11 @@ class BeautifulSoup(BeautifulStoneSoup):
 
     # Lists can contain other lists, but there are restrictions.
     NESTABLE_LIST_TAGS = {'ol': [],
-                           'ul': [],
-                           'li': ['ul', 'ol'],
-                           'dl': [],
-                           'dd': ['dl'],
-                           'dt': ['dl']}
+                          'ul': [],
+                          'li': ['ul', 'ol'],
+                          'dl': [],
+                          'dd': ['dl'],
+                          'dt': ['dl']}
 
     # Tables can contain other tables, but there are restrictions.
     NESTABLE_TABLE_TAGS = {'table': [],
@@ -1564,7 +1564,7 @@ class UnicodeDammit:
     # values that aren't in Python's aliases and can't be determined
     # by the heuristics in find_codec.
     CHARSET_ALIASES = {"macintosh": "mac-roman",
-                        "x-sjis": "shift-jis"}
+                       "x-sjis": "shift-jis"}
 
     def __init__(self, markup, overrideEncodings=[],
                  smartQuotesTo='xml'):
@@ -1767,37 +1767,37 @@ class UnicodeDammit:
         return s.translate(c.EBCDIC_TO_ASCII_MAP)
 
     MS_CHARS = {'\x80': ('euro', '20AC'),
-                 '\x81': ' ',
-                 '\x82': ('sbquo', '201A'),
-                 '\x83': ('fnof', '192'),
-                 '\x84': ('bdquo', '201E'),
-                 '\x85': ('hellip', '2026'),
-                 '\x86': ('dagger', '2020'),
-                 '\x87': ('Dagger', '2021'),
-                 '\x88': ('circ', '2C6'),
-                 '\x89': ('permil', '2030'),
-                 '\x8A': ('Scaron', '160'),
-                 '\x8B': ('lsaquo', '2039'),
-                 '\x8C': ('OElig', '152'),
-                 '\x8D': '?',
-                 '\x8E': ('#x17D', '17D'),
-                 '\x8F': '?',
-                 '\x90': '?',
-                 '\x91': ('lsquo', '2018'),
-                 '\x92': ('rsquo', '2019'),
-                 '\x93': ('ldquo', '201C'),
-                 '\x94': ('rdquo', '201D'),
-                 '\x95': ('bull', '2022'),
-                 '\x96': ('ndash', '2013'),
-                 '\x97': ('mdash', '2014'),
-                 '\x98': ('tilde', '2DC'),
-                 '\x99': ('trade', '2122'),
-                 '\x9a': ('scaron', '161'),
-                 '\x9b': ('rsaquo', '203A'),
-                 '\x9c': ('oelig', '153'),
-                 '\x9d': '?',
-                 '\x9e': ('#x17E', '17E'),
-                 '\x9f': ('Yuml', '178')}
+                '\x81': ' ',
+                '\x82': ('sbquo', '201A'),
+                '\x83': ('fnof', '192'),
+                '\x84': ('bdquo', '201E'),
+                '\x85': ('hellip', '2026'),
+                '\x86': ('dagger', '2020'),
+                '\x87': ('Dagger', '2021'),
+                '\x88': ('circ', '2C6'),
+                '\x89': ('permil', '2030'),
+                '\x8A': ('Scaron', '160'),
+                '\x8B': ('lsaquo', '2039'),
+                '\x8C': ('OElig', '152'),
+                '\x8D': '?',
+                '\x8E': ('#x17D', '17D'),
+                '\x8F': '?',
+                '\x90': '?',
+                '\x91': ('lsquo', '2018'),
+                '\x92': ('rsquo', '2019'),
+                '\x93': ('ldquo', '201C'),
+                '\x94': ('rdquo', '201D'),
+                '\x95': ('bull', '2022'),
+                '\x96': ('ndash', '2013'),
+                '\x97': ('mdash', '2014'),
+                '\x98': ('tilde', '2DC'),
+                '\x99': ('trade', '2122'),
+                '\x9a': ('scaron', '161'),
+                '\x9b': ('rsaquo', '203A'),
+                '\x9c': ('oelig', '153'),
+                '\x9d': '?',
+                '\x9e': ('#x17E', '17E'),
+                '\x9f': ('Yuml', '178')}
 
 #######################################################################
 

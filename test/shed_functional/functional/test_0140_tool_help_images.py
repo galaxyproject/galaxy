@@ -45,21 +45,21 @@ class TestToolHelpImages(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         # Create a repository named htseq_count_0140 owned by user1.
         repository = self.get_or_create_repository(name=repository_name,
-                                                    description=repository_description,
-                                                    long_description=repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=repository_description,
+                                                   long_description=repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Upload htseq_count.tar to the repository.
         self.upload_file(repository,
-                          filename='htseq_count/htseq_count.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded htseq_count.tar.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='htseq_count/htseq_count.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded htseq_count.tar.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_load_tool_page(self):
         '''Load the tool page and check for the image.'''

@@ -68,24 +68,24 @@ class TestDeletedDependencies(ShedTwillTestCase):
         We are at simple repository dependencies, step 1 - Create and populate column_maker_0440 so that it has an installable revision 0.
         '''
         category = self.create_category(name='Test 0440 Deleted Dependency Definitions',
-                                         description='Description of Deleted Dependency Definitions category for test 0440')
+                                        description='Description of Deleted Dependency Definitions category for test 0440')
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = ["Repository <b>column_maker_0440</b> has been created"]
         repository = self.get_or_create_repository(name=column_repository_name,
-                                                    description=column_repository_description,
-                                                    long_description=column_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=strings_displayed)
+                                                   description=column_repository_description,
+                                                   long_description=column_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=strings_displayed)
         self.upload_file(repository,
-                          filename='column_maker/column_maker.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded column maker tool tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='column_maker/column_maker.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded column maker tool tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_create_convert_chars_repository(self):
         '''Create and populate a repository named convert_chars_0440.'''
@@ -96,20 +96,20 @@ class TestDeletedDependencies(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = ["Repository <b>convert_chars_0440</b> has been created"]
         repository = self.get_or_create_repository(name=convert_repository_name,
-                                                    description=convert_repository_description,
-                                                    long_description=convert_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=strings_displayed)
+                                                   description=convert_repository_description,
+                                                   long_description=convert_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=strings_displayed)
         self.upload_file(repository,
-                          filename='convert_chars/convert_chars.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded convert chars tool tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='convert_chars/convert_chars.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded convert chars tool tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0015_create_dependency_on_convert_chars(self):
         '''Create a dependency definition file that specifies column_maker_0440 and upload it to convert_chars_0440.'''
@@ -123,9 +123,9 @@ class TestDeletedDependencies(ShedTwillTestCase):
         column_tuple = (self.url, column_repository.name, column_repository.user.username, self.get_repository_tip(column_repository))
         # After this, convert_chars_0440 should depend on column_maker_0440.
         self.create_repository_dependency(repository=convert_repository,
-                                           repository_tuples=[column_tuple],
-                                           filepath=dependency_xml_path,
-                                           prior_installation_required=True)
+                                          repository_tuples=[column_tuple],
+                                          filepath=dependency_xml_path,
+                                          prior_installation_required=True)
         self.check_repository_dependency(convert_repository, column_repository)
 
     def test_0020_verify_dependency_metadata(self):
@@ -178,20 +178,20 @@ class TestDeletedDependencies(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = ["Repository <b>bwa_package_0440</b> has been created"]
         repository = self.get_or_create_repository(name=bwa_package_repository_name,
-                                                    description=bwa_package_repository_description,
-                                                    long_description=bwa_package_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=strings_displayed)
+                                                   description=bwa_package_repository_description,
+                                                   long_description=bwa_package_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=strings_displayed)
         self.upload_file(repository,
-                          filename='bwa/complex/tool_dependencies.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded package tool dependency definition.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='bwa/complex/tool_dependencies.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded package tool dependency definition.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0035_create_bwa_base_repository(self):
         '''Create and populate the bwa_base_0440 repository.'''
@@ -203,20 +203,20 @@ class TestDeletedDependencies(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = ["Repository <b>bwa_base_0440</b> has been created"]
         repository = self.get_or_create_repository(name=bwa_base_repository_name,
-                                                    description=bwa_base_repository_description,
-                                                    long_description=bwa_base_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=strings_displayed)
+                                                   description=bwa_base_repository_description,
+                                                   long_description=bwa_base_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=strings_displayed)
         self.upload_file(repository,
-                          filename='bwa/complex/bwa_base.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded BWA nucleotide space mapping tool tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='bwa/complex/bwa_base.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded BWA nucleotide space mapping tool tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0040_create_dependency_on_bwa_package_repository(self):
         '''Create a complex repository dependency on bwa_package_0440 and upload it to bwa_tool_0440.'''
@@ -230,12 +230,12 @@ class TestDeletedDependencies(ShedTwillTestCase):
         changeset_revision = self.get_repository_tip(bwa_package_repository)
         bwa_tuple = (self.url, bwa_package_repository.name, bwa_package_repository.user.username, changeset_revision)
         self.create_repository_dependency(repository=bwa_base_repository,
-                                           repository_tuples=[bwa_tuple],
-                                           filepath=dependency_path,
-                                           prior_installation_required=True,
-                                           complex=True,
-                                           package='bwa',
-                                           version='0.5.9')
+                                          repository_tuples=[bwa_tuple],
+                                          filepath=dependency_path,
+                                          prior_installation_required=True,
+                                          complex=True,
+                                          package='bwa',
+                                          version='0.5.9')
 
     def test_0045_verify_dependency_metadata(self):
         '''Verify that uploading the dependency moved metadata to the tip.'''
@@ -285,20 +285,20 @@ class TestDeletedDependencies(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = ["Repository <b>bwa_tool_dependency_0440</b> has been created"]
         repository = self.get_or_create_repository(name=bwa_tool_dependency_repository_name,
-                                                    description=bwa_tool_dependency_repository_description,
-                                                    long_description=bwa_tool_dependency_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=strings_displayed)
+                                                   description=bwa_tool_dependency_repository_description,
+                                                   long_description=bwa_tool_dependency_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=strings_displayed)
         self.upload_file(repository,
-                          filename='bwa/complex/tool_dependencies.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded package tool dependency definition.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='bwa/complex/tool_dependencies.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded package tool dependency definition.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0060_delete_bwa_tool_dependency_definition(self):
         '''Delete the tool_dependencies.xml file from bwa_tool_dependency_0440.'''
@@ -335,14 +335,14 @@ class TestDeletedDependencies(ShedTwillTestCase):
         # is re-uploaded and a new downloadable revision is created.
         old_changeset_revision = self.get_repository_tip(repository)
         self.upload_file(repository,
-                          filename='bwa/complex/tool_dependencies.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded package tool dependency definition.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='bwa/complex/tool_dependencies.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded package tool dependency definition.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         new_changeset_revision = self.get_repository_tip(repository)
         # Check that the old changeset revision is still downloadable.
         metadata_record = self.get_repository_metadata_by_changeset_revision(repository, old_changeset_revision)

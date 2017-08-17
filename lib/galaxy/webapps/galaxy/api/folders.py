@@ -215,7 +215,7 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
             trans.app.security_agent.set_all_library_permissions(trans, folder, permissions)
         else:
             raise exceptions.RequestParameterInvalidException('The mandatory parameter "action" has an invalid value.'
-                                                               'Allowed values are: "set_permissions"')
+                                                              'Allowed values are: "set_permissions"')
         return self.folder_manager.get_current_roles(trans, folder)
 
     @expose_api

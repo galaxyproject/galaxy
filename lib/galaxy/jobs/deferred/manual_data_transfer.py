@@ -45,32 +45,32 @@ class ManualDataTransferPlugin(DataTransfer):
             for sample_dataset in sample_datasets:
                 sample_dataset_id = sample_dataset.id
                 sample_dataset_dict = dict(sample_id=sample_dataset.sample.id,
-                                            name=sample_dataset.name,
-                                            file_path=sample_dataset.file_path,
-                                            status=sample_dataset.status,
-                                            error_msg=sample_dataset.error_msg,
-                                            size=sample_dataset.size,
-                                            external_service_id=sample_dataset.external_service.id)
+                                           name=sample_dataset.name,
+                                           file_path=sample_dataset.file_path,
+                                           status=sample_dataset.status,
+                                           error_msg=sample_dataset.error_msg,
+                                           size=sample_dataset.size,
+                                           external_service_id=sample_dataset.external_service.id)
                 sample_datasets_dict[sample_dataset_id] = sample_dataset_dict
             params = {'type' : 'init_transfer',
-                       'sample_id' : sample.id,
-                       'sample_datasets_dict' : sample_datasets_dict,
-                       'protocol' : protocol,
-                       'host' : host,
-                       'user_name' : user_name,
-                       'password' : password}
+                      'sample_id' : sample.id,
+                      'sample_datasets_dict' : sample_datasets_dict,
+                      'protocol' : protocol,
+                      'host' : host,
+                      'user_name' : user_name,
+                      'password' : password}
         elif 'transfer_job_id' in kwd:
             params = {'type' : 'finish_transfer',
-                       'protocol' : kwd['result']['protocol'],
-                       'sample_id' : kwd['sample_id'],
-                       'result' : kwd['result'],
-                       'transfer_job_id' : kwd['transfer_job_id']}
+                      'protocol' : kwd['result']['protocol'],
+                      'sample_id' : kwd['sample_id'],
+                      'result' : kwd['result'],
+                      'transfer_job_id' : kwd['transfer_job_id']}
         else:
             log.error('No job was created because kwd does not include "samples" and "sample_datasets" or "transfer_job_id".')
             return
         deferred_job = self.app.model.DeferredJob(state=self.app.model.DeferredJob.states.NEW,
-                                                   plugin='ManualDataTransferPlugin',
-                                                   params=params)
+                                                  plugin='ManualDataTransferPlugin',
+                                                  params=params)
         self.sa_session.add(deferred_job)
         self.sa_session.flush()
         log.debug('Created a deferred job in the ManualDataTransferPlugin of type: %s' % params['type'])

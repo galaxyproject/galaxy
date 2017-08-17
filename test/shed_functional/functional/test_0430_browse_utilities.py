@@ -49,24 +49,24 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         Create and populate the repository that will contain one or more datatypes.
         """
         category = self.create_category(name='Test 0430 Galaxy Utilities',
-                                         description='Description of Test 0430 Galaxy Utilities category')
+                                        description='Description of Test 0430 Galaxy Utilities category')
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = self.expect_repo_created_strings(datatypes_repository_name)
         repository = self.get_or_create_repository(name=datatypes_repository_name,
-                                                    description=datatypes_repository_description,
-                                                    long_description=datatypes_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=strings_displayed)
+                                                   description=datatypes_repository_description,
+                                                   long_description=datatypes_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=strings_displayed)
         self.upload_file(repository,
-                          filename='emboss/datatypes/datatypes_conf.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded datatypes_conf.xml.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/datatypes/datatypes_conf.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded datatypes_conf.xml.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_create_emboss_repository(self):
         """Create and populate the emboss_0430 repository"""
@@ -75,7 +75,7 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         Create the emboss_0430 repository, and populate it with tools.
         """
         category = self.create_category(name='Test 0430 Galaxy Utilities',
-                                         description='Description of Test 0430 Galaxy Utilities category')
+                                        description='Description of Test 0430 Galaxy Utilities category')
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = self.expect_repo_created_strings(emboss_repository_name)
         emboss_repository = self.get_or_create_repository(name=emboss_repository_name,
@@ -85,14 +85,14 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
                                                     category_id=self.security.encode_id(category.id),
                                                     strings_displayed=strings_displayed)
         self.upload_file(emboss_repository,
-                          filename='emboss/emboss.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded emboss.tar.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/emboss.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded emboss.tar.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0015_create_dependency_on_datatypes_repository(self):
         '''Create a dependency definition file that specifies emboss_datatypes_0430 and upload it to emboss_0430.'''
@@ -110,24 +110,24 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         Create and populate the repository that will have a tool dependency defined.
         """
         category = self.create_category(name='Test 0430 Galaxy Utilities',
-                                         description='Description of Test 0430 Galaxy Utilities category')
+                                        description='Description of Test 0430 Galaxy Utilities category')
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = self.expect_repo_created_strings(freebayes_repository_name)
         repository = self.get_or_create_repository(name=freebayes_repository_name,
-                                                    description=freebayes_repository_description,
-                                                    long_description=freebayes_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=strings_displayed)
+                                                   description=freebayes_repository_description,
+                                                   long_description=freebayes_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=strings_displayed)
         self.upload_file(repository,
-                          filename='freebayes/freebayes.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded freebayes.tar.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='freebayes/freebayes.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded freebayes.tar.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0025_browse_custom_datatypes(self):
         '''Load the page to browse custom datatypes.'''

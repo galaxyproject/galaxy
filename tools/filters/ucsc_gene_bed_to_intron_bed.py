@@ -24,11 +24,11 @@ assert sys.version_info[:2] >= (2, 4)
 def main():
     parser = optparse.OptionParser(usage="%prog [options] ")
     parser.add_option("-s", "--strand", action="store_true", dest="strand",
-                       help="Print strand after interval")
+                      help="Print strand after interval")
     parser.add_option("-i", "--input", dest="input", default=None,
-                       help="Input file")
+                      help="Input file")
     parser.add_option("-o", "--output", dest="output", default=None,
-                       help="Output file")
+                      help="Output file")
     options, args = parser.parse_args()
 
     try:

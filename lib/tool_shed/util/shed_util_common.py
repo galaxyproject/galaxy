@@ -324,10 +324,10 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
                 "<br/><br/>...some text eliminated here because file size is larger than maximum viewing size of %s...<br/><br/>" % \
                 util.nice_size(basic_util.MAX_DISPLAY_SIZE)
             safe_str = util.shrink_string_by_size(safe_str,
-                                                   basic_util.MAX_DISPLAY_SIZE,
-                                                   join_by=join_by_str,
-                                                   left_larger=True,
-                                                   beginning_on_size_error=True)
+                                                  basic_util.MAX_DISPLAY_SIZE,
+                                                  join_by=join_by_str,
+                                                  left_larger=True,
+                                                  beginning_on_size_error=True)
         return safe_str
 
 
@@ -395,9 +395,9 @@ def get_tool_panel_config_tool_path_install_dir(app, repository):
     """
     tool_shed = common_util.remove_port_from_tool_shed_url(str(repository.tool_shed))
     relative_install_dir = '%s/repos/%s/%s/%s' % (tool_shed,
-                                                   str(repository.owner),
-                                                   str(repository.name),
-                                                   str(repository.installed_changeset_revision))
+                                                  str(repository.owner),
+                                                  str(repository.name),
+                                                  str(repository.installed_changeset_revision))
     # Get the relative tool installation paths from each of the shed tool configs.
     shed_config_dict = repository.get_shed_config_dict(app)
     if not shed_config_dict:
@@ -482,21 +482,21 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
             template = email_alert_template
         display_date = hg_util.get_readable_ctx_date(ctx)
         admin_body = string.Template(template).safe_substitute(host=host,
-                                                                  sharable_link=sharable_link,
-                                                                  repository_name=repository.name,
-                                                                  revision='%s:%s' % (str(ctx.rev()), ctx),
-                                                                  display_date=display_date,
-                                                                  description=ctx.description(),
-                                                                  username=username,
-                                                                  content_alert_str=content_alert_str)
+                                                               sharable_link=sharable_link,
+                                                               repository_name=repository.name,
+                                                               revision='%s:%s' % (str(ctx.rev()), ctx),
+                                                               display_date=display_date,
+                                                               description=ctx.description(),
+                                                               username=username,
+                                                               content_alert_str=content_alert_str)
         body = string.Template(template).safe_substitute(host=host,
-                                                            sharable_link=sharable_link,
-                                                            repository_name=repository.name,
-                                                            revision='%s:%s' % (str(ctx.rev()), ctx),
-                                                            display_date=display_date,
-                                                            description=ctx.description(),
-                                                            username=username,
-                                                            content_alert_str='')
+                                                         sharable_link=sharable_link,
+                                                         repository_name=repository.name,
+                                                         revision='%s:%s' % (str(ctx.rev()), ctx),
+                                                         display_date=display_date,
+                                                         description=ctx.description(),
+                                                         username=username,
+                                                         content_alert_str='')
         admin_users = app.config.get("admin_users", "").split(",")
         frm = email_from
         if new_repo_alert:
@@ -505,7 +505,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
             email_alerts = []
             for user in sa_session.query(app.model.User) \
                                   .filter(and_(app.model.User.table.c.deleted == false(),
-                                                 app.model.User.table.c.new_repo_alert == true())):
+                                               app.model.User.table.c.new_repo_alert == true())):
                 if admin_only:
                     if user.email in admin_users:
                         email_alerts.append(user.email)
@@ -594,10 +594,10 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
                 full_path = '%s/' % full_path
                 is_folder = True
             node = {"title": filename,
-                     "isFolder": is_folder,
-                     "isLazy": is_folder,
-                     "tooltip": full_path,
-                     "key": full_path}
+                    "isFolder": is_folder,
+                    "isLazy": is_folder,
+                    "tooltip": full_path,
+                    "key": full_path}
             folder_contents.append(node)
     return folder_contents
 

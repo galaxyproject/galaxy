@@ -168,8 +168,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
 
         if parsing_shed_tool_conf:
             shed_tool_conf_dict = dict(config_filename=config_filename,
-                                        tool_path=tool_path,
-                                        config_elems=config_elems)
+                                       tool_path=tool_path,
+                                       config_elems=config_elems)
             self._dynamic_tool_confs.append(shed_tool_conf_dict)
 
     def load_item(self, item, tool_path, panel_dict=None, integrated_panel_dict=None, load_panel_dict=True, guid=None, index=None, internal=False):

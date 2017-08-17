@@ -101,10 +101,10 @@ class WorkflowCanvas(object):
                     out_conn_pos = self.out_pos[out_pos_index][key]
         adjusted = (out_conn_pos[0] + self.widths[output_dict['id']], out_conn_pos[1])
         self.text.append(svgwrite.shapes.Circle(center=(out_conn_pos[0] + self.widths[output_dict['id']] - MARGIN,
-                                                         out_conn_pos[1] - MARGIN),
-                                                 r=5,
-                                                 fill="#ffffff",
-                                                 stroke="#000000"))
+                                                        out_conn_pos[1] - MARGIN),
+                                                r=5,
+                                                fill="#ffffff",
+                                                stroke="#000000"))
         marker = self.canvas.marker(overflow='visible',
                                     refX="0", refY="5",
                                     viewBox="0 0 10 5",
@@ -115,8 +115,8 @@ class WorkflowCanvas(object):
         marker.add(self.canvas.path(d="M 0 0 L 10 5 L 0 10 z"))
         self.canvas.defs.add(marker)
         conn = svgwrite.shapes.Line((adjusted[0], adjusted[1] - MARGIN),
-                                     (in_coords[0] - 10, in_coords[1]),
-                                     stroke="#000000")
+                                    (in_coords[0] - 10, in_coords[1]),
+                                    stroke="#000000")
         conn['marker-end'] = marker.get_funciri()
         self.connectors.append(conn)
 

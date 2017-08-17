@@ -142,15 +142,15 @@ class Registry(object):
         clause_list = []
         for repository in self.sa_session.query(model.Repository) \
                                          .filter(and_(model.Repository.table.c.deleted == false(),
-                                                        model.Repository.table.c.deprecated == false())):
+                                                      model.Repository.table.c.deprecated == false())):
             certified_level_one_tuple = self.get_certified_level_one_tuple(repository)
             latest_installable_changeset_revision, is_level_one_certified = certified_level_one_tuple
             if is_level_one_certified:
                 certified_level_one_tuples.append(certified_level_one_tuple)
                 clause_list.append("%s=%d and %s='%s'" % (model.RepositoryMetadata.table.c.repository_id,
-                                                            repository.id,
-                                                            model.RepositoryMetadata.table.c.changeset_revision,
-                                                            latest_installable_changeset_revision))
+                                                          repository.id,
+                                                          model.RepositoryMetadata.table.c.changeset_revision,
+                                                          latest_installable_changeset_revision))
         return clause_list
 
     def get_certified_level_one_tuple(self, repository):
@@ -167,8 +167,8 @@ class Registry(object):
         if latest_installable_changeset_revision not in [None, hg_util.INITIAL_CHANGELOG_HASH]:
             encoded_repository_id = self.app.security.encode_id(repository.id)
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
-                                                                                               encoded_repository_id,
-                                                                                               latest_installable_changeset_revision)
+                                                                                              encoded_repository_id,
+                                                                                              latest_installable_changeset_revision)
             if repository_metadata:
                 # No repository_metadata.
                 return (latest_installable_changeset_revision, True)
@@ -230,7 +230,7 @@ class Registry(object):
         # Load self.repository_and_suite_tuples and self.suite_tuples
         for repository in self.sa_session.query(model.Repository) \
                                          .filter(and_(model.Repository.table.c.deleted == false(),
-                                                        model.Repository.table.c.deprecated == false())) \
+                                                      model.Repository.table.c.deprecated == false())) \
                                          .join(model.User.table):
             self.load_repository_and_suite_tuple(repository)
 
@@ -265,8 +265,8 @@ class Registry(object):
                     encoded_repository_id = self.app.security.encode_id(repository.id)
                     tip_changeset_hash = repository.tip(self.app)
                     repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
-                                                                                                       encoded_repository_id,
-                                                                                                       tip_changeset_hash)
+                                                                                                      encoded_repository_id,
+                                                                                                      tip_changeset_hash)
                     self.viewable_repositories_and_suites_by_category[category_name] += 1
                     if is_valid:
                         self.viewable_valid_repositories_and_suites_by_category[category_name] += 1

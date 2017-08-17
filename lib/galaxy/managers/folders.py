@@ -223,8 +223,8 @@ class FolderManager(object):
         manage_folder_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in manage_roles]
         add_library_item_role_list = [(add_role.name, trans.security.encode_id(add_role.id)) for add_role in add_roles]
         return dict(modify_folder_role_list=modify_folder_role_list,
-                     manage_folder_role_list=manage_folder_role_list,
-                     add_library_item_role_list=add_library_item_role_list)
+                    manage_folder_role_list=manage_folder_role_list,
+                    add_library_item_role_list=add_library_item_role_list)
 
     def can_add_item(self, trans, folder):
         """

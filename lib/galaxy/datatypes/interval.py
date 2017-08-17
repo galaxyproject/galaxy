@@ -253,8 +253,8 @@ class Interval(Tabular):
         # Filter UCSC sites to only those that are supported by this build and
         # enabled.
         valid_sites = [(name, url)
-                        for name, url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey)
-                        if name in app.datatypes_registry.get_display_sites('ucsc')]
+                       for name, url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey)
+                       if name in app.datatypes_registry.get_display_sites('ucsc')]
         if not valid_sites:
             return []
         # If there are any valid sites, we need to generate the estimated
@@ -266,11 +266,11 @@ class Interval(Tabular):
         ret_val = []
         for site_name, site_url in valid_sites:
             internal_url = url_for(controller='dataset', dataset_id=dataset.id,
-                                    action='display_at', filename='ucsc_' + site_name)
+                                   action='display_at', filename='ucsc_' + site_name)
             display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
-                                      (base_url, url_for(controller='root'), dataset.id, type))
+                                     (base_url, url_for(controller='root'), dataset.id, type))
             redirect_url = quote_plus("%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
-                                       (site_url, dataset.dbkey, chrom, start, stop))
+                                      (site_url, dataset.dbkey, chrom, start, stop))
             link = '%s?redirect_url=%s&display_url=%s' % (internal_url, redirect_url, display_url)
             ret_val.append((site_name, link))
         return ret_val
@@ -342,23 +342,23 @@ class Interval(Tabular):
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory('genomic-region',
-                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
+                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dataprovider(self, dataset, **settings):
         return dataproviders.dataset.GenomicRegionDataProvider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('genomic-region-dict',
-                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
+                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dict_dataprovider(self, dataset, **settings):
         settings['named_columns'] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('interval',
-                                                    dataproviders.dataset.IntervalDataProvider.settings)
+                                                   dataproviders.dataset.IntervalDataProvider.settings)
     def interval_dataprovider(self, dataset, **settings):
         return dataproviders.dataset.IntervalDataProvider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('interval-dict',
-                                                    dataproviders.dataset.IntervalDataProvider.settings)
+                                                   dataproviders.dataset.IntervalDataProvider.settings)
     def interval_dict_dataprovider(self, dataset, **settings):
         settings['named_columns'] = True
         return self.interval_dataprovider(dataset, **settings)
@@ -626,7 +626,7 @@ class _RemoteCallMixin:
         internal_url = "%s" % url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='%s_%s' % (type, site_name))
         base_url = app.config.get("display_at_callback", base_url)
         display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
-                                  (base_url, url_for(controller='root'), dataset.id, type))
+                                 (base_url, url_for(controller='root'), dataset.id, type))
         link = '%s?redirect_url=%s&display_url=%s' % (internal_url, redirect_url, display_url)
         return link
 
@@ -645,7 +645,7 @@ class Gff(Tabular, _RemoteCallMixin):
     """Add metadata elements"""
     MetadataElement(name="columns", default=9, desc="Number of columns", readonly=True, visible=False)
     MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'int', 'str', 'str', 'str'],
-                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
+                    param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
 
     MetadataElement(name="attributes", default=0, desc="Number of attributes", readonly=True, visible=False, no_value=0)
     MetadataElement(name="attribute_types", default={}, desc="Attribute types", param=metadata.DictParameter, readonly=True, visible=False, no_value=[])
@@ -866,23 +866,23 @@ class Gff(Tabular, _RemoteCallMixin):
     # ------------- Dataproviders
     # redefine bc super is Tabular
     @dataproviders.decorators.dataprovider_factory('genomic-region',
-                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
+                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dataprovider(self, dataset, **settings):
         return dataproviders.dataset.GenomicRegionDataProvider(dataset, 0, 3, 4, **settings)
 
     @dataproviders.decorators.dataprovider_factory('genomic-region-dict',
-                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
+                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dict_dataprovider(self, dataset, **settings):
         settings['named_columns'] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('interval',
-                                                    dataproviders.dataset.IntervalDataProvider.settings)
+                                                   dataproviders.dataset.IntervalDataProvider.settings)
     def interval_dataprovider(self, dataset, **settings):
         return dataproviders.dataset.IntervalDataProvider(dataset, 0, 3, 4, 6, 2, **settings)
 
     @dataproviders.decorators.dataprovider_factory('interval-dict',
-                                                    dataproviders.dataset.IntervalDataProvider.settings)
+                                                   dataproviders.dataset.IntervalDataProvider.settings)
     def interval_dict_dataprovider(self, dataset, **settings):
         settings['named_columns'] = True
         return self.interval_dataprovider(dataset, **settings)
@@ -899,7 +899,7 @@ class Gff3(Gff):
 
     """Add metadata elements"""
     MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
-                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
+                    param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
 
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
@@ -1015,7 +1015,7 @@ class Gtf(Gff):
     """Add metadata elements"""
     MetadataElement(name="columns", default=9, desc="Number of columns", readonly=True, visible=False)
     MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
-                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
+                    param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
 
     def sniff(self, filename):
         """

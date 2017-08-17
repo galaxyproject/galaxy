@@ -39,13 +39,13 @@ def directory_hash_id(id):
 
 class Dataset(object):
     states = Bunch(NEW='new',
-                    UPLOAD='upload',
-                    QUEUED='queued',
-                    RUNNING='running',
-                    OK='ok',
-                    EMPTY='empty',
-                    ERROR='error',
-                    DISCARDED='discarded')
+                   UPLOAD='upload',
+                   QUEUED='queued',
+                   RUNNING='running',
+                   OK='ok',
+                   EMPTY='empty',
+                   ERROR='error',
+                   DISCARDED='discarded')
     permitted_actions = get_permitted_actions(filter='DATASET')
     file_path = "/tmp/"
     engine = None
@@ -142,8 +142,8 @@ class DatasetInstance(object):
     permitted_actions = Dataset.permitted_actions
 
     def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None,
-                  dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, validation_errors=None, visible=True, create_dataset=False):
+                 dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
+                 parent_id=None, validation_errors=None, visible=True, create_dataset=False):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -325,11 +325,11 @@ class DatasetInstance(object):
 
 class HistoryDatasetAssociation(DatasetInstance):
     def __init__(self,
-                  hid=None,
-                  history=None,
-                  copied_from_history_dataset_association=None,
-                  copied_from_library_dataset_dataset_association=None,
-                  **kwd):
+                 hid=None,
+                 history=None,
+                 copied_from_history_dataset_association=None,
+                 copied_from_library_dataset_dataset_association=None,
+                 **kwd):
         DatasetInstance.__init__(self, **kwd)
         self.hid = hid
         # Relationships
@@ -339,18 +339,18 @@ class HistoryDatasetAssociation(DatasetInstance):
 
     def copy(self, copy_children=False, parent_id=None, target_history=None):
         hda = HistoryDatasetAssociation(hid=self.hid,
-                                         name=self.name,
-                                         info=self.info,
-                                         blurb=self.blurb,
-                                         peek=self.peek,
-                                         extension=self.extension,
-                                         dbkey=self.dbkey,
-                                         dataset=self.dataset,
-                                         visible=self.visible,
-                                         deleted=self.deleted,
-                                         parent_id=parent_id,
-                                         copied_from_history_dataset_association=self,
-                                         history=target_history)
+                                        name=self.name,
+                                        info=self.info,
+                                        blurb=self.blurb,
+                                        peek=self.peek,
+                                        extension=self.extension,
+                                        dbkey=self.dbkey,
+                                        dataset=self.dataset,
+                                        visible=self.visible,
+                                        deleted=self.deleted,
+                                        parent_id=parent_id,
+                                        copied_from_history_dataset_association=self,
+                                        history=target_history)
         context.add(hda)
         context.flush()
         hda.set_size()
@@ -376,18 +376,18 @@ class HistoryDatasetAssociation(DatasetInstance):
             context.add(library_dataset)
             context.flush()
         ldda = LibraryDatasetDatasetAssociation(name=self.name,
-                                                 info=self.info,
-                                                 blurb=self.blurb,
-                                                 peek=self.peek,
-                                                 extension=self.extension,
-                                                 dbkey=self.dbkey,
-                                                 dataset=self.dataset,
-                                                 library_dataset=library_dataset,
-                                                 visible=self.visible,
-                                                 deleted=self.deleted,
-                                                 parent_id=parent_id,
-                                                 copied_from_history_dataset_association=self,
-                                                 user=self.history.user)
+                                                info=self.info,
+                                                blurb=self.blurb,
+                                                peek=self.peek,
+                                                extension=self.extension,
+                                                dbkey=self.dbkey,
+                                                dataset=self.dataset,
+                                                library_dataset=library_dataset,
+                                                visible=self.visible,
+                                                deleted=self.deleted,
+                                                parent_id=parent_id,
+                                                copied_from_history_dataset_association=self,
+                                                user=self.history.user)
         context.add(ldda)
         context.flush()
         # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
@@ -417,11 +417,11 @@ class HistoryDatasetAssociation(DatasetInstance):
 
 class LibraryDatasetDatasetAssociation(DatasetInstance):
     def __init__(self,
-                  copied_from_history_dataset_association=None,
-                  copied_from_library_dataset_dataset_association=None,
-                  library_dataset=None,
-                  user=None,
-                  **kwd):
+                 copied_from_history_dataset_association=None,
+                 copied_from_library_dataset_dataset_association=None,
+                 library_dataset=None,
+                 user=None,
+                 **kwd):
         DatasetInstance.__init__(self, **kwd)
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
@@ -431,18 +431,18 @@ class LibraryDatasetDatasetAssociation(DatasetInstance):
     def to_history_dataset_association(self, target_history, parent_id=None):
         hid = target_history._next_hid()
         hda = HistoryDatasetAssociation(name=self.name,
-                                         info=self.info,
-                                         blurb=self.blurb,
-                                         peek=self.peek,
-                                         extension=self.extension,
-                                         dbkey=self.dbkey,
-                                         dataset=self.dataset,
-                                         visible=self.visible,
-                                         deleted=self.deleted,
-                                         parent_id=parent_id,
-                                         copied_from_library_dataset_dataset_association=self,
-                                         history=target_history,
-                                         hid=hid)
+                                        info=self.info,
+                                        blurb=self.blurb,
+                                        peek=self.peek,
+                                        extension=self.extension,
+                                        dbkey=self.dbkey,
+                                        dataset=self.dataset,
+                                        visible=self.visible,
+                                        deleted=self.deleted,
+                                        parent_id=parent_id,
+                                        copied_from_library_dataset_dataset_association=self,
+                                        history=target_history,
+                                        hid=hid)
         context.add(hda)
         context.flush()
         hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
@@ -455,17 +455,17 @@ class LibraryDatasetDatasetAssociation(DatasetInstance):
 
     def copy(self, copy_children=False, parent_id=None, target_folder=None):
         ldda = LibraryDatasetDatasetAssociation(name=self.name,
-                                                 info=self.info,
-                                                 blurb=self.blurb,
-                                                 peek=self.peek,
-                                                 extension=self.extension,
-                                                 dbkey=self.dbkey,
-                                                 dataset=self.dataset,
-                                                 visible=self.visible,
-                                                 deleted=self.deleted,
-                                                 parent_id=parent_id,
-                                                 copied_from_library_dataset_dataset_association=self,
-                                                 folder=target_folder)
+                                                info=self.info,
+                                                blurb=self.blurb,
+                                                peek=self.peek,
+                                                extension=self.extension,
+                                                dbkey=self.dbkey,
+                                                dataset=self.dataset,
+                                                visible=self.visible,
+                                                deleted=self.deleted,
+                                                parent_id=parent_id,
+                                                copied_from_library_dataset_dataset_association=self,
+                                                folder=target_folder)
         context.add(ldda)
         context.flush()
         # Need to set after flushed, as MetadataFiles require dataset.id

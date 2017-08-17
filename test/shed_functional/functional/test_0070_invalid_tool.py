@@ -26,42 +26,42 @@ class TestBismarkRepository(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=repository_name,
-                                                    description=repository_description,
-                                                    long_description=repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=repository_description,
+                                                   long_description=repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='bismark/bismark.tar',
-                          filepath=None,
-                          valid_tools_only=False,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded bismark tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='bismark/bismark.tar',
+                         filepath=None,
+                         valid_tools_only=False,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded bismark tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         self.display_manage_repository_page(repository, strings_displayed=['Invalid tools'])
         invalid_revision = self.get_repository_tip(repository)
         self.upload_file(repository,
-                          filename='bismark/bismark_methylation_extractor.xml',
-                          filepath=None,
-                          valid_tools_only=False,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded an updated tool xml.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='bismark/bismark_methylation_extractor.xml',
+                         filepath=None,
+                         valid_tools_only=False,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded an updated tool xml.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         valid_revision = self.get_repository_tip(repository)
         self.test_db_util.refresh(repository)
         tool_guid = '%s/repos/user1/bismark_0070/bismark_methylation_extractor/0.7.7.3' % self.url.replace('http://', '').rstrip('/')
         tool_metadata_strings_displayed = [tool_guid,
-                                            '0.7.7.3',  # The tool version.
-                                            'bismark_methylation_extractor',  # The tool ID.
-                                            'Bismark',  # The tool name.
-                                            'methylation extractor']  # The tool description.
+                                           '0.7.7.3',  # The tool version.
+                                           'bismark_methylation_extractor',  # The tool ID.
+                                           'Bismark',  # The tool name.
+                                           'methylation extractor']  # The tool description.
         tool_page_strings_displayed = ['Bismark (version 0.7.7.3)']
         self.check_repository_tools_for_changeset_revision(repository,
-                                                            valid_revision,
-                                                            tool_metadata_strings_displayed=tool_metadata_strings_displayed,
-                                                            tool_page_strings_displayed=tool_page_strings_displayed)
+                                                           valid_revision,
+                                                           tool_metadata_strings_displayed=tool_metadata_strings_displayed,
+                                                           tool_page_strings_displayed=tool_page_strings_displayed)
         self.check_repository_invalid_tools_for_changeset_revision(repository, invalid_revision)

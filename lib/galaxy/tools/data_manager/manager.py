@@ -159,15 +159,15 @@ class DataManager(object):
                 repository_owner = tool_elem.find('repository_owner').text
                 installed_changeset_revision = tool_elem.find('installed_changeset_revision').text
                 self.tool_shed_repository_info_dict = dict(tool_shed=tool_shed,
-                                                            name=repository_name,
-                                                            owner=repository_owner,
-                                                            installed_changeset_revision=installed_changeset_revision)
+                                                           name=repository_name,
+                                                           owner=repository_owner,
+                                                           installed_changeset_revision=installed_changeset_revision)
                 tool_shed_repository = \
                     repository_util.get_installed_repository(self.data_managers.app,
-                                                              tool_shed=tool_shed,
-                                                              name=repository_name,
-                                                              owner=repository_owner,
-                                                              installed_changeset_revision=installed_changeset_revision)
+                                                             tool_shed=tool_shed,
+                                                             name=repository_name,
+                                                             owner=repository_owner,
+                                                             installed_changeset_revision=installed_changeset_revision)
                 if tool_shed_repository is None:
                     log.warning('Could not determine tool shed repository from database. This should only ever happen when running tests.')
                     # we'll set tool_path manually here from shed_conf_file
@@ -186,9 +186,9 @@ class DataManager(object):
                         tool_path = shed_conf.get("tool_path", tool_path)
         assert path is not None, "A tool file path could not be determined:\n%s" % (util.xml_to_string(elem))
         self.load_tool(os.path.join(tool_path, path),
-                        guid=tool_guid,
-                        data_manager_id=self.id,
-                        tool_shed_repository_id=tool_shed_repository_id)
+                       guid=tool_guid,
+                       data_manager_id=self.id,
+                       tool_shed_repository_id=tool_shed_repository_id)
         self.name = elem.get('name', self.tool.name)
         self.description = elem.get('description', self.tool.description)
         self.undeclared_tables = util.asbool(elem.get('undeclared_tables', self.undeclared_tables))
@@ -250,11 +250,11 @@ class DataManager(object):
                             self.move_by_data_table_column[data_table_name] = {}
                         self.move_by_data_table_column[data_table_name][data_table_coumn_name] = \
                             dict(type=move_type,
-                                  source_base=source_base,
-                                  source_value=source_value,
-                                  target_base=target_base,
-                                  target_value=target_value,
-                                  relativize_symlinks=relativize_symlinks)
+                                 source_base=source_base,
+                                 source_value=source_value,
+                                 target_base=target_base,
+                                 target_value=target_value,
+                                 relativize_symlinks=relativize_symlinks)
 
     @property
     def id(self):
@@ -263,10 +263,10 @@ class DataManager(object):
     def load_tool(self, tool_filename, guid=None, data_manager_id=None, tool_shed_repository_id=None):
         toolbox = self.data_managers.app.toolbox
         tool = toolbox.load_hidden_tool(tool_filename,
-                                         guid=guid,
-                                         data_manager_id=data_manager_id,
-                                         repository_id=tool_shed_repository_id,
-                                         use_cached=True)
+                                        guid=guid,
+                                        data_manager_id=data_manager_id,
+                                        repository_id=tool_shed_repository_id,
+                                        use_cached=True)
         self.data_managers.app.toolbox.data_manager_tools[tool.id] = tool
         self.tool = tool
         return tool

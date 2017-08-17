@@ -463,10 +463,10 @@ class Tool(object, Dictifiable):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
             return repository_util.get_installed_repository(self.app,
-                                                             tool_shed=self.tool_shed,
-                                                             name=self.repository_name,
-                                                             owner=self.repository_owner,
-                                                             installed_changeset_revision=self.installed_changeset_revision)
+                                                            tool_shed=self.tool_shed,
+                                                            name=self.repository_name,
+                                                            owner=self.repository_owner,
+                                                            installed_changeset_revision=self.installed_changeset_revision)
         return None
 
     @property
@@ -843,8 +843,8 @@ class Tool(object, Dictifiable):
                 if self.nginx_upload and self.app.config.nginx_upload_path:
                     if '?' in unquote_plus(self.action):
                         raise Exception('URL parameters in a non-default tool action can not be used '
-                                         'in conjunction with nginx upload.  Please convert them to '
-                                         'hidden POST parameters')
+                                        'in conjunction with nginx upload.  Please convert them to '
+                                        'hidden POST parameters')
                     self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
                                    unquote_plus(self.action))
                 self.target = input_elem.get("target", self.target)
@@ -1001,10 +1001,10 @@ class Tool(object, Dictifiable):
                             possible_cases.remove(case.value)
                         except:
                             log.warning("Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
-                                         (self.id, group.name, group.test_param.name, case.value))
+                                        (self.id, group.name, group.test_param.name, case.value))
                     for unspecified_case in possible_cases:
                         log.warning("Tool %s: a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." %
-                                     (self.id, group.name, group.test_param.name, unspecified_case))
+                                    (self.id, group.name, group.test_param.name, unspecified_case))
                         case = ConditionalWhen()
                         case.value = unspecified_case
                         case.inputs = odict()
@@ -1116,8 +1116,8 @@ class Tool(object, Dictifiable):
                     log.exception("Exception in parse_help, so images may not be properly displayed")
             try:
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
-                                        output_encoding='utf-8', default_filters=['decode.utf8'],
-                                        encoding_errors='replace')
+                                       output_encoding='utf-8', default_filters=['decode.utf8'],
+                                       encoding_errors='replace')
             except:
                 log.exception("error in help for tool %s", self.name)
 
@@ -1134,10 +1134,10 @@ class Tool(object, Dictifiable):
                 # Each page has to rendered all-together because of backreferences allowed by rst
                 try:
                     self.__help_by_page = [Template(rst_to_html(help_header + x + help_footer),
-                                                      input_encoding='utf-8', output_encoding='utf-8',
-                                                      default_filters=['decode.utf8'],
-                                                      encoding_errors='replace')
-                                            for x in self.__help_by_page]
+                                                    input_encoding='utf-8', output_encoding='utf-8',
+                                                    default_filters=['decode.utf8'],
+                                                    encoding_errors='replace')
+                                           for x in self.__help_by_page]
                 except:
                     log.exception("error in multi-page help for tool %s", self.name)
         # Pad out help pages to match npages ... could this be done better?
@@ -1286,11 +1286,11 @@ class Tool(object, Dictifiable):
             execution_tracker = execute_job(trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info)
             if execution_tracker.successful_jobs:
                 return dict(out_data=execution_tracker.output_datasets,
-                             num_jobs=len(execution_tracker.successful_jobs),
-                             job_errors=execution_tracker.execution_errors,
-                             jobs=execution_tracker.successful_jobs,
-                             output_collections=execution_tracker.output_collections,
-                             implicit_collections=execution_tracker.implicit_collections)
+                            num_jobs=len(execution_tracker.successful_jobs),
+                            job_errors=execution_tracker.execution_errors,
+                            jobs=execution_tracker.successful_jobs,
+                            output_collections=execution_tracker.output_collections,
+                            implicit_collections=execution_tracker.implicit_collections)
             else:
                 raise exceptions.MessageException(execution_tracker.execution_errors[0])
 
@@ -1570,12 +1570,12 @@ class Tool(object, Dictifiable):
                     visible = False
                 ext = fields[4].lower()
                 child_dataset = self.app.model.HistoryDatasetAssociation(extension=ext,
-                                                                          parent_id=outdata.id,
-                                                                          designation=designation,
-                                                                          visible=visible,
-                                                                          dbkey=outdata.dbkey,
-                                                                          create_dataset=True,
-                                                                          sa_session=self.sa_session)
+                                                                         parent_id=outdata.id,
+                                                                         designation=designation,
+                                                                         visible=visible,
+                                                                         dbkey=outdata.dbkey,
+                                                                         create_dataset=True,
+                                                                         sa_session=self.sa_session)
                 self.app.security_agent.copy_dataset_permissions(outdata.dataset, child_dataset.dataset)
                 # Move data from temp location to dataset location
                 self.app.object_store.update_from_file(child_dataset.dataset, file_name=filename, create=True)
@@ -1698,7 +1698,7 @@ class Tool(object, Dictifiable):
                             if not data_table.filenames[data_table_filename]['from_shed_config']:
                                 tar_file = data_table.filenames[data_table_filename]['filename'] + '.sample'
                                 sample_file = os.path.join(data_table.filenames[data_table_filename]['tool_data_path'],
-                                                            tar_file)
+                                                           tar_file)
                                 # Use the .sample file, if one exists. If not, skip this data table.
                                 if os.path.exists(sample_file):
                                     tarfile_path, tarfile_name = os.path.split(tar_file)
@@ -1759,8 +1759,8 @@ class Tool(object, Dictifiable):
 
             # Basic information
             tool_dict.update({'link': link,
-                                'min_width': self.uihints.get('minwidth', -1),
-                                'target': self.target})
+                              'min_width': self.uihints.get('minwidth', -1),
+                              'target': self.target})
 
         # Add input and output details.
         if io_details:
@@ -2074,11 +2074,11 @@ class OutputParameterJSONTool(Tool):
             file_name = str(wrapped_data)
             extra_files_path = str(wrapped_data.files_path)
             data_dict = dict(out_data_name=out_name,
-                              ext=data.ext,
-                              dataset_id=data.dataset.id,
-                              hda_id=data.id,
-                              file_name=file_name,
-                              extra_files_path=extra_files_path)
+                             ext=data.ext,
+                             dataset_id=data.dataset.id,
+                             hda_id=data.id,
+                             file_name=file_name,
+                             extra_files_path=extra_files_path)
             json_params['output_data'].append(data_dict)
             if json_filename is None:
                 json_filename = file_name
@@ -2139,11 +2139,11 @@ class DataSourceTool(OutputParameterJSONTool):
             file_name = str(wrapped_data)
             extra_files_path = str(wrapped_data.files_path)
             data_dict = dict(out_data_name=out_name,
-                              ext=data.ext,
-                              dataset_id=data.dataset.id,
-                              hda_id=data.id,
-                              file_name=file_name,
-                              extra_files_path=extra_files_path)
+                             ext=data.ext,
+                             dataset_id=data.dataset.id,
+                             hda_id=data.id,
+                             file_name=file_name,
+                             extra_files_path=extra_files_path)
             json_params['output_data'].append(data_dict)
             if json_filename is None:
                 json_filename = file_name
@@ -2631,9 +2631,9 @@ class FilterFromFileTool(DatabaseOperationTool):
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool,
-                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
-                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
-                    DataDestinationTool]:
+                   DataManagerTool, DataSourceTool, AsyncDataSourceTool,
+                   UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
+                   DataDestinationTool]:
     tool_types[tool_class.tool_type] = tool_class
 
 

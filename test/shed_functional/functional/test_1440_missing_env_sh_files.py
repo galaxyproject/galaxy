@@ -54,21 +54,21 @@ class TestMissingEnvSh(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=package_repository_name,
-                                                    description=package_repository_description,
-                                                    long_description=package_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=package_repository_description,
+                                                   long_description=package_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Upload the edited tool dependency definition to the package_lapack_3_4_1440 repository.
         self.upload_file(repository,
-                          filename='1440_files/dependency_definition/tool_dependencies.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_env_sh_1_0_1440 with a broken tool dependency definition.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='1440_files/dependency_definition/tool_dependencies.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate package_env_sh_1_0_1440 with a broken tool dependency definition.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_create_filter_repository(self):
         '''Create and populate filter_1440.'''
@@ -78,30 +78,30 @@ class TestMissingEnvSh(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=tool_repository_name,
-                                                    description=tool_repository_description,
-                                                    long_description=tool_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=tool_repository_description,
+                                                   long_description=tool_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Upload the edited tool dependency definition to the package_lapack_3_4_1440 repository.
         self.upload_file(repository,
-                          filename='filtering/filtering_2.2.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate filter_1440 with the filtering tool.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_2.2.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate filter_1440 with the filtering tool.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         self.upload_file(repository,
-                          filename='1440_files/complex_dependency/tool_dependencies.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate filter_1440 with a dependency on package_env_sh_1_0_1440.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='1440_files/complex_dependency/tool_dependencies.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate filter_1440 with a dependency on package_env_sh_1_0_1440.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0015_install_filter_repository(self):
         '''Install the filter_1440 repository to galaxy.'''
@@ -112,10 +112,10 @@ class TestMissingEnvSh(ShedTwillTestCase):
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         post_submit_strings_displayed = ['filter_1440', 'package_env_sh_1_0_1440']
         self.install_repository('filter_1440',
-                                 common.test_user_1_name,
-                                 category_name,
-                                 install_tool_dependencies=True,
-                                 post_submit_strings_displayed=post_submit_strings_displayed)
+                                common.test_user_1_name,
+                                category_name,
+                                install_tool_dependencies=True,
+                                post_submit_strings_displayed=post_submit_strings_displayed)
 
     def test_0020_verify_missing_tool_dependency(self):
         '''Verify that the filter_1440 repository is installed and missing tool dependencies.'''

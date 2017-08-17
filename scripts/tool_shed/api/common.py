@@ -26,10 +26,10 @@ class HTTPRedirectWithDataHandler(urllib2.HTTPRedirectHandler):
         if str(code) in self.redirect_codes and request_method in self.valid_methods:
             new_url = new_url.replace(' ', '%20')
             request = urllib2.Request(new_url,
-                                       data=request.data,
-                                       headers=request.headers,
-                                       origin_req_host=request.get_origin_req_host(),
-                                       unverifiable=True)
+                                      data=request.data,
+                                      headers=request.headers,
+                                      origin_req_host=request.get_origin_req_host(),
+                                      unverifiable=True)
             if self.method in self.valid_methods:
                 if request.get_method() != self.method:
                     request.get_method = lambda: self.method

@@ -134,11 +134,11 @@ class GenomeDataProvider(BaseDataProvider):
     col_name_data_attr_mapping = {}
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None,
-                  error_max_vals="Only the first %i %s in this region are displayed."):
+                 error_max_vals="Only the first %i %s in this region are displayed."):
         super(GenomeDataProvider, self).__init__(converted_dataset=converted_dataset,
-                                                    original_dataset=original_dataset,
-                                                    dependencies=dependencies,
-                                                    error_max_vals=error_max_vals)
+                                                 original_dataset=original_dataset,
+                                                 dependencies=dependencies,
+                                                 error_max_vals=error_max_vals)
 
     def write_data_to_file(self, regions, filename):
         """
@@ -261,8 +261,8 @@ class GenomeDataProvider(BaseDataProvider):
                 except KeyError:
                     continue
                 filters.append({'name': attrs['name'],
-                                  'type': column_types[viz_col_index],
-                                  'index': attrs['index']})
+                                'type': column_types[viz_col_index],
+                                'index': attrs['index']})
         return filters
 
     def get_default_max_vals(self):
@@ -306,10 +306,10 @@ class FilterableMixin:
         if isinstance(self.original_dataset.datatype, Gff):
             # Can filter by score and GTF attributes.
             filters = [{'name': 'Score',
-                          'type': 'number',
-                          'index': filter_col,
-                          'tool_id': 'Filter1',
-                          'tool_exp_name': 'c6'}]
+                        'type': 'number',
+                        'index': filter_col,
+                        'tool_id': 'Filter1',
+                        'tool_exp_name': 'c6'}]
             filter_col += 1
             if isinstance(self.original_dataset.datatype, Gtf):
                 # Create filters based on dataset metadata.
@@ -317,18 +317,18 @@ class FilterableMixin:
                     if a_type in ['int', 'float']:
                         filters.append(
                             {'name': name,
-                              'type': 'number',
-                              'index': filter_col,
-                              'tool_id': 'gff_filter_by_attribute',
-                              'tool_exp_name': name})
+                             'type': 'number',
+                             'index': filter_col,
+                             'tool_id': 'gff_filter_by_attribute',
+                             'tool_exp_name': name})
                         filter_col += 1
         elif isinstance(self.original_dataset.datatype, Bed):
             # Can filter by score column only.
             filters = [{'name': 'Score',
-                          'type': 'number',
-                          'index': filter_col,
-                          'tool_id': 'Filter1',
-                          'tool_exp_name': 'c5'
+                        'type': 'number',
+                        'index': filter_col,
+                        'tool_id': 'Filter1',
+                        'tool_exp_name': 'c5'
                           }]
 
         return filters
@@ -838,7 +838,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         filters = []
         filters.append({'name': 'Mapping Quality',
                         'type': 'number',
-                          'index': filter_col}
+                        'index': filter_col}
                         )
         return filters
 
@@ -849,7 +849,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
 
         # Open current BAM file using index.
         bamfile = pysam.AlignmentFile(self.original_dataset.file_name, mode='rb',
-                                       index_filename=self.converted_dataset.file_name)
+                                      index_filename=self.converted_dataset.file_name)
 
         # TODO: write headers as well?
         new_bamfile = pysam.AlignmentFile(filename, template=bamfile, mode='wb')
@@ -881,7 +881,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
     def open_data_file(self):
         # Attempt to open the BAM file with index
         return pysam.AlignmentFile(self.original_dataset.file_name, mode='rb',
-                                    index_filename=self.converted_dataset.file_name)
+                                   index_filename=self.converted_dataset.file_name)
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         """
@@ -904,7 +904,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         return data
 
     def process_data(self, iterator, start_val=0, max_vals=None, ref_seq=None,
-                      iterator_type='nth', mean_depth=None, start=0, end=0, **kwargs):
+                     iterator_type='nth', mean_depth=None, start=0, end=0, **kwargs):
         """
         Returns a dict with the following attributes::
 
@@ -1023,18 +1023,18 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                     # Found pair.
                     pair = paired_pending[qname]
                     results.append([hash("%i_%s" % (pair['start'], qname)),
-                                      pair['start'],
-                                      read.pos + read_len,
-                                      qname,
-                                      [pair['start'], pair['end'], pair['cigar'], pair['strand'], pair['seq']],
-                                      [read.pos, read.pos + read_len, read.cigar, strand, seq],
-                                      None, [pair['mapq'], read.mapq]
+                                    pair['start'],
+                                    read.pos + read_len,
+                                    qname,
+                                    [pair['start'], pair['end'], pair['cigar'], pair['strand'], pair['seq']],
+                                    [read.pos, read.pos + read_len, read.cigar, strand, seq],
+                                    None, [pair['mapq'], read.mapq]
                                       ])
                     del paired_pending[qname]
                 else:
                     # Insert first of pair.
                     paired_pending[qname] = {'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos,
-                                              'rlen': read_len, 'strand': strand, 'cigar': read.cigar, 'mapq': read.mapq}
+                                             'rlen': read_len, 'strand': strand, 'cigar': read.cigar, 'mapq': read.mapq}
                     count += 1
             else:
                 results.append([hash("%i_%s" % (read.pos, qname)),
@@ -1071,10 +1071,10 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
             Use reference-based compression to compress read sequence and cigar.
             '''
             read_seq, read_cigar = get_ref_based_read_seq_and_cigar(read[seq_field].upper(),
-                                                                     read[start_field],
-                                                                     ref_seq.sequence,
-                                                                     ref_seq.start,
-                                                                     read[cigar_field])
+                                                                    read[start_field],
+                                                                    ref_seq.sequence,
+                                                                    ref_seq.start,
+                                                                    read[cigar_field])
             read[seq_field] = read_seq
             read[cigar_field] = read_cigar
 
@@ -1121,8 +1121,8 @@ class SamDataProvider(BamDataProvider):
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None):
         """ Create SamDataProvider. """
         super(SamDataProvider, self).__init__(converted_dataset=converted_dataset,
-                                                 original_dataset=original_dataset,
-                                                 dependencies=dependencies)
+                                              original_dataset=original_dataset,
+                                              dependencies=dependencies)
 
         # To use BamDataProvider, original dataset must be BAM and
         # converted dataset must be BAI. Use BAI from BAM metadata.
@@ -1560,28 +1560,28 @@ class ENCODEPeakTabixDataProvider(TabixDataProvider, ENCODEPeakDataProvider):
         filter_col = 8
         filters = []
         filters.append({'name': 'Score',
-                          'type': 'number',
-                          'index': filter_col,
-                          'tool_id': 'Filter1',
-                          'tool_exp_name': 'c6'})
+                        'type': 'number',
+                        'index': filter_col,
+                        'tool_id': 'Filter1',
+                        'tool_exp_name': 'c6'})
         filter_col += 1
         filters.append({'name': 'Signal Value',
-                          'type': 'number',
-                          'index': filter_col,
-                          'tool_id': 'Filter1',
-                          'tool_exp_name': 'c7'})
+                        'type': 'number',
+                        'index': filter_col,
+                        'tool_id': 'Filter1',
+                        'tool_exp_name': 'c7'})
         filter_col += 1
         filters.append({'name': 'pValue',
                         'type': 'number',
-                          'index': filter_col,
-                          'tool_id': 'Filter1',
-                          'tool_exp_name': 'c8'})
+                        'index': filter_col,
+                        'tool_id': 'Filter1',
+                        'tool_exp_name': 'c8'})
         filter_col += 1
         filters.append({'name': 'qValue',
                         'type': 'number',
-                          'index': filter_col,
-                          'tool_id': 'Filter1',
-                          'tool_exp_name': 'c9'})
+                        'index': filter_col,
+                        'tool_id': 'Filter1',
+                        'tool_exp_name': 'c9'})
         return filters
 
 #
@@ -1668,13 +1668,13 @@ def package_gff_feature(feature, no_detail=False, filter_cols=[]):
 
     # Return full feature.
     payload = [feature.start,
-                feature.end,
-                feature.name(),
-                feature.strand,
-                # No notion of thick start, end in GFF, so make everything
-                # thick.
-                feature.start,
-                feature.end
+               feature.end,
+               feature.name(),
+               feature.strand,
+               # No notion of thick start, end in GFF, so make everything
+               # thick.
+               feature.start,
+               feature.end
                 ]
 
     # HACK: ignore interval with name 'transcript' from feature.

@@ -159,8 +159,8 @@ class JobConfiguration(object, ConfiguresHandlers):
             self.__parse_job_conf_xml(tree)
         except IOError:
             log.warning('Job configuration "%s" does not exist, using legacy'
-                         ' job configuration from Galaxy config file "%s" instead'
-                         % (self.app.config.job_config_file, self.app.config.config_file))
+                        ' job configuration from Galaxy config file "%s" instead'
+                        % (self.app.config.job_config_file, self.app.config.config_file))
             self.__parse_job_conf_legacy()
         except Exception as e:
             raise config_exception(e, job_config_file)
@@ -313,7 +313,7 @@ class JobConfiguration(object, ConfiguresHandlers):
 
         if "raw" in self.limits.total_walltime:
             h, m, s = [int(v) for v in
-                        self.limits.total_walltime["raw"].split(':')]
+                       self.limits.total_walltime["raw"].split(':')]
             self.limits.total_walltime["delta"] = datetime.timedelta(
                 0, s, 0, 0, m, h
             )
@@ -648,7 +648,7 @@ class JobConfiguration(object, ConfiguresHandlers):
                     rval[id] = runner_class(self.app, runner['workers'], **runner.get('kwds', {}))
                 except TypeError:
                     log.exception("Job runner '%s:%s' has not been converted to a new-style runner or encountered TypeError on load",
-                                   module_name, class_name)
+                                  module_name, class_name)
                     rval[id] = runner_class(self.app)
                 log.debug("Loaded job runner '%s:%s' as '%s'" % (module_name, class_name, id))
         return rval
@@ -912,18 +912,18 @@ class JobWrapper(object, HasResourceParameters):
             self.tool_working_directory = os.path.join(self.working_directory, "working")
             safe_makedirs(self.tool_working_directory)
             log.debug('(%s) Working directory for job is: %s',
-                       self.job_id, self.working_directory)
+                      self.job_id, self.working_directory)
         except ObjectInvalid:
             raise Exception('(%s) Unable to create job working directory',
-                             job.id)
+                            job.id)
 
     def clear_working_directory(self):
         job = self.get_job()
         if not os.path.exists(self.working_directory):
             log.warning('(%s): Working directory clear requested but %s does '
-                         'not exist',
-                         self.job_id,
-                         self.working_directory)
+                        'not exist',
+                        self.job_id,
+                        self.working_directory)
             return
 
         self.app.object_store.create(
@@ -937,7 +937,7 @@ class JobWrapper(object, HasResourceParameters):
         shutil.move(self.working_directory, arc_dir)
         self._create_working_directory()
         log.debug('(%s) Previous working directory moved to %s',
-                   self.job_id, arc_dir)
+                  self.job_id, arc_dir)
 
     def default_compute_environment(self, job=None):
         if not job:
@@ -1084,7 +1084,7 @@ class JobWrapper(object, HasResourceParameters):
 
         if job.state in model.Job.terminal_states:
             log.warning("(%s) Ignoring state change from '%s' to '%s' for job "
-                         "that is already terminal", job.id, job.state, state)
+                        "that is already terminal", job.id, job.state, state)
             return
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             dataset = dataset_assoc.dataset
@@ -1202,7 +1202,7 @@ class JobWrapper(object, HasResourceParameters):
                     # and when the job is recovered, it won't be found.
                     if os.path.exists(dataset_path.real_path) and os.stat(dataset_path.real_path).st_size > 0:
                         log.warning("finish(): %s not found, but %s is not empty, so it will be used instead"
-                                     % (dataset_path.false_path, dataset_path.real_path))
+                                    % (dataset_path.false_path, dataset_path.real_path))
                     else:
                         # Prior to fail we need to set job.state
                         job.set_state(final_job_state)
@@ -1399,8 +1399,8 @@ class JobWrapper(object, HasResourceParameters):
         self.tool.exec_after_process(self.queue.app, inp_data, out_data, param_dict, job=job)
         # Call 'exec_after_process' hook
         self.tool.call_hook('exec_after_process', self.queue.app, inp_data=inp_data,
-                             out_data=out_data, param_dict=param_dict,
-                             tool=self.tool, stdout=job.stdout, stderr=job.stderr)
+                            out_data=out_data, param_dict=param_dict,
+                            tool=self.tool, stdout=job.stdout, stderr=job.stderr)
         job.command_line = unicodify(self.command_line)
 
         collected_bytes = 0
@@ -1509,14 +1509,14 @@ class JobWrapper(object, HasResourceParameters):
                 if size > self.app.job_config.limits.output_size:
                     log.warning('(%s) Job output size %s has exceeded the global output size limit', self.get_id_tag(), os.path.basename(outfile))
                     return (JobState.runner_states.OUTPUT_SIZE_LIMIT,
-                             'Job output file grew too large (greater than %s), please try different inputs or parameters'
-                             % util.nice_size(self.app.job_config.limits.output_size))
+                            'Job output file grew too large (greater than %s), please try different inputs or parameters'
+                            % util.nice_size(self.app.job_config.limits.output_size))
         if self.app.job_config.limits.walltime_delta is not None and runtime is not None:
             if runtime > self.app.job_config.limits.walltime_delta:
                 log.warning('(%s) Job runtime %s has exceeded the global walltime, it will be terminated', self.get_id_tag(), runtime)
                 return (JobState.runner_states.GLOBAL_WALLTIME_REACHED,
-                         'Job ran longer than the maximum allowed execution time (runtime: %s, limit: %s), please try different inputs or parameters'
-                         % (str(runtime).split('.')[0], self.app.job_config.limits.walltime))
+                        'Job ran longer than the maximum allowed execution time (runtime: %s, limit: %s), please try different inputs or parameters'
+                        % (str(runtime).split('.')[0], self.app.job_config.limits.walltime))
         return None
 
     def has_limits(self):
@@ -1657,15 +1657,15 @@ class JobWrapper(object, HasResourceParameters):
     def invalidate_external_metadata(self):
         job = self.get_job()
         self.external_output_metadata.invalidate_external_metadata([output_dataset_assoc.dataset for
-                                                                      output_dataset_assoc in
-                                                                      job.output_datasets + job.output_library_datasets],
-                                                                    self.sa_session)
+                                                                    output_dataset_assoc in
+                                                                    job.output_datasets + job.output_library_datasets],
+                                                                   self.sa_session)
 
     def setup_external_metadata(self, exec_dir=None, tmp_dir=None,
-                                 dataset_files_path=None, config_root=None,
-                                 config_file=None, datatypes_config=None,
-                                 resolve_metadata_dependencies=False,
-                                 set_extension=True, **kwds):
+                                dataset_files_path=None, config_root=None,
+                                config_file=None, datatypes_config=None,
+                                resolve_metadata_dependencies=False,
+                                set_extension=True, **kwds):
         # extension could still be 'auto' if this is the upload tool.
         job = self.get_job()
         if set_extension:
@@ -1686,18 +1686,18 @@ class JobWrapper(object, HasResourceParameters):
         if datatypes_config is None:
             datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
         command = self.external_output_metadata.setup_external_metadata([output_dataset_assoc.dataset for
-                                                                           output_dataset_assoc in
-                                                                           job.output_datasets + job.output_library_datasets],
-                                                                         self.sa_session,
-                                                                         exec_dir=exec_dir,
-                                                                         tmp_dir=tmp_dir,
-                                                                         dataset_files_path=dataset_files_path,
-                                                                         config_root=config_root,
-                                                                         config_file=config_file,
-                                                                         datatypes_config=datatypes_config,
-                                                                         job_metadata=os.path.join(self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE),
-                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
-                                                                         **kwds)
+                                                                         output_dataset_assoc in
+                                                                         job.output_datasets + job.output_library_datasets],
+                                                                        self.sa_session,
+                                                                        exec_dir=exec_dir,
+                                                                        tmp_dir=tmp_dir,
+                                                                        dataset_files_path=dataset_files_path,
+                                                                        config_root=config_root,
+                                                                        config_file=config_file,
+                                                                        datatypes_config=datatypes_config,
+                                                                        job_metadata=os.path.join(self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE),
+                                                                        max_metadata_value_size=self.app.config.max_metadata_value_size,
+                                                                        **kwds)
         if resolve_metadata_dependencies:
             metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")
             if metadata_tool is not None:
@@ -1940,7 +1940,7 @@ class TaskWrapper(JobWrapper):
 
         # This may have ended too soon
         log.debug('task %s for job %d ended; exit code: %d'
-                   % (self.task_id, self.job_id,
+                  % (self.task_id, self.job_id,
                       tool_exit_code if tool_exit_code is not None else -256))
         # default post job setup_external_metadata
         self.sa_session.expunge_all()
@@ -1993,8 +1993,8 @@ class TaskWrapper(JobWrapper):
         pass
 
     def setup_external_metadata(self, exec_dir=None, tmp_dir=None, dataset_files_path=None,
-                                 config_root=None, config_file=None, datatypes_config=None,
-                                 set_extension=True, **kwds):
+                                config_root=None, config_file=None, datatypes_config=None,
+                                set_extension=True, **kwds):
         # There is no metadata setting for tasks.  This is handled after the merge, at the job level.
         return ""
 

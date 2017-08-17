@@ -50,10 +50,10 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
             message = "A new web API key has been generated for (%s)" % escape(new_key.user.email)
             status = "done"
         return trans.response.send_redirect(web.url_for(controller='userskeys',
-                                                          action='all_users',
-                                                          cntrller=cntrller,
-                                                          message=message,
-                                                          status=status))
+                                                        action='all_users',
+                                                        cntrller=cntrller,
+                                                        message=message,
+                                                        status=status))
 
     @web.expose
     @web.require_login()
@@ -73,7 +73,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                     userkey = api_user.key
                 users.append({'uid': uid, 'email': user.email, 'key': userkey})
         return trans.fill_template('webapps/galaxy/user/list_users.mako',
-                                    cntrller=cntrller,
-                                    users=users,
-                                    message=message,
-                                    status=status)
+                                   cntrller=cntrller,
+                                   users=users,
+                                   message=message,
+                                   status=status)

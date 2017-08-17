@@ -49,8 +49,8 @@ class GenomeRegion(object):
     @staticmethod
     def from_dict(obj_dict):
         return GenomeRegion(chrom=obj_dict['chrom'],
-                             start=obj_dict['start'],
-                             end=obj_dict['end'])
+                            start=obj_dict['start'],
+                            end=obj_dict['end'])
 
     @staticmethod
     def from_str(obj_str):

@@ -36,27 +36,27 @@ class ExternalServiceGrid(grids.Grid):
     default_filter = dict(deleted="False")
     columns = [
         NameColumn("Name",
-                    key="name",
-                    link=(lambda item: iff(item.deleted, None, dict(operation="view", id=item.id))),
-                    attach_popup=True,
-                    filterable="advanced"),
+                   key="name",
+                   link=(lambda item: iff(item.deleted, None, dict(operation="view", id=item.id))),
+                   attach_popup=True,
+                   filterable="advanced"),
         grids.TextColumn("Description",
-                          key='description',
-                          filterable="advanced"),
+                         key='description',
+                         filterable="advanced"),
         ExternalServiceTypeColumn("External Service Type"),
         grids.GridColumn("Last Updated",
-                          key="update_time",
-                          format=time_ago),
+                         key="update_time",
+                         format=time_ago),
         grids.DeletedColumn("Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced")
+                            key="deleted",
+                            visible=False,
+                            filterable="advanced")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
-                                                cols_to_filter=[columns[0], columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = [
         grids.GridOperation("Edit", allow_multiple=False, condition=(lambda item: not item.deleted)),
         grids.GridOperation("Delete", allow_multiple=True, condition=(lambda item: not item.deleted)),
@@ -108,9 +108,9 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
                 self.__save_external_service(trans, **kwd)
                 message = 'The external_service has been created.'
                 return trans.response.send_redirect(web.url_for(controller='external_service',
-                                                                  action='browse_external_services',
-                                                                  message=message,
-                                                                  status=status))
+                                                                action='browse_external_services',
+                                                                message=message,
+                                                                status=status))
         elif external_service_type_id != 'none':
             # Form submission via refresh_on_change
             trans.app.external_service_types.reload(external_service_type_id)
@@ -118,14 +118,14 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
             widgets.extend(external_service_type.form_definition.get_widgets(trans.user, **kwd))
         if error:
             return trans.response.send_redirect(web.url_for(controller='external_service',
-                                                              action='browse_external_services',
-                                                              message=message,
-                                                              status='error'))
+                                                            action='browse_external_services',
+                                                            message=message,
+                                                            status='error'))
         return trans.fill_template('/admin/external_service/create_external_service.mako',
-                                    widgets=widgets,
-                                    message=message,
-                                    status=status,
-                                    external_service_type=external_service_type)
+                                   widgets=widgets,
+                                   message=message,
+                                   status=status,
+                                   external_service_type=external_service_type)
 
     @web.expose
     @web.require_admin
@@ -137,8 +137,8 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
             return invalid_id_redirect(trans, 'external_service', external_service_id, 'external_service', action='browse_external_services')
         external_service_type = self.get_external_service_type(trans, external_service.external_service_type_id)
         return trans.fill_template('/admin/external_service/view_external_service.mako',
-                                    external_service=external_service,
-                                    external_service_type=external_service_type)
+                                   external_service=external_service,
+                                   external_service_type=external_service_type)
 
     @web.expose
     @web.require_admin
@@ -159,11 +159,11 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         widgets.extend(external_service.form_definition.get_widgets(trans.user, external_service.form_values.content, **kwd))
         external_service_type = self.get_external_service_type(trans, external_service.external_service_type_id)
         return trans.fill_template('/admin/external_service/edit_external_service.mako',
-                                    external_service=external_service,
-                                    widgets=widgets,
-                                    message=message,
-                                    status=status,
-                                    external_service_type=external_service_type)
+                                   external_service=external_service,
+                                   widgets=widgets,
+                                   message=message,
+                                   status=status,
+                                   external_service_type=external_service_type)
 
     def __save_external_service(self, trans, **kwd):
         # Here we save a newly created external_service or save changed
@@ -209,9 +209,9 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         except:
             return invalid_id_redirect(trans, 'external_service', external_service_id, 'external_service', action='browse_external_services')
         vars = dict(id=trans.security.encode_id(external_service.form_definition.form_definition_current_id),
-                     response_redirect=web.url_for(controller='external_service',
-                                                    action='update_external_service_form_definition',
-                                                    **kwd))
+                    response_redirect=web.url_for(controller='external_service',
+                                                  action='update_external_service_form_definition',
+                                                  **kwd))
         return trans.response.send_redirect(web.url_for(controller='forms', action='edit_form_definition', **vars))
 
     @web.expose
@@ -228,10 +228,10 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         trans.sa_session.flush()
         message = "The form definition for the '%s' external service has been updated with your changes." % external_service.name
         return trans.response.send_redirect(web.url_for(controller='external_service',
-                                                          action='edit_external_service',
-                                                          message=message,
-                                                          status='done',
-                                                          **kwd))
+                                                        action='edit_external_service',
+                                                        message=message,
+                                                        status='done',
+                                                        **kwd))
 
     @web.expose
     @web.require_admin
@@ -248,9 +248,9 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
             trans.sa_session.flush()
         message = '%i external services has been deleted' % len(external_service_id_list)
         return trans.response.send_redirect(web.url_for(controller='external_service',
-                                                          action='browse_external_services',
-                                                          message=message,
-                                                          status='done'))
+                                                        action='browse_external_services',
+                                                        message=message,
+                                                        status='done'))
 
     @web.expose
     @web.require_admin
@@ -268,9 +268,9 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         status = 'done'
         message = '%i external services have been undeleted' % len(external_service_id_list)
         return trans.response.send_redirect(web.url_for(controller='external_service',
-                                                          action='browse_external_services',
-                                                          message=message,
-                                                          status=status))
+                                                        action='browse_external_services',
+                                                        message=message,
+                                                        status=status))
 
     @web.expose
     @web.require_admin
@@ -284,20 +284,20 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
             status = 'done'
             message = 'Reloaded external service type: %s' % new_external_service_type.name
         external_service_type_select_field = self.__build_external_service_type_select_field(trans,
-                                                                                              external_service_type_id,
-                                                                                              refresh_on_change=False,
-                                                                                              visible_external_service_types_only=False)
+                                                                                             external_service_type_id,
+                                                                                             refresh_on_change=False,
+                                                                                             visible_external_service_types_only=False)
         if not trans.app.external_service_types.visible_external_service_types:
             message = 'There are no visible external service types in the external service types config file.'
             status = 'error'
             return trans.response.send_redirect(web.url_for(controller='external_service',
-                                                              action='browse_external_services',
-                                                              message=message,
-                                                              status=status))
+                                                            action='browse_external_services',
+                                                            message=message,
+                                                            status=status))
         return trans.fill_template('/admin/external_service/reload_external_service_types.mako',
-                                    external_service_type_select_field=external_service_type_select_field,
-                                    message=message,
-                                    status=status)
+                                   external_service_type_select_field=external_service_type_select_field,
+                                   message=message,
+                                   status=status)
 
     def get_external_service_type(self, trans, external_service_type_id, action='browse_external_services'):
         try:
@@ -305,9 +305,9 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         except KeyError:
             message = 'Error in loading external service type: %s' % external_service_type_id
             return trans.response.send_redirect(web.url_for(controller='external_service',
-                                                              action=action,
-                                                              message=message,
-                                                              status='error'))
+                                                            action=action,
+                                                            message=message,
+                                                            status='error'))
 
     # ===== Methods for building SelectFields used on various admin_requests forms
     def __build_external_service_widgets(self, trans, external_service=None, **kwd):
@@ -327,19 +327,19 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
             else:
                 seq_type = 'none'
         widgets = [dict(label='Name',
-                          widget=TextField('external_service_name', 40, name),
-                          helptext=''),
-                    dict(label='Description',
-                          widget=TextField('external_service_description', 40, description),
-                          helptext=''),
-                    dict(label='Version',
-                          widget=TextField('external_service_version', 40, version),
-                          helptext='')]
+                        widget=TextField('external_service_name', 40, name),
+                        helptext=''),
+                   dict(label='Description',
+                        widget=TextField('external_service_description', 40, description),
+                        helptext=''),
+                   dict(label='Version',
+                        widget=TextField('external_service_version', 40, version),
+                        helptext='')]
         # Do not show the external_service_type selectfield when editing a external_service
         if not external_service:
             widgets.append(dict(label='External service type',
-                                  widget=self.__build_external_service_type_select_field(trans, seq_type, visible_external_service_types_only=True),
-                                  helptext=''))
+                                widget=self.__build_external_service_type_select_field(trans, seq_type, visible_external_service_types_only=True),
+                                helptext=''))
         return widgets
 
     def __build_external_service_type_select_field(self, trans, selected_value, refresh_on_change=True, visible_external_service_types_only=False):
@@ -351,8 +351,8 @@ class ExternalService(BaseUIController, UsesFormDefinitionsMixin):
         refresh_on_change_values = ['none']
         refresh_on_change_values.extend([trans.security.encode_id(obj.id) for obj in objs_list])
         select_external_service_type = SelectField('external_service_type_id',
-                                                    refresh_on_change=refresh_on_change,
-                                                    refresh_on_change_values=refresh_on_change_values)
+                                                   refresh_on_change=refresh_on_change,
+                                                   refresh_on_change_values=refresh_on_change_values)
         if selected_value == 'none':
             select_external_service_type.add_option('Select one', 'none', selected=True)
         else:

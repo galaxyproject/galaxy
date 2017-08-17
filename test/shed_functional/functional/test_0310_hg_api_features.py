@@ -45,29 +45,29 @@ class TestHgWebFeatures(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=repository_name,
-                                                    description=repository_description,
-                                                    long_description=repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=repository_description,
+                                                   long_description=repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='filtering/filtering_1.1.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=True,
-                          commit_message="Uploaded filtering 1.1.0.",
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_1.1.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=True,
+                         commit_message="Uploaded filtering 1.1.0.",
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         self.upload_file(repository,
-                          filename='filtering/filtering_test_data.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message="Uploaded filtering test data.",
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_test_data.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message="Uploaded filtering test data.",
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_clone(self):
         '''Clone the repository to a local path.'''

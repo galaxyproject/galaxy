@@ -161,12 +161,12 @@ class InstallEnvironment(object):
         llog.debug('+ ' + str(command))
         # Launch the command as subprocess.  A bufsize of 1 means line buffered.
         process_handle = subprocess.Popen(str(command),
-                                           stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE,
-                                           bufsize=1,
-                                           close_fds=False,
-                                           shell=True,
-                                           cwd=state.env['lcwd'])
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE,
+                                          bufsize=1,
+                                          close_fds=False,
+                                          shell=True,
+                                          cwd=state.env['lcwd'])
         pid = process_handle.pid
         # Launch the asynchronous readers of the process' stdout and stderr.
         stdout_queue = queue.Queue()
@@ -178,10 +178,10 @@ class InstallEnvironment(object):
         # Place streamed stdout and stderr into a threaded IPC queue target so it can
         # be printed and stored for later retrieval when generating the INSTALLATION.log.
         stdio_thread = threading.Thread(target=self.enqueue_output,
-                                         args=(process_handle.stdout,
-                                                stdout_queue,
-                                                process_handle.stderr,
-                                                stderr_queue))
+                                        args=(process_handle.stdout,
+                                              stdout_queue,
+                                              process_handle.stderr,
+                                              stderr_queue))
         thread_lock = threading.Lock()
         thread_lock.acquire()
         stdio_thread.start()

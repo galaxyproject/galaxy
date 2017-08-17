@@ -76,7 +76,7 @@ class TabularData(data.Text):
                     cursor = f.read(1)
             last_read = f.tell()
         return dumps({'ck_data': util.unicodify(ck_data),
-                        'offset': last_read})
+                      'offset': last_read})
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         preview = util.string_as_bool(preview)
@@ -96,8 +96,8 @@ class TabularData(data.Text):
             else:
                 trans.response.set_content_type("text/html")
                 return trans.stream_template_mako("/dataset/large_file.mako",
-                                                   truncated_data=open(dataset.file_name).read(max_peek_size),
-                                                   data=dataset)
+                                                  truncated_data=open(dataset.file_name).read(max_peek_size),
+                                                  data=dataset)
         else:
             column_names = 'null'
             if dataset.metadata.column_names:
@@ -111,11 +111,11 @@ class TabularData(data.Text):
             if column_number is None:
                 column_number = 'null'
             return trans.fill_template("/dataset/tabular_chunked.mako",
-                                        dataset=dataset,
-                                        chunk=self.get_chunk(trans, dataset, 0),
-                                        column_number=column_number,
-                                        column_names=column_names,
-                                        column_types=column_types)
+                                       dataset=dataset,
+                                       chunk=self.get_chunk(trans, dataset, 0),
+                                       column_number=column_number,
+                                       column_names=column_names,
+                                       column_types=column_types)
 
     def make_html_table(self, dataset, **kwargs):
         """Create HTML table, used for displaying peek"""
@@ -219,7 +219,7 @@ class TabularData(data.Text):
         return dataproviders.column.ColumnarDataProvider(dataset_source, deliminator=delimiter, **settings)
 
     @dataproviders.decorators.dataprovider_factory('dataset-column',
-                                                    dataproviders.column.ColumnarDataProvider.settings)
+                                                   dataproviders.column.ColumnarDataProvider.settings)
     def dataset_column_dataprovider(self, dataset, **settings):
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
@@ -551,7 +551,7 @@ class Sam(Tabular):
         return super(Sam, self).column_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('dataset-column',
-                                                    dataproviders.column.ColumnarDataProvider.settings)
+                                                   dataproviders.column.ColumnarDataProvider.settings)
     def dataset_column_dataprovider(self, dataset, **settings):
         settings['comment_char'] = '@'
         return super(Sam, self).dataset_column_dataprovider(dataset, **settings)
@@ -580,13 +580,13 @@ class Sam(Tabular):
         return self.dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('genomic-region',
-                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
+                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dataprovider(self, dataset, **settings):
         settings['comment_char'] = '@'
         return dataproviders.dataset.GenomicRegionDataProvider(dataset, 2, 3, 3, **settings)
 
     @dataproviders.decorators.dataprovider_factory('genomic-region-dict',
-                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
+                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dict_dataprovider(self, dataset, **settings):
         settings['comment_char'] = '@'
         return dataproviders.dataset.GenomicRegionDataProvider(dataset, 2, 3, 3, True, **settings)
@@ -661,12 +661,12 @@ class Pileup(Tabular):
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory('genomic-region',
-                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
+                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dataprovider(self, dataset, **settings):
         return dataproviders.dataset.GenomicRegionDataProvider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('genomic-region-dict',
-                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
+                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dict_dataprovider(self, dataset, **settings):
         settings['named_columns'] = True
         return self.genomic_region_dataprovider(dataset, **settings)
@@ -724,12 +724,12 @@ class BaseVcf(Tabular):
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory('genomic-region',
-                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
+                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dataprovider(self, dataset, **settings):
         return dataproviders.dataset.GenomicRegionDataProvider(dataset, 0, 1, 1, **settings)
 
     @dataproviders.decorators.dataprovider_factory('genomic-region-dict',
-                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
+                                                   dataproviders.dataset.GenomicRegionDataProvider.settings)
     def genomic_region_dict_dataprovider(self, dataset, **settings):
         settings['named_columns'] = True
         return self.genomic_region_dataprovider(dataset, **settings)
@@ -757,7 +757,7 @@ class VcfGz(BaseVcf, binary.Binary):
         # Usage: bcftools index <in.bcf>
 
         dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
-                                        '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name))) + ".vcf.gz"
+                                       '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name))) + ".vcf.gz"
         os.symlink(dataset.file_name, dataset_symlink)
 
         stderr_name = tempfile.NamedTemporaryFile(prefix="bcf_index_stderr").name

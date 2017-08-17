@@ -15,6 +15,6 @@ class Group(BaseUIController):
             'jscript'       : "../toolshed/scripts/toolshed.groups"
         }
         return trans.fill_template('/webapps/tool_shed/group/index.mako',
-                                    config={
+                                   config={
                                         'title': 'Tool Shed Groups',
                                         'app': app})

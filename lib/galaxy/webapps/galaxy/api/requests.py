@@ -103,6 +103,6 @@ class RequestsAPIController(BaseAPIController):
     def __update_request_state(self, trans, encoded_request_id):
         requests_common_cntrller = trans.webapp.controllers['requests_common']
         status, output = requests_common_cntrller.update_request_state(trans,
-                                                                        cntrller='api',
-                                                                        request_id=encoded_request_id)
+                                                                       cntrller='api',
+                                                                       request_id=encoded_request_id)
         return status, output

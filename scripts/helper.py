@@ -33,8 +33,8 @@ except:
 options.config = os.path.abspath(options.config)
 
 config = ConfigParser(dict(file_path='database/files',
-                             id_secret='USING THE DEFAULT IS NOT SECURE!',
-                             database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE'))
+                           id_secret='USING THE DEFAULT IS NOT SECURE!',
+                           database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE'))
 config.read(options.config)
 
 helper = security.SecurityHelper(id_secret=config.get('app:main', 'id_secret'))

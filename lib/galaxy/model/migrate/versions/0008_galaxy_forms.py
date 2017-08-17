@@ -121,8 +121,8 @@ def upgrade(migrate_engine):
     if FormDefinitionCurrent_table is not None and FormDefinition_table is not None:
         try:
             cons = ForeignKeyConstraint([FormDefinitionCurrent_table.c.latest_form_id],
-                                         [FormDefinition_table.c.id],
-                                         name='form_definition_current_latest_form_id_fk')
+                                        [FormDefinition_table.c.id],
+                                        name='form_definition_current_latest_form_id_fk')
             # Create the constraint
             cons.create()
         except Exception:

@@ -32,7 +32,7 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
         # behavior of just setting an error if there is *anything* on
         # stderr.
         if (len(tool.stdio_regexes) > 0 or
-             len(tool.stdio_exit_codes) > 0):
+            len(tool.stdio_exit_codes) > 0):
             # Check the exit code ranges in the order in which
             # they were specified. Each exit_code is a StdioExitCode
             # that includes an applicable range. If the exit code was in
@@ -42,7 +42,7 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
             if tool_exit_code is not None:
                 for stdio_exit_code in tool.stdio_exit_codes:
                     if (tool_exit_code >= stdio_exit_code.range_start and
-                         tool_exit_code <= stdio_exit_code.range_end):
+                        tool_exit_code <= stdio_exit_code.range_end):
                         # Tack on a generic description of the code
                         # plus a specific code description. For example,
                         # this might prepend "Job 42: Warning (Out of Memory)\n".
@@ -56,9 +56,9 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
                         log.info("Job %s: %s" % (job.get_id_tag(), tool_msg))
                         stderr = tool_msg + "\n" + stderr
                         max_error_level = max(max_error_level,
-                                               stdio_exit_code.error_level)
+                                              stdio_exit_code.error_level)
                         if (max_error_level >=
-                             StdioErrorLevel.FATAL):
+                            StdioErrorLevel.FATAL):
                             break
 
             if max_error_level < StdioErrorLevel.FATAL:
@@ -80,30 +80,30 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
                     # TODO: Collapse this into a single function.
                     if (regex.stdout_match):
                         regex_match = re.search(regex.match, stdout,
-                                                 re.IGNORECASE)
+                                                re.IGNORECASE)
                         if (regex_match):
                             rexmsg = __regex_err_msg(regex_match, regex)
                             log.info("Job %s: %s"
-                                      % (job.get_id_tag(), rexmsg))
+                                     % (job.get_id_tag(), rexmsg))
                             stdout = rexmsg + "\n" + stdout
                             max_error_level = max(max_error_level,
-                                                   regex.error_level)
+                                                  regex.error_level)
                             if (max_error_level >=
-                                 StdioErrorLevel.FATAL):
+                                StdioErrorLevel.FATAL):
                                 break
 
                     if (regex.stderr_match):
                         regex_match = re.search(regex.match, stderr,
-                                                 re.IGNORECASE)
+                                                re.IGNORECASE)
                         if (regex_match):
                             rexmsg = __regex_err_msg(regex_match, regex)
                             log.info("Job %s: %s"
-                                      % (job.get_id_tag(), rexmsg))
+                                     % (job.get_id_tag(), rexmsg))
                             stderr = rexmsg + "\n" + stderr
                             max_error_level = max(max_error_level,
-                                                   regex.error_level)
+                                                  regex.error_level)
                             if (max_error_level >=
-                                 StdioErrorLevel.FATAL):
+                                StdioErrorLevel.FATAL):
                                 break
 
             # If we encountered a fatal error, then we'll need to set the
@@ -132,7 +132,7 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
     except:
         tb = traceback.format_exc()
         log.warning("Tool check encountered unexpected exception; " +
-                     "assuming tool was successful: " + tb)
+                    "assuming tool was successful: " + tb)
         success = True
 
     # Store the modified stdout and stderr in the job:

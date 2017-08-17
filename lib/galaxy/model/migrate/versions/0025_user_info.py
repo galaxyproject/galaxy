@@ -48,8 +48,8 @@ def upgrade(migrate_engine):
             if User_table is not None and FormValues_table is not None:
                 try:
                     cons = ForeignKeyConstraint([User_table.c.form_values_id],
-                                                 [FormValues_table.c.id],
-                                                 name='user_form_values_id_fk')
+                                                [FormValues_table.c.id],
+                                                name='user_form_values_id_fk')
                     # Create the constraint
                     cons.create()
                 except Exception:

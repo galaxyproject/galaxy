@@ -113,9 +113,9 @@ class CasperJSTestCase(unittest.TestCase):
         log.debug('process_command_list: %s', str(process_command_list))
         try:
             process = subprocess.Popen(process_command_list,
-                                        shell=False,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
+                                       shell=False,
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
 
             # output from the browser (stderr only) immediately
             while process.poll() is None:
@@ -148,8 +148,8 @@ class CasperJSTestCase(unittest.TestCase):
         except OSError as os_err:
             if os_err.errno == errno.ENOENT:
                 log.error('No path to headless browser executable: %s\n' +
-                           'These tests were designed to use the following headless browser:\n%s',
-                           self.exec_path, self.casper_info)
+                          'These tests were designed to use the following headless browser:\n%s',
+                          self.exec_path, self.casper_info)
             raise
 
         return self.handle_js_results(stdout_output)

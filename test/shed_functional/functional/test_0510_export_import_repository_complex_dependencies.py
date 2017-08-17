@@ -41,19 +41,19 @@ class TestExportImportRepository(ShedTwillTestCase):
         self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.import_capsule(self.get_filename('repository_capsules/0510_trans_proteomic_pipeline.tar.gz'),
-                             strings_displayed=['package_trans_proteomic_pipeline_4_6_3',
-                                                 'package_perl_5_18',
-                                                 'package_libpng_1_2',
-                                                 'package_libgd_2_1',
-                                                 'package_expat_2_1',
-                                                 '<b>Exists'],
-                             strings_not_displayed=[' Exists'],
-                             strings_displayed_after_submit=['Repository <b>package_trans_proteomic_pipeline_4_6_3</b> has been created.',
-                                                              'Repository <b>package_perl_5_18</b> has been created.',
-                                                              'Repository <b>package_libpng_1_2</b> has been created.',
-                                                              'Repository <b>package_libgd_2_1</b> has been created.',
-                                                              'Repository <b>package_expat_2_1</b> has been created.'],
-                             strings_not_displayed_after_submit=['Import not necessary'])
+                            strings_displayed=['package_trans_proteomic_pipeline_4_6_3',
+                                               'package_perl_5_18',
+                                               'package_libpng_1_2',
+                                               'package_libgd_2_1',
+                                               'package_expat_2_1',
+                                               '<b>Exists'],
+                            strings_not_displayed=[' Exists'],
+                            strings_displayed_after_submit=['Repository <b>package_trans_proteomic_pipeline_4_6_3</b> has been created.',
+                                                            'Repository <b>package_perl_5_18</b> has been created.',
+                                                            'Repository <b>package_libpng_1_2</b> has been created.',
+                                                            'Repository <b>package_libgd_2_1</b> has been created.',
+                                                            'Repository <b>package_expat_2_1</b> has been created.'],
+                            strings_not_displayed_after_submit=['Import not necessary'])
 
     def test_0010_export_repository_capsule(self):
         '''Export the repository that was imported in the previous step.'''
@@ -84,16 +84,16 @@ class TestExportImportRepository(ShedTwillTestCase):
         '''
         global capsule_filepath
         self.import_capsule(capsule_filepath,
-                             strings_displayed=['package_trans_proteomic_pipeline_4_6_3',
-                                                 'package_perl_5_18',
-                                                 'package_libpng_1_2',
-                                                 'package_libgd_2_1',
-                                                 'package_expat_2_1',
-                                                 ' Exists',
-                                                 self.url],
-                             strings_not_displayed_after_submit=['Repository <b>package_trans_proteomic_pipeline_4_6_3</b> has been created.',
-                                                                  'Repository <b>package_perl_5_18</b> has been created.',
-                                                                  'Repository <b>package_libpng_1_2</b> has been created.',
-                                                                  'Repository <b>package_libgd_2_1</b> has been created.',
-                                                                  'Repository <b>package_expat_2_1</b> has been created.'],
-                             strings_displayed_after_submit=['Import not necessary', ' Exists'])
+                            strings_displayed=['package_trans_proteomic_pipeline_4_6_3',
+                                               'package_perl_5_18',
+                                               'package_libpng_1_2',
+                                               'package_libgd_2_1',
+                                               'package_expat_2_1',
+                                               ' Exists',
+                                               self.url],
+                            strings_not_displayed_after_submit=['Repository <b>package_trans_proteomic_pipeline_4_6_3</b> has been created.',
+                                                                'Repository <b>package_perl_5_18</b> has been created.',
+                                                                'Repository <b>package_libpng_1_2</b> has been created.',
+                                                                'Repository <b>package_libgd_2_1</b> has been created.',
+                                                                'Repository <b>package_expat_2_1</b> has been created.'],
+                            strings_displayed_after_submit=['Import not necessary', ' Exists'])

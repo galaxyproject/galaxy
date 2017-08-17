@@ -113,8 +113,8 @@ class RemoteFilesAPIController(BaseAPIController):
                     path = os.path.relpath(os.path.join(dirpath, filename), directory)
                     statinfo = os.lstat(os.path.join(dirpath, filename))
                     response.append(dict(path=path,
-                                           size=statinfo.st_size,
-                                           ctime=time.strftime("%m/%d/%Y %I:%M:%S %p", time.localtime(statinfo.st_ctime))))
+                                         size=statinfo.st_size,
+                                         ctime=time.strftime("%m/%d/%Y %I:%M:%S %p", time.localtime(statinfo.st_ctime))))
         else:
             log.warning("The directory \"%s\" does not exist." % directory)
             return response

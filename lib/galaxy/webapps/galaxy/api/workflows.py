@@ -275,8 +275,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if 'installed_repository_file' in payload:
             workflow_controller = trans.webapp.controllers['workflow']
             result = workflow_controller.import_workflow(trans=trans,
-                                                          cntrller='api',
-                                                          **payload)
+                                                         cntrller='api',
+                                                         **payload)
             return result
 
         if 'from_history_id' in payload:
@@ -562,10 +562,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 owner = item['owner']
                 changeset_revision = item['changeset_revision']
                 irm.install(tool_shed_url,
-                             name,
-                             owner,
-                             changeset_revision,
-                             payload)
+                            name,
+                            owner,
+                            changeset_revision,
+                            payload)
         return item
 
     @expose_api

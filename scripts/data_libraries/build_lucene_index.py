@@ -100,9 +100,9 @@ def get_sa_session(ini_file):
     if not db_con:
         db_con = "sqlite:///%s?isolation_level=IMMEDIATE" % ini_config.database
     model = galaxy.model.mapping.init(ini_config.file_path,
-                                       db_con,
-                                       engine_options={},
-                                       create_tables=False)
+                                      db_con,
+                                      engine_options={},
+                                      create_tables=False)
     return model.context.current, ini_config
 
 

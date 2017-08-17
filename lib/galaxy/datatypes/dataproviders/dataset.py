@@ -80,7 +80,7 @@ class DatasetDataProvider(base.DataProvider):
         :type indeces: list of ints
         """
         metadata_column_types = (self.dataset.metadata.column_types or
-                                  getattr(self.dataset.datatype, 'column_types', None) or None)
+                                 getattr(self.dataset.datatype, 'column_types', None) or None)
         if not metadata_column_types:
             return metadata_column_types
         if indeces:
@@ -100,7 +100,7 @@ class DatasetDataProvider(base.DataProvider):
         :type indeces: list of ints
         """
         metadata_column_names = (self.dataset.metadata.column_names or
-                                  getattr(self.dataset.datatype, 'column_names', None) or None)
+                                 getattr(self.dataset.datatype, 'column_names', None) or None)
         if not metadata_column_names:
             return metadata_column_names
         if indeces:
@@ -123,10 +123,10 @@ class DatasetDataProvider(base.DataProvider):
         :raises ValueError: if an entry in list_of_column_names is not in column_names
         """
         metadata_column_names = (self.dataset.metadata.column_names or
-                                  getattr(self.dataset.datatype, 'column_names', None) or None)
+                                 getattr(self.dataset.datatype, 'column_names', None) or None)
         if not metadata_column_names:
             raise KeyError('No column_names found for ' +
-                            'datatype: %s, dataset: %s' % (str(self.dataset.datatype), str(self.dataset)))
+                           'datatype: %s, dataset: %s' % (str(self.dataset.datatype), str(self.dataset)))
         indeces = []  # if indeces and column_names:
         # pull using indeces and re-name with given names - no need to alter (does as super would)
         #    pass
@@ -302,7 +302,7 @@ class GenomicRegionDataProvider(column.ColumnarDataProvider):
         indeces = [chrom_column, start_column, end_column]
         if not all(_ is not None for _ in indeces):
             raise ValueError("Could not determine proper column indeces for" +
-                              " chrom, start, end: %s" % (str(indeces)))
+                             " chrom, start, end: %s" % (str(indeces)))
         kwargs.update({'indeces' : indeces})
 
         if not kwargs.get('column_types', None):
@@ -344,7 +344,7 @@ class IntervalDataProvider(column.ColumnarDataProvider):
     }
 
     def __init__(self, dataset, chrom_column=None, start_column=None, end_column=None,
-                  strand_column=None, name_column=None, named_columns=False, **kwargs):
+                 strand_column=None, name_column=None, named_columns=False, **kwargs):
         """
         :param dataset: the Galaxy dataset whose file will be the source
         :type dataset: model.DatasetInstance

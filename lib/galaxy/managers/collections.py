@@ -40,8 +40,8 @@ class DatasetCollectionManager(object):
         self.ldda_manager = lddas.LDDAManager(app)
 
     def create(self, trans, parent, name, collection_type, element_identifiers=None,
-                elements=None, implicit_collection_info=None, trusted_identifiers=None,
-                hide_source_items=False, tags=None):
+               elements=None, implicit_collection_info=None, trusted_identifiers=None,
+               hide_source_items=False, tags=None):
         """
         PRECONDITION: security checks on ability to add to parent
         occurred during load.
@@ -109,7 +109,7 @@ class DatasetCollectionManager(object):
         return self.__persist(dataset_collection_instance)
 
     def create_dataset_collection(self, trans, collection_type, element_identifiers=None, elements=None,
-                                   hide_source_items=None):
+                                  hide_source_items=None):
         if element_identifiers is None and elements is None:
             raise RequestParameterInvalidException(ERROR_INVALID_ELEMENTS_SPECIFICATION)
         if not collection_type:

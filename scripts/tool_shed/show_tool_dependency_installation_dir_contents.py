@@ -54,17 +54,17 @@ if __name__ == '__main__':
     description += '--delete command line argument is provided.'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--basepath',
-                         dest='basepath',
-                         required=True,
-                         action='store',
-                         metavar='name',
-                         help='The base path where tool dependencies are installed.')
+                        dest='basepath',
+                        required=True,
+                        action='store',
+                        metavar='name',
+                        help='The base path where tool dependencies are installed.')
     parser.add_argument('--dburi',
-                         dest='dburi',
-                         required=True,
-                         action='store',
-                         metavar='dburi',
-                         help='The database URI to connect to.')
+                        dest='dburi',
+                        required=True,
+                        action='store',
+                        metavar='dburi',
+                        help='The database URI to connect to.')
     args = parser.parse_args()
     database_connection = args.dburi
     config_dict = dict(database_connection=database_connection, tool_dependency_dir=args.basepath)

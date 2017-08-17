@@ -54,32 +54,32 @@ def boolean_false(migrate_engine):
 
 
 RepositoryReview_table = Table("repository_review", metadata,
-                                Column("id", Integer, primary_key=True),
-                                Column("create_time", DateTime, default=NOW),
-                                Column("update_time", DateTime, default=NOW, onupdate=NOW),
-                                Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
-                                Column("changeset_revision", TrimmedString(255), index=True),
-                                Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=False),
-                                Column("approved", TrimmedString(255)),
-                                Column("rating", Integer, index=True),
-                                Column("deleted", Boolean, index=True, default=False))
-
-ComponentReview_table = Table("component_review", metadata,
                                Column("id", Integer, primary_key=True),
                                Column("create_time", DateTime, default=NOW),
                                Column("update_time", DateTime, default=NOW, onupdate=NOW),
-                               Column("repository_review_id", Integer, ForeignKey("repository_review.id"), index=True),
-                               Column("component_id", Integer, ForeignKey("component.id"), index=True),
-                               Column("comment", TEXT),
-                               Column("private", Boolean, default=False),
+                               Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
+                               Column("changeset_revision", TrimmedString(255), index=True),
+                               Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=False),
                                Column("approved", TrimmedString(255)),
-                               Column("rating", Integer),
+                               Column("rating", Integer, index=True),
                                Column("deleted", Boolean, index=True, default=False))
 
+ComponentReview_table = Table("component_review", metadata,
+                              Column("id", Integer, primary_key=True),
+                              Column("create_time", DateTime, default=NOW),
+                              Column("update_time", DateTime, default=NOW, onupdate=NOW),
+                              Column("repository_review_id", Integer, ForeignKey("repository_review.id"), index=True),
+                              Column("component_id", Integer, ForeignKey("component.id"), index=True),
+                              Column("comment", TEXT),
+                              Column("private", Boolean, default=False),
+                              Column("approved", TrimmedString(255)),
+                              Column("rating", Integer),
+                              Column("deleted", Boolean, index=True, default=False))
+
 Component_table = Table("component", metadata,
-                         Column("id", Integer, primary_key=True),
-                         Column("name", TrimmedString(255)),
-                         Column("description", TEXT))
+                        Column("id", Integer, primary_key=True),
+                        Column("name", TrimmedString(255)),
+                        Column("description", TEXT))
 
 
 def upgrade(migrate_engine):
@@ -105,11 +105,11 @@ def upgrade(migrate_engine):
     # Insert default Component values.
     names = ['Data types', 'Functional tests', 'README', 'Tool dependencies', 'Tools', 'Workflows']
     descriptions = ['Proprietary datatypes defined in a file named datatypes_conf.xml included in the repository',
-                     'Functional tests defined in each tool config included in the repository along with test data files',
-                     'An appropriately named file included in the repository that contains installation information or 3rd-party tool dependency licensing information',
-                     'Tool dependencies defined in a file named tool_dependencies.xml included in the repository for contained tools',
-                     'Galaxy tools included in the repository',
-                     'Exported Galaxy workflows included in the repository']
+                    'Functional tests defined in each tool config included in the repository along with test data files',
+                    'An appropriately named file included in the repository that contains installation information or 3rd-party tool dependency licensing information',
+                    'Tool dependencies defined in a file named tool_dependencies.xml included in the repository for contained tools',
+                    'Galaxy tools included in the repository',
+                    'Exported Galaxy workflows included in the repository']
     for tup in zip(names, descriptions):
         name, description = tup
         cmd = "INSERT INTO component VALUES ("

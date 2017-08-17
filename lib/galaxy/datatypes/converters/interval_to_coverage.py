@@ -137,15 +137,15 @@ if __name__ == "__main__":
     subprocess.check_call(commandline, shell=True)
 
     coverage = CoverageWriter(out_stream=open(out_fname, "a"),
-                               chromCol=chr_col_2, positionCol=position_col_2,
-                               forwardCol=forward_col_2, reverseCol=reverse_col_2, )
+                              chromCol=chr_col_2, positionCol=position_col_2,
+                              forwardCol=forward_col_2, reverseCol=reverse_col_2, )
     temp_file.seek(0)
     interval = io.NiceReaderWrapper(temp_file,
-                                     chrom_col=chr_col_1,
-                                     start_col=start_col_1,
-                                     end_col=end_col_1,
-                                     strand_col=strand_col_1,
-                                     fix_strand=True)
+                                    chrom_col=chr_col_1,
+                                    start_col=start_col_1,
+                                    end_col=end_col_1,
+                                    strand_col=strand_col_1,
+                                    fix_strand=True)
     main(interval, coverage)
     temp_file.close()
     coverage.close()

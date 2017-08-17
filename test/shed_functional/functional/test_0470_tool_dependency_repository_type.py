@@ -80,21 +80,21 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=package_libx11_repository_name,
-                                                    description=package_libx11_repository_description,
-                                                    long_description=package_libx11_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=package_libx11_repository_description,
+                                                   long_description=package_libx11_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Upload the tool dependency definition to the package_x11_client_1_5_proto_7_0_0470 repository.
         self.upload_file(repository,
-                          filename='emboss/libx11_proto/first_tool_dependency/tool_dependencies.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_x11_client_1_5_proto_7_0_0470 with tool dependency definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/libx11_proto/first_tool_dependency/tool_dependencies.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate package_x11_client_1_5_proto_7_0_0470 with tool dependency definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_create_emboss_5_0_0_repository(self):
         '''Create and populate package_emboss_5_0_0_0470.'''
@@ -107,21 +107,21 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=package_emboss_repository_name,
-                                                    description=package_emboss_repository_description,
-                                                    long_description=package_emboss_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=package_emboss_repository_description,
+                                                   long_description=package_emboss_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Upload the edited tool dependency definition to the package_emboss_5_0_0 repository.
         self.upload_file(repository,
-                          filename='emboss/emboss_5_0_0/first_tool_dependency/tool_dependencies.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_emboss_5_0_0_0470 with tool dependency definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/emboss_5_0_0/first_tool_dependency/tool_dependencies.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate package_emboss_5_0_0_0470 with tool dependency definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0015_create_emboss_5_repository(self):
         '''Create and populate emboss_5_0470.'''
@@ -134,21 +134,21 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=emboss_repository_name,
-                                                    description=emboss_repository_description,
-                                                    long_description=emboss_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=emboss_repository_description,
+                                                   long_description=emboss_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Populate emboss_5 with tool and dependency definitions.
         self.upload_file(repository,
-                          filename='emboss/0470_files/emboss_complex_dependency.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate emboss_5 with tool and dependency definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/0470_files/emboss_complex_dependency.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate emboss_5 with tool and dependency definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_upload_updated_tool_dependency_to_package_x11(self):
         '''Upload a new tool_dependencies.xml to package_x11_client_1_5_proto_7_0_0470.'''
@@ -159,14 +159,14 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         package_x11_repository = self.test_db_util.get_repository_by_name_and_owner(package_libx11_repository_name, common.test_user_1_name)
         # Upload the tool dependency definition to the package_x11_client_1_5_proto_7_0_0470 repository.
         self.upload_file(package_x11_repository,
-                          filename='emboss/libx11_proto/second_tool_dependency/tool_dependencies.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_x11_client_1_5_proto_7_0_0470 with tool dependency definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/libx11_proto/second_tool_dependency/tool_dependencies.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate package_x11_client_1_5_proto_7_0_0470 with tool dependency definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         assert len(package_x11_repository.metadata_revisions) == 1, \
             'package_x11_client_1_5_proto_7_0_0470 has incorrect number of metadata revisions, expected 1 but found %d' % \
             len(package_x11_repository.metadata_revisions)
@@ -181,14 +181,14 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         package_emboss_repository = self.test_db_util.get_repository_by_name_and_owner(package_emboss_repository_name, common.test_user_1_name)
         # Populate package_emboss_5_0_0_0470 with updated tool dependency definition.
         self.upload_file(package_emboss_repository,
-                          filename='emboss/emboss_5_0_0/second_tool_dependency/tool_dependencies.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_emboss_5_0_0_0470 with tool dependency definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/emboss_5_0_0/second_tool_dependency/tool_dependencies.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate package_emboss_5_0_0_0470 with tool dependency definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         assert len(package_emboss_repository.metadata_revisions) == 2, \
             'package_emboss_5_0_0_0470 has incorrect number of metadata revisions, expected 2 but found %d' % \
             len(package_emboss_repository.metadata_revisions)
@@ -203,14 +203,14 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         emboss_repository = self.test_db_util.get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         # Populate package_emboss_5_0_0_0470 with updated tool dependency definition.
         self.upload_file(emboss_repository,
-                          filename='emboss/0470_files/tool_dependencies.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Upload updated complex repository dependency definition to emboss_5_0470.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/0470_files/tool_dependencies.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Upload updated complex repository dependency definition to emboss_5_0470.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
         assert len(emboss_repository.metadata_revisions) == 2, 'package_emboss_5_0_0_0470 has incorrect number of metadata revisions'
 
     def test_0035_modify_package_x11_repository_type(self):

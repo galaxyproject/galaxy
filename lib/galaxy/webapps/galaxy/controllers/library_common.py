@@ -130,39 +130,39 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             try:
                 if self.app.config.new_lib_browse:
                     return trans.fill_template('library/common/browse_library_opt.mako',
-                                                cntrller=cntrller,
-                                                use_panels=use_panels,
-                                                library=library,
-                                                created_ldda_ids=created_ldda_ids,
-                                                hidden_folder_ids=hidden_folder_ids,
-                                                show_deleted=show_deleted,
-                                                comptypes=comptypes,
-                                                current_user_roles=current_user_roles,
-                                                message=escape(message),
-                                                status=escape(status))
+                                               cntrller=cntrller,
+                                               use_panels=use_panels,
+                                               library=library,
+                                               created_ldda_ids=created_ldda_ids,
+                                               hidden_folder_ids=hidden_folder_ids,
+                                               show_deleted=show_deleted,
+                                               comptypes=comptypes,
+                                               current_user_roles=current_user_roles,
+                                               message=escape(message),
+                                               status=escape(status))
                 else:
                     return trans.fill_template('library/common/browse_library.mako',
-                                                cntrller=cntrller,
-                                                use_panels=use_panels,
-                                                library=library,
-                                                created_ldda_ids=created_ldda_ids,
-                                                hidden_folder_ids=hidden_folder_ids,
-                                                show_deleted=show_deleted,
-                                                comptypes=comptypes,
-                                                current_user_roles=current_user_roles,
-                                                message=escape(message),
-                                                status=escape(status))
+                                               cntrller=cntrller,
+                                               use_panels=use_panels,
+                                               library=library,
+                                               created_ldda_ids=created_ldda_ids,
+                                               hidden_folder_ids=hidden_folder_ids,
+                                               show_deleted=show_deleted,
+                                               comptypes=comptypes,
+                                               current_user_roles=current_user_roles,
+                                               message=escape(message),
+                                               status=escape(status))
             except Exception as e:
                 message = 'Error attempting to display contents of library (%s): %s.' % (escape(str(library.name)), str(e))
                 status = 'error'
         default_action = kwd.get('default_action', None)
 
         return trans.response.send_redirect(web.url_for(use_panels=use_panels,
-                                                          controller=cntrller,
-                                                          action='browse_libraries',
-                                                          default_action=default_action,
-                                                          message=message,
-                                                          status=status))
+                                                        controller=cntrller,
+                                                        action='browse_libraries',
+                                                        default_action=default_action,
+                                                        message=message,
+                                                        status=status))
 
     @web.expose
     def library_info(self, trans, cntrller, **kwd):
@@ -199,29 +199,29 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 trans.sa_session.flush()
                 message = "Information updated for library '%s'." % library.name
                 return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                  action='library_info',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  id=trans.security.encode_id(library.id),
-                                                                  show_deleted=show_deleted,
-                                                                  message=message,
-                                                                  status='done'))
+                                                                action='library_info',
+                                                                cntrller=cntrller,
+                                                                use_panels=use_panels,
+                                                                id=trans.security.encode_id(library.id),
+                                                                show_deleted=show_deleted,
+                                                                message=message,
+                                                                status='done'))
         # See if we have any associated templates
         info_association, inherited = library.get_info_association()
         widgets = library.get_template_widgets(trans)
         widget_fields_have_contents = self.widget_fields_have_contents(widgets)
         return trans.fill_template('/library/common/library_info.mako',
-                                    cntrller=cntrller,
-                                    use_panels=use_panels,
-                                    library=library,
-                                    widgets=widgets,
-                                    widget_fields_have_contents=widget_fields_have_contents,
-                                    current_user_roles=current_user_roles,
-                                    show_deleted=show_deleted,
-                                    info_association=info_association,
-                                    inherited=inherited,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   use_panels=use_panels,
+                                   library=library,
+                                   widgets=widgets,
+                                   widget_fields_have_contents=widget_fields_have_contents,
+                                   current_user_roles=current_user_roles,
+                                   show_deleted=show_deleted,
+                                   info_association=info_association,
+                                   inherited=inherited,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def library_permissions(self, trans, cntrller, **kwd):
@@ -250,25 +250,25 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             trans.app.security_agent.copy_library_permissions(trans, library, library.root_folder)
             message = "Permissions updated for library '%s'." % escape(library.name)
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='library_permissions',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=trans.security.encode_id(library.id),
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status='done'))
+                                                            action='library_permissions',
+                                                            cntrller=cntrller,
+                                                            use_panels=use_panels,
+                                                            id=trans.security.encode_id(library.id),
+                                                            show_deleted=show_deleted,
+                                                            message=message,
+                                                            status='done'))
         roles = trans.app.security_agent.get_legitimate_roles(trans, library, cntrller)
         all_roles = trans.app.security_agent.get_all_roles(trans, cntrller)
         return trans.fill_template('/library/common/library_permissions.mako',
-                                    cntrller=cntrller,
-                                    use_panels=use_panels,
-                                    library=library,
-                                    current_user_roles=current_user_roles,
-                                    roles=roles,
-                                    all_roles=all_roles,
-                                    show_deleted=show_deleted,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   use_panels=use_panels,
+                                   library=library,
+                                   current_user_roles=current_user_roles,
+                                   roles=roles,
+                                   all_roles=all_roles,
+                                   show_deleted=show_deleted,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def create_folder(self, trans, cntrller, parent_id, library_id, **kwd):
@@ -288,7 +288,7 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         self._check_add(trans, cntrller, is_admin, parent_folder, current_user_roles, use_panels, library_id, show_deleted)
         if kwd.get('new_folder_button', False) or cntrller == 'api':
             new_folder = trans.app.model.LibraryFolder(name=kwd.get('name', ''),
-                                                        description=kwd.get('description', ''))
+                                                       description=kwd.get('description', ''))
             # We are associating the last used genome build with folders, so we will always
             # initialize a new folder with the first dbkey in genome builds list which is currently
             # ?    unspecified (?)
@@ -311,39 +311,39 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 message = "The new folder named '%s' has been added to the data library.  " % escape(new_folder.name)
                 message += "Additional information about this folder may be added using the inherited template."
                 return trans.fill_template('/library/common/folder_info.mako',
-                                            cntrller=cntrller,
-                                            use_panels=use_panels,
-                                            folder=new_folder,
-                                            library_id=library_id,
-                                            widgets=widgets,
-                                            current_user_roles=current_user_roles,
-                                            show_deleted=show_deleted,
-                                            info_association=info_association,
-                                            inherited=inherited,
-                                            message=escape(message),
-                                            status='done')
+                                           cntrller=cntrller,
+                                           use_panels=use_panels,
+                                           folder=new_folder,
+                                           library_id=library_id,
+                                           widgets=widgets,
+                                           current_user_roles=current_user_roles,
+                                           show_deleted=show_deleted,
+                                           info_association=info_association,
+                                           inherited=inherited,
+                                           message=escape(message),
+                                           status='done')
             # If not inheritable info_association, redirect to the library.
             message = "The new folder named '%s' has been added to the data library." % escape(new_folder.name)
             # SM: This is the second place where the API controller would
             # reference the library id:
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status='done'))
+                                                            action='browse_library',
+                                                            cntrller=cntrller,
+                                                            use_panels=use_panels,
+                                                            id=library_id,
+                                                            show_deleted=show_deleted,
+                                                            message=message,
+                                                            status='done'))
         # We do not render any template widgets on creation pages since saving the info_association
         # cannot occur before the associated item is saved.
         return trans.fill_template('/library/common/new_folder.mako',
-                                    cntrller=cntrller,
-                                    use_panels=use_panels,
-                                    library_id=library_id,
-                                    folder=parent_folder,
-                                    show_deleted=show_deleted,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   use_panels=use_panels,
+                                   library_id=library_id,
+                                   folder=parent_folder,
+                                   show_deleted=show_deleted,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def folder_info(self, trans, cntrller, id, library_id, **kwd):
@@ -372,14 +372,14 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 trans.sa_session.flush()
                 message = "Information updated for folder '%s'." % escape(folder.name)
                 return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                  action='folder_info',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  id=id,
-                                                                  library_id=library_id,
-                                                                  show_deleted=show_deleted,
-                                                                  message=message,
-                                                                  status='done'))
+                                                                action='folder_info',
+                                                                cntrller=cntrller,
+                                                                use_panels=use_panels,
+                                                                id=id,
+                                                                library_id=library_id,
+                                                                show_deleted=show_deleted,
+                                                                message=message,
+                                                                status='done'))
         # See if we have any associated templates
         widgets = []
         widget_fields_have_contents = False
@@ -388,18 +388,18 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             widgets = folder.get_template_widgets(trans)
             widget_fields_have_contents = self.widget_fields_have_contents(widgets)
         return trans.fill_template('/library/common/folder_info.mako',
-                                    cntrller=cntrller,
-                                    use_panels=use_panels,
-                                    folder=folder,
-                                    library_id=library_id,
-                                    widgets=widgets,
-                                    widget_fields_have_contents=widget_fields_have_contents,
-                                    current_user_roles=current_user_roles,
-                                    show_deleted=show_deleted,
-                                    info_association=info_association,
-                                    inherited=inherited,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   use_panels=use_panels,
+                                   folder=folder,
+                                   library_id=library_id,
+                                   widgets=widgets,
+                                   widget_fields_have_contents=widget_fields_have_contents,
+                                   current_user_roles=current_user_roles,
+                                   show_deleted=show_deleted,
+                                   info_association=info_association,
+                                   inherited=inherited,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def folder_permissions(self, trans, cntrller, id, library_id, **kwd):
@@ -428,28 +428,28 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             trans.sa_session.refresh(folder)
             message = "Permissions updated for folder '%s'." % escape(folder.name)
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='folder_permissions',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=trans.security.encode_id(folder.id),
-                                                              library_id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status='done'))
+                                                            action='folder_permissions',
+                                                            cntrller=cntrller,
+                                                            use_panels=use_panels,
+                                                            id=trans.security.encode_id(folder.id),
+                                                            library_id=library_id,
+                                                            show_deleted=show_deleted,
+                                                            message=message,
+                                                            status='done'))
         # If the library is public all roles are legitimate, but if the library
         # is restricted, only those roles associated with the LIBRARY_ACCESS
         # permission are legitimate.
         roles = trans.app.security_agent.get_legitimate_roles(trans, folder.parent_library, cntrller)
         return trans.fill_template('/library/common/folder_permissions.mako',
-                                    cntrller=cntrller,
-                                    use_panels=use_panels,
-                                    folder=folder,
-                                    library_id=library_id,
-                                    current_user_roles=current_user_roles,
-                                    roles=roles,
-                                    show_deleted=show_deleted,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   use_panels=use_panels,
+                                   folder=folder,
+                                   library_id=library_id,
+                                   current_user_roles=current_user_roles,
+                                   roles=roles,
+                                   show_deleted=show_deleted,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def ldda_edit_info(self, trans, cntrller, library_id, folder_id, id, **kwd):
@@ -589,18 +589,18 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             # sets it properly in the metadata
             ldda.metadata.dbkey = ldda.dbkey
         return trans.fill_template("/library/common/ldda_edit_info.mako",
-                                    cntrller=cntrller,
-                                    use_panels=use_panels,
-                                    ldda=ldda,
-                                    library_id=library_id,
-                                    file_formats=file_formats,
-                                    widgets=widgets,
-                                    current_user_roles=current_user_roles,
-                                    show_deleted=show_deleted,
-                                    info_association=info_association,
-                                    inherited=inherited,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   use_panels=use_panels,
+                                   ldda=ldda,
+                                   library_id=library_id,
+                                   file_formats=file_formats,
+                                   widgets=widgets,
+                                   current_user_roles=current_user_roles,
+                                   show_deleted=show_deleted,
+                                   info_association=info_association,
+                                   inherited=inherited,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def ldda_info(self, trans, cntrller, library_id, folder_id, id, **kwd):
@@ -617,12 +617,12 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             # Get all associated hdas and lddas that use the same disk file.
             associated_hdas = trans.sa_session.query(trans.model.HistoryDatasetAssociation) \
                                               .filter(and_(trans.model.HistoryDatasetAssociation.deleted == false(),
-                                                             trans.model.HistoryDatasetAssociation.dataset_id == ldda.dataset_id)) \
+                                                           trans.model.HistoryDatasetAssociation.dataset_id == ldda.dataset_id)) \
                                               .all()
             associated_lddas = trans.sa_session.query(trans.model.LibraryDatasetDatasetAssociation) \
                                                .filter(and_(trans.model.LibraryDatasetDatasetAssociation.deleted == false(),
-                                                              trans.model.LibraryDatasetDatasetAssociation.dataset_id == ldda.dataset_id,
-                                                              trans.model.LibraryDatasetDatasetAssociation.id != ldda.id)) \
+                                                            trans.model.LibraryDatasetDatasetAssociation.dataset_id == ldda.dataset_id,
+                                                            trans.model.LibraryDatasetDatasetAssociation.id != ldda.id)) \
                                                .all()
         else:
             associated_hdas = []
@@ -635,21 +635,21 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             widgets = ldda.get_template_widgets(trans)
             widget_fields_have_contents = self.widget_fields_have_contents(widgets)
         return trans.fill_template('/library/common/ldda_info.mako',
-                                    cntrller=cntrller,
-                                    use_panels=use_panels,
-                                    ldda=ldda,
-                                    library=ldda.library_dataset.folder.parent_library,
-                                    show_associated_hdas_and_lddas=show_associated_hdas_and_lddas,
-                                    associated_hdas=associated_hdas,
-                                    associated_lddas=associated_lddas,
-                                    show_deleted=show_deleted,
-                                    widgets=widgets,
-                                    widget_fields_have_contents=widget_fields_have_contents,
-                                    current_user_roles=current_user_roles,
-                                    info_association=info_association,
-                                    inherited=inherited,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   use_panels=use_panels,
+                                   ldda=ldda,
+                                   library=ldda.library_dataset.folder.parent_library,
+                                   show_associated_hdas_and_lddas=show_associated_hdas_and_lddas,
+                                   associated_hdas=associated_hdas,
+                                   associated_lddas=associated_lddas,
+                                   show_deleted=show_deleted,
+                                   widgets=widgets,
+                                   widget_fields_have_contents=widget_fields_have_contents,
+                                   current_user_roles=current_user_roles,
+                                   info_association=info_association,
+                                   inherited=inherited,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def ldda_permissions(self, trans, cntrller, library_id, folder_id, id, **kwd):
@@ -676,12 +676,12 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         if filter(lambda x: x != library, libraries):
             message = "Library datasets specified span multiple libraries."
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              id=library_id,
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              message=message,
-                                                              status='error'))
+                                                            action='browse_library',
+                                                            id=library_id,
+                                                            cntrller=cntrller,
+                                                            use_panels=use_panels,
+                                                            message=message,
+                                                            status='error'))
         # If access to the dataset is restricted, then use the roles associated with the DATASET_ACCESS permission to
         # determine the legitimate roles.  If the dataset is public, see if access to the library is restricted.  If
         # it is, use the roles associated with the LIBRARY_ACCESS permission to determine the legitimate roles.  If both
@@ -744,14 +744,14 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                     message = 'Permissions updated for %d datasets.' % len(lddas)
                 status = 'done'
             return trans.fill_template("/library/common/ldda_permissions.mako",
-                                        cntrller=cntrller,
-                                        use_panels=use_panels,
-                                        lddas=lddas,
-                                        library_id=library_id,
-                                        roles=roles,
-                                        show_deleted=show_deleted,
-                                        message=escape(message),
-                                        status=escape(status))
+                                       cntrller=cntrller,
+                                       use_panels=use_panels,
+                                       lddas=lddas,
+                                       library_id=library_id,
+                                       roles=roles,
+                                       show_deleted=show_deleted,
+                                       message=escape(message),
+                                       status=escape(status))
         if len(ids) > 1:
             # Ensure that the permissions across all library items are identical, otherwise we can't update them together.
             check_list = []
@@ -771,23 +771,23 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 if permissions != check_list:
                     message = 'The datasets you selected do not have identical permissions, so they can not be updated together'
                     trans.response.send_redirect(web.url_for(controller='library_common',
-                                                               action='browse_library',
-                                                               cntrller=cntrller,
-                                                               use_panels=use_panels,
-                                                               id=library_id,
-                                                               show_deleted=show_deleted,
-                                                               message=message,
-                                                               status='error'))
+                                                             action='browse_library',
+                                                             cntrller=cntrller,
+                                                             use_panels=use_panels,
+                                                             id=library_id,
+                                                             show_deleted=show_deleted,
+                                                             message=message,
+                                                             status='error'))
         # Display permission form, permissions will be updated for all lddas simultaneously.
         return trans.fill_template("/library/common/ldda_permissions.mako",
-                                    cntrller=cntrller,
-                                    use_panels=use_panels,
-                                    lddas=lddas,
-                                    library_id=library_id,
-                                    roles=roles,
-                                    show_deleted=show_deleted,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   use_panels=use_panels,
+                                   lddas=lddas,
+                                   library_id=library_id,
+                                   roles=roles,
+                                   show_deleted=show_deleted,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def upload_library_dataset(self, trans, cntrller, library_id, folder_id, **kwd):
@@ -859,15 +859,15 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 if cntrller == 'api':
                     return 400, message
                 trans.response.send_redirect(web.url_for(controller='library_common',
-                                                           action='upload_library_dataset',
-                                                           cntrller=cntrller,
-                                                           library_id=library_id,
-                                                           folder_id=folder_id,
-                                                           replace_id=replace_id,
-                                                           upload_option=upload_option,
-                                                           show_deleted=show_deleted,
-                                                           message=message,
-                                                           status='error'))
+                                                         action='upload_library_dataset',
+                                                         cntrller=cntrller,
+                                                         library_id=library_id,
+                                                         folder_id=folder_id,
+                                                         replace_id=replace_id,
+                                                         upload_option=upload_option,
+                                                         show_deleted=show_deleted,
+                                                         message=message,
+                                                         status='error'))
             else:
                 # See if we have any inherited templates.
                 if not info_association:
@@ -915,13 +915,13 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                             processed_widgets.append(widget_dict)
                     widgets = processed_widgets
                 created_outputs_dict = trans.webapp.controllers['library_common'].upload_dataset(trans,
-                                                                                                    cntrller=cntrller,
-                                                                                                    library_id=trans.security.encode_id(library.id),
-                                                                                                    folder_id=trans.security.encode_id(folder.id),
-                                                                                                    template_id=template_id,
-                                                                                                    widgets=widgets,
-                                                                                                    replace_dataset=replace_dataset,
-                                                                                                    **kwd)
+                                                                                                 cntrller=cntrller,
+                                                                                                 library_id=trans.security.encode_id(library.id),
+                                                                                                 folder_id=trans.security.encode_id(folder.id),
+                                                                                                 template_id=template_id,
+                                                                                                 widgets=widgets,
+                                                                                                 replace_dataset=replace_dataset,
+                                                                                                 **kwd)
                 if created_outputs_dict:
                     if cntrller == 'api':
                         # created_outputs_dict can be a string only if cntrller == 'api'
@@ -957,14 +957,14 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                             else:
                                 default_action = 'import_to_current_history'
                             trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                       action='browse_library',
-                                                                       cntrller=cntrller,
-                                                                       id=library_id,
-                                                                       default_action=default_action,
-                                                                       created_ldda_ids=created_ldda_ids,
-                                                                       show_deleted=show_deleted,
-                                                                       message=message,
-                                                                       status='done'))
+                                                                     action='browse_library',
+                                                                     cntrller=cntrller,
+                                                                     id=library_id,
+                                                                     default_action=default_action,
+                                                                     created_ldda_ids=created_ldda_ids,
+                                                                     show_deleted=show_deleted,
+                                                                     message=message,
+                                                                     status='done'))
                 else:
                     created_ldda_ids = ''
                     message = "Upload failed"
@@ -972,13 +972,13 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                     if cntrller == 'api':
                         return 400, message
                 trans.response.send_redirect(web.url_for(controller='library_common',
-                                                           action='browse_library',
-                                                           cntrller=cntrller,
-                                                           id=library_id,
-                                                           created_ldda_ids=created_ldda_ids,
-                                                           show_deleted=show_deleted,
-                                                           message=message,
-                                                           status=status))
+                                                         action='browse_library',
+                                                         cntrller=cntrller,
+                                                         id=library_id,
+                                                         created_ldda_ids=created_ldda_ids,
+                                                         show_deleted=show_deleted,
+                                                         message=message,
+                                                         status=status))
         # Note: if the upload form was submitted due to refresh_on_change for a form field, we cannot re-populate
         # the field for the selected file ( files_0|file_data ) if the user selected one.  This is because the value
         # attribute of the html input file type field is typically ignored by browsers as a security precaution.
@@ -1018,27 +1018,27 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         upload_option_select_list = self._build_upload_option_select_list(trans, upload_option, is_admin, do_not_display_options)
         roles_select_list = self._build_roles_select_list(trans, cntrller, library, util.listify(roles))
         return trans.fill_template('/library/common/upload.mako',
-                                    cntrller=cntrller,
-                                    upload_option_select_list=upload_option_select_list,
-                                    upload_option=upload_option,
-                                    action=action,
-                                    library_id=library_id,
-                                    folder_id=folder_id,
-                                    replace_dataset=replace_dataset,
-                                    file_formats=file_formats,
-                                    dbkeys=dbkeys,
-                                    last_used_build=last_used_build,
-                                    roles_select_list=roles_select_list,
-                                    history=history,
-                                    widgets=widgets,
-                                    template_id=template_id,
-                                    to_posix_lines=to_posix_lines,
-                                    space_to_tab=space_to_tab,
-                                    link_data_only=link_data_only,
-                                    show_deleted=show_deleted,
-                                    ldda_message=ldda_message,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   upload_option_select_list=upload_option_select_list,
+                                   upload_option=upload_option,
+                                   action=action,
+                                   library_id=library_id,
+                                   folder_id=folder_id,
+                                   replace_dataset=replace_dataset,
+                                   file_formats=file_formats,
+                                   dbkeys=dbkeys,
+                                   last_used_build=last_used_build,
+                                   roles_select_list=roles_select_list,
+                                   history=history,
+                                   widgets=widgets,
+                                   template_id=template_id,
+                                   to_posix_lines=to_posix_lines,
+                                   space_to_tab=space_to_tab,
+                                   link_data_only=link_data_only,
+                                   show_deleted=show_deleted,
+                                   ldda_message=ldda_message,
+                                   message=escape(message),
+                                   status=escape(status))
 
     def upload_dataset(self, trans, cntrller, library_id, folder_id, replace_dataset=None, **kwd):
         # Set up the traditional tool state/params
@@ -1110,15 +1110,15 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             if cntrller == 'api':
                 return (response_code, message)
             trans.response.send_redirect(web.url_for(controller='library_common',
-                                                       action='upload_library_dataset',
-                                                       cntrller=cntrller,
-                                                       library_id=library_id,
-                                                       folder_id=folder_id,
-                                                       replace_id=replace_id,
-                                                       upload_option=upload_option,
-                                                       show_deleted=show_deleted,
-                                                       message=message,
-                                                       status='error'))
+                                                     action='upload_library_dataset',
+                                                     cntrller=cntrller,
+                                                     library_id=library_id,
+                                                     folder_id=folder_id,
+                                                     replace_id=replace_id,
+                                                     upload_option=upload_option,
+                                                     show_deleted=show_deleted,
+                                                     message=message,
+                                                     status='error'))
         json_file_path = upload_common.create_paramfile(trans, uploaded_datasets)
         data_list = [ud.data for ud in uploaded_datasets]
         job_params = {}
@@ -1321,12 +1321,12 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         if not history.active_datasets:
             message = 'Your current history is empty'
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status='error'))
+                                                            action='browse_library',
+                                                            cntrller=cntrller,
+                                                            id=library_id,
+                                                            show_deleted=show_deleted,
+                                                            message=message,
+                                                            status='error'))
         if kwd.get('add_history_datasets_to_library_button', False):
             hda_ids = util.listify(hda_ids)
             if hda_ids:
@@ -1344,10 +1344,10 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                     else:
                         role_obj_list = []
                     ldda = hda.to_library_dataset_dataset_association(trans,
-                                                                       target_folder=folder,
-                                                                       replace_dataset=replace_dataset,
-                                                                       roles=role_obj_list,
-                                                                       ldda_message=ldda_message)
+                                                                      target_folder=folder,
+                                                                      replace_dataset=replace_dataset,
+                                                                      roles=role_obj_list,
+                                                                      ldda_message=ldda_message)
                     created_ldda_ids = '%s,%s' % (created_ldda_ids, str(ldda.id))
                     dataset_names.append(ldda.name)
                     if not replace_dataset:
@@ -1414,13 +1414,13 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                                 if not replace_dataset:
                                     message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                     return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                      action='browse_library',
-                                                                      cntrller=cntrller,
-                                                                      id=library_id,
-                                                                      created_ldda_ids=created_ldda_ids,
-                                                                      show_deleted=show_deleted,
-                                                                      message=message,
-                                                                      status='done'))
+                                                                    action='browse_library',
+                                                                    cntrller=cntrller,
+                                                                    id=library_id,
+                                                                    created_ldda_ids=created_ldda_ids,
+                                                                    show_deleted=show_deleted,
+                                                                    message=message,
+                                                                    status='done'))
             else:
                 message = 'Select at least one dataset from the list of active datasets in your current history'
                 status = 'error'
@@ -1440,27 +1440,27 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 upload_option_select_list = self._build_upload_option_select_list(trans, upload_option, is_admin)
                 roles_select_list = self._build_roles_select_list(trans, cntrller, library, util.listify(roles))
                 return trans.fill_template("/library/common/upload.mako",
-                                            cntrller=cntrller,
-                                            upload_option_select_list=upload_option_select_list,
-                                            upload_option=upload_option,
-                                            action=action,
-                                            library_id=library_id,
-                                            folder_id=folder_id,
-                                            replace_dataset=replace_dataset,
-                                            file_formats=file_formats,
-                                            dbkeys=dbkeys,
-                                            last_used_build=last_used_build,
-                                            roles_select_list=roles_select_list,
-                                            history=history,
-                                            widgets=[],
-                                            template_id=template_id,
-                                            to_posix_lines=to_posix_lines,
-                                            space_to_tab=space_to_tab,
-                                            link_data_only=link_data_only,
-                                            show_deleted=show_deleted,
-                                            ldda_message=ldda_message,
-                                            message=escape(message),
-                                            status=escape(status))
+                                           cntrller=cntrller,
+                                           upload_option_select_list=upload_option_select_list,
+                                           upload_option=upload_option,
+                                           action=action,
+                                           library_id=library_id,
+                                           folder_id=folder_id,
+                                           replace_dataset=replace_dataset,
+                                           file_formats=file_formats,
+                                           dbkeys=dbkeys,
+                                           last_used_build=last_used_build,
+                                           roles_select_list=roles_select_list,
+                                           history=history,
+                                           widgets=[],
+                                           template_id=template_id,
+                                           to_posix_lines=to_posix_lines,
+                                           space_to_tab=space_to_tab,
+                                           link_data_only=link_data_only,
+                                           show_deleted=show_deleted,
+                                           ldda_message=ldda_message,
+                                           message=escape(message),
+                                           status=escape(status))
 
     def _build_roles_select_list(self, trans, cntrller, library, selected_role_ids=[]):
         # Get the list of legitimate roles to display on the upload form.  If the library is public,
@@ -1487,8 +1487,8 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             if option_value not in do_not_include_values:
                 upload_refresh_on_change_values.append(option_value)
         upload_option_select_list = SelectField('upload_option',
-                                                 refresh_on_change=True,
-                                                 refresh_on_change_values=upload_refresh_on_change_values)
+                                                refresh_on_change=True,
+                                                refresh_on_change_values=upload_refresh_on_change_values)
         for option_value, option_label in trans.model.LibraryDataset.upload_options:
             if option_value not in do_not_include_values:
                 if option_value == 'upload_directory':
@@ -1540,13 +1540,13 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             except:
                 message = 'This dataset contains no content'
         return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                          action='browse_library',
-                                                          cntrller=cntrller,
-                                                          use_panels=use_panels,
-                                                          id=library_id,
-                                                          show_deleted=show_deleted,
-                                                          message=message,
-                                                          status='error'))
+                                                        action='browse_library',
+                                                        cntrller=cntrller,
+                                                        use_panels=use_panels,
+                                                        id=library_id,
+                                                        show_deleted=show_deleted,
+                                                        message=message,
+                                                        status='error'))
 
     @web.expose
     def library_dataset_info(self, trans, cntrller, id, library_id, **kwd):
@@ -1583,18 +1583,18 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             widgets = library_dataset.library_dataset_dataset_association.get_template_widgets(trans)
             widget_fields_have_contents = self.widget_fields_have_contents(widgets)
         return trans.fill_template('/library/common/library_dataset_info.mako',
-                                    cntrller=cntrller,
-                                    use_panels=use_panels,
-                                    library_dataset=library_dataset,
-                                    library_id=library_id,
-                                    current_user_roles=current_user_roles,
-                                    info_association=info_association,
-                                    inherited=inherited,
-                                    widgets=widgets,
-                                    widget_fields_have_contents=widget_fields_have_contents,
-                                    show_deleted=show_deleted,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   use_panels=use_panels,
+                                   library_dataset=library_dataset,
+                                   library_id=library_id,
+                                   current_user_roles=current_user_roles,
+                                   info_association=info_association,
+                                   inherited=inherited,
+                                   widgets=widgets,
+                                   widget_fields_have_contents=widget_fields_have_contents,
+                                   show_deleted=show_deleted,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def library_dataset_permissions(self, trans, cntrller, id, library_id, **kwd):
@@ -1634,15 +1634,15 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 status = 'done'
         roles = trans.app.security_agent.get_legitimate_roles(trans, library_dataset, cntrller)
         return trans.fill_template('/library/common/library_dataset_permissions.mako',
-                                    cntrller=cntrller,
-                                    use_panels=use_panels,
-                                    library_dataset=library_dataset,
-                                    library_id=library_id,
-                                    roles=roles,
-                                    current_user_roles=current_user_roles,
-                                    show_deleted=show_deleted,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   use_panels=use_panels,
+                                   library_dataset=library_dataset,
+                                   library_id=library_id,
+                                   roles=roles,
+                                   current_user_roles=current_user_roles,
+                                   show_deleted=show_deleted,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def make_library_item_public(self, trans, cntrller, library_id, item_type, id, **kwd):
@@ -1678,13 +1678,13 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             message = "Invalid item_type (%s) received." % escape(str(item_type))
             status = 'error'
         return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                          action='browse_library',
-                                                          cntrller=cntrller,
-                                                          use_panels=use_panels,
-                                                          id=library_id,
-                                                          show_deleted=show_deleted,
-                                                          message=message,
-                                                          status=status))
+                                                        action='browse_library',
+                                                        cntrller=cntrller,
+                                                        use_panels=use_panels,
+                                                        id=library_id,
+                                                        show_deleted=show_deleted,
+                                                        message=message,
+                                                        status=status))
 
     @web.expose
     def act_on_multiple_datasets(self, trans, cntrller, library_id=None, ldda_ids='', **kwd):
@@ -1738,31 +1738,31 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 else:
                     selected_history_id = ''
                 return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                  action='import_datasets_to_histories',
-                                                                  cntrller=cntrller,
-                                                                  library_id=library_id,
-                                                                  selected_history_id=selected_history_id,
-                                                                  ldda_ids=ldda_ids,
-                                                                  use_panels=use_panels,
-                                                                  show_deleted=show_deleted,
-                                                                  message=message,
-                                                                  status=status,
-                                                                  **new_kwd))
+                                                                action='import_datasets_to_histories',
+                                                                cntrller=cntrller,
+                                                                library_id=library_id,
+                                                                selected_history_id=selected_history_id,
+                                                                ldda_ids=ldda_ids,
+                                                                use_panels=use_panels,
+                                                                show_deleted=show_deleted,
+                                                                message=message,
+                                                                status=status,
+                                                                **new_kwd))
             if action == 'move':
                 if library_id in ['none', 'None', None]:
                     source_library_id = ''
                 else:
                     source_library_id = library_id
                 return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                  action='move_library_item',
-                                                                  cntrller=cntrller,
-                                                                  source_library_id=source_library_id,
-                                                                  item_type='ldda',
-                                                                  item_id=ldda_ids,
-                                                                  use_panels=use_panels,
-                                                                  show_deleted=show_deleted,
-                                                                  message=message,
-                                                                  status=status))
+                                                                action='move_library_item',
+                                                                cntrller=cntrller,
+                                                                source_library_id=source_library_id,
+                                                                item_type='ldda',
+                                                                item_id=ldda_ids,
+                                                                use_panels=use_panels,
+                                                                show_deleted=show_deleted,
+                                                                message=message,
+                                                                status=status))
             ldda_ids = util.listify(ldda_ids)
             for ldda_id in ldda_ids:
                 try:
@@ -1793,15 +1793,15 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                     encoded_ldda_ids = [trans.security.encode_id(ldda_id) for ldda_id in valid_ldda_ids]
                     folder_id = trans.security.encode_id(valid_lddas[0].library_dataset.folder.id)
                     trans.response.send_redirect(web.url_for(controller='library_common',
-                                                               action='ldda_permissions',
-                                                               cntrller=cntrller,
-                                                               use_panels=use_panels,
-                                                               library_id=library_id,
-                                                               folder_id=folder_id,
-                                                               id=",".join(encoded_ldda_ids),
-                                                               show_deleted=show_deleted,
-                                                               message=message,
-                                                               status=status))
+                                                             action='ldda_permissions',
+                                                             cntrller=cntrller,
+                                                             use_panels=use_panels,
+                                                             library_id=library_id,
+                                                             folder_id=folder_id,
+                                                             id=",".join(encoded_ldda_ids),
+                                                             show_deleted=show_deleted,
+                                                             message=message,
+                                                             status=status))
                 else:
                     message = "You are not authorized to manage permissions on any of the selected datasets."
             elif action == 'delete':
@@ -1955,28 +1955,28 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         if library_id:
             # If we have a library_id, browse the associated library
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              current_user_roles=current_user_roles,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status=status))
+                                                            action='browse_library',
+                                                            cntrller=cntrller,
+                                                            current_user_roles=current_user_roles,
+                                                            use_panels=use_panels,
+                                                            id=library_id,
+                                                            show_deleted=show_deleted,
+                                                            message=message,
+                                                            status=status))
         else:
             # We arrived here from the library_dataset_search_results page, so redirect there.
             search_term = kwd.get('search_term', '')
             comptypes = get_comptypes(trans)
             return trans.fill_template('/library/common/library_dataset_search_results.mako',
-                                        cntrller=cntrller,
-                                        current_user_roles=current_user_roles,
-                                        search_term=search_term,
-                                        comptypes=comptypes,
-                                        lddas=lddas,
-                                        show_deleted=show_deleted,
-                                        use_panels=use_panels,
-                                        message=escape(message),
-                                        status=escape(status))
+                                       cntrller=cntrller,
+                                       current_user_roles=current_user_roles,
+                                       search_term=search_term,
+                                       comptypes=comptypes,
+                                       lddas=lddas,
+                                       show_deleted=show_deleted,
+                                       use_panels=use_panels,
+                                       message=escape(message),
+                                       status=escape(status))
 
     @web.expose
     def import_datasets_to_histories(self, trans, cntrller, library_id='', folder_id='', ldda_ids='', target_history_id='', target_history_ids='', new_history_name='', **kwd):
@@ -2057,10 +2057,10 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                     num_source = len(ldda_ids) - invalid_datasets
                     num_target = len(target_histories)
                     message += "%i %s imported into %i %s: %s" % (num_source,
-                                                                   inflector.cond_plural(num_source, "dataset"),
-                                                                   num_target,
-                                                                   inflector.cond_plural(num_target, "history"),
-                                                                   hist_names_str)
+                                                                  inflector.cond_plural(num_source, "dataset"),
+                                                                  num_target,
+                                                                  inflector.cond_plural(num_target, "history"),
+                                                                  hist_names_str)
                 trans.sa_session.refresh(current_history)
         current_user_roles = trans.get_current_user_roles()
         source_lddas = []
@@ -2088,25 +2088,25 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         if action == 'import_to_current_history' and library_id:
             # To streamline this as much as possible, go back to browsing the library.
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              message=message,
-                                                              status=status))
+                                                            action='browse_library',
+                                                            cntrller=cntrller,
+                                                            id=library_id,
+                                                            message=message,
+                                                            status=status))
         return trans.fill_template("/library/common/import_datasets_to_histories.mako",
-                                    cntrller=cntrller,
-                                    library=library,
-                                    current_history=current_history,
-                                    ldda_ids=ldda_ids,
-                                    target_history_id=target_history_id,
-                                    target_history_ids=target_history_ids,
-                                    source_lddas=source_lddas,
-                                    target_histories=target_histories,
-                                    new_history_name=new_history_name,
-                                    show_deleted=show_deleted,
-                                    use_panels=use_panels,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   library=library,
+                                   current_history=current_history,
+                                   ldda_ids=ldda_ids,
+                                   target_history_id=target_history_id,
+                                   target_history_ids=target_history_ids,
+                                   source_lddas=source_lddas,
+                                   target_histories=target_histories,
+                                   new_history_name=new_history_name,
+                                   show_deleted=show_deleted,
+                                   use_panels=use_panels,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def manage_template_inheritance(self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd):
@@ -2117,22 +2117,22 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         current_user_roles = trans.get_current_user_roles()
         try:
             item, item_desc, action, id = self.get_item_and_stuff(trans,
-                                                                   item_type=item_type,
-                                                                   library_id=library_id,
-                                                                   folder_id=folder_id,
-                                                                   ldda_id=ldda_id,
-                                                                   is_admin=is_admin)
+                                                                  item_type=item_type,
+                                                                  library_id=library_id,
+                                                                  folder_id=folder_id,
+                                                                  ldda_id=ldda_id,
+                                                                  is_admin=is_admin)
         except ValueError:
             return None
         if not (is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, item)):
             message = "You are not authorized to modify %s '%s'." % (escape(item_desc), escape(item.name))
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status='error'))
+                                                            action='browse_library',
+                                                            cntrller=cntrller,
+                                                            id=library_id,
+                                                            show_deleted=show_deleted,
+                                                            message=message,
+                                                            status='error'))
         info_association, inherited = item.get_info_association(restrict=True)
         if info_association:
             if info_association.inheritable:
@@ -2143,15 +2143,15 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             trans.sa_session.add(info_association)
             trans.sa_session.flush()
         return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                          action=action,
-                                                          cntrller=cntrller,
-                                                          use_panels=use_panels,
-                                                          library_id=library_id,
-                                                          folder_id=folder_id,
-                                                          id=id,
-                                                          show_deleted=show_deleted,
-                                                          message=message,
-                                                          status='done'))
+                                                        action=action,
+                                                        cntrller=cntrller,
+                                                        use_panels=use_panels,
+                                                        library_id=library_id,
+                                                        folder_id=folder_id,
+                                                        id=id,
+                                                        show_deleted=show_deleted,
+                                                        message=message,
+                                                        status='done'))
 
     @web.expose
     def move_library_item(self, trans, cntrller, item_type, item_id, source_library_id='', make_target_current=True, **kwd):
@@ -2249,9 +2249,9 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                         message += '.  '
                     num_source = len(move_ldda_ids) - invalid_items
                     message = "%i %s moved to folder (%s) within data library (%s)" % (num_source,
-                                                                                        inflector.cond_plural(num_source, "dataset"),
-                                                                                        target_folder.name,
-                                                                                        target_library.name)
+                                                                                       inflector.cond_plural(num_source, "dataset"),
+                                                                                       target_folder.name,
+                                                                                       target_library.name)
                 elif item_type == 'folder':
                     move_folder = trans.sa_session.query(trans.app.model.LibraryFolder) \
                                                   .get(trans.security.decode_id(move_folder_id))
@@ -2264,8 +2264,8 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                         trans.sa_session.add(move_folder)
                         flush_required = True
                     message = "Moved folder (%s) to folder (%s) within data library (%s) " % (escape(move_folder.name),
-                                                                                               escape(target_folder.name),
-                                                                                               escape(target_library.name))
+                                                                                              escape(target_folder.name),
+                                                                                              escape(target_library.name))
                 if flush_required:
                     trans.sa_session.flush()
         if target_library:
@@ -2330,11 +2330,11 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                             target_libraries.append(library)
             # A refresh_on_change is required to display the selected library's folders
             return build_select_field(trans,
-                                       objs=target_libraries,
-                                       label_attr='name',
-                                       select_field_name='target_library_id',
-                                       selected_value=selected_value,
-                                       refresh_on_change=True)
+                                      objs=target_libraries,
+                                      label_attr='name',
+                                      select_field_name='target_library_id',
+                                      selected_value=selected_value,
+                                      refresh_on_change=True)
 
         def __build_target_folder_id_select_field(trans, folders, selected_value='none'):
             for folder in folders:
@@ -2342,11 +2342,11 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                     folder.name = 'Data library root'
                     break
             return build_select_field(trans,
-                                       objs=folders,
-                                       label_attr='name',
-                                       select_field_name='target_folder_id',
-                                       selected_value=selected_value,
-                                       refresh_on_change=False)
+                                      objs=folders,
+                                      label_attr='name',
+                                      select_field_name='target_folder_id',
+                                      selected_value=selected_value,
+                                      refresh_on_change=False)
         if target_library:
             selected_value = target_library.id
         else:
@@ -2354,21 +2354,21 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         target_library_id_select_field = __build_target_library_id_select_field(trans, selected_value=selected_value)
         target_folder_id_select_field = __build_target_folder_id_select_field(trans, target_library_folders)
         return trans.fill_template("/library/common/move_library_item.mako",
-                                    cntrller=cntrller,
-                                    make_target_current=make_target_current,
-                                    source_library=source_library,
-                                    item_type=item_type,
-                                    item_id=item_id,
-                                    move_ldda_ids=move_ldda_ids,
-                                    move_lddas=move_lddas,
-                                    move_folder=move_folder,
-                                    target_library=target_library,
-                                    target_library_id_select_field=target_library_id_select_field,
-                                    target_folder_id_select_field=target_folder_id_select_field,
-                                    show_deleted=show_deleted,
-                                    use_panels=use_panels,
-                                    message=escape(message),
-                                    status=escape(status))
+                                   cntrller=cntrller,
+                                   make_target_current=make_target_current,
+                                   source_library=source_library,
+                                   item_type=item_type,
+                                   item_id=item_id,
+                                   move_ldda_ids=move_ldda_ids,
+                                   move_lddas=move_lddas,
+                                   move_folder=move_folder,
+                                   target_library=target_library,
+                                   target_library_id_select_field=target_library_id_select_field,
+                                   target_folder_id_select_field=target_folder_id_select_field,
+                                   show_deleted=show_deleted,
+                                   use_panels=use_panels,
+                                   message=escape(message),
+                                   status=escape(status))
 
     @web.expose
     def delete_library_item(self, trans, cntrller, library_id, item_id, item_type, **kwd):
@@ -2382,8 +2382,8 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         status = kwd.get('status', 'done')
         show_deleted = util.string_as_bool(kwd.get('show_deleted', False))
         item_types = {'library': trans.app.model.Library,
-                       'folder': trans.app.model.LibraryFolder,
-                       'library_dataset': trans.app.model.LibraryDataset}
+                      'folder': trans.app.model.LibraryFolder,
+                      'library_dataset': trans.app.model.LibraryDataset}
         is_admin = (trans.user_is_admin() and cntrller == 'library_admin')
         current_user_roles = trans.get_current_user_roles()
         if item_type not in item_types:
@@ -2426,17 +2426,17 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 status = 'error'
         if item_type == 'library':
             return trans.response.send_redirect(web.url_for(controller=cntrller,
-                                                              action='browse_libraries',
-                                                              message=message,
-                                                              status=status))
+                                                            action='browse_libraries',
+                                                            message=message,
+                                                            status=status))
         else:
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status=status))
+                                                            action='browse_library',
+                                                            cntrller=cntrller,
+                                                            id=library_id,
+                                                            show_deleted=show_deleted,
+                                                            message=message,
+                                                            status=status))
 
     @web.expose
     def undelete_library_item(self, trans, cntrller, library_id, item_id, item_type, **kwd):
@@ -2444,8 +2444,8 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
         status = kwd.get('status', 'done')
         show_deleted = util.string_as_bool(kwd.get('show_deleted', False))
         item_types = {'library': trans.app.model.Library,
-                       'folder': trans.app.model.LibraryFolder,
-                       'library_dataset': trans.app.model.LibraryDataset}
+                      'folder': trans.app.model.LibraryFolder,
+                      'library_dataset': trans.app.model.LibraryDataset}
         is_admin = (trans.user_is_admin() and cntrller == 'library_admin')
         current_user_roles = trans.get_current_user_roles()
         if item_type not in item_types:
@@ -2495,17 +2495,17 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 status = 'error'
         if item_type == 'library':
             return trans.response.send_redirect(web.url_for(controller=cntrller,
-                                                              action='browse_libraries',
-                                                              message=message,
-                                                              status=status))
+                                                            action='browse_libraries',
+                                                            message=message,
+                                                            status=status))
         else:
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status=status))
+                                                            action='browse_library',
+                                                            cntrller=cntrller,
+                                                            id=library_id,
+                                                            show_deleted=show_deleted,
+                                                            message=message,
+                                                            status=status))
 
     def _check_access(self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted):
         can_access = True
@@ -2536,19 +2536,19 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
                 return 400, message
             if isinstance(item, trans.model.Library):
                 return trans.response.send_redirect(web.url_for(controller=cntrller,
-                                                                  action='browse_libraries',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  message=message,
-                                                                  status='error'))
+                                                                action='browse_libraries',
+                                                                cntrller=cntrller,
+                                                                use_panels=use_panels,
+                                                                message=message,
+                                                                status='error'))
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status='error'))
+                                                            action='browse_library',
+                                                            cntrller=cntrller,
+                                                            use_panels=use_panels,
+                                                            id=library_id,
+                                                            show_deleted=show_deleted,
+                                                            message=message,
+                                                            status='error'))
 
     def _check_add(self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted):
         # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
@@ -2558,42 +2558,42 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             if cntrller == 'api':
                 return 403, message
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status='error'))
+                                                            action='browse_library',
+                                                            cntrller=cntrller,
+                                                            use_panels=use_panels,
+                                                            id=library_id,
+                                                            show_deleted=show_deleted,
+                                                            message=message,
+                                                            status='error'))
 
     def _check_manage(self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted):
         if isinstance(item, trans.model.LibraryDataset):
             # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE and DATASET_MANAGE_PERMISSIONS permissions.
             if not (is_admin or
-                     (trans.app.security_agent.can_manage_library_item(current_user_roles, item) and
-                       trans.app.security_agent.can_manage_dataset(current_user_roles, item.library_dataset_dataset_association.dataset))):
+                    (trans.app.security_agent.can_manage_library_item(current_user_roles, item) and
+                     trans.app.security_agent.can_manage_dataset(current_user_roles, item.library_dataset_dataset_association.dataset))):
                 message = "You are not authorized to manage permissions on library dataset (%s)." % escape(item.name)
                 if cntrller == 'api':
                     return 403, message
                 return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                                  action='browse_library',
-                                                                  id=library_id,
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  message=message,
-                                                                  status='error'))
+                                                                action='browse_library',
+                                                                id=library_id,
+                                                                cntrller=cntrller,
+                                                                use_panels=use_panels,
+                                                                message=message,
+                                                                status='error'))
         # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE permission.
         if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, item)):
             message = "You are not authorized to manage permissions on (%s)." % escape(item.name)
             if cntrller == 'api':
                 return 403, message
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              id=library_id,
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              message=message,
-                                                              status='error'))
+                                                            action='browse_library',
+                                                            id=library_id,
+                                                            cntrller=cntrller,
+                                                            use_panels=use_panels,
+                                                            message=message,
+                                                            status='error'))
 
     def _check_modify(self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted):
         # Deny modification if the user is not an admin and does not have the LIBRARY_MODIFY permission.
@@ -2602,13 +2602,13 @@ class LibraryCommon(BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMeta
             if cntrller == 'api':
                 return 403, message
             return trans.response.send_redirect(web.url_for(controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              use_panels=use_panels,
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status='error'))
+                                                            action='browse_library',
+                                                            cntrller=cntrller,
+                                                            id=library_id,
+                                                            use_panels=use_panels,
+                                                            show_deleted=show_deleted,
+                                                            message=message,
+                                                            status='error'))
 
 # ---- Utility methods -------------------------------------------------------
 
@@ -2678,9 +2678,9 @@ def activatable_folders_and_library_datasets(trans, folder):
     library_datasets = trans.sa_session.query(trans.model.LibraryDataset) \
                                        .filter(trans.model.LibraryDataset.table.c.folder_id == folder.id) \
                                        .join((trans.model.LibraryDatasetDatasetAssociation.table,
-                                                trans.model.LibraryDataset.table.c.library_dataset_dataset_association_id == trans.model.LibraryDatasetDatasetAssociation.table.c.id)) \
+                                              trans.model.LibraryDataset.table.c.library_dataset_dataset_association_id == trans.model.LibraryDatasetDatasetAssociation.table.c.id)) \
                                        .join((trans.model.Dataset.table,
-                                                trans.model.LibraryDatasetDatasetAssociation.table.c.dataset_id == trans.model.Dataset.table.c.id)) \
+                                              trans.model.LibraryDatasetDatasetAssociation.table.c.dataset_id == trans.model.Dataset.table.c.id)) \
                                        .filter(trans.model.Dataset.table.c.deleted == false()) \
                                        .order_by(trans.model.LibraryDataset.table.c._name) \
                                        .all()
@@ -2781,9 +2781,9 @@ def whoosh_search(trans, cntrller, search_term, **kwd):
             index = whoosh.index.open_dir(whoosh_index_dir)
             # Set field boosts for searcher to place equal weight on all search fields.
             searcher = index.searcher(weighting=BM25F(field_B={'name_B' : 3.4,
-                                                                  'info_B' : 3.2,
-                                                                  'dbkey_B' : 3.3,
-                                                                  'message_B' : 3.5}))
+                                                               'info_B' : 3.2,
+                                                               'dbkey_B' : 3.3,
+                                                               'message_B' : 3.5}))
             # Perform search
             parser = MultifieldParser(['name', 'info', 'dbkey', 'message'], schema=schema)
             # Search term with wildcards may be slow...

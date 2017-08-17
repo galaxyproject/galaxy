@@ -40,20 +40,20 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=repository_name,
-                                                    description=repository_description,
-                                                    long_description=repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=repository_description,
+                                                   long_description=repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='filtering/filtering_1.1.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded filtering 1.1.0 tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_1.1.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded filtering 1.1.0 tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_install_filtering_to_galaxy(self):
         '''Install the filtering_1470 repository to galaxy.'''
@@ -62,20 +62,20 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         '''
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.install_repository(repository_name,
-                                 common.test_user_1_name,
-                                 category_name,
-                                 install_tool_dependencies=False,
-                                 install_repository_dependencies=False,
-                                 new_tool_panel_section_label='Filtering')
+                                common.test_user_1_name,
+                                category_name,
+                                install_tool_dependencies=False,
+                                install_repository_dependencies=False,
+                                new_tool_panel_section_label='Filtering')
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(repository_name,
-                                                                                         common.test_user_1_name)
+                                                                                        common.test_user_1_name)
         strings_displayed = ['filtering_1470',
-                              self.url.replace('http://', ''),
-                              installed_repository.installed_changeset_revision,
-                              installed_repository.changeset_revision]
+                             self.url.replace('http://', ''),
+                             installed_repository.installed_changeset_revision,
+                             installed_repository.changeset_revision]
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
         self.display_installed_repository_manage_page(installed_repository,
-                                                       strings_displayed=strings_displayed)
+                                                      strings_displayed=strings_displayed)
 
     def test_0015_update_repository(self):
         '''Upload a readme file to the filtering_1470 repository.'''
@@ -88,14 +88,14 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(repository,
-                          filename='filtering/readme.txt',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded readme.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/readme.txt',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded readme.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_get_repository_updates(self):
         '''Get updates to the installed repository.'''
@@ -104,7 +104,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         '''
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(repository_name,
-                                                                                         common.test_user_1_name)
+                                                                                        common.test_user_1_name)
         self.update_installed_repository(installed_repository)
 
     def test_0025_uninstall_repository(self):
@@ -113,7 +113,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         This is step 4 - In Galaxy, uninstall the repository.
         '''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(repository_name,
-                                                                                         common.test_user_1_name)
+                                                                                        common.test_user_1_name)
         self.uninstall_repository(installed_repository)
 
     def test_0030_reinstall_repository(self):
@@ -122,7 +122,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         This is step 5 - In Galaxy, reinstall the repository.
         '''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(repository_name,
-                                                                                         common.test_user_1_name)
+                                                                                        common.test_user_1_name)
         self.reinstall_repository(installed_repository)
 
     def test_0035_verify_absence_of_ghosts(self):
@@ -131,6 +131,6 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         This is step 6 - Make sure step 5 created no white ghosts.
         '''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(repository_name,
-                                                                                         common.test_user_1_name,
-                                                                                         return_multiple=True)
+                                                                                        common.test_user_1_name,
+                                                                                        return_multiple=True)
         assert len(installed_repository) == 1, 'Multiple filtering repositories found in the Galaxy database, possibly indicating a "white ghost" scenario.'

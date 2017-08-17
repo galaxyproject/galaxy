@@ -185,9 +185,9 @@ def download_from_genomespace_importer(username, token, json_parameter_file, gen
         # save json info for single primary dataset
         if dataset_id is not None:
             metadata_parameter_file.write("%s\n" % json.dumps(dict(type='dataset',
-                                                                      dataset_id=dataset_id,
-                                                                      ext=file_type,
-                                                                      name="GenomeSpace importer on %s" % (filename))))
+                                                                   dataset_id=dataset_id,
+                                                                   ext=file_type,
+                                                                   name="GenomeSpace importer on %s" % (filename))))
         # if using tmp file, move the file to the new file path dir to get scooped up later
         if using_temp_file:
             original_filename = filename
@@ -198,10 +198,10 @@ def download_from_genomespace_importer(username, token, json_parameter_file, gen
             target_output_filename = os.path.join(os.getcwd(), 'primary_%i_%s_visible_%s' % (hda_id, filename, file_type))
             shutil.move(output_filename, target_output_filename)
             metadata_parameter_file.write("%s\n" % json.dumps(dict(type='new_primary_dataset',
-                                                                      base_dataset_id=base_dataset_id,
-                                                                      ext=file_type,
-                                                                      filename=target_output_filename,
-                                                                      name="GenomeSpace importer on %s" % (original_filename))))
+                                                                   base_dataset_id=base_dataset_id,
+                                                                   ext=file_type,
+                                                                   filename=target_output_filename,
+                                                                   name="GenomeSpace importer on %s" % (original_filename))))
         dataset_id = None  # only one primary dataset available
         output_filename = None  # only have one filename available
     metadata_parameter_file.close()

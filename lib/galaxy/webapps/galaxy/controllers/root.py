@@ -108,12 +108,12 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         User login path for client-side.
         """
         return self.template(trans, 'login',
-                              redirect=redirect,
-                              # TODO: move into config
-                              openid_providers=[p.name for p in trans.app.openid_providers],
-                              # an installation may have it's own welcome_url - show it here if they've set that
-                              welcome_url=web.url_for(controller='root', action='welcome'),
-                              show_welcome_with_login=trans.app.config.show_welcome_with_login)
+                             redirect=redirect,
+                             # TODO: move into config
+                             openid_providers=[p.name for p in trans.app.openid_providers],
+                             # an installation may have it's own welcome_url - show it here if they've set that
+                             welcome_url=web.url_for(controller='root', action='welcome'),
+                             show_welcome_with_login=trans.app.config.show_welcome_with_login)
 
     # ---- Tool related -----------------------------------------------------
 
@@ -253,8 +253,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 trans.log_event("Formatted dataset id %s for display at %s" % (str(id), display_app))
                 return data.as_display_type(display_app, **kwd)
             elif authz_method == 'display_at' and trans.app.host_security_agent.allow_action(trans.request.remote_addr,
-                                                                                              data.permitted_actions.DATASET_ACCESS,
-                                                                                              dataset=data):
+                                                                                             data.permitted_actions.DATASET_ACCESS,
+                                                                                             dataset=data):
                 trans.response.set_content_type(data.get_mime())
                 return data.as_display_type(display_app, **kwd)
             else:
@@ -365,18 +365,18 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
 
     @web.expose
     def history_add_to(self, trans, history_id=None, file_data=None,
-                        name="Data Added to History", info=None, ext="txt", dbkey="?", copy_access_from=None, **kwd):
+                       name="Data Added to History", info=None, ext="txt", dbkey="?", copy_access_from=None, **kwd):
         """Adds a POSTed file to a History.
         """
         # TODO: unencoded id
         try:
             history = trans.sa_session.query(trans.app.model.History).get(history_id)
             data = trans.app.model.HistoryDatasetAssociation(name=name,
-                                                              info=info,
-                                                              extension=ext,
-                                                              dbkey=dbkey,
-                                                              create_dataset=True,
-                                                              sa_session=trans.sa_session)
+                                                             info=info,
+                                                             extension=ext,
+                                                             dbkey=dbkey,
+                                                             create_dataset=True,
+                                                             sa_session=trans.sa_session)
             if copy_access_from:
                 copy_access_from = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(copy_access_from)
                 trans.app.security_agent.copy_dataset_permissions(copy_access_from.dataset, data.dataset)
@@ -435,7 +435,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 dataset = 'dataset' in kwd
                 bypass_manage_permission = 'bypass_manage_permission' in kwd
                 trans.app.security_agent.history_set_default_permissions(history, permissions,
-                                                                          dataset=dataset, bypass_manage_permission=bypass_manage_permission)
+                                                                         dataset=dataset, bypass_manage_permission=bypass_manage_permission)
                 return trans.show_ok_message('Default history permissions have been changed.')
             return trans.fill_template('history/permissions.mako')
         else:

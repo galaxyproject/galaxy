@@ -50,7 +50,7 @@ class LoggingProxy(ConnectionProxy):
         rval = execute(cursor, statement, parameters, context)
         duration = time.clock() - start
         log.debug("statement: %r parameters: %r executemany: %r duration: %r stack: %r thread: %r",
-                   statement, parameters, executemany, duration, " > ".join(pretty_stack()), thread_ident)
+                  statement, parameters, executemany, duration, " > ".join(pretty_stack()), thread_ident)
         return rval
 
 

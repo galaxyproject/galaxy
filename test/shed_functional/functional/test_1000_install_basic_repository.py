@@ -26,47 +26,47 @@ class BasicToolShedFeatures(ShedTwillTestCase):
         category = self.create_category(name='Test 0000 Basic Repository Features 1', description='Test Description 0000 Basic Repository Features 1')
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name='filtering_0000',
-                                                    description="Galaxy's filtering tool",
-                                                    long_description="Long description of Galaxy's filtering tool",
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id))
+                                                   description="Galaxy's filtering tool",
+                                                   long_description="Long description of Galaxy's filtering tool",
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id))
         if self.repository_is_new(repository):
             self.upload_file(repository,
-                              filename='filtering/filtering_1.1.0.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded filtering 1.1.0 tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='filtering/filtering_1.1.0.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded filtering 1.1.0 tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
             self.upload_file(repository,
-                              filename='filtering/filtering_0000.txt',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded readme for 1.1.0',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='filtering/filtering_0000.txt',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=False,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded readme for 1.1.0',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
             self.upload_file(repository,
-                              filename='filtering/filtering_2.2.0.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded filtering 2.2.0 tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='filtering/filtering_2.2.0.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded filtering 2.2.0 tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
             self.upload_file(repository,
-                              filename='readme.txt',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded readme for 2.2.0',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='readme.txt',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=False,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded readme for 2.2.0',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0010_browse_tool_sheds(self):
         """Browse the available tool sheds in this Galaxy instance."""
@@ -86,15 +86,15 @@ class BasicToolShedFeatures(ShedTwillTestCase):
 
     def test_0025_install_filtering_repository(self):
         self.install_repository('filtering_0000',
-                                 common.test_user_1_name,
-                                 'Test 0000 Basic Repository Features 1',
-                                 new_tool_panel_section_label='test_1000')
+                                common.test_user_1_name,
+                                'Test 0000 Basic Repository Features 1',
+                                new_tool_panel_section_label='test_1000')
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner('filtering_0000', common.test_user_1_name)
         strings_displayed = ['filtering_0000',
-                              "Galaxy's filtering tool",
-                              'user1',
-                              self.url.replace('http://', ''),
-                              str(installed_repository.installed_changeset_revision)]
+                             "Galaxy's filtering tool",
+                             'user1',
+                             self.url.replace('http://', ''),
+                             str(installed_repository.installed_changeset_revision)]
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
         strings_displayed.extend(['Installed tool shed repository', 'Valid tools', 'Filter1'])
         self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
@@ -107,14 +107,14 @@ class BasicToolShedFeatures(ShedTwillTestCase):
         # repository was already installed, nothing will be in the process of being installed, so the grid will not display 'filtering_0000'.
         post_submit_strings_not_displayed = ['filtering_0000']
         self.install_repository('filtering_0000',
-                                 common.test_user_1_name,
-                                 'Test 0000 Basic Repository Features 1',
-                                 post_submit_strings_not_displayed=post_submit_strings_not_displayed)
+                                common.test_user_1_name,
+                                'Test 0000 Basic Repository Features 1',
+                                post_submit_strings_not_displayed=post_submit_strings_not_displayed)
         strings_displayed = ['filtering_0000',
-                              "Galaxy's filtering tool",
-                              'user1',
-                              self.url.replace('http://', ''),
-                              str(installed_repository.installed_changeset_revision)]
+                             "Galaxy's filtering tool",
+                             'user1',
+                             self.url.replace('http://', ''),
+                             str(installed_repository.installed_changeset_revision)]
         self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
 

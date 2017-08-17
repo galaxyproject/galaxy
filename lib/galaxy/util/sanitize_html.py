@@ -317,8 +317,8 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
     svg_elem_map = None
 
     acceptable_svg_properties = ['fill', 'fill-opacity', 'fill-rule',
-                                  'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
-                                  'stroke-opacity']
+                                 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
+                                 'stroke-opacity']
 
     def reset(self):
         _BaseHTMLProcessor.reset(self)

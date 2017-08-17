@@ -47,7 +47,7 @@ class Xgmml(xml.GenericXml):
         """
         if len(split_files) > 1:
             raise NotImplementedError("Merging multiple XML files is non-trivial " +
-                                       "and must be implemented for each XML type")
+                                      "and must be implemented for each XML type")
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
 

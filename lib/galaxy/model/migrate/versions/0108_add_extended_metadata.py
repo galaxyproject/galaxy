@@ -19,9 +19,9 @@ ExtendedMetadata_table = Table("extended_metadata", metadata,
 ExtendedMetadataIndex_table = Table("extended_metadata_index", metadata,
                                     Column("id", Integer, primary_key=True),
                                     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id",
-                                                                                        onupdate="CASCADE",
-                                                                                        ondelete="CASCADE"),
-                                            index=True),
+                                                                                       onupdate="CASCADE",
+                                                                                       ondelete="CASCADE"),
+                                           index=True),
                                     Column("path", String(255)),
                                     Column("value", TEXT))
 

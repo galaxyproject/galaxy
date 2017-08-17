@@ -65,10 +65,10 @@ def create_sequencer_form_definition(migrate_engine):
     # create new form_definition_current in the db
     cmd = "INSERT INTO form_definition_current VALUES ( %s, %s, %s, %s, %s )"
     cmd = cmd % (nextval(migrate_engine, 'form_definition_current'),
-                  localtimestamp(migrate_engine),
-                  localtimestamp(migrate_engine),
-                  'NULL',
-                  boolean(migrate_engine, 'false'))
+                 localtimestamp(migrate_engine),
+                 localtimestamp(migrate_engine),
+                 'NULL',
+                 boolean(migrate_engine, 'false'))
     migrate_engine.execute(cmd)
     # get this form_definition_current id
     form_definition_current_id = get_latest_id(migrate_engine, 'form_definition_current')
@@ -77,43 +77,43 @@ def create_sequencer_form_definition(migrate_engine):
     form_definition_desc = ''
     form_definition_fields = []
     fields = [('Host', 'TextField'),
-               ('User name', 'TextField'),
-               ('Password', 'PasswordField'),
-               ('Data directory', 'TextField')]
+              ('User name', 'TextField'),
+              ('Password', 'PasswordField'),
+              ('Data directory', 'TextField')]
     for index, (label, field_type) in enumerate(fields):
         form_definition_fields.append({'name': 'field_%i' % index,
-                                         'label': label,
-                                         'helptext': '',
-                                         'visible': True,
-                                         'required': False,
-                                         'type': field_type,
-                                         'selectlist': [],
-                                         'layout': 'none',
-                                         'default': ''})
+                                       'label': label,
+                                       'helptext': '',
+                                       'visible': True,
+                                       'required': False,
+                                       'type': field_type,
+                                       'selectlist': [],
+                                       'layout': 'none',
+                                       'default': ''})
     form_definition_fields.append({'name': 'field_%i' % len(fields),
-                                     'label': 'Prepend the experiment name and sample name to the dataset name?',
-                                     'helptext': 'Galaxy datasets are renamed by prepending the experiment name and sample name to the dataset name, ensuring dataset names remain unique in Galaxy even when multiple datasets have the same name on the sequencer.',
-                                     'visible': True,
-                                     'required': False,
-                                     'type': 'SelectField',
-                                     'selectlist': ['Do not rename',
-                                                     'Preprend sample name',
-                                                     'Prepend experiment name',
-                                                     'Prepend experiment and sample name'],
-                                     'layout': 'none',
-                                     'default': ''})
+                                   'label': 'Prepend the experiment name and sample name to the dataset name?',
+                                   'helptext': 'Galaxy datasets are renamed by prepending the experiment name and sample name to the dataset name, ensuring dataset names remain unique in Galaxy even when multiple datasets have the same name on the sequencer.',
+                                   'visible': True,
+                                   'required': False,
+                                   'type': 'SelectField',
+                                   'selectlist': ['Do not rename',
+                                                  'Preprend sample name',
+                                                  'Prepend experiment name',
+                                                  'Prepend experiment and sample name'],
+                                   'layout': 'none',
+                                   'default': ''})
     form_definition_type = 'Sequencer Information Form'
     form_definition_layout = dumps('[]')
     cmd = "INSERT INTO form_definition VALUES ( %s, %s, %s, '%s', '%s', %s, '%s', '%s', '%s' )"
     cmd = cmd % (nextval(migrate_engine, 'form_definition'),
-                  localtimestamp(migrate_engine),
-                  localtimestamp(migrate_engine),
-                  form_definition_name,
-                  form_definition_desc,
-                  form_definition_current_id,
-                  dumps(form_definition_fields),
-                  form_definition_type,
-                  form_definition_layout)
+                 localtimestamp(migrate_engine),
+                 localtimestamp(migrate_engine),
+                 form_definition_name,
+                 form_definition_desc,
+                 form_definition_current_id,
+                 dumps(form_definition_fields),
+                 form_definition_type,
+                 form_definition_layout)
     migrate_engine.execute(cmd)
     # get this form_definition id
     form_definition_id = get_latest_id(migrate_engine, 'form_definition')
@@ -150,15 +150,15 @@ def add_sequencer(migrate_engine, sequencer_index, sequencer_form_definition_id,
     '''Adds a new sequencer to the sequencer table along with its form values.'''
     # Create a new form values record with the supplied sequencer information
     values = dumps({'field_0': sequencer_info.get('host', ''),
-                      'field_1': sequencer_info.get('username', ''),
-                      'field_2': sequencer_info.get('password', ''),
-                      'field_3': sequencer_info.get('data_dir', ''),
-                      'field_4': sequencer_info.get('rename_dataset', '')})
+                    'field_1': sequencer_info.get('username', ''),
+                    'field_2': sequencer_info.get('password', ''),
+                    'field_3': sequencer_info.get('data_dir', ''),
+                    'field_4': sequencer_info.get('rename_dataset', '')})
     cmd = "INSERT INTO form_values VALUES ( %s, %s, %s, %s, '%s' )" % (nextval(migrate_engine, 'form_values'),
-                                                                        localtimestamp(migrate_engine),
-                                                                        localtimestamp(migrate_engine),
-                                                                        sequencer_form_definition_id,
-                                                                        values)
+                                                                       localtimestamp(migrate_engine),
+                                                                       localtimestamp(migrate_engine),
+                                                                       sequencer_form_definition_id,
+                                                                       values)
     migrate_engine.execute(cmd)
     sequencer_form_values_id = get_latest_id(migrate_engine, 'form_values')
     # Create a new sequencer record with reference to the form value created above.
@@ -168,15 +168,15 @@ def add_sequencer(migrate_engine, sequencer_index, sequencer_form_definition_id,
     sequencer_type_id = 'simple_unknown_sequencer'
     cmd = "INSERT INTO sequencer VALUES ( %s, %s, %s, '%s', '%s', '%s', '%s', %s, %s, %s )"
     cmd = cmd % (nextval(migrate_engine, 'sequencer'),
-                  localtimestamp(migrate_engine),
-                  localtimestamp(migrate_engine),
-                  name,
-                  desc,
-                  sequencer_type_id,
-                  version,
-                  sequencer_form_definition_id,
-                  sequencer_form_values_id,
-                  boolean(migrate_engine, 'false'))
+                 localtimestamp(migrate_engine),
+                 localtimestamp(migrate_engine),
+                 name,
+                 desc,
+                 sequencer_type_id,
+                 version,
+                 sequencer_form_definition_id,
+                 sequencer_form_values_id,
+                 boolean(migrate_engine, 'false'))
     migrate_engine.execute(cmd)
     return get_latest_id(migrate_engine, 'sequencer')
 
@@ -281,10 +281,10 @@ def downgrade(migrate_engine):
             seq_values = loads(str(row[1]))
             # create the datatx_info json dict
             datatx_info = dumps(dict(host=seq_values.get('field_0', ''),
-                                       username=seq_values.get('field_1', ''),
-                                       password=seq_values.get('field_2', ''),
-                                       data_dir=seq_values.get('field_3', ''),
-                                       rename_dataset=seq_values.get('field_4', '')))
+                                     username=seq_values.get('field_1', ''),
+                                     password=seq_values.get('field_2', ''),
+                                     data_dir=seq_values.get('field_3', ''),
+                                     rename_dataset=seq_values.get('field_4', '')))
             # update the column
             cmd = "UPDATE request_type SET datatx_info='%s' WHERE id=%i" % (datatx_info, request_type_id)
             migrate_engine.execute(cmd)

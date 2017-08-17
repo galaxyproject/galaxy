@@ -78,7 +78,7 @@ class TestEnvironment(object):
         if not attributes:
             # TODO:?? raise to class scope?
             attributes = ['protocol', 'host', 'port', 'history_id', 'file_dir',
-                           'tool_shed_test_file', 'shed_tools_dict', 'saved_output_dir', 'debug_these_tests']
+                          'tool_shed_test_file', 'shed_tools_dict', 'saved_output_dir', 'debug_these_tests']
         this_dict = {}
         for attr_name in attributes:
             attr_val = getattr(self, attr_name)

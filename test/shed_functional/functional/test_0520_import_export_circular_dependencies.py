@@ -47,10 +47,10 @@ class TestExportImportRepository(ShedTwillTestCase):
         self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.import_capsule(self.get_filename('repository_capsules/0520_filtering.tar.gz'),
-                             strings_displayed=[filtering_repository_name, freebayes_repository_name, '<b>Exists'],
-                             strings_not_displayed=[' Exists'],
-                             strings_displayed_after_submit=['Repository <b>filtering_0520</b> has been created.'],
-                             strings_not_displayed_after_submit=['Import not necessary'])
+                            strings_displayed=[filtering_repository_name, freebayes_repository_name, '<b>Exists'],
+                            strings_not_displayed=[' Exists'],
+                            strings_displayed_after_submit=['Repository <b>filtering_0520</b> has been created.'],
+                            strings_not_displayed_after_submit=['Import not necessary'])
 
     def test_0010_verify_invalid_dependency(self):
         '''Verify that the repository dependencies are marked as invalid.'''
@@ -62,11 +62,11 @@ class TestExportImportRepository(ShedTwillTestCase):
         filtering_repository = self.test_db_util.get_repository_by_name_and_owner(filtering_repository_name, common.test_user_1_name)
         strings_displayed = ['Ignoring repository dependency definition', self.url, 'filtering_0520', 'name is invalid']
         self.display_manage_repository_page(freebayes_repository,
-                                             strings_displayed=strings_displayed,
-                                             strings_not_displayed=['Repository dependencies'])
+                                            strings_displayed=strings_displayed,
+                                            strings_not_displayed=['Repository dependencies'])
         self.display_manage_repository_page(filtering_repository,
-                                             strings_displayed=['Repository dependencies', self.get_repository_tip(freebayes_repository)],
-                                             strings_not_displayed=[])
+                                            strings_displayed=['Repository dependencies', self.get_repository_tip(freebayes_repository)],
+                                            strings_not_displayed=[])
 
     def test_0015_verify_repository_metadata(self):
         '''Verify that the repositories are not marked as downloadable.'''

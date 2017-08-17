@@ -56,13 +56,13 @@ class MigrateToolsApplication(object, galaxy.config.ConfiguresGalaxyMixin):
         # installation of all appropriate tool shed repositories.
         self.tool_migration_manager = \
             tool_migration_manager.ToolMigrationManager(app=self,
-                                                         latest_migration_script_number=latest_migration_script_number,
-                                                         tool_shed_install_config=os.path.join(self.config.root,
-                                                                                                'scripts',
-                                                                                                'migrate_tools',
-                                                                                                tools_migration_config),
-                                                         migrated_tools_config=self.config.migrated_tools_config,
-                                                         install_dependencies=install_dependencies)
+                                                        latest_migration_script_number=latest_migration_script_number,
+                                                        tool_shed_install_config=os.path.join(self.config.root,
+                                                                                              'scripts',
+                                                                                              'migrate_tools',
+                                                                                              tools_migration_config),
+                                                        migrated_tools_config=self.config.migrated_tools_config,
+                                                        install_dependencies=install_dependencies)
 
     @property
     def sa_session(self):

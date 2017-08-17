@@ -674,7 +674,7 @@ class StdioParser(object):
                     code_range = exit_code_elem.get("value", "")
                 if code_range is None:
                     log.warning("Tool stdio exit codes must have " +
-                                 "a range or value")
+                                "a range or value")
                     continue
                 # Parse the range. We look for:
                 #   :Y
@@ -698,7 +698,7 @@ class StdioParser(object):
                 # If we got more than one colon, then ignore the exit code.
                 elif (len(code_ranges) > 2):
                     log.warning("Invalid tool exit_code range %s - ignored"
-                                 % code_range)
+                                % code_range)
                     continue
                 # Else we have a singular value. If it's not an integer, then
                 # we'll just write a log message and skip this exit_code.
@@ -716,13 +716,13 @@ class StdioParser(object):
                 # the start must be -inf and the end must be +inf.
                 # So at least warn about this situation:
                 if (isinf(exit_code.range_start) and
-                     isinf(exit_code.range_end)):
+                    isinf(exit_code.range_end)):
                     log.warning("Tool exit_code range %s will match on " +
-                                 "all exit codes" % code_range)
+                                "all exit codes" % code_range)
                 self.stdio_exit_codes.append(exit_code)
         except Exception:
             log.error("Exception in parse_stdio_exit_codes! " +
-                       str(sys.exc_info()))
+                      str(sys.exc_info()))
             trace = sys.exc_info()[2]
             if trace is not None:
                 trace_msg = repr(traceback.format_tb(trace))
@@ -753,7 +753,7 @@ class StdioParser(object):
                 if regex.match is None:
                     # TODO: Convert the offending XML element to a string
                     log.warning("Ignoring tool's stdio regex element %s - "
-                                 "the 'match' attribute must exist")
+                                "the 'match' attribute must exist")
                     continue
                 # Parse the output sources. We look for the "src", "source",
                 # and "sources" attributes, in that order. If there is no
@@ -783,14 +783,14 @@ class StdioParser(object):
                         regex.stderr_match = True
                     if (not regex.stdout_match and not regex.stderr_match):
                         log.warning("Tool id %s: unable to determine if tool "
-                                     "stream source scanning is output, error, "
-                                     "or both. Defaulting to use both." % self.id)
+                                    "stream source scanning is output, error, "
+                                    "or both. Defaulting to use both." % self.id)
                         regex.stdout_match = True
                         regex.stderr_match = True
                 self.stdio_regexes.append(regex)
         except Exception:
             log.error("Exception in parse_stdio_exit_codes! " +
-                       str(sys.exc_info()))
+                      str(sys.exc_info()))
             trace = sys.exc_info()[2]
             if trace is not None:
                 trace_msg = repr(traceback.format_tb(trace))
@@ -814,10 +814,10 @@ class StdioParser(object):
                     return_level = StdioErrorLevel.FATAL
                 else:
                     log.debug("Tool %s: error level %s did not match log/warning/fatal" %
-                               (self.id, err_level))
+                              (self.id, err_level))
         except Exception:
             log.error("Exception in parse_error_level " +
-                       str(sys.exc_info()))
+                      str(sys.exc_info()))
             trace = sys.exc_info()[2]
             if trace is not None:
                 trace_msg = repr(traceback.format_tb(trace))

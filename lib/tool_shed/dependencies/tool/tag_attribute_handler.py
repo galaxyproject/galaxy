@@ -27,9 +27,9 @@ class TagAttributeHandler(object):
             if sub_elem.tag == 'repository':
                 altered, new_sub_elem, error_message = \
                     self.process_repository_tag_set(parent_elem=elem,
-                                                     elem_index=sub_index,
-                                                     elem=sub_elem,
-                                                     message=message)
+                                                    elem_index=sub_index,
+                                                    elem=sub_elem,
+                                                    message=message)
             if error_message and error_message not in message:
                 message += error_message
             if altered:
@@ -52,8 +52,8 @@ class TagAttributeHandler(object):
             error_message = ''
             if sub_elem.tag == 'package':
                 altered, new_sub_elem, error_message = self.process_package_tag_set(elem=sub_elem,
-                                                                                     message=message,
-                                                                                     skip_actions_tags=skip_actions_tags)
+                                                                                    message=message,
+                                                                                    skip_actions_tags=skip_actions_tags)
             elif sub_elem.tag == 'action':
                 # <action type="set_environment_for_install">
                 #    <repository name="package_readline_6_2" owner="devteam"">
@@ -61,13 +61,13 @@ class TagAttributeHandler(object):
                 #    </repository>
                 # </action>
                 altered, new_sub_elem, error_message = self.process_action_tag_set(elem=sub_elem,
-                                                                                    message=message)
+                                                                                   message=message)
             else:
                 # Inspect the sub elements of elem to locate all <repository> tags and
                 # populate them with toolshed and changeset_revision attributes if necessary.
                 altered, new_sub_elem, error_message = self.rdd.handle_sub_elem(parent_elem=elem,
-                                                                                 elem_index=sub_index,
-                                                                                 elem=sub_elem)
+                                                                                elem_index=sub_index,
+                                                                                elem=sub_elem)
             if error_message and error_message not in message:
                 message += error_message
             if altered:
@@ -97,8 +97,8 @@ class TagAttributeHandler(object):
                         continue
                 altered, new_sub_elem, error_message = \
                     self.process_actions_tag_set(elem=sub_elem,
-                                                  message=message,
-                                                  skip_actions_tags=skip_actions_tags)
+                                                 message=message,
+                                                 skip_actions_tags=skip_actions_tags)
             if error_message and error_message not in message:
                 message += error_message
             if altered:
@@ -119,8 +119,8 @@ class TagAttributeHandler(object):
                     # <package name="eigen" version="2.0.17">
                     altered, new_elem, error_message = \
                         self.process_package_tag_set(elem=elem,
-                                                      message=error_message,
-                                                      skip_actions_tags=skip_actions_tags)
+                                                     message=error_message,
+                                                     skip_actions_tags=skip_actions_tags)
                 if altered:
                     if not self.altered:
                         self.altered = True
@@ -139,13 +139,13 @@ class TagAttributeHandler(object):
             if sub_elem.tag == 'actions_group':
                 altered, new_sub_elem, error_message = \
                     self.process_actions_group_tag_set(elem=sub_elem,
-                                                        message=message,
-                                                        skip_actions_tags=skip_actions_tags)
+                                                       message=message,
+                                                       skip_actions_tags=skip_actions_tags)
             elif sub_elem.tag == 'actions':
                 altered, new_sub_elem, error_message = \
                     self.process_actions_tag_set(elem=sub_elem,
-                                                  message=message,
-                                                  skip_actions_tags=skip_actions_tags)
+                                                 message=message,
+                                                 skip_actions_tags=skip_actions_tags)
             else:
                 package_name = elem.get('name', '')
                 package_version = elem.get('version', '')
@@ -172,14 +172,14 @@ class TagAttributeHandler(object):
             if sub_elem.tag == 'install':
                 altered, new_sub_elem, error_message = \
                     self.process_install_tag_set(elem=sub_elem,
-                                                  message=message,
-                                                  skip_actions_tags=skip_actions_tags)
+                                                 message=message,
+                                                 skip_actions_tags=skip_actions_tags)
             elif sub_elem.tag == 'repository':
                 altered, new_sub_elem, error_message = \
                     self.process_repository_tag_set(parent_elem=elem,
-                                                     elem_index=sub_index,
-                                                     elem=sub_elem,
-                                                     message=message)
+                                                    elem_index=sub_index,
+                                                    elem=sub_elem,
+                                                    message=message)
             if error_message and error_message not in message:
                 message += error_message
             if altered:
@@ -193,8 +193,8 @@ class TagAttributeHandler(object):
     def process_repository_tag_set(self, parent_elem, elem_index, elem, message):
         # We have a complex repository dependency.
         altered, new_elem, error_message = self.rdd.handle_complex_dependency_elem(parent_elem=parent_elem,
-                                                                                    elem_index=elem_index,
-                                                                                    elem=elem)
+                                                                                   elem_index=elem_index,
+                                                                                   elem=elem)
         if error_message and error_message not in message:
             message += error_message
         if altered:

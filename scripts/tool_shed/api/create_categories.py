@@ -36,7 +36,7 @@ def main(options):
         description = category_dict.get('description', None)
         if name is not None and description is not None:
             data = dict(name=name,
-                         description=description)
+                        description=description)
             url = '%s/api/categories' % to_tool_shed
             try:
                 response = submit(url, data, api_key)

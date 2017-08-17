@@ -59,15 +59,15 @@ def upgrade(migrate_engine):
         if migrate_engine.name == 'sqlite':
             # create a temporary table
             RequestTemp_table = Table('request_temp', metadata,
-                                       Column("id", Integer, primary_key=True),
-                                       Column("create_time", DateTime, default=now),
-                                       Column("update_time", DateTime, default=now, onupdate=now),
-                                       Column("name", TrimmedString(255), nullable=False),
-                                       Column("desc", TEXT),
-                                       Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-                                       Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True),
-                                       Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                                       Column("deleted", Boolean, index=True, default=False))
+                                      Column("id", Integer, primary_key=True),
+                                      Column("create_time", DateTime, default=now),
+                                      Column("update_time", DateTime, default=now, onupdate=now),
+                                      Column("name", TrimmedString(255), nullable=False),
+                                      Column("desc", TEXT),
+                                      Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
+                                      Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True),
+                                      Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
+                                      Column("deleted", Boolean, index=True, default=False))
             try:
                 RequestTemp_table.create()
             except Exception:

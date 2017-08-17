@@ -92,12 +92,12 @@ class LocalJobRunner(BaseJobRunner):
             stderr_file = tempfile.NamedTemporaryFile(suffix='_stderr', dir=job_wrapper.working_directory)
             log.debug('(%s) executing job script: %s' % (job_id, command_line))
             proc = subprocess.Popen(args=command_line,
-                                     shell=True,
-                                     cwd=job_wrapper.working_directory,
-                                     stdout=stdout_file,
-                                     stderr=stderr_file,
-                                     env=self._environ,
-                                     preexec_fn=os.setpgrp)
+                                    shell=True,
+                                    cwd=job_wrapper.working_directory,
+                                    stdout=stdout_file,
+                                    stderr=stderr_file,
+                                    env=self._environ,
+                                    preexec_fn=os.setpgrp)
             job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
             job_wrapper.change_state(model.Job.states.RUNNING)
 

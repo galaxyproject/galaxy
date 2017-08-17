@@ -19,15 +19,15 @@ log = logging.getLogger(__name__)
 class InstalledRepositoryMetadataManager(metadata_generator.MetadataGenerator):
 
     def __init__(self, app, tpm=None, repository=None, changeset_revision=None, repository_clone_url=None,
-                  shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
-                  resetting_all_metadata_on_repository=False, updating_installed_repository=False,
-                  persist=False, metadata_dict=None):
+                 shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
+                 resetting_all_metadata_on_repository=False, updating_installed_repository=False,
+                 persist=False, metadata_dict=None):
         super(InstalledRepositoryMetadataManager, self).__init__(app, repository, changeset_revision,
-                                                                    repository_clone_url, shed_config_dict,
-                                                                    relative_install_dir, repository_files_dir,
-                                                                    resetting_all_metadata_on_repository,
-                                                                    updating_installed_repository, persist,
-                                                                    metadata_dict=metadata_dict, user=None)
+                                                                 repository_clone_url, shed_config_dict,
+                                                                 relative_install_dir, repository_files_dir,
+                                                                 resetting_all_metadata_on_repository,
+                                                                 updating_installed_repository, persist,
+                                                                 metadata_dict=metadata_dict, user=None)
         if tpm is None:
             self.tpm = tool_panel_manager.ToolPanelManager(self.app)
         else:
@@ -54,7 +54,7 @@ class InstalledRepositoryMetadataManager(metadata_generator.MetadataGenerator):
             return self.app.install_model.context.query(self.app.install_model.ToolShedRepository) \
                                                  .filter(self.app.install_model.ToolShedRepository.table.c.uninstalled == false()) \
                                                  .order_by(self.app.install_model.ToolShedRepository.table.c.name,
-                                                            self.app.install_model.ToolShedRepository.table.c.owner)
+                                                           self.app.install_model.ToolShedRepository.table.c.owner)
         else:
             return self.app.install_model.context.query(self.app.install_model.ToolShedRepository) \
                                                  .filter(self.app.install_model.ToolShedRepository.table.c.uninstalled == false())
@@ -115,10 +115,10 @@ class InstalledRepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     self.reset_all_metadata_on_installed_repository()
                     if self.invalid_file_tups:
                         message = tool_util.generate_message_for_invalid_tools(self.app,
-                                                                                self.invalid_file_tups,
-                                                                                repository,
-                                                                                None,
-                                                                                as_html=False)
+                                                                               self.invalid_file_tups,
+                                                                               repository,
+                                                                               None,
+                                                                               as_html=False)
                         log.debug(message)
                         unsuccessful_count += 1
                     else:
@@ -166,12 +166,12 @@ class InstalledRepositoryMetadataManager(metadata_generator.MetadataGenerator):
         guid_to_tool_elem_dict = {}
         for tool_config_filename, guid, tool in repository_tools_tups:
             guid_to_tool_elem_dict[guid] = self.tpm.generate_tool_elem(tool_shed,
-                                                                          self.repository.name,
-                                                                          self.repository.changeset_revision,
-                                                                          self.repository.owner or '',
-                                                                          tool_config_filename,
-                                                                          tool,
-                                                                          None)
+                                                                       self.repository.name,
+                                                                       self.repository.changeset_revision,
+                                                                       self.repository.owner or '',
+                                                                       tool_config_filename,
+                                                                       tool,
+                                                                       None)
         config_elems = []
         tree, error_message = xml_util.parse_xml(shed_tool_conf)
         if tree:

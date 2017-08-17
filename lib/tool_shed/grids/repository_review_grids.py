@@ -30,17 +30,17 @@ class ComponentGrid(grids.Grid):
     use_hide_message = False
     columns = [
         NameColumn("Name",
-                    key="Component.name",
-                    link=(lambda item: dict(operation="edit", id=item.id)),
-                    attach_popup=False),
+                   key="Component.name",
+                   link=(lambda item: dict(operation="edit", id=item.id)),
+                   attach_popup=False),
         DescriptionColumn("Description",
-                           key="Component.description",
-                           attach_popup=False)
+                          key="Component.description",
+                          attach_popup=False)
     ]
     default_filter = {}
     global_actions = [
         grids.GridAction("Add new component",
-                          dict(controller='repository_review', action='manage_components', operation='create'))
+                         dict(controller='repository_review', action='manage_components', operation='create'))
     ]
     operations = []
     standard_filters = []
@@ -76,10 +76,10 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
                 for repository_metadata in repository_metadata_revisions:
                     rev, label, changeset_revision = \
                         hg_util.get_rev_label_changeset_revision_from_repository_metadata(trans.app,
-                                                                                           repository_metadata,
-                                                                                           repository=repository,
-                                                                                           include_date=True,
-                                                                                           include_hash=False)
+                                                                                          repository_metadata,
+                                                                                          repository=repository,
+                                                                                          include_date=True,
+                                                                                          include_hash=False)
                     rval += '<a href="manage_repository_reviews_of_revision?id=%s&changeset_revision=%s">%s</a><br/>' % \
                         (trans.security.encode_id(repository.id), changeset_revision, label)
                 return rval
@@ -130,34 +130,34 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
     default_sort_key = "Repository.name"
     columns = [
         RepositoryGrid.NameColumn("Repository name",
-                                   key="name",
-                                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                   attach_popup=True),
+                                  key="name",
+                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                  attach_popup=True),
         RepositoryGrid.UserColumn("Owner",
-                                   model_class=model.User,
-                                   attach_popup=False,
-                                   key="User.username"),
+                                  model_class=model.User,
+                                  attach_popup=False,
+                                  key="User.username"),
         WithReviewsRevisionColumn("Reviewed revisions"),
         ReviewersColumn("Reviewers", attach_popup=False),
         RatingColumn("Rating", attach_popup=False),
         ApprovedColumn("Approved", attach_popup=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = [
         grids.GridOperation("Inspect repository revisions",
-                             allow_multiple=False,
-                             condition=(lambda item: not item.deleted),
-                             async_compatible=False)
+                            allow_multiple=False,
+                            condition=(lambda item: not item.deleted),
+                            async_compatible=False)
     ]
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
                                .filter(and_(model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.deprecated == false())) \
+                                            model.Repository.table.c.deprecated == false())) \
                                .join((model.RepositoryReview.table, model.RepositoryReview.table.c.repository_id == model.Repository.table.c.id)) \
                                .join((model.User.table, model.User.table.c.id == model.Repository.table.c.user_id)) \
                                .outerjoin((model.ComponentReview.table, model.ComponentReview.table.c.repository_review_id == model.RepositoryReview.table.c.id)) \
@@ -169,33 +169,33 @@ class RepositoriesWithoutReviewsGrid(RepositoriesWithReviewsGrid):
     title = "Repositories with no reviews"
     columns = [
         RepositoriesWithReviewsGrid.NameColumn("Repository name",
-                                                key="name",
-                                                link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                                attach_popup=True),
+                                               key="name",
+                                               link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                               attach_popup=True),
         RepositoriesWithReviewsGrid.DescriptionColumn("Synopsis",
-                                                       key="description",
-                                                       attach_popup=False),
+                                                      key="description",
+                                                      attach_popup=False),
         RepositoriesWithReviewsGrid.WithoutReviewsRevisionColumn("Revisions for review"),
         RepositoriesWithReviewsGrid.UserColumn("Owner",
-                                                model_class=model.User,
-                                                attach_popup=False,
-                                                key="User.username")
+                                               model_class=model.User,
+                                               attach_popup=False,
+                                               key="User.username")
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name, description",
-                                                cols_to_filter=[columns[0], columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = [grids.GridOperation("Inspect repository revisions",
-                                        allow_multiple=False,
-                                        condition=(lambda item: not item.deleted),
-                                        async_compatible=False)]
+                                      allow_multiple=False,
+                                      condition=(lambda item: not item.deleted),
+                                      async_compatible=False)]
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
                                .filter(and_(model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.deprecated == false(),
-                                              model.Repository.reviews == null())) \
+                                            model.Repository.table.c.deprecated == false(),
+                                            model.Repository.reviews == null())) \
                                .join(model.User.table)
 
 
@@ -207,38 +207,38 @@ class RepositoriesReadyForReviewGrid(RepositoriesWithoutReviewsGrid):
     title = "Repositories ready for review"
     columns = [
         RepositoriesWithoutReviewsGrid.NameColumn("Repository name",
-                                                   key="name",
-                                                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                                   attach_popup=True),
+                                                  key="name",
+                                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                                  attach_popup=True),
         RepositoriesWithoutReviewsGrid.DescriptionColumn("Synopsis",
-                                                          key="description",
-                                                          attach_popup=False),
+                                                         key="description",
+                                                         attach_popup=False),
         RepositoriesWithoutReviewsGrid.WithoutReviewsRevisionColumn("Revisions for review"),
         RepositoriesWithoutReviewsGrid.UserColumn("Owner",
-                                                   model_class=model.User,
-                                                   attach_popup=False,
-                                                   key="User.username")
+                                                  model_class=model.User,
+                                                  attach_popup=False,
+                                                  key="User.username")
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name, description",
-                                                cols_to_filter=[columns[0], columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = [grids.GridOperation("Inspect repository revisions",
-                                        allow_multiple=False,
-                                        condition=(lambda item: not item.deleted),
-                                        async_compatible=False)]
+                                      allow_multiple=False,
+                                      condition=(lambda item: not item.deleted),
+                                      async_compatible=False)]
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
                                .filter(and_(model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.deprecated == false(),
-                                              model.Repository.reviews == null())) \
+                                            model.Repository.table.c.deprecated == false(),
+                                            model.Repository.reviews == null())) \
                                .join(model.RepositoryMetadata.table) \
                                .filter(and_(model.RepositoryMetadata.table.c.downloadable == true(),
-                                              or_(model.RepositoryMetadata.table.c.includes_tools == false(),
-                                                   and_(model.RepositoryMetadata.table.c.includes_tools == true(),
-                                                         model.RepositoryMetadata.table.c.tools_functionally_correct == true())))) \
+                                            or_(model.RepositoryMetadata.table.c.includes_tools == false(),
+                                                and_(model.RepositoryMetadata.table.c.includes_tools == true(),
+                                                     model.RepositoryMetadata.table.c.tools_functionally_correct == true())))) \
                                .join(model.User.table)
 
 
@@ -247,9 +247,9 @@ class RepositoriesReviewedByMeGrid(RepositoriesWithReviewsGrid):
 
     columns = [
         RepositoriesWithReviewsGrid.NameColumn("Repository name",
-                                                key="name",
-                                                link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                                attach_popup=True),
+                                               key="name",
+                                               link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                               attach_popup=True),
         RepositoriesWithReviewsGrid.UserColumn("Owner", attach_popup=False),
         RepositoriesWithReviewsGrid.WithReviewsRevisionColumn("Reviewed revisions"),
         RepositoriesWithReviewsGrid.ReviewersColumn("Reviewers", attach_popup=False),
@@ -257,15 +257,15 @@ class RepositoriesReviewedByMeGrid(RepositoriesWithReviewsGrid):
         RepositoriesWithReviewsGrid.ApprovedColumn("Approved", attach_popup=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
                                .filter(and_(model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.deprecated == false())) \
+                                            model.Repository.table.c.deprecated == false())) \
                                .join((model.RepositoryReview.table, model.RepositoryReview.table.c.repository_id == model.Repository.table.c.id)) \
                                .filter(model.RepositoryReview.table.c.user_id == trans.user.id) \
                                .join((model.User.table, model.User.table.c.id == model.RepositoryReview.table.c.user_id)) \
@@ -296,10 +296,10 @@ class RepositoryReviewsByUserGrid(grids.Grid):
             else:
                 rval += 'browse_review'
             revision_label = hg_util.get_revision_label(trans.app,
-                                                         review.repository,
-                                                         review.changeset_revision,
-                                                         include_date=True,
-                                                         include_hash=False)
+                                                        review.repository,
+                                                        review.changeset_revision,
+                                                        include_date=True,
+                                                        include_hash=False)
             rval += '?id=%s">%s</a>' % (encoded_review_id, revision_label)
             return rval
 
@@ -327,14 +327,14 @@ class RepositoryReviewsByUserGrid(grids.Grid):
     use_hide_message = False
     columns = [
         RepositoryNameColumn("Repository Name",
-                              model_class=model.Repository,
-                              key="Repository.name",
-                              link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                              attach_popup=True),
+                             model_class=model.Repository,
+                             key="Repository.name",
+                             link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                             attach_popup=True),
         RepositoryDescriptionColumn("Description",
-                                     model_class=model.Repository,
-                                     key="Repository.description",
-                                     attach_popup=False),
+                                    model_class=model.Repository,
+                                    key="Repository.description",
+                                    attach_popup=False),
         RevisionColumn("Revision", attach_popup=False),
         RatingColumn("Rating", attach_popup=False),
     ]
@@ -343,9 +343,9 @@ class RepositoryReviewsByUserGrid(grids.Grid):
     global_actions = []
     operations = [
         grids.GridOperation("Inspect repository revisions",
-                             allow_multiple=False,
-                             condition=(lambda item: not item.deleted),
-                             async_compatible=False)
+                            allow_multiple=False,
+                            condition=(lambda item: not item.deleted),
+                            async_compatible=False)
     ]
     standard_filters = []
     num_rows_per_page = 50
@@ -356,7 +356,7 @@ class RepositoryReviewsByUserGrid(grids.Grid):
         user_id = trans.security.decode_id(kwd['id'])
         return trans.sa_session.query(model.RepositoryReview) \
                                .filter(and_(model.RepositoryReview.table.c.deleted == false(),
-                                              model.RepositoryReview.table.c.user_id == user_id)) \
+                                            model.RepositoryReview.table.c.user_id == user_id)) \
                                .join((model.Repository.table, model.RepositoryReview.table.c.repository_id == model.Repository.table.c.id)) \
                                .filter(model.Repository.table.c.deprecated == false())
 
@@ -365,24 +365,24 @@ class ReviewedRepositoriesIOwnGrid(RepositoriesWithReviewsGrid):
     title = "Reviewed repositories I own"
     columns = [
         RepositoriesWithReviewsGrid.NameColumn("Repository name",
-                                                key="name",
-                                                link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                                attach_popup=True),
+                                               key="name",
+                                               link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                               attach_popup=True),
         RepositoriesWithReviewsGrid.WithReviewsRevisionColumn("Reviewed revisions"),
         RepositoriesWithReviewsGrid.WithoutReviewsRevisionColumn("Revisions for review"),
         RepositoriesWithReviewsGrid.ReviewersColumn("Reviewers", attach_popup=False),
         RepositoryGrid.DeprecatedColumn("Deprecated")
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = [
         grids.GridOperation("Inspect repository revisions",
-                             allow_multiple=False,
-                             condition=(lambda item: not item.deleted),
-                             async_compatible=False)
+                            allow_multiple=False,
+                            condition=(lambda item: not item.deleted),
+                            async_compatible=False)
     ]
 
     def build_initial_query(self, trans, **kwd):
@@ -402,34 +402,34 @@ class RepositoriesWithNoToolTestsGrid(RepositoriesWithoutReviewsGrid):
     title = "Repositories that contain tools with no tests or test data"
     columns = [
         RepositoriesWithoutReviewsGrid.NameColumn("Repository name",
-                                                   key="name",
-                                                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                                   attach_popup=True),
+                                                  key="name",
+                                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                                  attach_popup=True),
         RepositoriesWithoutReviewsGrid.DescriptionColumn("Synopsis",
-                                                          key="description",
-                                                          attach_popup=False),
+                                                         key="description",
+                                                         attach_popup=False),
         RepositoriesWithoutReviewsGrid.WithoutReviewsRevisionColumn("Revisions for review"),
         RepositoriesWithoutReviewsGrid.UserColumn("Owner",
-                                                   model_class=model.User,
-                                                   attach_popup=False,
-                                                   key="User.username")
+                                                  model_class=model.User,
+                                                  attach_popup=False,
+                                                  key="User.username")
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name, description",
-                                                cols_to_filter=[columns[0], columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = [grids.GridOperation("Inspect repository revisions",
-                                        allow_multiple=False,
-                                        condition=(lambda item: not item.deleted),
-                                        async_compatible=False)]
+                                      allow_multiple=False,
+                                      condition=(lambda item: not item.deleted),
+                                      async_compatible=False)]
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
                                .filter(and_(model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.deprecated == false())) \
+                                            model.Repository.table.c.deprecated == false())) \
                                .join(model.RepositoryMetadata.table) \
                                .filter(and_(model.RepositoryMetadata.table.c.downloadable == true(),
-                                              model.RepositoryMetadata.table.c.includes_tools == true(),
-                                              model.RepositoryMetadata.table.c.tools_functionally_correct == false())) \
+                                            model.RepositoryMetadata.table.c.includes_tools == true(),
+                                            model.RepositoryMetadata.table.c.tools_functionally_correct == false())) \
                                .join(model.User.table)

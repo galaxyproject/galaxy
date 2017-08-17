@@ -68,21 +68,21 @@ class UserGrid(grids.Grid):
             if column_filter == 'All':
                 return query
             return query.filter(and_(model.Tool.table.c.user_id == model.User.table.c.id,
-                                       model.User.table.c.email == column_filter))
+                                     model.User.table.c.email == column_filter))
 
     title = "Users"
     model_class = model.User
     default_sort_key = "email"
     columns = [
         UserLoginColumn("Email",
-                         key="email",
-                         link=(lambda item: dict(operation="information", id=item.id)),
-                         attach_popup=True,
-                         filterable="advanced"),
-        UserNameColumn("User Name",
-                        key="username",
-                        attach_popup=False,
+                        key="email",
+                        link=(lambda item: dict(operation="information", id=item.id)),
+                        attach_popup=True,
                         filterable="advanced"),
+        UserNameColumn("User Name",
+                       key="username",
+                       attach_popup=False,
+                       filterable="advanced"),
         GroupsColumn("Groups", attach_popup=False),
         RolesColumn("Roles", attach_popup=False),
         ExternalColumn("External", attach_popup=False),
@@ -90,28 +90,28 @@ class UserGrid(grids.Grid):
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         EmailColumn("Email",
-                     key="email",
-                     visible=False)
+                    key="email",
+                    visible=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search",
-                                                cols_to_filter=[columns[0], columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     global_actions = [
         grids.GridAction("Create new user",
-                          dict(controller='admin', action='users', operation='create'))
+                         dict(controller='admin', action='users', operation='create'))
     ]
     operations = [
         grids.GridOperation("Manage Roles and Groups",
-                             condition=(lambda item: not item.deleted),
-                             allow_multiple=False,
-                             url_args=dict(action="manage_roles_and_groups_for_user")),
+                            condition=(lambda item: not item.deleted),
+                            allow_multiple=False,
+                            url_args=dict(action="manage_roles_and_groups_for_user")),
         grids.GridOperation("Reset Password",
-                             condition=(lambda item: not item.deleted),
-                             allow_multiple=True,
-                             allow_popup=False,
-                             url_args=dict(action="reset_user_password"))
+                            condition=(lambda item: not item.deleted),
+                            allow_multiple=True,
+                            allow_popup=False,
+                            url_args=dict(action="reset_user_password"))
     ]
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
@@ -177,51 +177,51 @@ class RoleGrid(grids.Grid):
     default_sort_key = "name"
     columns = [
         NameColumn("Name",
-                    key="name",
-                    link=(lambda item: dict(operation="Manage role associations", id=item.id)),
-                    attach_popup=True,
-                    filterable="advanced"),
+                   key="name",
+                   link=(lambda item: dict(operation="Manage role associations", id=item.id)),
+                   attach_popup=True,
+                   filterable="advanced"),
         DescriptionColumn("Description",
-                           key='description',
-                           attach_popup=False,
-                           filterable="advanced"),
+                          key='description',
+                          attach_popup=False,
+                          filterable="advanced"),
         GroupsColumn("Groups", attach_popup=False),
         RepositoriesColumn("Repositories", attach_popup=False),
         UsersColumn("Users", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced")
+                            key="deleted",
+                            visible=False,
+                            filterable="advanced")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     global_actions = [
         grids.GridAction("Add new role",
-                          dict(controller='admin', action='roles', operation='create'))
+                         dict(controller='admin', action='roles', operation='create'))
     ]
     # Repository admin roles currently do not have any operations since they are managed automatically based
     # on other events.  For example, if a repository is renamed, its associated admin role is automatically
     # renamed accordingly and if a repository is deleted its associated admin role is automatically deleted.
     operations = [grids.GridOperation("Rename",
-                                        condition=(lambda item: not item.deleted and not item.is_repository_admin_role),
-                                        allow_multiple=False,
-                                        url_args=dict(action="rename_role")),
-                   grids.GridOperation("Delete",
-                                        condition=(lambda item: not item.deleted and not item.is_repository_admin_role),
-                                        allow_multiple=True,
-                                        url_args=dict(action="mark_role_deleted")),
-                   grids.GridOperation("Undelete",
-                                        condition=(lambda item: item.deleted and not item.is_repository_admin_role),
-                                        allow_multiple=True,
-                                        url_args=dict(action="undelete_role")),
-                   grids.GridOperation("Purge",
-                                        condition=(lambda item: item.deleted and not item.is_repository_admin_role),
-                                        allow_multiple=True,
-                                        url_args=dict(action="purge_role"))]
+                                      condition=(lambda item: not item.deleted and not item.is_repository_admin_role),
+                                      allow_multiple=False,
+                                      url_args=dict(action="rename_role")),
+                  grids.GridOperation("Delete",
+                                      condition=(lambda item: not item.deleted and not item.is_repository_admin_role),
+                                      allow_multiple=True,
+                                      url_args=dict(action="mark_role_deleted")),
+                  grids.GridOperation("Undelete",
+                                      condition=(lambda item: item.deleted and not item.is_repository_admin_role),
+                                      allow_multiple=True,
+                                      url_args=dict(action="undelete_role")),
+                  grids.GridOperation("Purge",
+                                      condition=(lambda item: item.deleted and not item.is_repository_admin_role),
+                                      allow_multiple=True,
+                                      url_args=dict(action="purge_role"))]
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
         grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
@@ -267,43 +267,43 @@ class GroupGrid(grids.Grid):
     default_sort_key = "name"
     columns = [
         NameColumn("Name",
-                    key="name",
-                    link=(lambda item: dict(operation="Manage users and roles", id=item.id)),
-                    attach_popup=True),
+                   key="name",
+                   link=(lambda item: dict(operation="Manage users and roles", id=item.id)),
+                   attach_popup=True),
         UsersColumn("Users", attach_popup=False),
         RolesColumn("Roles", attach_popup=False),
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced")
+                            key="deleted",
+                            visible=False,
+                            filterable="advanced")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     global_actions = [
         grids.GridAction("Add new group",
-                          dict(controller='admin', action='groups', operation='create'))
+                         dict(controller='admin', action='groups', operation='create'))
     ]
     operations = [grids.GridOperation("Rename",
-                                        condition=(lambda item: not item.deleted),
-                                        allow_multiple=False,
-                                        url_args=dict(action="rename_group")),
-                   grids.GridOperation("Delete",
-                                        condition=(lambda item: not item.deleted),
-                                        allow_multiple=True,
-                                        url_args=dict(action="mark_group_deleted")),
-                   grids.GridOperation("Undelete",
-                                        condition=(lambda item: item.deleted),
-                                        allow_multiple=True,
-                                        url_args=dict(action="undelete_group")),
-                   grids.GridOperation("Purge",
-                                        condition=(lambda item: item.deleted),
-                                        allow_multiple=True,
-                                        url_args=dict(action="purge_group"))]
+                                      condition=(lambda item: not item.deleted),
+                                      allow_multiple=False,
+                                      url_args=dict(action="rename_group")),
+                  grids.GridOperation("Delete",
+                                      condition=(lambda item: not item.deleted),
+                                      allow_multiple=True,
+                                      url_args=dict(action="mark_group_deleted")),
+                  grids.GridOperation("Undelete",
+                                      condition=(lambda item: item.deleted),
+                                      allow_multiple=True,
+                                      url_args=dict(action="undelete_group")),
+                  grids.GridOperation("Purge",
+                                      condition=(lambda item: item.deleted),
+                                      allow_multiple=True,
+                                      url_args=dict(action="purge_group"))]
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
         grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
@@ -317,13 +317,13 @@ class ManageCategoryGrid(CategoryGrid):
     columns = [col for col in CategoryGrid.columns]
     # Override the NameColumn to include an Edit link
     columns[0] = CategoryGrid.NameColumn("Name",
-                                            key="Category.name",
-                                            link=(lambda item: dict(operation="Edit", id=item.id)),
-                                            model_class=model.Category,
-                                            attach_popup=False)
+                                         key="Category.name",
+                                         link=(lambda item: dict(operation="Edit", id=item.id)),
+                                         model_class=model.Category,
+                                         attach_popup=False)
     global_actions = [
         grids.GridAction("Add new category",
-                          dict(controller='admin', action='manage_categories', operation='create'))
+                         dict(controller='admin', action='manage_categories', operation='create'))
     ]
 
 
@@ -337,32 +337,32 @@ class AdminRepositoryGrid(RepositoryGrid):
             return ''
 
     columns = [RepositoryGrid.NameColumn("Name",
-                                           key="name",
-                                           link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                           attach_popup=True),
-                RepositoryGrid.HeadsColumn("Heads"),
-                RepositoryGrid.UserColumn("Owner",
-                                           model_class=model.User,
-                                           link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
-                                           attach_popup=False,
-                                           key="User.username"),
-                RepositoryGrid.DeprecatedColumn("Deprecated", key="deprecated", attach_popup=False),
-                # Columns that are valid for filtering but are not visible.
-                DeletedColumn("Deleted", key="deleted", attach_popup=False)]
+                                         key="name",
+                                         link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                         attach_popup=True),
+               RepositoryGrid.HeadsColumn("Heads"),
+               RepositoryGrid.UserColumn("Owner",
+                                         model_class=model.User,
+                                         link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
+                                         attach_popup=False,
+                                         key="User.username"),
+               RepositoryGrid.DeprecatedColumn("Deprecated", key="deprecated", attach_popup=False),
+               # Columns that are valid for filtering but are not visible.
+               DeletedColumn("Deleted", key="deleted", attach_popup=False)]
     columns.append(grids.MulticolFilterColumn("Search repository name",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = [operation for operation in RepositoryGrid.operations]
     operations.append(grids.GridOperation("Delete",
-                                            allow_multiple=False,
-                                            condition=(lambda item: not item.deleted),
-                                            async_compatible=False))
+                                          allow_multiple=False,
+                                          condition=(lambda item: not item.deleted),
+                                          async_compatible=False))
     operations.append(grids.GridOperation("Undelete",
-                                            allow_multiple=False,
-                                            condition=(lambda item: item.deleted),
-                                            async_compatible=False))
+                                          allow_multiple=False,
+                                          condition=(lambda item: item.deleted),
+                                          async_compatible=False))
     standard_filters = []
     default_filter = {}
 
@@ -393,10 +393,10 @@ class RepositoryMetadataGrid(grids.Grid):
         def get_value(self, trans, grid, repository_metadata):
             repository = repository_metadata.repository
             return hg_util.get_revision_label(trans.app,
-                                               repository,
-                                               repository_metadata.changeset_revision,
-                                               include_date=True,
-                                               include_hash=True)
+                                              repository,
+                                              repository_metadata.changeset_revision,
+                                              include_date=True,
+                                              include_hash=True)
 
     class ToolsColumn(grids.TextColumn):
 
@@ -473,13 +473,13 @@ class RepositoryMetadataGrid(grids.Grid):
     use_hide_message = False
     columns = [
         IdColumn("Id",
-                  visible=False,
-                  attach_popup=False),
+                 visible=False,
+                 attach_popup=False),
         NameColumn("Name",
-                    key="name",
-                    model_class=model.Repository,
-                    link=(lambda item: dict(operation="view_or_manage_repository_revision", id=item.id)),
-                    attach_popup=True),
+                   key="name",
+                   model_class=model.Repository,
+                   link=(lambda item: dict(operation="view_or_manage_repository_revision", id=item.id)),
+                   attach_popup=True),
         OwnerColumn("Owner", attach_popup=False),
         RevisionColumn("Revision", attach_popup=False),
         ToolsColumn("Tools", attach_popup=False),
@@ -490,15 +490,15 @@ class RepositoryMetadataGrid(grids.Grid):
         MaliciousColumn("Malicious", attach_popup=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name",
-                                                cols_to_filter=[columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = [grids.GridOperation("Delete",
-                                        allow_multiple=False,
-                                        allow_popup=True,
-                                        async_compatible=False,
-                                        confirm="Repository metadata records cannot be recovered after they are deleted. Click OK to delete the selected items.")]
+                                      allow_multiple=False,
+                                      allow_popup=True,
+                                      async_compatible=False,
+                                      confirm="Repository metadata records cannot be recovered after they are deleted. Click OK to delete the selected items.")]
     standard_filters = []
     default_filter = {}
     use_paging = False

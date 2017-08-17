@@ -229,16 +229,16 @@ def _future_expose_api(func, to_json=True, user_required=True, user_or_session_r
         # errors passed in from trans._authenicate_api
         if trans.error_message:
             return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
-                                         err_msg=trans.error_message)
+                                        err_msg=trans.error_message)
         if trans.anonymous:
             # error if anon and user required
             if user_required:
                 return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
-                                             err_msg="API authentication required for this request")
+                                            err_msg="API authentication required for this request")
             # error if anon and no session
             if not trans.galaxy_session and user_or_session_required:
                 return __api_error_response(trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
-                                             err_msg="API authentication required for this request")
+                                            err_msg="API authentication required for this request")
 
         if trans.request.body:
             try:

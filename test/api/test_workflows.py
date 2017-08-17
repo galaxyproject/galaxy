@@ -1670,9 +1670,9 @@ test_data:
         hda4 = self.dataset_populator.new_dataset(history_id, content="10 11 12")
         parameters = {
             "0": {"input": {"batch": True, "values": [{"id" : hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"},
-                                                         {"id" : hda2.get("id"), "hid": hda2.get("hid"), "src": "hda"},
-                                                         {"id" : hda3.get("id"), "hid": hda2.get("hid"), "src": "hda"},
-                                                         {"id" : hda4.get("id"), "hid": hda2.get("hid"), "src": "hda"}]}},
+                                                      {"id" : hda2.get("id"), "hid": hda2.get("hid"), "src": "hda"},
+                                                      {"id" : hda3.get("id"), "hid": hda2.get("hid"), "src": "hda"},
+                                                      {"id" : hda4.get("id"), "hid": hda2.get("hid"), "src": "hda"}]}},
             "1": {"input": {"batch": False, "values": [{"id" : hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"}]}, "exp": "2"}}
         workflow_request = {
             "history_id" : history_id,
@@ -1776,7 +1776,7 @@ steps:
             seed="moo",
         )
         params = dumps({str(steps[0]["id"]): dict(num_lines=1, seed_source=seed_source),
-                          str(steps[1]["id"]): dict(num_lines=1, seed_source=seed_source)})
+                        str(steps[1]["id"]): dict(num_lines=1, seed_source=seed_source)})
         workflow_request["parameters"] = params
         run_workflow_response = self._post("workflows", data=workflow_request)
         self._assert_status_code_is(run_workflow_response, 200)

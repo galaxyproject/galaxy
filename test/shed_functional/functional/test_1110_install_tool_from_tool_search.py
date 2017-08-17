@@ -50,132 +50,132 @@ class TestToolSearchAndInstall(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         global running_standalone
         repository = self.get_or_create_repository(name=bwa_base_repository_name,
-                                                    description=bwa_base_repository_description,
-                                                    long_description=bwa_base_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=bwa_base_repository_description,
+                                                   long_description=bwa_base_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         if self.repository_is_new(repository):
             running_standalone = True
             self.upload_file(repository,
-                              filename='bwa/bwa_base.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded BWA tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='bwa/bwa_base.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded BWA tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0010_create_bwa_color_repository(self):
         '''Create and populate bwa_color_0090.'''
         category = self.create_category(name=category_name, description=category_description)
         global running_standalone
         repository = self.get_or_create_repository(name=bwa_color_repository_name,
-                                                    description=bwa_color_repository_description,
-                                                    long_description=bwa_color_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=bwa_color_repository_description,
+                                                   long_description=bwa_color_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         if self.repository_is_new(repository):
             running_standalone = True
             self.upload_file(repository,
-                              filename='bwa/bwa_color.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded BWA color tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='bwa/bwa_color.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded BWA color tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0015_create_emboss_datatypes_repository(self):
         '''Create and populate emboss_datatypes_0090.'''
         category = self.create_category(name=category_name, description=category_description)
         global running_standalone
         repository = self.get_or_create_repository(name=emboss_datatypes_repository_name,
-                                                    description=emboss_datatypes_repository_description,
-                                                    long_description=emboss_datatypes_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=emboss_datatypes_repository_description,
+                                                   long_description=emboss_datatypes_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         if self.repository_is_new(repository):
             running_standalone = True
             self.upload_file(repository,
-                              filename='emboss/datatypes/datatypes_conf.xml',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded datatypes_conf.xml.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='emboss/datatypes/datatypes_conf.xml',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=False,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded datatypes_conf.xml.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0020_create_emboss_repository(self):
         '''Create and populate emboss_0090.'''
         category = self.create_category(name=category_name, description=category_description)
         global running_standalone
         repository = self.get_or_create_repository(name=emboss_repository_name,
-                                                    description=emboss_repository_description,
-                                                    long_description=emboss_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=emboss_repository_description,
+                                                   long_description=emboss_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         if self.repository_is_new(repository):
             running_standalone = True
             self.upload_file(repository,
-                              filename='emboss/emboss.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded emboss tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='emboss/emboss.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=False,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded emboss tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0025_create_filtering_repository(self):
         '''Create and populate filtering_0090.'''
         category = self.create_category(name=category_name, description=category_description)
         global running_standalone
         repository = self.get_or_create_repository(name=filtering_repository_name,
-                                                    description=filtering_repository_description,
-                                                    long_description=filtering_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=filtering_repository_description,
+                                                   long_description=filtering_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         if self.repository_is_new(repository):
             running_standalone = True
             self.upload_file(repository,
-                              filename='filtering/filtering_1.1.0.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded filtering 1.1.0 tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='filtering/filtering_1.1.0.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded filtering 1.1.0 tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0030_create_freebayes_repository(self):
         '''Create and populate freebayes_0090.'''
         category = self.create_category(name=category_name, description=category_description)
         global running_standalone
         repository = self.get_or_create_repository(name=freebayes_repository_name,
-                                                    description=freebayes_repository_description,
-                                                    long_description=freebayes_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=freebayes_repository_description,
+                                                   long_description=freebayes_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         if self.repository_is_new(repository):
             running_standalone = True
             self.upload_file(repository,
-                              filename='freebayes/freebayes.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded freebayes tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='freebayes/freebayes.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded freebayes tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0035_create_and_upload_dependency_definitions(self):
         '''Create and upload repository dependency definitions.'''
@@ -217,11 +217,11 @@ class TestToolSearchAndInstall(ShedTwillTestCase):
         # Installed: freebayes
         # Never installed: filtering, emboss, emboss_datatypes, bwa_color, bwa_base
         self.install_repository(freebayes_repository_name,
-                                 common.test_user_1_name,
-                                 category_name,
-                                 install_tool_dependencies=False,
-                                 install_repository_dependencies=False,
-                                 new_tool_panel_section_label='freebayes_1090')
+                                common.test_user_1_name,
+                                category_name,
+                                install_tool_dependencies=False,
+                                install_repository_dependencies=False,
+                                new_tool_panel_section_label='freebayes_1090')
         installed_repositories = [(freebayes_repository_name, common.test_user_1_name)]
         strings_displayed = ['freebayes_0090']
         strings_not_displayed = ['filtering_0090', 'emboss_0090', 'emboss_datatypes_0090', 'bwa_color_0090', 'bwa_base_0090']
@@ -236,13 +236,13 @@ class TestToolSearchAndInstall(ShedTwillTestCase):
         # Deactivated: filtering
         # Never installed: emboss, emboss_datatypes, bwa_color, bwa_base
         self.install_repository(filtering_repository_name,
-                                 common.test_user_1_name,
-                                 category_name,
-                                 install_tool_dependencies=False,
-                                 install_repository_dependencies=False,
-                                 new_tool_panel_section_label='filtering_1090')
+                                common.test_user_1_name,
+                                category_name,
+                                install_tool_dependencies=False,
+                                install_repository_dependencies=False,
+                                new_tool_panel_section_label='filtering_1090')
         installed_repositories = [(filtering_repository_name, common.test_user_1_name),
-                                   (freebayes_repository_name, common.test_user_1_name)]
+                                  (freebayes_repository_name, common.test_user_1_name)]
         strings_displayed = ['filtering_0090', 'freebayes_0090']
         strings_not_displayed = ['emboss_0090', 'emboss_datatypes_0090', 'bwa_color_0090', 'bwa_base_0090']
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
@@ -261,11 +261,11 @@ class TestToolSearchAndInstall(ShedTwillTestCase):
         # Uninstalled: emboss_datatypes
         # Never installed: emboss, bwa_color, bwa_base
         self.install_repository(emboss_datatypes_repository_name,
-                                 common.test_user_1_name,
-                                 category_name,
-                                 includes_tools_for_display_in_tool_panel=False)
+                                common.test_user_1_name,
+                                category_name,
+                                includes_tools_for_display_in_tool_panel=False)
         installed_repositories = [(emboss_datatypes_repository_name, common.test_user_1_name),
-                                   (freebayes_repository_name, common.test_user_1_name)]
+                                  (freebayes_repository_name, common.test_user_1_name)]
         strings_displayed = ['emboss_datatypes_0090', 'freebayes_0090']
         strings_not_displayed = ['filtering_0090', 'emboss_0090', 'bwa_color_0090', 'bwa_base_0090']
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
@@ -283,8 +283,8 @@ class TestToolSearchAndInstall(ShedTwillTestCase):
         bwa_base_revision = self.get_repository_tip(bwa_base_repository)
         bwa_color_revision = self.get_repository_tip(bwa_color_repository)
         self.search_for_valid_tools(search_fields={'tool_id': 'bwa'},
-                                     exact_matches=False, from_galaxy=True,
-                                     strings_displayed=['bwa_color_0090', 'bwa_base_0090', bwa_base_revision, bwa_color_revision])
+                                    exact_matches=False, from_galaxy=True,
+                                    strings_displayed=['bwa_color_0090', 'bwa_base_0090', bwa_base_revision, bwa_color_revision])
         strings_displayed = ['freebayes_0090', 'emboss_0090', 'filtering_0090']
         strings_displayed.extend(['bwa_color_0090', 'bwa_base_0090'])
         strings_displayed.extend(['bwa', 'Handle', 'tool dependencies'])
@@ -295,17 +295,17 @@ class TestToolSearchAndInstall(ShedTwillTestCase):
         # After this test, the repositories should be in the following state:
         # Installed: bwa_color, bwa_base, emboss_datatypes, emboss, filtering, freebayes
         self.install_repositories_from_search_results(repositories_to_install,
-                                                       install_repository_dependencies='True',
-                                                       install_tool_dependencies=False,
-                                                       new_tool_panel_section_label='bwa_1090',
-                                                       strings_displayed=strings_displayed)
+                                                      install_repository_dependencies='True',
+                                                      install_tool_dependencies=False,
+                                                      new_tool_panel_section_label='bwa_1090',
+                                                      strings_displayed=strings_displayed)
 
         installed_repositories = [(emboss_repository_name, common.test_user_1_name),
-                                   (filtering_repository_name, common.test_user_1_name),
-                                   (bwa_color_repository_name, common.test_user_1_name),
-                                   (bwa_base_repository_name, common.test_user_1_name),
-                                   (emboss_datatypes_repository_name, common.test_user_1_name),
-                                   (freebayes_repository_name, common.test_user_1_name)]
+                                  (filtering_repository_name, common.test_user_1_name),
+                                  (bwa_color_repository_name, common.test_user_1_name),
+                                  (bwa_base_repository_name, common.test_user_1_name),
+                                  (emboss_datatypes_repository_name, common.test_user_1_name),
+                                  (freebayes_repository_name, common.test_user_1_name)]
         strings_displayed = ['emboss_datatypes_0090', 'filtering_0090', 'emboss_0090', 'bwa_color_0090', 'bwa_base_0090', 'freebayes_0090']
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
         self.verify_installed_repositories(installed_repositories)

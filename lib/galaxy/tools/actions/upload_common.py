@@ -31,7 +31,7 @@ def persist_uploads(params):
                 local_filename = util.mkstemp_ln(f.file.name, 'upload_file_data_')
                 f.file.close()
                 upload_dataset['file_data'] = dict(filename=f.filename,
-                                                    local_filename=local_filename)
+                                                   local_filename=local_filename)
             elif type(f) == dict and 'local_filename' not in f:
                 raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
             if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
@@ -126,11 +126,11 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     if not history:
         history = trans.history
     hda = trans.app.model.HistoryDatasetAssociation(name=uploaded_dataset.name,
-                                                     extension=uploaded_dataset.file_type,
-                                                     dbkey=uploaded_dataset.dbkey,
-                                                     history=history,
-                                                     create_dataset=True,
-                                                     sa_session=trans.sa_session)
+                                                    extension=uploaded_dataset.file_type,
+                                                    dbkey=uploaded_dataset.dbkey,
+                                                    history=history,
+                                                    create_dataset=True,
+                                                    sa_session=trans.sa_session)
     if state:
         hda.state = state
     else:
@@ -173,12 +173,12 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
         trans.sa_session.flush()
         trans.app.security_agent.copy_library_permissions(trans, folder, ld)
     ldda = trans.app.model.LibraryDatasetDatasetAssociation(name=uploaded_dataset.name,
-                                                             extension=uploaded_dataset.file_type,
-                                                             dbkey=uploaded_dataset.dbkey,
-                                                             library_dataset=ld,
-                                                             user=trans.user,
-                                                             create_dataset=True,
-                                                             sa_session=trans.sa_session)
+                                                            extension=uploaded_dataset.file_type,
+                                                            dbkey=uploaded_dataset.dbkey,
+                                                            library_dataset=ld,
+                                                            user=trans.user,
+                                                            create_dataset=True,
+                                                            sa_session=trans.sa_session)
     if uploaded_dataset.get('tag_using_filenames', False):
         tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
         tag_manager = tags.GalaxyTagManager(trans.sa_session)
@@ -313,13 +313,13 @@ def create_paramfile(trans, uploaded_datasets):
             trans.sa_session.add(data)
             trans.sa_session.flush()
             json = dict(file_type=uploaded_dataset.file_type,
-                         dataset_id=data.dataset.id,
-                         dbkey=uploaded_dataset.dbkey,
-                         type=uploaded_dataset.type,
-                         metadata=uploaded_dataset.metadata,
-                         primary_file=uploaded_dataset.primary_file,
-                         composite_file_paths=uploaded_dataset.composite_files,
-                         composite_files=dict((k, v.__dict__) for k, v in data.datatype.get_composite_files(data).items()))
+                        dataset_id=data.dataset.id,
+                        dbkey=uploaded_dataset.dbkey,
+                        type=uploaded_dataset.type,
+                        metadata=uploaded_dataset.metadata,
+                        primary_file=uploaded_dataset.primary_file,
+                        composite_file_paths=uploaded_dataset.composite_files,
+                        composite_files=dict((k, v.__dict__) for k, v in data.datatype.get_composite_files(data).items()))
         else:
             try:
                 is_binary = uploaded_dataset.datatype.is_binary
@@ -338,21 +338,21 @@ def create_paramfile(trans, uploaded_datasets):
             except:
                 purge_source = True
             json = dict(file_type=uploaded_dataset.file_type,
-                         ext=uploaded_dataset.ext,
-                         name=uploaded_dataset.name,
-                         dataset_id=data.dataset.id,
-                         dbkey=uploaded_dataset.dbkey,
-                         type=uploaded_dataset.type,
-                         is_binary=is_binary,
-                         link_data_only=link_data_only,
-                         uuid=uuid_str,
-                         to_posix_lines=getattr(uploaded_dataset, "to_posix_lines", True),
-                         auto_decompress=getattr(uploaded_dataset, "auto_decompress", True),
-                         purge_source=purge_source,
-                         space_to_tab=uploaded_dataset.space_to_tab,
-                         in_place=trans.app.config.external_chown_script is None,
-                         check_content=trans.app.config.check_upload_content,
-                         path=uploaded_dataset.path)
+                        ext=uploaded_dataset.ext,
+                        name=uploaded_dataset.name,
+                        dataset_id=data.dataset.id,
+                        dbkey=uploaded_dataset.dbkey,
+                        type=uploaded_dataset.type,
+                        is_binary=is_binary,
+                        link_data_only=link_data_only,
+                        uuid=uuid_str,
+                        to_posix_lines=getattr(uploaded_dataset, "to_posix_lines", True),
+                        auto_decompress=getattr(uploaded_dataset, "auto_decompress", True),
+                        purge_source=purge_source,
+                        space_to_tab=uploaded_dataset.space_to_tab,
+                        in_place=trans.app.config.external_chown_script is None,
+                        check_content=trans.app.config.check_upload_content,
+                        path=uploaded_dataset.path)
             # TODO: This will have to change when we start bundling inputs.
             # Also, in_place above causes the file to be left behind since the
             # user cannot remove it unless the parent directory is writable.

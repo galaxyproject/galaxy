@@ -104,7 +104,7 @@ def main():
 
     out = bx.align.lav.Writer(open(lav_out, 'w'),
                               attributes={"name_format_1": primaryFile,
-                                           "name_format_2": secondaryFile})
+                                          "name_format_2": secondaryFile})
 
     axtsRead = 0
     axtsWritten = 0

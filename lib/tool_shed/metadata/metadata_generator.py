@@ -31,9 +31,9 @@ log = logging.getLogger(__name__)
 class MetadataGenerator(object):
 
     def __init__(self, app, repository=None, changeset_revision=None, repository_clone_url=None,
-                  shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
-                  resetting_all_metadata_on_repository=False, updating_installed_repository=False,
-                  persist=False, metadata_dict=None, user=None):
+                 shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
+                 resetting_all_metadata_on_repository=False, updating_installed_repository=False,
+                 persist=False, metadata_dict=None, user=None):
         self.app = app
         self.user = user
         self.repository = repository
@@ -94,12 +94,12 @@ class MetadataGenerator(object):
         self.invalid_file_tups = []
         self.sa_session = app.model.context.current
         self.NOT_TOOL_CONFIGS = [suc.DATATYPES_CONFIG_FILENAME,
-                                  rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
-                                  rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
-                                  suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME]
+                                 rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+                                 rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
+                                 suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME]
 
     def generate_data_manager_metadata(self, repo_dir, data_manager_config_filename, metadata_dict,
-                                        shed_config_dict=None):
+                                       shed_config_dict=None):
         """
         Update the received metadata_dict with information from the parsed data_manager_config_filename.
         """
@@ -115,13 +115,13 @@ class MetadataGenerator(object):
             repo_files_directory = repo_path
         relative_data_manager_dir = util.relpath(os.path.split(data_manager_config_filename)[0], repo_dir)
         rel_data_manager_config_filename = os.path.join(relative_data_manager_dir,
-                                                         os.path.split(data_manager_config_filename)[1])
+                                                        os.path.split(data_manager_config_filename)[1])
         data_managers = {}
         invalid_data_managers = []
         data_manager_metadata = {'config_filename': rel_data_manager_config_filename,
-                                  'data_managers': data_managers,
-                                  'invalid_data_managers': invalid_data_managers,
-                                  'error_messages': []}
+                                 'data_managers': data_managers,
+                                 'invalid_data_managers': invalid_data_managers,
+                                 'error_messages': []}
         metadata_dict['data_manager'] = data_manager_metadata
         tree, error_message = xml_util.parse_xml(data_manager_config_filename)
         if tree is None:
@@ -147,7 +147,7 @@ class MetadataGenerator(object):
             if data_manager_id is None:
                 log.error('Data Manager entry is missing id attribute in "%s".' % (data_manager_config_filename))
                 invalid_data_managers.append({'index': i,
-                                                'error_message': 'Data Manager entry is missing id attribute'})
+                                              'error_message': 'Data Manager entry is missing id attribute'})
                 continue
             # FIXME: default behavior is to fall back to tool.name.
             data_manager_name = data_manager_elem.get('name', data_manager_id)
@@ -157,7 +157,7 @@ class MetadataGenerator(object):
             if tool_file is None:
                 log.error('Data Manager entry is missing tool_file attribute in "%s".' % (data_manager_config_filename))
                 invalid_data_managers.append({'index': i,
-                                                'error_message': 'Data Manager entry is missing tool_file attribute'})
+                                              'error_message': 'Data Manager entry is missing tool_file attribute'})
                 continue
             else:
                 bad_data_table = False
@@ -166,7 +166,7 @@ class MetadataGenerator(object):
                     if data_table_name is None:
                         log.error('Data Manager data_table entry is missing name attribute in "%s".' % (data_manager_config_filename))
                         invalid_data_managers.append({'index': i,
-                                                        'error_message': 'Data Manager entry is missing name attribute'})
+                                                      'error_message': 'Data Manager entry is missing name attribute'})
                         bad_data_table = True
                         break
                     else:
@@ -179,15 +179,15 @@ class MetadataGenerator(object):
             if tool is None:
                 log.error("Unable to determine tools metadata for '%s'." % (data_manager_metadata_tool_file))
                 invalid_data_managers.append({'index': i,
-                                                'error_message': 'Unable to determine tools metadata'})
+                                              'error_message': 'Unable to determine tools metadata'})
                 continue
             data_managers[data_manager_id] = {'id': data_manager_id,
-                                                 'name': data_manager_name,
-                                                 'guid': guid,
-                                                 'version': version,
-                                                 'tool_config_file': data_manager_metadata_tool_file,
-                                                 'data_tables': data_tables,
-                                                 'tool_guid': tool['guid']}
+                                              'name': data_manager_name,
+                                              'guid': guid,
+                                              'version': version,
+                                              'tool_config_file': data_manager_metadata_tool_file,
+                                              'data_tables': data_tables,
+                                              'tool_guid': tool['guid']}
             log.debug('Loaded Data Manager tool_files: %s' % (tool_file))
         return metadata_dict
 
@@ -246,8 +246,8 @@ class MetadataGenerator(object):
                         else:
                             guid = suc.generate_tool_guid(self.repository_clone_url, tool)
                         converter_dict = dict(tool_config=tool_config,
-                                               guid=guid,
-                                               target_datatype=target_datatype)
+                                              guid=guid,
+                                              target_datatype=target_datatype)
                         converters.append(converter_dict)
                     elif sub_elem.tag == 'display':
                         # <display file="ucsc/bigwig.xml" />
@@ -343,15 +343,15 @@ class MetadataGenerator(object):
         datatypes_config = hg_util.get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, files_dir)
         if datatypes_config:
             metadata_dict = self.generate_datatypes_metadata(tv,
-                                                              files_dir,
-                                                              datatypes_config,
-                                                              metadata_dict)
+                                                             files_dir,
+                                                             datatypes_config,
+                                                             metadata_dict)
         # Get the relative path to all sample files included in the repository for storage in
         # the repository's metadata.
         sample_file_metadata_paths, sample_file_copy_paths = \
             self.get_sample_files_from_disk(repository_files_dir=files_dir,
-                                             tool_path=self.shed_config_dict.get('tool_path'),
-                                             relative_install_dir=self.relative_install_dir)
+                                            tool_path=self.shed_config_dict.get('tool_path'),
+                                            relative_install_dir=self.relative_install_dir)
         if sample_file_metadata_paths:
             metadata_dict['sample_files'] = sample_file_metadata_paths
         # Copy all sample files included in the repository to a single directory location so we
@@ -364,9 +364,9 @@ class MetadataGenerator(object):
             if filename == 'tool_data_table_conf.xml.sample':
                 new_table_elems, error_message = \
                     self.app.tool_data_tables.add_new_entries_from_config_file(config_filename=sample_file,
-                                                                                tool_data_path=work_dir,
-                                                                                shed_tool_data_table_config=work_dir,
-                                                                                persist=False)
+                                                                               tool_data_path=work_dir,
+                                                                               shed_tool_data_table_config=work_dir,
+                                                                               persist=False)
                 if error_message:
                     self.invalid_file_tups.append((filename, error_message))
         for root, dirs, files in os.walk(files_dir):
@@ -379,16 +379,16 @@ class MetadataGenerator(object):
                         path_to_repository_dependencies_config = os.path.join(root, name)
                         metadata_dict, error_message = \
                             self.generate_repository_dependency_metadata(path_to_repository_dependencies_config,
-                                                                          metadata_dict)
+                                                                         metadata_dict)
                         if error_message:
                             self.invalid_file_tups.append((name, error_message))
                     # See if we have one or more READ_ME files.
                     elif name.lower() in readme_file_names:
                         relative_path_to_readme = self.get_relative_path_to_repository_file(root,
-                                                                                             name,
-                                                                                             self.relative_install_dir,
-                                                                                             work_dir,
-                                                                                             self.shed_config_dict)
+                                                                                            name,
+                                                                                            self.relative_install_dir,
+                                                                                            work_dir,
+                                                                                            self.shed_config_dict)
                         readme_files.append(relative_path_to_readme)
                     # See if we have a tool config.
                     elif looks_like_a_tool(os.path.join(root, name), invalid_names=self.NOT_TOOL_CONFIGS):
@@ -402,7 +402,7 @@ class MetadataGenerator(object):
                         if is_tool:
                             tool, valid, error_message = \
                                 tv.load_tool_from_config(self.app.security.encode_id(self.repository.id),
-                                                          full_path)
+                                                         full_path)
                             if tool is None:
                                 if not valid:
                                     invalid_tool_configs.append(name)
@@ -410,9 +410,9 @@ class MetadataGenerator(object):
                             else:
                                 invalid_files_and_errors_tups = \
                                     tv.check_tool_input_params(files_dir,
-                                                                name,
-                                                                tool,
-                                                                sample_file_copy_paths)
+                                                               name,
+                                                               tool,
+                                                               sample_file_copy_paths)
                                 can_set_metadata = True
                                 for tup in invalid_files_and_errors_tups:
                                     if name in tup:
@@ -422,13 +422,13 @@ class MetadataGenerator(object):
                                 if can_set_metadata:
                                     relative_path_to_tool_config = \
                                         self.get_relative_path_to_repository_file(root,
-                                                                                   name,
-                                                                                   self.relative_install_dir,
-                                                                                   work_dir,
-                                                                                   self.shed_config_dict)
+                                                                                  name,
+                                                                                  self.relative_install_dir,
+                                                                                  work_dir,
+                                                                                  self.shed_config_dict)
                                     metadata_dict = self.generate_tool_metadata(relative_path_to_tool_config,
-                                                                                 tool,
-                                                                                 metadata_dict)
+                                                                                tool,
+                                                                                metadata_dict)
                                 else:
                                     for tup in invalid_files_and_errors_tups:
                                         self.invalid_file_tups.append(tup)
@@ -445,20 +445,20 @@ class MetadataGenerator(object):
                                     exported_workflow_dict = json.loads(workflow_text)
                                 except Exception:
                                     log.exception("Skipping file %s since it does not seem to be a valid exported Galaxy workflow",
-                                                   str(relative_path))
+                                                  str(relative_path))
                                     valid_exported_galaxy_workflow = False
                             if valid_exported_galaxy_workflow and \
                                 'a_galaxy_workflow' in exported_workflow_dict and \
                                     exported_workflow_dict['a_galaxy_workflow'] == 'true':
                                 metadata_dict = self.generate_workflow_metadata(relative_path,
-                                                                                 exported_workflow_dict,
-                                                                                 metadata_dict)
+                                                                                exported_workflow_dict,
+                                                                                metadata_dict)
         # Handle any data manager entries
         data_manager_config = hg_util.get_config_from_disk(suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir)
         metadata_dict = self.generate_data_manager_metadata(files_dir,
-                                                             data_manager_config,
-                                                             metadata_dict,
-                                                             shed_config_dict=self.shed_config_dict)
+                                                            data_manager_config,
+                                                            metadata_dict,
+                                                            shed_config_dict=self.shed_config_dict)
 
         if readme_files:
             metadata_dict['readme_files'] = readme_files
@@ -467,8 +467,8 @@ class MetadataGenerator(object):
         if tool_dependencies_config:
             metadata_dict, error_message = \
                 self.generate_tool_dependency_metadata(tool_dependencies_config,
-                                                        metadata_dict,
-                                                        original_repository_metadata=original_repository_metadata)
+                                                       metadata_dict,
+                                                       original_repository_metadata=original_repository_metadata)
             if error_message:
                 self.invalid_file_tups.append((rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME, error_message))
         if invalid_tool_configs:
@@ -502,7 +502,7 @@ class MetadataGenerator(object):
                     # where a tool dependency definition is considered invalid.
                     repository_dependency_tup, repository_dependency_is_valid, error_message = \
                         self.handle_repository_elem(repository_elem=sub_elem,
-                                                     only_if_compiling_contained_td=False)
+                                                    only_if_compiling_contained_td=False)
                 elif sub_elem.tag == 'install':
                     package_install_version = sub_elem.get('version', '1.0')
                     if package_install_version == '1.0':
@@ -510,8 +510,8 @@ class MetadataGenerator(object):
                         # <actions_group> tag set.  Comments, <repository> tag sets and <readme> tag sets will be skipped
                         # in tool_dependency_util.parse_package_elem().
                         actions_elem_tuples = tool_dependency_util.parse_package_elem(sub_elem,
-                                                                                       platform_info_dict=None,
-                                                                                       include_after_install_actions=False)
+                                                                                      platform_info_dict=None,
+                                                                                      include_after_install_actions=False)
                         if actions_elem_tuples:
                             # We now have a list of a single tuple that looks something like:
                             # [(True, <Element 'actions' at 0x104017850>)]
@@ -535,7 +535,7 @@ class MetadataGenerator(object):
                                                     # We have a complex repository dependency.
                                                     repository_dependency_tup, repository_dependency_is_valid, error_message = \
                                                         self.handle_repository_elem(repository_elem=sub_action_elem,
-                                                                                     only_if_compiling_contained_td=True)
+                                                                                    only_if_compiling_contained_td=True)
                                     elif action_elem.tag == 'action':
                                         # <action type="set_environment_for_install">
                                         #    <repository changeset_revision="b107b91b3574" name="package_readline_6_2" owner="devteam" prior_installation_required="True" toolshed="http://localhost:9009">
@@ -547,7 +547,7 @@ class MetadataGenerator(object):
                                                 # We have a complex repository dependency.
                                                 repository_dependency_tup, repository_dependency_is_valid, error_message = \
                                                     self.handle_repository_elem(repository_elem=sub_action_elem,
-                                                                                 only_if_compiling_contained_td=True)
+                                                                                only_if_compiling_contained_td=True)
         if requirements_dict:
             dependency_key = '%s/%s' % (package_name, package_version)
             if repository_dependency_is_valid:
@@ -583,7 +583,7 @@ class MetadataGenerator(object):
             for repository_elem in root.findall('repository'):
                 repository_dependency_tup, repository_dependency_is_valid, err_msg = \
                     self.handle_repository_elem(repository_elem,
-                                                 only_if_compiling_contained_td=False)
+                                                only_if_compiling_contained_td=False)
                 if repository_dependency_is_valid:
                     valid_repository_dependency_tups.append(repository_dependency_tup)
                 else:
@@ -591,12 +591,12 @@ class MetadataGenerator(object):
                     toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                         repository_dependency_tup
                     repository_dependency_tup = (toolshed,
-                                                  name,
-                                                  owner,
-                                                  changeset_revision,
-                                                  prior_installation_required,
-                                                  only_if_compiling_contained_td,
-                                                  err_msg)
+                                                 name,
+                                                 owner,
+                                                 changeset_revision,
+                                                 prior_installation_required,
+                                                 only_if_compiling_contained_td,
+                                                 err_msg)
                     invalid_repository_dependency_tups.append(repository_dependency_tup)
                     error_message += err_msg
             if invalid_repository_dependency_tups:
@@ -618,8 +618,8 @@ class MetadataGenerator(object):
             tool_type = str(tool_requirement.type)
             version = str(tool_requirement.version) if tool_requirement.version else None
             requirement_dict = dict(name=name,
-                                     type=tool_type,
-                                     version=version)
+                                    type=tool_type,
+                                    version=version)
             tool_requirements.append(requirement_dict)
         # Handle tool.tests.
         tool_tests = []
@@ -665,29 +665,29 @@ class MetadataGenerator(object):
                     if file_name not in required_files and file_name is not None:
                         required_files.append(file_name)
                 test_dict = dict(name=str(ttb.name),
-                                  required_files=required_files,
-                                  inputs=inputs,
-                                  outputs=outputs)
+                                 required_files=required_files,
+                                 inputs=inputs,
+                                 outputs=outputs)
                 tool_tests.append(test_dict)
         # Determine if the tool should be loaded into the tool panel.  Examples of valid tools that
         # should not be displayed in the tool panel are datatypes converters and DataManager tools
         # (which are of type 'manage_data').
         datatypes = metadata_dict.get('datatypes', None)
         add_to_tool_panel_attribute = self.set_add_to_tool_panel_attribute_for_tool(tool=tool,
-                                                                                     guid=guid,
-                                                                                     datatypes=datatypes)
+                                                                                    guid=guid,
+                                                                                    datatypes=datatypes)
         tool_dict = dict(id=tool.id,
-                          guid=guid,
-                          name=tool.name,
-                          version=tool.version,
-                          profile=tool.profile,
-                          description=tool.description,
-                          version_string_cmd=tool.version_string_cmd,
-                          tool_config=tool_config,
-                          tool_type=tool.tool_type,
-                          requirements=tool_requirements,
-                          tests=tool_tests,
-                          add_to_tool_panel=add_to_tool_panel_attribute)
+                         guid=guid,
+                         name=tool.name,
+                         version=tool.version,
+                         profile=tool.profile,
+                         description=tool.description,
+                         version_string_cmd=tool.version_string_cmd,
+                         tool_config=tool_config,
+                         tool_type=tool.tool_type,
+                         requirements=tool_requirements,
+                         tests=tool_tests,
+                         add_to_tool_panel=add_to_tool_panel_attribute)
         if 'tools' in metadata_dict:
             metadata_dict['tools'].append(tool_dict)
         else:
@@ -728,8 +728,8 @@ class MetadataGenerator(object):
                     rvs.valid_tool_dependencies_dict, rvs.invalid_tool_dependencies_dict, \
                         repository_dependency_tup, repository_dependency_is_valid, \
                         message = self.generate_package_dependency_metadata(elem,
-                                                                             rvs.valid_tool_dependencies_dict,
-                                                                             rvs.invalid_tool_dependencies_dict)
+                                                                            rvs.valid_tool_dependencies_dict,
+                                                                            rvs.invalid_tool_dependencies_dict)
                     if repository_dependency_is_valid:
                         if repository_dependency_tup and repository_dependency_tup not in valid_repository_dependency_tups:
                             # We have a valid complex repository dependency.
@@ -744,12 +744,12 @@ class MetadataGenerator(object):
                                 repository_dependency_tup
                             repository_dependency_tup = \
                                 (toolshed,
-                                  name,
-                                  owner,
-                                  changeset_revision,
-                                  prior_installation_required,
-                                  only_if_compiling_contained_td,
-                                  message)
+                                 name,
+                                 owner,
+                                 changeset_revision,
+                                 prior_installation_required,
+                                 only_if_compiling_contained_td,
+                                 message)
                             invalid_repository_dependency_tups.append(repository_dependency_tup)
                             error_messages.append('%s  %s' % (error_message, message))
                 elif elem.tag == 'set_environment':
@@ -765,23 +765,23 @@ class MetadataGenerator(object):
                 irm = self.app.installed_repository_manager
                 updated_tool_dependency_names, deleted_tool_dependency_names = \
                     irm.handle_existing_tool_dependencies_that_changed_in_update(self.repository,
-                                                                                  original_valid_tool_dependencies_dict,
-                                                                                  rvs.valid_tool_dependencies_dict)
+                                                                                 original_valid_tool_dependencies_dict,
+                                                                                 rvs.valid_tool_dependencies_dict)
             metadata_dict['tool_dependencies'] = rvs.valid_tool_dependencies_dict
         if rvs.invalid_tool_dependencies_dict:
             metadata_dict['invalid_tool_dependencies'] = rvs.invalid_tool_dependencies_dict
         if valid_repository_dependency_tups:
             metadata_dict = \
                 self.update_repository_dependencies_metadata(metadata=metadata_dict,
-                                                              repository_dependency_tups=valid_repository_dependency_tups,
-                                                              is_valid=True,
-                                                              description=description)
+                                                             repository_dependency_tups=valid_repository_dependency_tups,
+                                                             is_valid=True,
+                                                             description=description)
         if invalid_repository_dependency_tups:
             metadata_dict = \
                 self.update_repository_dependencies_metadata(metadata=metadata_dict,
-                                                              repository_dependency_tups=invalid_repository_dependency_tups,
-                                                              is_valid=False,
-                                                              description=description)
+                                                             repository_dependency_tups=invalid_repository_dependency_tups,
+                                                             is_valid=False,
+                                                             description=description)
         return metadata_dict, error_message
 
     def generate_workflow_metadata(self, relative_path, exported_workflow_dict, metadata_dict):
@@ -862,11 +862,11 @@ class MetadataGenerator(object):
         changeset_revision = repository_elem.get('changeset_revision', None)
         prior_installation_required = str(repository_elem.get('prior_installation_required', False))
         repository_dependency_tup = [toolshed,
-                                      name,
-                                      owner,
-                                      changeset_revision,
-                                      prior_installation_required,
-                                      str(only_if_compiling_contained_td)]
+                                     name,
+                                     owner,
+                                     changeset_revision,
+                                     prior_installation_required,
+                                     str(only_if_compiling_contained_td)]
         if self.app.name == 'galaxy':
             if self.updating_installed_repository:
                 pass
@@ -899,10 +899,10 @@ class MetadataGenerator(object):
             # we're successful in locating an installed repository with the attributes defined
             # in the repository_elem, we know it is valid.
             repository = repository_util.get_repository_for_dependency_relationship(self.app,
-                                                                                     toolshed,
-                                                                                     name,
-                                                                                     owner,
-                                                                                     changeset_revision)
+                                                                                    toolshed,
+                                                                                    name,
+                                                                                    owner,
+                                                                                    changeset_revision)
             if repository:
                 return repository_dependency_tup, is_valid, error_message
             else:
@@ -910,18 +910,18 @@ class MetadataGenerator(object):
                 # revisions with which the repository
                 # may have been installed.
                 text = metadata_util.get_updated_changeset_revisions_from_tool_shed(self.app,
-                                                                                     toolshed,
-                                                                                     name,
-                                                                                     owner,
-                                                                                     changeset_revision)
+                                                                                    toolshed,
+                                                                                    name,
+                                                                                    owner,
+                                                                                    changeset_revision)
                 if text:
                     updated_changeset_revisions = util.listify(text)
                     for updated_changeset_revision in updated_changeset_revisions:
                         repository = repository_util.get_repository_for_dependency_relationship(self.app,
-                                                                                                 toolshed,
-                                                                                                 name,
-                                                                                                 owner,
-                                                                                                 updated_changeset_revision)
+                                                                                                toolshed,
+                                                                                                name,
+                                                                                                owner,
+                                                                                                updated_changeset_revision)
                         if repository:
                             return repository_dependency_tup, is_valid, error_message
                         if self.updating_installed_repository:
@@ -963,7 +963,7 @@ class MetadataGenerator(object):
                 try:
                     repository = self.sa_session.query(self.app.model.Repository) \
                         .filter(and_(self.app.model.Repository.table.c.name == name,
-                                       self.app.model.Repository.table.c.user_id == user.id)) \
+                                     self.app.model.Repository.table.c.user_id == user.id)) \
                         .one()
                 except:
                     error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, " % \
@@ -1104,7 +1104,7 @@ class MetadataGenerator(object):
                 repository_dependencies_dict['repository_dependencies'] = repository_dependencies
             else:
                 repository_dependencies_dict = dict(description=description,
-                                                     repository_dependencies=repository_dependency_tups)
+                                                    repository_dependencies=repository_dependency_tups)
         if repository_dependencies_dict:
             if is_valid:
                 metadata['repository_dependencies'] = repository_dependencies_dict

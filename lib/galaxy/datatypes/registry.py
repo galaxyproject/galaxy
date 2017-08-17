@@ -202,8 +202,8 @@ class Registry(object):
                                     # the sys.path, probably true but the previous lock wasn't doing that.
                                     try:
                                         imported_module = __import_module(proprietary_path,
-                                                                           proprietary_datatype_module,
-                                                                           datatype_class_name)
+                                                                          proprietary_datatype_module,
+                                                                          datatype_class_name)
                                         if imported_module not in self.imported_modules:
                                             self.imported_modules.append(imported_module)
                                         if hasattr(imported_module, datatype_class_name):
@@ -240,7 +240,7 @@ class Registry(object):
                                     # Because of the way that the value of can_process_datatype was set above, we know that the value of
                                     # override is True.
                                     self.log.debug("Overriding conflicting datatype with extension '%s', using datatype from %s." %
-                                                    (str(extension), str(config)))
+                                                   (str(extension), str(config)))
                                 if make_subclass:
                                     datatype_class = type(datatype_class_name, (datatype_class, ), {})
                                     if edam_format:
@@ -301,9 +301,9 @@ class Registry(object):
             # Load datatype sniffers from the config - we'll do this even if one or more datatypes were not properly processed in the config
             # since sniffers are not tightly coupled with datatypes.
             self.load_datatype_sniffers(root,
-                                         deactivate=deactivate,
-                                         handling_proprietary_datatypes=handling_proprietary_datatypes,
-                                         override=override)
+                                        deactivate=deactivate,
+                                        handling_proprietary_datatypes=handling_proprietary_datatypes,
+                                        override=override)
             self.upload_file_formats.sort()
             # Load build sites
             self._load_build_sites(root)

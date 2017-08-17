@@ -166,7 +166,7 @@ class WebApplication(base.WebApplication):
 
 
 class GalaxyWebTransaction(base.DefaultWebTransaction,
-                            context.ProvidesAppContext, context.ProvidesUserContext, context.ProvidesHistoryContext):
+                           context.ProvidesAppContext, context.ProvidesUserContext, context.ProvidesHistoryContext):
     """
     Encapsulates web transaction specific state for the Galaxy application
     (specifically the user's "cookie" session and history)
@@ -436,7 +436,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                 # Retrieve the galaxy_session id via the unique session_key
                 galaxy_session = self.sa_session.query(self.app.model.GalaxySession) \
                                                 .filter(and_(self.app.model.GalaxySession.table.c.session_key == session_key,
-                                                               self.app.model.GalaxySession.table.c.is_valid == true())).options(joinedload("user")).first()
+                                                             self.app.model.GalaxySession.table.c.is_valid == true())).options(joinedload("user")).first()
         # If remote user is in use it can invalidate the session and in some
         # cases won't have a cookie set above, so we need to to check some
         # things now.
@@ -457,7 +457,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                     invalidate_existing_session = True
                     user_for_new_session = self.get_or_create_remote_user(remote_user_email)
                     log.warning("User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
-                                 remote_user_email, galaxy_session.user.email)
+                                remote_user_email, galaxy_session.user.email)
             elif remote_user_email:
                 # No session exists, get/create user for new session
                 user_for_new_session = self.get_or_create_remote_user(remote_user_email)
@@ -469,7 +469,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                 # session with an external user, invalidate
                 invalidate_existing_session = True
                 log.warning("User '%s' is an external user with an existing session, invalidating session since external auth is disabled",
-                             galaxy_session.user.email)
+                            galaxy_session.user.email)
             elif galaxy_session is not None and galaxy_session.user is not None and galaxy_session.user.deleted:
                 invalidate_existing_session = True
                 log.warning("User '%s' is marked deleted, invalidating session" % galaxy_session.user.email)
@@ -627,7 +627,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         Update the session cookie to match the current session.
         """
         self.set_cookie(self.security.encode_guid(self.galaxy_session.session_key),
-                         name=name, path=self.app.config.cookie_path)
+                        name=name, path=self.app.config.cookie_path)
 
     def handle_user_login(self, user):
         """
@@ -702,9 +702,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         galaxy_user_id = prev_galaxy_session.user_id
         if logout_all and galaxy_user_id is not None:
             for other_galaxy_session in (self.sa_session.query(self.app.model.GalaxySession)
-                                          .filter(and_(self.app.model.GalaxySession.table.c.user_id == galaxy_user_id,
-                                                         self.app.model.GalaxySession.table.c.is_valid == true(),
-                                                         self.app.model.GalaxySession.table.c.id != prev_galaxy_session.id))):
+                                         .filter(and_(self.app.model.GalaxySession.table.c.user_id == galaxy_user_id,
+                                                      self.app.model.GalaxySession.table.c.is_valid == true(),
+                                                      self.app.model.GalaxySession.table.c.id != prev_galaxy_session.id))):
                 other_galaxy_session.is_valid = False
                 self.sa_session.add(other_galaxy_session)
         self.sa_session.flush()
@@ -877,8 +877,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         form.
         """
         return self.fill_template(template, form=form, header=header,
-                                   use_panels=(form.use_panels or use_panels),
-                                   active_view=active_view)
+                                  use_panels=(form.use_panels or use_panels),
+                                  active_view=active_view)
 
     @property
     def session_csrf_token(self):
@@ -913,7 +913,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             return self.fill_template_mako(filename, **kwargs)
         else:
             template = Template(file=os.path.join(self.app.config.template_path, filename),
-                                 searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)])
+                                searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)])
             return str(template)
 
     def fill_template_mako(self, filename, template_lookup=None, **kwargs):
@@ -950,7 +950,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         Fill in a template, putting any keyword arguments on the context.
         """
         template = Template(source=template_string,
-                             searchList=[context or kwargs, dict(caller=self)])
+                            searchList=[context or kwargs, dict(caller=self)])
         return str(template)
 
 

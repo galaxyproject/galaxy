@@ -288,28 +288,28 @@ class Grid(object):
         # as str.
         if not dict_format:
             page = trans.fill_template(iff(async_request, self.async_template, self.template),
-                                        grid=self,
-                                        query=query,
-                                        cur_page_num=page_num,
-                                        num_pages=num_pages,
-                                        num_page_links=self.num_page_links,
-                                        default_filter_dict=self.default_filter,
-                                        cur_filter_dict=cur_filter_dict,
-                                        sort_key=sort_key,
-                                        current_item=current_item,
-                                        ids=kwargs.get('id', []),
-                                        url=url,
-                                        status=status,
-                                        message=message,
-                                        info_text=self.info_text,
-                                        use_panels=self.use_panels,
-                                        use_hide_message=self.use_hide_message,
-                                        advanced_search=self.advanced_search,
-                                        show_item_checkboxes=(self.show_item_checkboxes or
-                                                               kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
-                                        # Pass back kwargs so that grid template can set and use args without
-                                        # grid explicitly having to pass them.
-                                        kwargs=kwargs)
+                                       grid=self,
+                                       query=query,
+                                       cur_page_num=page_num,
+                                       num_pages=num_pages,
+                                       num_page_links=self.num_page_links,
+                                       default_filter_dict=self.default_filter,
+                                       cur_filter_dict=cur_filter_dict,
+                                       sort_key=sort_key,
+                                       current_item=current_item,
+                                       ids=kwargs.get('id', []),
+                                       url=url,
+                                       status=status,
+                                       message=message,
+                                       info_text=self.info_text,
+                                       use_panels=self.use_panels,
+                                       use_hide_message=self.use_hide_message,
+                                       advanced_search=self.advanced_search,
+                                       show_item_checkboxes=(self.show_item_checkboxes or
+                                                             kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
+                                       # Pass back kwargs so that grid template can set and use args without
+                                       # grid explicitly having to pass them.
+                                       kwargs=kwargs)
             trans.log_action(trans.get_user(), text_type("grid.view"), context, params)
             return page
 
@@ -462,9 +462,9 @@ class Grid(object):
 
 class GridColumn(object):
     def __init__(self, label, key=None, model_class=None, method=None, format=None,
-                  link=None, attach_popup=False, visible=True, nowrap=False,
-                  # Valid values for filterable are ['standard', 'advanced', None]
-                  filterable=None, sortable=True, label_id_prefix=None, target=None):
+                 link=None, attach_popup=False, visible=True, nowrap=False,
+                 # Valid values for filterable are ['standard', 'advanced', None]
+                 filterable=None, sortable=True, label_id_prefix=None, target=None):
         """Create a grid column."""
         self.label = label
         self.key = key
@@ -630,9 +630,9 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
     def get_value(self, trans, grid, item):
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, item, webapp_model=trans.model)
         return trans.fill_template("tool_shed_rating.mako",
-                                    ave_item_rating=ave_item_rating,
-                                    num_ratings=num_ratings,
-                                    item_id=trans.security.encode_id(item.id))
+                                   ave_item_rating=ave_item_rating,
+                                   num_ratings=num_ratings,
+                                   item_id=trans.security.encode_id(item.id))
 
     def sort(self, trans, query, ascending, column_name=None):
         def get_foreign_key(source_class, target_class):
@@ -653,9 +653,9 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
         # Do sorting using a subquery.
         # Subquery to get average rating for each item.
         ave_rating_subquery = trans.sa_session.query(fk_col,
-                                                      func.avg(item_rating_assoc_class.table.c.rating).label('avg_rating')) \
-                                              .group_by(fk_col) \
-                                              .subquery()
+                                                     func.avg(item_rating_assoc_class.table.c.rating).label('avg_rating')) \
+        .group_by(fk_col) \
+        .subquery()
         # Integrate subquery into main query.
         query = query.outerjoin((ave_rating_subquery, referent_col == ave_rating_subquery.columns[fk_col.name]))
         # Sort using subquery results; use coalesce to avoid null values.
@@ -704,7 +704,7 @@ class CommunityTagsColumn(TextColumn):
 
     def get_value(self, trans, grid, item):
         return trans.fill_template("/tagging_common.mako", tag_type="community", trans=trans, user=trans.get_user(), tagged_item=item, elt_context=self.grid_name,
-                                    in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter", use_toggle_link=True)
+                                   in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter", use_toggle_link=True)
 
     def filter(self, trans, user, query, column_filter):
         """ Modify query to filter model_class by tag. Multiple filters are ANDed. """
@@ -735,14 +735,14 @@ class IndividualTagsColumn(CommunityTagsColumn):
     """ Column that supports individual tags. """
     def get_value(self, trans, grid, item):
         return trans.fill_template("/tagging_common.mako",
-                                    tag_type="individual",
-                                    user=trans.user,
-                                    tagged_item=item,
-                                    elt_context=self.grid_name,
-                                    in_form=True,
-                                    input_size="20",
-                                    tag_click_fn="add_tag_to_grid_filter",
-                                    use_toggle_link=True)
+                                   tag_type="individual",
+                                   user=trans.user,
+                                   tagged_item=item,
+                                   elt_context=self.grid_name,
+                                   in_form=True,
+                                   input_size="20",
+                                   tag_click_fn="add_tag_to_grid_filter",
+                                   use_toggle_link=True)
 
     def get_filter(self, trans, user, column_filter):
             # Parse filter to extract multiple tags.
@@ -916,8 +916,8 @@ class SharingStatusColumn(GridColumn):
 
 class GridOperation(object):
     def __init__(self, label, key=None, condition=None, allow_multiple=True, allow_popup=True,
-                  target=None, url_args=None, async_compatible=False, confirm=None,
-                  global_operation=None):
+                 target=None, url_args=None, async_compatible=False, confirm=None,
+                 global_operation=None):
         self.label = label
         self.key = key
         self.allow_multiple = allow_multiple

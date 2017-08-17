@@ -524,7 +524,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                 return
             pbs.pbs_deljob(c, job_id, '')
             log.debug("%s Removed from PBS queue before job completion"
-                       % job_tag)
+                      % job_tag)
         except:
             e = traceback.format_exc()
             log.debug("%s Unable to stop job: %s" % (job_tag, e))

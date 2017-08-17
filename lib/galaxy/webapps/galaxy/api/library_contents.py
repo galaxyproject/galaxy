@@ -88,9 +88,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         encoded_id = 'F' + trans.security.encode_id(library.root_folder.id)
         # appending root folder
         rval.append(dict(id=encoded_id,
-                           type='folder',
-                           name='/',
-                           url=url_for('library_content', library_id=library_id, id=encoded_id)))
+                         type='folder',
+                         name='/',
+                         url=url_for('library_content', library_id=library_id, id=encoded_id)))
         library.root_folder.api_path = ''
         # appending all other items in the library recursively
         for content in traverse(library.root_folder):
@@ -98,9 +98,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             if content.api_type == 'folder':
                 encoded_id = 'F' + encoded_id
             rval.append(dict(id=encoded_id,
-                               type=content.api_type,
-                               name=content.api_path,
-                               url=url_for('library_content', library_id=library_id, id=encoded_id, )))
+                             type=content.api_type,
+                             name=content.api_path,
+                             url=url_for('library_content', library_id=library_id, id=encoded_id, )))
         return rval
 
     @expose_api
@@ -262,8 +262,8 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 if create_type == 'folder':
                     encoded_id = 'F' + encoded_id
                 rval.append(dict(id=encoded_id,
-                                   name=v.name,
-                                   url=url_for('library_content', library_id=library_id, id=encoded_id)))
+                                 name=v.name,
+                                 url=url_for('library_content', library_id=library_id, id=encoded_id)))
             return rval
 
     def _scan_json_block(self, meta, prefix=""):
@@ -317,9 +317,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             content = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=False)
             content_conv = self.get_library_dataset(trans, converted_id, check_ownership=False, check_accessible=False)
             assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(parent=content.library_dataset_dataset_association,
-                                                                           dataset=content_conv.library_dataset_dataset_association,
-                                                                           file_type=content_conv.library_dataset_dataset_association.extension,
-                                                                           metadata_safe=True)
+                                                                          dataset=content_conv.library_dataset_dataset_association,
+                                                                          file_type=content_conv.library_dataset_dataset_association.extension,
+                                                                          metadata_safe=True)
             trans.sa_session.add(assoc)
             trans.sa_session.flush()
 
@@ -394,13 +394,13 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         except exceptions.httpexceptions.HTTPInternalServerError:
             log.exception('Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s',
-                           id, str(kwd))
+                          id, str(kwd))
             raise
         except exceptions.httpexceptions.HTTPException:
             raise
         except Exception as exc:
             log.exception('library_contents API, delete: uncaught exception: %s, %s',
-                           id, str(kwd))
+                          id, str(kwd))
             trans.response.status = 500
             rval.update({'error': str(exc)})
         return rval

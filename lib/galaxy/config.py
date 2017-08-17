@@ -273,7 +273,7 @@ class Configuration(object):
         self.user_activation_on = string_as_bool(kwargs.get('user_activation_on', False))
         self.activation_grace_period = int(kwargs.get('activation_grace_period', 3))
         default_inactivity_box_content = ("Your account has not been activated yet. Feel free to browse around and see what's available, but"
-                                           " you won't be able to upload data or run jobs until you have verified your email address.")
+                                          " you won't be able to upload data or run jobs until you have verified your email address.")
         self.inactivity_box_content = kwargs.get('inactivity_box_content', default_inactivity_box_content)
         self.terms_url = kwargs.get('terms_url', None)
         self.instance_resource_url = kwargs.get('instance_resource_url', None)
@@ -970,11 +970,11 @@ class ConfiguresGalaxyMixin:
 
         # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
         self.tool_data_tables = ToolDataTableManager(tool_data_path=self.config.tool_data_path,
-                                                      config_filename=self.config.tool_data_table_config_path)
+                                                     config_filename=self.config.tool_data_table_config_path)
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
         self.tool_data_tables.load_from_config_file(config_filename=self.config.shed_tool_data_table_config,
-                                                     tool_data_path=self.tool_data_tables.tool_data_path,
-                                                     from_shed_config=from_shed_config)
+                                                    tool_data_path=self.tool_data_tables.tool_data_path,
+                                                    from_shed_config=from_shed_config)
 
     def _configure_datatypes_registry(self, installed_repository_manager=None):
         from galaxy.datatypes import registry
@@ -1047,14 +1047,14 @@ class ConfiguresGalaxyMixin:
 
         from galaxy.model import mapping
         self.model = mapping.init(self.config.file_path,
-                                   db_url,
-                                   self.config.database_engine_options,
-                                   map_install_models=combined_install_database,
-                                   database_query_profiling_proxy=self.config.database_query_profiling_proxy,
-                                   object_store=self.object_store,
-                                   trace_logger=getattr(self, "trace_logger", None),
-                                   use_pbkdf2=self.config.get_bool('use_pbkdf2', True),
-                                   slow_query_log_threshold=self.config.slow_query_log_threshold)
+                                  db_url,
+                                  self.config.database_engine_options,
+                                  map_install_models=combined_install_database,
+                                  database_query_profiling_proxy=self.config.database_query_profiling_proxy,
+                                  object_store=self.object_store,
+                                  trace_logger=getattr(self, "trace_logger", None),
+                                  use_pbkdf2=self.config.get_bool('use_pbkdf2', True),
+                                  slow_query_log_threshold=self.config.slow_query_log_threshold)
 
         if combined_install_database:
             log.info("Install database targetting Galaxy's database configuration.")
@@ -1065,7 +1065,7 @@ class ConfiguresGalaxyMixin:
             log.info("Install database using its own connection %s" % install_db_url)
             install_db_engine_options = self.config.install_database_engine_options
             self.install_model = install_mapping.init(install_db_url,
-                                                       install_db_engine_options)
+                                                      install_db_engine_options)
 
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():

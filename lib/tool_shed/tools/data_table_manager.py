@@ -15,7 +15,7 @@ class ToolDataTableManager(object):
         self.app = app
 
     def generate_repository_info_elem(self, tool_shed, repository_name, changeset_revision, owner,
-                                       parent_elem=None, **kwd):
+                                      parent_elem=None, **kwd):
         """Create and return an ElementTree repository info Element."""
         if parent_elem is None:
             elem = XmlET.Element('tool_shed_repository')
@@ -38,11 +38,11 @@ class ToolDataTableManager(object):
 
     def generate_repository_info_elem_from_repository(self, tool_shed_repository, parent_elem=None, **kwd):
         return self.generate_repository_info_elem(tool_shed_repository.tool_shed,
-                                                   tool_shed_repository.name,
-                                                   tool_shed_repository.installed_changeset_revision,
-                                                   tool_shed_repository.owner,
-                                                   parent_elem=parent_elem,
-                                                   **kwd)
+                                                  tool_shed_repository.name,
+                                                  tool_shed_repository.installed_changeset_revision,
+                                                  tool_shed_repository.owner,
+                                                  parent_elem=parent_elem,
+                                                  **kwd)
 
     def get_tool_index_sample_files(self, sample_files):
         """
@@ -74,11 +74,11 @@ class ToolDataTableManager(object):
             # The repository must contain a tool_data_table_conf.xml.sample file that includes
             # all required entries for all tools in the repository.
             sample_tool_data_table_conf = hg_util.get_config_from_disk('tool_data_table_conf.xml.sample',
-                                                                        relative_install_dir)
+                                                                       relative_install_dir)
             if sample_tool_data_table_conf:
                 # Add entries to the ToolDataTableManager's in-memory data_tables dictionary.
                 error, message = self.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf,
-                                                                               persist=True)
+                                                                              persist=True)
                 if error:
                     # TODO: Do more here than logging an exception.
                     log.debug(message)
@@ -102,9 +102,9 @@ class ToolDataTableManager(object):
         try:
             new_table_elems, message = self.app.tool_data_tables \
                 .add_new_entries_from_config_file(config_filename=filename,
-                                                   tool_data_path=self.app.config.shed_tool_data_path,
-                                                   shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
-                                                   persist=persist)
+                                                  tool_data_path=self.app.config.shed_tool_data_path,
+                                                  shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
+                                                  persist=persist)
             if message:
                 error = True
         except Exception as e:
@@ -155,7 +155,7 @@ class ToolDataTableManager(object):
                         elems.append(elem)
         else:
             log.debug("The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.",
-                       tool_data_table_conf_filename, TOOL_DATA_TABLE_FILE_SAMPLE_NAME)
+                      tool_data_table_conf_filename, TOOL_DATA_TABLE_FILE_SAMPLE_NAME)
         for elem in elems:
             if elem.tag == 'table':
                 for file_elem in elem.findall('file'):

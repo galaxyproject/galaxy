@@ -127,8 +127,8 @@ class InRangeValidator(Validator):
     @classmethod
     def from_element(cls, param, elem):
         return cls(elem.get('message', None), elem.get('min'),
-                    elem.get('max'), elem.get('exclude_min', 'false'),
-                    elem.get('exclude_max', 'false'))
+                   elem.get('max'), elem.get('exclude_min', 'false'),
+                   elem.get('exclude_max', 'false'))
 
     def __init__(self, message, range_min, range_max, exclude_min=False, exclude_max=False):
         """
@@ -447,18 +447,18 @@ class MetadataInDataTableColumnValidator(Validator):
 
 
 validator_types = dict(expression=ExpressionValidator,
-                        regex=RegexValidator,
-                        in_range=InRangeValidator,
-                        length=LengthValidator,
-                        metadata=MetadataValidator,
-                        unspecified_build=UnspecifiedBuildValidator,
-                        no_options=NoOptionsValidator,
-                        empty_field=EmptyTextfieldValidator,
-                        empty_dataset=DatasetEmptyValidator,
-                        empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
-                        dataset_metadata_in_file=MetadataInFileColumnValidator,
-                        dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
-                        dataset_ok_validator=DatasetOkValidator, )
+                       regex=RegexValidator,
+                       in_range=InRangeValidator,
+                       length=LengthValidator,
+                       metadata=MetadataValidator,
+                       unspecified_build=UnspecifiedBuildValidator,
+                       no_options=NoOptionsValidator,
+                       empty_field=EmptyTextfieldValidator,
+                       empty_dataset=DatasetEmptyValidator,
+                       empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
+                       dataset_metadata_in_file=MetadataInFileColumnValidator,
+                       dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
+                       dataset_ok_validator=DatasetOkValidator, )
 
 
 def get_suite():

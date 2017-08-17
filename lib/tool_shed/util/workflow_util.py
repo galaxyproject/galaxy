@@ -42,8 +42,8 @@ class RepoToolModule(ToolModule):
             for tool_dict in tools_metadata:
                 if self.tool_id in [tool_dict['id'], tool_dict['guid']]:
                     repository, self.tool, message = self.tv.load_tool_from_changeset_revision(repository_id,
-                                                                                                changeset_revision,
-                                                                                                tool_dict['tool_config'])
+                                                                                               changeset_revision,
+                                                                                               tool_dict['tool_config'])
                     if message and self.tool is None:
                         self.errors = 'unavailable'
                     break
@@ -80,8 +80,8 @@ class RepoToolModule(ToolModule):
         def callback(input, prefixed_name, prefixed_label, **kwargs):
             if isinstance(input, galaxy.tools.parameters.basic.DataToolParameter):
                 data_inputs.append(dict(name=prefixed_name,
-                                          label=prefixed_label,
-                                          extensions=input.extensions))
+                                        label=prefixed_label,
+                                        extensions=input.extensions))
         if self.tool:
             try:
                 galaxy.tools.parameters.visit_input_values(self.tool.inputs, self.state.inputs, callback)
@@ -179,10 +179,10 @@ def generate_workflow_image(trans, workflow_name, repository_metadata_id=None, r
     else:
         tools_metadata = []
     workflow, missing_tool_tups = get_workflow_from_dict(trans=trans,
-                                                          workflow_dict=workflow_dict,
-                                                          tools_metadata=tools_metadata,
-                                                          repository_id=repository_id,
-                                                          changeset_revision=changeset_revision)
+                                                         workflow_dict=workflow_dict,
+                                                         tools_metadata=tools_metadata,
+                                                         repository_id=repository_id,
+                                                         changeset_revision=changeset_revision)
     workflow_canvas = WorkflowCanvas()
     canvas = workflow_canvas.canvas
     # Store px width for boxes of each step.
@@ -294,9 +294,9 @@ def get_workflow_from_dict(trans, workflow_dict, tools_metadata, repository_id, 
         post_job_actions = step_dict.get('post_job_actions', {})
         for pja_dict in post_job_actions.values():
             trans.model.PostJobAction(pja_dict['action_type'],
-                                       step,
-                                       pja_dict['output_name'],
-                                       pja_dict['action_arguments'])
+                                      step,
+                                      pja_dict['output_name'],
+                                      pja_dict['action_arguments'])
         steps.append(step)
         steps_by_external_id[step_dict['id']] = step
     # Second pass to deal with connections between steps.
@@ -355,10 +355,10 @@ def import_workflow(trans, repository, workflow_name):
     if workflow_dict:
         # Create workflow if possible.
         workflow, missing_tool_tups = get_workflow_from_dict(trans=trans,
-                                                              workflow_dict=workflow_dict,
-                                                              tools_metadata=tools_metadata,
-                                                              repository_id=repository.id,
-                                                              changeset_revision=changeset_revision)
+                                                             workflow_dict=workflow_dict,
+                                                             tools_metadata=tools_metadata,
+                                                             repository_id=repository.id,
+                                                             changeset_revision=changeset_revision)
         # Save the workflow in the Galaxy database.  Pass workflow_dict along to create annotation at this point.
         stored_workflow = save_workflow(trans, workflow, workflow_dict)
         # Use the latest version of the saved workflow.

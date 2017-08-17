@@ -70,10 +70,10 @@ class EnvManager(object):
             # The protocol is not stored, but the port is if it exists.
             toolshed = common_util.remove_protocol_from_tool_shed_url(toolshed)
             repository = repository_util.get_repository_for_dependency_relationship(self.app,
-                                                                                     toolshed,
-                                                                                     repository_name,
-                                                                                     repository_owner,
-                                                                                     changeset_revision)
+                                                                                    toolshed,
+                                                                                    repository_name,
+                                                                                    repository_owner,
+                                                                                    changeset_revision)
             if repository:
                 for sub_elem in elem:
                     tool_dependency_type = sub_elem.tag

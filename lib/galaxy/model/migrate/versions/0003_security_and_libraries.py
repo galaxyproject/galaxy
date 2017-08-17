@@ -423,8 +423,8 @@ def upgrade(migrate_engine):
     if HistoryDatasetAssociation_table is not None and LibraryDatasetDatasetAssociation_table is not None:
         try:
             cons = ForeignKeyConstraint([HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id],
-                                         [LibraryDatasetDatasetAssociation_table.c.id],
-                                         name='history_dataset_association_copied_from_library_dataset_da_fkey')
+                                        [LibraryDatasetDatasetAssociation_table.c.id],
+                                        name='history_dataset_association_copied_from_library_dataset_da_fkey')
             # Create the constraint
             cons.create()
         except Exception:
@@ -445,8 +445,8 @@ def upgrade(migrate_engine):
         if MetadataFile_table is not None and LibraryDatasetDatasetAssociation_table is not None:
             try:
                 cons = ForeignKeyConstraint([MetadataFile_table.c.lda_id],
-                                             [LibraryDatasetDatasetAssociation_table.c.id],
-                                             name='metadata_file_lda_id_fkey')
+                                            [LibraryDatasetDatasetAssociation_table.c.id],
+                                            name='metadata_file_lda_id_fkey')
                 # Create the constraint
                 cons.create()
             except Exception:
@@ -553,8 +553,8 @@ def downgrade(migrate_engine):
     if MetadataFile_table is not None and LibraryDatasetDatasetAssociation_table is not None:
         try:
             cons = ForeignKeyConstraint([MetadataFile_table.c.lda_id],
-                                         [LibraryDatasetDatasetAssociation_table.c.id],
-                                         name='metadata_file_lda_id_fkey')
+                                        [LibraryDatasetDatasetAssociation_table.c.id],
+                                        name='metadata_file_lda_id_fkey')
             # Drop the constraint
             cons.drop()
         except Exception:
@@ -573,8 +573,8 @@ def downgrade(migrate_engine):
     if HistoryDatasetAssociation_table is not None and LibraryDatasetDatasetAssociation_table is not None:
         try:
             cons = ForeignKeyConstraint([HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id],
-                                         [LibraryDatasetDatasetAssociation_table.c.id],
-                                         name='history_dataset_association_copied_from_library_dataset_da_fkey')
+                                        [LibraryDatasetDatasetAssociation_table.c.id],
+                                        name='history_dataset_association_copied_from_library_dataset_da_fkey')
             # Drop the constraint
             cons.drop()
         except Exception:

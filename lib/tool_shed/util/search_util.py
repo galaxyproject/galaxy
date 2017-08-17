@@ -39,12 +39,12 @@ def in_tool_dict(tool_dict, exact_matches_checked, tool_id=None, tool_name=None,
         tool_dict_tool_name = tool_dict['name'].lower()
         tool_dict_tool_id = tool_dict['id'].lower()
         found = (tool_version == tool_dict_tool_version and
-                  tool_name == tool_dict_tool_name and
-                  tool_id == tool_dict_tool_id) or \
+                 tool_name == tool_dict_tool_name and
+                 tool_id == tool_dict_tool_id) or \
                 (not exact_matches_checked and
-                  tool_dict_tool_version.find(tool_version) >= 0 and
-                  tool_dict_tool_name.find(tool_name) >= 0 and
-                  tool_dict_tool_id.find(tool_id) >= 0)
+                 tool_dict_tool_version.find(tool_version) >= 0 and
+                 tool_dict_tool_name.find(tool_name) >= 0 and
+                 tool_dict_tool_id.find(tool_id) >= 0)
     return found
 
 
@@ -90,7 +90,7 @@ def search_names_versions(tool_dict, exact_matches_checked, match_tuples, reposi
 
 
 def search_repository_metadata(app, exact_matches_checked, tool_ids='', tool_names='', tool_versions='',
-                                workflow_names='', all_workflows=False):
+                               workflow_names='', all_workflows=False):
     sa_session = app.model.context.current
     match_tuples = []
     ok = True
@@ -99,7 +99,7 @@ def search_repository_metadata(app, exact_matches_checked, tool_ids='', tool_nam
                                              .filter(app.model.RepositoryMetadata.table.c.includes_tools == true()) \
                                              .join(app.model.Repository) \
                                              .filter(and_(app.model.Repository.table.c.deleted == false(),
-                                                            app.model.Repository.table.c.deprecated == false())):
+                                                          app.model.Repository.table.c.deprecated == false())):
             metadata = repository_metadata.metadata
             if metadata:
                 tools = metadata.get('tools', [])
@@ -154,7 +154,7 @@ def search_repository_metadata(app, exact_matches_checked, tool_ids='', tool_nam
                                              .filter(app.model.RepositoryMetadata.table.c.includes_workflows == true()) \
                                              .join(app.model.Repository) \
                                              .filter(and_(app.model.Repository.table.c.deleted == false(),
-                                                            app.model.Repository.table.c.deprecated == false())):
+                                                          app.model.Repository.table.c.deprecated == false())):
             metadata = repository_metadata.metadata
             if metadata:
                 # metadata[ 'workflows' ] is a list of tuples where each contained tuple is

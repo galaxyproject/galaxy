@@ -112,7 +112,7 @@ class RepositoryDependency(object):
     """Repository dependency object"""
 
     def __init__(self, id=None, toolshed=None, repository_name=None, repository_owner=None, changeset_revision=None, prior_installation_required=False,
-                  only_if_compiling_contained_td=False, installation_status=None, tool_shed_repository_id=None):
+                 only_if_compiling_contained_td=False, installation_status=None, tool_shed_repository_id=None):
         self.id = id
         self.toolshed = toolshed
         self.repository_name = repository_name
@@ -137,7 +137,7 @@ class Tool(object):
     """Tool object"""
 
     def __init__(self, id=None, tool_config=None, tool_id=None, name=None, description=None, version=None, profile=None, requirements=None,
-                  repository_id=None, changeset_revision=None, repository_installation_status=None):
+                 repository_id=None, changeset_revision=None, repository_installation_status=None):
         self.id = id
         self.tool_config = tool_config
         self.tool_id = tool_id
@@ -155,7 +155,7 @@ class ToolDependency(object):
     """Tool dependency object"""
 
     def __init__(self, id=None, name=None, version=None, type=None, readme=None, installation_status=None, repository_id=None,
-                  tool_dependency_id=None):
+                 tool_dependency_id=None):
         self.id = id
         self.name = name
         self.version = version
@@ -174,7 +174,7 @@ class Workflow(object):
     """Workflow object."""
 
     def __init__(self, id=None, workflow_name=None, steps=None, format_version=None, annotation=None,
-                  repository_metadata_id=None, repository_id=None):
+                 repository_metadata_id=None, repository_id=None):
         """
         When rendered in the tool shed, repository_metadata_id will have a value and repository_id will
         be None.  When rendered in Galaxy, repository_id will have a value and repository_metadata_id will
@@ -209,9 +209,9 @@ class UtilityContainerManager(object):
             # Insert a header row.
             data_manager_id += 1
             data_manager = DataManager(id=data_manager_id,
-                                        name='Name',
-                                        version='Version',
-                                        data_tables='Data Tables')
+                                       name='Name',
+                                       version='Version',
+                                       data_tables='Data Tables')
             folder.valid_data_managers.append(data_manager)
             for data_manager_dict in data_managers.values():
                 data_manager_id += 1
@@ -224,9 +224,9 @@ class UtilityContainerManager(object):
                     version = 'unknown'
                     data_tables = 'unknown'
                 data_manager = DataManager(id=data_manager_id,
-                                            name=name,
-                                            version=version,
-                                            data_tables=data_tables)
+                                           name=name,
+                                           version=version,
+                                           data_tables=data_tables)
                 folder.valid_data_managers.append(data_manager)
         else:
             data_managers_root_folder = None
@@ -244,10 +244,10 @@ class UtilityContainerManager(object):
             # Insert a header row.
             datatype_id += 1
             datatype = Datatype(id=datatype_id,
-                                 extension='extension',
-                                 type='type',
-                                 mimetype='mimetype',
-                                 subclass='subclass')
+                                extension='extension',
+                                type='type',
+                                mimetype='mimetype',
+                                subclass='subclass')
             folder.datatypes.append(datatype)
             for datatypes_dict in datatypes:
                 # {"converters":
@@ -286,12 +286,12 @@ class UtilityContainerManager(object):
                     converters = 'unknown'
                     display_app_containers = 'unknown'
                 datatype = Datatype(id=datatype_id,
-                                     extension=extension,
-                                     type=type,
-                                     mimetype=mimetype,
-                                     subclass=subclass,
-                                     converters=converters,
-                                     display_app_containers=display_app_containers)
+                                    extension=extension,
+                                    type=type,
+                                    mimetype=mimetype,
+                                    subclass=subclass,
+                                    converters=converters,
+                                    display_app_containers=display_app_containers)
                 folder.datatypes.append(datatype)
         else:
             datatypes_root_folder = None
@@ -312,28 +312,28 @@ class UtilityContainerManager(object):
             # Insert a header row.
             data_manager_id += 1
             data_manager = InvalidDataManager(id=data_manager_id,
-                                               index='Element Index',
-                                               error='Error')
+                                              index='Element Index',
+                                              error='Error')
             folder.invalid_data_managers.append(data_manager)
             if error_messages:
                 for error_message in error_messages:
                     data_manager_id += 1
                     data_manager = InvalidDataManager(id=data_manager_id,
-                                                       index=0,
-                                                       error=error_message)
+                                                      index=0,
+                                                      error=error_message)
                     folder.invalid_data_managers.append(data_manager)
             for data_manager_dict in data_managers:
                 data_manager_id += 1
                 data_manager = InvalidDataManager(id=data_manager_id,
-                                                   index=data_manager_dict.get('index', 0) + 1,
-                                                   error=data_manager_dict.get('error_message', ''))
+                                                  index=data_manager_dict.get('index', 0) + 1,
+                                                  error=data_manager_dict.get('error_message', ''))
                 folder.invalid_data_managers.append(data_manager)
         else:
             data_managers_root_folder = None
         return folder_id, data_managers_root_folder
 
     def build_invalid_tools_folder(self, folder_id, invalid_tool_configs, changeset_revision, repository=None,
-                                    label='Invalid tools'):
+                                   label='Invalid tools'):
         """Return a folder hierarchy containing invalid tools."""
         # TODO: Should we display invalid tools on the tool panel selection page when installing the
         # repository into Galaxy?
@@ -356,10 +356,10 @@ class UtilityContainerManager(object):
                     repository_id = None
                     repository_installation_status = None
                 invalid_tool = InvalidTool(id=invalid_tool_id,
-                                            tool_config=invalid_tool_config,
-                                            repository_id=repository_id,
-                                            changeset_revision=changeset_revision,
-                                            repository_installation_status=repository_installation_status)
+                                           tool_config=invalid_tool_config,
+                                           repository_id=repository_id,
+                                           changeset_revision=changeset_revision,
+                                           repository_installation_status=repository_installation_status)
                 folder.invalid_tools.append(invalid_tool)
         else:
             invalid_tools_root_folder = None
@@ -390,7 +390,7 @@ class UtilityContainerManager(object):
         return folder_id, readme_files_root_folder
 
     def build_repository_dependencies_folder(self, folder_id, repository_dependencies, label='Repository dependencies',
-                                              installed=False):
+                                             installed=False):
         """Return a folder hierarchy containing repository dependencies."""
         if repository_dependencies:
             repository_dependency_id = 0
@@ -401,9 +401,9 @@ class UtilityContainerManager(object):
             # Create the Repository dependencies folder and add it to the root folder.
             repository_dependencies_folder_key = repository_dependencies['root_key']
             repository_dependencies_folder = Folder(id=folder_id,
-                                                     key=repository_dependencies_folder_key,
-                                                     label=label,
-                                                     parent=repository_dependencies_root_folder)
+                                                    key=repository_dependencies_folder_key,
+                                                    label=label,
+                                                    parent=repository_dependencies_root_folder)
             del repository_dependencies['root_key']
             # The received repository_dependencies is a dictionary with keys: 'root_key', 'description', and one or more
             # repository_dependency keys.  We want the description value associated with the repository_dependencies_folder.
@@ -412,9 +412,9 @@ class UtilityContainerManager(object):
             del repository_dependencies['description']
             repository_dependencies_folder, folder_id, repository_dependency_id = \
                 self.populate_repository_dependencies_container(repository_dependencies_folder,
-                                                                 repository_dependencies,
-                                                                 folder_id,
-                                                                 repository_dependency_id)
+                                                                repository_dependencies,
+                                                                folder_id,
+                                                                repository_dependency_id)
             repository_dependencies_folder = self.prune_repository_dependencies(repository_dependencies_folder)
         else:
             repository_dependencies_root_folder = None
@@ -434,15 +434,15 @@ class UtilityContainerManager(object):
             # Insert a header row.
             container_object_tool_id += 1
             tool = Tool(id=container_object_tool_id,
-                         tool_config='',
-                         tool_id='',
-                         name='Name',
-                         description='Description',
-                         version='Version',
-                         profile='Minimum Galaxy Version',
-                         requirements='',
-                         repository_id='',
-                         changeset_revision='')
+                        tool_config='',
+                        tool_id='',
+                        name='Name',
+                        description='Description',
+                        version='Version',
+                        profile='Minimum Galaxy Version',
+                        requirements='',
+                        repository_id='',
+                        changeset_revision='')
             folder.valid_tools.append(tool)
             if repository:
                 repository_id = repository.id
@@ -489,23 +489,23 @@ class UtilityContainerManager(object):
                     description = ''
                     version = 'unknown'
                 tool = Tool(id=container_object_tool_id,
-                             tool_config=tool_config,
-                             tool_id=tool_id,
-                             name=name,
-                             description=description,
-                             version=version,
-                             profile=profile,
-                             requirements=requirements_str,
-                             repository_id=repository_id,
-                             changeset_revision=changeset_revision,
-                             repository_installation_status=repository_installation_status)
+                            tool_config=tool_config,
+                            tool_id=tool_id,
+                            name=name,
+                            description=description,
+                            version=version,
+                            profile=profile,
+                            requirements=requirements_str,
+                            repository_id=repository_id,
+                            changeset_revision=changeset_revision,
+                            repository_installation_status=repository_installation_status)
                 folder.valid_tools.append(tool)
         else:
             tools_root_folder = None
         return folder_id, tools_root_folder
 
     def build_tool_dependencies_folder(self, folder_id, tool_dependencies, label='Tool dependencies', missing=False,
-                                        new_install=False, reinstalling=False):
+                                       new_install=False, reinstalling=False):
         """Return a folder hierarchy containing tool dependencies."""
         # When we're in Galaxy (not the tool shed) and the tool dependencies are not installed or are in an error state,
         # they are considered missing.  The tool dependency status will be displayed only if a record exists for the tool
@@ -530,22 +530,22 @@ class UtilityContainerManager(object):
             tool_dependency_id += 1
             if self.app.name == 'galaxy':
                 tool_dependency = ToolDependency(id=tool_dependency_id,
-                                                  name='Name',
-                                                  version='Version',
-                                                  type='Type',
-                                                  readme=None,
-                                                  installation_status='Installation status',
-                                                  repository_id=None,
-                                                  tool_dependency_id=None)
+                                                 name='Name',
+                                                 version='Version',
+                                                 type='Type',
+                                                 readme=None,
+                                                 installation_status='Installation status',
+                                                 repository_id=None,
+                                                 tool_dependency_id=None)
             else:
                 tool_dependency = ToolDependency(id=tool_dependency_id,
-                                                  name='Name',
-                                                  version='Version',
-                                                  type='Type',
-                                                  readme=None,
-                                                  installation_status=None,
-                                                  repository_id=None,
-                                                  tool_dependency_id=None)
+                                                 name='Name',
+                                                 version='Version',
+                                                 type='Type',
+                                                 readme=None,
+                                                 installation_status=None,
+                                                 repository_id=None,
+                                                 tool_dependency_id=None)
             folder.tool_dependencies.append(tool_dependency)
             for dependency_key, requirements_dict in tool_dependencies.items():
                 tool_dependency_id += 1
@@ -569,13 +569,13 @@ class UtilityContainerManager(object):
                         else:
                             installation_status = None
                         tool_dependency = ToolDependency(id=tool_dependency_id,
-                                                          name=name,
-                                                          version=None,
-                                                          type=type,
-                                                          readme=None,
-                                                          installation_status=installation_status,
-                                                          repository_id=repository_id,
-                                                          tool_dependency_id=td_id)
+                                                         name=name,
+                                                         version=None,
+                                                         type=type,
+                                                         readme=None,
+                                                         installation_status=installation_status,
+                                                         repository_id=repository_id,
+                                                         tool_dependency_id=td_id)
                         folder.tool_dependencies.append(tool_dependency)
                 else:
                     try:
@@ -598,20 +598,20 @@ class UtilityContainerManager(object):
                     else:
                         installation_status = None
                     tool_dependency = ToolDependency(id=tool_dependency_id,
-                                                      name=name,
-                                                      version=version,
-                                                      type=type,
-                                                      readme=None,
-                                                      installation_status=installation_status,
-                                                      repository_id=repository_id,
-                                                      tool_dependency_id=td_id)
+                                                     name=name,
+                                                     version=version,
+                                                     type=type,
+                                                     readme=None,
+                                                     installation_status=installation_status,
+                                                     repository_id=repository_id,
+                                                     tool_dependency_id=td_id)
                     folder.tool_dependencies.append(tool_dependency)
         else:
             tool_dependencies_root_folder = None
         return folder_id, tool_dependencies_root_folder
 
     def build_workflows_folder(self, folder_id, workflows, repository_metadata_id=None, repository_id=None,
-                                label='Workflows'):
+                               label='Workflows'):
         """
         Return a folder hierarchy containing workflow objects for each workflow dictionary in the
         received workflows list.  When this method is called from the tool shed, repository_metadata_id
@@ -629,12 +629,12 @@ class UtilityContainerManager(object):
             # Insert a header row.
             workflow_id += 1
             workflow = Workflow(id=workflow_id,
-                                 workflow_name='Name',
-                                 steps='steps',
-                                 format_version='format-version',
-                                 annotation='annotation',
-                                 repository_metadata_id=repository_metadata_id,
-                                 repository_id=repository_id)
+                                workflow_name='Name',
+                                steps='steps',
+                                format_version='format-version',
+                                annotation='annotation',
+                                repository_metadata_id=repository_metadata_id,
+                                repository_id=repository_id)
             folder.workflows.append(workflow)
             for workflow_tup in workflows:
                 workflow_dict = workflow_tup[1]
@@ -645,25 +645,25 @@ class UtilityContainerManager(object):
                     steps = 'unknown'
                 workflow_id += 1
                 workflow = Workflow(id=workflow_id,
-                                     workflow_name=workflow_dict.get('name', ''),
-                                     steps=steps,
-                                     format_version=workflow_dict.get('format-version', ''),
-                                     annotation=workflow_dict.get('annotation', ''),
-                                     repository_metadata_id=repository_metadata_id,
-                                     repository_id=repository_id)
+                                    workflow_name=workflow_dict.get('name', ''),
+                                    steps=steps,
+                                    format_version=workflow_dict.get('format-version', ''),
+                                    annotation=workflow_dict.get('annotation', ''),
+                                    repository_metadata_id=repository_metadata_id,
+                                    repository_id=repository_id)
                 folder.workflows.append(workflow)
         else:
             workflows_root_folder = None
         return folder_id, workflows_root_folder
 
     def generate_repository_dependencies_folder_label_from_key(self, repository_name, repository_owner, changeset_revision,
-                                                                prior_installation_required, only_if_compiling_contained_td, key):
+                                                               prior_installation_required, only_if_compiling_contained_td, key):
         """Return a repository dependency label based on the repository dependency key."""
         if self.key_is_current_repositorys_key(repository_name,
-                                                repository_owner,
-                                                changeset_revision,
-                                                prior_installation_required,
-                                                only_if_compiling_contained_td, key):
+                                               repository_owner,
+                                               changeset_revision,
+                                               prior_installation_required,
+                                               only_if_compiling_contained_td, key):
             label = 'Repository dependencies'
         else:
             if util.asbool(prior_installation_required):
@@ -706,7 +706,7 @@ class UtilityContainerManager(object):
             installation_status = 'unknown'
         if tool_shed_repository_id:
             tool_shed_repository = repository_util.get_tool_shed_repository_by_id(self.app,
-                                                                                   self.app.security.encode_id(tool_shed_repository_id))
+                                                                                  self.app.security.encode_id(tool_shed_repository_id))
             if tool_shed_repository:
                 if tool_shed_repository.missing_repository_dependencies:
                     installation_status = '%s, missing repository dependencies' % installation_status
@@ -722,7 +722,7 @@ class UtilityContainerManager(object):
         return None
 
     def handle_repository_dependencies_container_entry(self, repository_dependencies_folder, rd_key, rd_value, folder_id,
-                                                        repository_dependency_id, folder_keys):
+                                                       repository_dependency_id, folder_keys):
         repository_components_tuple = container_util.get_components_from_key(rd_key)
         components_list = repository_util.extract_components_from_tuple(repository_components_tuple)
         toolshed, repository_name, repository_owner, changeset_revision = components_list[0:4]
@@ -738,11 +738,11 @@ class UtilityContainerManager(object):
             only_if_compiling_contained_td = components_list[5]
         folder = self.get_folder(repository_dependencies_folder, rd_key)
         label = self.generate_repository_dependencies_folder_label_from_key(repository_name,
-                                                                             repository_owner,
-                                                                             changeset_revision,
-                                                                             prior_installation_required,
-                                                                             only_if_compiling_contained_td,
-                                                                             repository_dependencies_folder.key)
+                                                                            repository_owner,
+                                                                            changeset_revision,
+                                                                            prior_installation_required,
+                                                                            only_if_compiling_contained_td,
+                                                                            repository_dependencies_folder.key)
         if folder:
             if rd_key not in folder_keys:
                 folder_id += 1
@@ -758,10 +758,10 @@ class UtilityContainerManager(object):
             # Insert a header row.
             repository_dependency_id += 1
             repository_dependency = RepositoryDependency(id=repository_dependency_id,
-                                                          repository_name='Name',
-                                                          changeset_revision='Revision',
-                                                          repository_owner='Owner',
-                                                          installation_status='Installation status')
+                                                         repository_name='Name',
+                                                         changeset_revision='Revision',
+                                                         repository_owner='Owner',
+                                                         installation_status='Installation status')
             # Insert the header row into the folder.
             sub_folder.repository_dependencies.append(repository_dependency)
         for repository_dependency in rd_value:
@@ -777,14 +777,14 @@ class UtilityContainerManager(object):
                     common_util.parse_repository_dependency_tuple(repository_dependency)
                 repository_dependency_id += 1
                 repository_dependency = RepositoryDependency(id=repository_dependency_id,
-                                                              toolshed=toolshed,
-                                                              repository_name=repository_name,
-                                                              repository_owner=repository_owner,
-                                                              changeset_revision=changeset_revision,
-                                                              prior_installation_required=util.asbool(prior_installation_required),
-                                                              only_if_compiling_contained_td=util.asbool(only_if_compiling_contained_td),
-                                                              installation_status=installation_status,
-                                                              tool_shed_repository_id=tool_shed_repository_id)
+                                                             toolshed=toolshed,
+                                                             repository_name=repository_name,
+                                                             repository_owner=repository_owner,
+                                                             changeset_revision=changeset_revision,
+                                                             prior_installation_required=util.asbool(prior_installation_required),
+                                                             only_if_compiling_contained_td=util.asbool(only_if_compiling_contained_td),
+                                                             installation_status=installation_status,
+                                                             tool_shed_repository_id=tool_shed_repository_id)
                 # Insert the repository_dependency into the folder.
                 sub_folder.repository_dependencies.append(repository_dependency)
         return repository_dependencies_folder, folder_id, repository_dependency_id
@@ -793,18 +793,18 @@ class UtilityContainerManager(object):
         toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple(repository_dependency)
         key = container_util.generate_repository_dependencies_key_for_repository(toolshed,
-                                                                                  repository_name,
-                                                                                  repository_owner,
-                                                                                  changeset_revision,
-                                                                                  prior_installation_required,
-                                                                                  only_if_compiling_contained_td)
+                                                                                 repository_name,
+                                                                                 repository_owner,
+                                                                                 changeset_revision,
+                                                                                 prior_installation_required,
+                                                                                 only_if_compiling_contained_td)
         for sub_folder in folder.folders:
             if key == sub_folder.key:
                 return True
         return False
 
     def key_is_current_repositorys_key(self, repository_name, repository_owner, changeset_revision,
-                                        prior_installation_required, only_if_compiling_contained_td, key):
+                                       prior_installation_required, only_if_compiling_contained_td, key):
         repository_components_tuple = container_util.get_components_from_key(key)
         components_list = repository_util.extract_components_from_tuple(repository_components_tuple)
         toolshed, key_name, key_owner, key_changeset_revision = components_list[0:4]
@@ -819,15 +819,15 @@ class UtilityContainerManager(object):
             key_prior_installation_required = components_list[4]
             key_only_if_compiling_contained_td = components_list[5]
         if (repository_name == key_name and
-             repository_owner == key_owner and
-             changeset_revision == key_changeset_revision and
-             prior_installation_required == key_prior_installation_required and
-             only_if_compiling_contained_td == key_only_if_compiling_contained_td):
+            repository_owner == key_owner and
+            changeset_revision == key_changeset_revision and
+            prior_installation_required == key_prior_installation_required and
+            only_if_compiling_contained_td == key_only_if_compiling_contained_td):
             return True
         return False
 
     def populate_repository_dependencies_container(self, repository_dependencies_folder, repository_dependencies, folder_id,
-                                                    repository_dependency_id):
+                                                   repository_dependency_id):
         folder_keys = []
         for key in repository_dependencies.keys():
             if key not in folder_keys:
@@ -835,11 +835,11 @@ class UtilityContainerManager(object):
         for key, value in repository_dependencies.items():
             repository_dependencies_folder, folder_id, repository_dependency_id = \
                 self.handle_repository_dependencies_container_entry(repository_dependencies_folder,
-                                                                     key,
-                                                                     value,
-                                                                     folder_id,
-                                                                     repository_dependency_id,
-                                                                     folder_keys)
+                                                                    key,
+                                                                    value,
+                                                                    folder_id,
+                                                                    repository_dependency_id,
+                                                                    folder_keys)
         return repository_dependencies_folder, folder_id, repository_dependency_id
 
     def prune_folder(self, folder, repository_dependency):

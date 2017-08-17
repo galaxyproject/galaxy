@@ -50,11 +50,11 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         repository_id = trans.security.encode_id(review.repository_id)
         changeset_revision = review.changeset_revision
         return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                          action='manage_repository_reviews_of_revision',
-                                                          id=repository_id,
-                                                          changeset_revision=changeset_revision,
-                                                          message=message,
-                                                          status=status))
+                                                        action='manage_repository_reviews_of_revision',
+                                                        id=repository_id,
+                                                        changeset_revision=changeset_revision,
+                                                        message=message,
+                                                        status=status))
 
     @web.expose
     @web.require_login("browse components")
@@ -63,8 +63,8 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation == "create":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='create_component',
-                                                                  **kwd))
+                                                                action='create_component',
+                                                                **kwd))
         return self.component_grid(trans, **kwd)
 
     @web.expose
@@ -77,20 +77,20 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
         rev, changeset_revision_label = hg_util.get_rev_label_from_changeset_revision(repo, review.changeset_revision)
         return trans.fill_template('/webapps/tool_shed/repository_review/browse_review.mako',
-                                    repository=repository,
-                                    changeset_revision_label=changeset_revision_label,
-                                    review=review,
-                                    message=message,
-                                    status=status)
+                                   repository=repository,
+                                   changeset_revision_label=changeset_revision_label,
+                                   review=review,
+                                   message=message,
+                                   status=status)
 
     def copy_review(self, trans, review_to_copy, review):
         for component_review in review_to_copy.component_reviews:
             copied_component_review = trans.model.ComponentReview(repository_review_id=review.id,
-                                                                   component_id=component_review.component.id,
-                                                                   comment=component_review.comment,
-                                                                   private=component_review.private,
-                                                                   approved=component_review.approved,
-                                                                   rating=component_review.rating)
+                                                                  component_id=component_review.component.id,
+                                                                  comment=component_review.comment,
+                                                                  private=component_review.private,
+                                                                  approved=component_review.approved,
+                                                                  rating=component_review.rating)
             trans.sa_session.add(copied_component_review)
             trans.sa_session.flush()
         review.approved = review_to_copy.approved
@@ -119,14 +119,14 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 message = "Component '%s' has been created" % escape(component.name)
                 status = 'done'
                 trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                           action='manage_components',
-                                                           message=message,
-                                                           status=status))
+                                                         action='manage_components',
+                                                         message=message,
+                                                         status=status))
         return trans.fill_template('/webapps/tool_shed/repository_review/create_component.mako',
-                                    name=name,
-                                    description=description,
-                                    message=message,
-                                    status=status)
+                                   name=name,
+                                   description=description,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_login("create review")
@@ -143,9 +143,9 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 # Make sure there is not already a review of the revision by the user.
                 repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
                 if review_util.get_review_by_repository_id_changeset_revision_user_id(app=trans.app,
-                                                                                       repository_id=repository_id,
-                                                                                       changeset_revision=changeset_revision,
-                                                                                       user_id=trans.security.encode_id(trans.user.id)):
+                                                                                      repository_id=repository_id,
+                                                                                      changeset_revision=changeset_revision,
+                                                                                      user_id=trans.security.encode_id(trans.user.id)):
                     message = "You have already created a review for revision <b>%s</b> of repository <b>%s</b>." % (changeset_revision, escape(repository.name))
                     status = "error"
                 else:
@@ -154,8 +154,8 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                             not previous_review_id and \
                             review_util.has_previous_repository_reviews(trans.app, repository, changeset_revision):
                         return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                          action='select_previous_review',
-                                                                          **kwd))
+                                                                        action='select_previous_review',
+                                                                        **kwd))
                     # A review can be initially performed only on an installable revision of a repository, so make sure we have metadata associated
                     # with the received changeset_revision.
                     repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
@@ -163,10 +163,10 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                         metadata = repository_metadata.metadata
                         if metadata:
                             review = trans.app.model.RepositoryReview(repository_id=repository_metadata.repository_id,
-                                                                       changeset_revision=changeset_revision,
-                                                                       user_id=trans.user.id,
-                                                                       rating=None,
-                                                                       deleted=False)
+                                                                      changeset_revision=changeset_revision,
+                                                                      user_id=trans.user.id,
+                                                                      rating=None,
+                                                                      deleted=False)
                             trans.sa_session.add(review)
                             trans.sa_session.flush()
                             if previous_review_id:
@@ -177,10 +177,10 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                 % (changeset_revision, repository.name)
                             status = 'done'
                             trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                       action='edit_review',
-                                                                       id=review_id,
-                                                                       message=message,
-                                                                       status=status))
+                                                                     action='edit_review',
+                                                                     id=review_id,
+                                                                     message=message,
+                                                                     status=status))
                     else:
                         message = "A new review cannot be created for revision <b>%s</b> of repository <b>%s</b>.  Select a valid revision and try again." \
                             % (changeset_revision, escape(repository.name))
@@ -188,11 +188,11 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                         kwd['status'] = 'error'
             else:
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='manage_repository_reviews',
-                                                                  **kwd))
+                                                                action='manage_repository_reviews',
+                                                                **kwd))
         return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                          action='view_or_manage_repository',
-                                                          **kwd))
+                                                        action='view_or_manage_repository',
+                                                        **kwd))
 
     @web.expose
     @web.require_login("edit component")
@@ -203,9 +203,9 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         if not id:
             message = "No component ids received for editing"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='manage_categories',
-                                                       message=message,
-                                                       status='error'))
+                                                     action='manage_categories',
+                                                     message=message,
+                                                     status='error'))
         component = review_util.get_component(trans.app, id)
         if kwd.get('edit_component_button', False):
             new_description = kwd.get('description', '').strip()
@@ -216,13 +216,13 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 message = "The information has been saved for the component named <b>%s</b>" % escape(component.name)
                 status = 'done'
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='manage_components',
-                                                                  message=message,
-                                                                  status=status))
+                                                                action='manage_components',
+                                                                message=message,
+                                                                status=status))
         return trans.fill_template('/webapps/tool_shed/repository_review/edit_component.mako',
-                                    component=component,
-                                    message=message,
-                                    status=status)
+                                   component=component,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_login("edit review")
@@ -286,8 +286,8 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 component = review_util.get_component(trans.app, component_id)
                 component_review = \
                     review_util.get_component_review_by_repository_review_id_component_id(trans.app,
-                                                                                           review_id,
-                                                                                           component_id)
+                                                                                          review_id,
+                                                                                          component_id)
                 if component_review:
                     # See if the existing component review should be updated.
                     if component_review.comment != comment or \
@@ -306,10 +306,10 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                     # See if a new component_review should be created.
                     if comment or private or approved != trans.model.ComponentReview.approved_states.NO or rating:
                         component_review = trans.model.ComponentReview(repository_review_id=review.id,
-                                                                        component_id=component.id,
-                                                                        comment=comment,
-                                                                        approved=approved,
-                                                                        rating=rating)
+                                                                       component_id=component.id,
+                                                                       comment=comment,
+                                                                       approved=approved,
+                                                                       rating=rating)
                         trans.sa_session.add(component_review)
                         trans.sa_session.flush()
                         flushed = True
@@ -318,8 +318,8 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                     # Update the repository rating value to be the average of all component review ratings.
                     average_rating = trans.sa_session.query(func.avg(trans.model.ComponentReview.table.c.rating)) \
                                                      .filter(and_(trans.model.ComponentReview.table.c.repository_review_id == review.id,
-                                                                    trans.model.ComponentReview.table.c.deleted == false(),
-                                                                    trans.model.ComponentReview.table.c.approved != trans.model.ComponentReview.approved_states.NA)) \
+                                                                  trans.model.ComponentReview.table.c.deleted == false(),
+                                                                  trans.model.ComponentReview.table.c.approved != trans.model.ComponentReview.approved_states.NA)) \
                                                      .scalar()
                     if average_rating is not None:
                         review.rating = int(average_rating)
@@ -341,18 +341,18 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         else:
             selected_value = trans.model.ComponentReview.approved_states.NO
         revision_approved_select_field = grids_util.build_approved_select_field(trans,
-                                                                                 name='revision_approved',
-                                                                                 selected_value=selected_value,
-                                                                                 for_component=False)
+                                                                                name='revision_approved',
+                                                                                selected_value=selected_value,
+                                                                                for_component=False)
         rev, changeset_revision_label = hg_util.get_rev_label_from_changeset_revision(repo, review.changeset_revision)
         return trans.fill_template('/webapps/tool_shed/repository_review/edit_review.mako',
-                                    repository=repository,
-                                    review=review,
-                                    changeset_revision_label=changeset_revision_label,
-                                    revision_approved_select_field=revision_approved_select_field,
-                                    components_dict=components_dict,
-                                    message=message,
-                                    status=status)
+                                   repository=repository,
+                                   review=review,
+                                   changeset_revision_label=changeset_revision_label,
+                                   revision_approved_select_field=revision_approved_select_field,
+                                   components_dict=components_dict,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_login("manage components")
@@ -361,12 +361,12 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation == "create":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='create_component',
-                                                                  **kwd))
+                                                                action='create_component',
+                                                                **kwd))
             elif operation == "edit":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='edit_component',
-                                                                  **kwd))
+                                                                action='edit_component',
+                                                                **kwd))
         if 'message' not in kwd:
             message = "This is a list of repository components (features) that can be reviewed.  You can add new components or change "
             message += "the description of an existing component if appropriate.  Click on the name link to change the description."
@@ -388,12 +388,12 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation == "inspect repository revisions":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='create_review',
-                                                                  **kwd))
+                                                                action='create_review',
+                                                                **kwd))
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='view_or_manage_repository',
-                                                                  **kwd))
+                                                                action='view_or_manage_repository',
+                                                                **kwd))
         message = 'Any of these repositories that contain tools have been installed into Galaxy and proven to be functionally correct by executing the tests defined '
         message += 'for each tool.  Repositories that do not contain tools have not been installed into Galaxy. '
         kwd['message'] = message
@@ -407,8 +407,8 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         if 'operation' in kwd:
             kwd['mine'] = True
             return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                              action='manage_repositories_with_reviews',
-                                                              **kwd))
+                                                            action='manage_repositories_with_reviews',
+                                                            **kwd))
         self.repositories_reviewed_by_me_grid.title = 'Repositories reviewed by me'
         return self.repositories_reviewed_by_me_grid(trans, **kwd)
 
@@ -423,12 +423,12 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation == "inspect repository revisions":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='create_review',
-                                                                  **kwd))
+                                                                action='create_review',
+                                                                **kwd))
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='view_or_manage_repository',
-                                                                  **kwd))
+                                                                action='view_or_manage_repository',
+                                                                **kwd))
         message = 'These repositories contain tools with missing functional tests or test data.  '
         kwd['message'] = message
         kwd['status'] = 'warning'
@@ -442,12 +442,12 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation == "inspect repository revisions":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='manage_repository_reviews',
-                                                                  **kwd))
+                                                                action='manage_repository_reviews',
+                                                                **kwd))
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='view_or_manage_repository',
-                                                                  **kwd))
+                                                                action='view_or_manage_repository',
+                                                                **kwd))
         return self.repositories_with_reviews_grid(trans, **kwd)
 
     @web.expose
@@ -457,12 +457,12 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation == "inspect repository revisions":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='create_review',
-                                                                  **kwd))
+                                                                action='create_review',
+                                                                **kwd))
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='view_or_manage_repository',
-                                                                  **kwd))
+                                                                action='view_or_manage_repository',
+                                                                **kwd))
         return self.repositories_without_reviews_grid(trans, **kwd)
 
     @web.expose
@@ -487,8 +487,8 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                         # Find the review for this changeset_revision
                         repository_reviews = \
                             review_util.get_reviews_by_repository_id_changeset_revision(trans.app,
-                                                                                         repository_id,
-                                                                                         changeset_revision)
+                                                                                        repository_id,
+                                                                                        changeset_revision)
                         # Determine if the current user can add a review to this revision.
                         can_add_review = trans.user not in [repository_review.user for repository_review in repository_reviews]
                         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
@@ -502,17 +502,17 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                         can_add_review = True
                     installable = changeset_revision in metadata_revision_hashes
                     revision_dict = dict(changeset_revision_label=changeset_revision_label,
-                                          repository_reviews=repository_reviews,
-                                          repository_metadata_reviews=repository_metadata_reviews,
-                                          installable=installable,
-                                          can_add_review=can_add_review)
+                                         repository_reviews=repository_reviews,
+                                         repository_metadata_reviews=repository_metadata_reviews,
+                                         installable=installable,
+                                         can_add_review=can_add_review)
                     reviews_dict[changeset_revision] = revision_dict
         return trans.fill_template('/webapps/tool_shed/repository_review/reviews_of_repository.mako',
-                                    repository=repository,
-                                    reviews_dict=reviews_dict,
-                                    mine=mine,
-                                    message=message,
-                                    status=status)
+                                   repository=repository,
+                                   reviews_dict=reviews_dict,
+                                   mine=mine,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_login("manage repository reviews of revision")
@@ -527,16 +527,16 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         installable = changeset_revision in [metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions]
         rev, changeset_revision_label = hg_util.get_rev_label_from_changeset_revision(repo, changeset_revision)
         reviews = review_util.get_reviews_by_repository_id_changeset_revision(trans.app,
-                                                                               repository_id,
-                                                                               changeset_revision)
+                                                                              repository_id,
+                                                                              changeset_revision)
         return trans.fill_template('/webapps/tool_shed/repository_review/reviews_of_changeset_revision.mako',
-                                    repository=repository,
-                                    changeset_revision=changeset_revision,
-                                    changeset_revision_label=changeset_revision_label,
-                                    reviews=reviews,
-                                    installable=installable,
-                                    message=message,
-                                    status=status)
+                                   repository=repository,
+                                   changeset_revision=changeset_revision,
+                                   changeset_revision_label=changeset_revision_label,
+                                   reviews=reviews,
+                                   installable=installable,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_login("repository reviews by user")
@@ -550,13 +550,13 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             kwd['id'] = trans.security.encode_id(repository.id)
             if operation == "inspect repository revisions":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='manage_repository_reviews',
-                                                                  **kwd))
+                                                                action='manage_repository_reviews',
+                                                                **kwd))
             if operation == "view_or_manage_repository":
                 kwd['changeset_revision'] = review.changeset_revision
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='view_or_manage_repository',
-                                                                  **kwd))
+                                                                action='view_or_manage_repository',
+                                                                **kwd))
         # The user may not be the current user.  The value of the received id is the encoded user id.
         user = suc.get_user(trans.app, kwd['id'])
         self.repository_reviews_by_user_grid.title = "All repository revision reviews for user '%s'" % user.username
@@ -570,12 +570,12 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation == "inspect repository revisions":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='manage_repository_reviews',
-                                                                  **kwd))
+                                                                action='manage_repository_reviews',
+                                                                **kwd))
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
-                                                                  action='view_or_manage_repository',
-                                                                  **kwd))
+                                                                action='view_or_manage_repository',
+                                                                **kwd))
         return self.reviewed_repositories_i_own_grid(trans, **kwd)
 
     @web.expose
@@ -588,16 +588,16 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         changeset_revision = kwd.get('changeset_revision', None)
         repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
         previous_reviews_dict = review_util.get_previous_repository_reviews(trans.app,
-                                                                             repository,
-                                                                             changeset_revision)
+                                                                            repository,
+                                                                            changeset_revision)
         rev, changeset_revision_label = hg_util.get_rev_label_from_changeset_revision(repo, changeset_revision)
         return trans.fill_template('/webapps/tool_shed/repository_review/select_previous_review.mako',
-                                    repository=repository,
-                                    changeset_revision=changeset_revision,
-                                    changeset_revision_label=changeset_revision_label,
-                                    previous_reviews_dict=previous_reviews_dict,
-                                    message=message,
-                                    status=status)
+                                   repository=repository,
+                                   changeset_revision=changeset_revision,
+                                   changeset_revision_label=changeset_revision_label,
+                                   previous_reviews_dict=previous_reviews_dict,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_login("view or manage repository")
@@ -605,9 +605,9 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         repository = repository_util.get_repository_in_tool_shed(trans.app, kwd['id'])
         if trans.user_is_admin() or repository.user == trans.user:
             return trans.response.send_redirect(web.url_for(controller='repository',
-                                                              action='manage_repository',
-                                                              **kwd))
+                                                            action='manage_repository',
+                                                            **kwd))
         else:
             return trans.response.send_redirect(web.url_for(controller='repository',
-                                                              action='view_repository',
-                                                              **kwd))
+                                                            action='view_repository',
+                                                            **kwd))

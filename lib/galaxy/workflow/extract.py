@@ -41,7 +41,7 @@ def extract_workflow(trans, user, history=None, job_ids=None, dataset_ids=None, 
         for j, index in enumerate(steps_at_level):
             step = steps[index]
             step.position = dict(top=(base_pos + 120 * j),
-                                  left=(base_pos + 220 * i))
+                                 left=(base_pos + 220 * i))
     # Store it
     stored = model.StoredWorkflow()
     stored.user = user

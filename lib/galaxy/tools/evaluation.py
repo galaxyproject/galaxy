@@ -116,7 +116,7 @@ class ToolEvaluator(object):
         self.tool.exec_before_job(self.app, inp_data, out_data, param_dict)
         # Run the before queue ("exec_before_job") hook
         self.tool.call_hook('exec_before_job', self.app, inp_data=inp_data,
-                             out_data=out_data, tool=self.tool, param_dict=incoming)
+                            out_data=out_data, tool=self.tool, param_dict=incoming)
 
         self.param_dict = param_dict
 
@@ -184,11 +184,11 @@ class ToolEvaluator(object):
                 dataset_instances = DatasetListWrapper.to_dataset_instances(value)
                 input_values[input.name] = \
                     DatasetListWrapper(job_working_directory,
-                                        dataset_instances,
-                                        dataset_paths=input_dataset_paths,
-                                        datatypes_registry=self.app.datatypes_registry,
-                                        tool=self.tool,
-                                        name=input.name)
+                                       dataset_instances,
+                                       dataset_paths=input_dataset_paths,
+                                       datatypes_registry=self.app.datatypes_registry,
+                                       tool=self.tool,
+                                       name=input.name)
 
             elif isinstance(input, DataToolParameter):
                 # FIXME: We're populating param_dict with conversions when
@@ -212,15 +212,15 @@ class ToolEvaluator(object):
                         # Input that converter is based from has a value,
                         # but converted dataset does not exist
                         raise Exception('A path for explicit datatype conversion has not been found: %s --/--> %s'
-                                         % (input_values[input.name].extension, conversion_extensions))
+                                        % (input_values[input.name].extension, conversion_extensions))
                     else:
                         # Trick wrapper into using target conv ext (when
                         # None) without actually being a tool parameter
                         input_values[conversion_name] = \
                             DatasetFilenameWrapper(converted_dataset,
-                                                    datatypes_registry=self.app.datatypes_registry,
-                                                    tool=Bunch(conversion_name=Bunch(extensions=conv_ext)),
-                                                    name=conversion_name)
+                                                   datatypes_registry=self.app.datatypes_registry,
+                                                   tool=Bunch(conversion_name=Bunch(extensions=conv_ext)),
+                                                   name=conversion_name)
                 # Wrap actual input dataset
                 dataset = input_values[input.name]
                 wrapper_kwds = dict(

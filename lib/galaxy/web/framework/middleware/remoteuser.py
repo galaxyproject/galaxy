@@ -42,8 +42,8 @@ errorpage = """
 class RemoteUser(object):
 
     def __init__(self, app, maildomain=None, display_servers=None, admin_users=None,
-                  single_user=None, remote_user_header=None, remote_user_secret_header=None,
-                  normalize_remote_user_email=False):
+                 single_user=None, remote_user_header=None, remote_user_secret_header=None,
+                 normalize_remote_user_email=False):
         self.app = app
         self.maildomain = maildomain
         self.display_servers = display_servers or []

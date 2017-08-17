@@ -83,11 +83,11 @@ class TagManager(object):
         group_by = item_tag_assoc_class.table.c.tag_id
         # Do query and get result set.
         query = select(columns=cols_to_select,
-                        from_obj=from_obj,
-                        whereclause=where_clause,
-                        group_by=group_by,
-                        order_by=order_by,
-                        limit=limit)
+                       from_obj=from_obj,
+                       whereclause=where_clause,
+                       group_by=group_by,
+                       order_by=order_by,
+                       limit=limit)
         result_set = self.sa_session.execute(query)
         # Return community tags.
         community_tags = []
@@ -98,7 +98,7 @@ class TagManager(object):
 
     def get_tool_tags(self):
         query = select(columns=[galaxy.model.ToolTagAssociation.table.c.tag_id],
-                        from_obj=galaxy.model.ToolTagAssociation.table).distinct()
+                       from_obj=galaxy.model.ToolTagAssociation.table).distinct()
         result_set = self.sa_session.execute(query)
 
         tags = []
@@ -314,29 +314,29 @@ class GalaxyTagManager(TagManager):
         from galaxy import model
         TagManager.__init__(self, sa_session)
         self.item_tag_assoc_info["History"] = ItemTagAssocInfo(model.History,
-                                                                model.HistoryTagAssociation,
-                                                                model.HistoryTagAssociation.table.c.history_id)
+                                                               model.HistoryTagAssociation,
+                                                               model.HistoryTagAssociation.table.c.history_id)
         self.item_tag_assoc_info["HistoryDatasetAssociation"] = \
             ItemTagAssocInfo(model.HistoryDatasetAssociation,
-                              model.HistoryDatasetAssociationTagAssociation,
-                              model.HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id)
+                             model.HistoryDatasetAssociationTagAssociation,
+                             model.HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id)
         self.item_tag_assoc_info["HistoryDatasetCollectionAssociation"] = \
             ItemTagAssocInfo(model.HistoryDatasetCollectionAssociation,
-                              model.HistoryDatasetCollectionTagAssociation,
-                              model.HistoryDatasetCollectionTagAssociation.table.c.history_dataset_collection_id)
+                             model.HistoryDatasetCollectionTagAssociation,
+                             model.HistoryDatasetCollectionTagAssociation.table.c.history_dataset_collection_id)
         self.item_tag_assoc_info["LibraryDatasetDatasetAssociation"] = \
             ItemTagAssocInfo(model.LibraryDatasetDatasetAssociation,
-                              model.LibraryDatasetDatasetAssociationTagAssociation,
-                              model.LibraryDatasetDatasetAssociationTagAssociation.table.c.library_dataset_dataset_association_id)
+                             model.LibraryDatasetDatasetAssociationTagAssociation,
+                             model.LibraryDatasetDatasetAssociationTagAssociation.table.c.library_dataset_dataset_association_id)
         self.item_tag_assoc_info["Page"] = ItemTagAssocInfo(model.Page,
-                                                             model.PageTagAssociation,
-                                                             model.PageTagAssociation.table.c.page_id)
+                                                            model.PageTagAssociation,
+                                                            model.PageTagAssociation.table.c.page_id)
         self.item_tag_assoc_info["StoredWorkflow"] = ItemTagAssocInfo(model.StoredWorkflow,
-                                                                       model.StoredWorkflowTagAssociation,
-                                                                       model.StoredWorkflowTagAssociation.table.c.stored_workflow_id)
+                                                                      model.StoredWorkflowTagAssociation,
+                                                                      model.StoredWorkflowTagAssociation.table.c.stored_workflow_id)
         self.item_tag_assoc_info["Visualization"] = ItemTagAssocInfo(model.Visualization,
-                                                                      model.VisualizationTagAssociation,
-                                                                      model.VisualizationTagAssociation.table.c.visualization_id)
+                                                                     model.VisualizationTagAssociation,
+                                                                     model.VisualizationTagAssociation.table.c.visualization_id)
 
 
 class CommunityTagManager(TagManager):

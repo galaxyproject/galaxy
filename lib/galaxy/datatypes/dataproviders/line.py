@@ -32,7 +32,7 @@ class FilteredLineDataProvider(base.LimitedOffsetDataProvider):
     }
 
     def __init__(self, source, strip_lines=True, strip_newlines=False, provide_blank=False,
-                  comment_char=DEFAULT_COMMENT_CHAR, **kwargs):
+                 comment_char=DEFAULT_COMMENT_CHAR, **kwargs):
         """
         :param strip_lines: remove whitespace from the beginning an ending
             of each line (or not).
@@ -153,7 +153,7 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         # composition - not inheritance
         # TODO: not a fan of this:
         (filter_fn, limit, offset) = (kwargs.pop('filter_fn', None),
-                                         kwargs.pop('limit', None), kwargs.pop('offset', 0))
+                                      kwargs.pop('limit', None), kwargs.pop('offset', 0))
         line_provider = FilteredLineDataProvider(source, **kwargs)
         super(BlockDataProvider, self).__init__(line_provider, filter_fn=filter_fn, limit=limit, offset=offset)
 

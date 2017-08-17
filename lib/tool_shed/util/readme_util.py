@@ -55,20 +55,20 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                             lock.acquire(True)
                             try:
                                 text_of_reasonable_length = suc.set_image_paths(app,
-                                                                                 app.security.encode_id(repository.id),
-                                                                                 text_of_reasonable_length)
+                                                                                app.security.encode_id(repository.id),
+                                                                                text_of_reasonable_length)
                             except Exception as e:
                                 log.exception("Exception in build_readme_files_dict, so images may not be properly displayed")
                             finally:
                                 lock.release()
                         if readme_file_name.endswith('.rst'):
                             text_of_reasonable_length = Template(rst_to_html(text_of_reasonable_length),
-                                                                  input_encoding='utf-8',
-                                                                  output_encoding='utf-8',
-                                                                  default_filters=['decode.utf8'],
-                                                                  encoding_errors='replace')
+                                                                 input_encoding='utf-8',
+                                                                 output_encoding='utf-8',
+                                                                 default_filters=['decode.utf8'],
+                                                                 encoding_errors='replace')
                             text_of_reasonable_length = text_of_reasonable_length.render(static_path=web.url_for('/static'),
-                                                                                          host_url=web.url_for('/', qualified=True))
+                                                                                         host_url=web.url_for('/', qualified=True))
                             text_of_reasonable_length = unicodify(text_of_reasonable_length)
                         else:
                             text_of_reasonable_length = basic_util.to_html_string(text_of_reasonable_length)
@@ -84,7 +84,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                                 readme_files_dict[readme_file_name] = basic_util.size_string(text)
                             except Exception as e:
                                 log.exception("Error reading README file '%s' from repository manifest: %s" %
-                                               (str(relative_path_to_readme_file), str(e)))
+                                              (str(relative_path_to_readme_file), str(e)))
     return readme_files_dict
 
 

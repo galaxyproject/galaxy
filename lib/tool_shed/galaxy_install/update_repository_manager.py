@@ -34,8 +34,8 @@ class UpdateRepositoryManager(object):
         changeset_revision_dict = {}
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, str(repository.tool_shed))
         params = dict(name=str(repository.name),
-                       owner=str(repository.owner),
-                       changeset_revision=str(repository.installed_changeset_revision))
+                      owner=str(repository.owner),
+                      changeset_revision=str(repository.installed_changeset_revision))
         pathspec = ['repository', 'get_changeset_revision_and_ctx_rev']
         try:
             encoded_update_dict = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)

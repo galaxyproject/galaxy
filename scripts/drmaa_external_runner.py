@@ -16,7 +16,7 @@ import sys
 import drmaa
 
 DRMAA_jobTemplate_attributes = ['args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
-                                 'workingDirectory', 'jobName', 'email', 'project']
+                                'workingDirectory', 'jobName', 'email', 'project']
 
 
 def load_job_template_from_file(jt, filename):

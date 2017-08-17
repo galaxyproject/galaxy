@@ -68,7 +68,7 @@ class ToolValidator(object):
                         if sample_tool_data_table_conf:
                             error, correction_msg = \
                                 self.tdtm.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf,
-                                                                                   persist=False)
+                                                                                  persist=False)
                             if error:
                                 invalid_files_and_errors_tups.append(('tool_data_table_conf.xml.sample', correction_msg))
                             else:
@@ -208,13 +208,13 @@ class ToolValidator(object):
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
                 error, message = self.tdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
-                                                                                    persist=False)
+                                                                                   persist=False)
         tool, valid, message2 = self.load_tool_from_config(repository_id, tool_config_filepath)
         message = self.concat_messages(message, message2)
         return tool, valid, message, sample_files
 
     def handle_sample_files_and_load_tool_from_tmp_config(self, repo, repository_id, changeset_revision,
-                                                           tool_config_filename, work_dir):
+                                                          tool_config_filename, work_dir):
         tool = None
         message = ''
         ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
@@ -228,7 +228,7 @@ class ToolValidator(object):
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
                 if tool_data_table_config:
                     error, message = self.tdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
-                                                                                        persist=False)
+                                                                                       persist=False)
                     if error:
                         log.debug(message)
         manifest_ctx, ctx_file = hg_util.get_ctx_file_path_from_manifest(tool_config_filename, repo, changeset_revision)
@@ -255,37 +255,37 @@ class ToolValidator(object):
         tool_config_filepath = repository_util.get_absolute_path_to_file_in_repository(repo_files_dir, tool_config_filename)
         work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-ltfcr")
         can_use_disk_file = self.can_use_tool_config_disk_file(repository,
-                                                                repo,
-                                                                tool_config_filepath,
-                                                                changeset_revision)
+                                                               repo,
+                                                               tool_config_filepath,
+                                                               changeset_revision)
         if can_use_disk_file:
             self.app.config.tool_data_path = work_dir
             tool, valid, message, sample_files = \
                 self.handle_sample_files_and_load_tool_from_disk(repo_files_dir,
-                                                                  repository_id,
-                                                                  tool_config_filepath,
-                                                                  work_dir)
+                                                                 repository_id,
+                                                                 tool_config_filepath,
+                                                                 work_dir)
             if tool is not None:
                 invalid_files_and_errors_tups = \
                     self.check_tool_input_params(repo_files_dir,
-                                                  tool_config_filename,
-                                                  tool,
-                                                  sample_files)
+                                                 tool_config_filename,
+                                                 tool,
+                                                 sample_files)
                 if invalid_files_and_errors_tups:
                     message2 = tool_util.generate_message_for_invalid_tools(self.app,
-                                                                             invalid_files_and_errors_tups,
-                                                                             repository,
-                                                                             metadata_dict=None,
-                                                                             as_html=True,
-                                                                             displaying_invalid_tool=True)
+                                                                            invalid_files_and_errors_tups,
+                                                                            repository,
+                                                                            metadata_dict=None,
+                                                                            as_html=True,
+                                                                            displaying_invalid_tool=True)
                     message = self.concat_messages(message, message2)
         else:
             tool, message, sample_files = \
                 self.handle_sample_files_and_load_tool_from_tmp_config(repo,
-                                                                        repository_id,
-                                                                        changeset_revision,
-                                                                        tool_config_filename,
-                                                                        work_dir)
+                                                                       repository_id,
+                                                                       changeset_revision,
+                                                                       tool_config_filename,
+                                                                       work_dir)
         basic_util.remove_dir(work_dir)
         self.app.config.tool_data_path = original_tool_data_path
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.

@@ -42,9 +42,9 @@ def main():
     jobs = {}
     try:
         for job in app.model.Job.filter(sa.and_(app.model.Job.table.c.create_time < '2008-12-16',
-                                                  app.model.Job.table.c.state == 'ok',
-                                                  app.model.Job.table.c.tool_id == 'gops_join_1',
-                                                  sa.not_(app.model.Job.table.c.command_line.like('%-m 1 %')))).all():
+                                                app.model.Job.table.c.state == 'ok',
+                                                app.model.Job.table.c.tool_id == 'gops_join_1',
+                                                sa.not_(app.model.Job.table.c.command_line.like('%-m 1 %')))).all():
             print "# processing job id %s" % str(job.id)
             for jtoda in job.output_datasets:
                 print "# --> processing JobToOutputDatasetAssociation id %s" % str(jtoda.id)

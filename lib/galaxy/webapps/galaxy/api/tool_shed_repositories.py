@@ -80,7 +80,7 @@ class ToolShedRepositoriesController(BaseAPIController):
 
     def __get_value_mapper(self, trans, tool_shed_repository):
         value_mapper = {'id': trans.security.encode_id(tool_shed_repository.id),
-                         'error_message': tool_shed_repository.error_message or ''}
+                        'error_message': tool_shed_repository.error_message or ''}
         return value_mapper
 
     def __get_tool_dependencies(self, metadata, tool_dependencies=None):
@@ -102,9 +102,9 @@ class ToolShedRepositoriesController(BaseAPIController):
         if metadata['includes_tools_for_display_in_tool_panel']:
             for key, tool_dict in metadata['tools']:
                 tool_info = dict(clean=re.sub('[^a-zA-Z0-9]+', '_', tool_dict['name']).lower(),
-                                  name=tool_dict['name'],
-                                  version=tool_dict['version'],
-                                  description=tool_dict['description'])
+                                 name=tool_dict['name'],
+                                 version=tool_dict['version'],
+                                 description=tool_dict['description'])
                 if tool_info not in tools:
                     tools.append(tool_info)
         if metadata['has_repository_dependencies']:
@@ -238,8 +238,8 @@ class ToolShedRepositoriesController(BaseAPIController):
             tool_ids = util.listify(tool_ids)
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field(trans.app)
         tool_panel_section_dict = {'name': tool_panel_section_select_field.name,
-                                    'id': tool_panel_section_select_field.field_id,
-                                    'sections': []}
+                                   'id': tool_panel_section_select_field.field_id,
+                                   'sections': []}
         for name, id, _ in tool_panel_section_select_field.options:
             tool_panel_section_dict['sections'].append(dict(id=id, name=name))
         repository_data = dict()
@@ -270,10 +270,10 @@ class ToolShedRepositoriesController(BaseAPIController):
                     tools[changeset] = []
                 for tool_dict in metadata['tools']:
                     tool_info = dict(clean=re.sub('[^a-zA-Z0-9]+', '_', tool_dict['name']).lower(),
-                                      guid=tool_dict['guid'],
-                                      name=tool_dict['name'],
-                                      version=tool_dict['version'],
-                                      description=tool_dict['description'])
+                                     guid=tool_dict['guid'],
+                                     name=tool_dict['name'],
+                                     version=tool_dict['version'],
+                                     description=tool_dict['description'])
                     if tool_info not in tools[changeset]:
                         tools[changeset].append(tool_info)
                 if metadata['has_repository_dependencies']:
@@ -396,8 +396,8 @@ class ToolShedRepositoriesController(BaseAPIController):
             tool_shed_repository_dict = \
                 tool_shed_repository.to_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
             tool_shed_repository_dict['url'] = web.url_for(controller='tool_shed_repositories',
-                                                              action='show',
-                                                              id=trans.security.encode_id(tool_shed_repository.id))
+                                                           action='show',
+                                                           id=trans.security.encode_id(tool_shed_repository.id))
             tool_shed_repository_dicts.append(tool_shed_repository_dict)
         return tool_shed_repository_dicts
 
@@ -447,42 +447,42 @@ class ToolShedRepositoriesController(BaseAPIController):
         shed_tool_conf = kwd.get('shed_tool_conf', None)
         tool_path = suc.get_tool_path_by_shed_tool_conf_filename(self.app, shed_tool_conf)
         installation_dict = dict(install_repository_dependencies=install_repository_dependencies,
-                                  new_tool_panel_section_label=new_tool_panel_section_label,
-                                  no_changes_checked=False,
-                                  repo_info_dicts=repo_info_dicts,
-                                  tool_panel_section_id=tool_panel_section_id,
-                                  tool_path=tool_path,
-                                  tool_shed_url=tool_shed_url)
+                                 new_tool_panel_section_label=new_tool_panel_section_label,
+                                 no_changes_checked=False,
+                                 repo_info_dicts=repo_info_dicts,
+                                 tool_panel_section_id=tool_panel_section_id,
+                                 tool_path=tool_path,
+                                 tool_shed_url=tool_shed_url)
         new_repositories, tool_panel_keys, repo_info_dicts, filtered_repos = irm.handle_tool_shed_repositories(installation_dict)
         if new_repositories:
             installation_dict = dict(created_or_updated_tool_shed_repositories=new_repositories,
-                                      filtered_repo_info_dicts=filtered_repos,
-                                      has_repository_dependencies=has_repository_dependencies,
-                                      includes_tool_dependencies=includes_tool_dependencies,
-                                      includes_tools=includes_tools,
-                                      includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
-                                      install_repository_dependencies=install_repository_dependencies,
-                                      install_tool_dependencies=install_tool_dependencies,
-                                      message='',
-                                      new_tool_panel_section_label=new_tool_panel_section_label,
-                                      tool_panel_section_mapping=tool_panel_section_mapping,
-                                      install_resolver_dependencies=install_resolver_dependencies,
-                                      shed_tool_conf=shed_tool_conf,
-                                      status='ok',
-                                      tool_panel_section_id=tool_panel_section_id,
-                                      tool_panel_section_keys=tool_panel_keys,
-                                      tool_path=tool_path,
-                                      tool_shed_url=tool_shed_url)
+                                     filtered_repo_info_dicts=filtered_repos,
+                                     has_repository_dependencies=has_repository_dependencies,
+                                     includes_tool_dependencies=includes_tool_dependencies,
+                                     includes_tools=includes_tools,
+                                     includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
+                                     install_repository_dependencies=install_repository_dependencies,
+                                     install_tool_dependencies=install_tool_dependencies,
+                                     message='',
+                                     new_tool_panel_section_label=new_tool_panel_section_label,
+                                     tool_panel_section_mapping=tool_panel_section_mapping,
+                                     install_resolver_dependencies=install_resolver_dependencies,
+                                     shed_tool_conf=shed_tool_conf,
+                                     status='ok',
+                                     tool_panel_section_id=tool_panel_section_id,
+                                     tool_panel_section_keys=tool_panel_keys,
+                                     tool_path=tool_path,
+                                     tool_shed_url=tool_shed_url)
             encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                 irm.initiate_repository_installation(installation_dict)
             return json.dumps(dict(operation='install',
-                                     api=True,
-                                     install_resolver_dependencies=install_resolver_dependencies,
-                                     install_tool_dependencies=install_tool_dependencies,
-                                     encoded_kwd=encoded_kwd,
-                                     reinstalling=False,
-                                     tool_shed_repository_ids=json.dumps([repo[0] for repo in repositories]),
-                                     repositories=[trans.security.encode_id(repo.id) for repo in new_repositories]))
+                                   api=True,
+                                   install_resolver_dependencies=install_resolver_dependencies,
+                                   install_tool_dependencies=install_tool_dependencies,
+                                   encoded_kwd=encoded_kwd,
+                                   reinstalling=False,
+                                   tool_shed_repository_ids=json.dumps([repo[0] for repo in repositories]),
+                                   repositories=[trans.security.encode_id(repo.id) for repo in new_repositories]))
 
     @expose_api
     def install_repository_revision(self, trans, payload, **kwd):
@@ -522,16 +522,16 @@ class ToolShedRepositoriesController(BaseAPIController):
         self.__ensure_can_install_repos(trans)
         irm = InstallRepositoryManager(self.app)
         installed_tool_shed_repositories = irm.install(tool_shed_url,
-                                                        name,
-                                                        owner,
-                                                        changeset_revision,
-                                                        payload)
+                                                       name,
+                                                       owner,
+                                                       changeset_revision,
+                                                       payload)
 
         def to_dict(tool_shed_repository):
             tool_shed_repository_dict = tool_shed_repository.as_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
             tool_shed_repository_dict['url'] = web.url_for(controller='tool_shed_repositories',
-                                                              action='show',
-                                                              id=trans.security.encode_id(tool_shed_repository.id))
+                                                           action='show',
+                                                           id=trans.security.encode_id(tool_shed_repository.id))
             return tool_shed_repository_dict
         if installed_tool_shed_repositories:
             return map(to_dict, installed_tool_shed_repositories)
@@ -600,15 +600,15 @@ class ToolShedRepositoriesController(BaseAPIController):
         all_installed_tool_shed_repositories = []
         for tool_shed_url, name, owner, changeset_revision in zip(tool_shed_urls, names, owners, changeset_revisions):
             current_payload = dict(tool_shed_url=tool_shed_url,
-                                    name=name,
-                                    owner=owner,
-                                    changeset_revision=changeset_revision,
-                                    new_tool_panel_section_label=new_tool_panel_section_label,
-                                    tool_panel_section_id=tool_panel_section_id,
-                                    install_repository_dependencies=install_repository_dependencies,
-                                    install_resolver_dependencies=install_resolver_dependencies,
-                                    install_tool_dependencies=install_tool_dependencies,
-                                    shed_tool_conf=shed_tool_conf)
+                                   name=name,
+                                   owner=owner,
+                                   changeset_revision=changeset_revision,
+                                   new_tool_panel_section_label=new_tool_panel_section_label,
+                                   tool_panel_section_id=tool_panel_section_id,
+                                   install_repository_dependencies=install_repository_dependencies,
+                                   install_resolver_dependencies=install_resolver_dependencies,
+                                   install_tool_dependencies=install_tool_dependencies,
+                                   shed_tool_conf=shed_tool_conf)
             installed_tool_shed_repositories = self.install_repository_revision(trans, **current_payload)
             if isinstance(installed_tool_shed_repositories, dict):
                 # We encountered an error.
@@ -675,10 +675,10 @@ class ToolShedRepositoriesController(BaseAPIController):
         tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload(payload, include_changeset=True)
         tool_shed_repositories = []
         tool_shed_repository = repository_util.get_installed_repository(self.app,
-                                                                         tool_shed=tool_shed_url,
-                                                                         name=name,
-                                                                         owner=owner,
-                                                                         changeset_revision=changeset_revision)
+                                                                        tool_shed=tool_shed_url,
+                                                                        name=name,
+                                                                        owner=owner,
+                                                                        changeset_revision=changeset_revision)
         rrm = RepairRepositoryManager(self.app)
         repair_dict = rrm.get_repair_dict(tool_shed_repository)
         ordered_tsr_ids = repair_dict.get('ordered_tsr_ids', [])
@@ -689,11 +689,11 @@ class ToolShedRepositoriesController(BaseAPIController):
                 repo_info_dict = ordered_repo_info_dicts[index]
                 # TODO: handle errors in repair_dict.
                 repair_dict = rrm.repair_tool_shed_repository(repository,
-                                                               encoding_util.tool_shed_encode(repo_info_dict))
+                                                              encoding_util.tool_shed_encode(repo_info_dict))
                 repository_dict = repository.to_dict(value_mapper=self.__get_value_mapper(trans, repository))
                 repository_dict['url'] = web.url_for(controller='tool_shed_repositories',
-                                                        action='show',
-                                                        id=trans.security.encode_id(repository.id))
+                                                     action='show',
+                                                     id=trans.security.encode_id(repository.id))
                 if repair_dict:
                     errors = repair_dict.get(repository.name, [])
                     repository_dict['errors_attempting_repair'] = '  '.join(errors)
@@ -732,9 +732,9 @@ class ToolShedRepositoriesController(BaseAPIController):
         """
         start_time = strftime("%Y-%m-%d %H:%M:%S")
         results = dict(start_time=start_time,
-                        successful_count=0,
-                        unsuccessful_count=0,
-                        repository_status=[])
+                       successful_count=0,
+                       unsuccessful_count=0,
+                       repository_status=[])
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
             raise HTTPForbidden(detail='You are not authorized to reset metadata on repositories installed into this Galaxy instance.')
@@ -748,10 +748,10 @@ class ToolShedRepositoriesController(BaseAPIController):
                 irmm_invalid_file_tups = irmm.get_invalid_file_tups()
                 if irmm_invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools(self.app,
-                                                                            irmm_invalid_file_tups,
-                                                                            repository,
-                                                                            None,
-                                                                            as_html=False)
+                                                                           irmm_invalid_file_tups,
+                                                                           repository,
+                                                                           None,
+                                                                           as_html=False)
                     results['unsuccessful_count'] += 1
                 else:
                     message = "Successfully reset metadata on repository %s owned by %s" % \
@@ -781,8 +781,8 @@ class ToolShedRepositoriesController(BaseAPIController):
             return {}
         tool_shed_repository_dict = tool_shed_repository.as_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
         tool_shed_repository_dict['url'] = web.url_for(controller='tool_shed_repositories',
-                                                          action='show',
-                                                          id=trans.security.encode_id(tool_shed_repository.id))
+                                                       action='show',
+                                                       id=trans.security.encode_id(tool_shed_repository.id))
         return tool_shed_repository_dict
 
     @expose_api
@@ -801,7 +801,7 @@ class ToolShedRepositoriesController(BaseAPIController):
             return {}
         tool_shed_repository_dict = tool_shed_repository.as_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
         tool_shed_repository_dict['url'] = web.url_for(controller='tool_shed_repositories',
-                                                          action='show',
-                                                          id=trans.security.encode_id(tool_shed_repository.id))
+                                                       action='show',
+                                                       id=trans.security.encode_id(tool_shed_repository.id))
         tool_shed_repository_dict['repository_dependencies'] = self.__flatten_repository_dependency_list(trans, tool_shed_repository)
         return tool_shed_repository_dict

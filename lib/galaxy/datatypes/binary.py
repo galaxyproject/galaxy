@@ -250,8 +250,8 @@ class Bam(Binary):
 
         # Get the version of samtools via --version-only, if available
         p = subprocess.Popen(['samtools', '--version-only'],
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
         output, error = p.communicate()
 
         # --version-only is available
@@ -398,7 +398,7 @@ class Bam(Binary):
         if exit_code == -6:
             # SIGABRT, most likely samtools 1.0+ which does not accept the index name parameter.
             dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
-                                            '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
+                                           '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
             os.symlink(dataset.file_name, dataset_symlink)
             try:
                 command = ['samtools', 'index', dataset_symlink]
@@ -491,7 +491,7 @@ class Bam(Binary):
                     bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
                     ck_data = "%s\n%s" % (ck_data, bamline_modified)
         return dumps({'ck_data': util.unicodify(ck_data),
-                        'offset': offset})
+                      'offset': offset})
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         preview = util.string_as_bool(preview)
@@ -510,11 +510,11 @@ class Bam(Binary):
             if column_number is None:
                 column_number = 1
             return trans.fill_template("/dataset/tabular_chunked.mako",
-                                        dataset=dataset,
-                                        chunk=self.get_chunk(trans, dataset, 0),
-                                        column_number=column_number,
-                                        column_names=column_names,
-                                        column_types=column_types)
+                                       dataset=dataset,
+                                       chunk=self.get_chunk(trans, dataset, 0),
+                                       column_number=column_number,
+                                       column_names=column_names,
+                                       column_types=column_types)
 
     # ------------- Dataproviders
     # pipe through samtools view
@@ -704,7 +704,7 @@ class Bcf(Binary):
         # Usage: bcftools index <in.bcf>
 
         dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
-                                        '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
+                                       '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
         os.symlink(dataset.file_name, dataset_symlink)
 
         stderr_name = tempfile.NamedTemporaryFile(prefix="bcf_index_stderr").name
@@ -1022,7 +1022,7 @@ class SQlite (Binary):
 class GeminiSQLite(SQlite):
     """Class describing a Gemini Sqlite database """
     MetadataElement(name="gemini_version", default='0.10.0', param=MetadataParameter, desc="Gemini Version",
-                     readonly=True, visible=True, no_value='0.10.0')
+                    readonly=True, visible=True, no_value='0.10.0')
     file_ext = "gemini.sqlite"
     edam_format = "format_3622"
     edam_data = "data_3498"
@@ -1043,7 +1043,7 @@ class GeminiSQLite(SQlite):
     def sniff(self, filename):
         if super(GeminiSQLite, self).sniff(filename):
             gemini_table_names = ["gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
-                                   "variant_impacts", "variants", "version"]
+                                  "variant_impacts", "variants", "version"]
             try:
                 conn = sqlite.connect(filename)
                 c = conn.cursor()
@@ -1450,9 +1450,9 @@ Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
 class SearchGuiArchive (CompressedArchive):
     """Class describing a SearchGUI archive """
     MetadataElement(name="searchgui_version", default='1.28.0', param=MetadataParameter, desc="SearchGui Version",
-                     readonly=True, visible=True, no_value=None)
+                    readonly=True, visible=True, no_value=None)
     MetadataElement(name="searchgui_major_version", default='1', param=MetadataParameter, desc="SearchGui Major Version",
-                     readonly=True, visible=True, no_value=None)
+                    readonly=True, visible=True, no_value=None)
     file_ext = "searchgui_archive"
 
     def set_meta(self, dataset, overwrite=True, **kwd):

@@ -56,7 +56,7 @@ class TextField(BaseField):
     def get_html(self, prefix="", disabled=False):
         value = unicodify(self.value or "")
         return unicodify('<input type="text" name="%s%s" size="%d" value="%s"%s>'
-                          % (prefix, self.name, self.size, escape(value, quote=True), self.get_disabled_str(disabled)))
+                         % (prefix, self.name, self.size, escape(value, quote=True), self.get_disabled_str(disabled)))
 
     def set_size(self, size):
         self.size = int(size)
@@ -84,7 +84,7 @@ class PasswordField(BaseField):
 
     def get_html(self, prefix="", disabled=False):
         return unicodify('<input type="password" name="%s%s" size="%d" value="%s"%s>'
-                          % (prefix, self.name, self.size, escape(str(self.value), quote=True), self.get_disabled_str(disabled)))
+                         % (prefix, self.name, self.size, escape(str(self.value), quote=True), self.get_disabled_str(disabled)))
 
     def set_size(self, size):
         self.size = int(size)
@@ -117,7 +117,7 @@ class TextArea(BaseField):
 
     def get_html(self, prefix="", disabled=False):
         return unicodify('<textarea name="%s%s" rows="%d" cols="%d"%s>%s</textarea>'
-                          % (prefix, self.name, self.rows, self.cols, self.get_disabled_str(disabled), escape(str(self.value), quote=True)))
+                         % (prefix, self.name, self.rows, self.cols, self.get_disabled_str(disabled), escape(str(self.value), quote=True)))
 
     def set_size(self, rows, cols):
         self.rows = rows
@@ -160,7 +160,7 @@ class CheckboxField(BaseField):
             checked_text = ''
         id_name = prefix + self.name
         return unicodify('<input type="checkbox" id="%s" name="%s" value="__CHECKED__"%s%s%s><input type="hidden" name="%s" value="__NOTHING__"%s>'
-                          % (id_name, id_name, checked_text, self.get_disabled_str(disabled), self.refresh_on_change_text, id_name, self.get_disabled_str(disabled)))
+                         % (id_name, id_name, checked_text, self.get_disabled_str(disabled), self.refresh_on_change_text, id_name, self.get_disabled_str(disabled)))
 
     @staticmethod
     def is_checked(value):
@@ -321,7 +321,7 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " checked='checked'"
             rval.append('<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s%s><label class="inline" for="%s">%s</label></div>'
-                         % (style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str(disabled), self.extra_attributes, uniq_id, escape(text, quote=True)))
+                        % (style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str(disabled), self.extra_attributes, uniq_id, escape(text, quote=True)))
             ctr += 1
         return unicodify("\n".join(rval))
 
@@ -338,17 +338,17 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " checked='checked'"
             rval.append('<div%s><input type="radio" name="%s%s"%s value="%s" id="%s"%s%s%s><label class="inline" for="%s">%s</label></div>'
-                         % (style,
-                             prefix,
-                             self.name,
-                             self.refresh_on_change_text,
-                             escaped_value,
-                             uniq_id,
-                             selected_text,
-                             self.get_disabled_str(disabled),
-                             self.extra_attributes,
-                             uniq_id,
-                             text))
+                        % (style,
+                           prefix,
+                           self.name,
+                           self.refresh_on_change_text,
+                           escaped_value,
+                           uniq_id,
+                           selected_text,
+                           self.get_disabled_str(disabled),
+                           self.extra_attributes,
+                           uniq_id,
+                           text))
             ctr += 1
         return unicodify("\n".join(rval))
 
@@ -379,7 +379,7 @@ class SelectField(BaseField):
         else:
             id_string = ''
         rval.insert(0, '<select name="%s%s"%s%s%s%s%s%s%s>'
-                     % (prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str(disabled), id_string, self.extra_attributes))
+                    % (prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str(disabled), id_string, self.extra_attributes))
         rval.append('</select>')
         return unicodify("\n".join(rval))
 
@@ -426,14 +426,14 @@ class AddressField(BaseField):
     @staticmethod
     def fields():
         return [("desc", "Short address description", "Required"),
-                  ("name", "Name", ""),
-                  ("institution", "Institution", ""),
-                  ("address", "Address", ""),
-                  ("city", "City", ""),
-                  ("state", "State/Province/Region", ""),
-                  ("postal_code", "Postal Code", ""),
-                  ("country", "Country", ""),
-                  ("phone", "Phone", "")]
+                ("name", "Name", ""),
+                ("institution", "Institution", ""),
+                ("address", "Address", ""),
+                ("city", "City", ""),
+                ("state", "State/Province/Region", ""),
+                ("postal_code", "Postal Code", ""),
+                ("country", "Country", ""),
+                ("phone", "Phone", "")]
 
     def __init__(self, name, user=None, value=None, params=None, security=None, **kwds):
         super(AddressField, self).__init__(name, value, **kwds)
@@ -450,8 +450,8 @@ class AddressField(BaseField):
                 add_ids.append(str(a.id))
         add_ids.append('new')
         self.select_address = SelectField(self.name,
-                                           refresh_on_change=True,
-                                           refresh_on_change_values=add_ids)
+                                          refresh_on_change=True,
+                                          refresh_on_change_values=add_ids)
         if self.value == 'none':
             self.select_address.add_option('Select one', 'none', selected=True)
         else:
@@ -473,8 +473,8 @@ class AddressField(BaseField):
             self.select_address.add_option('Add a new address', 'new', selected=True)
             for field_name, label, help_text in self.fields():
                 add_field = TextField(self.name + '_' + field_name,
-                                       40,
-                                       restore_text(self.params.get(self.name + '_' + field_name, '')))
+                                      40,
+                                      restore_text(self.params.get(self.name + '_' + field_name, '')))
                 address_html += '''
                                 <div class="form-row">
                                     <label>%s</label>
@@ -626,7 +626,7 @@ def get_suite():
 
 # --------- Utility methods -----------------------------
 def build_select_field(trans, objs, label_attr, select_field_name, initial_value='none',
-                        selected_value='none', refresh_on_change=False, multiple=False, display=None, size=None):
+                       selected_value='none', refresh_on_change=False, multiple=False, display=None, size=None):
     """
     Build a SelectField given a set of objects.  The received params are:
 
@@ -655,11 +655,11 @@ def build_select_field(trans, objs, label_attr, select_field_name, initial_value
     else:
         refresh_on_change_values = []
     select_field = SelectField(name=select_field_name,
-                                multiple=multiple,
-                                display=display,
-                                refresh_on_change=refresh_on_change,
-                                refresh_on_change_values=refresh_on_change_values,
-                                size=size)
+                               multiple=multiple,
+                               display=display,
+                               refresh_on_change=refresh_on_change,
+                               refresh_on_change_values=refresh_on_change_values,
+                               size=size)
     for obj in objs:
         if label_attr == 'self':
             # Each obj is a string

@@ -310,8 +310,8 @@ class MetadataElementSpec(object):
     is a MetadataSpecCollection) of datatype.
     """
     def __init__(self, datatype, name=None, desc=None,
-                  param=MetadataParameter, default=None, no_value=None,
-                  visible=True, set_in_upload=False, **kwargs):
+                 param=MetadataParameter, default=None, no_value=None,
+                 visible=True, set_in_upload=False, **kwargs):
         self.name = name
         self.desc = desc or name
         self.default = default
@@ -605,10 +605,10 @@ class FileParameter(MetadataParameter):
                 # directory. Correct.
                 file_name = path_rewriter(file_name)
             parent.dataset.object_store.update_from_file(mf,
-                                                          file_name=file_name,
-                                                          extra_dir='_metadata_files',
-                                                          extra_dir_at_root=True,
-                                                          alt_name=os.path.basename(mf.file_name))
+                                                         file_name=file_name,
+                                                         extra_dir='_metadata_files',
+                                                         extra_dir_at_root=True,
+                                                         alt_name=os.path.basename(mf.file_name))
             os.unlink(file_name)
             value = mf.id
         return value
@@ -654,8 +654,8 @@ class MetadataTempFile(object):
 
     def to_JSON(self):
         return {'__class__': self.__class__.__name__,
-                 'filename': self.file_name,
-                 'kwds': self.kwds}
+                'filename': self.file_name,
+                'kwds': self.kwds}
 
     @classmethod
     def from_JSON(cls, json_dict):
@@ -699,14 +699,14 @@ class JobExternalOutputMetadataWrapper(object):
         if isinstance(dataset, galaxy.model.HistoryDatasetAssociation):
             return sa_session.query(galaxy.model.JobExternalOutputMetadata) \
                              .filter_by(job_id=self.job_id,
-                                         history_dataset_association_id=dataset.id,
-                                         is_valid=True) \
+                                        history_dataset_association_id=dataset.id,
+                                        is_valid=True) \
                              .first()  # there should only be one or None
         elif isinstance(dataset, galaxy.model.LibraryDatasetDatasetAssociation):
             return sa_session.query(galaxy.model.JobExternalOutputMetadata) \
                              .filter_by(job_id=self.job_id,
-                                         library_dataset_dataset_association_id=dataset.id,
-                                         is_valid=True) \
+                                        library_dataset_dataset_association_id=dataset.id,
+                                        is_valid=True) \
                              .first()  # there should only be one or None
         return None
 
@@ -726,12 +726,12 @@ class JobExternalOutputMetadataWrapper(object):
                 jeom = self.get_output_filenames_by_dataset(dataset, sa_session)
 
     def setup_external_metadata(self, datasets, sa_session, exec_dir=None,
-                                 tmp_dir=None, dataset_files_path=None,
-                                 output_fnames=None, config_root=None,
-                                 config_file=None, datatypes_config=None,
-                                 job_metadata=None, compute_tmp_dir=None,
-                                 include_command=True, max_metadata_value_size=0,
-                                 kwds=None):
+                                tmp_dir=None, dataset_files_path=None,
+                                output_fnames=None, config_root=None,
+                                config_file=None, datatypes_config=None,
+                                job_metadata=None, compute_tmp_dir=None,
+                                include_command=True, max_metadata_value_size=0,
+                                kwds=None):
         kwds = kwds or {}
         if tmp_dir is None:
             tmp_dir = MetadataTempFile.tmp_dir
@@ -834,9 +834,9 @@ class JobExternalOutputMetadataWrapper(object):
                 sa_session.flush()
             metadata_files_list.append(metadata_files)
         args = '"%s" "%s" %s %s' % (datatypes_config,
-                                     job_metadata,
-                                     " ".join(map(__metadata_files_list_to_cmd_line, metadata_files_list)),
-                                     max_metadata_value_size)
+                                    job_metadata,
+                                    " ".join(map(__metadata_files_list_to_cmd_line, metadata_files_list)),
+                                    max_metadata_value_size)
         if include_command:
             # return command required to build
             fd, fp = tempfile.mkstemp(suffix='.py', dir=tmp_dir, prefix="set_metadata_")
@@ -864,10 +864,10 @@ class JobExternalOutputMetadataWrapper(object):
             MetadataTempFile.cleanup_from_JSON_dict_filename(metadata_files.filename_out)
             dataset_key = self.get_dataset_metadata_key(metadata_files.dataset)
             for key, fname in [('filename_in', metadata_files.filename_in),
-                                ('filename_out', metadata_files.filename_out),
-                                ('filename_results_code', metadata_files.filename_results_code),
-                                ('filename_kwds', metadata_files.filename_kwds),
-                                ('filename_override_metadata', metadata_files.filename_override_metadata)]:
+                               ('filename_out', metadata_files.filename_out),
+                               ('filename_results_code', metadata_files.filename_results_code),
+                               ('filename_kwds', metadata_files.filename_kwds),
+                               ('filename_override_metadata', metadata_files.filename_override_metadata)]:
                 try:
                     os.remove(fname)
                 except Exception as e:

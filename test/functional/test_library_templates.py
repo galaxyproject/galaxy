@@ -48,7 +48,7 @@ class TestLibraryFeatures(TwillTestCase):
         self.check_page_for_string(check_str)
 
     def add_template(self, cntrller, item_type, form_type, form_id, form_name,
-                      library_id=None, folder_id=None, ldda_id=None, request_type_id=None, sample_id=None):
+                     library_id=None, folder_id=None, ldda_id=None, request_type_id=None, sample_id=None):
         """
         Add a new template to an item - for library items, the template will ALWAYS BE SET TO INHERITABLE here.  If you want to
         dis-inherit your template, call the manage_library_template_inheritance() below immediately after you call this
@@ -92,8 +92,8 @@ class TestLibraryFeatures(TwillTestCase):
         self.check_page_for_string(check_str)
 
     def create_form(self, name, description, form_type, field_type='TextField', form_layout_name='',
-                     num_fields=1, num_options=0, field_name='1_field_name', strings_displayed=[],
-                     strings_displayed_after_submit=[]):
+                    num_fields=1, num_options=0, field_name='1_field_name', strings_displayed=[],
+                    strings_displayed_after_submit=[]):
         """Create a new form definition."""
         self.visit_url("%s/forms/create_form_definition" % self.url)
         for check_str in strings_displayed:
@@ -153,7 +153,7 @@ class TestLibraryFeatures(TwillTestCase):
         self.check_for_strings(strings_displayed=[item_desc, check_str])
 
     def edit_template(self, cntrller, item_type, form_type, library_id, field_type, field_label_1, field_helptext_1, field_default_1,
-                       folder_id='', ldda_id='', action='add_field'):
+                      folder_id='', ldda_id='', action='add_field'):
         """Edit the form fields defining a library template"""
         params = dict(cntrller=cntrller, item_type=item_type, form_type=form_type, library_id=library_id)
         self.visit_url("/library_common/edit_template", params=params)
@@ -172,11 +172,11 @@ class TestLibraryFeatures(TwillTestCase):
         self.check_page_for_string("The template for this data library has been updated with your changes.")
 
     def folder_info(self, cntrller, folder_id, library_id, name='', new_name='', description='', template_refresh_field_name='1_field_name',
-                     template_refresh_field_contents='', template_fields=[], strings_displayed=[], strings_not_displayed=[],
-                     strings_displayed_after_submit=[], strings_not_displayed_after_submit=[]):
+                    template_refresh_field_contents='', template_fields=[], strings_displayed=[], strings_not_displayed=[],
+                    strings_displayed_after_submit=[], strings_not_displayed_after_submit=[]):
         """Add information to a library using an existing template with 2 elements"""
         self.visit_url("%s/library_common/folder_info?cntrller=%s&id=%s&library_id=%s" %
-                        (self.url, cntrller, folder_id, library_id))
+                       (self.url, cntrller, folder_id, library_id))
         if name and new_name and description:
             tc.fv('1', "name", new_name)
             tc.fv('1', "description", description)
@@ -210,10 +210,10 @@ class TestLibraryFeatures(TwillTestCase):
                 pass
 
     def ldda_edit_info(self, cntrller, library_id, folder_id, ldda_id, ldda_name, new_ldda_name='', template_refresh_field_name='1_field_name',
-                        template_refresh_field_contents='', template_fields=[], strings_displayed=[], strings_not_displayed=[]):
+                       template_refresh_field_contents='', template_fields=[], strings_displayed=[], strings_not_displayed=[]):
         """Edit library_dataset_dataset_association information, optionally template element information"""
         self.visit_url("%s/library_common/ldda_edit_info?cntrller=%s&library_id=%s&folder_id=%s&id=%s" %
-                        (self.url, cntrller, library_id, folder_id, ldda_id))
+                       (self.url, cntrller, library_id, folder_id, ldda_id))
         check_str = 'Edit attributes of %s' % ldda_name
         self.check_page_for_string(check_str)
         if new_ldda_name:
@@ -242,7 +242,7 @@ class TestLibraryFeatures(TwillTestCase):
                 pass
 
     def library_info(self, cntrller, library_id, library_name='', new_name='', new_description='', new_synopsis='',
-                      template_fields=[], strings_displayed=[]):
+                     template_fields=[], strings_displayed=[]):
         """Edit information about a library, optionally using an existing template with up to 2 elements"""
         self.visit_url("%s/library_common/library_info?cntrller=%s&id=%s" % (self.url, cntrller, library_id))
         for check_str in strings_displayed:
@@ -307,10 +307,10 @@ class TestLibraryFeatures(TwillTestCase):
         self.check_page_for_string(check_str)
 
     def upload_library_dataset(self, cntrller, library_id, folder_id, filename='', server_dir='', replace_id='',
-                                upload_option='upload_file', file_type='auto', dbkey='hg18', space_to_tab='',
-                                link_data_only='copy_files', preserve_dirs='Yes', filesystem_paths='', roles=[],
-                                ldda_message='', hda_ids='', template_refresh_field_name='1_field_name',
-                                template_refresh_field_contents='', template_fields=[], show_deleted='False', strings_displayed=[]):
+                               upload_option='upload_file', file_type='auto', dbkey='hg18', space_to_tab='',
+                               link_data_only='copy_files', preserve_dirs='Yes', filesystem_paths='', roles=[],
+                               ldda_message='', hda_ids='', template_refresh_field_name='1_field_name',
+                               template_refresh_field_contents='', template_fields=[], show_deleted='False', strings_displayed=[]):
         """Add datasets to library using any upload_option"""
         # NOTE: due to the library_wait() method call at the end of this method, no tests should be done
         # for strings_displayed_after_submit.
@@ -465,12 +465,12 @@ class TestLibraryFeatures(TwillTestCase):
             # Create form for library template
             strings_displayed_after_submit = ["The form '%s' has been updated with the changes." % type]
             self.create_form(name=type,
-                              description=form_desc,
-                              form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
-                              field_type=type,
-                              num_options=num_options,
-                              field_name=field_name,
-                              strings_displayed_after_submit=strings_displayed_after_submit)
+                             description=form_desc,
+                             form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
+                             field_type=type,
+                             num_options=num_options,
+                             field_name=field_name,
+                             strings_displayed_after_submit=strings_displayed_after_submit)
         # Get all of the new form definitions for later use
         global AddressField_form
         AddressField_form = get_form('AddressField')
@@ -537,11 +537,11 @@ class TestLibraryFeatures(TwillTestCase):
         # Logged in as admin_user
         # Add a template containing an AddressField to library1
         self.add_template(cntrller='library_admin',
-                           item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
-                           form_id=self.security.encode_id(AddressField_form.id),
-                           form_name=AddressField_form.name,
-                           library_id=self.security.encode_id(library1.id))
+                          item_type='library',
+                          form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
+                          form_id=self.security.encode_id(AddressField_form.id),
+                          form_name=AddressField_form.name,
+                          library_id=self.security.encode_id(library1.id))
 
     def test_020_add_folder_to_library1(self):
         """Testing adding a folder to library1"""
@@ -551,10 +551,10 @@ class TestLibraryFeatures(TwillTestCase):
         name = "folder"
         description = "folder description"
         self.add_folder('library_admin',
-                         self.security.encode_id(library1.id),
-                         self.security.encode_id(folder.id),
-                         name=name,
-                         description=description)
+                        self.security.encode_id(library1.id),
+                        self.security.encode_id(folder.id),
+                        name=name,
+                        description=description)
         global folder1
         folder1 = get_folder(folder.id, name, description)
 
@@ -562,15 +562,15 @@ class TestLibraryFeatures(TwillTestCase):
         """Checking library1 and its root folder"""
         # Logged in as admin_user
         self.browse_library(cntrller='library_admin',
-                             library_id=self.security.encode_id(library1.id),
-                             strings_displayed=[folder1.name, folder1.description])
+                            library_id=self.security.encode_id(library1.id),
+                            strings_displayed=[folder1.name, folder1.description])
         # Make sure the template and contents were inherited to folder1
         self.folder_info(cntrller='library_admin',
-                          folder_id=self.security.encode_id(folder1.id),
-                          library_id=self.security.encode_id(library1.id),
-                          template_refresh_field_name=address_field_name,
-                          strings_displayed=[AddressField_form.name,
-                                              'This is an inherited template and is not required to be used with this folder'])
+                         folder_id=self.security.encode_id(folder1.id),
+                         library_id=self.security.encode_id(library1.id),
+                         template_refresh_field_name=address_field_name,
+                         strings_displayed=[AddressField_form.name,
+                                            'This is an inherited template and is not required to be used with this folder'])
 
     def test_030_add_dataset_to_folder1(self):
         """Testing adding a ldda1 to folder1, and adding a new UserAddress on the upload form."""
@@ -582,23 +582,23 @@ class TestLibraryFeatures(TwillTestCase):
         ldda_message = '1.bed message'
         short_desc = 'Office'
         self.upload_library_dataset(cntrller='library_admin',
-                                     library_id=self.security.encode_id(library1.id),
-                                     folder_id=self.security.encode_id(folder1.id),
-                                     filename=filename,
-                                     file_type='bed',
-                                     dbkey='hg18',
-                                     template_refresh_field_name=address_field_name,
-                                     ldda_message=ldda_message,
-                                     template_refresh_field_contents='new',
-                                     template_fields=[('%s_short_desc' % address_field_name, short_desc),
-                                                       ('%s_name' % address_field_name, 'Dick'),
-                                                       ('%s_institution' % address_field_name, 'PSU'),
-                                                       ('%s_address' % address_field_name, '32 O Street'),
-                                                       ('%s_city' % address_field_name, 'Anywhere'),
-                                                       ('%s_state' % address_field_name, 'AK'),
-                                                       ('%s_postal_code' % address_field_name, '0000000'),
-                                                       ('%s_country' % address_field_name, 'USA')],
-                                     strings_displayed=['Upload files'])
+                                    library_id=self.security.encode_id(library1.id),
+                                    folder_id=self.security.encode_id(folder1.id),
+                                    filename=filename,
+                                    file_type='bed',
+                                    dbkey='hg18',
+                                    template_refresh_field_name=address_field_name,
+                                    ldda_message=ldda_message,
+                                    template_refresh_field_contents='new',
+                                    template_fields=[('%s_short_desc' % address_field_name, short_desc),
+                                                     ('%s_name' % address_field_name, 'Dick'),
+                                                     ('%s_institution' % address_field_name, 'PSU'),
+                                                     ('%s_address' % address_field_name, '32 O Street'),
+                                                     ('%s_city' % address_field_name, 'Anywhere'),
+                                                     ('%s_state' % address_field_name, 'AK'),
+                                                     ('%s_postal_code' % address_field_name, '0000000'),
+                                                     ('%s_country' % address_field_name, 'USA')],
+                                    strings_displayed=['Upload files'])
         global user_address1
         user_address1 = get_user_address(admin_user, short_desc)
         assert user_address1 is not None, 'Problem retrieving user_address1 from the database'
@@ -606,36 +606,36 @@ class TestLibraryFeatures(TwillTestCase):
         ldda1 = get_latest_ldda_by_name(filename)
         assert ldda1 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda1 from the database'
         self.browse_library(cntrller='library_admin',
-                             library_id=self.security.encode_id(library1.id),
-                             strings_displayed=[ldda1.name, ldda1.message, 'bed'])
+                            library_id=self.security.encode_id(library1.id),
+                            strings_displayed=[ldda1.name, ldda1.message, 'bed'])
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info('library_admin',
-                             self.security.encode_id(library1.id),
-                             self.security.encode_id(folder1.id),
-                             self.security.encode_id(ldda1.id),
-                             ldda1.name,
-                             strings_displayed=['Dick'])
+                            self.security.encode_id(library1.id),
+                            self.security.encode_id(folder1.id),
+                            self.security.encode_id(ldda1.id),
+                            ldda1.name,
+                            strings_displayed=['Dick'])
 
     def test_035_edit_contents_of_ldda1_tempplate(self):
         """Testing editing the contents of ldda1 AddressField template by adding a new user_address"""
         short_desc = 'Home'
         # Now add a new user_address to ldda1
         self.ldda_edit_info('library_admin',
-                             self.security.encode_id(library1.id),
-                             self.security.encode_id(folder1.id),
-                             self.security.encode_id(ldda1.id),
-                             ldda1.name,
-                             template_refresh_field_name=address_field_name,
-                             template_refresh_field_contents='new',
-                             template_fields=[('%s_short_desc' % address_field_name, short_desc),
-                                               ('%s_name' % address_field_name, 'Richard'),
-                                               ('%s_institution' % address_field_name, 'PSU'),
-                                               ('%s_address' % address_field_name, '32 O Street'),
-                                               ('%s_city' % address_field_name, 'Anywhere'),
-                                               ('%s_state' % address_field_name, 'AK'),
-                                               ('%s_postal_code' % address_field_name, '0000000'),
-                                               ('%s_country' % address_field_name, 'USA')],
-                             strings_displayed=[short_desc])
+                            self.security.encode_id(library1.id),
+                            self.security.encode_id(folder1.id),
+                            self.security.encode_id(ldda1.id),
+                            ldda1.name,
+                            template_refresh_field_name=address_field_name,
+                            template_refresh_field_contents='new',
+                            template_fields=[('%s_short_desc' % address_field_name, short_desc),
+                                             ('%s_name' % address_field_name, 'Richard'),
+                                             ('%s_institution' % address_field_name, 'PSU'),
+                                             ('%s_address' % address_field_name, '32 O Street'),
+                                             ('%s_city' % address_field_name, 'Anywhere'),
+                                             ('%s_state' % address_field_name, 'AK'),
+                                             ('%s_postal_code' % address_field_name, '0000000'),
+                                             ('%s_country' % address_field_name, 'USA')],
+                            strings_displayed=[short_desc])
         global user_address2
         user_address2 = get_user_address(admin_user, short_desc)
         assert user_address2 is not None, 'Problem retrieving user_address2 from the database'
@@ -644,13 +644,13 @@ class TestLibraryFeatures(TwillTestCase):
         """Testing editing the contents of folder1 AddressField template"""
         # Make sure the template and contents were inherited to folder1
         self.folder_info(cntrller='library_admin',
-                          folder_id=self.security.encode_id(folder1.id),
-                          library_id=self.security.encode_id(library1.id),
-                          template_refresh_field_name=address_field_name,
-                          template_refresh_field_contents=str(user_address2.id),
-                          strings_displayed=[AddressField_form.name,
-                                              'This is an inherited template and is not required to be used with this folder'],
-                          strings_displayed_after_submit=['Richard'])
+                         folder_id=self.security.encode_id(folder1.id),
+                         library_id=self.security.encode_id(library1.id),
+                         template_refresh_field_name=address_field_name,
+                         template_refresh_field_contents=str(user_address2.id),
+                         strings_displayed=[AddressField_form.name,
+                                            'This is an inherited template and is not required to be used with this folder'],
+                         strings_displayed_after_submit=['Richard'])
 
     def test_045_add_dataset_to_folder1(self):
         """Testing adding another ldda to folder1"""
@@ -658,36 +658,36 @@ class TestLibraryFeatures(TwillTestCase):
         filename = '2.bed'
         ldda_message = '2.bed message'
         self.upload_library_dataset(cntrller='library_admin',
-                                     library_id=self.security.encode_id(library1.id),
-                                     folder_id=self.security.encode_id(folder1.id),
-                                     filename=filename,
-                                     file_type='bed',
-                                     dbkey='hg18',
-                                     template_refresh_field_name=address_field_name,
-                                     ldda_message=ldda_message,
-                                     strings_displayed=['Upload files'])
+                                    library_id=self.security.encode_id(library1.id),
+                                    folder_id=self.security.encode_id(folder1.id),
+                                    filename=filename,
+                                    file_type='bed',
+                                    dbkey='hg18',
+                                    template_refresh_field_name=address_field_name,
+                                    ldda_message=ldda_message,
+                                    strings_displayed=['Upload files'])
         # Make sure user_address2 is associated with ldda.
         self.ldda_edit_info(cntrller='library_admin',
-                             library_id=self.security.encode_id(library1.id),
-                             folder_id=self.security.encode_id(folder1.id),
-                             ldda_id=self.security.encode_id(ldda1.id),
-                             ldda_name=ldda1.name,
-                             template_refresh_field_name=address_field_name,
-                             strings_displayed=[user_address2.desc])
+                            library_id=self.security.encode_id(library1.id),
+                            folder_id=self.security.encode_id(folder1.id),
+                            ldda_id=self.security.encode_id(ldda1.id),
+                            ldda_name=ldda1.name,
+                            template_refresh_field_name=address_field_name,
+                            strings_displayed=[user_address2.desc])
 
     def test_050_add_template_to_library2(self):
         """ Testing add an inheritable template containing an CheckboxField to library2"""
         # Add a template containing an CheckboxField to library1
         self.add_template(cntrller='library_admin',
-                           item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
-                           form_id=self.security.encode_id(CheckboxField_form.id),
-                           form_name=CheckboxField_form.name,
-                           library_id=self.security.encode_id(library2.id))
+                          item_type='library',
+                          form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
+                          form_id=self.security.encode_id(CheckboxField_form.id),
+                          form_name=CheckboxField_form.name,
+                          library_id=self.security.encode_id(library2.id))
         # Check the CheckboxField to make sure the template contents are inherited
         self.library_info('library_admin',
-                           self.security.encode_id(library2.id),
-                           template_fields=[(checkbox_field_name, '1')])
+                          self.security.encode_id(library2.id),
+                          template_fields=[(checkbox_field_name, '1')])
 
     def test_055_add_folder2_to_library2(self):
         """Testing adding a folder to library2"""
@@ -697,10 +697,10 @@ class TestLibraryFeatures(TwillTestCase):
         name = "folder"
         description = "folder description"
         self.add_folder('library_admin',
-                         self.security.encode_id(library2.id),
-                         self.security.encode_id(folder.id),
-                         name=name,
-                         description=description)
+                        self.security.encode_id(library2.id),
+                        self.security.encode_id(folder.id),
+                        name=name,
+                        description=description)
         global folder2
         folder2 = get_folder(folder.id, name, description)
 
@@ -708,19 +708,19 @@ class TestLibraryFeatures(TwillTestCase):
         """Checking library2 and its root folder"""
         # Logged in as admin_user
         self.browse_library(cntrller='library_admin',
-                             library_id=self.security.encode_id(library2.id),
-                             strings_displayed=[folder2.name, folder2.description])
+                            library_id=self.security.encode_id(library2.id),
+                            strings_displayed=[folder2.name, folder2.description])
 
     def test_065_save_folder2_inherited_template(self):
         """Saving the inherited template for folder2"""
         # Logged in as admin_user
         # Save the inherited template
         self.folder_info(cntrller='library_admin',
-                          folder_id=self.security.encode_id(folder2.id),
-                          library_id=self.security.encode_id(library2.id),
-                          template_fields=[(checkbox_field_name, '1')],
-                          strings_displayed=[CheckboxField_form.name,
-                                              'This is an inherited template and is not required to be used with this folder'])
+                         folder_id=self.security.encode_id(folder2.id),
+                         library_id=self.security.encode_id(library2.id),
+                         template_fields=[(checkbox_field_name, '1')],
+                         strings_displayed=[CheckboxField_form.name,
+                                            'This is an inherited template and is not required to be used with this folder'])
 
     def test_070_add_ldda_to_folder2(self):
         """
@@ -731,40 +731,40 @@ class TestLibraryFeatures(TwillTestCase):
         filename = '1.bed'
         ldda_message = '1.bed message'
         self.upload_library_dataset(cntrller='library_admin',
-                                     library_id=self.security.encode_id(library2.id),
-                                     folder_id=self.security.encode_id(folder2.id),
-                                     filename=filename,
-                                     file_type='bed',
-                                     dbkey='hg18',
-                                     ldda_message=ldda_message,
-                                     strings_displayed=['CheckboxField', 'checked'])
+                                    library_id=self.security.encode_id(library2.id),
+                                    folder_id=self.security.encode_id(folder2.id),
+                                    filename=filename,
+                                    file_type='bed',
+                                    dbkey='hg18',
+                                    ldda_message=ldda_message,
+                                    strings_displayed=['CheckboxField', 'checked'])
         ldda = get_latest_ldda_by_name(filename)
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library(cntrller='library_admin',
-                             library_id=self.security.encode_id(library2.id),
-                             strings_displayed=[ldda.name, ldda.message, 'bed'])
+                            library_id=self.security.encode_id(library2.id),
+                            strings_displayed=[ldda.name, ldda.message, 'bed'])
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info('library_admin',
-                             self.security.encode_id(library2.id),
-                             self.security.encode_id(folder2.id),
-                             self.security.encode_id(ldda.id),
-                             ldda.name,
-                             strings_displayed=['CheckboxField', 'checked'])
+                            self.security.encode_id(library2.id),
+                            self.security.encode_id(folder2.id),
+                            self.security.encode_id(ldda.id),
+                            ldda.name,
+                            strings_displayed=['CheckboxField', 'checked'])
 
     def test_080_add_template_to_library3(self):
         """ Testing add an inheritable template containing an SelectField to library3"""
         # Logged in as admin_user
         self.add_template(cntrller='library_admin',
-                           item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
-                           form_id=self.security.encode_id(SelectField_form.id),
-                           form_name=SelectField_form.name,
-                           library_id=self.security.encode_id(library3.id))
+                          item_type='library',
+                          form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
+                          form_id=self.security.encode_id(SelectField_form.id),
+                          form_name=SelectField_form.name,
+                          library_id=self.security.encode_id(library3.id))
         # Select the 2nd option in the SelectField to make sure the template contents are inherited
         # SelectField option names are zero-based
         self.library_info('library_admin',
-                           self.security.encode_id(library3.id),
-                           template_fields=[(select_field_name, 'Option1')])
+                          self.security.encode_id(library3.id),
+                          template_fields=[(select_field_name, 'Option1')])
 
     def test_085_add_folder3_to_library3(self):
         """Testing adding a folder to library3"""
@@ -774,10 +774,10 @@ class TestLibraryFeatures(TwillTestCase):
         name = "folder"
         description = "folder description"
         self.add_folder('library_admin',
-                         self.security.encode_id(library3.id),
-                         self.security.encode_id(folder.id),
-                         name=name,
-                         description=description)
+                        self.security.encode_id(library3.id),
+                        self.security.encode_id(folder.id),
+                        name=name,
+                        description=description)
         global folder3
         folder3 = get_folder(folder.id, name, description)
 
@@ -785,20 +785,20 @@ class TestLibraryFeatures(TwillTestCase):
         """Checking library3 and its root folder"""
         # Logged in as admin_user
         self.browse_library(cntrller='library_admin',
-                             library_id=self.security.encode_id(library3.id),
-                             strings_displayed=[folder3.name, folder3.description])
+                            library_id=self.security.encode_id(library3.id),
+                            strings_displayed=[folder3.name, folder3.description])
 
     def test_095_save_folder3_inherited_template(self):
         """Saving the inherited template for folder3"""
         # Logged in as admin_user
         # Save the inherited template
         self.folder_info(cntrller='library_admin',
-                          folder_id=self.security.encode_id(folder3.id),
-                          library_id=self.security.encode_id(library3.id),
-                          template_fields=[(select_field_name, 'Option1')],
-                          strings_displayed=[SelectField_form.name,
-                                              'This is an inherited template and is not required to be used with this folder',
-                                              'Option1'])
+                         folder_id=self.security.encode_id(folder3.id),
+                         library_id=self.security.encode_id(library3.id),
+                         template_fields=[(select_field_name, 'Option1')],
+                         strings_displayed=[SelectField_form.name,
+                                            'This is an inherited template and is not required to be used with this folder',
+                                            'Option1'])
 
     def test_100_add_ldda_to_folder3(self):
         """
@@ -808,63 +808,63 @@ class TestLibraryFeatures(TwillTestCase):
         ldda_message = '3.bed message'
         # Logged in as admin_user
         self.upload_library_dataset(cntrller='library_admin',
-                                     library_id=self.security.encode_id(library3.id),
-                                     folder_id=self.security.encode_id(folder3.id),
-                                     filename=filename,
-                                     file_type='bed',
-                                     dbkey='hg18',
-                                     ldda_message=ldda_message,
-                                     strings_displayed=['SelectField', 'selected>Option1'])
+                                    library_id=self.security.encode_id(library3.id),
+                                    folder_id=self.security.encode_id(folder3.id),
+                                    filename=filename,
+                                    file_type='bed',
+                                    dbkey='hg18',
+                                    ldda_message=ldda_message,
+                                    strings_displayed=['SelectField', 'selected>Option1'])
         ldda = get_latest_ldda_by_name(filename)
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library(cntrller='library_admin',
-                             library_id=self.security.encode_id(library3.id),
-                             strings_displayed=[ldda.name, ldda.message, 'bed'])
+                            library_id=self.security.encode_id(library3.id),
+                            strings_displayed=[ldda.name, ldda.message, 'bed'])
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info('library_admin',
-                             self.security.encode_id(library3.id),
-                             self.security.encode_id(folder3.id),
-                             self.security.encode_id(ldda.id),
-                             ldda.name,
-                             strings_displayed=['SelectField', 'Option1'])
+                            self.security.encode_id(library3.id),
+                            self.security.encode_id(folder3.id),
+                            self.security.encode_id(ldda.id),
+                            ldda.name,
+                            strings_displayed=['SelectField', 'Option1'])
         # Import a dataset from the current history
         filename = '8.bed'
         self.new_history(name='import+with+SelectField')
         self.upload_file(filename)
         hda = get_latest_hda()
         self.upload_library_dataset(cntrller='library_admin',
-                                     library_id=self.security.encode_id(library3.id),
-                                     folder_id=self.security.encode_id(folder3.id),
-                                     upload_option='import_from_history',
-                                     hda_ids=self.security.encode_id(hda.id),
-                                     strings_displayed=['<select name="%s" last_selected_value="Option1">' % select_field_name])
+                                    library_id=self.security.encode_id(library3.id),
+                                    folder_id=self.security.encode_id(folder3.id),
+                                    upload_option='import_from_history',
+                                    hda_ids=self.security.encode_id(hda.id),
+                                    strings_displayed=['<select name="%s" last_selected_value="Option1">' % select_field_name])
         ldda = get_latest_ldda_by_name(filename)
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library(cntrller='library_admin',
-                             library_id=self.security.encode_id(library3.id),
-                             strings_displayed=[ldda.name, 'bed'])
+                            library_id=self.security.encode_id(library3.id),
+                            strings_displayed=[ldda.name, 'bed'])
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info('library_admin',
-                             self.security.encode_id(library3.id),
-                             self.security.encode_id(folder3.id),
-                             self.security.encode_id(ldda.id),
-                             ldda.name,
-                             strings_displayed=['SelectField', 'Option1'])
+                            self.security.encode_id(library3.id),
+                            self.security.encode_id(folder3.id),
+                            self.security.encode_id(ldda.id),
+                            ldda.name,
+                            strings_displayed=['SelectField', 'Option1'])
 
     def test_105_add_template_to_library4(self):
         """ Testing add an inheritable template containing an TextArea to library4"""
         # Logged in as admin_user
         # Add an inheritable template to library4
         self.add_template(cntrller='library_admin',
-                           item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
-                           form_id=self.security.encode_id(TextArea_form.id),
-                           form_name=TextArea_form.name,
-                           library_id=self.security.encode_id(library4.id))
+                          item_type='library',
+                          form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
+                          form_id=self.security.encode_id(TextArea_form.id),
+                          form_name=TextArea_form.name,
+                          library_id=self.security.encode_id(library4.id))
         # Select the 2nd option in the SelectField to make sure the template contents are inherited
         self.library_info('library_admin',
-                           self.security.encode_id(library4.id),
-                           template_fields=[(textarea_name, 'This text should be inherited')])
+                          self.security.encode_id(library4.id),
+                          template_fields=[(textarea_name, 'This text should be inherited')])
 
     def test_110_add_folder4_to_library4(self):
         """Testing adding a folder to library4"""
@@ -874,10 +874,10 @@ class TestLibraryFeatures(TwillTestCase):
         name = "folder"
         description = "folder description"
         self.add_folder('library_admin',
-                         self.security.encode_id(library4.id),
-                         self.security.encode_id(folder.id),
-                         name=name,
-                         description=description)
+                        self.security.encode_id(library4.id),
+                        self.security.encode_id(folder.id),
+                        name=name,
+                        description=description)
         global folder4
         folder4 = get_folder(folder.id, name, description)
 
@@ -886,12 +886,12 @@ class TestLibraryFeatures(TwillTestCase):
         # Logged in as admin_user
         # Save the inherited template
         self.folder_info(cntrller='library_admin',
-                          folder_id=self.security.encode_id(folder4.id),
-                          library_id=self.security.encode_id(library4.id),
-                          template_fields=[(textarea_name, 'This text should be inherited')],
-                          strings_displayed=[TextArea_form.name,
-                                              'This is an inherited template and is not required to be used with this folder',
-                                              'This text should be inherited'])
+                         folder_id=self.security.encode_id(folder4.id),
+                         library_id=self.security.encode_id(library4.id),
+                         template_fields=[(textarea_name, 'This text should be inherited')],
+                         strings_displayed=[TextArea_form.name,
+                                            'This is an inherited template and is not required to be used with this folder',
+                                            'This text should be inherited'])
 
     def test_120_add_ldda_to_folder4(self):
         """
@@ -901,39 +901,39 @@ class TestLibraryFeatures(TwillTestCase):
         ldda_message = '4.bed message'
         # Logged in as admin_user
         self.upload_library_dataset(cntrller='library_admin',
-                                     library_id=self.security.encode_id(library4.id),
-                                     folder_id=self.security.encode_id(folder4.id),
-                                     filename=filename,
-                                     file_type='bed',
-                                     dbkey='hg18',
-                                     ldda_message=ldda_message,
-                                     strings_displayed=['TextArea', 'This text should be inherited'])
+                                    library_id=self.security.encode_id(library4.id),
+                                    folder_id=self.security.encode_id(folder4.id),
+                                    filename=filename,
+                                    file_type='bed',
+                                    dbkey='hg18',
+                                    ldda_message=ldda_message,
+                                    strings_displayed=['TextArea', 'This text should be inherited'])
         ldda = get_latest_ldda_by_name(filename)
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library(cntrller='library_admin',
-                             library_id=self.security.encode_id(library4.id),
-                             strings_displayed=[ldda.name, ldda.message, 'bed'])
+                            library_id=self.security.encode_id(library4.id),
+                            strings_displayed=[ldda.name, ldda.message, 'bed'])
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info('library_admin',
-                             self.security.encode_id(library4.id),
-                             self.security.encode_id(folder4.id),
-                             self.security.encode_id(ldda.id),
-                             ldda.name,
-                             strings_displayed=['TextArea', 'This text should be inherited'])
+                            self.security.encode_id(library4.id),
+                            self.security.encode_id(folder4.id),
+                            self.security.encode_id(ldda.id),
+                            ldda.name,
+                            strings_displayed=['TextArea', 'This text should be inherited'])
 
     def test_125_add_template_to_library5(self):
         """ Testing add an inheritable template containing an TextField to library5"""
         # Add an inheritable template to library5
         self.add_template(cntrller='library_admin',
-                           item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
-                           form_id=self.security.encode_id(TextField_form.id),
-                           form_name=TextField_form.name,
-                           library_id=self.security.encode_id(library5.id))
+                          item_type='library',
+                          form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
+                          form_id=self.security.encode_id(TextField_form.id),
+                          form_name=TextField_form.name,
+                          library_id=self.security.encode_id(library5.id))
         # Select the 2nd option in the SelectField to make sure the template contents are inherited
         self.library_info('library_admin',
-                           self.security.encode_id(library5.id),
-                           template_fields=[(textfield_name, 'This text should be inherited')])
+                          self.security.encode_id(library5.id),
+                          template_fields=[(textfield_name, 'This text should be inherited')])
 
     def test_130_add_folder5_to_library5(self):
         """Testing adding a folder to library5"""
@@ -943,10 +943,10 @@ class TestLibraryFeatures(TwillTestCase):
         name = "folder"
         description = "folder description"
         self.add_folder('library_admin',
-                         self.security.encode_id(library5.id),
-                         self.security.encode_id(folder.id),
-                         name=name,
-                         description=description)
+                        self.security.encode_id(library5.id),
+                        self.security.encode_id(folder.id),
+                        name=name,
+                        description=description)
         global folder5
         folder5 = get_folder(folder.id, name, description)
 
@@ -955,12 +955,12 @@ class TestLibraryFeatures(TwillTestCase):
         # Logged in as admin_user
         # Save the inherited template
         self.folder_info(cntrller='library_admin',
-                          folder_id=self.security.encode_id(folder5.id),
-                          library_id=self.security.encode_id(library5.id),
-                          template_fields=[(textfield_name, 'This text should be inherited')],
-                          strings_displayed=[TextField_form.name,
-                                              'This is an inherited template and is not required to be used with this folder',
-                                              'This text should be inherited'])
+                         folder_id=self.security.encode_id(folder5.id),
+                         library_id=self.security.encode_id(library5.id),
+                         template_fields=[(textfield_name, 'This text should be inherited')],
+                         strings_displayed=[TextField_form.name,
+                                            'This is an inherited template and is not required to be used with this folder',
+                                            'This text should be inherited'])
 
     def test_140_add_ldda_to_folder5(self):
         """
@@ -970,37 +970,37 @@ class TestLibraryFeatures(TwillTestCase):
         filename = '5.bed'
         ldda_message = '5.bed message'
         self.upload_library_dataset(cntrller='library_admin',
-                                     library_id=self.security.encode_id(library5.id),
-                                     folder_id=self.security.encode_id(folder5.id),
-                                     filename=filename,
-                                     file_type='bed',
-                                     dbkey='hg18',
-                                     ldda_message=ldda_message,
-                                     strings_displayed=['TextField', 'This text should be inherited'])
+                                    library_id=self.security.encode_id(library5.id),
+                                    folder_id=self.security.encode_id(folder5.id),
+                                    filename=filename,
+                                    file_type='bed',
+                                    dbkey='hg18',
+                                    ldda_message=ldda_message,
+                                    strings_displayed=['TextField', 'This text should be inherited'])
         ldda = get_latest_ldda_by_name(filename)
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library(cntrller='library_admin',
-                             library_id=self.security.encode_id(library5.id),
-                             strings_displayed=[ldda.name, ldda.message, 'bed'])
+                            library_id=self.security.encode_id(library5.id),
+                            strings_displayed=[ldda.name, ldda.message, 'bed'])
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info('library_admin',
-                             self.security.encode_id(library5.id),
-                             self.security.encode_id(folder5.id),
-                             self.security.encode_id(ldda.id),
-                             ldda.name,
-                             strings_displayed=['TextField', 'This text should be inherited'])
+                            self.security.encode_id(library5.id),
+                            self.security.encode_id(folder5.id),
+                            self.security.encode_id(ldda.id),
+                            ldda.name,
+                            strings_displayed=['TextField', 'This text should be inherited'])
 
     def test_145_edit_library5_template_layout(self):
         """Test editing the layout of library5's template"""
         # Currently there is only a TextField, and we'll add a TextArea.
         self.edit_template(cntrller='library_admin',
-                            item_type='library',
-                            form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
-                            library_id=self.security.encode_id(library5.id),
-                            field_type='TextArea',
-                            field_label_1=TextArea_form.name,
-                            field_helptext_1='%s help' % TextArea_form.name,
-                            field_default_1='%s default' % TextArea_form.name)
+                           item_type='library',
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
+                           library_id=self.security.encode_id(library5.id),
+                           field_type='TextArea',
+                           field_label_1=TextArea_form.name,
+                           field_helptext_1='%s help' % TextArea_form.name,
+                           field_default_1='%s default' % TextArea_form.name)
 
     def test_150_add_ldda_to_library5(self):
         """
@@ -1010,40 +1010,40 @@ class TestLibraryFeatures(TwillTestCase):
         ldda_message = '6.bed message'
         # Logged in as admin_user
         self.upload_library_dataset(cntrller='library_admin',
-                                     library_id=self.security.encode_id(library5.id),
-                                     folder_id=self.security.encode_id(library5.root_folder.id),
-                                     filename=filename,
-                                     file_type='bed',
-                                     dbkey='hg18',
-                                     ldda_message=ldda_message,
-                                     strings_displayed=['TextField',
-                                                         'This text should be inherited',
-                                                         'TextArea'])
+                                    library_id=self.security.encode_id(library5.id),
+                                    folder_id=self.security.encode_id(library5.root_folder.id),
+                                    filename=filename,
+                                    file_type='bed',
+                                    dbkey='hg18',
+                                    ldda_message=ldda_message,
+                                    strings_displayed=['TextField',
+                                                       'This text should be inherited',
+                                                       'TextArea'])
         ldda = get_latest_ldda_by_name(filename)
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library(cntrller='library_admin',
-                             library_id=self.security.encode_id(library5.id),
-                             strings_displayed=[ldda.name, ldda.message, 'bed'])
+                            library_id=self.security.encode_id(library5.id),
+                            strings_displayed=[ldda.name, ldda.message, 'bed'])
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info('library_admin',
-                             self.security.encode_id(library5.id),
-                             self.security.encode_id(library5.root_folder.id),
-                             self.security.encode_id(ldda.id),
-                             ldda.name,
-                             strings_displayed=['TextField',
-                                                 'This text should be inherited',
-                                                 'TextArea'])
+                            self.security.encode_id(library5.id),
+                            self.security.encode_id(library5.root_folder.id),
+                            self.security.encode_id(ldda.id),
+                            ldda.name,
+                            strings_displayed=['TextField',
+                                               'This text should be inherited',
+                                               'TextArea'])
 
     def test_155_add_template_to_library6(self):
         """ Testing add an inheritable template containing an WorkflowField to library6"""
         # Add an inheritable template to library6
         # We won't select an option since we have no workflow to select
         self.add_template(cntrller='library_admin',
-                           item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
-                           form_id=self.security.encode_id(WorkflowField_form.id),
-                           form_name=WorkflowField_form.name,
-                           library_id=self.security.encode_id(library6.id))
+                          item_type='library',
+                          form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
+                          form_id=self.security.encode_id(WorkflowField_form.id),
+                          form_name=WorkflowField_form.name,
+                          library_id=self.security.encode_id(library6.id))
 
     def test_160_add_folder6_to_library6(self):
         """Testing adding a folder to library6"""
@@ -1053,10 +1053,10 @@ class TestLibraryFeatures(TwillTestCase):
         name = "folder"
         description = "folder description"
         self.add_folder('library_admin',
-                         self.security.encode_id(library6.id),
-                         self.security.encode_id(folder.id),
-                         name=name,
-                         description=description)
+                        self.security.encode_id(library6.id),
+                        self.security.encode_id(folder.id),
+                        name=name,
+                        description=description)
         global folder6
         folder6 = get_folder(folder.id, name, description)
 
@@ -1065,12 +1065,12 @@ class TestLibraryFeatures(TwillTestCase):
         # Logged in as admin_user
         # Save the inherited template - we won't select an option since we have no workflow to select
         self.folder_info(cntrller='library_admin',
-                          folder_id=self.security.encode_id(folder6.id),
-                          library_id=self.security.encode_id(library6.id),
-                          template_fields=[(workflow_field_name, 'none')],
-                          strings_displayed=[WorkflowField_form.name,
-                                              'This is an inherited template and is not required to be used with this folder',
-                                              'none'])
+                         folder_id=self.security.encode_id(folder6.id),
+                         library_id=self.security.encode_id(library6.id),
+                         template_fields=[(workflow_field_name, 'none')],
+                         strings_displayed=[WorkflowField_form.name,
+                                            'This is an inherited template and is not required to be used with this folder',
+                                            'none'])
 
     def test_170_add_ldda_to_folder6(self):
         """
@@ -1080,25 +1080,25 @@ class TestLibraryFeatures(TwillTestCase):
         filename = '7.bed'
         ldda_message = '7.bed message'
         self.upload_library_dataset(cntrller='library_admin',
-                                     library_id=self.security.encode_id(library6.id),
-                                     folder_id=self.security.encode_id(folder6.id),
-                                     filename=filename,
-                                     file_type='bed',
-                                     dbkey='hg18',
-                                     ldda_message=ldda_message,
-                                     strings_displayed=['WorkflowField', 'none'])
+                                    library_id=self.security.encode_id(library6.id),
+                                    folder_id=self.security.encode_id(folder6.id),
+                                    filename=filename,
+                                    file_type='bed',
+                                    dbkey='hg18',
+                                    ldda_message=ldda_message,
+                                    strings_displayed=['WorkflowField', 'none'])
         ldda = get_latest_ldda_by_name(filename)
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library(cntrller='library_admin',
-                             library_id=self.security.encode_id(library6.id),
-                             strings_displayed=[ldda.name, ldda.message, 'bed'])
+                            library_id=self.security.encode_id(library6.id),
+                            strings_displayed=[ldda.name, ldda.message, 'bed'])
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info('library_admin',
-                             self.security.encode_id(library6.id),
-                             self.security.encode_id(folder6.id),
-                             self.security.encode_id(ldda.id),
-                             ldda.name,
-                             strings_displayed=['WorkflowField', 'none'])
+                            self.security.encode_id(library6.id),
+                            self.security.encode_id(folder6.id),
+                            self.security.encode_id(ldda.id),
+                            ldda.name,
+                            strings_displayed=['WorkflowField', 'none'])
 
     def test_999_reset_data_for_later_test_runs(self):
         """Reseting data to enable later test runs to pass"""
@@ -1118,10 +1118,10 @@ class TestLibraryFeatures(TwillTestCase):
         ##################
         for library in [library1, library2, library3, library4, library5, library6]:
             self.delete_library_item('library_admin',
-                                      self.security.encode_id(library.id),
-                                      self.security.encode_id(library.id),
-                                      library.name,
-                                      item_type='library')
+                                     self.security.encode_id(library.id),
+                                     self.security.encode_id(library.id),
+                                     library.name,
+                                     item_type='library')
             self.purge_library(self.security.encode_id(library.id), library.name)
         ##################
         # Make sure all users are associated only with their private roles

@@ -44,13 +44,13 @@ def main(options):
     tools_functionally_correct = str(options.tools_functionally_correct)
     parts = ['repository_revisions']
     params = dict(do_not_test=do_not_test,
-                   downloadable=downloadable,
-                   includes_tools=includes_tools,
-                   malicious=malicious,
-                   missing_test_components=missing_test_components,
-                   skip_tool_test=skip_tool_test,
-                   test_install_error=test_install_error,
-                   tools_functionally_correct=tools_functionally_correct)
+                  downloadable=downloadable,
+                  includes_tools=includes_tools,
+                  malicious=malicious,
+                  missing_test_components=missing_test_components,
+                  skip_tool_test=skip_tool_test,
+                  test_install_error=test_install_error,
+                  tools_functionally_correct=tools_functionally_correct)
     api_url = get_api_url(base=base_tool_shed_url, parts=parts, params=params)
     baseline_repository_dicts, error_message = json_from_url(api_url)
     if baseline_repository_dicts is None or error_message:
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Get a filtered list of repository dictionaries.')
     parser.add_argument("-u", "--url", dest="tool_shed_url", required=True, help="Tool Shed URL")
     parser.add_argument("-l", "--latest_revision_only", dest="latest_revision_only", default=True,
-                         help="Restrict results to latest downloadable revision only")
+                        help="Restrict results to latest downloadable revision only")
     parser.add_argument("-n", "--do_not_test", help="do_not_test", default=False)
     parser.add_argument("-d", "--downloadable", help="downloadable", default=True)
     parser.add_argument("-i", "--includes_tools", help="includes_tools", default=True)

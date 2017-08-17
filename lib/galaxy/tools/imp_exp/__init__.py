@@ -87,7 +87,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
 
                 # Create history.
                 new_history = model.History(name='imported from archive: %s' % history_attrs['name'].encode('utf-8'),
-                                             user=user)
+                                            user=user)
                 new_history.importing = True
                 new_history.hid_counter = history_attrs['hid_counter']
                 new_history.genome_build = history_attrs['genome_build']
@@ -132,17 +132,17 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
 
                     # Create dataset and HDA.
                     hda = model.HistoryDatasetAssociation(name=dataset_attrs['name'].encode('utf-8'),
-                                                           extension=dataset_attrs['extension'],
-                                                           info=dataset_attrs['info'].encode('utf-8'),
-                                                           blurb=dataset_attrs['blurb'],
-                                                           peek=dataset_attrs['peek'],
-                                                           designation=dataset_attrs['designation'],
-                                                           visible=dataset_attrs['visible'],
-                                                           dbkey=metadata['dbkey'],
-                                                           metadata=metadata,
-                                                           history=new_history,
-                                                           create_dataset=True,
-                                                           sa_session=self.sa_session)
+                                                          extension=dataset_attrs['extension'],
+                                                          info=dataset_attrs['info'].encode('utf-8'),
+                                                          blurb=dataset_attrs['blurb'],
+                                                          peek=dataset_attrs['peek'],
+                                                          designation=dataset_attrs['designation'],
+                                                          visible=dataset_attrs['visible'],
+                                                          dbkey=metadata['dbkey'],
+                                                          metadata=metadata,
+                                                          history=new_history,
+                                                          create_dataset=True,
+                                                          sa_session=self.sa_session)
                     if 'uuid' in dataset_attrs:
                         hda.dataset.uuid = dataset_attrs["uuid"]
                     if dataset_attrs.get('exported', True) is False:
@@ -317,13 +317,13 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
         Returns history's datasets.
         """
         query = (trans.sa_session.query(trans.model.HistoryDatasetAssociation)
-                  .filter(trans.model.HistoryDatasetAssociation.history == history)
-                  .options(eagerload("children"))
-                  .join("dataset")
-                  .options(eagerload_all("dataset.actions"))
-                  .order_by(trans.model.HistoryDatasetAssociation.hid)
-                  .filter(trans.model.HistoryDatasetAssociation.deleted == expression.false())
-                  .filter(trans.model.Dataset.purged == expression.false()))
+                 .filter(trans.model.HistoryDatasetAssociation.history == history)
+                 .options(eagerload("children"))
+                 .join("dataset")
+                 .options(eagerload_all("dataset.actions"))
+                 .order_by(trans.model.HistoryDatasetAssociation.hid)
+                 .filter(trans.model.HistoryDatasetAssociation.deleted == expression.false())
+                 .filter(trans.model.Dataset.purged == expression.false()))
         return query.all()
 
     # TODO: should use db_session rather than trans in this method.
@@ -521,8 +521,8 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
         if jeha.compressed:
             options = "-G"
         return "%s %s %s %s" % (options, history_attrs_filename,
-                                 datasets_attrs_filename,
-                                 jobs_attrs_filename)
+                                datasets_attrs_filename,
+                                jobs_attrs_filename)
 
     def cleanup_after_job(self, db_session):
         """ Remove temporary directory and attribute files generated during setup for this job. """

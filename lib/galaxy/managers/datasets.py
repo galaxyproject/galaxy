@@ -271,8 +271,8 @@ class DatasetDeserializer(base.ModelDeserializer, deletable.PurgableDeserializer
 
 # ============================================================================= AKA DatasetInstanceManager
 class DatasetAssociationManager(base.ModelManager,
-                                 secured.AccessibleManagerMixin,
-                                 deletable.PurgableManagerMixin):
+                                secured.AccessibleManagerMixin,
+                                deletable.PurgableManagerMixin):
     """
     DatasetAssociation/DatasetInstances are intended to be working
     proxies to a Dataset, associated with either a library or a
@@ -363,7 +363,7 @@ class DatasetAssociationManager(base.ModelManager,
 
 
 class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
-                                                        deletable.PurgableSerializerMixin):
+                                                       deletable.PurgableSerializerMixin):
 
     def __init__(self, app):
         self.dataset_serializer = DatasetSerializer(app)
@@ -442,10 +442,10 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
             if isinstance(dataset_assoc.metadata.spec[meta_type].param, galaxy.datatypes.metadata.FileParameter):
                 meta_files.append(
                     dict(file_type=meta_type,
-                          download_url=self.url_for('history_contents_metadata_file',
-                                                     history_id=self.app.security.encode_id(dataset_assoc.history_id),
-                                                     history_content_id=self.app.security.encode_id(dataset_assoc.id),
-                                                     metadata_file=meta_type)))
+                         download_url=self.url_for('history_contents_metadata_file',
+                                                   history_id=self.app.security.encode_id(dataset_assoc.history_id),
+                                                   history_content_id=self.app.security.encode_id(dataset_assoc.id),
+                                                   metadata_file=meta_type)))
         return meta_files
 
     def serialize_metadata(self, dataset_assoc, key, excluded=None, **context):

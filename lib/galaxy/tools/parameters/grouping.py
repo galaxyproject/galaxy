@@ -387,7 +387,7 @@ class UploadDataset(Group):
                                 path = relpath(os.path.join(dirpath, filename), user_ftp_dir)
                                 if not os.path.islink(os.path.join(dirpath, filename)):
                                     ftp_data_file = {'local_filename' : os.path.abspath(os.path.join(user_ftp_dir, path)),
-                                                      'filename' : os.path.basename(path)}
+                                                     'filename' : os.path.basename(path)}
                                     purge = getattr(trans.app.config, 'ftp_upload_purge', True)
                                     file_bunch = get_data_file_filename(
                                         ftp_data_file,
@@ -467,7 +467,7 @@ class UploadDataset(Group):
                     continue
                     # TODO: warning to the user (could happen if file is already imported)
                 ftp_data_file = {'local_filename' : os.path.abspath(os.path.join(user_ftp_dir, ftp_file)),
-                                  'filename' : os.path.basename(ftp_file)}
+                                 'filename' : os.path.basename(ftp_file)}
                 purge = getattr(trans.app.config, 'ftp_upload_purge', True)
                 file_bunch = get_data_file_filename(ftp_data_file, override_name=name, override_info=info, purge=purge)
                 if file_bunch.path:

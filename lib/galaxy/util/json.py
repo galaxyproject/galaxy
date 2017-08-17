@@ -92,9 +92,9 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
         request = json.loads(request)
     except Exception as e:
         return False, request, jsonrpc_response(id=None,
-                                                 error=dict(code=-32700,
-                                                             message='Parse error',
-                                                             data=str(e)))
+                                                error=dict(code=-32700,
+                                                           message='Parse error',
+                                                           data=str(e)))
     try:
         assert 'jsonrpc' in request, \
             'This server requires JSON-RPC 2.0 and no "jsonrpc" member was sent with the Request object as per the JSON-RPC 2.0 Specification.'
@@ -103,24 +103,24 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
         assert 'method' in request, 'No "method" member was sent with the Request object'
     except AssertionError as e:
         return False, request, jsonrpc_response(request=request,
-                                                 error=dict(code=-32600,
-                                                             message='Invalid Request',
-                                                             data=str(e)))
+                                                error=dict(code=-32600,
+                                                           message='Invalid Request',
+                                                           data=str(e)))
     try:
         assert request['method'] in (regular_methods + notification_methods)
     except AssertionError as e:
         return False, request, jsonrpc_response(request=request,
-                                                 error=dict(code=-32601,
-                                                             message='Method not found',
-                                                             data='Valid methods are: %s' % ', '.join(regular_methods + notification_methods)))
+                                                error=dict(code=-32601,
+                                                           message='Method not found',
+                                                           data='Valid methods are: %s' % ', '.join(regular_methods + notification_methods)))
     try:
         if request['method'] in regular_methods:
             assert 'id' in request, 'No "id" member was sent with the Request object and the requested method "%s" is not a notification method' % request['method']
     except AssertionError as e:
         return False, request, jsonrpc_response(request=request,
-                                                 error=dict(code=-32600,
-                                                             message='Invalid Request',
-                                                             data=str(e)))
+                                                error=dict(code=-32600,
+                                                           message='Invalid Request',
+                                                           data=str(e)))
     return True, request, None
 
 

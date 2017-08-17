@@ -238,16 +238,16 @@ class Biom1(Json):
 
                 b_transform = {'rows': _transform_dict_list_ids, 'columns': _transform_dict_list_ids}
                 for (m_name, b_name) in [('table_rows', 'rows'),
-                                            ('table_matrix_element_type', 'matrix_element_type'),
-                                            ('table_format', 'format'),
-                                            ('table_generated_by', 'generated_by'),
-                                            ('table_matrix_type', 'matrix_type'),
-                                            ('table_shape', 'shape'),
-                                            ('table_format_url', 'format_url'),
-                                            ('table_date', 'date'),
-                                            ('table_type', 'type'),
-                                            ('table_id', 'id'),
-                                            ('table_columns', 'columns')]:
+                                         ('table_matrix_element_type', 'matrix_element_type'),
+                                         ('table_format', 'format'),
+                                         ('table_generated_by', 'generated_by'),
+                                         ('table_matrix_type', 'matrix_type'),
+                                         ('table_shape', 'shape'),
+                                         ('table_format_url', 'format_url'),
+                                         ('table_date', 'date'),
+                                         ('table_type', 'type'),
+                                         ('table_id', 'id'),
+                                         ('table_columns', 'columns')]:
                     try:
                         metadata_value = json_dict.get(b_name, None)
                         if b_name in b_transform:

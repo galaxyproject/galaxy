@@ -147,8 +147,8 @@ class ToolDataTableManager(object):
         error_message = ''
         try:
             table_elems = self.load_from_config_file(config_filename=config_filename,
-                                                      tool_data_path=tool_data_path,
-                                                      from_shed_config=True)
+                                                     tool_data_path=tool_data_path,
+                                                     from_shed_config=True)
         except Exception as e:
             error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), str(e))
             log.debug(error_message)
@@ -327,7 +327,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         repo_elem = config_element.find('tool_shed_repository')
         if repo_elem is not None:
             repo_info = dict(tool_shed=repo_elem.find('tool_shed').text, name=repo_elem.find('repository_name').text,
-                              owner=repo_elem.find('repository_owner').text, installed_changeset_revision=repo_elem.find('installed_changeset_revision').text)
+                             owner=repo_elem.find('repository_owner').text, installed_changeset_revision=repo_elem.find('installed_changeset_revision').text)
         else:
             repo_info = None
         # Read every file
@@ -394,7 +394,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
             if filename not in self.filenames or not self.filenames[filename]['found']:
                 self.filenames[filename] = dict(found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path,
-                                                   config_element=config_element, tool_shed_repository=repo_info, errors=errors)
+                                                config_element=config_element, tool_shed_repository=repo_info, errors=errors)
             else:
                 log.debug("Filename '%s' already exists in filenames (%s), not adding", filename, list(self.filenames.keys()))
             # Remove URL tmp file

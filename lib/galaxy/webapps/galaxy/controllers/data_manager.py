@@ -101,10 +101,10 @@ class DataManager(BaseUIController):
             if len(table_names) == 1:
                 message = "The data table '%s' has been reloaded." % table_names[0]
                 redirect_url = web.url_for(controller='data_manager',
-                                            action='manage_data_table',
-                                            table_name=table_names[0],
-                                            message=message,
-                                            status=status)
+                                           action='manage_data_table',
+                                           table_name=table_names[0],
+                                           message=message,
+                                           status=status)
             else:
                 message = "The data tables '%s' have been reloaded." % ', '.join(table_names)
         else:
@@ -112,7 +112,7 @@ class DataManager(BaseUIController):
             status = 'error'
         if redirect_url is None:
             redirect_url = web.url_for(controller='admin',
-                                        action='view_tool_data_tables',
-                                        message=message,
-                                        status=status)
+                                       action='view_tool_data_tables',
+                                       message=message,
+                                       status=status)
         return trans.response.send_redirect(redirect_url)

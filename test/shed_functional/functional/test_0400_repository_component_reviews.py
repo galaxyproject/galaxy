@@ -78,7 +78,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         strings_not_displayed = ['Repository dependencies']
         self.manage_review_components(strings_not_displayed=strings_not_displayed)
         self.add_repository_review_component(name='Repository dependencies',
-                                              description='Repository dependencies defined in a file named repository_dependencies.xml included in the repository')
+                                             description='Repository dependencies defined in a file named repository_dependencies.xml included in the repository')
         strings_displayed = ['Data types', 'Functional tests', 'README', 'Repository dependencies', 'Tool dependencies', 'Tools', 'Workflows']
         self.manage_review_components(strings_displayed=strings_displayed)
 
@@ -93,20 +93,20 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = self.expect_repo_created_strings(repository_name)
         repository = self.get_or_create_repository(name=repository_name,
-                                                    description=repository_description,
-                                                    long_description=repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=strings_displayed)
+                                                   description=repository_description,
+                                                   long_description=repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=strings_displayed)
         self.upload_file(repository,
-                          filename='filtering/filtering_1.1.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded filtering 1.1.0 tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_1.1.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded filtering 1.1.0 tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_review_initial_revision_data_types(self):
         '''Review the datatypes component for the current tip revision.'''
@@ -402,14 +402,14 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(repository,
-                          filename='readme.txt',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded readme.txt.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='readme.txt',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded readme.txt.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0095_review_new_changeset_readme_component(self):
         '''Update the filtering repository's readme component review to reflect the presence of the readme file.'''
@@ -438,9 +438,9 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         # }
         review_contents_dict = {'README': dict(rating=5, comment='Clear and concise readme file, a true pleasure to read.', approved='yes', private='no')}
         self.create_repository_review(repository,
-                                       review_contents_dict,
-                                       changeset_revision=self.get_repository_tip(repository),
-                                       copy_from=(str(last_review.changeset_revision), last_review.id))
+                                      review_contents_dict,
+                                      changeset_revision=self.get_repository_tip(repository),
+                                      copy_from=(str(last_review.changeset_revision), last_review.id))
 
     def test_0100_verify_readme_review(self):
         '''Verify that the readme component review displays correctly.'''
@@ -466,14 +466,14 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         """
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(repository,
-                          filename='filtering/filtering_test_data.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded filtering test data.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_test_data.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded filtering test data.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0110_review_new_changeset_functional_tests(self):
         '''Update the filtering repository's readme component review to reflect the presence of the readme file.'''
@@ -499,9 +499,9 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         # }
         review_contents_dict = {'Functional tests': dict(rating=5, comment='A good set of functional tests.', approved='yes', private='no')}
         self.create_repository_review(repository,
-                                       review_contents_dict,
-                                       changeset_revision=self.get_repository_tip(repository),
-                                       copy_from=(str(last_review.changeset_revision), last_review.id))
+                                      review_contents_dict,
+                                      changeset_revision=self.get_repository_tip(repository),
+                                      copy_from=(str(last_review.changeset_revision), last_review.id))
 
     def test_0115_verify_functional_tests_review(self):
         '''Verify that the functional tests component review displays correctly.'''
@@ -526,14 +526,14 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(repository,
-                          filename='filtering/filtering_2.2.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded filtering 2.2.0 tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_2.2.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded filtering 2.2.0 tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0125_review_new_changeset_functional_tests(self):
         '''Update the filtering repository's review to apply to the new changeset with filtering 2.2.0.'''
@@ -558,9 +558,9 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         # }
         review_contents_dict = {'Tools': dict(rating=5, comment='Version 2.2.0 does the impossible and improves this tool.', approved='yes', private='yes')}
         self.create_repository_review(repository,
-                                       review_contents_dict,
-                                       changeset_revision=self.get_repository_tip(repository),
-                                       copy_from=(str(last_review.changeset_revision), last_review.id))
+                                      review_contents_dict,
+                                      changeset_revision=self.get_repository_tip(repository),
+                                      copy_from=(str(last_review.changeset_revision), last_review.id))
 
     def test_0135_verify_review_for_new_version(self):
         '''Verify that the reviews display correctly for this changeset revision.'''

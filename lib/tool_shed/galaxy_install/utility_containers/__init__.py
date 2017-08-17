@@ -12,25 +12,25 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
         self.app = app
 
     def build_repository_containers(self, repository, datatypes, invalid_tools, missing_repository_dependencies,
-                                     missing_tool_dependencies, readme_files_dict, repository_dependencies,
-                                     tool_dependencies, valid_tools, workflows, valid_data_managers,
-                                     invalid_data_managers, data_managers_errors, new_install=False,
-                                     reinstalling=False):
+                                    missing_tool_dependencies, readme_files_dict, repository_dependencies,
+                                    tool_dependencies, valid_tools, workflows, valid_data_managers,
+                                    invalid_data_managers, data_managers_errors, new_install=False,
+                                    reinstalling=False):
         """
         Return a dictionary of containers for the received repository's dependencies and readme files for
         display during installation to Galaxy.
         """
         containers_dict = dict(datatypes=None,
-                                invalid_tools=None,
-                                missing_tool_dependencies=None,
-                                readme_files=None,
-                                repository_dependencies=None,
-                                missing_repository_dependencies=None,
-                                tool_dependencies=None,
-                                valid_tools=None,
-                                workflows=None,
-                                valid_data_managers=None,
-                                invalid_data_managers=None)
+                               invalid_tools=None,
+                               missing_tool_dependencies=None,
+                               readme_files=None,
+                               repository_dependencies=None,
+                               missing_repository_dependencies=None,
+                               tool_dependencies=None,
+                               valid_tools=None,
+                               workflows=None,
+                               valid_data_managers=None,
+                               invalid_data_managers=None)
         # Some of the tool dependency folders will include links to display tool dependency information, and
         # some of these links require the repository id.  However we need to be careful because sometimes the
         # repository object is None.
@@ -52,10 +52,10 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
             if invalid_tools:
                 folder_id, invalid_tools_root_folder = \
                     self.build_invalid_tools_folder(folder_id,
-                                                     invalid_tools,
-                                                     changeset_revision,
-                                                     repository=repository,
-                                                     label='Invalid tools')
+                                                    invalid_tools,
+                                                    changeset_revision,
+                                                    repository=repository,
+                                                    label='Invalid tools')
                 containers_dict['invalid_tools'] = invalid_tools_root_folder
             # Readme files container.
             if readme_files_dict:
@@ -69,17 +69,17 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
                     label = 'Installed repository dependencies'
                 folder_id, repository_dependencies_root_folder = \
                     self.build_repository_dependencies_folder(folder_id=folder_id,
-                                                               repository_dependencies=repository_dependencies,
-                                                               label=label,
-                                                               installed=True)
+                                                              repository_dependencies=repository_dependencies,
+                                                              label=label,
+                                                              installed=True)
                 containers_dict['repository_dependencies'] = repository_dependencies_root_folder
             # Missing repository dependencies container.
             if missing_repository_dependencies:
                 folder_id, missing_repository_dependencies_root_folder = \
                     self.build_repository_dependencies_folder(folder_id=folder_id,
-                                                               repository_dependencies=missing_repository_dependencies,
-                                                               label='Missing repository dependencies',
-                                                               installed=False)
+                                                              repository_dependencies=missing_repository_dependencies,
+                                                              label='Missing repository dependencies',
+                                                              installed=False)
                 containers_dict['missing_repository_dependencies'] = missing_repository_dependencies_root_folder
             # Installed tool dependencies container.
             if tool_dependencies:
@@ -90,52 +90,52 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
                 # We only want to display the Status column if the tool_dependency is missing.
                 folder_id, tool_dependencies_root_folder = \
                     self.build_tool_dependencies_folder(folder_id,
-                                                         tool_dependencies,
-                                                         label=label,
-                                                         missing=False,
-                                                         new_install=new_install,
-                                                         reinstalling=reinstalling)
+                                                        tool_dependencies,
+                                                        label=label,
+                                                        missing=False,
+                                                        new_install=new_install,
+                                                        reinstalling=reinstalling)
                 containers_dict['tool_dependencies'] = tool_dependencies_root_folder
             # Missing tool dependencies container.
             if missing_tool_dependencies:
                 # We only want to display the Status column if the tool_dependency is missing.
                 folder_id, missing_tool_dependencies_root_folder = \
                     self.build_tool_dependencies_folder(folder_id,
-                                                         missing_tool_dependencies,
-                                                         label='Missing tool dependencies',
-                                                         missing=True,
-                                                         new_install=new_install,
-                                                         reinstalling=reinstalling)
+                                                        missing_tool_dependencies,
+                                                        label='Missing tool dependencies',
+                                                        missing=True,
+                                                        new_install=new_install,
+                                                        reinstalling=reinstalling)
                 containers_dict['missing_tool_dependencies'] = missing_tool_dependencies_root_folder
             # Valid tools container.
             if valid_tools:
                 folder_id, valid_tools_root_folder = self.build_tools_folder(folder_id,
-                                                                              valid_tools,
-                                                                              repository,
-                                                                              changeset_revision,
-                                                                              label='Valid tools')
+                                                                             valid_tools,
+                                                                             repository,
+                                                                             changeset_revision,
+                                                                             label='Valid tools')
                 containers_dict['valid_tools'] = valid_tools_root_folder
             # Workflows container.
             if workflows:
                 folder_id, workflows_root_folder = \
                     self.build_workflows_folder(folder_id=folder_id,
-                                                 workflows=workflows,
-                                                 repository_metadata_id=None,
-                                                 repository_id=repository_id,
-                                                 label='Workflows')
+                                                workflows=workflows,
+                                                repository_metadata_id=None,
+                                                repository_id=repository_id,
+                                                label='Workflows')
                 containers_dict['workflows'] = workflows_root_folder
             if valid_data_managers:
                 folder_id, valid_data_managers_root_folder = \
                     self.build_data_managers_folder(folder_id=folder_id,
-                                                     data_managers=valid_data_managers,
-                                                     label='Valid Data Managers')
+                                                    data_managers=valid_data_managers,
+                                                    label='Valid Data Managers')
                 containers_dict['valid_data_managers'] = valid_data_managers_root_folder
             if invalid_data_managers or data_managers_errors:
                 folder_id, invalid_data_managers_root_folder = \
                     self.build_invalid_data_managers_folder(folder_id=folder_id,
-                                                             data_managers=invalid_data_managers,
-                                                             error_messages=data_managers_errors,
-                                                             label='Invalid Data Managers')
+                                                            data_managers=invalid_data_managers,
+                                                            error_messages=data_managers_errors,
+                                                            label='Invalid Data Managers')
                 containers_dict['invalid_data_managers'] = invalid_data_managers_root_folder
         except Exception as e:
             log.debug("Exception in build_repository_containers: %s" % str(e))

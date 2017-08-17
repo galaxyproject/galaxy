@@ -176,8 +176,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             email = payload['email']
             password = payload['password']
             message = "\n".join([validate_email(trans, email),
-                                   validate_password(trans, password, password),
-                                   validate_publicname(trans, username)]).rstrip()
+                                 validate_password(trans, password, password),
+                                 validate_publicname(trans, username)]).rstrip()
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             else:
@@ -185,7 +185,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         else:
             raise exceptions.NotImplemented()
         item = user.to_dict(view='element', value_mapper={'id': trans.security.encode_id,
-                                                            'total_disk_usage': float})
+                                                          'total_disk_usage': float})
         return item
 
     @expose_api
@@ -556,9 +556,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         Return available password inputs.
         """
         return {'inputs': [{'name': 'current', 'type': 'password', 'label': 'Current password'},
-                            {'name': 'password', 'type': 'password', 'label': 'New password'},
-                            {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'},
-                            {'name': 'token', 'type': 'hidden', 'hidden': True, 'ignore': None}]}
+                           {'name': 'password', 'type': 'password', 'label': 'New password'},
+                           {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'},
+                           {'name': 'token', 'type': 'hidden', 'hidden': True, 'ignore': None}]}
 
     @expose_api
     def set_password(self, trans, id, payload={}, **kwd):

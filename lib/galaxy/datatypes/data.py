@@ -434,8 +434,8 @@ class Data(object):
         else:
             trans.response.set_content_type("text/html")
             return trans.stream_template_mako("/dataset/large_file.mako",
-                                               truncated_data=open(data.file_name).read(max_peek_size),
-                                               data=data)
+                                              truncated_data=open(data.file_name).read(max_peek_size),
+                                              data=data)
 
     def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
         def escape(raw_identifier):
@@ -569,7 +569,7 @@ class Data(object):
                 return target_frame, getattr(self, self.supported_display_apps[type]['links_function'])(dataset, type, app, base_url, **kwd)
         except:
             log.exception('Function %s is referred to in datatype %s for generating links for type %s, but is not accessible',
-                           self.supported_display_apps[type]['links_function'], self.__class__.__name__, type)
+                          self.supported_display_apps[type]['links_function'], self.__class__.__name__, type)
         return target_frame, []
 
     def get_converter_types(self, original_dataset, datatypes_registry):

@@ -88,10 +88,10 @@ class Role(object, Dictifiable):
     dict_element_visible_keys = ('id', 'name', 'description', 'type')
     private_id = None
     types = Bunch(PRIVATE='private',
-                   SYSTEM='system',
-                   USER='user',
-                   ADMIN='admin',
-                   SHARING='sharing')
+                  SYSTEM='system',
+                  USER='user',
+                  ADMIN='admin',
+                  SHARING='sharing')
 
     def __init__(self, name="", description="", type="system", deleted=False):
         self.name = name
@@ -136,16 +136,16 @@ class RepositoryRoleAssociation(object):
 class GalaxySession(object):
 
     def __init__(self,
-                  id=None,
-                  user=None,
-                  remote_host=None,
-                  remote_addr=None,
-                  referer=None,
-                  current_history=None,
-                  session_key=None,
-                  is_valid=False,
-                  prev_session_id=None,
-                  last_action=None):
+                 id=None,
+                 user=None,
+                 remote_host=None,
+                 remote_addr=None,
+                 referer=None,
+                 current_history=None,
+                 session_key=None,
+                 is_valid=False,
+                 prev_session_id=None,
+                 last_action=None):
         self.id = id
         self.user = user
         self.remote_host = remote_host
@@ -160,18 +160,18 @@ class GalaxySession(object):
 
 class Repository(object, Dictifiable):
     dict_collection_visible_keys = ('id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
-                                     'times_downloaded', 'deprecated')
+                                    'times_downloaded', 'deprecated')
     dict_element_visible_keys = ('id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'long_description', 'user_id', 'private',
-                                  'deleted', 'times_downloaded', 'deprecated')
+                                 'deleted', 'times_downloaded', 'deprecated')
     file_states = Bunch(NORMAL='n',
-                         NEEDS_MERGING='m',
-                         MARKED_FOR_REMOVAL='r',
-                         MARKED_FOR_ADDITION='a',
-                         NOT_TRACKED='?')
+                        NEEDS_MERGING='m',
+                        MARKED_FOR_REMOVAL='r',
+                        MARKED_FOR_ADDITION='a',
+                        NOT_TRACKED='?')
 
     def __init__(self, id=None, name=None, type=None, remote_repository_url=None, homepage_url=None,
-                  description=None, long_description=None, user_id=None, private=False,
-                  deleted=None, email_alerts=None, times_downloaded=0, deprecated=False):
+                 description=None, long_description=None, user_id=None, private=False,
+                 deleted=None, email_alerts=None, times_downloaded=0, deprecated=False):
         self.id = id
         self.name = name or "Unnamed repository"
         self.type = type
@@ -194,7 +194,7 @@ class Repository(object, Dictifiable):
             if str(role.name) == admin_role_name:
                 return role
         raise Exception('Repository %s owned by %s is not associated with a required administrative role.' %
-                         (str(self.name), str(self.user.username)))
+                        (str(self.name), str(self.user.username)))
 
     def allow_push(self, app):
         repo = hg.repository(ui.ui(), self.repo_path(app))
@@ -231,8 +231,8 @@ class Repository(object, Dictifiable):
         # is made that does not create a new downloadable changeset revision but updates the existing
         # one, we still want to be able to get repository dependencies.
         repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(app,
-                                                                                                    self,
-                                                                                                    changeset)
+                                                                                                   self,
+                                                                                                   changeset)
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
@@ -255,8 +255,8 @@ class Repository(object, Dictifiable):
 
     def installable_revisions(self, app, sort_revisions=True):
         return metadata_util.get_metadata_revisions(self,
-                                                     hg.repository(ui.ui(), self.repo_path(app)),
-                                                     sort_revisions=sort_revisions)
+                                                    hg.repository(ui.ui(), self.repo_path(app)),
+                                                    sort_revisions=sort_revisions)
 
     def is_new(self, app):
         repo = hg.repository(ui.ui(), self.repo_path(app))
@@ -305,16 +305,16 @@ class Repository(object, Dictifiable):
 
 class RepositoryMetadata(object, Dictifiable):
     dict_collection_visible_keys = ('id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
-                                     'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
-                                     'includes_tools_for_display_in_tool_panel', 'includes_workflows')
+                                    'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
+                                    'includes_tools_for_display_in_tool_panel', 'includes_workflows')
     dict_element_visible_keys = ('id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
-                                  'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
-                                  'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'repository_dependencies')
+                                 'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
+                                 'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'repository_dependencies')
 
     def __init__(self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False,
-                  downloadable=False, missing_test_components=None, tools_functionally_correct=False, test_install_error=False,
-                  has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False,
-                  includes_workflows=False):
+                 downloadable=False, missing_test_components=None, tools_functionally_correct=False, test_install_error=False,
+                 has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False,
+                 includes_workflows=False):
         self.id = id
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision

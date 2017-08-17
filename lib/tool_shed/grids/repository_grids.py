@@ -46,15 +46,15 @@ class CategoryGrid(grids.Grid):
     default_sort_key = "name"
     columns = [
         NameColumn("Name",
-                    key="Category.name",
-                    link=(lambda item: dict(operation="repositories_by_category", id=item.id)),
-                    attach_popup=False),
+                   key="Category.name",
+                   link=(lambda item: dict(operation="repositories_by_category", id=item.id)),
+                   attach_popup=False),
         DescriptionColumn("Description",
-                           key="Category.description",
-                           attach_popup=False),
+                          key="Category.description",
+                          attach_popup=False),
         RepositoriesColumn("Repositories",
-                            model_class=model.Repository,
-                            attach_popup=False)
+                           model_class=model.Repository,
+                           attach_popup=False)
     ]
     # Override these
     default_filter = {}
@@ -179,7 +179,7 @@ class RepositoryGrid(grids.Grid):
             if column_filter == 'All':
                 return query
             return query.filter(and_(model.Repository.table.c.user_id == model.User.table.c.id,
-                                       model.User.table.c.email == column_filter))
+                                     model.User.table.c.email == column_filter))
 
     class EmailAlertsColumn(grids.TextColumn):
 
@@ -201,34 +201,34 @@ class RepositoryGrid(grids.Grid):
     use_hide_message = False
     columns = [
         NameColumn("Name",
-                    key="name",
-                    link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                    attach_popup=False),
+                   key="name",
+                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                   attach_popup=False),
         DescriptionColumn("Synopsis",
-                           key="description",
-                           attach_popup=False),
+                          key="description",
+                          attach_popup=False),
         TypeColumn("Type"),
         MetadataRevisionColumn("Metadata<br/>Revisions"),
         UserColumn("Owner",
-                    model_class=model.User,
-                    link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
-                    attach_popup=False,
-                    key="User.username"),
+                   model_class=model.User,
+                   link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
+                   attach_popup=False,
+                   key="User.username"),
         # Columns that are valid for filtering but are not visible.
         EmailColumn("Email",
-                     model_class=model.User,
-                     key="email",
-                     visible=False),
+                    model_class=model.User,
+                    key="email",
+                    visible=False),
         RepositoryCategoryColumn("Category",
-                                  model_class=model.Category,
-                                  key="Category.name",
-                                  visible=False)
+                                 model_class=model.Category,
+                                 key="Category.name",
+                                 visible=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name, description",
-                                                cols_to_filter=[columns[0], columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = []
     standard_filters = []
     default_filter = dict(deleted="False")
@@ -257,7 +257,7 @@ class RepositoryGrid(grids.Grid):
             # The filter is None.
             return trans.sa_session.query(model.Repository) \
                                    .filter(and_(model.Repository.table.c.deleted == false(),
-                                                  model.Repository.table.c.deprecated == false())) \
+                                                model.Repository.table.c.deprecated == false())) \
                                    .join(model.User.table) \
                                    .outerjoin(model.RepositoryCategoryAssociation.table) \
                                    .outerjoin(model.Category.table)
@@ -266,17 +266,17 @@ class RepositoryGrid(grids.Grid):
 class DockerImageGrid(RepositoryGrid):
     columns = [
         RepositoryGrid.NameColumn("Name",
-                                   key="name",
-                                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                   attach_popup=False),
+                                  key="name",
+                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                  attach_popup=False),
         RepositoryGrid.DescriptionColumn("Synopsis",
-                                          key="description",
-                                          attach_popup=False),
+                                         key="description",
+                                         attach_popup=False),
         RepositoryGrid.UserColumn("Owner",
-                                   model_class=model.User,
-                                   link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
-                                   attach_popup=False,
-                                   key="User.username"),
+                                  model_class=model.User,
+                                  link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
+                                  attach_popup=False,
+                                  key="User.username"),
         RepositoryGrid.EmailAlertsColumn("Alert", attach_popup=False),
     ]
     operations = [grids.GridOperation("Include in Docker image", allow_multiple=True)]
@@ -286,23 +286,23 @@ class DockerImageGrid(RepositoryGrid):
 class EmailAlertsRepositoryGrid(RepositoryGrid):
     columns = [
         RepositoryGrid.NameColumn("Name",
-                                   key="name",
-                                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                   attach_popup=False),
+                                  key="name",
+                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                  attach_popup=False),
         RepositoryGrid.DescriptionColumn("Synopsis",
-                                          key="description",
-                                          attach_popup=False),
+                                         key="description",
+                                         attach_popup=False),
         RepositoryGrid.UserColumn("Owner",
-                                   model_class=model.User,
-                                   link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
-                                   attach_popup=False,
-                                   key="User.username"),
+                                  model_class=model.User,
+                                  link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
+                                  attach_popup=False,
+                                  key="User.username"),
         RepositoryGrid.EmailAlertsColumn("Alert", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced")
+                            key="deleted",
+                            visible=False,
+                            filterable="advanced")
     ]
     operations = [grids.GridOperation("Receive email alerts", allow_multiple=True)]
     global_actions = [
@@ -342,14 +342,14 @@ class MatchedRepositoryGrid(grids.Grid):
     use_hide_message = False
     columns = [
         NameColumn("Repository name",
-                    link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                    attach_popup=True),
+                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                   attach_popup=True),
         DescriptionColumn("Synopsis",
-                           attach_popup=False),
+                          attach_popup=False),
         RevisionColumn("Revision"),
         UserColumn("Owner",
-                    model_class=model.User,
-                    attach_popup=False)
+                   model_class=model.User,
+                   attach_popup=False)
     ]
     operations = [grids.GridOperation("Install to Galaxy", allow_multiple=True)]
     standard_filters = []
@@ -365,13 +365,13 @@ class MatchedRepositoryGrid(grids.Grid):
             for match_tuple in match_tuples:
                 repository_id, changeset_revision = match_tuple
                 clause_list.append("%s=%d and %s='%s'" % (model.RepositoryMetadata.table.c.repository_id,
-                                                            int(repository_id),
-                                                            model.RepositoryMetadata.table.c.changeset_revision,
-                                                            changeset_revision))
+                                                          int(repository_id),
+                                                          model.RepositoryMetadata.table.c.changeset_revision,
+                                                          changeset_revision))
             return trans.sa_session.query(model.RepositoryMetadata) \
                                    .join(model.Repository) \
                                    .filter(and_(model.Repository.table.c.deleted == false(),
-                                                  model.Repository.table.c.deprecated == false())) \
+                                                model.Repository.table.c.deprecated == false())) \
                                    .join(model.User.table) \
                                    .filter(or_(*clause_list)) \
                                    .order_by(model.Repository.name)
@@ -384,8 +384,8 @@ class InstallMatchedRepositoryGrid(MatchedRepositoryGrid):
     columns = [col for col in MatchedRepositoryGrid.columns]
     # Override the NameColumn
     columns[0] = MatchedRepositoryGrid.NameColumn("Name",
-                                                     link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                                     attach_popup=False)
+                                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                                  attach_popup=False)
 
 
 class MyWritableRepositoriesGrid(RepositoryGrid):
@@ -393,22 +393,22 @@ class MyWritableRepositoriesGrid(RepositoryGrid):
     title = 'Repositories I can change'
     columns = [
         RepositoryGrid.NameColumn("Name",
-                                   key="name",
-                                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                   attach_popup=False),
+                                  key="name",
+                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                  attach_popup=False),
         RepositoryGrid.TypeColumn("Type"),
         RepositoryGrid.MetadataRevisionColumn("Metadata<br/>Revisions"),
         RepositoryGrid.UserColumn("Owner",
-                                   model_class=model.User,
-                                   link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
-                                   attach_popup=False,
-                                   key="User.username")
+                                  model_class=model.User,
+                                  link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
+                                  attach_popup=False,
+                                  key="User.username")
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = []
     use_paging = False
 
@@ -418,7 +418,7 @@ class MyWritableRepositoriesGrid(RepositoryGrid):
         clause_list = []
         for repository in trans.sa_session.query(model.Repository) \
                                           .filter(and_(model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false())):
+                                                       model.Repository.table.c.deleted == false())):
             allow_push = repository.allow_push(trans.app)
             if allow_push:
                 allow_push_usernames = allow_push.split(',')
@@ -437,18 +437,18 @@ class RepositoriesByUserGrid(RepositoryGrid):
     title = "Repositories by user"
     columns = [
         RepositoryGrid.NameColumn("Name",
-                                   key="name",
-                                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                   attach_popup=False),
+                                  key="name",
+                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                  attach_popup=False),
         RepositoryGrid.DescriptionColumn("Synopsis",
-                                          key="description",
-                                          attach_popup=False),
+                                         key="description",
+                                         attach_popup=False),
         RepositoryGrid.TypeColumn("Type"),
         RepositoryGrid.MetadataRevisionColumn("Metadata<br/>Revisions"),
         RepositoryGrid.CategoryColumn("Category",
-                                       model_class=model.Category,
-                                       key="Category.name",
-                                       attach_popup=False)
+                                      model_class=model.Category,
+                                      key="Category.name",
+                                      attach_popup=False)
     ]
     operations = []
     standard_filters = []
@@ -471,7 +471,7 @@ class RepositoriesByUserGrid(RepositoryGrid):
         if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
             return trans.sa_session.query(model.Repository) \
                                    .filter(and_(model.Repository.type == rt_util.REPOSITORY_SUITE_DEFINITION,
-                                                  model.Repository.table.c.user_id == decoded_user_id)) \
+                                                model.Repository.table.c.user_id == decoded_user_id)) \
                                    .join(model.RepositoryMetadata.table) \
                                    .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list)) \
                                    .join(model.User.table) \
@@ -481,8 +481,8 @@ class RepositoriesByUserGrid(RepositoryGrid):
             # The value of filter is None.
             return trans.sa_session.query(model.Repository) \
                                    .filter(and_(model.Repository.table.c.deleted == false(),
-                                                  model.Repository.table.c.deprecated == false(),
-                                                  model.Repository.table.c.user_id == decoded_user_id)) \
+                                                model.Repository.table.c.deprecated == false(),
+                                                model.Repository.table.c.user_id == decoded_user_id)) \
                                    .join(model.User.table) \
                                    .outerjoin(model.RepositoryCategoryAssociation.table) \
                                    .outerjoin(model.Category.table)
@@ -493,30 +493,30 @@ class RepositoriesInCategoryGrid(RepositoryGrid):
 
     columns = [
         RepositoryGrid.NameColumn("Name",
-                                   key="name",
-                                   link=(lambda item: dict(controller="repository", operation="view_or_manage_repository", id=item.id)),
-                                   attach_popup=False),
+                                  key="name",
+                                  link=(lambda item: dict(controller="repository", operation="view_or_manage_repository", id=item.id)),
+                                  attach_popup=False),
         RepositoryGrid.DescriptionColumn("Synopsis",
-                                          key="description",
-                                          attach_popup=False),
+                                         key="description",
+                                         attach_popup=False),
         RepositoryGrid.TypeColumn("Type"),
         RepositoryGrid.MetadataRevisionColumn("Metadata<br/>Revisions"),
         RepositoryGrid.UserColumn("Owner",
-                                   model_class=model.User,
-                                   link=(lambda item: dict(controller="repository", operation="repositories_by_user", id=item.id)),
-                                   attach_popup=False,
-                                   key="User.username"),
+                                  model_class=model.User,
+                                  link=(lambda item: dict(controller="repository", operation="repositories_by_user", id=item.id)),
+                                  attach_popup=False,
+                                  key="User.username"),
         # Columns that are valid for filtering but are not visible.
         RepositoryGrid.EmailColumn("Email",
-                                    model_class=model.User,
-                                    key="email",
-                                    visible=False)
+                                   model_class=model.User,
+                                   key="email",
+                                   visible=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name, description",
-                                                cols_to_filter=[columns[0], columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = []
     use_paging = False
 
@@ -566,14 +566,14 @@ class RepositoriesInCategoryGrid(RepositoryGrid):
                 if category:
                     return trans.sa_session.query(model.Repository) \
                                            .filter(and_(model.Repository.table.c.deleted == false(),
-                                                          model.Repository.table.c.deprecated == false())) \
+                                                        model.Repository.table.c.deprecated == false())) \
                                            .join(model.User.table) \
                                            .outerjoin(model.RepositoryCategoryAssociation.table) \
                                            .outerjoin(model.Category.table) \
                                            .filter(model.Category.table.c.name == category.name)
             return trans.sa_session.query(model.Repository) \
                                    .filter(and_(model.Repository.table.c.deleted == false(),
-                                                  model.Repository.table.c.deprecated == false())) \
+                                                model.Repository.table.c.deprecated == false())) \
                                    .join(model.User.table) \
                                    .outerjoin(model.RepositoryCategoryAssociation.table) \
                                    .outerjoin(model.Category.table)
@@ -583,25 +583,25 @@ class RepositoriesIOwnGrid(RepositoryGrid):
     title = "Repositories I own"
     columns = [
         RepositoryGrid.NameColumn("Name",
-                                   key="name",
-                                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                   attach_popup=False),
+                                  key="name",
+                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                  attach_popup=False),
         RepositoryGrid.TypeColumn("Type"),
         RepositoryGrid.MetadataRevisionColumn("Metadata<br/>Revisions"),
         RepositoryGrid.DeprecatedColumn("Deprecated")
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = []
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
                                .filter(and_(model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.user_id == trans.user.id)) \
+                                            model.Repository.table.c.user_id == trans.user.id)) \
                                .join(model.User.table) \
                                .outerjoin(model.RepositoryCategoryAssociation.table) \
                                .outerjoin(model.Category.table)
@@ -611,18 +611,18 @@ class RepositoriesICanAdministerGrid(RepositoryGrid):
     title = "Repositories I can administer"
     columns = [
         RepositoryGrid.NameColumn("Name",
-                                   key="name",
-                                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                   attach_popup=False),
+                                  key="name",
+                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                  attach_popup=False),
         RepositoryGrid.UserColumn("Owner"),
         RepositoryGrid.MetadataRevisionColumn("Metadata<br/>Revisions"),
         RepositoryGrid.DeprecatedColumn("Deprecated")
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = []
     use_paging = False
 
@@ -658,21 +658,21 @@ class RepositoriesMissingToolTestComponentsGrid(RepositoryGrid):
     title = "Repositories with missing tool test components"
     columns = [
         RepositoryGrid.NameColumn("Name",
-                                   key="name",
-                                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                   attach_popup=False),
+                                  key="name",
+                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                  attach_popup=False),
         RepositoryGrid.LatestInstallableRevisionColumn("Latest Installable Revision"),
         RepositoryGrid.UserColumn("Owner",
-                                   key="User.username",
-                                   model_class=model.User,
-                                   link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
-                                   attach_popup=False)
+                                  key="User.username",
+                                  model_class=model.User,
+                                  link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
+                                  attach_popup=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = []
     use_paging = False
 
@@ -681,7 +681,7 @@ class RepositoriesMissingToolTestComponentsGrid(RepositoryGrid):
         revision_clause_list = []
         for repository in trans.sa_session.query(model.Repository) \
                                           .filter(and_(model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false())):
+                                                       model.Repository.table.c.deleted == false())):
             changeset_revision = \
                 grids_util.filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_components(trans, repository)
             if changeset_revision:
@@ -689,7 +689,7 @@ class RepositoriesMissingToolTestComponentsGrid(RepositoryGrid):
         if revision_clause_list:
             return trans.sa_session.query(model.Repository) \
                                    .filter(and_(model.Repository.table.c.deprecated == false(),
-                                                  model.Repository.table.c.deleted == false())) \
+                                                model.Repository.table.c.deleted == false())) \
                                    .join(model.RepositoryMetadata) \
                                    .filter(or_(*revision_clause_list)) \
                                    .join(model.User.table)
@@ -711,7 +711,7 @@ class MyWritableRepositoriesMissingToolTestComponentsGrid(RepositoriesMissingToo
         user_clause_list = []
         for repository in trans.sa_session.query(model.Repository) \
                                           .filter(and_(model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false())):
+                                                       model.Repository.table.c.deleted == false())):
             allow_push = repository.allow_push(trans.app)
             if allow_push:
                 allow_push_usernames = allow_push.split(',')
@@ -723,7 +723,7 @@ class MyWritableRepositoriesMissingToolTestComponentsGrid(RepositoriesMissingToo
             revision_clause_list = []
             for repository in trans.sa_session.query(model.Repository) \
                                               .filter(and_(model.Repository.table.c.deprecated == false(),
-                                                             model.Repository.table.c.deleted == false())) \
+                                                           model.Repository.table.c.deleted == false())) \
                                               .filter(or_(*user_clause_list)):
                 changeset_revision = \
                     grids_util.filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_components(trans, repository)
@@ -732,7 +732,7 @@ class MyWritableRepositoriesMissingToolTestComponentsGrid(RepositoriesMissingToo
             if revision_clause_list:
                 return trans.sa_session.query(model.Repository) \
                                        .filter(and_(model.Repository.table.c.deprecated == false(),
-                                                      model.Repository.table.c.deleted == false())) \
+                                                    model.Repository.table.c.deleted == false())) \
                                        .join(model.User.table) \
                                        .filter(or_(*user_clause_list)) \
                                        .join(model.RepositoryMetadata) \
@@ -746,28 +746,28 @@ class DeprecatedRepositoriesIOwnGrid(RepositoriesIOwnGrid):
     title = "Deprecated repositories I own"
     columns = [
         RepositoriesIOwnGrid.NameColumn("Name",
-                                         key="name",
-                                         link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                         attach_popup=False),
+                                        key="name",
+                                        link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                        attach_popup=False),
         RepositoryGrid.TypeColumn("Type"),
         RepositoriesIOwnGrid.MetadataRevisionColumn("Metadata<br/>Revisions"),
         RepositoriesIOwnGrid.CategoryColumn("Category",
-                                             model_class=model.Category,
-                                             key="Category.name",
-                                             attach_popup=False),
+                                            model_class=model.Category,
+                                            key="Category.name",
+                                            attach_popup=False),
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
                                .filter(and_(model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.user_id == trans.user.id,
-                                              model.Repository.table.c.deprecated == true())) \
+                                            model.Repository.table.c.user_id == trans.user.id,
+                                            model.Repository.table.c.deprecated == true())) \
                                .join(model.User.table) \
                                .outerjoin(model.RepositoryCategoryAssociation.table) \
                                .outerjoin(model.Category.table)
@@ -802,15 +802,15 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
     columns = [
         InvalidToolConfigColumn("Tool config"),
         RepositoryGrid.NameColumn("Name",
-                                   key="name",
-                                   link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                   attach_popup=False),
+                                  key="name",
+                                  link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                  attach_popup=False),
         RepositoryGrid.LatestInstallableRevisionColumn("Latest Metadata Revision"),
         RepositoryGrid.UserColumn("Owner",
-                                   key="User.username",
-                                   model_class=model.User,
-                                   link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
-                                   attach_popup=False)
+                                  key="User.username",
+                                  model_class=model.User,
+                                  link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
+                                  attach_popup=False)
     ]
     operations = []
     use_paging = False
@@ -820,7 +820,7 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
         revision_clause_list = []
         for repository in trans.sa_session.query(model.Repository) \
                                           .filter(and_(model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false())):
+                                                       model.Repository.table.c.deleted == false())):
             changeset_revision = \
                 grids_util.filter_by_latest_metadata_changeset_revision_that_has_invalid_tools(trans, repository)
             if changeset_revision:
@@ -828,7 +828,7 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
         if revision_clause_list:
             return trans.sa_session.query(model.Repository) \
                                    .filter(and_(model.Repository.table.c.deprecated == false(),
-                                                  model.Repository.table.c.deleted == false())) \
+                                                model.Repository.table.c.deleted == false())) \
                                    .join(model.RepositoryMetadata) \
                                    .filter(or_(*revision_clause_list)) \
                                    .join(model.User.table)
@@ -850,7 +850,7 @@ class MyWritableRepositoriesWithInvalidToolsGrid(RepositoriesWithInvalidToolsGri
         user_clause_list = []
         for repository in trans.sa_session.query(model.Repository) \
                                           .filter(and_(model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false())):
+                                                       model.Repository.table.c.deleted == false())):
             allow_push = repository.allow_push(trans.app)
             if allow_push:
                 allow_push_usernames = allow_push.split(',')
@@ -862,7 +862,7 @@ class MyWritableRepositoriesWithInvalidToolsGrid(RepositoriesWithInvalidToolsGri
             revision_clause_list = []
             for repository in trans.sa_session.query(model.Repository) \
                                               .filter(and_(model.Repository.table.c.deprecated == false(),
-                                                             model.Repository.table.c.deleted == false())) \
+                                                           model.Repository.table.c.deleted == false())) \
                                               .filter(or_(*user_clause_list)):
                 changeset_revision = \
                     grids_util.filter_by_latest_metadata_changeset_revision_that_has_invalid_tools(trans, repository)
@@ -871,7 +871,7 @@ class MyWritableRepositoriesWithInvalidToolsGrid(RepositoriesWithInvalidToolsGri
             if revision_clause_list:
                 return trans.sa_session.query(model.Repository) \
                                        .filter(and_(model.Repository.table.c.deprecated == false(),
-                                                      model.Repository.table.c.deleted == false())) \
+                                                    model.Repository.table.c.deleted == false())) \
                                        .join(model.User.table) \
                                        .filter(or_(*user_clause_list)) \
                                        .join(model.RepositoryMetadata) \
@@ -957,20 +957,20 @@ class RepositoryMetadataGrid(grids.Grid):
     default_sort_key = "Repository.name"
     columns = [
         RepositoryNameColumn("Repository name",
-                              key="Repository.name",
-                              link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                              attach_popup=False),
+                             key="Repository.name",
+                             link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                             attach_popup=False),
         RepositoryNameColumn("Type"),
         RepositoryOwnerColumn("Owner",
-                               model_class=model.User,
-                               attach_popup=False,
-                               key="User.username")
+                              model_class=model.User,
+                              attach_popup=False,
+                              key="User.username")
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name, description",
-                                                cols_to_filter=[columns[0], columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = []
     standard_filters = []
     default_filter = dict(malicious="False")
@@ -982,7 +982,7 @@ class RepositoryMetadataGrid(grids.Grid):
         return trans.sa_session.query(model.RepositoryMetadata) \
                                .join(model.Repository) \
                                .filter(and_(model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.deprecated == false())) \
+                                            model.Repository.table.c.deprecated == false())) \
                                .join(model.User.table)
 
 
@@ -1009,21 +1009,21 @@ class RepositoryDependenciesGrid(RepositoryMetadataGrid):
                                 required_repository_id = trans.security.encode_id(required_repository.id)
                                 required_repository_metadata = \
                                     metadata_util.get_repository_metadata_by_repository_id_changeset_revision(trans.app,
-                                                                                                               required_repository_id,
+                                                                                                              required_repository_id,
                                                                                                               changeset_revision)
                                 if not required_repository_metadata:
                                     repo = hg_util.get_repo_for_repository(trans.app,
-                                                                            repository=required_repository,
-                                                                            repo_path=None,
-                                                                            create=False)
+                                                                           repository=required_repository,
+                                                                           repo_path=None,
+                                                                           create=False)
                                     updated_changeset_revision = \
                                         metadata_util.get_next_downloadable_changeset_revision(required_repository,
-                                                                                                repo,
-                                                                                                changeset_revision)
+                                                                                               repo,
+                                                                                               changeset_revision)
                                     required_repository_metadata = \
                                         metadata_util.get_repository_metadata_by_repository_id_changeset_revision(trans.app,
-                                                                                                                   required_repository_id,
-                                                                                                                   updated_changeset_revision)
+                                                                                                                  required_repository_id,
+                                                                                                                  updated_changeset_revision)
                                 required_repository_metadata_id = trans.security.encode_id(required_repository_metadata.id)
                                 rd_line += '<a href="browse_repository_dependencies?operation=view_or_manage_repository&id=%s">' % (required_repository_metadata_id)
                             rd_line += 'Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>' % (escape_html(name), escape_html(owner), escape_html(changeset_revision))
@@ -1036,31 +1036,31 @@ class RepositoryDependenciesGrid(RepositoryMetadataGrid):
     default_sort_key = "Repository.name"
     columns = [
         RequiredRepositoryColumn("Repository dependency",
-                                  attach_popup=False),
+                                 attach_popup=False),
         RepositoryMetadataGrid.RepositoryNameColumn("Repository name",
-                                                     model_class=model.Repository,
-                                                     link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                                     attach_popup=False,
-                                                     key="Repository.name"),
+                                                    model_class=model.Repository,
+                                                    link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                                    attach_popup=False,
+                                                    key="Repository.name"),
         RepositoryMetadataGrid.RepositoryOwnerColumn("Owner",
-                                                      model_class=model.User,
-                                                      attach_popup=False,
-                                                      key="User.username"),
+                                                     model_class=model.User,
+                                                     attach_popup=False,
+                                                     key="User.username"),
         RepositoryMetadataGrid.ChangesetRevisionColumn("Revision",
-                                                        attach_popup=False)
+                                                       attach_popup=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name, owner",
-                                                cols_to_filter=[columns[1], columns[2]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[1], columns[2]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.RepositoryMetadata) \
                                .join(model.Repository) \
                                .filter(and_(model.RepositoryMetadata.table.c.has_repository_dependencies == true(),
-                                              model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.deprecated == false())) \
+                                            model.Repository.table.c.deleted == false(),
+                                            model.Repository.table.c.deprecated == false())) \
                                .join(model.User.table)
 
 
@@ -1097,31 +1097,31 @@ class DatatypesGrid(RepositoryMetadataGrid):
     default_sort_key = "Repository.name"
     columns = [
         DatatypesColumn("Datatype extension and class",
-                         attach_popup=False),
+                        attach_popup=False),
         RepositoryMetadataGrid.RepositoryNameColumn("Repository name",
-                                                     model_class=model.Repository,
-                                                     link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                                     attach_popup=False,
-                                                     key="Repository.name"),
+                                                    model_class=model.Repository,
+                                                    link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                                    attach_popup=False,
+                                                    key="Repository.name"),
         RepositoryMetadataGrid.RepositoryOwnerColumn("Owner",
-                                                      model_class=model.User,
-                                                      attach_popup=False,
-                                                      key="User.username"),
+                                                     model_class=model.User,
+                                                     attach_popup=False,
+                                                     key="User.username"),
         RepositoryMetadataGrid.ChangesetRevisionColumn("Revision",
-                                                        attach_popup=False)
+                                                       attach_popup=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name, owner",
-                                                cols_to_filter=[columns[1], columns[2]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[1], columns[2]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.RepositoryMetadata) \
                                .join(model.Repository) \
                                .filter(and_(model.RepositoryMetadata.table.c.includes_datatypes == true(),
-                                              model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.deprecated == false())) \
+                                            model.Repository.table.c.deleted == false(),
+                                            model.Repository.table.c.deprecated == false())) \
                                .join(model.User.table)
 
 
@@ -1167,31 +1167,31 @@ class ToolDependenciesGrid(RepositoryMetadataGrid):
     default_sort_key = "Repository.name"
     columns = [
         ToolDependencyColumn("Tool dependency",
-                              attach_popup=False),
+                             attach_popup=False),
         RepositoryMetadataGrid.RepositoryNameColumn("Repository name",
-                                                     model_class=model.Repository,
-                                                     link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                                     attach_popup=False,
-                                                     key="Repository.name"),
+                                                    model_class=model.Repository,
+                                                    link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                                    attach_popup=False,
+                                                    key="Repository.name"),
         RepositoryMetadataGrid.RepositoryOwnerColumn("Owner",
-                                                      model_class=model.User,
-                                                      attach_popup=False,
-                                                      key="User.username"),
+                                                     model_class=model.User,
+                                                     attach_popup=False,
+                                                     key="User.username"),
         RepositoryMetadataGrid.ChangesetRevisionColumn("Revision",
-                                                        attach_popup=False)
+                                                       attach_popup=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name, owner",
-                                                cols_to_filter=[columns[1], columns[2]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[1], columns[2]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.RepositoryMetadata) \
                                .join(model.Repository) \
                                .filter(and_(model.RepositoryMetadata.table.c.includes_tool_dependencies == true(),
-                                              model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.deprecated == false())) \
+                                            model.Repository.table.c.deleted == false(),
+                                            model.Repository.table.c.deprecated == false())) \
                                .join(model.User.table)
 
 
@@ -1227,31 +1227,31 @@ class ToolsGrid(RepositoryMetadataGrid):
     default_sort_key = "Repository.name"
     columns = [
         ToolsColumn("Tool id and version",
-                     attach_popup=False),
+                    attach_popup=False),
         RepositoryMetadataGrid.RepositoryNameColumn("Repository name",
-                                                     model_class=model.Repository,
-                                                     link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
-                                                     attach_popup=False,
-                                                     key="Repository.name"),
+                                                    model_class=model.Repository,
+                                                    link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)),
+                                                    attach_popup=False,
+                                                    key="Repository.name"),
         RepositoryMetadataGrid.RepositoryOwnerColumn("Owner",
-                                                      model_class=model.User,
-                                                      attach_popup=False,
-                                                      key="User.username"),
+                                                     model_class=model.User,
+                                                     attach_popup=False,
+                                                     key="User.username"),
         RepositoryMetadataGrid.ChangesetRevisionColumn("Revision",
-                                                        attach_popup=False)
+                                                       attach_popup=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name, owner",
-                                                cols_to_filter=[columns[1], columns[2]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[1], columns[2]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.RepositoryMetadata) \
                                .join(model.Repository) \
                                .filter(and_(model.RepositoryMetadata.table.c.includes_tools == true(),
-                                              model.Repository.table.c.deleted == false(),
-                                              model.Repository.table.c.deprecated == false())) \
+                                            model.Repository.table.c.deleted == false(),
+                                            model.Repository.table.c.deprecated == false())) \
                                .join(model.User.table)
 
 
@@ -1278,16 +1278,16 @@ class ValidCategoryGrid(CategoryGrid):
     default_sort_key = "name"
     columns = [
         CategoryGrid.NameColumn("Name",
-                                 key="Category.name",
-                                 link=(lambda item: dict(operation="valid_repositories_by_category", id=item.id)),
-                                 attach_popup=False),
+                                key="Category.name",
+                                link=(lambda item: dict(operation="valid_repositories_by_category", id=item.id)),
+                                attach_popup=False),
         CategoryGrid.DescriptionColumn("Description",
-                                        key="Category.description",
-                                        attach_popup=False),
+                                       key="Category.description",
+                                       attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         RepositoriesColumn("Valid repositories",
-                            model_class=model.Repository,
-                            attach_popup=False)
+                           model_class=model.Repository,
+                           attach_popup=False)
     ]
     # Override these
     default_filter = {}
@@ -1340,27 +1340,27 @@ class ValidRepositoryGrid(RepositoryGrid):
     title = "Valid Repositories"
     columns = [
         RepositoryGrid.NameColumn("Name",
-                                   key="name",
-                                   attach_popup=True),
+                                  key="name",
+                                  attach_popup=True),
         RepositoryGrid.DescriptionColumn("Synopsis",
-                                          key="description",
-                                          attach_popup=False),
+                                         key="description",
+                                         attach_popup=False),
         RepositoryGrid.TypeColumn("Type"),
         InstallableRevisionColumn("Installable Revisions"),
         RepositoryGrid.UserColumn("Owner",
-                                   model_class=model.User,
-                                   attach_popup=False),
+                                  model_class=model.User,
+                                  attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         RepositoryCategoryColumn("Category",
-                                  model_class=model.Category,
-                                  key="Category.name",
-                                  visible=False)
+                                 model_class=model.Category,
+                                 key="Category.name",
+                                 visible=False)
     ]
     columns.append(grids.MulticolFilterColumn("Search repository name, description",
-                                                cols_to_filter=[columns[0], columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     operations = []
     use_paging = False
 
@@ -1377,7 +1377,7 @@ class ValidRepositoryGrid(RepositoryGrid):
                                        .join(model.RepositoryCategoryAssociation.table) \
                                        .join(model.Category.table) \
                                        .filter(and_(model.Category.table.c.id == trans.security.decode_id(kwd['id']),
-                                                      model.RepositoryMetadata.table.c.downloadable == true()))
+                                                    model.RepositoryMetadata.table.c.downloadable == true()))
             if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
                 return trans.sa_session.query(model.Repository) \
                                        .filter(model.Repository.type == rt_util.REPOSITORY_SUITE_DEFINITION) \
@@ -1387,18 +1387,18 @@ class ValidRepositoryGrid(RepositoryGrid):
                                        .join(model.RepositoryCategoryAssociation.table) \
                                        .join(model.Category.table) \
                                        .filter(and_(model.Category.table.c.id == trans.security.decode_id(kwd['id']),
-                                                      model.RepositoryMetadata.table.c.downloadable == true()))
+                                                    model.RepositoryMetadata.table.c.downloadable == true()))
             else:
                 # The value of filter is None.
                 return trans.sa_session.query(model.Repository) \
                                        .filter(and_(model.Repository.table.c.deleted == false(),
-                                                      model.Repository.table.c.deprecated == false())) \
+                                                    model.Repository.table.c.deprecated == false())) \
                                        .join(model.RepositoryMetadata.table) \
                                        .join(model.User.table) \
                                        .join(model.RepositoryCategoryAssociation.table) \
                                        .join(model.Category.table) \
                                        .filter(and_(model.Category.table.c.id == trans.security.decode_id(kwd['id']),
-                                                      model.RepositoryMetadata.table.c.downloadable == true()))
+                                                    model.RepositoryMetadata.table.c.downloadable == true()))
         # The user performed a free text search on the ValidCategoryGrid.
         if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE:
             return trans.sa_session.query(model.Repository) \
@@ -1421,7 +1421,7 @@ class ValidRepositoryGrid(RepositoryGrid):
             # The value of filter is None.
             return trans.sa_session.query(model.Repository) \
                                    .filter(and_(model.Repository.table.c.deleted == false(),
-                                                  model.Repository.table.c.deprecated == false())) \
+                                                model.Repository.table.c.deprecated == false())) \
                                    .join(model.RepositoryMetadata.table) \
                                    .join(model.User.table) \
                                    .outerjoin(model.RepositoryCategoryAssociation.table) \

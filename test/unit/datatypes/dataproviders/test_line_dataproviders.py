@@ -86,7 +86,7 @@ class Test_FilteredLineDataProvider(test_base_dataproviders.Test_FilteredDataPro
         """
         (contents, provider, data) = self.contents_provider_and_data(comment_char='T')
         self.assertEqual(data, ['# this should be stripped out', 'One',
-                                  '# as should blank lines', '# preceding/trailing whitespace too'])
+                                '# as should blank lines', '# preceding/trailing whitespace too'])
         self.assertCounters(provider, 7, 4, 4)
 
 
@@ -247,7 +247,7 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
             strip_lines=False, strip_newlines=True,
             new_block_delim_fn=is_not_indented, block_filter_fn=empty_block)
         self.assertEqual(data, [{'header': 'One', 'data': ['ABCD']},
-                                  {'header': 'Two', 'data': ['ABCD', 'EFGH']}])
+                                {'header': 'Two', 'data': ['ABCD', 'EFGH']}])
         self.assertCounters(provider, 3, 2, 2)
 
     def test_block_filter_fn_w_limit_offset(self):

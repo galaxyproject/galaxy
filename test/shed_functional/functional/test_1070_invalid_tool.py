@@ -30,30 +30,30 @@ class TestFreebayesRepository(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=repository_name,
-                                                    description=repository_description,
-                                                    long_description=repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=repository_description,
+                                                   long_description=repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         if self.repository_is_new(repository):
             self.upload_file(repository,
-                              filename='bismark/bismark.tar',
-                              filepath=None,
-                              valid_tools_only=False,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded bismark tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='bismark/bismark.tar',
+                             filepath=None,
+                             valid_tools_only=False,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded bismark tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
             self.upload_file(repository,
-                              filename='bismark/bismark_methylation_extractor.xml',
-                              filepath=None,
-                              valid_tools_only=False,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded an updated tool xml.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='bismark/bismark_methylation_extractor.xml',
+                             filepath=None,
+                             valid_tools_only=False,
+                             uncompress_file=False,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded an updated tool xml.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0010_browse_tool_shed(self):
         """Browse the available tool sheds in this Galaxy instance and preview the bismark repository."""
@@ -66,21 +66,21 @@ class TestFreebayesRepository(ShedTwillTestCase):
     def test_0015_install_freebayes_repository(self):
         '''Install the test repository without installing tool dependencies.'''
         self.install_repository(repository_name,
-                                 common.test_user_1_name,
-                                 category_name,
-                                 install_tool_dependencies=False,
-                                 new_tool_panel_section_label='test_1070')
+                                common.test_user_1_name,
+                                category_name,
+                                install_tool_dependencies=False,
+                                new_tool_panel_section_label='test_1070')
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(repository_name, common.test_user_1_name)
         strings_displayed = ['bismark_0070',
-                              "Galaxy's bismark wrapper",
-                              'user1',
-                              self.url.replace('http://', ''),
-                              installed_repository.installed_changeset_revision]
+                             "Galaxy's bismark wrapper",
+                             'user1',
+                             self.url.replace('http://', ''),
+                             installed_repository.installed_changeset_revision]
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
         strings_displayed.extend(['methylation extractor', 'Invalid tools'])
         self.display_installed_repository_manage_page(installed_repository,
-                                                       strings_displayed=strings_displayed,
-                                                       strings_not_displayed=['bisulfite mapper'])
+                                                      strings_displayed=strings_displayed,
+                                                      strings_not_displayed=['bisulfite mapper'])
         self.verify_tool_metadata_for_installed_repository(installed_repository)
         self.update_installed_repository(installed_repository, strings_displayed=["there are no updates available"])
         assert 'invalid_tools' in installed_repository.metadata, 'No invalid tools were defined in %s.' % \

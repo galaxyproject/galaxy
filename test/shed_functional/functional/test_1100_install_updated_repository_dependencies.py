@@ -35,21 +35,21 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=column_repository_name,
-                                                    description=column_repository_description,
-                                                    long_description=column_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=column_repository_description,
+                                                   long_description=column_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         if self.repository_is_new(repository):
             self.upload_file(repository,
-                              filename='column_maker/column_maker.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded column_maker tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='column_maker/column_maker.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded column_maker tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0010_create_and_populate_convert_repository(self):
         '''Create and populate the convert_chars repository.'''
@@ -57,32 +57,32 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=convert_repository_name,
-                                                    description=convert_repository_description,
-                                                    long_description=convert_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=convert_repository_description,
+                                                   long_description=convert_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         if self.repository_is_new(repository):
             self.upload_file(repository,
-                              filename='convert_chars/convert_chars.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded convert_chars tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='convert_chars/convert_chars.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded convert_chars tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0015_install_and_uninstall_column_repository(self):
         '''Install and uninstall the column_maker repository.'''
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.install_repository(column_repository_name,
-                                 common.test_user_1_name,
-                                 category_name,
-                                 install_tool_dependencies=False,
-                                 install_repository_dependencies=True,
-                                 new_tool_panel_section_label='column_maker',
-                                 strings_not_displayed=['install_repository_dependencies'])
+                                common.test_user_1_name,
+                                category_name,
+                                install_tool_dependencies=False,
+                                install_repository_dependencies=True,
+                                new_tool_panel_section_label='column_maker',
+                                strings_not_displayed=['install_repository_dependencies'])
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(column_repository_name, common.test_user_1_name)
         self.uninstall_repository(installed_column_repository)
 

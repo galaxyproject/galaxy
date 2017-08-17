@@ -453,18 +453,18 @@ valid_chars = set(string.ascii_letters + string.digits + " -=_.()/+*^,:?!")
 
 # characters that are allowed but need to be escaped
 mapped_chars = {'>': '__gt__',
-                 '<': '__lt__',
-                 "'": '__sq__',
-                 '"': '__dq__',
-                 '[': '__ob__',
-                 ']': '__cb__',
-                 '{': '__oc__',
-                 '}': '__cc__',
-                 '@': '__at__',
-                 '\n': '__cn__',
-                 '\r': '__cr__',
-                 '\t': '__tc__',
-                 '#': '__pd__'}
+                '<': '__lt__',
+                "'": '__sq__',
+                '"': '__dq__',
+                '[': '__ob__',
+                ']': '__cb__',
+                '{': '__oc__',
+                '}': '__cc__',
+                '@': '__at__',
+                '\n': '__cn__',
+                '\r': '__cr__',
+                '\t': '__tc__',
+                '#': '__pd__'}
 
 
 def restore_text(text, character_map=mapped_chars):
@@ -507,9 +507,9 @@ def sanitize_lists_to_string(values, valid_characters=valid_chars, character_map
         rval = []
         for value in values:
             rval.append(sanitize_lists_to_string(value,
-                                                   valid_characters=valid_characters,
-                                                   character_map=character_map,
-                                                   invalid_character=invalid_character))
+                                                 valid_characters=valid_characters,
+                                                 character_map=character_map,
+                                                 invalid_character=invalid_character))
         values = ",".join(rval)
     else:
         values = sanitize_text(values, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)
@@ -720,7 +720,7 @@ class Params(object):
                 if (value is not None and
                     key not in self.NEVER_SANITIZE and
                     True not in [key.endswith("|%s" % nonsanitize_parameter) for
-                                  nonsanitize_parameter in self.NEVER_SANITIZE]):
+                                 nonsanitize_parameter in self.NEVER_SANITIZE]):
                         self.__dict__[key] = sanitize_param(value)
                 else:
                     self.__dict__[key] = value
@@ -1147,10 +1147,10 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
             os.chmod(path, perms)
         except Exception as e:
             log.warning('Unable to honor umask (%s) for %s, tried to set: %s but mode remains %s, error was: %s' % (oct(umask),
-                                                                                                                      path,
-                                                                                                                      oct(perms),
-                                                                                                                      oct(stat.S_IMODE(st.st_mode)),
-                                                                                                                      e))
+                                                                                                                    path,
+                                                                                                                    oct(perms),
+                                                                                                                    oct(stat.S_IMODE(st.st_mode)),
+                                                                                                                    e))
     # fix group
     if gid is not None and st.st_gid != gid:
         try:
@@ -1163,9 +1163,9 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
                 desired_group = gid
                 current_group = st.st_gid
             log.warning('Unable to honor primary group (%s) for %s, group remains %s, error was: %s' % (desired_group,
-                                                                                                          path,
-                                                                                                          current_group,
-                                                                                                          e))
+                                                                                                        path,
+                                                                                                        current_group,
+                                                                                                        e))
 
 
 def docstring_trim(docstring):

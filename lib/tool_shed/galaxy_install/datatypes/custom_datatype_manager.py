@@ -13,7 +13,7 @@ class CustomDatatypeLoader(object):
         self.app = app
 
     def alter_config_and_load_prorietary_datatypes(self, datatypes_config, relative_install_dir,
-                                                    deactivate=False, override=True):
+                                                   deactivate=False, override=True):
         """
         Parse a custom datatypes config (a datatypes_conf.xml file included in an installed
         tool shed repository) and add information to appropriate element attributes that will
@@ -32,7 +32,7 @@ class CustomDatatypeLoader(object):
             # We have valid XML, but not a valid custom datatypes definition.
             return None, None
         converter_path, display_path = self.get_converter_and_display_paths(registration,
-                                                                             relative_install_dir)
+                                                                            relative_install_dir)
         if converter_path:
             # Path to datatype converters
             registration.attrib['proprietary_converter_path'] = converter_path
@@ -80,20 +80,20 @@ class CustomDatatypeLoader(object):
                             elem.attrib['proprietary_datatype_module'] = proprietary_datatype_module
         # Load custom datatypes
         self.app.datatypes_registry.load_datatypes(root_dir=self.app.config.root,
-                                                    config=datatypes_config_root,
-                                                    deactivate=deactivate,
-                                                    override=override)
+                                                   config=datatypes_config_root,
+                                                   deactivate=deactivate,
+                                                   override=override)
         return converter_path, display_path
 
     def create_repository_dict_for_proprietary_datatypes(self, tool_shed, name, owner, installed_changeset_revision,
-                                                          tool_dicts, converter_path=None, display_path=None):
+                                                         tool_dicts, converter_path=None, display_path=None):
         return dict(tool_shed=tool_shed,
-                     repository_name=name,
-                     repository_owner=owner,
-                     installed_changeset_revision=installed_changeset_revision,
-                     tool_dicts=tool_dicts,
-                     converter_path=converter_path,
-                     display_path=display_path)
+                    repository_name=name,
+                    repository_owner=owner,
+                    installed_changeset_revision=installed_changeset_revision,
+                    tool_dicts=tool_dicts,
+                    converter_path=converter_path,
+                    display_path=display_path)
 
     def get_converter_and_display_paths(self, registration_elem, relative_install_dir):
         """
@@ -144,8 +144,8 @@ class CustomDatatypeLoader(object):
     def load_installed_datatype_converters(self, installed_repository_dict, deactivate=False):
         """Load or deactivate proprietary datatype converters."""
         self.app.datatypes_registry.load_datatype_converters(self.app.toolbox,
-                                                              installed_repository_dict=installed_repository_dict,
-                                                              deactivate=deactivate)
+                                                             installed_repository_dict=installed_repository_dict,
+                                                             deactivate=deactivate)
 
     def load_installed_datatypes(self, repository, relative_install_dir, deactivate=False):
         """
@@ -158,21 +158,21 @@ class CustomDatatypeLoader(object):
         if datatypes_config:
             converter_path, display_path = \
                 self.alter_config_and_load_prorietary_datatypes(datatypes_config,
-                                                                 relative_install_dir,
-                                                                 deactivate=deactivate)
+                                                                relative_install_dir,
+                                                                deactivate=deactivate)
             if converter_path or display_path:
                 # Create a dictionary of tool shed repository related information.
                 repository_dict = \
                     self.create_repository_dict_for_proprietary_datatypes(tool_shed=repository.tool_shed,
-                                                                           name=repository.name,
-                                                                           owner=repository.owner,
-                                                                           installed_changeset_revision=repository.installed_changeset_revision,
-                                                                           tool_dicts=metadata.get('tools', []),
-                                                                           converter_path=converter_path,
-                                                                           display_path=display_path)
+                                                                          name=repository.name,
+                                                                          owner=repository.owner,
+                                                                          installed_changeset_revision=repository.installed_changeset_revision,
+                                                                          tool_dicts=metadata.get('tools', []),
+                                                                          converter_path=converter_path,
+                                                                          display_path=display_path)
         return repository_dict
 
     def load_installed_display_applications(self, installed_repository_dict, deactivate=False):
         """Load or deactivate custom datatype display applications."""
         self.app.datatypes_registry.load_display_applications(self.app, installed_repository_dict=installed_repository_dict,
-                                                               deactivate=deactivate)
+                                                              deactivate=deactivate)

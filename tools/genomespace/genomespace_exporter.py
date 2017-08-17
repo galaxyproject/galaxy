@@ -256,8 +256,8 @@ def send_file_to_genomespace(genomespace_site, username, token, source_filename,
         upload_request.get_method = lambda: 'GET'
         upload_info = json.loads(url_opener.open(upload_request).read())
         conn = S3Connection(aws_access_key_id=upload_info['amazonCredentials']['accessKey'],
-                             aws_secret_access_key=upload_info['amazonCredentials']['secretKey'],
-                             security_token=upload_info['amazonCredentials']['sessionToken'])
+                            aws_secret_access_key=upload_info['amazonCredentials']['secretKey'],
+                            security_token=upload_info['amazonCredentials']['sessionToken'])
         # Cannot use conn.get_bucket due to permissions, manually create bucket object
         bucket = boto.s3.bucket.Bucket(connection=conn, name=upload_info['s3BucketName'])
         mp = bucket.initiate_multipart_upload(upload_info['s3ObjectKey'])

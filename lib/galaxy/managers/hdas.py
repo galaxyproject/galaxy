@@ -22,9 +22,9 @@ log = logging.getLogger(__name__)
 
 
 class HDAManager(datasets.DatasetAssociationManager,
-                  secured.OwnableManagerMixin,
-                  taggable.TaggableManagerMixin,
-                  annotatable.AnnotatableManagerMixin):
+                 secured.OwnableManagerMixin,
+                 taggable.TaggableManagerMixin,
+                 annotatable.AnnotatableManagerMixin):
     """
     Interface/service object for interacting with HDAs.
     """
@@ -83,7 +83,7 @@ class HDAManager(datasets.DatasetAssociationManager,
         if not dataset:
             kwargs['create_dataset'] = True
         hda = model.HistoryDatasetAssociation(history=history, dataset=dataset,
-                                               sa_session=self.app.model.context, **kwargs)
+                                              sa_session=self.app.model.context, **kwargs)
 
         if history:
             history.add_dataset(hda, set_hid=('hid' not in kwargs))
@@ -179,7 +179,7 @@ class HDAManager(datasets.DatasetAssociationManager,
         """
         job_states = model.Job.states
         query = (self._job_state_history_query(hda)
-                  .filter(model.JobStateHistory.state == job_states.RESUBMITTED))
+                 .filter(model.JobStateHistory.state == job_states.RESUBMITTED))
         return self.app.model.context.query(query.exists()).scalar()
 
     def _job_state_history_query(self, hda):
@@ -194,9 +194,9 @@ class HDAManager(datasets.DatasetAssociationManager,
         # NOTE: don't eagerload (JODA will load the hda were using!)
         hda_id = hda.id
         query = (session.query(JobToOutputDatasetAssociation, JobStateHistory)
-                  .filter(JobToOutputDatasetAssociation.dataset_id == hda_id)
-                  .filter(JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id)
-                  .enable_eagerloads(False))
+                 .filter(JobToOutputDatasetAssociation.dataset_id == hda_id)
+                 .filter(JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id)
+                 .enable_eagerloads(False))
         return query
 
     def data_conversion_status(self, hda):
@@ -341,14 +341,14 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             #   see also: https://trello.com/c/5d6j4X5y
             #   see also: https://sentry.galaxyproject.org/galaxy/galaxy-main/group/20769/events/9352883/
             'url'           : lambda i, k, **c: self.url_for('history_content',
-                                                              history_id=self.app.security.encode_id(i.history_id),
-                                                              id=self.app.security.encode_id(i.id)),
+                                                             history_id=self.app.security.encode_id(i.history_id),
+                                                             id=self.app.security.encode_id(i.id)),
             'urls'          : self.serialize_urls,
 
             # TODO: backwards compat: need to go away
             'download_url'  : lambda i, k, **c: self.url_for('history_contents_display',
-                                                              history_id=self.app.security.encode_id(i.history.id),
-                                                              history_content_id=self.app.security.encode_id(i.id)),
+                                                             history_id=self.app.security.encode_id(i.history.id),
+                                                             history_content_id=self.app.security.encode_id(i.id)),
             'parent_id'     : self.serialize_id,
             # TODO: to DatasetAssociationSerializer
             'accessible'    : lambda i, k, user=None, **c: self.manager.is_accessible(i, user),
@@ -432,21 +432,21 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'display'       : url_for(controller='dataset', action='display', dataset_id=encoded_id, preview=True),
             'edit'          : url_for(controller='dataset', action='edit', dataset_id=encoded_id),
             'download'      : url_for(controller='dataset', action='display',
-                                       dataset_id=encoded_id, to_ext=hda.extension),
+                                      dataset_id=encoded_id, to_ext=hda.extension),
             'report_error'  : url_for(controller='dataset', action='errors', id=encoded_id),
             'rerun'         : url_for(controller='tool_runner', action='rerun', id=encoded_id),
             'show_params'   : url_for(controller='dataset', action='show_params', dataset_id=encoded_id),
             'visualization' : url_for(controller='visualization', action='index',
-                                       id=encoded_id, model='HistoryDatasetAssociation'),
+                                      id=encoded_id, model='HistoryDatasetAssociation'),
             'meta_download' : url_for(controller='dataset', action='get_metadata_file',
-                                       hda_id=encoded_id, metadata_name=''),
+                                      hda_id=encoded_id, metadata_name=''),
         }
         return urls
 
 
 class HDADeserializer(datasets.DatasetAssociationDeserializer,
-                       taggable.TaggableDeserializerMixin,
-                       annotatable.AnnotatableDeserializerMixin):
+                      taggable.TaggableDeserializerMixin,
+                      annotatable.AnnotatableDeserializerMixin):
     """
     Interface/service object for validating and deserializing dictionaries into histories.
     """
@@ -466,14 +466,14 @@ class HDADeserializer(datasets.DatasetAssociationDeserializer,
             # remapped
             'genome_build'  : lambda i, k, v, **c: self.deserialize_genome_build(i, 'dbkey', v),
             'misc_info'     : lambda i, k, v, **c: self.deserialize_basestring(i, 'info', v,
-                                                                                convert_none_to_empty=True),
+                                                                               convert_none_to_empty=True),
         })
         self.deserializable_keyset.update(self.deserializers.keys())
 
 
 class HDAFilterParser(datasets.DatasetAssociationFilterParser,
-                       taggable.TaggableFilterMixin,
-                       annotatable.AnnotatableFilterMixin):
+                      taggable.TaggableFilterMixin,
+                      annotatable.AnnotatableFilterMixin):
     model_manager_class = HDAManager
     model_class = model.HistoryDatasetAssociation
 

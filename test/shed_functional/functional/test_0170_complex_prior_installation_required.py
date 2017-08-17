@@ -42,20 +42,20 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=matplotlib_repository_name,
-                                                    description=matplotlib_repository_description,
-                                                    long_description=matplotlib_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=matplotlib_repository_description,
+                                                   long_description=matplotlib_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='package_matplotlib/package_matplotlib_1_2.tar',
-                          filepath=None,
-                          valid_tools_only=False,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded matplotlib tool dependency tarball.',
-                          strings_displayed=['This repository currently contains a single file named <b>tool_dependencies.xml</b>'],
-                          strings_not_displayed=[])
+                         filename='package_matplotlib/package_matplotlib_1_2.tar',
+                         filepath=None,
+                         valid_tools_only=False,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded matplotlib tool dependency tarball.',
+                         strings_displayed=['This repository currently contains a single file named <b>tool_dependencies.xml</b>'],
+                         strings_not_displayed=[])
 
     def test_0010_create_numpy_repository(self):
         '''Create and populate the package_numpy_1_7_0170 repository.'''
@@ -65,20 +65,20 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=numpy_repository_name,
-                                                    description=numpy_repository_description,
-                                                    long_description=numpy_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=numpy_repository_description,
+                                                   long_description=numpy_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='package_numpy/package_numpy_1_7.tar',
-                          filepath=None,
-                          valid_tools_only=False,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded numpy tool dependency tarball.',
-                          strings_displayed=['This repository currently contains a single file named <b>tool_dependencies.xml</b>'],
-                          strings_not_displayed=[])
+                         filename='package_numpy/package_numpy_1_7.tar',
+                         filepath=None,
+                         valid_tools_only=False,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded numpy tool dependency tarball.',
+                         strings_displayed=['This repository currently contains a single file named <b>tool_dependencies.xml</b>'],
+                         strings_not_displayed=[])
 
     def test_0015_create_complex_repository_dependency(self):
         '''Create a dependency on package_numpy_1_7_0170.'''
@@ -108,14 +108,14 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         open(new_xml_file, 'w').write(original_xml.replace('<!--NUMPY-->', processed_xml))
         # Upload the generated complex repository dependency XML to the matplotlib repository.
         self.upload_file(matplotlib_repository,
-                          filename='tool_dependencies.xml',
-                          filepath=dependency_xml_path,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded complex repository dependency on numpy 1.7.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='tool_dependencies.xml',
+                         filepath=dependency_xml_path,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded complex repository dependency on numpy 1.7.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_verify_generated_dependency(self):
         '''Verify that matplotlib now has a package tool dependency and a complex repository dependency.'''

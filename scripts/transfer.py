@@ -52,7 +52,7 @@ class ArgHandler(object):
     def __init__(self):
         self.parser = optparse.OptionParser()
         self.parser.add_option('-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)',
-                                default=os.path.abspath(os.path.join(galaxy_root, 'config/galaxy.ini')))
+                               default=os.path.abspath(os.path.join(galaxy_root, 'config/galaxy.ini')))
         self.parser.add_option('-d', '--debug', action='store_true', dest='debug', help="Debug (don't detach)")
         self.parser.add_option('-s', '--slow', action='store_true', dest='slow', help="Transfer slowly (for debugging)")
         self.opts = None
@@ -83,9 +83,9 @@ class GalaxyApp(object):
     """
     def __init__(self, config_file):
         self.config = ConfigParser.ConfigParser(dict(database_file='database/universe.sqlite',
-                                                       file_path='database/files',
-                                                       transfer_worker_port_range='12275-12675',
-                                                       transfer_worker_log=None))
+                                                     file_path='database/files',
+                                                     transfer_worker_port_range='12275-12675',
+                                                     transfer_worker_log=None))
         self.config.read(config_file)
         self.model = bunch.Bunch()
         self.connect_database()
@@ -275,12 +275,12 @@ def scp_transfer(transfer_job):
     try:
         # TODO: add the ability to determine progress of the copy here like we do in the http_transfer above.
         cmd = "scp %s@%s:'%s' '%s'" % (user_name,
-                                        host,
-                                        file_path.replace(' ', '\ '),
-                                        fn)
+                                       host,
+                                       file_path.replace(' ', '\ '),
+                                       fn)
         pexpect.run(cmd, events={'.ssword:*': password + '\r\n',
-                                   pexpect.TIMEOUT: print_ticks},
-                     timeout=10)
+                                 pexpect.TIMEOUT: print_ticks},
+                    timeout=10)
         return dict(state=transfer_job.states.DONE, path=fn)
     except Exception as e:
         return dict(state=transfer_job.states.ERROR, info='Error during file transfer: %s' % str(e))

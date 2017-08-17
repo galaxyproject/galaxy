@@ -91,17 +91,17 @@ class UserListGrid(grids.Grid):
     default_sort_key = "email"
     columns = [
         EmailColumn("Email",
-                     key="email",
-                     model_class=model.User,
-                     link=(lambda item: dict(controller="user", action="information", id=item.id, webapp="galaxy")),
-                     attach_popup=True,
-                     filterable="advanced",
-                     target="top"),
+                    key="email",
+                    model_class=model.User,
+                    link=(lambda item: dict(controller="user", action="information", id=item.id, webapp="galaxy")),
+                    attach_popup=True,
+                    filterable="advanced",
+                    target="top"),
         UserNameColumn("User Name",
-                        key="username",
-                        model_class=model.User,
-                        attach_popup=False,
-                        filterable="advanced"),
+                       key="username",
+                       model_class=model.User,
+                       attach_popup=False,
+                       filterable="advanced"),
         GroupsColumn("Groups", attach_popup=False),
         RolesColumn("Roles", attach_popup=False),
         ExternalColumn("External", attach_popup=False),
@@ -113,26 +113,26 @@ class UserListGrid(grids.Grid):
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
-                                                cols_to_filter=[columns[0], columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     global_actions = [
         grids.GridAction("Create new user", url_args=dict(webapp="galaxy", action="create_new_user"))
     ]
     operations = [
         grids.GridOperation("Manage Roles and Groups",
-                             condition=(lambda item: not item.deleted),
-                             allow_multiple=False,
-                             url_args=dict(action="forms/manage_roles_and_groups_for_user")),
+                            condition=(lambda item: not item.deleted),
+                            allow_multiple=False,
+                            url_args=dict(action="forms/manage_roles_and_groups_for_user")),
         grids.GridOperation("Reset Password",
-                             condition=(lambda item: not item.deleted),
-                             allow_multiple=True,
-                             url_args=dict(action="forms/reset_user_password"),
-                             target="top"),
+                            condition=(lambda item: not item.deleted),
+                            allow_multiple=True,
+                            url_args=dict(action="forms/reset_user_password"),
+                            target="top"),
         grids.GridOperation("Recalculate Disk Usage",
-                             condition=(lambda item: not item.deleted),
-                             allow_multiple=False)
+                            condition=(lambda item: not item.deleted),
+                            allow_multiple=False)
     ]
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
@@ -188,22 +188,22 @@ class RoleListGrid(grids.Grid):
     default_sort_key = "name"
     columns = [
         NameColumn("Name",
-                    key="name",
-                    link=(lambda item: dict(action="forms/manage_users_and_groups_for_role", id=item.id, webapp="galaxy")),
-                    model_class=model.Role,
-                    attach_popup=True,
-                    filterable="advanced",
-                    target="top"),
+                   key="name",
+                   link=(lambda item: dict(action="forms/manage_users_and_groups_for_role", id=item.id, webapp="galaxy")),
+                   model_class=model.Role,
+                   attach_popup=True,
+                   filterable="advanced",
+                   target="top"),
         DescriptionColumn("Description",
-                           key='description',
-                           model_class=model.Role,
-                           attach_popup=False,
-                           filterable="advanced"),
+                          key='description',
+                          model_class=model.Role,
+                          attach_popup=False,
+                          filterable="advanced"),
         TypeColumn("Type",
-                    key='type',
-                    model_class=model.Role,
-                    attach_popup=False,
-                    filterable="advanced"),
+                   key='type',
+                   model_class=model.Role,
+                   attach_popup=False,
+                   filterable="advanced"),
         GroupsColumn("Groups", attach_popup=False),
         UsersColumn("Users", attach_popup=False),
         StatusColumn("Status", attach_popup=False),
@@ -211,26 +211,26 @@ class RoleListGrid(grids.Grid):
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
-                                                cols_to_filter=[columns[0], columns[1], columns[2]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1], columns[2]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     global_actions = [
         grids.GridAction("Add new role", url_args=dict(action="forms/create_role"))
     ]
     operations = [grids.GridOperation("Edit",
-                                        condition=(lambda item: not item.deleted),
-                                        allow_multiple=False,
-                                        url_args=dict(action="forms/rename_role")),
-                   grids.GridOperation("Delete",
-                                        condition=(lambda item: not item.deleted),
-                                        allow_multiple=True),
-                   grids.GridOperation("Undelete",
-                                        condition=(lambda item: item.deleted),
-                                        allow_multiple=True),
-                   grids.GridOperation("Purge",
-                                        condition=(lambda item: item.deleted),
-                                        allow_multiple=True)]
+                                      condition=(lambda item: not item.deleted),
+                                      allow_multiple=False,
+                                      url_args=dict(action="forms/rename_role")),
+                  grids.GridOperation("Delete",
+                                      condition=(lambda item: not item.deleted),
+                                      allow_multiple=True),
+                  grids.GridOperation("Undelete",
+                                      condition=(lambda item: item.deleted),
+                                      allow_multiple=True),
+                  grids.GridOperation("Purge",
+                                      condition=(lambda item: item.deleted),
+                                      allow_multiple=True)]
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
         grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
@@ -274,11 +274,11 @@ class GroupListGrid(grids.Grid):
     default_sort_key = "name"
     columns = [
         NameColumn("Name",
-                    key="name",
-                    link=(lambda item: dict(action="forms/manage_users_and_roles_for_group", id=item.id, webapp="galaxy")),
-                    model_class=model.Group,
-                    attach_popup=True,
-                    filterable="advanced"),
+                   key="name",
+                   link=(lambda item: dict(action="forms/manage_users_and_roles_for_group", id=item.id, webapp="galaxy")),
+                   model_class=model.Group,
+                   attach_popup=True,
+                   filterable="advanced"),
         UsersColumn("Users", attach_popup=False),
         RolesColumn("Roles", attach_popup=False),
         StatusColumn("Status", attach_popup=False),
@@ -286,26 +286,26 @@ class GroupListGrid(grids.Grid):
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     global_actions = [
         grids.GridAction("Add new group", url_args=dict(action="forms/create_group"))
     ]
     operations = [grids.GridOperation("Rename",
-                                        condition=(lambda item: not item.deleted),
-                                        allow_multiple=False,
-                                        url_args=dict(action="forms/rename_group")),
-                   grids.GridOperation("Delete",
-                                        condition=(lambda item: not item.deleted),
-                                        allow_multiple=True),
-                   grids.GridOperation("Undelete",
-                                        condition=(lambda item: item.deleted),
-                                        allow_multiple=True),
-                   grids.GridOperation("Purge",
-                                        condition=(lambda item: item.deleted),
-                                        allow_multiple=True)]
+                                      condition=(lambda item: not item.deleted),
+                                      allow_multiple=False,
+                                      url_args=dict(action="forms/rename_group")),
+                  grids.GridOperation("Delete",
+                                      condition=(lambda item: not item.deleted),
+                                      allow_multiple=True),
+                  grids.GridOperation("Undelete",
+                                      condition=(lambda item: item.deleted),
+                                      allow_multiple=True),
+                  grids.GridOperation("Purge",
+                                      condition=(lambda item: item.deleted),
+                                      allow_multiple=True)]
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
         grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
@@ -358,20 +358,20 @@ class QuotaListGrid(grids.Grid):
     default_sort_key = "name"
     columns = [
         NameColumn("Name",
-                    key="name",
-                    link=(lambda item: dict(action="forms/edit_quota", id=item.id)),
-                    model_class=model.Quota,
-                    attach_popup=True,
-                    filterable="advanced"),
+                   key="name",
+                   link=(lambda item: dict(action="forms/edit_quota", id=item.id)),
+                   model_class=model.Quota,
+                   attach_popup=True,
+                   filterable="advanced"),
         DescriptionColumn("Description",
-                           key='description',
-                           model_class=model.Quota,
-                           attach_popup=False,
-                           filterable="advanced"),
+                          key='description',
+                          model_class=model.Quota,
+                          attach_popup=False,
+                          filterable="advanced"),
         AmountColumn("Amount",
-                      key='amount',
-                      model_class=model.Quota,
-                      attach_popup=False),
+                     key='amount',
+                     model_class=model.Quota,
+                     attach_popup=False),
         UsersColumn("Users", attach_popup=False),
         GroupsColumn("Groups", attach_popup=False),
         StatusColumn("Status", attach_popup=False),
@@ -379,45 +379,45 @@ class QuotaListGrid(grids.Grid):
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
-                                                cols_to_filter=[columns[0], columns[1]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0], columns[1]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     global_actions = [
         grids.GridAction("Add new quota", dict(action='forms/create_quota'))
     ]
     operations = [grids.GridOperation("Rename",
-                                        condition=(lambda item: not item.deleted),
-                                        allow_multiple=False,
-                                        url_args=dict(action="forms/rename_quota")),
-                   grids.GridOperation("Change amount",
-                                        condition=(lambda item: not item.deleted),
-                                        allow_multiple=False,
-                                        url_args=dict(action="forms/edit_quota")),
-                   grids.GridOperation("Manage users and groups",
-                                        condition=(lambda item: not item.default and not item.deleted),
-                                        allow_multiple=False,
-                                        url_args=dict(action="forms/manage_users_and_groups_for_quota")),
-                   grids.GridOperation("Set as different type of default",
-                                        condition=(lambda item: item.default),
-                                        allow_multiple=False,
-                                        url_args=dict(action="forms/set_quota_default")),
-                   grids.GridOperation("Set as default",
-                                        condition=(lambda item: not item.default and not item.deleted),
-                                        allow_multiple=False,
-                                        url_args=dict(action="forms/set_quota_default")),
-                   grids.GridOperation("Unset as default",
-                                        condition=(lambda item: item.default and not item.deleted),
-                                        allow_multiple=False),
-                   grids.GridOperation("Delete",
-                                        condition=(lambda item: not item.deleted and not item.default),
-                                        allow_multiple=True),
-                   grids.GridOperation("Undelete",
-                                        condition=(lambda item: item.deleted),
-                                        allow_multiple=True),
-                   grids.GridOperation("Purge",
-                                        condition=(lambda item: item.deleted),
-                                        allow_multiple=True)]
+                                      condition=(lambda item: not item.deleted),
+                                      allow_multiple=False,
+                                      url_args=dict(action="forms/rename_quota")),
+                  grids.GridOperation("Change amount",
+                                      condition=(lambda item: not item.deleted),
+                                      allow_multiple=False,
+                                      url_args=dict(action="forms/edit_quota")),
+                  grids.GridOperation("Manage users and groups",
+                                      condition=(lambda item: not item.default and not item.deleted),
+                                      allow_multiple=False,
+                                      url_args=dict(action="forms/manage_users_and_groups_for_quota")),
+                  grids.GridOperation("Set as different type of default",
+                                      condition=(lambda item: item.default),
+                                      allow_multiple=False,
+                                      url_args=dict(action="forms/set_quota_default")),
+                  grids.GridOperation("Set as default",
+                                      condition=(lambda item: not item.default and not item.deleted),
+                                      allow_multiple=False,
+                                      url_args=dict(action="forms/set_quota_default")),
+                  grids.GridOperation("Unset as default",
+                                      condition=(lambda item: item.default and not item.deleted),
+                                      allow_multiple=False),
+                  grids.GridOperation("Delete",
+                                      condition=(lambda item: not item.deleted and not item.default),
+                                      allow_multiple=True),
+                  grids.GridOperation("Undelete",
+                                      condition=(lambda item: item.deleted),
+                                      allow_multiple=True),
+                  grids.GridOperation("Purge",
+                                      condition=(lambda item: item.deleted),
+                                      allow_multiple=True)]
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
         grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
@@ -462,15 +462,15 @@ class ToolVersionListGrid(grids.Grid):
     default_sort_key = "tool_id"
     columns = [
         ToolIdColumn("Tool id",
-                      key='tool_id',
-                      attach_popup=False),
+                     key='tool_id',
+                     attach_popup=False),
         ToolVersionsColumn("Version lineage by tool id (parent/child ordered)")
     ]
     columns.append(grids.MulticolFilterColumn("Search tool id",
-                                                cols_to_filter=[columns[0]],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard"))
+                                              cols_to_filter=[columns[0]],
+                                              key="free-text-search",
+                                              visible=False,
+                                              filterable="standard"))
     global_actions = []
     operations = []
     standard_filters = []
@@ -590,7 +590,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
                 default_options.append(('Yes, ' + typ, typ))
             return {'title'  : 'Create Quota',
-                        'inputs' : [{
+                    'inputs' : [{
                             'name'    : 'name',
                             'label'   : 'Name'
                         }, {
@@ -670,11 +670,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {'title'  : 'Quota \'%s\'' % quota.name,
-                     'message': 'Quota \'%s\' is currently associated with %d user(s) and %d group(s).' %
-                                (quota.name, len(in_users), len(in_groups)),
-                     'status' : 'info',
-                     'inputs' : [build_select_input('in_groups', 'Groups', all_groups, in_groups),
-                                  build_select_input('in_users', 'Users', all_users, in_users)]}
+                    'message': 'Quota \'%s\' is currently associated with %d user(s) and %d group(s).' %
+                    (quota.name, len(in_users), len(in_groups)),
+                    'status' : 'info',
+                    'inputs' : [build_select_input('in_groups', 'Groups', all_groups, in_groups),
+                                build_select_input('in_users', 'Users', all_users, in_users)]}
         else:
             try:
                 return {'message': self._manage_users_and_groups_for_quota(quota, util.Params(payload), decode_id=trans.security.decode_id)}
@@ -816,9 +816,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             open_file_obj.close()
             migration_stages_dict[migration_stage] = (migration_info, repo_name_dependency_tups)
         return trans.fill_template('admin/review_tool_migration_stages.mako',
-                                    migration_stages_dict=migration_stages_dict,
-                                    message=message,
-                                    status=status)
+                                   migration_stages_dict=migration_stages_dict,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_admin
@@ -854,10 +854,10 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         reloaded, failed = trans.app.datatypes_registry.reload_display_applications(kwd.get('id'))
         if not reloaded and failed:
             return trans.show_error_message('Unable to reload any of the %i requested display applications ("%s").'
-                                             % (len(failed), '", "'.join(failed)))
+                                            % (len(failed), '", "'.join(failed)))
         if failed:
             return trans.show_warn_message('Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").'
-                                            % (len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed)))
+                                           % (len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed)))
         if not reloaded:
             return trans.show_warn_message('You need to request at least one display application to reload.')
         return trans.show_ok_message('Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded)))
@@ -870,10 +870,10 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         is_repo_installed = trans.install_model.context.query(trans.install_model.ToolShedRepository).first() is not None
         installing_repository_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True)
         return trans.fill_template('/webapps/galaxy/admin/center.mako',
-                                    is_repo_installed=is_repo_installed,
-                                    installing_repository_ids=installing_repository_ids,
-                                    message=message,
-                                    status=status)
+                                   is_repo_installed=is_repo_installed,
+                                   installing_repository_ids=installing_repository_ids,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_admin
@@ -894,10 +894,10 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 return download_file
             except Exception:
                 return trans.fill_template('/admin/package_tool.mako',
-                                            tool_id=tool_id,
-                                            toolbox=toolbox,
-                                            message=message,
-                                            status='error')
+                                           tool_id=tool_id,
+                                           toolbox=toolbox,
+                                           message=message,
+                                           status='error')
 
     @web.expose
     @web.require_admin
@@ -912,10 +912,10 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id})
             message, status = trans.app.toolbox.reload_tool_by_id(tool_id)
         return trans.fill_template('/admin/reload_tool.mako',
-                                    tool_id=tool_id,
-                                    toolbox=toolbox,
-                                    message=message,
-                                    status=status)
+                                   tool_id=tool_id,
+                                   toolbox=toolbox,
+                                   message=message,
+                                   status=status)
 
     @web.expose_api
     @web.require_admin
@@ -1082,11 +1082,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {'title'  : 'Role \'%s\'' % role.name,
-                     'message': 'Role \'%s\' is currently associated with %d user(s) and %d group(s).' %
-                                (role.name, len(in_users), len(in_groups)),
-                     'status' : 'info',
-                     'inputs' : [build_select_input('in_groups', 'Groups', all_groups, in_groups),
-                                  build_select_input('in_users', 'Users', all_users, in_users)]}
+                    'message': 'Role \'%s\' is currently associated with %d user(s) and %d group(s).' %
+                    (role.name, len(in_users), len(in_groups)),
+                    'status' : 'info',
+                    'inputs' : [build_select_input('in_groups', 'Groups', all_groups, in_groups),
+                                build_select_input('in_users', 'Users', all_users, in_users)]}
         else:
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
             in_groups = [trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_groups'))]
@@ -1249,11 +1249,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     in_roles.append(trans.security.encode_id(role.id))
                 all_roles.append((role.name, trans.security.encode_id(role.id)))
             return {'title'  : 'Group \'%s\'' % group.name,
-                     'message': 'Group \'%s\' is currently associated with %d user(s) and %d role(s).' %
-                                (group.name, len(in_users), len(in_roles)),
-                     'status' : 'info',
-                     'inputs' : [build_select_input('in_roles', 'Roles', all_roles, in_roles),
-                                  build_select_input('in_users', 'Users', all_users, in_users)]}
+                    'message': 'Group \'%s\' is currently associated with %d user(s) and %d role(s).' %
+                    (group.name, len(in_users), len(in_roles)),
+                    'status' : 'info',
+                    'inputs' : [build_select_input('in_roles', 'Roles', all_roles, in_roles),
+                                build_select_input('in_users', 'Users', all_users, in_users)]}
             return {'message' : 'Not showing associated datasets, there are too many.', 'info' : 'info'}
         else:
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
@@ -1377,8 +1377,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.require_admin
     def create_new_user(self, trans, **kwd):
         return trans.response.send_redirect(web.url_for(controller='user',
-                                                          action='create',
-                                                          cntrller='admin'))
+                                                        action='create',
+                                                        cntrller='admin'))
 
     @web.expose_api
     @web.require_admin
@@ -1518,7 +1518,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             in_groups = []
             all_groups = []
             for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.deleted == false()) \
-                                                                      .order_by(trans.app.model.Role.table.c.name):
+            .order_by(trans.app.model.Role.table.c.name):
                 if role in [x.role for x in user.roles]:
                     in_roles.append(trans.security.encode_id(role.id))
                 if role.type != trans.app.model.Role.types.PRIVATE:
@@ -1528,16 +1528,16 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     # precaution, since for a period of time we were including private roles in the form fields.
                     all_roles.append((role.name, trans.security.encode_id(role.id)))
             for group in trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.deleted == false()) \
-                                                                        .order_by(trans.app.model.Group.table.c.name):
+            .order_by(trans.app.model.Group.table.c.name):
                 if group in [x.group for x in user.groups]:
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {'title'  : 'Roles and groups for \'%s\'' % user.email,
-                     'message': 'User \'%s\' is currently associated with %d role(s) and is a member of %d group(s).' %
-                                (user.email, len(in_roles) - 1, len(in_groups)),
-                     'status' : 'info',
-                     'inputs' : [build_select_input('in_roles', 'Roles', all_roles, in_roles),
-                                  build_select_input('in_groups', 'Groups', all_groups, in_groups)]}
+                    'message': 'User \'%s\' is currently associated with %d role(s) and is a member of %d group(s).' %
+                    (user.email, len(in_roles) - 1, len(in_groups)),
+                    'status' : 'info',
+                    'inputs' : [build_select_input('in_roles', 'Roles', all_roles, in_roles),
+                                build_select_input('in_groups', 'Groups', all_groups, in_groups)]}
         else:
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_roles'))]
             in_groups = [trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_groups'))]
@@ -1599,15 +1599,15 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         cutoff_time = datetime.utcnow() - timedelta(seconds=int(cutoff))
         jobs = trans.sa_session.query(trans.app.model.Job) \
                                .filter(and_(trans.app.model.Job.table.c.update_time < cutoff_time,
-                                              or_(trans.app.model.Job.state == trans.app.model.Job.states.NEW,
-                                                   trans.app.model.Job.state == trans.app.model.Job.states.QUEUED,
-                                                   trans.app.model.Job.state == trans.app.model.Job.states.RUNNING,
-                                                   trans.app.model.Job.state == trans.app.model.Job.states.UPLOAD))) \
+                                            or_(trans.app.model.Job.state == trans.app.model.Job.states.NEW,
+                                                trans.app.model.Job.state == trans.app.model.Job.states.QUEUED,
+                                                trans.app.model.Job.state == trans.app.model.Job.states.RUNNING,
+                                                trans.app.model.Job.state == trans.app.model.Job.states.UPLOAD))) \
                                .order_by(trans.app.model.Job.table.c.update_time.desc()).all()
         recent_jobs = trans.sa_session.query(trans.app.model.Job) \
             .filter(and_(trans.app.model.Job.table.c.update_time > cutoff_time,
-                           or_(trans.app.model.Job.state == trans.app.model.Job.states.ERROR,
-                                trans.app.model.Job.state == trans.app.model.Job.states.OK))) \
+                         or_(trans.app.model.Job.state == trans.app.model.Job.states.ERROR,
+                             trans.app.model.Job.state == trans.app.model.Job.states.OK))) \
             .order_by(trans.app.model.Job.table.c.update_time.desc()).all()
         last_updated = {}
         for job in jobs:
@@ -1628,14 +1628,14 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             else:
                 finished[job.id] = '%s minutes' % int(delta.seconds / 60)
         return trans.fill_template('/admin/jobs.mako',
-                                    jobs=jobs,
-                                    recent_jobs=recent_jobs,
-                                    last_updated=last_updated,
-                                    finished=finished,
-                                    cutoff=cutoff,
-                                    msg=msg,
-                                    status=status,
-                                    job_lock=job_lock)
+                                   jobs=jobs,
+                                   recent_jobs=recent_jobs,
+                                   last_updated=last_updated,
+                                   finished=finished,
+                                   cutoff=cutoff,
+                                   msg=msg,
+                                   status=status,
+                                   job_lock=job_lock)
 
     @web.expose
     @web.require_admin
@@ -1644,19 +1644,19 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if jobid is not None:
             job = trans.sa_session.query(trans.app.model.Job).get(jobid)
         return trans.fill_template('/webapps/reports/job_info.mako',
-                                    job=job,
-                                    message="<a href='jobs'>Back</a>")
+                                   job=job,
+                                   message="<a href='jobs'>Back</a>")
 
     @web.expose
     @web.require_admin
     def manage_tool_dependencies(self,
-                                  trans,
-                                  install_dependencies=False,
-                                  uninstall_dependencies=False,
-                                  remove_unused_dependencies=False,
-                                  selected_tool_ids=None,
-                                  selected_environments_to_uninstall=None,
-                                  viewkey='View tool-centric dependencies'):
+                                 trans,
+                                 install_dependencies=False,
+                                 uninstall_dependencies=False,
+                                 remove_unused_dependencies=False,
+                                 selected_tool_ids=None,
+                                 selected_environments_to_uninstall=None,
+                                 viewkey='View tool-centric dependencies'):
         if not selected_tool_ids:
             selected_tool_ids = []
         if not selected_environments_to_uninstall:
@@ -1677,11 +1677,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 selected_environments_to_uninstall = [selected_environments_to_uninstall]
             view.remove_unused_dependency_paths(selected_environments_to_uninstall)
         return trans.fill_template('/webapps/galaxy/admin/manage_dependencies.mako',
-                                    tools=tools_by_id,
-                                    requirements_status=view.toolbox_requirements_status,
-                                    tool_ids_by_requirements=view.tool_ids_by_requirements,
-                                    unused_environments=view.unused_dependency_paths,
-                                    viewkey=viewkey)
+                                   tools=tools_by_id,
+                                   requirements_status=view.toolbox_requirements_status,
+                                   tool_ids_by_requirements=view.tool_ids_by_requirements,
+                                   unused_environments=view.unused_dependency_paths,
+                                   viewkey=viewkey)
 
     @web.expose
     @web.require_admin
@@ -1698,21 +1698,21 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             galaxy.queue_worker.send_control_task(trans.app, 'reload_sanitize_whitelist', noop_self=True)
             # dispatch a message to reload list for other processes
         return trans.fill_template('/webapps/galaxy/admin/sanitize_whitelist.mako',
-                                    sanitize_all=trans.app.config.sanitize_all_html,
-                                    tools=trans.app.toolbox.tools_by_id)
+                                   sanitize_all=trans.app.config.sanitize_all_html,
+                                   tools=trans.app.toolbox.tools_by_id)
 
 
 # ---- Utility methods -------------------------------------------------------
 
 def build_select_input(name, label, options, value):
     return {'type'      : 'select',
-             'multiple'  : True,
-             'optional'  : True,
-             'individual': True,
-             'name'      : name,
-             'label'     : label,
-             'options'   : options,
-             'value'     : value}
+            'multiple'  : True,
+            'optional'  : True,
+            'individual': True,
+            'name'      : name,
+            'label'     : label,
+            'options'   : options,
+            'value'     : value}
 
 
 def message_exception(trans, message):

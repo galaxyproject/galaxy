@@ -242,7 +242,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
 
             'url'           : lambda i, k, **c: self.url_for('history', id=self.app.security.encode_id(i.id)),
             'contents_url'  : lambda i, k, **c: self.url_for('history_contents',
-                                                              history_id=self.app.security.encode_id(i.id)),
+                                                             history_id=self.app.security.encode_id(i.id)),
 
             'empty'         : lambda i, k, **c: (len(i.datasets) + len(i.dataset_collections)) <= 0,
             'count'         : lambda i, k, **c: len(i.datasets),
@@ -251,7 +251,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             'state_ids'     : self.serialize_state_ids,
             'contents'      : self.serialize_contents,
             'non_ready_jobs': lambda i, k, **c: [self.app.security.encode_id(job.id) for job
-                                                  in self.manager.non_ready_jobs(i)],
+                                                 in self.manager.non_ready_jobs(i)],
 
             'contents_states': self.serialize_contents_states,
             'contents_active': self.serialize_contents_active,

@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 def build_tool_dependencies_select_field(app, tool_shed_repository, name, multiple=True, display='checkboxes',
-                                          uninstalled_only=False):
+                                         uninstalled_only=False):
     """
     Generate a SelectField consisting of the current list of tool dependency ids
     for an installed tool shed repository.
@@ -22,11 +22,11 @@ def build_tool_dependencies_select_field(app, tool_shed_repository, name, multip
     for tool_dependency in tool_shed_repository.tool_dependencies:
         if uninstalled_only:
             if tool_dependency.status not in [app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                               app.install_model.ToolDependency.installation_status.UNINSTALLED]:
+                                              app.install_model.ToolDependency.installation_status.UNINSTALLED]:
                 continue
         else:
             if tool_dependency.status in [app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                           app.install_model.ToolDependency.installation_status.UNINSTALLED]:
+                                          app.install_model.ToolDependency.installation_status.UNINSTALLED]:
                 continue
         option_label = '%s version %s' % (str(tool_dependency.name), str(tool_dependency.version))
         option_value = app.security.encode_id(tool_dependency.id)
@@ -84,12 +84,12 @@ def create_tool_dependency_objects(app, tool_shed_repository, relative_install_d
             if name and version:
                 status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
                 tool_dependency = create_or_update_tool_dependency(app,
-                                                                    tool_shed_repository,
-                                                                    name=name,
-                                                                    version=version,
-                                                                    type=tool_dependency_type,
-                                                                    status=status,
-                                                                    set_status=set_status)
+                                                                   tool_shed_repository,
+                                                                   name=name,
+                                                                   version=version,
+                                                                   type=tool_dependency_type,
+                                                                   status=status,
+                                                                   set_status=set_status)
                 tool_dependency_objects.append(tool_dependency)
         elif tool_dependency_type == 'set_environment':
             for env_elem in elem:
@@ -99,12 +99,12 @@ def create_tool_dependency_objects(app, tool_shed_repository, relative_install_d
                 if name and action:
                     status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
                     tool_dependency = create_or_update_tool_dependency(app,
-                                                                        tool_shed_repository,
-                                                                        name=name,
-                                                                        version=None,
-                                                                        type=tool_dependency_type,
-                                                                        status=status,
-                                                                        set_status=set_status)
+                                                                       tool_shed_repository,
+                                                                       name=name,
+                                                                       version=None,
+                                                                       type=tool_dependency_type,
+                                                                       status=status,
+                                                                       set_status=set_status)
                     tool_dependency_objects.append(tool_dependency)
     return tool_dependency_objects
 
@@ -159,8 +159,8 @@ def get_tool_dependency_by_name_type_repository(app, repository, name, type):
     context = app.install_model.context
     return context.query(app.install_model.ToolDependency) \
                   .filter(and_(app.install_model.ToolDependency.table.c.tool_shed_repository_id == repository.id,
-                                 app.install_model.ToolDependency.table.c.name == name,
-                                 app.install_model.ToolDependency.table.c.type == type)) \
+                               app.install_model.ToolDependency.table.c.name == name,
+                               app.install_model.ToolDependency.table.c.type == type)) \
                   .first()
 
 
@@ -168,8 +168,8 @@ def get_tool_dependency_by_name_version_type(app, name, version, type):
     context = app.install_model.context
     return context.query(app.install_model.ToolDependency) \
                   .filter(and_(app.install_model.ToolDependency.table.c.name == name,
-                                 app.install_model.ToolDependency.table.c.version == version,
-                                 app.install_model.ToolDependency.table.c.type == type)) \
+                               app.install_model.ToolDependency.table.c.version == version,
+                               app.install_model.ToolDependency.table.c.type == type)) \
                   .first()
 
 
@@ -177,9 +177,9 @@ def get_tool_dependency_by_name_version_type_repository(app, repository, name, v
     context = app.install_model.context
     return context.query(app.install_model.ToolDependency) \
                   .filter(and_(app.install_model.ToolDependency.table.c.tool_shed_repository_id == repository.id,
-                                 app.install_model.ToolDependency.table.c.name == name,
-                                 app.install_model.ToolDependency.table.c.version == version,
-                                 app.install_model.ToolDependency.table.c.type == type)) \
+                               app.install_model.ToolDependency.table.c.name == name,
+                               app.install_model.ToolDependency.table.c.version == version,
+                               app.install_model.ToolDependency.table.c.type == type)) \
                   .first()
 
 
@@ -203,21 +203,21 @@ def get_tool_dependency_ids(as_string=False, **kwd):
 
 
 def get_tool_dependency_install_dir(app, repository_name, repository_owner, repository_changeset_revision, tool_dependency_type,
-                                     tool_dependency_name, tool_dependency_version):
+                                    tool_dependency_name, tool_dependency_version):
     if tool_dependency_type == 'package':
         return os.path.abspath(os.path.join(app.config.tool_dependency_dir,
-                                              tool_dependency_name,
-                                              tool_dependency_version,
-                                              repository_owner,
-                                              repository_name,
-                                              repository_changeset_revision))
+                                            tool_dependency_name,
+                                            tool_dependency_version,
+                                            repository_owner,
+                                            repository_name,
+                                            repository_changeset_revision))
     if tool_dependency_type == 'set_environment':
         return os.path.abspath(os.path.join(app.config.tool_dependency_dir,
-                                              'environment_settings',
-                                              tool_dependency_name,
-                                              repository_owner,
-                                              repository_name,
-                                              repository_changeset_revision))
+                                            'environment_settings',
+                                            tool_dependency_name,
+                                            repository_owner,
+                                            repository_name,
+                                            repository_changeset_revision))
 
 
 def parse_package_elem(package_elem, platform_info_dict=None, include_after_install_actions=True):

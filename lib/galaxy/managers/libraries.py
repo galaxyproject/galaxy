@@ -211,9 +211,9 @@ class LibraryManager(object):
         manage_library_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in self.get_manage_roles(trans, library)]
         add_library_item_role_list = [(add_role.name, trans.security.encode_id(add_role.id)) for add_role in self.get_add_roles(trans, library)]
         return dict(access_library_role_list=access_library_role_list,
-                     modify_library_role_list=modify_library_role_list,
-                     manage_library_role_list=manage_library_role_list,
-                     add_library_item_role_list=add_library_item_role_list)
+                    modify_library_role_list=modify_library_role_list,
+                    manage_library_role_list=manage_library_role_list,
+                    add_library_item_role_list=add_library_item_role_list)
 
     def get_access_roles(self, trans, library):
         """

@@ -515,12 +515,12 @@ def _new_hda(
     """
     # Create new primary dataset
     primary_data = app.model.HistoryDatasetAssociation(extension=ext,
-                                                        designation=designation,
-                                                        visible=visible,
-                                                        dbkey=dbkey,
-                                                        create_dataset=True,
-                                                        flush=False,
-                                                        sa_session=sa_session)
+                                                       designation=designation,
+                                                       visible=visible,
+                                                       dbkey=dbkey,
+                                                       create_dataset=True,
+                                                       flush=False,
+                                                       sa_session=sa_session)
     if permissions is not UNSET:
         app.security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
     sa_session.add(primary_data)

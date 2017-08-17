@@ -38,12 +38,12 @@ class ToolBoxSearch(object):
         Create a searcher for `toolbox`.
         """
         self.schema = Schema(id=STORED,
-                              stub=KEYWORD,
-                              name=TEXT(analyzer=analysis.SimpleAnalyzer()),
-                              description=TEXT,
-                              section=TEXT,
-                              help=TEXT,
-                              labels=KEYWORD)
+                             stub=KEYWORD,
+                             name=TEXT(analyzer=analysis.SimpleAnalyzer()),
+                             description=TEXT,
+                             section=TEXT,
+                             help=TEXT,
+                             labels=KEYWORD)
         self.rex = analysis.RegexTokenizer()
         self.toolbox = toolbox
         self.storage, self.index = self._index_setup()
@@ -120,11 +120,11 @@ class ToolBoxSearch(object):
         searcher = self.index.searcher(
             weighting=BM25F(
                 field_B={'name_B': float(tool_name_boost),
-                          'section_B': float(tool_section_boost),
-                          'description_B': float(tool_description_boost),
-                          'labels_B': float(tool_label_boost),
-                          'stub_B': float(tool_stub_boost),
-                          'help_B': float(tool_help_boost)}
+                         'section_B': float(tool_section_boost),
+                         'description_B': float(tool_description_boost),
+                         'labels_B': float(tool_label_boost),
+                         'stub_B': float(tool_stub_boost),
+                         'help_B': float(tool_help_boost)}
             )
         )
         # Set query to search name, description, section, help, and labels.

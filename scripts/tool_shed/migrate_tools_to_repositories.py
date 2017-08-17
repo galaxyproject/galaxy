@@ -52,9 +52,9 @@ def directory_hash_id(id):
 def get_versions(app, item):
     """Get all versions of item whose state is a valid state"""
     valid_states = [app.model.Tool.states.NEW,
-                     app.model.Tool.states.WAITING,
-                     app.model.Tool.states.APPROVED,
-                     app.model.Tool.states.ARCHIVED]
+                    app.model.Tool.states.WAITING,
+                    app.model.Tool.states.APPROVED,
+                    app.model.Tool.states.ARCHIVED]
     versions = [item]
     this_item = item
     while item.newer_version:
@@ -85,8 +85,8 @@ def create_repository_from_tool(app, sa_session, tool):
     repo_name = tool.tool_id.lower().replace(' ', '_')
     print "Creating repository '%s' in database" % (repo_name)
     repository = app.model.Repository(name=repo_name,
-                                       description=tool.description,
-                                       user_id=tool.user_id)
+                                      description=tool.description,
+                                      user_id=tool.user_id)
     # Flush to get the id
     sa_session.add(repository)
     sa_session.flush()
@@ -116,8 +116,8 @@ def create_repository_from_tool(app, sa_session, tool):
     print "Associating ratings for tool '%s' with repository '%s'" % (tool.name, repository.name)
     for tra in tool.ratings:
         rra = app.model.RepositoryRatingAssociation(user=tra.user,
-                                                     rating=tra.rating,
-                                                     comment=tra.comment)
+                                                    rating=tra.rating,
+                                                    comment=tra.comment)
         rra.repository = repository
         sa_session.add(rra)
     sa_session.flush()

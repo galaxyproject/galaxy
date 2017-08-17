@@ -352,7 +352,7 @@ class LibrariesController(BaseAPIController):
             trans.app.security_agent.copy_library_permissions(trans, library, library.root_folder)
         else:
             raise exceptions.RequestParameterInvalidException('The mandatory parameter "action" has an invalid value.'
-                                                               'Allowed values are: "remove_restrictions", set_permissions"')
+                                                              'Allowed values are: "remove_restrictions", set_permissions"')
         roles = self.library_manager.get_current_roles(trans, library)
         return roles
 

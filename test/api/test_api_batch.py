@@ -23,7 +23,7 @@ class ApiBatchTestCase(api.ApiTestCase):
         batch = [
             dict(url=self._with_key('/api/histories')),
             dict(url=self._with_key('/api/histories'),
-                  method='POST', body=json.dumps(dict(name='Wat'))),
+                 method='POST', body=json.dumps(dict(name='Wat'))),
             dict(url=self._with_key('/api/histories')),
         ]
         response = self._post_batch(batch)

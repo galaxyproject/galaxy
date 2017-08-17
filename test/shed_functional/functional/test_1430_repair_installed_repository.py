@@ -63,20 +63,20 @@ class TestRepairRepository(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=filter_repository_name,
-                                                    description=filter_repository_description,
-                                                    long_description=filter_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=filter_repository_description,
+                                                   long_description=filter_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='filtering/filtering_1.1.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate filter_1430 with version 1.1.0.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_1.1.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate filter_1430 with version 1.1.0.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_create_column_repository(self):
         '''Create and populate the column_1430 repository.'''
@@ -87,20 +87,20 @@ class TestRepairRepository(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=column_repository_name,
-                                                    description=column_repository_description,
-                                                    long_description=column_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=column_repository_description,
+                                                   long_description=column_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='column_maker/column_maker.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate column_1430 with tool definitions.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='column_maker/column_maker.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate column_1430 with tool definitions.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0015_create_repository_dependency(self):
         '''Create a dependency on filter_1430.'''
@@ -128,12 +128,12 @@ class TestRepairRepository(ShedTwillTestCase):
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         post_submit_strings_displayed = ['column_1430', 'filter_1430']
         self.install_repository('column_1430',
-                                 common.test_user_1_name,
-                                 category_name,
-                                 new_tool_panel_section_label='repair',
-                                 post_submit_strings_displayed=post_submit_strings_displayed,
-                                 install_tool_dependencies=False,
-                                 install_repository_dependencies=True)
+                                common.test_user_1_name,
+                                category_name,
+                                new_tool_panel_section_label='repair',
+                                post_submit_strings_displayed=post_submit_strings_displayed,
+                                install_tool_dependencies=False,
+                                install_repository_dependencies=True)
 
     def test_0025_uninstall_filter_repository(self):
         '''Uninstall the filter_1430 repository from Galaxy.'''
@@ -144,11 +144,11 @@ class TestRepairRepository(ShedTwillTestCase):
         strings_displayed = ['Uninstalling this repository will result in the following']
         strings_not_displayed = []
         self.uninstall_repository(installed_repository,
-                                   strings_displayed=strings_displayed,
-                                   strings_not_displayed=strings_not_displayed)
+                                  strings_displayed=strings_displayed,
+                                  strings_not_displayed=strings_not_displayed)
         strings_not_displayed = ['filter_1430',
-                                  "Galaxy's filter tool for test 1430",
-                                  installed_repository.installed_changeset_revision]
+                                 "Galaxy's filter tool for test 1430",
+                                 installed_repository.installed_changeset_revision]
         self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
 
     def test_0030_repair_column_repository(self):
@@ -167,7 +167,7 @@ class TestRepairRepository(ShedTwillTestCase):
         '''
         filter_repository = self.test_db_util.get_installed_repository_by_name_owner('filter_1430', common.test_user_1_name)
         strings_displayed = ['filter_1430',
-                              "Galaxy's filter tool for test 1430",
-                              filter_repository.installed_changeset_revision]
+                             "Galaxy's filter tool for test 1430",
+                             filter_repository.installed_changeset_revision]
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
         self.check_galaxy_repository_tool_panel_section(repository=filter_repository, expected_tool_panel_section='repair')

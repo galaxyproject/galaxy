@@ -39,8 +39,8 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
                 # The missing_tool_configs_dict contents are something like:
                 # {'emboss_antigenic.xml': [('emboss', '5.0.0', 'package', '\nreadme blah blah blah\n')]}
                 tool_shed_accessible, missing_tool_configs_dict = common_util.check_for_missing_tools(app,
-                                                                                                       tool_panel_configs,
-                                                                                                       latest_tool_migration_script_number)
+                                                                                                      tool_panel_configs,
+                                                                                                      latest_tool_migration_script_number)
             else:
                 # It doesn't matter if the tool shed is accessible since there are no migrated tools defined in the local Galaxy instance, but
                 # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in
@@ -101,8 +101,8 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
                                     msg += "Tool Dependency\n"
                                     msg += "------------------------------------\n"
                                     msg += "Name: %s, Version: %s, Type: %s\n" % (tool_dependencies_tup[0],
-                                                                                   tool_dependencies_tup[1],
-                                                                                   tool_dependencies_tup[2])
+                                                                                  tool_dependencies_tup[1],
+                                                                                  tool_dependencies_tup[2])
                                     if len(tool_dependencies_tup) >= 4:
                                         msg += "Requirements and installation information:\n"
                                         msg += "%s\n" % tool_dependencies_tup[3]

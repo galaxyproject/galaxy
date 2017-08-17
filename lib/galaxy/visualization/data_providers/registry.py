@@ -81,8 +81,8 @@ class DataProviderRegistry(object):
                     converted_dataset = original_dataset.get_converted_dataset(trans, name)
                     deps = original_dataset.get_converted_dataset_deps(trans, name)
                     data_provider = data_provider_class(original_dataset=original_dataset,
-                                                         converted_dataset=converted_dataset,
-                                                         dependencies=deps)
+                                                        converted_dataset=converted_dataset,
+                                                        dependencies=deps)
 
             elif original_dataset:
                 # No name, so look up a provider name from datatype's information.
@@ -95,8 +95,8 @@ class DataProviderRegistry(object):
                 data_provider_mapping = original_dataset.datatype.data_sources
                 if 'data_standalone' in data_provider_mapping:
                     data_provider = self.get_data_provider(trans,
-                                                            name=data_provider_mapping['data_standalone'],
-                                                            original_dataset=original_dataset)
+                                                           name=data_provider_mapping['data_standalone'],
+                                                           original_dataset=original_dataset)
                 else:
                     source_list = data_provider_mapping[source]
                     if isinstance(source_list, string_types):

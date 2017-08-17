@@ -256,7 +256,7 @@ class HDCASerializer(
             'type_id'                   : self.serialize_type_id,
 
             'url'   : lambda i, k, **c: self.url_for('history_content_typed',
-                                                      history_id=self.app.security.encode_id(i.history_id),
-                                                      id=self.app.security.encode_id(i.id),
-                                                      type=self.hdca_manager.model_class.content_type),
+                                                     history_id=self.app.security.encode_id(i.history_id),
+                                                     id=self.app.security.encode_id(i.id),
+                                                     type=self.hdca_manager.model_class.content_type),
         })

@@ -23,10 +23,10 @@ if __name__ == '__main__':
     description = 'Clean out the configured tool dependency path, creating it if it does not exist.'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--tool_dependency_dir',
-                         dest='tool_dependency_dir',
-                         required=True,
-                         action='store',
-                         metavar='name',
-                         help='The base path where tool dependencies will be installed.')
+                        dest='tool_dependency_dir',
+                        required=True,
+                        action='store',
+                        metavar='name',
+                        help='The base path where tool dependencies will be installed.')
     args = parser.parse_args()
     sys.exit(main(args))

@@ -55,16 +55,16 @@ if __name__ == '__main__':
     description += 'the --delete command line argument is provided.'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--delete',
-                         dest='delete',
-                         required=False,
-                         action='store_true',
-                         default=False,
-                         help='Whether to delete empty folders or list them on exit.')
+                        dest='delete',
+                        required=False,
+                        action='store_true',
+                        default=False,
+                        help='Whether to delete empty folders or list them on exit.')
     parser.add_argument('--basepath',
-                         dest='basepath',
-                         required=True,
-                         action='store',
-                         metavar='name',
-                         help='The base path where tool dependencies are installed.')
+                        dest='basepath',
+                        required=True,
+                        action='store',
+                        metavar='name',
+                        help='The base path where tool dependencies are installed.')
     args = parser.parse_args()
     sys.exit(main(args))

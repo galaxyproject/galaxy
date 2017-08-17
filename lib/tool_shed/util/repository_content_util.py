@@ -6,7 +6,7 @@ from tool_shed.util import commit_util, hg_util, xml_util
 
 
 def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar,
-                commit_message, new_repo_alert):
+               commit_message, new_repo_alert):
     # Upload a tar archive of files.
     repo_dir = repository.repo_path(trans.app)
     hg_util.get_repo_for_repository(trans.app, repository=None, repo_path=repo_dir, create=False)
@@ -52,13 +52,13 @@ def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, 
                     tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                     shutil.move(tmp_filename, uploaded_file_name)
         return commit_util.handle_directory_changes(trans.app,
-                                                     trans.request.host,
-                                                     trans.user.username,
-                                                     repository,
-                                                     full_path,
-                                                     filenames_in_archive,
-                                                     remove_repo_files_not_in_tar,
-                                                     new_repo_alert,
-                                                     commit_message,
-                                                     undesirable_dirs_removed,
-                                                     undesirable_files_removed)
+                                                    trans.request.host,
+                                                    trans.user.username,
+                                                    repository,
+                                                    full_path,
+                                                    filenames_in_archive,
+                                                    remove_repo_files_not_in_tar,
+                                                    new_repo_alert,
+                                                    commit_message,
+                                                    undesirable_dirs_removed,
+                                                    undesirable_files_removed)

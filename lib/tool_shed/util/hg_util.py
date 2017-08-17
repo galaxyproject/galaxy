@@ -56,11 +56,11 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev):
     """
     try:
         commands.clone(get_configured_ui(),
-                        str(repository_clone_url),
-                        dest=str(repository_file_dir),
-                        pull=True,
-                        noupdate=False,
-                        rev=listify(str(ctx_rev)))
+                       str(repository_clone_url),
+                       dest=str(repository_file_dir),
+                       pull=True,
+                       noupdate=False,
+                       rev=listify(str(ctx_rev)))
         return True, None
     except Exception as e:
         error_message = 'Error cloning repository: %s' % str(e)
@@ -280,7 +280,7 @@ def get_revision_label(app, repository, changeset_revision, include_date=True, i
 
 
 def get_rev_label_changeset_revision_from_repository_metadata(app, repository_metadata, repository=None,
-                                                               include_date=True, include_hash=True):
+                                                              include_date=True, include_hash=True):
     if repository is None:
         repository = repository_metadata.repository
     repo = hg.repository(get_configured_ui(), repository.repo_path(app))
@@ -396,10 +396,10 @@ def unpack_chunks(hg_unbundle10_obj):
             raise Exception("negative data length")
         node, p1, p2, cs = struct.unpack('20s20s20s20s', readexactly(hg_unbundle10_obj, 80))
         yield {'node': node.encode('hex'),
-                'p1': p1.encode('hex'),
-                'p2': p2.encode('hex'),
-                'cs': cs.encode('hex'),
-                'data': [patch for patch in unpack_patches(hg_unbundle10_obj, length - 84)]}
+               'p1': p1.encode('hex'),
+               'p2': p2.encode('hex'),
+               'cs': cs.encode('hex'),
+               'data': [patch for patch in unpack_patches(hg_unbundle10_obj, length - 84)]}
 
 
 def unpack_groups(hg_unbundle10_obj):
@@ -435,9 +435,9 @@ def unpack_patches(hg_unbundle10_obj, remaining):
         block = readexactly(hg_unbundle10_obj, blocklen)
         remaining -= blocklen
         yield {'start': start,
-                'end': end,
-                'blocklen': blocklen,
-                'block': block.encode('string_escape')}
+               'end': end,
+               'blocklen': blocklen,
+               'block': block.encode('string_escape')}
     if remaining > 0:
         log.error("Unexpected end of patch stream, %s remaining", remaining)
         raise Exception("unexpected end of patch stream")

@@ -105,22 +105,22 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 library_dataset_dict = content_item.to_dict()
 
                 return_item.update(dict(file_ext=library_dataset_dict['file_ext'],
-                                          date_uploaded=library_dataset_dict['date_uploaded'],
-                                          is_unrestricted=is_unrestricted,
-                                          is_private=is_private,
-                                          can_manage=can_manage,
-                                          file_size=nice_size
+                                        date_uploaded=library_dataset_dict['date_uploaded'],
+                                        is_unrestricted=is_unrestricted,
+                                        is_private=is_private,
+                                        can_manage=can_manage,
+                                        file_size=nice_size
                                           ))
                 if content_item.library_dataset_dataset_association.message:
                     return_item.update(dict(message=content_item.library_dataset_dataset_association.message))
 
             # For every item include the default metadata
             return_item.update(dict(id=encoded_id,
-                                      type=content_item.api_type,
-                                      name=content_item.name,
-                                      update_time=update_time,
-                                      create_time=create_time,
-                                      deleted=content_item.deleted
+                                    type=content_item.api_type,
+                                    name=content_item.name,
+                                    update_time=update_time,
+                                    create_time=create_time,
+                                    deleted=content_item.deleted
                                       ))
             folder_contents.append(return_item)
 
@@ -138,11 +138,11 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             parent_library_id = trans.security.encode_id(folder.parent_library.id)
 
         metadata = dict(full_path=full_path,
-                         can_add_library_item=can_add_library_item,
-                         can_modify_folder=can_modify_folder,
-                         folder_name=folder.name,
-                         folder_description=folder.description,
-                         parent_library_id=parent_library_id)
+                        can_add_library_item=can_add_library_item,
+                        can_modify_folder=can_modify_folder,
+                        folder_name=folder.name,
+                        folder_description=folder.description,
+                        parent_library_id=parent_library_id)
         folder_container = dict(metadata=metadata, folder_contents=folder_contents)
         return folder_container
 

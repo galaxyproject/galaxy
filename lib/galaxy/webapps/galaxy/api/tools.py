@@ -260,16 +260,16 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool_ngram_maxsize = self.app.config.get('tool_ngram_maxsize', 4)
 
         results = self.app.toolbox_search.search(q=q,
-                                                  tool_name_boost=tool_name_boost,
-                                                  tool_section_boost=tool_section_boost,
-                                                  tool_description_boost=tool_description_boost,
-                                                  tool_label_boost=tool_label_boost,
-                                                  tool_stub_boost=tool_stub_boost,
-                                                  tool_help_boost=tool_help_boost,
-                                                  tool_search_limit=tool_search_limit,
-                                                  tool_enable_ngram_search=tool_enable_ngram_search,
-                                                  tool_ngram_minsize=tool_ngram_minsize,
-                                                  tool_ngram_maxsize=tool_ngram_maxsize)
+                                                 tool_name_boost=tool_name_boost,
+                                                 tool_section_boost=tool_section_boost,
+                                                 tool_description_boost=tool_description_boost,
+                                                 tool_label_boost=tool_label_boost,
+                                                 tool_stub_boost=tool_stub_boost,
+                                                 tool_help_boost=tool_help_boost,
+                                                 tool_search_limit=tool_search_limit,
+                                                 tool_enable_ngram_search=tool_enable_ngram_search,
+                                                 tool_ngram_minsize=tool_ngram_minsize,
+                                                 tool_ngram_maxsize=tool_ngram_maxsize)
         return results
 
     @expose_api_anonymous_and_sessionless
@@ -480,7 +480,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
                 input_dataset = jida.dataset
                 data_provider = data_provider_registry.get_data_provider(trans, original_dataset=input_dataset, source='data')
                 if data_provider and (not data_provider.converted_dataset or
-                                       data_provider.converted_dataset.state != trans.app.model.Dataset.states.OK):
+                                      data_provider.converted_dataset.state != trans.app.model.Dataset.states.OK):
                     # Can convert but no converted dataset yet, so return message about why.
                     data_sources = input_dataset.datatype.data_sources
                     msg = input_dataset.convert_dataset(trans, data_sources['data'])
@@ -587,12 +587,12 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
                     # Create new HDA for input dataset's subset.
                     new_dataset = trans.app.model.HistoryDatasetAssociation(extension=input_dataset.ext,
-                                                                             dbkey=input_dataset.dbkey,
-                                                                             create_dataset=True,
-                                                                             sa_session=trans.sa_session,
-                                                                             name="Subset [%s] of data %i" %
-                                                                                  (regions_str, input_dataset.hid),
-                                                                             visible=False)
+                                                                            dbkey=input_dataset.dbkey,
+                                                                            create_dataset=True,
+                                                                            sa_session=trans.sa_session,
+                                                                            name="Subset [%s] of data %i" %
+                                                                            (regions_str, input_dataset.hid),
+                                                                            visible=False)
                     target_history.add_dataset(new_dataset)
                     trans.sa_session.add(new_dataset)
                     trans.app.security_agent.set_all_dataset_permissions(new_dataset.dataset, hda_permissions)
@@ -610,8 +610,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
                     # Set metadata.
                     # TODO: set meta internally if dataset is small enough?
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool,
-                                                                                                 trans, incoming={'input1': new_dataset},
-                                                                                                 overwrite=False, job_params={"source": "trackster"})
+                                                                                                trans, incoming={'input1': new_dataset},
+                                                                                                overwrite=False, job_params={"source": "trackster"})
                     # Add HDA subset association.
                     subset_association = trans.app.model.HistoryDatasetAssociationSubset(hda=input_dataset, subset=new_dataset, location=regions_str)
                     trans.sa_session.add(subset_association)
@@ -629,8 +629,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         #
         try:
             subset_job, subset_job_outputs = tool.execute(trans, incoming=tool_params,
-                                                           history=target_history,
-                                                           job_params={"source": "trackster"})
+                                                          history=target_history,
+                                                          job_params={"source": "trackster"})
         except Exception as e:
             # Lots of things can go wrong when trying to execute tool.
             return {"error": True, "message": e.__class__.__name__ + ": " + str(e)}

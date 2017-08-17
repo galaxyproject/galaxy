@@ -127,8 +127,8 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         try:
             from weberror import evalexception
             app = wrap_if_allowed_or_fail(app, stack, evalexception.EvalException,
-                                           args=(conf,),
-                                           kwargs=dict(templating_formatters=build_template_error_formatters()))
+                                          args=(conf,),
+                                          kwargs=dict(templating_formatters=build_template_error_formatters()))
         except MiddlewareWrapUnsupported as exc:
             log.warning(str(exc))
             import galaxy.web.framework.middleware.error

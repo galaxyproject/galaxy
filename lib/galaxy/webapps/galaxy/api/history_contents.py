@@ -152,9 +152,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def __show_dataset(self, trans, id, **kwd):
         hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
         return self.hda_serializer.serialize_to_view(hda,
-                                                      user=trans.user,
-                                                      trans=trans,
-                                                      **self._parse_serialization_params(kwd, 'detailed'))
+                                                     user=trans.user,
+                                                     trans=trans,
+                                                     **self._parse_serialization_params(kwd, 'detailed'))
 
     def __show_dataset_collection(self, trans, id, history_id, **kwd):
         try:
@@ -273,7 +273,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         # examples. See also bioblend and API tests for specific examples.
 
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user,
-                                                  current_history=trans.history)
+                                                 current_history=trans.history)
 
         type = payload.get('type', 'dataset')
         if type == 'dataset':
@@ -459,7 +459,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             if payload.get('deleted', False):
                 self.hda_manager.stop_creating_job(hda)
             return self.hda_serializer.serialize_to_view(hda,
-                                                          user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+                                                         user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
         return {}
 
@@ -518,7 +518,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         else:
             self.hda_manager.delete(hda)
         return self.hda_serializer.serialize_to_view(hda,
-                                                      user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+                                                     user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     def __handle_unknown_contents_type(self, trans, contents_type):
         raise exceptions.UnknownContentsType('Unknown contents type: %s' % type)

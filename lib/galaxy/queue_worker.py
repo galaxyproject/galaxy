@@ -179,15 +179,15 @@ def admin_job_lock(app, **kwargs):
 
 
 control_message_to_task = {'create_panel_section': create_panel_section,
-                            'reload_tool': reload_tool,
-                            'reload_toolbox': reload_toolbox,
-                            'reload_data_managers': reload_data_managers,
-                            'reload_display_application': reload_display_application,
-                            'reload_tool_data_tables': reload_tool_data_tables,
-                            'admin_job_lock': admin_job_lock,
-                            'reload_sanitize_whitelist': reload_sanitize_whitelist,
-                            'recalculate_user_disk_usage': recalculate_user_disk_usage,
-                            'rebuild_toolbox_search_index': rebuild_toolbox_search_index}
+                           'reload_tool': reload_tool,
+                           'reload_toolbox': reload_toolbox,
+                           'reload_data_managers': reload_data_managers,
+                           'reload_display_application': reload_display_application,
+                           'reload_tool_data_tables': reload_tool_data_tables,
+                           'admin_job_lock': admin_job_lock,
+                           'reload_sanitize_whitelist': reload_sanitize_whitelist,
+                           'recalculate_user_disk_usage': recalculate_user_disk_usage,
+                           'rebuild_toolbox_search_index': rebuild_toolbox_search_index}
 
 
 class GalaxyQueueWorker(ConsumerMixin, threading.Thread):

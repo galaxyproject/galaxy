@@ -81,9 +81,9 @@ class RelationBuilder(object):
             # Get the changeset revision to which the current value of required_repository_changeset_revision
             # should be updated if it's not current.
             text = metadata_util.get_updated_changeset_revisions(self.app,
-                                                                  name=str(self.repository.name),
-                                                                  owner=str(self.repository.user.username),
-                                                                  changeset_revision=current_changeset_revision)
+                                                                 name=str(self.repository.name),
+                                                                 owner=str(self.repository.user.username),
+                                                                 changeset_revision=current_changeset_revision)
             if text:
                 valid_changeset_revisions = listify(text)
                 if current_changeset_revision not in valid_changeset_revisions:
@@ -112,11 +112,11 @@ class RelationBuilder(object):
             self.get_prior_installation_required_and_only_if_compiling_contained_td()
         # Create a key with the value of prior_installation_required defaulted to False.
         key = container_util.generate_repository_dependencies_key_for_repository(self.tool_shed_url,
-                                                                                  self.repository.name,
-                                                                                  self.repository.user.username,
-                                                                                  self.repository_metadata.changeset_revision,
-                                                                                  prior_installation_required,
-                                                                                  only_if_compiling_contained_td)
+                                                                                 self.repository.name,
+                                                                                 self.repository.user.username,
+                                                                                 self.repository_metadata.changeset_revision,
+                                                                                 prior_installation_required,
+                                                                                 only_if_compiling_contained_td)
         return key
 
     def get_repository_dependencies_for_changeset_revision(self):
@@ -143,7 +143,7 @@ class RelationBuilder(object):
                 # the various repository dependency objects for this round of processing.
                 current_repository_key_rd_dicts = \
                     self.populate_repository_dependency_objects_for_processing(current_repository_key,
-                                                                                repository_dependencies_dict)
+                                                                               repository_dependencies_dict)
         if current_repository_key:
             if current_repository_key_rd_dicts:
                 # There should be only a single current_repository_key_rd_dict in this list.
@@ -165,11 +165,11 @@ class RelationBuilder(object):
         tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple(repository_dependency)
         return container_util.generate_repository_dependencies_key_for_repository(tool_shed,
-                                                                                   name,
-                                                                                   owner,
-                                                                                   changeset_revision,
-                                                                                   prior_installation_required,
-                                                                                   only_if_compiling_contained_td)
+                                                                                  name,
+                                                                                  owner,
+                                                                                  changeset_revision,
+                                                                                  prior_installation_required,
+                                                                                  only_if_compiling_contained_td)
 
     def get_updated_changeset_revisions_for_repository_dependencies(self, key_rd_dicts):
         updated_key_rd_dicts = []
@@ -186,8 +186,8 @@ class RelationBuilder(object):
                     repository_id = self.app.security.encode_id(repository.id)
                     repository_metadata = \
                         metadata_util.get_repository_metadata_by_repository_id_changeset_revision(self.app,
-                                                                                                   repository_id,
-                                                                                                   rd_changeset_revision)
+                                                                                                  repository_id,
+                                                                                                  rd_changeset_revision)
                     if repository_metadata:
                         # The repository changeset_revision is installable, so no updates are available.
                         new_key_rd_dict = {}
@@ -200,17 +200,17 @@ class RelationBuilder(object):
                         if changeset_revision != rd_changeset_revision:
                             repository_metadata = \
                                 metadata_util.get_repository_metadata_by_repository_id_changeset_revision(self.app,
-                                                                                                           repository_id,
-                                                                                                           changeset_revision)
+                                                                                                          repository_id,
+                                                                                                          changeset_revision)
                         if repository_metadata:
                             new_key_rd_dict = {}
                             new_key_rd_dict[key] = \
                                 [rd_toolshed,
-                                  rd_name,
-                                  rd_owner,
-                                  repository_metadata.changeset_revision,
-                                  rd_prior_installation_required,
-                                  rd_only_if_compiling_contained_td]
+                                 rd_name,
+                                 rd_owner,
+                                 repository_metadata.changeset_revision,
+                                 rd_prior_installation_required,
+                                 rd_only_if_compiling_contained_td]
                             # We have the updated changeset revision.
                             updated_key_rd_dicts.append(new_key_rd_dict)
                         else:
@@ -238,8 +238,8 @@ class RelationBuilder(object):
         all_repository_dependencies_root_key = self.all_repository_dependencies['root_key']
         repository_dependency_as_key = self.get_repository_dependency_as_key(repository_dependency)
         self.update_circular_repository_dependencies(repository_key,
-                                                      repository_dependency,
-                                                      self.all_repository_dependencies[repository_dependency_as_key])
+                                                     repository_dependency,
+                                                     self.all_repository_dependencies[repository_dependency_as_key])
         if all_repository_dependencies_root_key != repository_dependency_as_key:
             self.all_repository_dependencies[repository_key] = [repository_dependency]
 
@@ -265,8 +265,8 @@ class RelationBuilder(object):
             repository_id = self.app.security.encode_id(required_repository.id)
             required_repository_metadata = \
                 metadata_util.get_repository_metadata_by_repository_id_changeset_revision(self.app,
-                                                                                           repository_id,
-                                                                                           changeset_revision)
+                                                                                          repository_id,
+                                                                                          changeset_revision)
             self.repository_metadata = required_repository_metadata
             if required_repository_metadata:
                 # The required_repository_metadata changeset_revision is installable.

@@ -26,8 +26,8 @@ class Admin(object):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         return trans.fill_template('/webapps/tool_shed/admin/index.mako',
-                                    message=message,
-                                    status=status)
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_admin
@@ -35,8 +35,8 @@ class Admin(object):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         return trans.fill_template('/webapps/tool_shed/admin/center.mako',
-                                    message=message,
-                                    status=status)
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_admin
@@ -115,9 +115,9 @@ class Admin(object):
                 if create_group_for_role_checked:
                     message += 'One of the groups associated with this role is the newly created group with the same name.'
                 trans.response.send_redirect(web.url_for(controller='admin',
-                                                           action='roles',
-                                                           message=util.sanitize_text(message),
-                                                           status='done'))
+                                                         action='roles',
+                                                         message=util.sanitize_text(message),
+                                                         status='done'))
         if ok:
             for user in trans.sa_session.query(trans.app.model.User) \
                                         .filter(trans.app.model.User.table.c.deleted == false()) \
@@ -128,15 +128,15 @@ class Admin(object):
                                          .order_by(trans.app.model.Group.table.c.name):
                 out_groups.append((group.id, group.name))
         return trans.fill_template('/webapps/tool_shed/admin/dataset_security/role/role_create.mako',
-                                    name=name,
-                                    description=description,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    in_groups=in_groups,
-                                    out_groups=out_groups,
-                                    create_group_for_role_checked=create_group_for_role_checked,
-                                    message=message,
-                                    status=status)
+                                   name=name,
+                                   description=description,
+                                   in_users=in_users,
+                                   out_users=out_users,
+                                   in_groups=in_groups,
+                                   out_groups=out_groups,
+                                   create_group_for_role_checked=create_group_for_role_checked,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_admin
@@ -148,9 +148,9 @@ class Admin(object):
         if not id:
             message = "No role ids received for renaming"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='roles',
-                                                       message=message,
-                                                       status='error'))
+                                                     action='roles',
+                                                     message=message,
+                                                     status='error'))
         role = get_role(trans, id)
         if params.get('rename_role_button', False):
             old_name = role.name
@@ -172,13 +172,13 @@ class Admin(object):
                         trans.sa_session.flush()
                         message = "Role '%s' has been renamed to '%s'" % (old_name, new_name)
                     return trans.response.send_redirect(web.url_for(controller='admin',
-                                                                      action='roles',
-                                                                      message=util.sanitize_text(message),
-                                                                      status='done'))
+                                                                    action='roles',
+                                                                    message=util.sanitize_text(message),
+                                                                    status='done'))
         return trans.fill_template('/webapps/tool_shed/admin/dataset_security/role/role_rename.mako',
-                                    role=role,
-                                    message=message,
-                                    status=status)
+                                   role=role,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_admin
@@ -190,9 +190,9 @@ class Admin(object):
         if not id:
             message = "No role ids received for managing users and groups"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='roles',
-                                                       message=message,
-                                                       status='error'))
+                                                     action='roles',
+                                                     message=message,
+                                                     status='error'))
         role = get_role(trans, id)
         if params.get('role_members_edit_button', False):
             in_users = [trans.sa_session.query(trans.app.model.User).get(x) for x in util.listify(params.in_users)]
@@ -215,9 +215,9 @@ class Admin(object):
             trans.sa_session.refresh(role)
             message = "Role '%s' has been updated with %d associated users and %d associated groups" % (role.name, len(in_users), len(in_groups))
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='roles',
-                                                       message=util.sanitize_text(message),
-                                                       status=status))
+                                                     action='roles',
+                                                     message=util.sanitize_text(message),
+                                                     status=status))
         in_users = []
         out_users = []
         in_groups = []
@@ -267,14 +267,14 @@ class Admin(object):
             message = "Not showing associated datasets, there are too many."
             status = 'info'
         return trans.fill_template('/webapps/tool_shed/admin/dataset_security/role/role.mako',
-                                    role=role,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    in_groups=in_groups,
-                                    out_groups=out_groups,
-                                    library_dataset_actions=library_dataset_actions,
-                                    message=message,
-                                    status=status)
+                                   role=role,
+                                   in_users=in_users,
+                                   out_users=out_users,
+                                   in_groups=in_groups,
+                                   out_groups=out_groups,
+                                   library_dataset_actions=library_dataset_actions,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_admin
@@ -283,9 +283,9 @@ class Admin(object):
         if not id:
             message = "No role ids received for deleting"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='roles',
-                                                       message=message,
-                                                       status='error'))
+                                                     action='roles',
+                                                     message=message,
+                                                     status='error'))
         ids = util.listify(id)
         message = "Deleted %d roles: " % len(ids)
         for role_id in ids:
@@ -295,9 +295,9 @@ class Admin(object):
             trans.sa_session.flush()
             message += " %s " % role.name
         trans.response.send_redirect(web.url_for(controller='admin',
-                                                   action='roles',
-                                                   message=util.sanitize_text(message),
-                                                   status='done'))
+                                                 action='roles',
+                                                 message=util.sanitize_text(message),
+                                                 status='done'))
 
     @web.expose
     @web.require_admin
@@ -306,9 +306,9 @@ class Admin(object):
         if not id:
             message = "No role ids received for undeleting"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='roles',
-                                                       message=message,
-                                                       status='error'))
+                                                     action='roles',
+                                                     message=message,
+                                                     status='error'))
         ids = util.listify(id)
         count = 0
         undeleted_roles = ""
@@ -317,9 +317,9 @@ class Admin(object):
             if not role.deleted:
                 message = "Role '%s' has not been deleted, so it cannot be undeleted." % role.name
                 trans.response.send_redirect(web.url_for(controller='admin',
-                                                           action='roles',
-                                                           message=util.sanitize_text(message),
-                                                           status='error'))
+                                                         action='roles',
+                                                         message=util.sanitize_text(message),
+                                                         status='error'))
             role.deleted = False
             trans.sa_session.add(role)
             trans.sa_session.flush()
@@ -327,9 +327,9 @@ class Admin(object):
             undeleted_roles += " %s" % role.name
         message = "Undeleted %d roles: %s" % (count, undeleted_roles)
         trans.response.send_redirect(web.url_for(controller='admin',
-                                                   action='roles',
-                                                   message=util.sanitize_text(message),
-                                                   status='done'))
+                                                 action='roles',
+                                                 message=util.sanitize_text(message),
+                                                 status='done'))
 
     @web.expose
     @web.require_admin
@@ -345,9 +345,9 @@ class Admin(object):
         if not id:
             message = "No role ids received for purging"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='roles',
-                                                       message=util.sanitize_text(message),
-                                                       status='error'))
+                                                     action='roles',
+                                                     message=util.sanitize_text(message),
+                                                     status='error'))
         ids = util.listify(id)
         message = "Purged %d roles: " % len(ids)
         for role_id in ids:
@@ -355,9 +355,9 @@ class Admin(object):
             if not role.deleted:
                 message = "Role '%s' has not been deleted, so it cannot be purged." % role.name
                 trans.response.send_redirect(web.url_for(controller='admin',
-                                                           action='roles',
-                                                           message=util.sanitize_text(message),
-                                                           status='error'))
+                                                         action='roles',
+                                                         message=util.sanitize_text(message),
+                                                         status='error'))
             # Delete UserRoleAssociations
             for ura in role.users:
                 user = trans.sa_session.query(trans.app.model.User).get(ura.user_id)
@@ -380,9 +380,9 @@ class Admin(object):
             trans.sa_session.flush()
             message += " %s " % role.name
         trans.response.send_redirect(web.url_for(controller='admin',
-                                                   action='roles',
-                                                   message=util.sanitize_text(message),
-                                                   status='done'))
+                                                 action='roles',
+                                                 message=util.sanitize_text(message),
+                                                 status='done'))
 
     @web.expose
     @web.require_admin
@@ -416,9 +416,9 @@ class Admin(object):
         if not id:
             message = "No group ids received for renaming"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='groups',
-                                                       message=message,
-                                                       status='error'))
+                                                     action='groups',
+                                                     message=message,
+                                                     status='error'))
         group = get_group(trans, id)
         if params.get('rename_group_button', False):
             old_name = group.name
@@ -438,13 +438,13 @@ class Admin(object):
                         trans.sa_session.flush()
                         message = "Group '%s' has been renamed to '%s'" % (old_name, new_name)
                     return trans.response.send_redirect(web.url_for(controller='admin',
-                                                                      action='groups',
-                                                                      message=util.sanitize_text(message),
-                                                                      status='done'))
+                                                                    action='groups',
+                                                                    message=util.sanitize_text(message),
+                                                                    status='done'))
         return trans.fill_template('/webapps/tool_shed/admin/dataset_security/group/group_rename.mako',
-                                    group=group,
-                                    message=message,
-                                    status=status)
+                                   group=group,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_admin
@@ -460,9 +460,9 @@ class Admin(object):
             trans.sa_session.refresh(group)
             message += "Group '%s' has been updated with %d associated roles and %d associated users" % (group.name, len(in_roles), len(in_users))
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='groups',
-                                                       message=util.sanitize_text(message),
-                                                       status=status))
+                                                     action='groups',
+                                                     message=util.sanitize_text(message),
+                                                     status=status))
         in_roles = []
         out_roles = []
         in_users = []
@@ -483,13 +483,13 @@ class Admin(object):
                 out_users.append((user.id, user.email))
         message += 'Group %s is currently associated with %d roles and %d users' % (group.name, len(in_roles), len(in_users))
         return trans.fill_template('/webapps/tool_shed/admin/dataset_security/group/group.mako',
-                                    group=group,
-                                    in_roles=in_roles,
-                                    out_roles=out_roles,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    message=message,
-                                    status=status)
+                                   group=group,
+                                   in_roles=in_roles,
+                                   out_roles=out_roles,
+                                   in_users=in_users,
+                                   out_users=out_users,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_admin
@@ -543,9 +543,9 @@ class Admin(object):
                 if create_role_for_group_checked:
                     message += 'One of the roles associated with this group is the newly created role with the same name.'
                 trans.response.send_redirect(web.url_for(controller='admin',
-                                                           action='groups',
-                                                           message=util.sanitize_text(message),
-                                                           status='done'))
+                                                         action='groups',
+                                                         message=util.sanitize_text(message),
+                                                         status='done'))
         if ok:
             for user in trans.sa_session.query(trans.app.model.User) \
                                         .filter(trans.app.model.User.table.c.deleted == false()) \
@@ -556,14 +556,14 @@ class Admin(object):
                                         .order_by(trans.app.model.Role.table.c.name):
                 out_roles.append((role.id, role.name))
         return trans.fill_template('/webapps/tool_shed/admin/dataset_security/group/group_create.mako',
-                                    name=name,
-                                    in_users=in_users,
-                                    out_users=out_users,
-                                    in_roles=in_roles,
-                                    out_roles=out_roles,
-                                    create_role_for_group_checked=create_role_for_group_checked,
-                                    message=message,
-                                    status=status)
+                                   name=name,
+                                   in_users=in_users,
+                                   out_users=out_users,
+                                   in_roles=in_roles,
+                                   out_roles=out_roles,
+                                   create_role_for_group_checked=create_role_for_group_checked,
+                                   message=message,
+                                   status=status)
 
     @web.expose
     @web.require_admin
@@ -573,9 +573,9 @@ class Admin(object):
         if not id:
             message = "No group ids received for marking deleted"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='groups',
-                                                       message=message,
-                                                       status='error'))
+                                                     action='groups',
+                                                     message=message,
+                                                     status='error'))
         ids = util.listify(id)
         message = "Deleted %d groups: " % len(ids)
         for group_id in ids:
@@ -585,9 +585,9 @@ class Admin(object):
             trans.sa_session.flush()
             message += " %s " % group.name
         trans.response.send_redirect(web.url_for(controller='admin',
-                                                   action='groups',
-                                                   message=util.sanitize_text(message),
-                                                   status='done'))
+                                                 action='groups',
+                                                 message=util.sanitize_text(message),
+                                                 status='done'))
 
     @web.expose
     @web.require_admin
@@ -596,9 +596,9 @@ class Admin(object):
         if not id:
             message = "No group ids received for undeleting"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='groups',
-                                                       message=message,
-                                                       status='error'))
+                                                     action='groups',
+                                                     message=message,
+                                                     status='error'))
         ids = util.listify(id)
         count = 0
         undeleted_groups = ""
@@ -607,9 +607,9 @@ class Admin(object):
             if not group.deleted:
                 message = "Group '%s' has not been deleted, so it cannot be undeleted." % group.name
                 trans.response.send_redirect(web.url_for(controller='admin',
-                                                           action='groups',
-                                                           message=util.sanitize_text(message),
-                                                           status='error'))
+                                                         action='groups',
+                                                         message=util.sanitize_text(message),
+                                                         status='error'))
             group.deleted = False
             trans.sa_session.add(group)
             trans.sa_session.flush()
@@ -617,9 +617,9 @@ class Admin(object):
             undeleted_groups += " %s" % group.name
         message = "Undeleted %d groups: %s" % (count, undeleted_groups)
         trans.response.send_redirect(web.url_for(controller='admin',
-                                                   action='groups',
-                                                   message=util.sanitize_text(message),
-                                                   status='done'))
+                                                 action='groups',
+                                                 message=util.sanitize_text(message),
+                                                 status='done'))
 
     @web.expose
     @web.require_admin
@@ -630,9 +630,9 @@ class Admin(object):
         if not id:
             message = "No group ids received for purging"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='groups',
-                                                       message=util.sanitize_text(message),
-                                                       status='error'))
+                                                     action='groups',
+                                                     message=util.sanitize_text(message),
+                                                     status='error'))
         ids = util.listify(id)
         message = "Purged %d groups: " % len(ids)
         for group_id in ids:
@@ -641,9 +641,9 @@ class Admin(object):
                 # We should never reach here, but just in case there is a bug somewhere...
                 message = "Group '%s' has not been deleted, so it cannot be purged." % group.name
                 trans.response.send_redirect(web.url_for(controller='admin',
-                                                           action='groups',
-                                                           message=util.sanitize_text(message),
-                                                           status='error'))
+                                                         action='groups',
+                                                         message=util.sanitize_text(message),
+                                                         status='error'))
             # Delete UserGroupAssociations
             for uga in group.users:
                 trans.sa_session.delete(uga)
@@ -653,16 +653,16 @@ class Admin(object):
             trans.sa_session.flush()
             message += " %s " % group.name
         trans.response.send_redirect(web.url_for(controller='admin',
-                                                   action='groups',
-                                                   message=util.sanitize_text(message),
-                                                   status='done'))
+                                                 action='groups',
+                                                 message=util.sanitize_text(message),
+                                                 status='done'))
 
     @web.expose
     @web.require_admin
     def create_new_user(self, trans, **kwd):
         return trans.response.send_redirect(web.url_for(controller='user',
-                                                          action='create',
-                                                          cntrller='admin'))
+                                                        action='create',
+                                                        cntrller='admin'))
 
     @web.expose
     @web.require_admin
@@ -671,9 +671,9 @@ class Admin(object):
         if not user_id:
             message = "No users received for resetting passwords."
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='users',
-                                                       message=message,
-                                                       status='error'))
+                                                     action='users',
+                                                     message=message,
+                                                     status='error'))
         user_ids = util.listify(user_id)
         if 'reset_user_password_button' in kwd:
             message = ''
@@ -698,17 +698,17 @@ class Admin(object):
                 message = "Passwords reset for %d %s." % (len(user_ids), inflector.cond_plural(len(user_ids), 'user'))
                 status = 'done'
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='users',
-                                                       message=util.sanitize_text(message),
-                                                       status=status))
+                                                     action='users',
+                                                     message=util.sanitize_text(message),
+                                                     status=status))
         users = [get_user(trans, user_id) for user_id in user_ids]
         if len(user_ids) > 1:
             user_id = ','.join(user_ids)
         return trans.fill_template('/webapps/tool_shed/admin/user/reset_password.mako',
-                                    id=user_id,
-                                    users=users,
-                                    password='',
-                                    confirm='')
+                                   id=user_id,
+                                   users=users,
+                                   password='',
+                                   confirm='')
 
     @web.expose
     @web.require_admin
@@ -717,9 +717,9 @@ class Admin(object):
         if not id:
             message = "No user ids received for deleting"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='users',
-                                                       message=message,
-                                                       status='error'))
+                                                     action='users',
+                                                     message=message,
+                                                     status='error'))
         ids = util.listify(id)
         message = "Deleted %d users: " % len(ids)
         for user_id in ids:
@@ -729,9 +729,9 @@ class Admin(object):
             trans.sa_session.flush()
             message += " %s " % user.email
         trans.response.send_redirect(web.url_for(controller='admin',
-                                                   action='users',
-                                                   message=util.sanitize_text(message),
-                                                   status='done'))
+                                                 action='users',
+                                                 message=util.sanitize_text(message),
+                                                 status='done'))
 
     @web.expose
     @web.require_admin
@@ -740,9 +740,9 @@ class Admin(object):
         if not id:
             message = "No user ids received for undeleting"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='users',
-                                                       message=message,
-                                                       status='error'))
+                                                     action='users',
+                                                     message=message,
+                                                     status='error'))
         ids = util.listify(id)
         count = 0
         undeleted_users = ""
@@ -751,9 +751,9 @@ class Admin(object):
             if not user.deleted:
                 message = "User '%s' has not been deleted, so it cannot be undeleted." % user.email
                 trans.response.send_redirect(web.url_for(controller='admin',
-                                                           action='users',
-                                                           message=util.sanitize_text(message),
-                                                           status='error'))
+                                                         action='users',
+                                                         message=util.sanitize_text(message),
+                                                         status='error'))
             user.deleted = False
             trans.sa_session.add(user)
             trans.sa_session.flush()
@@ -761,9 +761,9 @@ class Admin(object):
             undeleted_users += " %s" % user.email
         message = "Undeleted %d users: %s" % (count, undeleted_users)
         trans.response.send_redirect(web.url_for(controller='admin',
-                                                   action='users',
-                                                   message=util.sanitize_text(message),
-                                                   status='done'))
+                                                 action='users',
+                                                 message=util.sanitize_text(message),
+                                                 status='done'))
 
     @web.expose
     @web.require_admin
@@ -784,9 +784,9 @@ class Admin(object):
         if not id:
             message = "No user ids received for purging"
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='users',
-                                                       message=util.sanitize_text(message),
-                                                       status='error'))
+                                                     action='users',
+                                                     message=util.sanitize_text(message),
+                                                     status='error'))
         ids = util.listify(id)
         message = "Purged %d users: " % len(ids)
         for user_id in ids:
@@ -795,9 +795,9 @@ class Admin(object):
                 # We should never reach here, but just in case there is a bug somewhere...
                 message = "User '%s' has not been deleted, so it cannot be purged." % user.email
                 trans.response.send_redirect(web.url_for(controller='admin',
-                                                           action='users',
-                                                           message=util.sanitize_text(message),
-                                                           status='error'))
+                                                         action='users',
+                                                         message=util.sanitize_text(message),
+                                                         status='error'))
             private_role = trans.app.security_agent.get_private_user_role(user)
             # Delete History
             for h in user.active_histories:
@@ -829,9 +829,9 @@ class Admin(object):
             trans.sa_session.flush()
             message += "%s " % user.email
         trans.response.send_redirect(web.url_for(controller='admin',
-                                                   action='users',
-                                                   message=util.sanitize_text(message),
-                                                   status='done'))
+                                                 action='users',
+                                                 message=util.sanitize_text(message),
+                                                 status='done'))
 
     @web.expose
     @web.require_admin
@@ -880,9 +880,9 @@ class Admin(object):
         if not user_id:
             message += "Invalid user id (%s) received" % str(user_id)
             trans.response.send_redirect(web.url_for(controller='admin',
-                                                       action='users',
-                                                       message=util.sanitize_text(message),
-                                                       status='error'))
+                                                     action='users',
+                                                     message=util.sanitize_text(message),
+                                                     status='error'))
         user = get_user(trans, user_id)
         private_role = trans.app.security_agent.get_private_user_role(user)
         if kwd.get('user_roles_groups_edit_button', False):
@@ -908,15 +908,15 @@ class Admin(object):
                 message += "User '%s' has been updated with %d associated roles and %d associated groups (private roles are not displayed)" % \
                     (user.email, len(in_roles), len(in_groups))
                 trans.response.send_redirect(web.url_for(controller='admin',
-                                                           action='users',
-                                                           message=util.sanitize_text(message),
-                                                           status='done'))
+                                                         action='users',
+                                                         message=util.sanitize_text(message),
+                                                         status='done'))
         in_roles = []
         out_roles = []
         in_groups = []
         out_groups = []
         for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.deleted == false()) \
-                                                                  .order_by(trans.app.model.Role.table.c.name):
+        .order_by(trans.app.model.Role.table.c.name):
             if role in [x.role for x in user.roles]:
                 in_roles.append((role.id, role.name))
             elif role.type != trans.app.model.Role.types.PRIVATE:
@@ -926,7 +926,7 @@ class Admin(object):
                 # precaution, since for a period of time we were including private roles in the form fields.
                 out_roles.append((role.id, role.name))
         for group in trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.deleted == false()) \
-                                                                    .order_by(trans.app.model.Group.table.c.name):
+        .order_by(trans.app.model.Group.table.c.name):
             if group in [x.group for x in user.groups]:
                 in_groups.append((group.id, group.name))
             else:
@@ -936,13 +936,13 @@ class Admin(object):
         if not status:
             status = 'done'
         return trans.fill_template('/webapps/tool_shed/admin/user/user.mako',
-                                    user=user,
-                                    in_roles=in_roles,
-                                    out_roles=out_roles,
-                                    in_groups=in_groups,
-                                    out_groups=out_groups,
-                                    message=message,
-                                    status=status)
+                                   user=user,
+                                   in_roles=in_roles,
+                                   out_roles=out_roles,
+                                   in_groups=in_groups,
+                                   out_groups=out_groups,
+                                   message=message,
+                                   status=status)
 
 
 # ---- Utility methods -------------------------------------------------------

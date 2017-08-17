@@ -129,8 +129,8 @@ def get_upload_point(repository, **kwd):
 
 def handle_bz2(repository, uploaded_file_name):
     fd, uncompressed = tempfile.mkstemp(prefix='repo_%d_upload_bunzip2_' % repository.id,
-                                         dir=os.path.dirname(uploaded_file_name),
-                                         text=False)
+                                        dir=os.path.dirname(uploaded_file_name),
+                                        text=False)
     bzipped_file = bz2.BZ2File(uploaded_file_name, 'rb')
     while 1:
         try:
@@ -149,7 +149,7 @@ def handle_bz2(repository, uploaded_file_name):
 
 
 def handle_directory_changes(app, host, username, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar,
-                              new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed):
+                             new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed):
     repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
     content_alert_str = ''
     files_to_remove = []
@@ -213,24 +213,24 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
             if error:
                 return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
     hg_util.commit_changeset(repo.ui,
-                              repo,
-                              full_path_to_changeset=full_path,
-                              username=username,
-                              message=commit_message)
+                             repo,
+                             full_path_to_changeset=full_path,
+                             username=username,
+                             message=commit_message)
     admin_only = len(repository.downloadable_revisions) != 1
     suc.handle_email_alerts(app,
-                             host,
-                             repository,
-                             content_alert_str=content_alert_str,
-                             new_repo_alert=new_repo_alert,
-                             admin_only=admin_only)
+                            host,
+                            repository,
+                            content_alert_str=content_alert_str,
+                            new_repo_alert=new_repo_alert,
+                            admin_only=admin_only)
     return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
 
 
 def handle_gzip(repository, uploaded_file_name):
     fd, uncompressed = tempfile.mkstemp(prefix='repo_%d_upload_gunzip_' % repository.id,
-                                         dir=os.path.dirname(uploaded_file_name),
-                                         text=False)
+                                        dir=os.path.dirname(uploaded_file_name),
+                                        text=False)
     gzipped_file = gzip.GzipFile(uploaded_file_name, 'rb')
     while 1:
         try:

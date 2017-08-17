@@ -18,15 +18,15 @@ class SetMetadataToolAction(ToolAction):
         Execute using a web transaction.
         """
         job, odict = self.execute_via_app(tool, trans.app, trans.get_galaxy_session().id,
-                                           trans.history.id, trans.user, incoming, set_output_hid,
-                                           overwrite, history, job_params)
+                                          trans.history.id, trans.user, incoming, set_output_hid,
+                                          overwrite, history, job_params)
         # FIXME: can remove this when logging in execute_via_app method.
         trans.log_event("Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
         return job, odict
 
     def execute_via_app(self, tool, app, session_id, history_id, user=None,
-                         incoming={}, set_output_hid=False, overwrite=True,
-                         history=None, job_params=None):
+                        incoming={}, set_output_hid=False, overwrite=True,
+                        history=None, job_params=None):
         """
         Execute using application.
         """
@@ -74,18 +74,18 @@ class SetMetadataToolAction(ToolAction):
         job_working_dir = app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
         external_metadata_wrapper = JobExternalOutputMetadataWrapper(job)
         cmd_line = external_metadata_wrapper.setup_external_metadata(dataset,
-                                                                      sa_session,
-                                                                      exec_dir=None,
-                                                                      tmp_dir=job_working_dir,
-                                                                      dataset_files_path=app.model.Dataset.file_path,
-                                                                      output_fnames=input_paths,
-                                                                      config_root=app.config.root,
-                                                                      config_file=app.config.config_file,
-                                                                      datatypes_config=app.datatypes_registry.integrated_datatypes_configs,
-                                                                      job_metadata=None,
-                                                                      include_command=False,
-                                                                      max_metadata_value_size=app.config.max_metadata_value_size,
-                                                                      kwds={'overwrite' : overwrite})
+                                                                     sa_session,
+                                                                     exec_dir=None,
+                                                                     tmp_dir=job_working_dir,
+                                                                     dataset_files_path=app.model.Dataset.file_path,
+                                                                     output_fnames=input_paths,
+                                                                     config_root=app.config.root,
+                                                                     config_file=app.config.config_file,
+                                                                     datatypes_config=app.datatypes_registry.integrated_datatypes_configs,
+                                                                     job_metadata=None,
+                                                                     include_command=False,
+                                                                     max_metadata_value_size=app.config.max_metadata_value_size,
+                                                                     kwds={'overwrite' : overwrite})
         incoming['__SET_EXTERNAL_METADATA_COMMAND_LINE__'] = cmd_line
         for name, value in tool.params_to_strings(incoming, app).items():
             job.add_parameter(name, value)

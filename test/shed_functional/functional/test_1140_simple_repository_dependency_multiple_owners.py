@@ -59,21 +59,21 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
         strings_displayed = self.expect_repo_created_strings(datatypes_repository_name)
         repository = self.get_or_create_repository(name=datatypes_repository_name,
-                                                    description=datatypes_repository_description,
-                                                    long_description=datatypes_repository_long_description,
-                                                    owner=common.test_user_2_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=strings_displayed)
+                                                   description=datatypes_repository_description,
+                                                   long_description=datatypes_repository_long_description,
+                                                   owner=common.test_user_2_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=strings_displayed)
         if self.repository_is_new(repository):
             self.upload_file(repository,
-                              filename='blast/blast_datatypes.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded blast_datatypes tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='blast/blast_datatypes.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded blast_datatypes tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0010_verify_datatypes_repository(self):
         '''Verify the blast_datatypes_0120 repository.'''
@@ -99,22 +99,22 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = self.expect_repo_created_strings(tool_repository_name)
         repository = self.get_or_create_repository(name=tool_repository_name,
-                                                    description=tool_repository_description,
-                                                    long_description=tool_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=strings_displayed)
+                                                   description=tool_repository_description,
+                                                   long_description=tool_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=strings_displayed)
         if self.repository_is_new(repository):
             running_standalone = True
             self.upload_file(repository,
-                              filename='blast/blastxml_to_top_descr.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded blastxml_to_top_descr tarball.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='blast/blastxml_to_top_descr.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded blastxml_to_top_descr tarball.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
 
     def test_0020_verify_tool_repository(self):
         '''Verify the blastxml_to_top_descr_0120 repository.'''
@@ -162,11 +162,11 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         base_datatypes_count = int(self.get_datatypes_count())
         post_submit_strings_displayed = ['blastxml_to_top_descr_0120', 'blast_datatypes_0120', 'New']
         self.install_repository(name='blastxml_to_top_descr_0120',
-                                 owner=common.test_user_1_name,
-                                 category_name='Test 0120',
-                                 install_repository_dependencies=True,
-                                 post_submit_strings_displayed=post_submit_strings_displayed,
-                                 new_tool_panel_section_label='Test 0120')
+                                owner=common.test_user_1_name,
+                                category_name='Test 0120',
+                                install_repository_dependencies=True,
+                                post_submit_strings_displayed=post_submit_strings_displayed,
+                                new_tool_panel_section_label='Test 0120')
 
     def test_0050_verify_repository_installation(self):
         '''Verify installation of blastxml_to_top_descr_0120 and blast_datatypes_0120.'''

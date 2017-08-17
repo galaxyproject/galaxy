@@ -31,39 +31,39 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
         '''Create and populate freebayes_0040.'''
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=freebayes_repository_name,
-                                                    description=freebayes_repository_description,
-                                                    long_description=freebayes_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    categories=['test_0040_repository_circular_dependencies'],
-                                                    strings_displayed=[])
+                                                   description=freebayes_repository_description,
+                                                   long_description=freebayes_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   categories=['test_0040_repository_circular_dependencies'],
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='freebayes/freebayes.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded the tool tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='freebayes/freebayes.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded the tool tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0015_create_filtering_repository(self):
         '''Create and populate filtering_0040.'''
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=filtering_repository_name,
-                                                    description=filtering_repository_description,
-                                                    long_description=filtering_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    categories=['test_0040_repository_circular_dependencies'],
-                                                    strings_displayed=[])
+                                                   description=filtering_repository_description,
+                                                   long_description=filtering_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   categories=['test_0040_repository_circular_dependencies'],
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='filtering/filtering_1.1.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded the tool tarball for filtering 1.1.0.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_1.1.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded the tool tarball for filtering 1.1.0.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_create_dependency_on_freebayes(self):
         '''Upload a repository_dependencies.xml file that specifies the current revision of freebayes to the filtering_0040 repository.'''
@@ -112,5 +112,5 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
         '''Verify that freebayes displays tool dependencies.'''
         repository = self.test_db_util.get_repository_by_name_and_owner(freebayes_repository_name, common.test_user_1_name)
         self.display_manage_repository_page(repository,
-                                             strings_displayed=['freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Valid tools', 'package'],
-                                             strings_not_displayed=['Invalid tools'])
+                                            strings_displayed=['freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Valid tools', 'package'],
+                                            strings_not_displayed=['Invalid tools'])

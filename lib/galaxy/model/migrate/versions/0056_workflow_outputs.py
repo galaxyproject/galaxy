@@ -13,9 +13,9 @@ log = logging.getLogger(__name__)
 metadata = MetaData()
 
 WorkflowOutput_table = Table("workflow_output", metadata,
-                              Column("id", Integer, primary_key=True),
-                              Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
-                              Column("output_name", String(255), nullable=True))
+                             Column("id", Integer, primary_key=True),
+                             Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
+                             Column("output_name", String(255), nullable=True))
 
 tables = [WorkflowOutput_table]
 

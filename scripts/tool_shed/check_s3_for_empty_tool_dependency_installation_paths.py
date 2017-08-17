@@ -116,38 +116,38 @@ if __name__ == '__main__':
     description += 'the --delete command line argument is provided with a true value.'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--delete',
-                         dest='delete',
-                         required=True,
-                         action='store',
-                         default=False,
-                         type=asbool,
-                         help='Whether to delete empty folders or list them on exit.')
+                        dest='delete',
+                        required=True,
+                        action='store',
+                        default=False,
+                        type=asbool,
+                        help='Whether to delete empty folders or list them on exit.')
     parser.add_argument('--bucket',
-                         dest='bucket',
-                         required=True,
-                         action='store',
-                         metavar='name',
-                         help='The S3 bucket where tool dependencies are installed.')
+                        dest='bucket',
+                        required=True,
+                        action='store',
+                        metavar='name',
+                        help='The S3 bucket where tool dependencies are installed.')
     parser.add_argument('--id',
-                         dest='id',
-                         required=False,
-                         action='store',
-                         default=None,
-                         metavar='ACCESS_KEY',
-                         help='The identifier for an amazon account that has read access to the bucket.')
+                        dest='id',
+                        required=False,
+                        action='store',
+                        default=None,
+                        metavar='ACCESS_KEY',
+                        help='The identifier for an amazon account that has read access to the bucket.')
     parser.add_argument('--secret',
-                         dest='secret',
-                         required=False,
-                         action='store',
-                         default=None,
-                         metavar='SECRET_KEY',
-                         help='The secret key for an amazon account that has upload/delete access to the bucket.')
+                        dest='secret',
+                        required=False,
+                        action='store',
+                        default=None,
+                        metavar='SECRET_KEY',
+                        help='The secret key for an amazon account that has upload/delete access to the bucket.')
     parser.add_argument('--s3passwd',
-                         dest='s3passwd',
-                         required=False,
-                         action='store',
-                         default=None,
-                         metavar='path/file',
-                         help='The path to a file containing Amazon access credentials, in the format KEY:SECRET.')
+                        dest='s3passwd',
+                        required=False,
+                        action='store',
+                        default=None,
+                        metavar='path/file',
+                        help='The path to a file containing Amazon access credentials, in the format KEY:SECRET.')
     args = parser.parse_args()
     sys.exit(main(args))

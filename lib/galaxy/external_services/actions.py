@@ -65,10 +65,10 @@ class ExternalServiceAction(object):
 
     def get_action_access_link(self, trans, param_dict):
         return url_for(controller='/external_services',
-                        action="access_action",
-                        external_service_action=self.__action_url_id(param_dict),
-                        item=param_dict['item'].id,
-                        item_type=param_dict['item'].__class__.__name__)
+                       action="access_action",
+                       external_service_action=self.__action_url_id(param_dict),
+                       item=param_dict['item'].id,
+                       item_type=param_dict['item'].__class__.__name__)
 
     def populate_action(self, param_dict):
         return PopulatedExternalServiceAction(self, param_dict)

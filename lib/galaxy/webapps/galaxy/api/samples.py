@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 class SamplesAPIController(BaseAPIController):
     update_types = Bunch(SAMPLE=['sample_state', 'run_details'],
-                          SAMPLE_DATASET=['sample_dataset_transfer_status'])
+                         SAMPLE_DATASET=['sample_dataset_transfer_status'])
     update_type_values = []
     for k, v in update_types.items():
         update_type_values.extend(v)
@@ -40,8 +40,8 @@ class SamplesAPIController(BaseAPIController):
         for sample in request.samples:
             item = sample.to_dict()
             item['url'] = url_for('samples',
-                                   request_id=trans.security.encode_id(request_id),
-                                   id=trans.security.encode_id(sample.id))
+                                  request_id=trans.security.encode_id(request_id),
+                                  id=trans.security.encode_id(sample.id))
             item['id'] = trans.security.encode_id(item['id'])
             rval.append(item)
         return rval
@@ -86,11 +86,11 @@ class SamplesAPIController(BaseAPIController):
                 except:
                     log.exception('update() called with a deferred job plugin (%s) but creating the deferred job failed:' % deferred_plugin)
             status, output = requests_admin_controller.edit_template_info(trans,
-                                                                           cntrller='api',
-                                                                           item_type='sample',
-                                                                           form_type=trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE,
-                                                                           sample_id=sample_id,
-                                                                           **payload)
+                                                                          cntrller='api',
+                                                                          item_type='sample',
+                                                                          form_type=trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE,
+                                                                          sample_id=sample_id,
+                                                                          **payload)
             return status, output
         elif update_type == 'sample_state':
             return self.__update_sample_state(trans, sample, sample_id, **payload)
@@ -119,10 +119,10 @@ class SamplesAPIController(BaseAPIController):
             return "Invalid sample state requested ( %s )." % new_state_name
         requests_common_cntrller = trans.webapp.controllers['requests_common']
         status, output = requests_common_cntrller.update_sample_state(trans=trans,
-                                                                       cntrller='api',
-                                                                       sample_ids=[encoded_sample_id],
-                                                                       new_state=new_state,
-                                                                       comment=comment)
+                                                                      cntrller='api',
+                                                                      sample_ids=[encoded_sample_id],
+                                                                      new_state=new_state,
+                                                                      comment=comment)
         return status, output
 
     def __update_sample_dataset_status(self, trans, **payload):
@@ -138,8 +138,8 @@ class SamplesAPIController(BaseAPIController):
         error_msg = payload.get('error_msg', '')
         requests_admin_cntrller = trans.webapp.controllers['requests_admin']
         status, output = requests_admin_cntrller.update_sample_dataset_status(trans=trans,
-                                                                               cntrller='api',
-                                                                               sample_dataset_ids=sample_dataset_ids,
-                                                                               new_status=new_status,
-                                                                               error_msg=error_msg)
+                                                                              cntrller='api',
+                                                                              sample_dataset_ids=sample_dataset_ids,
+                                                                              new_status=new_status,
+                                                                              error_msg=error_msg)
         return status, output

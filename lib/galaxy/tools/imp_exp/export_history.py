@@ -54,7 +54,7 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
                 dataset_file_name = dataset_attrs['file_name']  # Full file name.
                 dataset_hid = dataset_attrs['hid']
                 dataset_archive_name = os.path.join('datasets',
-                                                     get_dataset_filename(dataset_attrs['name'], dataset_attrs['extension'], dataset_hid))
+                                                    get_dataset_filename(dataset_attrs['name'], dataset_attrs['extension'], dataset_hid))
                 history_archive.add(dataset_file_name, arcname=dataset_archive_name)
 
                 # Include additional files for example, files/images included in HTML output.
@@ -69,7 +69,7 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
                         dataset_extra_files_path = 'datasets/extra_files_path_%s' % dataset_hid
                         for fname in file_list:
                             history_archive.add(os.path.join(extra_files_path, fname),
-                                                 arcname=(os.path.join(dataset_extra_files_path, fname)))
+                                                arcname=(os.path.join(dataset_extra_files_path, fname)))
                         dataset_attrs['extra_files_path'] = dataset_extra_files_path
                     else:
                         dataset_attrs['extra_files_path'] = ''

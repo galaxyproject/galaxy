@@ -38,21 +38,21 @@ class TestDatatypeConverters(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         # Create a repository named bed_to_gff_0130 owned by user1.
         repository = self.get_or_create_repository(name=repository_name,
-                                                    description=repository_description,
-                                                    long_description=repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=repository_description,
+                                                   long_description=repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Upload bed_to_gff_converter.tar to the repository.
         self.upload_file(repository,
-                          filename='bed_to_gff_converter/bed_to_gff_converter.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded bed_to_gff_converter.tar.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='bed_to_gff_converter/bed_to_gff_converter.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded bed_to_gff_converter.tar.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_verify_tool_and_datatype(self):
         '''Verify that a valid tool and datatype are contained within the repository.'''
@@ -74,5 +74,5 @@ class TestDatatypeConverters(ShedTwillTestCase):
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         tool_metadata_strings_displayed = '<label>Display in tool panel:</label>\n                    False'
         self.check_repository_tools_for_changeset_revision(repository,
-                                                            self.get_repository_tip(repository),
-                                                            tool_metadata_strings_displayed=tool_metadata_strings_displayed)
+                                                           self.get_repository_tip(repository),
+                                                           tool_metadata_strings_displayed=tool_metadata_strings_displayed)

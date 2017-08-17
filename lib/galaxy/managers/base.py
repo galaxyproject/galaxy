@@ -147,10 +147,10 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
         security_check(trans, item, check_ownership, check_accessible)
     if deleted is True and not item.deleted:
         raise exceptions.ItemDeletionException('%s "%s" is not deleted'
-                                                % (class_name, getattr(item, 'name', id)), type="warning")
+                                               % (class_name, getattr(item, 'name', id)), type="warning")
     elif deleted is False and item.deleted:
         raise exceptions.ItemDeletionException('%s "%s" is deleted'
-                                                % (class_name, getattr(item, 'name', id)), type="warning")
+                                               % (class_name, getattr(item, 'name', id)), type="warning")
     return item
 
 

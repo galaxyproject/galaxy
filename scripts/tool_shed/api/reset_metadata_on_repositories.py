@@ -70,7 +70,7 @@ def main(options):
                     sys.exit(1)
     else:
         data = dict(encoded_ids_to_skip=encoded_ids_to_skip,
-                     my_writable=my_writable)
+                    my_writable=my_writable)
         url = '%s/api/repositories/reset_metadata_on_repositories' % base_tool_shed_url
         try:
             submit(url, data, options.api)

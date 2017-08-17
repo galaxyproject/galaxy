@@ -135,7 +135,7 @@ class CommunityRBACAgent(RBACAgent):
     def get_private_user_role(self, user, auto_create=False):
         role = self.sa_session.query(self.model.Role) \
                               .filter(and_(self.model.Role.table.c.name == user.email,
-                                             self.model.Role.table.c.type == self.model.Role.types.PRIVATE)) \
+                                           self.model.Role.table.c.type == self.model.Role.types.PRIVATE)) \
                               .first()
         if not role:
             if auto_create:
@@ -147,7 +147,7 @@ class CommunityRBACAgent(RBACAgent):
     def get_repository_reviewer_role(self):
         return self.sa_session.query(self.model.Role) \
                               .filter(and_(self.model.Role.table.c.name == 'Repository Reviewer',
-                                             self.model.Role.table.c.type == self.model.Role.types.SYSTEM)) \
+                                           self.model.Role.table.c.type == self.model.Role.types.SYSTEM)) \
                               .first()
 
     def set_entity_group_associations(self, groups=None, users=None, roles=None, delete_existing_assocs=True):
@@ -241,7 +241,7 @@ class CommunityRBACAgent(RBACAgent):
         # A member of the IUC is authorized to create new repositories that are owned by another user.
         iuc_group = self.sa_session.query(self.model.Group) \
                                    .filter(and_(self.model.Group.table.c.name == 'Intergalactic Utilities Commission',
-                                                  self.model.Group.table.c.deleted == false())) \
+                                                self.model.Group.table.c.deleted == false())) \
                                    .first()
         if iuc_group is not None:
             for uga in iuc_group.users:

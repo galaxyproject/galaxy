@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 
 def build_approved_select_field(trans, name, selected_value=None, for_component=True):
     options = [('No', trans.model.ComponentReview.approved_states.NO),
-                ('Yes', trans.model.ComponentReview.approved_states.YES)]
+               ('Yes', trans.model.ComponentReview.approved_states.YES)]
     if for_component:
         options.append(('Not applicable', trans.model.ComponentReview.approved_states.NA))
         if selected_value is None:
@@ -21,7 +21,7 @@ def build_approved_select_field(trans, name, selected_value=None, for_component=
 
 
 def build_changeset_revision_select_field(trans, repository, selected_value=None, add_id_to_name=True,
-                                           downloadable=False, reviewed=False, not_reviewed=False):
+                                          downloadable=False, reviewed=False, not_reviewed=False):
     """
     Build a SelectField whose options are the changeset_rev strings of certain revisions of the
     received repository.
@@ -56,10 +56,10 @@ def build_changeset_revision_select_field(trans, repository, selected_value=None
     for repository_metadata in repository_metadata_revisions:
         rev, label, changeset_revision = \
             hg_util.get_rev_label_changeset_revision_from_repository_metadata(trans.app,
-                                                                               repository_metadata,
-                                                                               repository=repository,
-                                                                               include_date=True,
-                                                                               include_hash=False)
+                                                                              repository_metadata,
+                                                                              repository=repository,
+                                                                              include_date=True,
+                                                                              include_hash=False)
         changeset_tups.append((rev, label, changeset_revision))
         refresh_on_change_values.append(changeset_revision)
     # Sort options by the revision label.  Even though the downloadable_revisions query sorts by update_time,
@@ -72,8 +72,8 @@ def build_changeset_revision_select_field(trans, repository, selected_value=None
     else:
         name = 'changeset_revision'
     select_field = SelectField(name=name,
-                                refresh_on_change=True,
-                                refresh_on_change_values=refresh_on_change_values)
+                               refresh_on_change=True,
+                               refresh_on_change_values=refresh_on_change_values)
     for option_tup in options:
         selected = selected_value and option_tup[1] == selected_value
         select_field.add_option(option_tup[0], option_tup[1], selected=selected)
@@ -124,14 +124,14 @@ def get_latest_downloadable_repository_metadata(trans, repository):
         return None
     except:
         latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
-                                                                                               repo,
-                                                                                               tip_ctx,
-                                                                                               downloadable=True)
+                                                                                              repo,
+                                                                                              tip_ctx,
+                                                                                              downloadable=True)
         if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
             return None
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
-                                                                                           encoded_repository_id,
-                                                                                           latest_downloadable_revision)
+                                                                                          encoded_repository_id,
+                                                                                          latest_downloadable_revision)
         if repository_metadata is not None and repository_metadata.downloadable:
             return repository_metadata
         return None
@@ -163,14 +163,14 @@ def get_latest_repository_metadata(trans, repository):
         return repository_metadata
     except:
         latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
-                                                                                               repo,
-                                                                                               tip_ctx,
-                                                                                               downloadable=False)
+                                                                                              repo,
+                                                                                              tip_ctx,
+                                                                                              downloadable=False)
         if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
             return None
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
-                                                                                           encoded_repository_id,
-                                                                                           latest_downloadable_revision)
+                                                                                          encoded_repository_id,
+                                                                                          latest_downloadable_revision)
         return repository_metadata
 
 

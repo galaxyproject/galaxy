@@ -36,36 +36,36 @@ class ToolWithRepositoryDependencies(ShedTwillTestCase):
         category = self.create_category(name='Test 0020 Basic Repository Dependencies', description='Test 0020 Basic Repository Dependencies')
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         datatypes_repository = self.get_or_create_repository(name=datatypes_repository_name,
-                                                              description=datatypes_repository_description,
-                                                              long_description=datatypes_repository_long_description,
+                                                             description=datatypes_repository_description,
+                                                             long_description=datatypes_repository_long_description,
+                                                             owner=common.test_user_1_name,
+                                                             category_id=self.security.encode_id(category.id),
+                                                             strings_displayed=[])
+        if self.repository_is_new(datatypes_repository):
+            self.upload_file(datatypes_repository,
+                             filename='emboss/datatypes/datatypes_conf.xml',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=False,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded datatypes_conf.xml.',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
+            emboss_repository = self.get_or_create_repository(name=emboss_repository_name,
+                                                              description=emboss_repository_description,
+                                                              long_description=emboss_repository_long_description,
                                                               owner=common.test_user_1_name,
                                                               category_id=self.security.encode_id(category.id),
                                                               strings_displayed=[])
-        if self.repository_is_new(datatypes_repository):
-            self.upload_file(datatypes_repository,
-                              filename='emboss/datatypes/datatypes_conf.xml',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded datatypes_conf.xml.',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
-            emboss_repository = self.get_or_create_repository(name=emboss_repository_name,
-                                                               description=emboss_repository_description,
-                                                               long_description=emboss_repository_long_description,
-                                                               owner=common.test_user_1_name,
-                                                               category_id=self.security.encode_id(category.id),
-                                                               strings_displayed=[])
             self.upload_file(emboss_repository,
-                              filename='emboss/emboss.tar',
-                              filepath=None,
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded emboss.tar',
-                              strings_displayed=[],
-                              strings_not_displayed=[])
+                             filename='emboss/emboss.tar',
+                             filepath=None,
+                             valid_tools_only=True,
+                             uncompress_file=True,
+                             remove_repo_files_not_in_tar=False,
+                             commit_message='Uploaded emboss.tar',
+                             strings_displayed=[],
+                             strings_not_displayed=[])
             repository_dependencies_path = self.generate_temp_path('test_1020', additional_paths=['emboss', '5'])
             repository_tuple = (self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip(datatypes_repository))
             self.create_repository_dependency(repository=emboss_repository, repository_tuples=[repository_tuple], filepath=repository_dependencies_path)
@@ -87,17 +87,17 @@ class ToolWithRepositoryDependencies(ShedTwillTestCase):
         global base_datatypes_count
         strings_displayed = ['Handle', 'Never installed', 'tool dependencies', 'emboss', '5.0.0', 'package']
         self.install_repository('emboss_0020',
-                                 common.test_user_1_name,
-                                 'Test 0020 Basic Repository Dependencies',
-                                 strings_displayed=strings_displayed,
-                                 install_tool_dependencies=False,
-                                 new_tool_panel_section_label='test_1020')
+                                common.test_user_1_name,
+                                'Test 0020 Basic Repository Dependencies',
+                                strings_displayed=strings_displayed,
+                                install_tool_dependencies=False,
+                                new_tool_panel_section_label='test_1020')
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner('emboss_0020', common.test_user_1_name)
         strings_displayed = ['emboss_0020',
-                              'Galaxy wrappers for Emboss version 5.0.0 tools for test 0020',
-                              'user1',
-                              self.url.replace('http://', ''),
-                              installed_repository.installed_changeset_revision]
+                             'Galaxy wrappers for Emboss version 5.0.0 tools for test 0020',
+                             'user1',
+                             self.url.replace('http://', ''),
+                             installed_repository.installed_changeset_revision]
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
         strings_displayed.extend(['Installed tool shed repository', 'Valid tools', 'antigenic'])
         self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)

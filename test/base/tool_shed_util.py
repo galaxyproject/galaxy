@@ -55,10 +55,10 @@ def parse_tool_panel_config(config, shed_tools_dict):
             galaxy_test_file_dir, \
                 last_tested_repository_name, \
                 last_tested_changeset_revision = get_installed_repository_info(elem,
-                                                                                last_galaxy_test_file_dir,
-                                                                                last_tested_repository_name,
-                                                                                last_tested_changeset_revision,
-                                                                                tool_path)
+                                                                               last_galaxy_test_file_dir,
+                                                                               last_tested_repository_name,
+                                                                               last_tested_changeset_revision,
+                                                                               tool_path)
             if galaxy_test_file_dir:
                 if not has_test_data:
                     has_test_data = True
@@ -74,10 +74,10 @@ def parse_tool_panel_config(config, shed_tools_dict):
                     galaxy_test_file_dir, \
                         last_tested_repository_name, \
                         last_tested_changeset_revision = get_installed_repository_info(section_elem,
-                                                                                        last_galaxy_test_file_dir,
-                                                                                        last_tested_repository_name,
-                                                                                        last_tested_changeset_revision,
-                                                                                        tool_path)
+                                                                                       last_galaxy_test_file_dir,
+                                                                                       last_tested_repository_name,
+                                                                                       last_tested_changeset_revision,
+                                                                                       tool_path)
                     if galaxy_test_file_dir:
                         if not has_test_data:
                             has_test_data = True

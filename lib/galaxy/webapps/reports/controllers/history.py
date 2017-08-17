@@ -77,9 +77,9 @@ class History(BaseUIController):
              sa.func.sum(galaxy.model.Dataset.table.c.total_size).label('size'),
              galaxy.model.User.table.c.email.label('email')),
             from_obj=[galaxy.model.User.table,
-                       galaxy.model.Dataset.table,
-                       galaxy.model.HistoryDatasetAssociation.table,
-                       galaxy.model.History.table],
+                      galaxy.model.Dataset.table,
+                      galaxy.model.HistoryDatasetAssociation.table,
+                      galaxy.model.History.table],
             whereclause=and_(galaxy.model.Dataset.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.dataset_id,
                              galaxy.model.History.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.history_id,
                              galaxy.model.History.table.c.user_id == galaxy.model.User.table.c.id,
@@ -90,9 +90,9 @@ class History(BaseUIController):
         # transform lists to dict with email as key and
         # number of (history/dataset)/size of history as value
         histories = dict([(_.email if _.email is not None else "Unknown", int(_.history))
-                            for _ in histories.execute()])
+                          for _ in histories.execute()])
         datasets = dict([(_.email if _.email is not None else "Unknown", (int(_.dataset), int(_.size)))
-                           for _ in datasets.execute()])
+                         for _ in datasets.execute()])
 
         sorting_functions = [
             lambda first, second: descending if first[0].lower() > second[0].lower() else -descending,
@@ -117,11 +117,11 @@ class History(BaseUIController):
             data[user] = ("%d (%s)" % (history, int_to_octet(dataset[1])), dataset[0])
 
         return trans.fill_template('/webapps/reports/history_and_dataset_per_user.mako',
-                                    data=data,
-                                    user_cutoff=user_cutoff,
-                                    sorting=sorting,
-                                    descending=descending,
-                                    message=message)
+                                   data=data,
+                                   user_cutoff=user_cutoff,
+                                   sorting=sorting,
+                                   descending=descending,
+                                   message=message)
 
     @web.expose
     def history_and_dataset_type(self, trans, **kwd):
@@ -142,21 +142,21 @@ class History(BaseUIController):
         if user_selection is not None:
             from_obj.append(galaxy.model.User.table)
             whereclause = and_(galaxy.model.Dataset.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.dataset_id,
-                                galaxy.model.History.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.history_id,
-                                galaxy.model.User.table.c.id == galaxy.model.History.table.c.user_id,
-                                galaxy.model.User.table.c.email == user_selection)
+                               galaxy.model.History.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.history_id,
+                               galaxy.model.User.table.c.id == galaxy.model.History.table.c.user_id,
+                               galaxy.model.User.table.c.email == user_selection)
         else:
             whereclause = and_(galaxy.model.Dataset.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.dataset_id,
                                galaxy.model.History.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.history_id)
         histories = sa.select((galaxy.model.Dataset.table.c.state.label('state'),
-                                 galaxy.model.History.table.c.name.label('name')),
-                               from_obj=from_obj,
-                               whereclause=whereclause,
-                               order_by=['name'])
+                               galaxy.model.History.table.c.name.label('name')),
+                              from_obj=from_obj,
+                              whereclause=whereclause,
+                              order_by=['name'])
 
         # execute requests, replace None fields by "Unknown"
         data = [(_.name if _.name is not None else "NoNamedHistory", _.state)
-                 for _ in histories.execute()]
+                for _ in histories.execute()]
 
         # sort by names descending or ascending
         data.sort(lambda first, second: descending if first[0].lower() > second[0].lower() else -descending)
@@ -186,7 +186,7 @@ class History(BaseUIController):
             datas[name][no_status] += 1
 
         return trans.fill_template('/webapps/reports/history_and_dataset_type.mako',
-                                    data=datas,
-                                    user_cutoff=user_cutoff,
-                                    descending=descending,
-                                    message=message)
+                                   data=datas,
+                                   user_cutoff=user_cutoff,
+                                   descending=descending,
+                                   message=message)

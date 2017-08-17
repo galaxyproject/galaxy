@@ -325,7 +325,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin):
 
         else:
             raise exceptions.RequestParameterInvalidException('The mandatory parameter "action" has an invalid value. '
-                                                               'Allowed values are: "remove_restrictions", "make_private", "set_permissions"')
+                                                              'Allowed values are: "remove_restrictions", "make_private", "set_permissions"')
 
         return self._get_current_roles(trans, library_dataset)
 

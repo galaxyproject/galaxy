@@ -31,20 +31,20 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=column_repository_name,
-                                                    description=column_repository_description,
-                                                    long_description=column_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=column_repository_description,
+                                                   long_description=column_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='column_maker/column_maker.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded column_maker tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='column_maker/column_maker.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded column_maker tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0005_create_convert_repository(self):
         """Create and populate the convert_chars repository."""
@@ -52,20 +52,20 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=convert_repository_name,
-                                                    description=convert_repository_description,
-                                                    long_description=convert_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=convert_repository_description,
+                                                   long_description=convert_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='convert_chars/convert_chars.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded convert_chars tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='convert_chars/convert_chars.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded convert_chars tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_create_repository_dependencies(self):
         '''Upload a repository_dependencies.xml file that specifies the current revision of convert_chars_0080 to the column_maker_0080 repository.'''

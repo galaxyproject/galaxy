@@ -644,8 +644,8 @@ class BaseFastq (Sequence):
                     self._clean_and_set_mime_type(trans, mime)
                     return fh.read()
                 return trans.stream_template_mako("/dataset/large_file.mako",
-                                                   truncated_data=fh.read(max_peek_size),
-                                                   data=dataset)
+                                                  truncated_data=fh.read(max_peek_size),
+                                                  data=dataset)
         else:
             return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 

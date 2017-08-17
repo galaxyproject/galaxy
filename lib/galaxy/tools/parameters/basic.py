@@ -1778,11 +1778,11 @@ class DataToolParameter(BaseDataToolParameter):
         # build and append a new select option
         def append(list, hda, name, src, keep=False):
             return list.append({'id'   : trans.security.encode_id(hda.id),
-                                  'hid'  : hda.hid,
-                                  'name' : name,
-                                  'tags' : [t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hda.tags],
-                                  'src'  : src,
-                                  'keep' : keep})
+                                'hid'  : hda.hid,
+                                'name' : name,
+                                'tags' : [t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hda.tags],
+                                'src'  : src,
+                                'keep' : keep})
 
         # add datasets
         hda_list = util.listify(other_values.get(self.name))

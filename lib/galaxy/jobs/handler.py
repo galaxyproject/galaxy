@@ -103,21 +103,21 @@ class JobHandlerQueue(object):
         jobs_at_startup = []
         if self.track_jobs_in_database:
             in_list = (model.Job.states.QUEUED,
-                        model.Job.states.RUNNING)
+                       model.Job.states.RUNNING)
         else:
             in_list = (model.Job.states.NEW,
-                        model.Job.states.QUEUED,
-                        model.Job.states.RUNNING)
+                       model.Job.states.QUEUED,
+                       model.Job.states.RUNNING)
         if self.app.config.user_activation_on:
                 jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
                     .outerjoin(model.User) \
                     .filter(model.Job.state.in_(in_list) &
-                             (model.Job.handler == self.app.config.server_name) &
-                             or_((model.Job.user_id == null()), (model.User.active == true()))).all()
+                            (model.Job.handler == self.app.config.server_name) &
+                            or_((model.Job.user_id == null()), (model.User.active == true()))).all()
         else:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
                 .filter(model.Job.state.in_(in_list) &
-                         (model.Job.handler == self.app.config.server_name)).all()
+                        (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
@@ -209,10 +209,10 @@ class JobHandlerQueue(object):
                 .join(model.HistoryDatasetAssociation) \
                 .join(model.Dataset) \
                 .filter(and_((model.Job.state == model.Job.states.NEW),
-                              or_((model.HistoryDatasetAssociation._state == model.HistoryDatasetAssociation.states.FAILED_METADATA),
-                                   (model.HistoryDatasetAssociation.deleted == true()),
-                                   (model.Dataset.state != model.Dataset.states.OK),
-                                   (model.Dataset.deleted == true())))).subquery()
+                             or_((model.HistoryDatasetAssociation._state == model.HistoryDatasetAssociation.states.FAILED_METADATA),
+                                 (model.HistoryDatasetAssociation.deleted == true()),
+                                 (model.Dataset.state != model.Dataset.states.OK),
+                                 (model.Dataset.deleted == true())))).subquery()
             ldda_not_ready = self.sa_session.query(model.Job.id).enable_eagerloads(False) \
                 .join(model.JobToInputLibraryDatasetAssociation) \
                 .join(model.LibraryDatasetDatasetAssociation) \
@@ -291,7 +291,7 @@ class JobHandlerQueue(object):
                 elif job_state == JOB_ADMIN_DELETED:
                     log.info("(%d) Job deleted by admin while still queued" % job.id)
                 elif job_state in (JOB_USER_OVER_QUOTA,
-                                    JOB_USER_OVER_TOTAL_WALLTIME):
+                                   JOB_USER_OVER_TOTAL_WALLTIME):
                     if job_state == JOB_USER_OVER_QUOTA:
                         log.info("(%d) User (%s) is over quota: job paused" % (job.id, job.user_id))
                     else:
@@ -400,7 +400,7 @@ class JobHandlerQueue(object):
                     pass  # No history, should not happen with an anon user
         # Check total walltime limits
         if (state == JOB_READY and
-             "delta" in self.app.job_config.limits.total_walltime):
+            "delta" in self.app.job_config.limits.total_walltime):
             jobs_to_check = self.sa_session.query(model.Job).filter(
                 model.Job.user_id == job.user.id,
                 model.Job.update_time >= datetime.datetime.now() -
@@ -581,8 +581,8 @@ class JobHandlerQueue(object):
             if self.app.job_config.limits.anonymous_user_concurrent_jobs:
                 count = self.sa_session.query(model.Job).enable_eagerloads(False) \
                             .filter(and_(model.Job.session_id == job.galaxy_session.id,
-                                           or_(model.Job.state == model.Job.states.RUNNING,
-                                                model.Job.state == model.Job.states.QUEUED))).count()
+                                         or_(model.Job.state == model.Job.states.RUNNING,
+                                             model.Job.state == model.Job.states.QUEUED))).count()
                 if count >= self.app.job_config.limits.anonymous_user_concurrent_jobs:
                     return JOB_WAIT
         else:
@@ -705,7 +705,7 @@ class JobHandlerStopQueue(object):
             # Fetch all new jobs
             newly_deleted_jobs = self.sa_session.query(model.Job).enable_eagerloads(False) \
                                      .filter((model.Job.state == model.Job.states.DELETED_NEW) &
-                                              (model.Job.handler == self.app.config.server_name)).all()
+                                             (model.Job.handler == self.app.config.server_name)).all()
             for job in newly_deleted_jobs:
                 jobs_to_check.append((job, job.stderr))
         # Also pull from the queue (in the case of Administrative stopped jobs)
@@ -723,7 +723,7 @@ class JobHandlerStopQueue(object):
         for job, error_msg in jobs_to_check:
             if (job.state not in
                     (job.states.DELETED_NEW,
-                      job.states.DELETED) and
+                     job.states.DELETED) and
                     job.finished):
                 # terminated before it got here
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
@@ -814,7 +814,7 @@ class DefaultJobDispatcher(object):
             log.debug("Stopping job %d:", job.get_id())
         elif(isinstance(job, model.Task)):
             log.debug("Stopping job %d, task %d"
-                       % (job.get_job().get_id(), job.get_id()))
+                      % (job.get_job().get_id(), job.get_id()))
         else:
             log.debug("Unknown job to stop")
 
@@ -827,7 +827,7 @@ class DefaultJobDispatcher(object):
                 log.debug("stopping job %d in %s runner" % (job.get_id(), runner_name))
             elif (isinstance(job, model.Task)):
                 log.debug("Stopping job %d, task %d in %s runner"
-                           % (job.get_job().get_id(), job.get_id(), runner_name))
+                          % (job.get_job().get_id(), job.get_id(), runner_name))
             try:
                 self.job_runners[runner_name].stop_job(job)
             except KeyError:

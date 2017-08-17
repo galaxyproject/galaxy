@@ -43,9 +43,9 @@ class DataTransfer(object):
                 results = []
                 for result in job.params['results'].values():
                     result['transfer_job'] = self.app.transfer_manager.new(protocol=job.params['protocol'],
-                                                                              name=result['name'],
-                                                                              datatype=result['datatype'],
-                                                                              url=result['url'])
+                                                                           name=result['name'],
+                                                                           datatype=result['datatype'],
+                                                                           url=result['url'])
                     results.append(result)
             elif job.params['protocol'] == 'scp':
                 results = []
@@ -57,32 +57,32 @@ class DataTransfer(object):
                 for sample_dataset_id, sample_dataset_info_dict in sample_datasets_dict.items():
                     result = {}
                     result['transfer_job'] = self.app.transfer_manager.new(protocol=job.params['protocol'],
-                                                                              host=job.params['host'],
-                                                                              user_name=job.params['user_name'],
-                                                                              password=job.params['password'],
-                                                                              sample_dataset_id=sample_dataset_id,
-                                                                              status=sample_dataset_info_dict['status'],
-                                                                              name=sample_dataset_info_dict['name'],
-                                                                              file_path=sample_dataset_info_dict['file_path'],
-                                                                              sample_id=sample_dataset_info_dict['sample_id'],
-                                                                              external_service_id=sample_dataset_info_dict['external_service_id'],
-                                                                              error_msg=sample_dataset_info_dict['error_msg'],
-                                                                              size=sample_dataset_info_dict['size'])
+                                                                           host=job.params['host'],
+                                                                           user_name=job.params['user_name'],
+                                                                           password=job.params['password'],
+                                                                           sample_dataset_id=sample_dataset_id,
+                                                                           status=sample_dataset_info_dict['status'],
+                                                                           name=sample_dataset_info_dict['name'],
+                                                                           file_path=sample_dataset_info_dict['file_path'],
+                                                                           sample_id=sample_dataset_info_dict['sample_id'],
+                                                                           external_service_id=sample_dataset_info_dict['external_service_id'],
+                                                                           error_msg=sample_dataset_info_dict['error_msg'],
+                                                                           size=sample_dataset_info_dict['size'])
                     results.append(result)
             self.app.transfer_manager.run([r['transfer_job'] for r in results])
             for result in results:
                 transfer_job = result.pop('transfer_job')
                 self.create_job(None,
-                                 transfer_job_id=transfer_job.id,
-                                 result=transfer_job.params,
-                                 sample_id=job.params['sample_id'])
+                                transfer_job_id=transfer_job.id,
+                                result=transfer_job.params,
+                                sample_id=job.params['sample_id'])
                 # Update the state of the relevant SampleDataset
                 new_status = self.app.model.SampleDataset.transfer_status.IN_QUEUE
                 self._update_sample_dataset_status(protocol=job.params['protocol'],
-                                                    sample_id=job.params['sample_id'],
-                                                    result_dict=transfer_job.params,
-                                                    new_status=new_status,
-                                                    error_msg='')
+                                                   sample_id=job.params['sample_id'],
+                                                   result_dict=transfer_job.params,
+                                                   new_status=new_status,
+                                                   error_msg='')
             job.state = self.app.model.DeferredJob.states.OK
             self.sa_session.add(job)
             self.sa_session.flush()
@@ -112,21 +112,21 @@ class DataTransfer(object):
                 # Determine the data format (see the relevant TODO item in the manual_data_transfer plugin)..
                 extension = sniff.guess_ext(result_dict['local_path'], sniff_order=self.app.datatypes_registry.sniff_order)
             self._update_sample_dataset_status(protocol=job.params['protocol'],
-                                                sample_id=int(job.params['sample_id']),
-                                                result_dict=result_dict,
-                                                new_status=new_status,
-                                                error_msg='')
+                                               sample_id=int(job.params['sample_id']),
+                                               result_dict=result_dict,
+                                               new_status=new_status,
+                                               error_msg='')
             sample = self.sa_session.query(self.app.model.Sample).get(int(job.params['sample_id']))
             ld = self.app.model.LibraryDataset(folder=sample.folder, name=library_dataset_name)
             self.sa_session.add(ld)
             self.sa_session.flush()
             self.app.security_agent.copy_library_permissions(FakeTrans(self.app), sample.folder, ld)
             ldda = self.app.model.LibraryDatasetDatasetAssociation(name=library_dataset_name,
-                                                                    extension=extension,
-                                                                    dbkey='?',
-                                                                    library_dataset=ld,
-                                                                    create_dataset=True,
-                                                                    sa_session=self.sa_session)
+                                                                   extension=extension,
+                                                                   dbkey='?',
+                                                                   library_dataset=ld,
+                                                                   create_dataset=True,
+                                                                   sa_session=self.sa_session)
             ldda.message = 'Transferred by the Data Transfer Plugin'
             self.sa_session.add(ldda)
             self.sa_session.flush()
@@ -143,17 +143,17 @@ class DataTransfer(object):
                         if spec.get('default'):
                             setattr(ldda.metadata, name, spec.unwrap(spec.get('default')))
                 self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool,
-                                                                                            FakeTrans(self.app,
-                                                                                                       history=sample.history,
-                                                                                                       user=sample.request.user),
-                                                                                            incoming={'input1': ldda})
+                                                                                           FakeTrans(self.app,
+                                                                                                     history=sample.history,
+                                                                                                     user=sample.request.user),
+                                                                                           incoming={'input1': ldda})
                 ldda.state = ldda.states.OK
                 # TODO: not sure if this flush is necessary
                 self.sa_session.add(ldda)
                 self.sa_session.flush()
             except Exception as e:
                 log.exception('Failure preparing library dataset for finished transfer job (id: %s) via deferred job (id: %s):' %
-                               (str(job.transfer_job.id), str(job.id)))
+                              (str(job.transfer_job.id), str(job.id)))
                 ldda.state = ldda.states.ERROR
             if sample.workflow:
                 log.debug("\n\nLogging sample mappings as: %s" % sample.workflow['mappings'])
@@ -199,10 +199,10 @@ class DataTransfer(object):
             # Update the state of the relevant SampleDataset
             new_status = self.app.model.SampleDataset.transfer_status.COMPLETE
             self._update_sample_dataset_status(protocol=job.params['protocol'],
-                                                sample_id=int(job.params['sample_id']),
-                                                result_dict=job.params['result'],
-                                                new_status=new_status,
-                                                error_msg='')
+                                               sample_id=int(job.params['sample_id']),
+                                               result_dict=job.params['result'],
+                                               new_status=new_status,
+                                               error_msg='')
             if sample.datasets and not sample.untransferred_dataset_files:
                 # Update the state of the sample to the sample's request type's final state.
                 new_state = sample.request.type.final_sample_state
@@ -225,8 +225,8 @@ class DataTransfer(object):
         if protocol in ['http', 'https']:
             sample_dataset = self.sa_session.query(self.app.model.SampleDataset) \
                                             .filter(and_(self.app.model.SampleDataset.table.c.sample_id == sample_id,
-                                                           self.app.model.SampleDataset.table.c.name == result_dict['name'],
-                                                           self.app.model.SampleDataset.table.c.file_path == result_dict['url'])) \
+                                                         self.app.model.SampleDataset.table.c.name == result_dict['name'],
+                                                         self.app.model.SampleDataset.table.c.file_path == result_dict['url'])) \
                                             .first()
         elif protocol in ['scp']:
             sample_dataset = self.sa_session.query(self.app.model.SampleDataset).get(int(result_dict['sample_dataset_id']))

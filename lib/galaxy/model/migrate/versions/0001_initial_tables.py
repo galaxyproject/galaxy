@@ -150,7 +150,7 @@ StoredWorkflow_table = Table("stored_workflow", metadata,
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=False),
     Column("latest_workflow_id", Integer,
-            ForeignKey("workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk'), index=True),
+           ForeignKey("workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk'), index=True),
     Column("name", TEXT),
     Column("deleted", Boolean, default=False))
 

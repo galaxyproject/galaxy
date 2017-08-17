@@ -9,10 +9,10 @@ class RepositoryGridFilterManager(object):
     """Provides filtered views of the many Tool SHed repository grids."""
 
     filters = Bunch(CERTIFIED_LEVEL_ONE='certified_level_one',
-                     CERTIFIED_LEVEL_TWO='certified_level_two',
-                     CERTIFIED_LEVEL_ONE_SUITES='certified_level_one_suites',
-                     CERTIFIED_LEVEL_TWO_SUITES='certified_level_two_suites',
-                     SUITES='suites')
+                    CERTIFIED_LEVEL_TWO='certified_level_two',
+                    CERTIFIED_LEVEL_ONE_SUITES='certified_level_one_suites',
+                    CERTIFIED_LEVEL_TWO_SUITES='certified_level_two_suites',
+                    SUITES='suites')
 
     def get_grid_title(self, trans, trailing_string='', default=''):
         filter = self.get_filter(trans)

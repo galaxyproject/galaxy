@@ -79,22 +79,22 @@ class ToolShedTestDriver(driver_util.TestDriver):
         print("Directory location for hgweb.config:", hgweb_config_dir)
         toolshed_database_conf = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
         kwargs = dict(admin_users='test@bx.psu.edu',
-                       allow_user_creation=True,
-                       allow_user_deletion=True,
-                       datatype_converters_config_file='datatype_converters_conf.xml.sample',
-                       file_path=shed_file_path,
-                       hgweb_config_dir=hgweb_config_dir,
-                       job_queue_workers=5,
-                       id_secret='changethisinproductiontoo',
-                       log_destination="stdout",
-                       new_file_path=new_repos_path,
-                       running_functional_tests=True,
-                       shed_tool_data_table_config=shed_tool_data_table_conf_file,
-                       smtp_server='smtp.dummy.string.tld',
-                       email_from='functional@localhost',
-                       template_path='templates',
-                       tool_parse_help=False,
-                       use_heartbeat=False)
+                      allow_user_creation=True,
+                      allow_user_deletion=True,
+                      datatype_converters_config_file='datatype_converters_conf.xml.sample',
+                      file_path=shed_file_path,
+                      hgweb_config_dir=hgweb_config_dir,
+                      job_queue_workers=5,
+                      id_secret='changethisinproductiontoo',
+                      log_destination="stdout",
+                      new_file_path=new_repos_path,
+                      running_functional_tests=True,
+                      shed_tool_data_table_config=shed_tool_data_table_conf_file,
+                      smtp_server='smtp.dummy.string.tld',
+                      email_from='functional@localhost',
+                      template_path='templates',
+                      tool_parse_help=False,
+                      use_heartbeat=False)
         kwargs.update(toolshed_database_conf)
         # Generate the tool_data_table_conf.xml file.
         open(default_tool_data_table_config_path, 'w').write(tool_data_table_conf_xml_template)
@@ -136,10 +136,10 @@ class ToolShedTestDriver(driver_util.TestDriver):
             if not os.environ.get('GALAXY_SHED_DATA_MANAGER_CONF'):
                 open(galaxy_shed_data_manager_conf_file, 'wb').write(shed_data_manager_conf_xml_template)
             kwargs = dict(migrated_tools_config=galaxy_migrated_tool_conf_file,
-                           shed_data_manager_config_file=galaxy_shed_data_manager_conf_file,
-                           shed_tool_path=galaxy_shed_tool_path,
-                           tool_data_path=tool_data_path,
-                           tool_sheds_config_file=galaxy_tool_sheds_conf_file)
+                          shed_data_manager_config_file=galaxy_shed_data_manager_conf_file,
+                          shed_tool_path=galaxy_shed_tool_path,
+                          tool_data_path=tool_data_path,
+                          tool_sheds_config_file=galaxy_tool_sheds_conf_file)
             kwargs.update(
                 driver_util.setup_galaxy_config(
                     galaxy_db_path,

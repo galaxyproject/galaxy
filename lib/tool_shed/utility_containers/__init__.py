@@ -27,7 +27,7 @@ class InvalidRepositoryDependency(object):
     """Invalid repository dependency definition object"""
 
     def __init__(self, id=None, toolshed=None, repository_name=None, repository_owner=None, changeset_revision=None,
-                  prior_installation_required=False, only_if_compiling_contained_td=False, error=None):
+                 prior_installation_required=False, only_if_compiling_contained_td=False, error=None):
         self.id = id
         self.toolshed = toolshed
         self.repository_name = repository_name
@@ -136,15 +136,15 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
             folder_id += 1
             invalid_repository_dependencies_root_folder = \
                 utility_container_manager.Folder(id=folder_id,
-                                                  key='root',
-                                                  label='root',
-                                                  parent=None)
+                                                 key='root',
+                                                 label='root',
+                                                 parent=None)
             folder_id += 1
             invalid_repository_dependencies_folder = \
                 utility_container_manager.Folder(id=folder_id,
-                                                  key='invalid_repository_dependencies',
-                                                  label=label,
-                                                  parent=invalid_repository_dependencies_root_folder)
+                                                 key='invalid_repository_dependencies',
+                                                 label=label,
+                                                 parent=invalid_repository_dependencies_root_folder)
             invalid_repository_dependencies_root_folder.folders.append(invalid_repository_dependencies_folder)
             invalid_repository_dependencies = invalid_repository_dependencies_dict['repository_dependencies']
             for invalid_repository_dependency in invalid_repository_dependencies:
@@ -153,24 +153,24 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                 toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, error = \
                     common_util.parse_repository_dependency_tuple(invalid_repository_dependency, contains_error=True)
                 key = container_util.generate_repository_dependencies_key_for_repository(toolshed,
-                                                                                          name,
-                                                                                          owner,
-                                                                                          changeset_revision,
-                                                                                          prior_installation_required,
-                                                                                          only_if_compiling_contained_td)
+                                                                                         name,
+                                                                                         owner,
+                                                                                         changeset_revision,
+                                                                                         prior_installation_required,
+                                                                                         only_if_compiling_contained_td)
                 label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>" % (name, changeset_revision, owner)
                 folder = utility_container_manager.Folder(id=folder_id,
-                                                           key=key,
-                                                           label=label,
-                                                           parent=invalid_repository_dependencies_folder)
+                                                          key=key,
+                                                          label=label,
+                                                          parent=invalid_repository_dependencies_folder)
                 ird = InvalidRepositoryDependency(id=invalid_repository_dependency_id,
-                                                   toolshed=toolshed,
-                                                   repository_name=name,
-                                                   repository_owner=owner,
-                                                   changeset_revision=changeset_revision,
-                                                   prior_installation_required=util.asbool(prior_installation_required),
-                                                   only_if_compiling_contained_td=util.asbool(only_if_compiling_contained_td),
-                                                   error=error)
+                                                  toolshed=toolshed,
+                                                  repository_name=name,
+                                                  repository_owner=owner,
+                                                  changeset_revision=changeset_revision,
+                                                  prior_installation_required=util.asbool(prior_installation_required),
+                                                  only_if_compiling_contained_td=util.asbool(only_if_compiling_contained_td),
+                                                  error=error)
                 folder.invalid_repository_dependencies.append(ird)
                 invalid_repository_dependencies_folder.folders.append(folder)
         else:
@@ -190,9 +190,9 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
             folder_id += 1
             invalid_tool_dependencies_folder = \
                 utility_container_manager.Folder(id=folder_id,
-                                                  key='invalid_tool_dependencies',
-                                                  label=label,
-                                                  parent=invalid_tool_dependencies_root_folder)
+                                                 key='invalid_tool_dependencies',
+                                                 label=label,
+                                                 parent=invalid_tool_dependencies_root_folder)
             invalid_tool_dependencies_root_folder.folders.append(invalid_tool_dependencies_folder)
             for td_key, requirements_dict in invalid_tool_dependencies_dict.items():
                 folder_id += 1
@@ -210,14 +210,14 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                 key = self.generate_tool_dependencies_key(name, version, type)
                 label = "Version <b>%s</b> of the <b>%s</b> <b>%s</b>" % (version, name, type)
                 folder = utility_container_manager.Folder(id=folder_id,
-                                                           key=key,
-                                                           label=label,
-                                                           parent=invalid_tool_dependencies_folder)
+                                                          key=key,
+                                                          label=label,
+                                                          parent=invalid_tool_dependencies_folder)
                 itd = InvalidToolDependency(id=invalid_tool_dependency_id,
-                                             name=name,
-                                             version=version,
-                                             type=type,
-                                             error=error)
+                                            name=name,
+                                            version=version,
+                                            type=type,
+                                            error=error)
                 folder.invalid_tool_dependencies.append(itd)
                 invalid_tool_dependencies_folder.folders.append(folder)
         else:
@@ -225,7 +225,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
         return folder_id, invalid_tool_dependencies_root_folder
 
     def build_repository_containers(self, repository, changeset_revision, repository_dependencies, repository_metadata,
-                                     exclude=None):
+                                    exclude=None):
         """
         Return a dictionary of containers for the received repository's dependencies and
         contents for display in the Tool Shed.
@@ -233,13 +233,13 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
         if exclude is None:
             exclude = []
         containers_dict = dict(datatypes=None,
-                                invalid_tools=None,
-                                readme_files=None,
-                                repository_dependencies=None,
-                                tool_dependencies=None,
-                                valid_tools=None,
-                                workflows=None,
-                                valid_data_managers=None
+                               invalid_tools=None,
+                               readme_files=None,
+                               repository_dependencies=None,
+                               tool_dependencies=None,
+                               valid_tools=None,
+                               workflows=None,
+                               valid_data_managers=None
                                 )
         if repository_metadata:
             metadata = repository_metadata.metadata
@@ -259,7 +259,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                         invalid_repository_dependencies = metadata['invalid_repository_dependencies']
                         folder_id, invalid_repository_dependencies_root_folder = \
                             self.build_invalid_repository_dependencies_root_folder(folder_id,
-                                                                                    invalid_repository_dependencies)
+                                                                                   invalid_repository_dependencies)
                         containers_dict['invalid_repository_dependencies'] = invalid_repository_dependencies_root_folder
                 # Invalid tool dependencies container.
                 if metadata:
@@ -267,7 +267,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                         invalid_tool_dependencies = metadata['invalid_tool_dependencies']
                         folder_id, invalid_tool_dependencies_root_folder = \
                             self.build_invalid_tool_dependencies_root_folder(folder_id,
-                                                                              invalid_tool_dependencies)
+                                                                             invalid_tool_dependencies)
                         containers_dict['invalid_tool_dependencies'] = invalid_tool_dependencies_root_folder
                 # Invalid tools container.
                 if metadata:
@@ -275,10 +275,10 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                         invalid_tool_configs = metadata['invalid_tools']
                         folder_id, invalid_tools_root_folder = \
                             self.build_invalid_tools_folder(folder_id,
-                                                             invalid_tool_configs,
-                                                             changeset_revision,
-                                                             repository=repository,
-                                                             label='Invalid tools')
+                                                            invalid_tool_configs,
+                                                            changeset_revision,
+                                                            repository=repository,
+                                                            label='Invalid tools')
                         containers_dict['invalid_tools'] = invalid_tools_root_folder
                 # Readme files container.
                 if metadata:
@@ -290,9 +290,9 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                     # Repository dependencies container.
                     folder_id, repository_dependencies_root_folder = \
                         self.build_repository_dependencies_folder(folder_id=folder_id,
-                                                                   repository_dependencies=repository_dependencies,
-                                                                   label='Repository dependencies',
-                                                                   installed=False)
+                                                                  repository_dependencies=repository_dependencies,
+                                                                  label='Repository dependencies',
+                                                                  installed=False)
                     if repository_dependencies_root_folder:
                         containers_dict['repository_dependencies'] = repository_dependencies_root_folder
                 # Tool dependencies container.
@@ -310,19 +310,19 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                             tools.extend(metadata.get('invalid_tools', []))
                         folder_id, tool_dependencies_root_folder = \
                             self.build_tool_dependencies_folder(folder_id,
-                                                                 tool_dependencies,
-                                                                 missing=False,
-                                                                 new_install=False)
+                                                                tool_dependencies,
+                                                                missing=False,
+                                                                new_install=False)
                         containers_dict['tool_dependencies'] = tool_dependencies_root_folder
                 # Valid tools container.
                 if metadata:
                     if 'tools' not in exclude and 'tools' in metadata:
                         valid_tools = metadata['tools']
                         folder_id, valid_tools_root_folder = self.build_tools_folder(folder_id,
-                                                                                      valid_tools,
-                                                                                      repository,
-                                                                                      changeset_revision,
-                                                                                      label='Valid tools')
+                                                                                     valid_tools,
+                                                                                     repository,
+                                                                                     changeset_revision,
+                                                                                     label='Valid tools')
                         containers_dict['valid_tools'] = valid_tools_root_folder
                 # Workflows container.
                 if metadata:
@@ -330,10 +330,10 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                         workflows = metadata['workflows']
                         folder_id, workflows_root_folder = \
                             self.build_workflows_folder(folder_id=folder_id,
-                                                         workflows=workflows,
-                                                         repository_metadata_id=repository_metadata.id,
-                                                         repository_id=None,
-                                                         label='Workflows')
+                                                        workflows=workflows,
+                                                        repository_metadata_id=repository_metadata.id,
+                                                        repository_id=None,
+                                                        label='Workflows')
                         containers_dict['workflows'] = workflows_root_folder
                 # Valid Data Managers container
                 if metadata:
@@ -346,9 +346,9 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                         data_managers = metadata['data_manager'].get('invalid_data_managers', None)
                         folder_id, data_managers_root_folder = \
                             self.build_invalid_data_managers_folder(folder_id,
-                                                                     data_managers,
-                                                                     error_messages,
-                                                                     label="Invalid Data Managers")
+                                                                    data_managers,
+                                                                    error_messages,
+                                                                    label="Invalid Data Managers")
                         containers_dict['invalid_data_managers'] = data_managers_root_folder
             except Exception:
                 log.exception("Exception in build_repository_containers")

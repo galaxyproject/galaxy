@@ -52,21 +52,21 @@ class TestDataManagers(ShedTwillTestCase):
         '''
         category = self.test_db_util.get_category_by_name(category_name)
         repository = self.get_or_create_repository(name=data_manager_repository_name,
-                                                    description=data_manager_repository_description,
-                                                    long_description=data_manager_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=data_manager_repository_description,
+                                                   long_description=data_manager_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         # Upload the data manager files to the repository.
         self.upload_file(repository,
-                          filename=data_manager_tar_file,
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Populate %s with a data manager configuration.' % data_manager_repository_name,
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename=data_manager_tar_file,
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Populate %s with a data manager configuration.' % data_manager_repository_name,
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_install_data_manager_repository(self):
         '''Install the data_manager_1460 repository to galaxy.'''
@@ -76,10 +76,10 @@ class TestDataManagers(ShedTwillTestCase):
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         post_submit_strings_displayed = [data_manager_repository_name]
         self.install_repository(data_manager_repository_name,
-                                 common.test_user_1_name,
-                                 category_name,
-                                 install_tool_dependencies=True,
-                                 post_submit_strings_displayed=post_submit_strings_displayed)
+                                common.test_user_1_name,
+                                category_name,
+                                install_tool_dependencies=True,
+                                post_submit_strings_displayed=post_submit_strings_displayed)
 
     def test_0030_verify_data_manager_tool(self):
         '''Verify that the data_manager_1460 repository is installed and Data Manager tool appears in list in Galaxy.'''

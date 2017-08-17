@@ -34,76 +34,76 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         category = self.test_db_util.get_category_by_name('Test 0030 Repository Dependency Revisions')
         repository = self.get_or_create_repository(name=emboss_5_repository_name,
-                                                    description=emboss_repository_description,
-                                                    long_description=emboss_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id))
+                                                   description=emboss_repository_description,
+                                                   long_description=emboss_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id))
         self.upload_file(repository,
-                          filename='emboss/emboss.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded tool tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/emboss.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded tool tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0015_create_emboss_6_repository(self):
         '''Create and populate the emboss_6_0030 repository.'''
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         category = self.test_db_util.get_category_by_name('Test 0030 Repository Dependency Revisions')
         repository = self.get_or_create_repository(name=emboss_6_repository_name,
-                                                    description=emboss_repository_description,
-                                                    long_description=emboss_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id))
+                                                   description=emboss_repository_description,
+                                                   long_description=emboss_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id))
         self.upload_file(repository,
-                          filename='emboss/emboss.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded tool tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/emboss.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded tool tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_create_emboss_datatypes_repository(self):
         '''Create and populate the emboss_datatypes_0030 repository.'''
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         category = self.test_db_util.get_category_by_name('Test 0030 Repository Dependency Revisions')
         repository = self.get_or_create_repository(name=datatypes_repository_name,
-                                                    description=emboss_repository_description,
-                                                    long_description=emboss_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id))
+                                                   description=emboss_repository_description,
+                                                   long_description=emboss_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id))
         self.upload_file(repository,
-                          filename='emboss/datatypes/datatypes_conf.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded datatypes_conf.xml.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/datatypes/datatypes_conf.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded datatypes_conf.xml.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0025_create_emboss_repository(self):
         '''Create and populate the emboss_0030 repository.'''
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         category = self.test_db_util.get_category_by_name('Test 0030 Repository Dependency Revisions')
         repository = self.get_or_create_repository(name=emboss_repository_name,
-                                                    description=emboss_repository_description,
-                                                    long_description=emboss_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id))
+                                                   description=emboss_repository_description,
+                                                   long_description=emboss_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id))
         self.upload_file(repository,
-                          filename='emboss/emboss.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded the tool tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/emboss.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded the tool tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0030_generate_repository_dependencies_for_emboss_5(self):
         '''Generate a repository_dependencies.xml file specifying emboss_datatypes and upload it to the emboss_5 repository.'''
@@ -150,8 +150,8 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             strings_displayed = ['emboss_datatypes_0030', 'user1', datatypes_tip]
             strings_displayed.extend(['Tool dependencies', 'emboss', '5.0.0', 'package'])
             self.display_manage_repository_page(repository,
-                                                 changeset_revision=changeset_revision,
-                                                 strings_displayed=strings_displayed)
+                                                changeset_revision=changeset_revision,
+                                                strings_displayed=strings_displayed)
 
     def test_0055_verify_repository_metadata(self):
         '''Verify that resetting the metadata does not change it.'''

@@ -21,7 +21,7 @@ def init():
     options.config = os.path.abspath(options.config)
 
     config_parser = ConfigParser(dict(here=os.getcwd(),
-                                        database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE'))
+                                      database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE'))
     config_parser.read(options.config)
 
     config_dict = {}

@@ -110,9 +110,9 @@ class RepositoryDependencyAttributeHandler(object):
             repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
             if repository:
                 repo = hg_util.get_repo_for_repository(self.app,
-                                                        repository=repository,
-                                                        repo_path=None,
-                                                        create=False)
+                                                       repository=repository,
+                                                       repo_path=None,
+                                                       create=False)
                 lastest_installable_changeset_revision = \
                     metadata_util.get_latest_downloadable_changeset_revision(self.app, repository, repo)
                 if lastest_installable_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:

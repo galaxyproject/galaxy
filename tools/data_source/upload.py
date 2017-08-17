@@ -40,9 +40,9 @@ def stop_err(msg, ret=1):
 
 def file_err(msg, dataset, json_file):
     json_file.write(dumps(dict(type='dataset',
-                                  ext='data',
-                                  dataset_id=dataset.dataset_id,
-                                  stderr=msg)) + "\n")
+                               ext='data',
+                               dataset_id=dataset.dataset_id,
+                               stderr=msg)) + "\n")
     # never remove a server-side upload
     if dataset.type in ('server_dir', 'path_paste'):
         return
@@ -332,11 +332,11 @@ def add_file(dataset, registry, json_file, output_path):
     # Write the job info
     stdout = stdout or 'uploaded %s file' % data_type
     info = dict(type='dataset',
-                 dataset_id=dataset.dataset_id,
-                 ext=ext,
-                 stdout=stdout,
-                 name=dataset.name,
-                 line_count=line_count)
+                dataset_id=dataset.dataset_id,
+                ext=ext,
+                stdout=stdout,
+                name=dataset.name,
+                line_count=line_count)
     if dataset.get('uuid', None) is not None:
         info['uuid'] = dataset.get('uuid')
     json_file.write(dumps(info) + "\n")
@@ -376,8 +376,8 @@ def add_composite_file(dataset, json_file, output_path, files_path):
         shutil.move(dataset.primary_file, output_path)
         # Write the job info
         info = dict(type='dataset',
-                     dataset_id=dataset.dataset_id,
-                     stdout='uploaded %s file' % dataset.file_type)
+                    dataset_id=dataset.dataset_id,
+                    stdout='uploaded %s file' % dataset.file_type)
         json_file.write(dumps(info) + "\n")
 
 

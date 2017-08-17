@@ -47,117 +47,117 @@ class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=bwa_base_repository_name,
-                                                    description=bwa_base_repository_description,
-                                                    long_description=bwa_base_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=bwa_base_repository_description,
+                                                   long_description=bwa_base_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='bwa/bwa_base.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded BWA tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='bwa/bwa_base.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded BWA tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0010_create_bwa_color_repository(self):
         '''Create and populate bwa_color_0090.'''
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=bwa_color_repository_name,
-                                                    description=bwa_color_repository_description,
-                                                    long_description=bwa_color_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=bwa_color_repository_description,
+                                                   long_description=bwa_color_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='bwa/bwa_color.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded BWA color tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='bwa/bwa_color.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded BWA color tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0015_create_emboss_datatypes_repository(self):
         '''Create and populate emboss_datatypes_0090.'''
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.get_or_create_repository(name=emboss_datatypes_repository_name,
-                                                    description=emboss_datatypes_repository_description,
-                                                    long_description=emboss_datatypes_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=emboss_datatypes_repository_description,
+                                                   long_description=emboss_datatypes_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='emboss/datatypes/datatypes_conf.xml',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded datatypes_conf.xml.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/datatypes/datatypes_conf.xml',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded datatypes_conf.xml.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0020_create_emboss_repository(self):
         '''Create and populate emboss_0090.'''
         category = self.create_category(name=category_name, description=category_description)
         repository = self.get_or_create_repository(name=emboss_repository_name,
-                                                    description=emboss_repository_description,
-                                                    long_description=emboss_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=emboss_repository_description,
+                                                   long_description=emboss_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='emboss/emboss.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=False,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded emboss tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='emboss/emboss.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=False,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded emboss tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0025_create_filtering_repository(self):
         '''Create and populate filtering_0090.'''
         category = self.create_category(name=category_name, description=category_description)
         filtering_repository = self.get_or_create_repository(name=filtering_repository_name,
-                                                              description=filtering_repository_description,
-                                                              long_description=filtering_repository_long_description,
-                                                              owner=common.test_user_1_name,
-                                                              category_id=self.security.encode_id(category.id),
-                                                              strings_displayed=[])
+                                                             description=filtering_repository_description,
+                                                             long_description=filtering_repository_long_description,
+                                                             owner=common.test_user_1_name,
+                                                             category_id=self.security.encode_id(category.id),
+                                                             strings_displayed=[])
         self.upload_file(filtering_repository,
-                          filename='filtering/filtering_1.1.0.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded filtering 1.1.0 tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='filtering/filtering_1.1.0.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded filtering 1.1.0 tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0030_create_freebayes_repository(self):
         '''Create and populate freebayes_0090.'''
         category = self.create_category(name=category_name, description=category_description)
         repository = self.get_or_create_repository(name=freebayes_repository_name,
-                                                    description=freebayes_repository_description,
-                                                    long_description=freebayes_repository_long_description,
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id(category.id),
-                                                    strings_displayed=[])
+                                                   description=freebayes_repository_description,
+                                                   long_description=freebayes_repository_long_description,
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id(category.id),
+                                                   strings_displayed=[])
         self.upload_file(repository,
-                          filename='freebayes/freebayes.tar',
-                          filepath=None,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded freebayes tarball.',
-                          strings_displayed=[],
-                          strings_not_displayed=[])
+                         filename='freebayes/freebayes.tar',
+                         filepath=None,
+                         valid_tools_only=True,
+                         uncompress_file=True,
+                         remove_repo_files_not_in_tar=False,
+                         commit_message='Uploaded freebayes tarball.',
+                         strings_displayed=[],
+                         strings_not_displayed=[])
 
     def test_0035_create_and_upload_dependency_definitions(self):
         '''Create and upload repository dependency definitions.'''

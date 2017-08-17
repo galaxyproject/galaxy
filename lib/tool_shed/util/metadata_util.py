@@ -44,20 +44,20 @@ def get_all_dependencies(app, metadata_entry, processed_dependency_links=[]):
 def get_current_repository_metadata_for_changeset_revision(app, repository, changeset_revision):
     encoded_repository_id = app.security.encode_id(repository.id)
     repository_metadata = get_repository_metadata_by_changeset_revision(app,
-                                                                         encoded_repository_id,
-                                                                         changeset_revision)
+                                                                        encoded_repository_id,
+                                                                        changeset_revision)
     if repository_metadata:
         return repository_metadata
     # The installable changeset_revision may have been changed because it was "moved ahead"
     # in the repository changelog.
     repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
     updated_changeset_revision = get_next_downloadable_changeset_revision(repository,
-                                                                           repo,
-                                                                           after_changeset_revision=changeset_revision)
+                                                                          repo,
+                                                                          after_changeset_revision=changeset_revision)
     if updated_changeset_revision and updated_changeset_revision != changeset_revision:
         repository_metadata = get_repository_metadata_by_changeset_revision(app,
-                                                                             encoded_repository_id,
-                                                                             updated_changeset_revision)
+                                                                            encoded_repository_id,
+                                                                            updated_changeset_revision)
         if repository_metadata:
             return repository_metadata
     return None
@@ -79,8 +79,8 @@ def get_dependencies_for_metadata_revision(app, metadata):
 def get_latest_changeset_revision(app, repository, repo):
     repository_tip = repository.tip(app)
     repository_metadata = get_repository_metadata_by_changeset_revision(app,
-                                                                         app.security.encode_id(repository.id),
-                                                                         repository_tip)
+                                                                        app.security.encode_id(repository.id),
+                                                                        repository_tip)
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
     changeset_revisions = [revision[1] for revision in get_metadata_revisions(repository, repo)]
@@ -112,8 +112,8 @@ def get_latest_repository_metadata(app, decoded_repository_id, downloadable=Fals
     else:
         changeset_revision = get_latest_changeset_revision(app, repository, repo)
     return get_repository_metadata_by_changeset_revision(app,
-                                                          app.security.encode_id(repository.id),
-                                                          changeset_revision)
+                                                         app.security.encode_id(repository.id),
+                                                         changeset_revision)
 
 
 def get_metadata_by_id(app, metadata_id):
@@ -249,7 +249,7 @@ def get_repository_metadata_by_changeset_revision(app, id, changeset_revision):
     sa_session = app.model.context.current
     all_metadata_records = sa_session.query(app.model.RepositoryMetadata) \
                                      .filter(and_(app.model.RepositoryMetadata.table.c.repository_id == app.security.decode_id(id),
-                                                    app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision)) \
+                                                  app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision)) \
                                      .order_by(app.model.RepositoryMetadata.table.c.update_time.desc()) \
                                      .all()
     if len(all_metadata_records) > 1:

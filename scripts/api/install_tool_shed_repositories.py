@@ -37,9 +37,9 @@ def main(options):
         revision_data['owner'] = options.owner
         revision_url = '%s%s' % (options.local_url.rstrip('/'), '/api/tool_shed_repositories/get_latest_installable_revision')
         latest_installable_revision = submit(options.api,
-                                              revision_url,
-                                              revision_data,
-                                              return_formatted=False)
+                                             revision_url,
+                                             revision_data,
+                                             return_formatted=False)
         data['changeset_revision'] = latest_installable_revision
     if options.tool_panel_section_id:
         data['tool_panel_section_id'] = options.tool_panel_section_id

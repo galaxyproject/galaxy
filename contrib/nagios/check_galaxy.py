@@ -136,8 +136,8 @@ class Browser:
     def runtool(self):
         path = '/api/tools'
         data = {'tool_id' : self.tool,
-                 'history_id' : self.history_id,
-                 'inputs' : {'echo' : self.handler}}
+                'history_id' : self.history_id,
+                'inputs' : {'echo' : self.handler}}
         res = self.req(path, data=data)
         dprint(json.loads(res.read()))
 

@@ -36,8 +36,8 @@ def get_all_installed_repositories(actually_installed=False):
     if actually_installed:
         return install_session.query(galaxy.model.tool_shed_install.ToolShedRepository) \
                               .filter(and_(galaxy.model.tool_shed_install.ToolShedRepository.table.c.deleted == false(),
-                                             galaxy.model.tool_shed_install.ToolShedRepository.table.c.uninstalled == false(),
-                                             galaxy.model.tool_shed_install.ToolShedRepository.table.c.status == galaxy.model.tool_shed_install.ToolShedRepository.installation_status.INSTALLED)) \
+                                           galaxy.model.tool_shed_install.ToolShedRepository.table.c.uninstalled == false(),
+                                           galaxy.model.tool_shed_install.ToolShedRepository.table.c.status == galaxy.model.tool_shed_install.ToolShedRepository.installation_status.INSTALLED)) \
                               .all()
     else:
         return install_session.query(galaxy.model.tool_shed_install.ToolShedRepository).all()
@@ -64,8 +64,8 @@ def get_default_user_permissions_by_user(user):
 def get_galaxy_repository_by_name_owner_changeset_revision(repository_name, owner, changeset_revision):
     return install_session.query(galaxy.model.tool_shed_install.ToolShedRepository) \
                           .filter(and_(galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
-                                         galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner,
-                                         galaxy.model.tool_shed_install.ToolShedRepository.table.c.changeset_revision == changeset_revision)) \
+                                       galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner,
+                                       galaxy.model.tool_shed_install.ToolShedRepository.table.c.changeset_revision == changeset_revision)) \
                           .first()
 
 
@@ -78,7 +78,7 @@ def get_installed_repository_by_id(repository_id):
 def get_installed_repository_by_name_owner(repository_name, owner, return_multiple=False):
     query = install_session.query(galaxy.model.tool_shed_install.ToolShedRepository) \
                            .filter(and_(galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
-                                          galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner))
+                                        galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner))
     if return_multiple:
         return query.all()
     return query.first()
@@ -101,7 +101,7 @@ def get_role(user, role_name):
 def get_repository_role_association(repository_id, role_id):
     rra = sa_session.query(model.RepositoryRoleAssociation) \
                     .filter(and_(model.RepositoryRoleAssociation.table.c.role_id == role_id,
-                                   model.RepositoryRoleAssociation.table.c.repository_id == repository_id)) \
+                                 model.RepositoryRoleAssociation.table.c.repository_id == repository_id)) \
                     .first()
     return rra
 
@@ -110,20 +110,20 @@ def get_repository_reviews(repository_id, reviewer_user_id=None, changeset_revis
     if reviewer_user_id and changeset_revision:
         reviews = sa_session.query(model.RepositoryReview) \
                             .filter(and_(model.RepositoryReview.table.c.repository_id == repository_id,
-                                           model.RepositoryReview.table.c.deleted == false(),
-                                           model.RepositoryReview.table.c.changeset_revision == changeset_revision,
-                                           model.RepositoryReview.table.c.user_id == reviewer_user_id)) \
+                                         model.RepositoryReview.table.c.deleted == false(),
+                                         model.RepositoryReview.table.c.changeset_revision == changeset_revision,
+                                         model.RepositoryReview.table.c.user_id == reviewer_user_id)) \
                             .all()
     elif reviewer_user_id:
         reviews = sa_session.query(model.RepositoryReview) \
                             .filter(and_(model.RepositoryReview.table.c.repository_id == repository_id,
-                                           model.RepositoryReview.table.c.deleted == false(),
-                                           model.RepositoryReview.table.c.user_id == reviewer_user_id)) \
+                                         model.RepositoryReview.table.c.deleted == false(),
+                                         model.RepositoryReview.table.c.user_id == reviewer_user_id)) \
                             .all()
     else:
         reviews = sa_session.query(model.RepositoryReview) \
                             .filter(and_(model.RepositoryReview.table.c.repository_id == repository_id,
-                                           model.RepositoryReview.table.c.deleted == false())) \
+                                         model.RepositoryReview.table.c.deleted == false())) \
                             .all()
     return reviews
 
@@ -147,7 +147,7 @@ def get_repository_by_id(repository_id):
 def get_repository_downloadable_revisions(repository_id):
     revisions = sa_session.query(model.RepositoryMetadata) \
                           .filter(and_(model.RepositoryMetadata.table.c.repository_id == repository_id,
-                                         model.RepositoryMetadata.table.c.downloadable == true())) \
+                                       model.RepositoryMetadata.table.c.downloadable == true())) \
                           .all()
     return revisions
 
@@ -155,7 +155,7 @@ def get_repository_downloadable_revisions(repository_id):
 def get_repository_metadata_for_changeset_revision(repository_id, changeset_revision):
     repository_metadata = sa_session.query(model.RepositoryMetadata) \
                                     .filter(and_(model.RepositoryMetadata.table.c.repository_id == repository_id,
-                                                   model.RepositoryMetadata.table.c.changeset_revision == changeset_revision)) \
+                                                 model.RepositoryMetadata.table.c.changeset_revision == changeset_revision)) \
                                     .first()
     return repository_metadata
 
@@ -163,8 +163,8 @@ def get_repository_metadata_for_changeset_revision(repository_id, changeset_revi
 def get_repository_review_by_user_id_changeset_revision(user_id, repository_id, changeset_revision):
     review = sa_session.query(model.RepositoryReview) \
                        .filter(and_(model.RepositoryReview.table.c.user_id == user_id,
-                                      model.RepositoryReview.table.c.repository_id == repository_id,
-                                      model.RepositoryReview.table.c.changeset_revision == changeset_revision)) \
+                                    model.RepositoryReview.table.c.repository_id == repository_id,
+                                    model.RepositoryReview.table.c.changeset_revision == changeset_revision)) \
                        .first()
     return review
 
@@ -218,7 +218,7 @@ def get_repository_by_name_and_owner(name, owner_username, return_multiple=False
     owner = get_user_by_name(owner_username)
     repository = sa_session.query(model.Repository) \
                            .filter(and_(model.Repository.table.c.name == name,
-                                          model.Repository.table.c.user_id == owner.id)) \
+                                        model.Repository.table.c.user_id == owner.id)) \
                            .first()
     return repository
 
@@ -226,6 +226,6 @@ def get_repository_by_name_and_owner(name, owner_username, return_multiple=False
 def get_repository_metadata_by_repository_id_changeset_revision(repository_id, changeset_revision):
     repository_metadata = sa_session.query(model.RepositoryMetadata) \
                                     .filter(and_(model.RepositoryMetadata.table.c.repository_id == repository_id,
-                                                   model.RepositoryMetadata.table.c.changeset_revision == changeset_revision)) \
+                                                 model.RepositoryMetadata.table.c.changeset_revision == changeset_revision)) \
                                     .first()
     return repository_metadata

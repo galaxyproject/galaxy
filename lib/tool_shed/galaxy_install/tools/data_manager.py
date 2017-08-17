@@ -46,7 +46,7 @@ class DataManagerHandler(object):
             lock.release()
 
     def install_data_managers(self, shed_data_manager_conf_filename, metadata_dict, shed_config_dict,
-                               relative_install_dir, repository, repository_tools_tups):
+                              relative_install_dir, repository, repository_tools_tups):
         rval = []
         if 'data_manager' in metadata_dict:
             tpm = tool_panel_manager.ToolPanelManager(self.app)
@@ -74,7 +74,7 @@ class DataManagerHandler(object):
                     data_manager_id = elem.get('id', None)
                     if data_manager_id is None:
                         log.error("A data manager was defined that does not have an id and will not be installed:\n%s" %
-                                   xml_util.xml_to_string(elem))
+                                  xml_util.xml_to_string(elem))
                         continue
                     data_manager_dict = metadata_dict['data_manager'].get('data_managers', {}).get(data_manager_id, None)
                     if data_manager_dict is None:
@@ -92,12 +92,12 @@ class DataManagerHandler(object):
                     tool_dict = repository_tools_by_guid.get(tool_guid, None)
                     if tool_dict is None:
                         log.error("Data manager tool guid '%s' could not be found for '%s'. Perhaps the tool is invalid?" %
-                                   (tool_guid, data_manager_id))
+                                  (tool_guid, data_manager_id))
                         continue
                     tool = tool_dict.get('tool', None)
                     if tool is None:
                         log.error("Data manager tool with guid '%s' could not be found for '%s'. Perhaps the tool is invalid?" %
-                                   (tool_guid, data_manager_id))
+                                  (tool_guid, data_manager_id))
                         continue
                     tool_config_filename = tool_dict.get('tool_config_filename', None)
                     if tool_config_filename is None:
@@ -107,16 +107,16 @@ class DataManagerHandler(object):
                     if elem.get('tool_file', None) is not None:
                         del elem.attrib['tool_file']  # remove old tool_file info
                     tool_elem = tpm.generate_tool_elem(repository.tool_shed,
-                                                        repository.name,
-                                                        repository.installed_changeset_revision,
-                                                        repository.owner,
-                                                        tool_config_filename,
-                                                        tool,
-                                                        None)
+                                                       repository.name,
+                                                       repository.installed_changeset_revision,
+                                                       repository.owner,
+                                                       tool_config_filename,
+                                                       tool,
+                                                       None)
                     elem.insert(0, tool_elem)
                     data_manager = \
                         self.app.data_managers.load_manager_from_elem(elem,
-                                                                       tool_path=shed_config_dict.get('tool_path', ''))
+                                                                      tool_path=shed_config_dict.get('tool_path', ''))
                     if data_manager:
                         rval.append(data_manager)
                 else:

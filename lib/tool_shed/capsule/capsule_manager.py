@@ -59,8 +59,8 @@ class ExportRepositoryManager(object):
             if self.repository:
                 repository_metadata = \
                     metadata_util.get_current_repository_metadata_for_changeset_revision(self.app,
-                                                                                          self.repository,
-                                                                                          self.changeset_revision)
+                                                                                         self.repository,
+                                                                                         self.changeset_revision)
                 if repository_metadata:
                     ordered_repository_ids = [self.repository_id]
                     ordered_repositories = [self.repository]
@@ -73,19 +73,19 @@ class ExportRepositoryManager(object):
             repositories_archive = tarfile.open(repositories_archive_filename, "w:%s" % self.file_type)
             exported_repository_registry = ExportedRepositoryRegistry()
             for repository_id, ordered_repository, ordered_changeset_revision in zip(ordered_repository_ids,
-                                                                                      ordered_repositories,
-                                                                                      ordered_changeset_revisions):
+                                                                                     ordered_repositories,
+                                                                                     ordered_changeset_revisions):
                 with self.__tempdir(prefix='tmp-toolshed-export-er') as work_dir:
                     repository_archive, error_message = self.generate_repository_archive(ordered_repository,
-                                                                                          ordered_changeset_revision,
-                                                                                          work_dir)
+                                                                                         ordered_changeset_revision,
+                                                                                         work_dir)
                     if error_message:
                         error_messages = '%s  %s' % (error_messages, error_message)
                     else:
                         archive_name = str(os.path.basename(repository_archive.name))
                         repositories_archive.add(repository_archive.name, arcname=archive_name)
                         attributes, sub_elements = self.get_repository_attributes_and_sub_elements(ordered_repository,
-                                                                                                    archive_name)
+                                                                                                   archive_name)
                         elem = xml_util.create_element('repository', attributes=attributes, sub_elements=sub_elements)
                         exported_repository_registry.exported_repository_elems.append(elem)
             # Keep information about the export in a file named export_info.xml in the archive.
@@ -135,9 +135,9 @@ class ExportRepositoryManager(object):
         file_type_str = basic_util.get_file_type_str(changeset_revision, self.file_type)
         file_name = '%s-%s' % (repository.name, file_type_str)
         return_code, error_message = hg_util.archive_repository_revision(self.app,
-                                                                          repository,
-                                                                          work_dir,
-                                                                          changeset_revision)
+                                                                         repository,
+                                                                         work_dir,
+                                                                         changeset_revision)
         if return_code:
             return None, error_message
         repository_archive_name = os.path.join(work_dir, file_name)
@@ -180,16 +180,16 @@ class ExportRepositoryManager(object):
         file_type_str = basic_util.get_file_type_str(self.changeset_revision, self.file_type)
         if self.export_repository_dependencies:
             repositories_archive_filename = '%s_%s_%s_%s_%s' % (self.capsule_with_dependencies_filename,
-                                                                 tool_shed,
-                                                                 str(self.repository.name),
-                                                                 str(self.repository.user.username),
-                                                                 file_type_str)
+                                                                tool_shed,
+                                                                str(self.repository.name),
+                                                                str(self.repository.user.username),
+                                                                file_type_str)
         else:
             repositories_archive_filename = '%s_%s_%s_%s_%s' % (self.capsule_filename,
-                                                                 tool_shed,
-                                                                 str(self.repository.name),
-                                                                 str(self.repository.user.username),
-                                                                 file_type_str)
+                                                                tool_shed,
+                                                                str(self.repository.name),
+                                                                str(self.repository.user.username),
+                                                                file_type_str)
         if use_tmp_archive_dir:
             tmp_archive_dir = tempfile.mkdtemp(prefix="tmp-toolshed-arcdir")
             repositories_archive_filename = os.path.join(tmp_archive_dir, repositories_archive_filename)
@@ -207,8 +207,8 @@ class ExportRepositoryManager(object):
                 repository_util.get_repo_info_tuple_contents(repo_info_tup)
             repository = repository_util.get_repository_by_name_and_owner(self.app, repository_name, repository_owner)
             repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(self.app,
-                                                                                                        repository,
-                                                                                                        changeset_revision)
+                                                                                                       repository,
+                                                                                                       changeset_revision)
             if repository_metadata:
                 return repository, repository_metadata.changeset_revision
         return None, None
@@ -234,8 +234,8 @@ class ExportRepositoryManager(object):
         rdim = RepositoryDependencyInstallManager(self.app)
         repository = repository_util.get_repository_in_tool_shed(self.app, self.repository_id)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
-                                                                                           self.repository_id,
-                                                                                           self.changeset_revision)
+                                                                                          self.repository_id,
+                                                                                          self.changeset_revision)
         # Get a dictionary of all repositories upon which the contents of the current
         # repository_metadata record depend.
         toolshed_base_url = str(web.url_for('/', qualified=True)).rstrip('/')
@@ -245,20 +245,20 @@ class ExportRepositoryManager(object):
         rb.set_filter_dependencies_needed_for_compiling(False)
         repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
         repo = hg_util.get_repo_for_repository(self.app,
-                                                repository=self.repository,
-                                                repo_path=None,
-                                                create=False)
+                                               repository=self.repository,
+                                               repo_path=None,
+                                               create=False)
         ctx = hg_util.get_changectx_for_changeset(repo, self.changeset_revision)
         repo_info_dict = {}
         # Cast unicode to string.
         repo_info_dict[str(repository.name)] = (str(self.repository.description),
-                                                     common_util.generate_clone_url_for_repository_in_tool_shed(self.user,
-                                                                                                                 self.repository),
-                                                     str(self.changeset_revision),
-                                                     str(ctx.rev()),
-                                                     str(self.repository.user.username),
-                                                     repository_dependencies,
-                                                     None)
+                                                common_util.generate_clone_url_for_repository_in_tool_shed(self.user,
+                                                                                                           self.repository),
+                                                str(self.changeset_revision),
+                                                str(ctx.rev()),
+                                                str(self.repository.user.username),
+                                                repository_dependencies,
+                                                None)
         all_required_repo_info_dict = rdim.get_required_repo_info_dicts(self.tool_shed_url, [repo_info_dict])
         all_repo_info_dicts = all_required_repo_info_dict.get('all_repo_info_dicts', [])
         return all_repo_info_dicts
@@ -319,13 +319,13 @@ class ExportRepositoryManager(object):
         # repository_ids, each of which is contained in the received list of repository_ids and whose associated
         # repository must be imported prior to the repository associated with the repository_id key.
         prior_import_required_dict = repository_util.get_prior_import_or_install_required_dict(self.app,
-                                                                                                repository_ids,
-                                                                                                repo_info_dicts)
+                                                                                               repository_ids,
+                                                                                               repo_info_dicts)
         processed_repository_ids = []
         # Process the list of repository dependencies defined for the primary exported repository.
         while len(processed_repository_ids) != len(prior_import_required_dict.keys()):
             repository_id = suc.get_next_prior_import_or_install_required_dict_entry(prior_import_required_dict,
-                                                                                      processed_repository_ids)
+                                                                                     processed_repository_ids)
             if repository_id == self.repository_id:
                 # Append self.repository_id without processing it since it must be returned last in the order.
                 # It will be processed below after all dependencies are processed.
@@ -339,8 +339,8 @@ class ExportRepositoryManager(object):
                         # Import the associated repository dependency first.
                         prior_repo_info_dict = \
                             self.get_repo_info_dict_for_import(prior_import_required_id,
-                                                                repository_ids,
-                                                                repo_info_dicts)
+                                                               repository_ids,
+                                                               repo_info_dicts)
                         prior_repository, prior_import_changeset_revision = \
                             self.get_components_from_repo_info_dict(prior_repo_info_dict)
                         if prior_repository and prior_import_changeset_revision:
@@ -398,8 +398,8 @@ class ImportRepositoryManager(object):
                     # Do not allow the repository to be automatically installed if population resulted in errors.
                     tip_changeset_revision = repository.tip(self.app)
                     repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
-                                                                                                       self.app.security.encode_id(repository.id),
-                                                                                                       tip_changeset_revision)
+                                                                                                      self.app.security.encode_id(repository.id),
+                                                                                                      tip_changeset_revision)
                     if repository_metadata:
                         if repository_metadata.downloadable:
                             repository_metadata.downloadable = False
@@ -463,12 +463,12 @@ class ImportRepositoryManager(object):
                             category_ids.append(self.app.security.encode_id(category.id))
                     # Create the repository record in the database.
                     repository, create_message = repository_util.create_repository(self.app,
-                                                                                    name,
-                                                                                    type,
-                                                                                    description,
-                                                                                    long_description,
-                                                                                    user_id=user_id,
-                                                                                    category_ids=category_ids)
+                                                                                   name,
+                                                                                   type,
+                                                                                   description,
+                                                                                   long_description,
+                                                                                   user_id=user_id,
+                                                                                   category_ids=category_ids)
                     if create_message:
                         results_message += create_message
                     # Populate the new repository with the contents of exported repository archive.
@@ -555,8 +555,8 @@ class ImportRepositoryManager(object):
         dependent_downloadable_revisions = []
         for repository in sa_session.query(self.app.model.Repository) \
                                     .filter(and_(self.app.model.Repository.table.c.id != rm_repository.id,
-                                                   self.app.model.Repository.table.c.deleted == false(),
-                                                   self.app.model.Repository.table.c.deprecated == false())):
+                                                 self.app.model.Repository.table.c.deleted == false(),
+                                                 self.app.model.Repository.table.c.deprecated == false())):
             downloadable_revisions = repository.downloadable_revisions
             if downloadable_revisions:
                 for downloadable_revision in downloadable_revisions:
@@ -587,13 +587,13 @@ class ImportRepositoryManager(object):
                                             # record, so updates must be necessary.
                                             defined_repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
                                             defined_repo = hg_util.get_repo_for_repository(self.app,
-                                                                                            repository=defined_repository,
-                                                                                            repo_path=None,
-                                                                                            create=False)
+                                                                                           repository=defined_repository,
+                                                                                           repo_path=None,
+                                                                                           create=False)
                                             updated_changeset_revision = \
                                                 metadata_util.get_next_downloadable_changeset_revision(defined_repository,
-                                                                                                        defined_repo,
-                                                                                                        changeset_revision)
+                                                                                                       defined_repo,
+                                                                                                       changeset_revision)
                                             if updated_changeset_revision == rm_changeset_revision and updated_changeset_revision != changeset_revision:
                                                 dependent_downloadable_revisions.append(downloadable_revision)
         return dependent_downloadable_revisions
@@ -682,8 +682,8 @@ class ImportRepositoryManager(object):
         repository_status_info_dicts = []
         for repository_info_dict in repository_info_dicts:
             repository = repository_util.get_repository_by_name_and_owner(self.app,
-                                                                           repository_info_dict['name'],
-                                                                           repository_info_dict['owner'])
+                                                                          repository_info_dict['name'],
+                                                                          repository_info_dict['owner'])
             if repository:
                 if repository.deleted:
                     repository_info_dict['status'] = 'Exists, deleted'
@@ -697,7 +697,7 @@ class ImportRepositoryManager(object):
                 if self.user_is_admin:
                     repository_info_dict['status'] = None
                 elif self.app.security_agent.user_can_import_repository_archive(self.user,
-                                                                                 repository_info_dict['owner']):
+                                                                                repository_info_dict['owner']):
                     repository_info_dict['status'] = None
                 else:
                     repository_info_dict['status'] = 'Not authorized to import'
@@ -760,25 +760,25 @@ class ImportRepositoryManager(object):
             undesirable_dirs_removed = 0
             ok, error_message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
                 commit_util.handle_directory_changes(self.app,
-                                                      self.host,
-                                                      self.user.username,
-                                                      repository,
-                                                      full_path,
-                                                      filenames_in_archive,
-                                                      remove_repo_files_not_in_tar,
-                                                      new_repo_alert,
-                                                      commit_message,
-                                                      undesirable_dirs_removed,
-                                                      undesirable_files_removed)
+                                                     self.host,
+                                                     self.user.username,
+                                                     repository,
+                                                     full_path,
+                                                     filenames_in_archive,
+                                                     remove_repo_files_not_in_tar,
+                                                     new_repo_alert,
+                                                     commit_message,
+                                                     undesirable_dirs_removed,
+                                                     undesirable_files_removed)
             if error_message:
                 results_dict['ok'] = False
                 results_dict['error_message'] += error_message
             try:
                 rmm = repository_metadata_manager.RepositoryMetadataManager(app=self.app,
-                                                                             user=self.user,
-                                                                             repository=repository)
+                                                                            user=self.user,
+                                                                            repository=repository)
                 status, error_message = rmm.set_repository_metadata_due_to_new_tip(self.host,
-                                                                                    content_alert_str=content_alert_str)
+                                                                                   content_alert_str=content_alert_str)
                 if error_message:
                     results_dict['ok'] = False
                     results_dict['error_message'] += error_message
@@ -803,11 +803,11 @@ class ImportRepositoryManager(object):
         url = kwd.get('url', '')
         uploaded_file = None
         return_dict = dict(error_message='',
-                            encoded_file_path=None,
-                            status='ok',
-                            tar_archive=None,
-                            uploaded_file=None,
-                            capsule_file_name=None)
+                           encoded_file_path=None,
+                           status='ok',
+                           tar_archive=None,
+                           uploaded_file=None,
+                           capsule_file_name=None)
         if url:
             valid_url = True
             try:

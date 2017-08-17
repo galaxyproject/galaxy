@@ -347,9 +347,9 @@ class TagDatasetAction(DefaultJobAction):
     def get_short_str(cls, pja):
         if pja.action_arguments and pja.action_arguments.get('tags', ''):
             return "%s tag(s) '%s' %s '%s'." % (cls.action,
-                                                 escape(pja.action_arguments['tags']),
-                                                 cls.direction,
-                                                 escape(pja.output_name))
+                                                escape(pja.action_arguments['tags']),
+                                                cls.direction,
+                                                escape(pja.output_name))
         else:
             return "%s Tag action used without a tag specified.  No tag will be added." % cls.action
 
@@ -368,13 +368,13 @@ class RemoveTagDatasetAction(TagDatasetAction):
 class ActionBox(object):
 
     actions = {"RenameDatasetAction": RenameDatasetAction,
-                "HideDatasetAction": HideDatasetAction,
-                "ChangeDatatypeAction": ChangeDatatypeAction,
-                "ColumnSetAction": ColumnSetAction,
-                "EmailAction": EmailAction,
-                "DeleteIntermediatesAction": DeleteIntermediatesAction,
-                "TagDatasetAction": TagDatasetAction,
-                "RemoveTagDatasetAction": RemoveTagDatasetAction,
+               "HideDatasetAction": HideDatasetAction,
+               "ChangeDatatypeAction": ChangeDatatypeAction,
+               "ColumnSetAction": ColumnSetAction,
+               "EmailAction": EmailAction,
+               "DeleteIntermediatesAction": DeleteIntermediatesAction,
+               "TagDatasetAction": TagDatasetAction,
+               "RemoveTagDatasetAction": RemoveTagDatasetAction,
                 }
     public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction',
                       'ColumnSetAction', 'EmailAction',

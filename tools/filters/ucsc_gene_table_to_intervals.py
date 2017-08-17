@@ -24,15 +24,15 @@ assert sys.version_info[:2] >= (2, 4)
 def main():
     parser = optparse.OptionParser(usage="%prog [options] ")
     parser.add_option("-r", "--region", dest="region", default="transcribed",
-                       help="Limit to region: one of coding, utr3, utr5, transcribed [default]")
+                      help="Limit to region: one of coding, utr3, utr5, transcribed [default]")
     parser.add_option("-e", "--exons", action="store_true", dest="exons",
-                       help="Only print intervals overlapping an exon")
+                      help="Only print intervals overlapping an exon")
     parser.add_option("-s", "--strand", action="store_true", dest="strand",
-                       help="Print strand after interval")
+                      help="Print strand after interval")
     parser.add_option("-i", "--input", dest="input", default=None,
-                       help="Input file")
+                      help="Input file")
     parser.add_option("-o", "--output", dest="output", default=None,
-                       help="Output file")
+                      help="Output file")
     options, args = parser.parse_args()
     assert options.region in ('coding', 'utr3', 'utr5', 'transcribed'), "Invalid region argument"
 

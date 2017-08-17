@@ -31,8 +31,8 @@ class GroupRolesAPIController(BaseAPIController):
                 role = gra.role
                 encoded_id = trans.security.encode_id(role.id)
                 rval.append(dict(id=encoded_id,
-                                   name=role.name,
-                                   url=url_for('group_role', group_id=group_id, id=encoded_id, )))
+                                 name=role.name,
+                                 url=url_for('group_role', group_id=group_id, id=encoded_id, )))
         except Exception as e:
             rval = "Error in group API at listing roles"
             log.error(rval + ": %s" % str(e))
@@ -56,8 +56,8 @@ class GroupRolesAPIController(BaseAPIController):
             for gra in group.roles:
                 if gra.role == role:
                     item = dict(id=role_id,
-                                 name=role.name,
-                                 url=url_for('group_role', group_id=group_id, id=role_id))  # TODO Fix This
+                                name=role.name,
+                                url=url_for('group_role', group_id=group_id, id=role_id))  # TODO Fix This
             if not item:
                 item = "role %s not in group %s" % (role.name, group.name)
         except Exception as e:
@@ -82,16 +82,16 @@ class GroupRolesAPIController(BaseAPIController):
             for gra in group.roles:
                 if gra.role == role:
                     item = dict(id=role_id,
-                                 name=role.name,
-                                 url=url_for('group_role', group_id=group_id, id=role_id))
+                                name=role.name,
+                                url=url_for('group_role', group_id=group_id, id=role_id))
             if not item:
                 gra = trans.app.model.GroupRoleAssociation(group, role)
                 # Add GroupRoleAssociation
                 trans.sa_session.add(gra)
                 trans.sa_session.flush()
                 item = dict(id=role_id,
-                             name=role.name,
-                             url=url_for('group_role', group_id=group_id, id=role_id))
+                            name=role.name,
+                            url=url_for('group_role', group_id=group_id, id=role_id))
         except Exception as e:
             item = "Error in group_role API Adding role %s to group %s" % (role.name, group.name)
             log.error(item + ": %s" % str(e))
@@ -115,8 +115,8 @@ class GroupRolesAPIController(BaseAPIController):
                     trans.sa_session.delete(gra)
                     trans.sa_session.flush()
                     item = dict(id=role_id,
-                                 name=role.name,
-                                 url=url_for('group_role', group_id=group_id, id=role_id))
+                                name=role.name,
+                                url=url_for('group_role', group_id=group_id, id=role_id))
             if not item:
                 item = "role %s not in group %s" % (role.name, group.name)
         except Exception as e:
