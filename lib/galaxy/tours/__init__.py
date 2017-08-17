@@ -8,7 +8,7 @@ import logging
 
 from galaxy import util
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 def tour_loader(contents_dict):
@@ -29,7 +29,7 @@ def tour_loader(contents_dict):
 class ToursRegistry(object):
 
     def __init__(self, tour_directories):
-        self.tour_directories = util.config_directories_from_setting( tour_directories )
+        self.tour_directories = util.config_directories_from_setting(tour_directories)
         self.load_tours()
 
     def tours_by_id_with_description(self):

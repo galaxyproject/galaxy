@@ -11,15 +11,15 @@ import six
 
 
 @six.add_metaclass(ABCMeta)
-class ErrorPlugin( object ):
+class ErrorPlugin(object):
     """Describes how to send bug reports to various locations."""
 
     @property
     @abstractmethod
-    def plugin_type( self ):
+    def plugin_type(self):
         """Short string providing labelling this plugin """
 
-    def submit_report( self, dataset, job, tool, user_submission=False, **kwargs ):
+    def submit_report(self, dataset, job, tool, user_submission=False, **kwargs):
         """Submit the bug report and render a string to be displayed to the user.
         """
         return None

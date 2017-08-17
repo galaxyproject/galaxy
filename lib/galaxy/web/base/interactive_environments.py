@@ -34,14 +34,14 @@ class InteractiveEnvironmentRequest(object):
 
         self.attr = Bunch()
         self.attr.viz_id = plugin.name
-        self.attr.history_id = trans.security.encode_id( trans.history.id )
+        self.attr.history_id = trans.security.encode_id(trans.history.id)
         self.attr.galaxy_config = trans.app.config
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
         self.attr.app_root = self.attr.root + "plugins/interactive_environments/" + self.attr.viz_id + "/static/"
         self.attr.import_volume = True
 
-        plugin_path = os.path.abspath( plugin.path )
+        plugin_path = os.path.abspath(plugin.path)
 
         # Store our template and configuration path
         self.attr.our_config_dir = os.path.join(plugin_path, "config")
@@ -62,14 +62,14 @@ class InteractiveEnvironmentRequest(object):
         self.notebook_pw = self.generate_password(length=24)
 
         ie_parent_temp_dir = self.attr.viz_config.get("docker", "docker_galaxy_temp_dir") or None
-        self.temp_dir = os.path.abspath( tempfile.mkdtemp( dir=ie_parent_temp_dir ) )
+        self.temp_dir = os.path.abspath(tempfile.mkdtemp(dir=ie_parent_temp_dir))
 
         if self.attr.viz_config.getboolean("docker", "wx_tempdir"):
             # Ensure permissions are set
             try:
-                os.chmod( self.temp_dir, os.stat(self.temp_dir).st_mode | stat.S_IXOTH )
+                os.chmod(self.temp_dir, os.stat(self.temp_dir).st_mode | stat.S_IXOTH)
             except Exception:
-                log.error( "Could not change permissions of tmpdir %s" % self.temp_dir )
+                log.error("Could not change permissions of tmpdir %s" % self.temp_dir)
                 # continue anyway
 
         # This duplicates the logic in the proxy manager
@@ -133,10 +133,10 @@ class InteractiveEnvironmentRequest(object):
             'docker_connect_port': None,
         }
         viz_config = configparser.SafeConfigParser(default_dict)
-        conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
-        if not os.path.exists( conf_path ):
+        conf_path = os.path.join(self.attr.our_config_dir, self.attr.viz_id + ".ini")
+        if not os.path.exists(conf_path):
             conf_path = "%s.sample" % conf_path
-        viz_config.read( conf_path )
+        viz_config.read(conf_path)
         self.attr.viz_config = viz_config
 
         def _boolean_option(option, default=False):
@@ -177,7 +177,7 @@ class InteractiveEnvironmentRequest(object):
         """
         trans = self.trans
         request = trans.request
-        api_key = api_keys.ApiKeyManager( trans.app ).get_or_create_api_key( trans.user )
+        api_key = api_keys.ApiKeyManager(trans.app).get_or_create_api_key(trans.user)
         conf_file = {
             'history_id': self.attr.history_id,
             'api_key': api_key,
@@ -369,19 +369,19 @@ class InteractiveEnvironmentRequest(object):
             self.attr.viz_id,
             raw_cmd
         ))
-        p = Popen( raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
-            log.error( "%s\n%s" % (stdout, stderr) )
+            log.error("%s\n%s" % (stdout, stderr))
             return None
         else:
             container_id = stdout.strip()
-            log.debug( "Container id: %s" % container_id)
+            log.debug("Container id: %s" % container_id)
             inspect_data = self.inspect_container(container_id)
             port_mappings = self.get_container_port_mapping(inspect_data)
             self.attr.docker_hostname = self.get_container_host(inspect_data)
             host_port = self._find_port_mapping(port_mappings)[-1]
-            log.debug( "Container host/port: %s:%s", self.attr.docker_hostname, host_port )
+            log.debug("Container host/port: %s:%s", self.attr.docker_hostname, host_port)
 
             # Now we configure our proxy_requst object and we manually specify
             # the port to map to and ensure the proxy is available.
@@ -394,7 +394,7 @@ class InteractiveEnvironmentRequest(object):
                 container_ids=[container_id],
             )
             # These variables then become available for use in templating URLs
-            self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
+            self.attr.proxy_url = self.attr.proxy_request['proxy_url']
             # Commented out because it needs to be documented and visible that
             # this variable was moved here. Usually would remove commented
             # code, but again, needs to be clear where this went. Remove at a
@@ -420,7 +420,7 @@ class InteractiveEnvironmentRequest(object):
             container_ids=[container.id],
             container_interface=self.attr.container_interface.key
         )
-        self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
+        self.attr.proxy_url = self.attr.proxy_request['proxy_url']
 
     def launch(self, image=None, additional_ids=None, env_override=None, volumes=None):
         """Launch a docker image.
@@ -483,7 +483,7 @@ class InteractiveEnvironmentRequest(object):
         p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
-            log.error( "%s\n%s" % (stdout, stderr) )
+            log.error("%s\n%s" % (stdout, stderr))
             return None
 
         inspect_data = json.loads(stdout)

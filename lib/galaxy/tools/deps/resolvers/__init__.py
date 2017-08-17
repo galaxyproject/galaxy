@@ -31,7 +31,7 @@ class DependencyResolver(Dictifiable, object):
     config_options = {}
 
     @abstractmethod
-    def resolve( self, requirement, **kwds ):
+    def resolve(self, requirement, **kwds):
         """Given inputs describing dependency in the abstract yield a Dependency object.
 
         The Dependency object describes various attributes (script, bin,
@@ -239,13 +239,13 @@ class Dependency(Dictifiable, object):
     cacheable = False
 
     @abstractmethod
-    def shell_commands( self, requirement ):
+    def shell_commands(self, requirement):
         """
         Return shell commands to enable this dependency.
         """
 
     @abstractproperty
-    def exact( self ):
+    def exact(self):
         """ Return true if version information wasn't discarded to resolve
         the dependency.
         """
@@ -258,7 +258,7 @@ class Dependency(Dictifiable, object):
         return "Using dependency %s version %s of type %s" % (self.name, self.version, self.dependency_type)
 
 
-class NullDependency( Dependency ):
+class NullDependency(Dependency):
     dependency_type = None
     exact = True
 
@@ -273,7 +273,7 @@ class NullDependency( Dependency ):
         """
         return "Dependency %s not found." % self.name
 
-    def shell_commands( self, requirement ):
+    def shell_commands(self, requirement):
         return None
 
 

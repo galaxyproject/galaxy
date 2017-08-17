@@ -14,95 +14,95 @@ from tools_support import (
 )
 
 
-class TestLocalJobRunner( TestCase, UsesApp, UsesTools ):
+class TestLocalJobRunner(TestCase, UsesApp, UsesTools):
 
-    def setUp( self ):
+    def setUp(self):
         self.setup_app()
         self._init_tool()
         self.app.job_metrics = metrics.JobMetrics()
-        self.job_wrapper = MockJobWrapper( self.app, self.test_directory, self.tool )
+        self.job_wrapper = MockJobWrapper(self.app, self.test_directory, self.tool)
 
-    def tearDown( self ):
+    def tearDown(self):
         self.tear_down_app()
 
-    def test_run( self ):
+    def test_run(self):
         self.job_wrapper.command_line = "echo HelloWorld"
-        runner = local.LocalJobRunner( self.app, 1 )
-        runner.queue_job( self.job_wrapper )
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(self.job_wrapper)
         assert self.job_wrapper.stdout.strip() == "HelloWorld"
 
-    def test_galaxy_lib_on_path( self ):
+    def test_galaxy_lib_on_path(self):
         self.job_wrapper.command_line = '''python -c "import galaxy.util"'''
-        runner = local.LocalJobRunner( self.app, 1 )
-        runner.queue_job( self.job_wrapper )
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(self.job_wrapper)
         assert self.job_wrapper.exit_code == 0
 
-    def test_default_slots( self ):
+    def test_default_slots(self):
         self.job_wrapper.command_line = '''echo $GALAXY_SLOTS'''
-        runner = local.LocalJobRunner( self.app, 1 )
-        runner.queue_job( self.job_wrapper )
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(self.job_wrapper)
         assert self.job_wrapper.stdout.strip() == "1"
 
-    def test_slots_override( self ):
+    def test_slots_override(self):
         # Set local_slots in job destination to specify slots for
         # local job runner.
-        self.job_wrapper.job_destination.params[ "local_slots" ] = 3
+        self.job_wrapper.job_destination.params["local_slots"] = 3
         self.job_wrapper.command_line = '''echo $GALAXY_SLOTS'''
-        runner = local.LocalJobRunner( self.app, 1 )
-        runner.queue_job( self.job_wrapper )
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(self.job_wrapper)
         assert self.job_wrapper.stdout.strip() == "3"
 
-    def test_exit_code( self ):
+    def test_exit_code(self):
         self.job_wrapper.command_line = '''sh -c "exit 4"'''
-        runner = local.LocalJobRunner( self.app, 1 )
-        runner.queue_job( self.job_wrapper )
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(self.job_wrapper)
         assert self.job_wrapper.exit_code == 4
 
-    def test_metadata_gets_set( self ):
-        runner = local.LocalJobRunner( self.app, 1 )
-        runner.queue_job( self.job_wrapper )
-        assert os.path.exists( self.job_wrapper.mock_metadata_path )
+    def test_metadata_gets_set(self):
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(self.job_wrapper)
+        assert os.path.exists(self.job_wrapper.mock_metadata_path)
 
-    def test_metadata_gets_set_if_embedded( self ):
-        self.job_wrapper.job_destination.params[ "embed_metadata_in_job" ] = "True"
+    def test_metadata_gets_set_if_embedded(self):
+        self.job_wrapper.job_destination.params["embed_metadata_in_job"] = "True"
 
         # Kill off cruft for _handle_metadata_externally and make sure job stil works...
         self.job_wrapper.external_output_metadata = None
         self.app.datatypes_registry.set_external_metadata_tool = None
 
-        runner = local.LocalJobRunner( self.app, 1 )
-        runner.queue_job( self.job_wrapper )
-        assert os.path.exists( self.job_wrapper.mock_metadata_path )
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(self.job_wrapper)
+        assert os.path.exists(self.job_wrapper.mock_metadata_path)
 
-    def test_stopping_job( self ):
+    def test_stopping_job(self):
         self.job_wrapper.command_line = '''python -c "import time; time.sleep(15)"'''
-        runner = local.LocalJobRunner( self.app, 1 )
+        runner = local.LocalJobRunner(self.app, 1)
 
         def queue():
-            runner.queue_job( self.job_wrapper )
+            runner.queue_job(self.job_wrapper)
 
         t = threading.Thread(target=queue)
         t.start()
         while True:
             if self.job_wrapper.external_id:
                 break
-            time.sleep( .01 )
+            time.sleep(.01)
         external_id = self.job_wrapper.external_id
         mock_job = bunch.Bunch(
             get_external_output_metadata=lambda: None,
             get_job_runner_external_id=lambda: str(external_id),
             get_id=lambda: 1
         )
-        runner.stop_job( mock_job )
+        runner.stop_job(mock_job)
         t.join(1)
 
 
-class MockJobWrapper( object ):
+class MockJobWrapper(object):
 
-    def __init__( self, app, test_directory, tool ):
-        working_directory = os.path.join( test_directory, "workdir" )
-        tool_working_directory = os.path.join( working_directory, "working" )
-        os.makedirs( tool_working_directory )
+    def __init__(self, app, test_directory, tool):
+        working_directory = os.path.join(test_directory, "workdir")
+        tool_working_directory = os.path.join(working_directory, "working")
+        os.makedirs(tool_working_directory)
         self.app = app
         self.tool = tool
         self.requires_containerization = False
@@ -116,12 +116,12 @@ class MockJobWrapper( object ):
         self.working_directory = working_directory
         self.tool_working_directory = tool_working_directory
         self.requires_setting_metadata = True
-        self.job_destination = bunch.Bunch( id="default", params={} )
-        self.galaxy_lib_dir = os.path.abspath( "lib" )
+        self.job_destination = bunch.Bunch(id="default", params={})
+        self.galaxy_lib_dir = os.path.abspath("lib")
         self.job_id = 1
         self.external_id = None
-        self.output_paths = [ '/tmp/output1.dat' ]
-        self.mock_metadata_path = os.path.abspath( os.path.join( test_directory, "METADATA_SET" ) )
+        self.output_paths = ['/tmp/output1.dat']
+        self.mock_metadata_path = os.path.abspath(os.path.join(test_directory, "METADATA_SET"))
         self.metadata_command = "touch %s" % self.mock_metadata_path
         self.galaxy_virtual_env = None
         self.shell = "/bin/bash"
@@ -134,40 +134,40 @@ class MockJobWrapper( object ):
             build_dependency_shell_commands=lambda: []
         )
 
-    def prepare( self ):
+    def prepare(self):
         self.prepare_called = True
 
-    def set_job_destination( self, job_destination, external_id ):
+    def set_job_destination(self, job_destination, external_id):
         self.external_id = external_id
 
-    def get_command_line( self ):
+    def get_command_line(self):
         return self.command_line
 
-    def get_id_tag( self ):
+    def get_id_tag(self):
         return "1"
 
-    def get_state( self ):
+    def get_state(self):
         return self.state
 
-    def change_state( self, state ):
+    def change_state(self, state):
         self.state = state
 
-    def get_output_fnames( self ):
+    def get_output_fnames(self):
         return []
 
-    def get_job( self ):
+    def get_job(self):
         return model.Job()
 
-    def setup_external_metadata( self, **kwds ):
+    def setup_external_metadata(self, **kwds):
         return self.metadata_command
 
-    def get_env_setup_clause( self ):
+    def get_env_setup_clause(self):
         return ""
 
-    def has_limits( self ):
+    def has_limits(self):
         return False
 
-    def finish( self, stdout, stderr, exit_code ):
+    def finish(self, stdout, stderr, exit_code):
         self.stdout = stdout
         self.stderr = stderr
         self.exit_code = exit_code

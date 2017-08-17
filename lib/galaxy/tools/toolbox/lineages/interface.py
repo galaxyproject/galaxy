@@ -15,7 +15,7 @@ class ToolLineageVersion(object):
         self.version = version
 
     @property
-    def id_based( self ):
+    def id_based(self):
         """ Return True if the lineage is defined by GUIDs (in this
         case the indexer of the tools (i.e. the ToolBox) should ignore
         the tool_version (because it is encoded in the GUID and managed
@@ -52,26 +52,26 @@ class ToolLineage:
         return ["%s/%s" % (tool_id, version) for version in self.tool_versions]
 
     @staticmethod
-    def from_tool( tool ):
+    def from_tool(tool):
         tool_id = tool.id
         lineages_by_id = ToolLineage.lineages_by_id
         with ToolLineage.lock:
             if tool_id not in lineages_by_id:
-                lineages_by_id[ tool_id ] = ToolLineage( tool_id )
-        lineage = lineages_by_id[ tool_id ]
-        lineage.register_version( tool.version )
+                lineages_by_id[tool_id] = ToolLineage(tool_id)
+        lineage = lineages_by_id[tool_id]
+        lineage.register_version(tool.version)
         return lineage
 
-    def register_version( self, tool_version ):
+    def register_version(self, tool_version):
         assert tool_version is not None
-        self._tool_versions.add( str(tool_version) )
+        self._tool_versions.add(str(tool_version))
 
-    def get_versions( self ):
+    def get_versions(self):
         """
         Return an ordered list of lineages (ToolLineageVersion) in this
         chain, from oldest to newest.
         """
-        return [ ToolLineageVersion( tool_id, tool_version ) for tool_id, tool_version in zip(self.tool_ids, self.tool_versions) ]
+        return [ToolLineageVersion(tool_id, tool_version) for tool_id, tool_version in zip(self.tool_ids, self.tool_versions)]
 
     def get_version_ids(self, reverse=False):
         if reverse:

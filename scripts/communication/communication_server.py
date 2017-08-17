@@ -46,8 +46,8 @@ from galaxy.web.security import SecurityHelper
 from galaxy.util.sanitize_html import sanitize_html
 
 # Get config file and load up SA session
-config = get_config( sys.argv )
-model = mapping.init( '/tmp/', config['db_url'] )
+config = get_config(sys.argv)
+model = mapping.init('/tmp/', config['db_url'])
 sa_session = model.context.current
 
 # With the config file we can load the full app properties
@@ -129,8 +129,8 @@ def crossdomain(origin=None, methods=None, headers=None,
     return decorator
 
 
-script_dir = os.path.dirname(os.path.realpath( __file__))
-communication_directory = os.path.join( script_dir, 'template' )
+script_dir = os.path.dirname(os.path.realpath(__file__))
+communication_directory = os.path.join(script_dir, 'template')
 
 
 @app.route('/')

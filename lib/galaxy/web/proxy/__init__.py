@@ -11,7 +11,7 @@ from galaxy.util import unique_id
 import urllib2
 import time
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 DEFAULT_PROXY_TO_HOST = "localhost"
@@ -21,7 +21,7 @@ SECURE_COOKIE = "galaxysession"
 
 class ProxyManager(object):
 
-    def __init__( self, config ):
+    def __init__(self, config):
         for option in ["manage_dynamic_proxy", "dynamic_proxy_bind_port",
                        "dynamic_proxy_bind_ip", "dynamic_proxy_debug",
                        "dynamic_proxy_external_proxy", "dynamic_proxy_prefix",
@@ -32,10 +32,10 @@ class ProxyManager(object):
                        "dynamic_proxy_golang_docker_address",
                        "dynamic_proxy_golang_api_key"]:
 
-            setattr( self, option, getattr( config, option ) )
+            setattr(self, option, getattr(config, option))
 
         if self.manage_dynamic_proxy:
-            self.lazy_process = self.__setup_lazy_process( config )
+            self.lazy_process = self.__setup_lazy_process(config)
         else:
             self.lazy_process = NoOpLazyProcess()
 
@@ -44,10 +44,10 @@ class ProxyManager(object):
 
         self.proxy_ipc = proxy_ipc(config)
 
-    def shutdown( self ):
+    def shutdown(self):
         self.lazy_process.shutdown()
 
-    def setup_proxy( self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="", route_name="", container_ids=None, container_interface=None ):
+    def setup_proxy(self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="", route_name="", container_ids=None, container_interface=None):
         if self.manage_dynamic_proxy:
             log.info("Attempting to start dynamic proxy process")
             log.debug("Cmd: " + ' '.join(self.lazy_process.command_and_args))
@@ -81,11 +81,11 @@ class ProxyManager(object):
             'proxied_host': proxy_requests.host,
         }
 
-    def query_proxy( self, trans ):
+    def query_proxy(self, trans):
         authentication = AuthenticationToken(trans)
         return self.proxy_ipc.fetch_requests(authentication)
 
-    def __setup_lazy_process( self, config ):
+    def __setup_lazy_process(self, config):
         launcher = self.proxy_launcher()
         command = launcher.launch_proxy_command(config)
         return LazyProcess(command)
@@ -117,9 +117,9 @@ class NodeProxyLauncher(object):
         if config.dynamic_proxy_debug:
             args.append("--verbose")
 
-        parent_directory = os.path.dirname( __file__ )
-        path_to_application = os.path.join( parent_directory, "js", "lib", "main.js" )
-        command = [ path_to_application ] + args
+        parent_directory = os.path.dirname(__file__)
+        path_to_application = os.path.join(parent_directory, "js", "lib", "main.js")
+        command = [path_to_application] + args
         return command
 
 
@@ -152,7 +152,7 @@ class AuthenticationToken(object):
 
     def __init__(self, trans):
         self.cookie_name = SECURE_COOKIE
-        self.cookie_value = trans.get_cookie( self.cookie_name )
+        self.cookie_value = trans.get_cookie(self.cookie_name)
 
 
 class ProxyRequests(object):
@@ -194,19 +194,19 @@ class JsonFileProxyIpc(object):
 
     def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface):
         key = authentication.cookie_value
-        with FileLock( self.proxy_session_map ):
-            if not os.path.exists( self.proxy_session_map ):
-                open( self.proxy_session_map, "w" ).write( "{}" )
-            json_data = open( self.proxy_session_map, "r" ).read()
-            session_map = json.loads( json_data )
-            session_map[ key ] = {
+        with FileLock(self.proxy_session_map):
+            if not os.path.exists(self.proxy_session_map):
+                open(self.proxy_session_map, "w").write("{}")
+            json_data = open(self.proxy_session_map, "r").read()
+            session_map = json.loads(json_data)
+            session_map[key] = {
                 'host': proxy_requests.host,
                 'port': proxy_requests.port,
                 'container_ids': container_ids,
                 'container_interface': container_interface,
             }
-            new_json_data = json.dumps( session_map )
-            open( self.proxy_session_map, "w" ).write( new_json_data )
+            new_json_data = json.dumps(session_map)
+            open(self.proxy_session_map, "w").write(new_json_data)
 
     def fetch_requests(self, authentication):
         key = authentication.cookie_value
@@ -232,7 +232,7 @@ class SqliteProxyIpc(object):
 
     def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface):
         key = authentication.cookie_value
-        with FileLock( self.proxy_session_map ):
+        with FileLock(self.proxy_session_map):
             conn = sqlite.connect(self.proxy_session_map)
             try:
                 c = conn.cursor()
@@ -263,7 +263,7 @@ class SqliteProxyIpc(object):
 
     def fetch_requests(self, authentication):
         key = authentication.cookie_value
-        with FileLock( self.proxy_session_map):
+        with FileLock(self.proxy_session_map):
             conn = sqlite.connect(self.proxy_session_map)
             try:
                 c = conn.cursor()
@@ -296,7 +296,7 @@ class RestGolangProxyIpc(object):
         """
         values = {
             'FrontendPath': route_name,
-            'BackendAddr': "%s:%s" % ( proxy_requests.host, proxy_requests.port ),
+            'BackendAddr': "%s:%s" % (proxy_requests.host, proxy_requests.port),
             'AuthorizedCookie': authentication.cookie_value,
             'ContainerIds': container_ids,
         }

@@ -13,16 +13,16 @@ from galaxy.visualization.plugins import (
     utils as vis_utils
 )
 
-unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
-sys.path.insert( 1, unit_root )
+unit_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+sys.path.insert(1, unit_root)
 from unittest_utils import galaxy_mock, utility
 
 
 # -----------------------------------------------------------------------------
-class VisualizationsPlugin_TestCase( unittest.TestCase ):
+class VisualizationsPlugin_TestCase(unittest.TestCase):
     plugin_class = vis_plugin.VisualizationPlugin
 
-    def test_default_init( self ):
+    def test_default_init(self):
         """
         A plugin with no context passed in should have sane defaults.
         """
@@ -34,24 +34,24 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
             'templates': {},
         })
         config = dict()
-        plugin = self.plugin_class( galaxy_mock.MockApp(), vis_dir.root_path,
-            'myvis', config )
-        self.assertEqual( plugin.name, 'myvis' )
-        self.assertEqual( plugin.path, vis_dir.root_path )
-        self.assertEqual( plugin.config, {} )
-        self.assertEqual( plugin.base_url, 'myvis' )
+        plugin = self.plugin_class(galaxy_mock.MockApp(), vis_dir.root_path,
+            'myvis', config)
+        self.assertEqual(plugin.name, 'myvis')
+        self.assertEqual(plugin.path, vis_dir.root_path)
+        self.assertEqual(plugin.config, {})
+        self.assertEqual(plugin.base_url, 'myvis')
         # static
-        self.assertTrue( plugin.serves_static )
-        self.assertEqual( plugin.static_path, vis_dir.root_path + '/static' )
-        self.assertEqual( plugin.static_url, 'myvis/static' )
+        self.assertTrue(plugin.serves_static)
+        self.assertEqual(plugin.static_path, vis_dir.root_path + '/static')
+        self.assertEqual(plugin.static_url, 'myvis/static')
         # template
-        self.assertTrue( plugin.serves_templates )
-        self.assertEqual( plugin.template_path, vis_dir.root_path + '/templates' )
-        self.assertEqual( plugin.template_lookup.__class__.__name__, 'TemplateLookup' )
+        self.assertTrue(plugin.serves_templates)
+        self.assertEqual(plugin.template_path, vis_dir.root_path + '/templates')
+        self.assertEqual(plugin.template_lookup.__class__.__name__, 'TemplateLookup')
         # resource parser
-        self.assertIsInstance( plugin.resource_parser, resource_parser.ResourceParser )
+        self.assertIsInstance(plugin.resource_parser, resource_parser.ResourceParser)
 
-    def test_init_with_context( self ):
+    def test_init_with_context(self):
         """
         A plugin with context passed in should use those in it's set up.
         """
@@ -66,17 +66,17 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
         context = dict(
             base_url='u/wot/m8',
             template_cache_dir='template_cache',
-            additional_template_paths=[ 'one' ]
+            additional_template_paths=['one']
         )
-        plugin = self.plugin_class( galaxy_mock.MockApp(), vis_dir.root_path,
-            'myvis', config, context=context )
-        self.assertEqual( plugin.base_url, 'u/wot/m8/myvis' )
+        plugin = self.plugin_class(galaxy_mock.MockApp(), vis_dir.root_path,
+            'myvis', config, context=context)
+        self.assertEqual(plugin.base_url, 'u/wot/m8/myvis')
         # static
-        self.assertEqual( plugin.static_url, 'u/wot/m8/myvis/static' )
+        self.assertEqual(plugin.static_url, 'u/wot/m8/myvis/static')
         # template
-        self.assertEqual( plugin.template_lookup.__class__.__name__, 'TemplateLookup' )
+        self.assertEqual(plugin.template_lookup.__class__.__name__, 'TemplateLookup')
 
-    def test_init_without_static_or_templates( self ):
+    def test_init_without_static_or_templates(self):
         """
         A plugin that has neither template or static directory should serve neither.
         """
@@ -85,13 +85,13 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
                 'vis1.xml': ''
             }
         })
-        plugin = self.plugin_class( galaxy_mock.MockApp(), vis_dir.root_path,
-            'myvis', dict() )
-        self.assertFalse( plugin.serves_static )
-        self.assertFalse( plugin.serves_templates )
+        plugin = self.plugin_class(galaxy_mock.MockApp(), vis_dir.root_path,
+            'myvis', dict())
+        self.assertFalse(plugin.serves_static)
+        self.assertFalse(plugin.serves_templates)
         # not sure what this would do, but...
 
-    def test_build_render_vars_default( self ):
+    def test_build_render_vars_default(self):
         """
         Render vars passed to render should default properly.
         """
@@ -99,40 +99,40 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
         config = dict(
             name='Cat Fancy Magazine\'s Genomic Visualization'
         )
-        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', config )
+        plugin = self.plugin_class(galaxy_mock.MockApp(), '', 'myvis', config)
 
-        render_vars = plugin._build_render_vars( config )
-        self.assertEqual( render_vars[ 'visualization_name' ], plugin.name )
-        self.assertEqual( render_vars[ 'visualization_display_name' ], plugin.config[ 'name' ] )
-        self.assertEqual( render_vars[ 'title' ], None )
-        self.assertEqual( render_vars[ 'saved_visualization' ], None )
-        self.assertEqual( render_vars[ 'visualization_id' ], None )
-        self.assertEqual( render_vars[ 'query' ], {} )
-        self.assertIsInstance( render_vars[ 'config' ], vis_utils.OpenObject )
-        self.assertEqual( render_vars[ 'config' ].__dict__, {} )
+        render_vars = plugin._build_render_vars(config)
+        self.assertEqual(render_vars['visualization_name'], plugin.name)
+        self.assertEqual(render_vars['visualization_display_name'], plugin.config['name'])
+        self.assertEqual(render_vars['title'], None)
+        self.assertEqual(render_vars['saved_visualization'], None)
+        self.assertEqual(render_vars['visualization_id'], None)
+        self.assertEqual(render_vars['query'], {})
+        self.assertIsInstance(render_vars['config'], vis_utils.OpenObject)
+        self.assertEqual(render_vars['config'].__dict__, {})
 
-    def test_build_config( self ):
+    def test_build_config(self):
         """
         """
         plugin_config = dict()
-        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', plugin_config )
-        config = plugin._build_config( {} )
-        self.assertIsInstance( config, vis_utils.OpenObject )
-        self.assertEqual( config.__dict__, {} )
+        plugin = self.plugin_class(galaxy_mock.MockApp(), '', 'myvis', plugin_config)
+        config = plugin._build_config({})
+        self.assertIsInstance(config, vis_utils.OpenObject)
+        self.assertEqual(config.__dict__, {})
 
         # existing should flow through
         plugin_config = dict()
-        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', plugin_config )
-        existing_config = dict( wat=1 )
-        config = plugin._build_config( existing_config )
-        self.assertEqual( config.wat, 1 )
+        plugin = self.plugin_class(galaxy_mock.MockApp(), '', 'myvis', plugin_config)
+        existing_config = dict(wat=1)
+        config = plugin._build_config(existing_config)
+        self.assertEqual(config.wat, 1)
 
         # unlisted/non-param kwargs should NOT overwrite existing
         plugin_config = dict()
-        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', plugin_config )
-        existing_config = dict( wat=1 )
-        config = plugin._build_config( existing_config, wat=2 )
-        self.assertEqual( config.wat, 1 )
+        plugin = self.plugin_class(galaxy_mock.MockApp(), '', 'myvis', plugin_config)
+        existing_config = dict(wat=1)
+        config = plugin._build_config(existing_config, wat=2)
+        self.assertEqual(config.wat, 1)
 
         # listed/param kwargs *should* overwrite existing
         plugin_config = dict(
@@ -145,18 +145,18 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
                 },
             )
         )
-        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', plugin_config )
-        existing_config = dict( wat=1 )
+        plugin = self.plugin_class(galaxy_mock.MockApp(), '', 'myvis', plugin_config)
+        existing_config = dict(wat=1)
         # send as string like a query would - should be parsed
-        config = plugin._build_config( existing_config, wat='2' )
-        self.assertEqual( config.wat, 2 )
+        config = plugin._build_config(existing_config, wat='2')
+        self.assertEqual(config.wat, 2)
 
-    def test_render( self ):
+    def test_render(self):
         """
         """
         # use the python in a template to test for variables that should be there
         # TODO: gotta be a better way
-        testing_template = utility.clean_multiline_string( """\
+        testing_template = utility.clean_multiline_string("""\
         <%
             found_all = True
             should_have = [
@@ -174,25 +174,25 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
                     break
         %>
         ${ found_all }
-        """ )
+        """)
 
         mock_app_dir = galaxy_mock.MockDir({
             'cache': {},
             'template.mako': testing_template
         })
-        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
-        plugin = self.plugin_class( mock_app, '', 'myvis', {
+        mock_app = galaxy_mock.MockApp(root=mock_app_dir.root_path)
+        plugin = self.plugin_class(mock_app, '', 'myvis', {
             "name": "Vlad News Bears"
         })
 
         # somewhat easier to set this up by hand
-        plugin.config[ 'entry_point' ] = { 'file': 'template.mako' }
+        plugin.config['entry_point'] = {'file': 'template.mako'}
         plugin.template_path = mock_app_dir.root_path
-        plugin.template_lookup = plugin._build_template_lookup( mock_app_dir.root_path )
+        plugin.template_lookup = plugin._build_template_lookup(mock_app_dir.root_path)
 
-        response = plugin.render( trans=galaxy_mock.MockTrans( app=mock_app ) )
-        self.assertIsInstance( response, string_types )
-        self.assertEqual( response.strip(), "True" )
+        response = plugin.render(trans=galaxy_mock.MockTrans(app=mock_app))
+        self.assertIsInstance(response, string_types)
+        self.assertEqual(response.strip(), "True")
 
 
 # -----------------------------------------------------------------------------

@@ -34,14 +34,14 @@ from bx.cookbook import doc_optparse
 from galaxy.tools.util import maf_utilities
 
 
-def stop_err( msg ):
-    sys.stderr.write( msg )
+def stop_err(msg):
+    sys.stderr.write(msg)
     sys.exit()
 
 
 def __main__():
     # Parse Command Line
-    options, args = doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse(__doc__)
     mincols = 0
     strand_col = -1
 
@@ -50,14 +50,14 @@ def __main__():
     else:
         primary_species = None
     if primary_species in [None, "?", "None"]:
-        stop_err( "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file." )
+        stop_err("You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file.")
 
     include_primary = True
-    secondary_species = maf_utilities.parse_species_option( options.species )
+    secondary_species = maf_utilities.parse_species_option(options.species)
     if secondary_species:
-        species = list( secondary_species )  # make copy of species list
+        species = list(secondary_species)  # make copy of species list
         if primary_species in secondary_species:
-            secondary_species.remove( primary_species )
+            secondary_species.remove(primary_species)
         else:
             include_primary = False
     else:
@@ -66,31 +66,31 @@ def __main__():
     if options.interval_file:
         interval_file = options.interval_file
     else:
-        stop_err( "Input interval file has not been specified." )
+        stop_err("Input interval file has not been specified.")
 
     if options.output_file:
         output_file = options.output_file
     else:
-        stop_err( "Output file has not been specified." )
+        stop_err("Output file has not been specified.")
 
     if not options.geneBED:
         if options.chromCol:
-            chr_col = int( options.chromCol ) - 1
+            chr_col = int(options.chromCol) - 1
         else:
-            stop_err( "Chromosome column not set, click the pencil icon in the history item to set the metadata attributes." )
+            stop_err("Chromosome column not set, click the pencil icon in the history item to set the metadata attributes.")
 
         if options.startCol:
-            start_col = int( options.startCol ) - 1
+            start_col = int(options.startCol) - 1
         else:
-            stop_err( "Start column not set, click the pencil icon in the history item to set the metadata attributes." )
+            stop_err("Start column not set, click the pencil icon in the history item to set the metadata attributes.")
 
         if options.endCol:
-            end_col = int( options.endCol ) - 1
+            end_col = int(options.endCol) - 1
         else:
-            stop_err( "End column not set, click the pencil icon in the history item to set the metadata attributes." )
+            stop_err("End column not set, click the pencil icon in the history item to set the metadata attributes.")
 
         if options.strandCol:
-            strand_col = int( options.strandCol ) - 1
+            strand_col = int(options.strandCol) - 1
 
     mafIndexFile = "%s/maf_index.loc" % options.mafIndexFileDir
 
@@ -104,27 +104,27 @@ def __main__():
     index = index_filename = None
     # using specified uid for locally cached
     if options.mafSourceType.lower() in ["cached"]:
-        index = maf_utilities.maf_index_by_uid( options.mafSource, mafIndexFile )
+        index = maf_utilities.maf_index_by_uid(options.mafSource, mafIndexFile)
         if index is None:
-            stop_err( "The MAF source specified (%s) appears to be invalid." % ( options.mafSource ) )
+            stop_err("The MAF source specified (%s) appears to be invalid." % (options.mafSource))
     elif options.mafSourceType.lower() in ["user"]:
         # index maf for use here, need to remove index_file when finished
-        index, index_filename = maf_utilities.open_or_build_maf_index( options.mafSource, options.mafIndex, species=[primary_species] )
+        index, index_filename = maf_utilities.open_or_build_maf_index(options.mafSource, options.mafIndex, species=[primary_species])
         if index is None:
-            stop_err( "Your MAF file appears to be malformed." )
+            stop_err("Your MAF file appears to be malformed.")
     else:
-        stop_err( "Invalid MAF source type specified." )
+        stop_err("Invalid MAF source type specified.")
 
     # open output file
-    output = open( output_file, "w" )
+    output = open(output_file, "w")
 
     if options.geneBED:
-        region_enumerator = maf_utilities.line_enumerator( open( interval_file, "r" ).readlines() )
+        region_enumerator = maf_utilities.line_enumerator(open(interval_file, "r").readlines())
     else:
         region_enumerator = enumerate(bx.intervals.io.NiceReaderWrapper(
-            open( interval_file, 'r' ), chrom_col=chr_col, start_col=start_col,
+            open(interval_file, 'r'), chrom_col=chr_col, start_col=start_col,
             end_col=end_col, strand_col=strand_col, fix_strand=True,
-            return_header=False, return_comments=False ) )
+            return_header=False, return_comments=False))
 
     # Step through intervals
     regions_extracted = 0
@@ -133,16 +133,16 @@ def __main__():
         try:
             if options.geneBED:  # Process as Gene BED
                 try:
-                    starts, ends, fields = maf_utilities.get_starts_ends_fields_from_gene_bed( line )
+                    starts, ends, fields = maf_utilities.get_starts_ends_fields_from_gene_bed(line)
                     # create spliced alignment object
                     alignment = maf_utilities.get_spliced_region_alignment(
                         index, primary_species, fields[0], starts, ends,
                         strand='+', species=species, mincols=mincols,
-                        overwrite_with_gaps=overwrite_with_gaps )
+                        overwrite_with_gaps=overwrite_with_gaps)
                     primary_name = secondary_name = fields[3]
                     alignment_strand = fields[5]
                 except Exception as e:
-                    print("Error loading exon positions from input line %i: %s" % ( line_count, e ))
+                    print("Error loading exon positions from input line %i: %s" % (line_count, e))
                     continue
             else:  # Process as standard intervals
                 try:
@@ -150,50 +150,50 @@ def __main__():
                     alignment = maf_utilities.get_region_alignment(
                         index, primary_species, line.chrom, line.start,
                         line.end, strand='+', species=species, mincols=mincols,
-                        overwrite_with_gaps=overwrite_with_gaps )
-                    primary_name = "%s(%s):%s-%s" % ( line.chrom, line.strand, line.start, line.end )
+                        overwrite_with_gaps=overwrite_with_gaps)
+                    primary_name = "%s(%s):%s-%s" % (line.chrom, line.strand, line.start, line.end)
                     secondary_name = ""
                     alignment_strand = line.strand
                 except Exception as e:
-                    print("Error loading region positions from input line %i: %s" % ( line_count, e ))
+                    print("Error loading region positions from input line %i: %s" % (line_count, e))
                     continue
 
             # Write alignment to output file
             # Output primary species first, if requested
             if include_primary:
-                output.write( ">%s.%s\n" % ( primary_species, primary_name ) )
+                output.write(">%s.%s\n" % (primary_species, primary_name))
                 if alignment_strand == "-":
-                    output.write( alignment.get_sequence_reverse_complement( primary_species ) )
+                    output.write(alignment.get_sequence_reverse_complement(primary_species))
                 else:
-                    output.write( alignment.get_sequence( primary_species ) )
-                output.write( "\n" )
+                    output.write(alignment.get_sequence(primary_species))
+                output.write("\n")
             # Output all remainging species
-            for spec in secondary_species or alignment.get_species_names( skip=primary_species ):
+            for spec in secondary_species or alignment.get_species_names(skip=primary_species):
                 if secondary_name:
-                    output.write( ">%s.%s\n" % ( spec, secondary_name ) )
+                    output.write(">%s.%s\n" % (spec, secondary_name))
                 else:
-                    output.write( ">%s\n" % ( spec ) )
+                    output.write(">%s\n" % (spec))
                 if alignment_strand == "-":
-                    output.write( alignment.get_sequence_reverse_complement( spec ) )
+                    output.write(alignment.get_sequence_reverse_complement(spec))
                 else:
-                    output.write( alignment.get_sequence( spec ) )
-                output.write( "\n" )
+                    output.write(alignment.get_sequence(spec))
+                output.write("\n")
 
-            output.write( "\n" )
+            output.write("\n")
             regions_extracted += 1
         except Exception as e:
-            print("Unexpected error from input line %i: %s" % ( line_count, e ))
+            print("Unexpected error from input line %i: %s" % (line_count, e))
             continue
 
     # close output file
     output.close()
 
     # remove index file if created during run
-    maf_utilities.remove_temp_index_file( index_filename )
+    maf_utilities.remove_temp_index_file(index_filename)
 
     # Print message about success for user
     if regions_extracted > 0:
-        print("%i regions were processed successfully." % ( regions_extracted ))
+        print("%i regions were processed successfully." % (regions_extracted))
     else:
         print("No regions were processed successfully.")
         if line_count > 0 and options.geneBED:

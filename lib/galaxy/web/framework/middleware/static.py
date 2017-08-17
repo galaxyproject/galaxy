@@ -8,20 +8,20 @@ from paste.httpheaders import ETAG
 from paste.urlparser import StaticURLParser
 
 
-class CacheableStaticURLParser( StaticURLParser ):
+class CacheableStaticURLParser(StaticURLParser):
 
-    def __init__( self, directory, cache_seconds=None ):
-        StaticURLParser.__init__( self, directory )
+    def __init__(self, directory, cache_seconds=None):
+        StaticURLParser.__init__(self, directory)
         self.cache_seconds = cache_seconds
 
-    def __call__( self, environ, start_response ):
+    def __call__(self, environ, start_response):
         path_info = environ.get('PATH_INFO', '')
         if not path_info:
             # See if this is a static file hackishly mapped.
             if os.path.exists(self.directory) and os.path.isfile(self.directory):
                 app = fileapp.FileApp(self.directory)
                 if self.cache_seconds:
-                    app.cache_control( max_age=int( self.cache_seconds ) )
+                    app.cache_control(max_age=int(self.cache_seconds))
                 return app(environ, start_response)
             return self.add_slash(environ, start_response)
         if path_info == '/':
@@ -47,9 +47,9 @@ class CacheableStaticURLParser( StaticURLParser ):
                 return ['']  # empty body
         app = fileapp.FileApp(full)
         if self.cache_seconds:
-            app.cache_control( max_age=int( self.cache_seconds ) )
+            app.cache_control(max_age=int(self.cache_seconds))
         return app(environ, start_response)
 
 
-def make_static( global_conf, document_root, cache_seconds=None ):
-    return CacheableStaticURLParser( document_root, cache_seconds )
+def make_static(global_conf, document_root, cache_seconds=None):
+    return CacheableStaticURLParser(document_root, cache_seconds)

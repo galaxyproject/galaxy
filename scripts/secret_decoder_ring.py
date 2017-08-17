@@ -17,8 +17,8 @@ from galaxy.util.properties import load_app_properties
 from galaxy.web.security import SecurityHelper
 
 # Get config file and load up SA session
-config = get_config( sys.argv )
-model = mapping.init( '/tmp/', config['db_url'] )
+config = get_config(sys.argv)
+model = mapping.init('/tmp/', config['db_url'])
 sa_session = model.context.current
 
 # With the config file we can load the full app properties

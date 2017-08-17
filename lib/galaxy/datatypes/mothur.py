@@ -734,7 +734,7 @@ class CountTable(Tabular):
 
         headers = get_headers(dataset.file_name, sep='\t', count=1)
         colnames = headers[0]
-        dataset.metadata.column_types = ['str'] + (['int'] * ( len(headers[0]) - 1))
+        dataset.metadata.column_types = ['str'] + (['int'] * (len(headers[0]) - 1))
         if len(colnames) > 1:
             dataset.metadata.columns = len(colnames)
         if len(colnames) > 2:
@@ -904,6 +904,7 @@ class SffFlow(Tabular):
           GQY1XT001CQIRF 84 1.02 0.06 0.98 0.06 0.09 1.05 0.07 ...
           GQY1XT001CF5YW 88 1.02 0.02 1.01 0.04 0.06 1.02 0.03 ...
     """
+
     def __init__(self, **kwd):
         super(SffFlow, self).__init__(**kwd)
 
