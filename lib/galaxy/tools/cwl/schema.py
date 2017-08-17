@@ -25,7 +25,8 @@ class SchemaLoader(object):
     @property
     def raw_document_loader(self):
         ensure_cwltool_available()
-        return schema_salad.ref_resolver.Loader({"cwl": "https://w3id.org/cwl/cwl#", "id": "@id"})
+        from cwltool.load_tool import jobloaderctx
+        return schema_salad.ref_resolver.Loader(jobloaderctx)
 
     def raw_process_reference(self, path):
         uri = "file://" + os.path.abspath(path)
