@@ -103,7 +103,7 @@ def _get_new_toolbox(app):
     from galaxy import tools
     from galaxy.tools.special_tools import load_lib_tools
     if hasattr(app, 'tool_shed_repository_cache'):
-                app.tool_shed_repository_cache.rebuild()
+        app.tool_shed_repository_cache.rebuild()
     tool_configs = app.config.tool_configs
     if app.config.migrated_tools_config not in tool_configs:
         tool_configs.append(app.config.migrated_tools_config)
@@ -196,6 +196,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
     handler, will have one of these used for dispatching so called 'control'
     tasks.
     """
+
     def __init__(self, app, queue=None, task_mapping=control_message_to_task, connection=None):
         super(GalaxyQueueWorker, self).__init__()
         log.info("Initializing %s Galaxy Queue Worker on %s", app.config.server_name, util.mask_password_from_url(app.config.amqp_internal_connection))

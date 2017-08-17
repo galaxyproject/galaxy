@@ -346,39 +346,39 @@ def add_file(dataset, registry, json_file, output_path):
 
 
 def add_composite_file(dataset, json_file, output_path, files_path):
-        if dataset.composite_files:
-            os.mkdir(files_path)
-            for name, value in dataset.composite_files.items():
-                value = util.bunch.Bunch(**value)
-                if dataset.composite_file_paths[value.name] is None and not value.optional:
-                    file_err('A required composite data file was not provided (%s)' % name, dataset, json_file)
-                    break
-                elif dataset.composite_file_paths[value.name] is not None:
-                    dp = dataset.composite_file_paths[value.name]['path']
-                    isurl = dp.find('://') != -1  # todo fixme
-                    if isurl:
-                        try:
-                            temp_name, dataset.is_multi_byte = sniff.stream_to_file(urlopen(dp), prefix='url_paste')
-                        except Exception as e:
-                            file_err('Unable to fetch %s\n%s' % (dp, str(e)), dataset, json_file)
-                            return
-                        dataset.path = temp_name
-                        dp = temp_name
-                    if not value.is_binary:
-                        tmpdir = output_adjacent_tmpdir(output_path)
-                        tmp_prefix = 'data_id_%s_convert_' % dataset.dataset_id
-                        if dataset.composite_file_paths[value.name].get('space_to_tab', value.space_to_tab):
-                            sniff.convert_newlines_sep2tabs(dp, tmp_dir=tmpdir, tmp_prefix=tmp_prefix)
-                        else:
-                            sniff.convert_newlines(dp, tmp_dir=tmpdir, tmp_prefix=tmp_prefix)
-                    shutil.move(dp, os.path.join(files_path, name))
-        # Move the dataset to its "real" path
-        shutil.move(dataset.primary_file, output_path)
-        # Write the job info
-        info = dict(type='dataset',
-                    dataset_id=dataset.dataset_id,
-                    stdout='uploaded %s file' % dataset.file_type)
-        json_file.write(dumps(info) + "\n")
+    if dataset.composite_files:
+        os.mkdir(files_path)
+        for name, value in dataset.composite_files.items():
+            value = util.bunch.Bunch(**value)
+            if dataset.composite_file_paths[value.name] is None and not value.optional:
+                file_err('A required composite data file was not provided (%s)' % name, dataset, json_file)
+                break
+            elif dataset.composite_file_paths[value.name] is not None:
+                dp = dataset.composite_file_paths[value.name]['path']
+                isurl = dp.find('://') != -1  # todo fixme
+                if isurl:
+                    try:
+                        temp_name, dataset.is_multi_byte = sniff.stream_to_file(urlopen(dp), prefix='url_paste')
+                    except Exception as e:
+                        file_err('Unable to fetch %s\n%s' % (dp, str(e)), dataset, json_file)
+                        return
+                    dataset.path = temp_name
+                    dp = temp_name
+                if not value.is_binary:
+                    tmpdir = output_adjacent_tmpdir(output_path)
+                    tmp_prefix = 'data_id_%s_convert_' % dataset.dataset_id
+                    if dataset.composite_file_paths[value.name].get('space_to_tab', value.space_to_tab):
+                        sniff.convert_newlines_sep2tabs(dp, tmp_dir=tmpdir, tmp_prefix=tmp_prefix)
+                    else:
+                        sniff.convert_newlines(dp, tmp_dir=tmpdir, tmp_prefix=tmp_prefix)
+                shutil.move(dp, os.path.join(files_path, name))
+    # Move the dataset to its "real" path
+    shutil.move(dataset.primary_file, output_path)
+    # Write the job info
+    info = dict(type='dataset',
+                dataset_id=dataset.dataset_id,
+                stdout='uploaded %s file' % dataset.file_type)
+    json_file.write(dumps(info) + "\n")
 
 
 def output_adjacent_tmpdir(output_path):

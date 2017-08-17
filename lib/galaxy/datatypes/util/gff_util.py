@@ -16,6 +16,7 @@ class GFFInterval(GenomicInterval):
     A GFF interval, including attributes. If file is strictly a GFF file,
     only attribute is 'group.'
     """
+
     def __init__(self, reader, fields, chrom_col=0, feature_col=2, start_col=3, end_col=4,
                  strand_col=6, score_col=5, default_strand='.', fix_strand=False):
         # HACK: GFF format allows '.' for strand but GenomicInterval does not. To get around this,
@@ -52,6 +53,7 @@ class GFFFeature(GFFInterval):
     """
     A GFF feature, which can include multiple intervals.
     """
+
     def __init__(self, reader, chrom_col=0, feature_col=2, start_col=3, end_col=4,
                  strand_col=6, score_col=5, default_strand='.', fix_strand=False, intervals=[],
                  raw_size=0):

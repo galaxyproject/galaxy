@@ -75,6 +75,7 @@ class Genome(object):
     """
     Encapsulates information about a known genome/dbkey.
     """
+
     def __init__(self, key, description, len_file=None, twobit_file=None):
         self.key = key
         self.description = description

@@ -49,6 +49,7 @@ class TextField(BaseField):
     >>> print TextField( "bins", size=4, value="default" ).get_html()
     <input type="text" name="bins" size="4" value="default">
     """
+
     def __init__(self, name, size=None, value=None, **kwds):
         super(TextField, self).__init__(name, value, **kwds)
         self.size = int(size or 10)
@@ -76,6 +77,7 @@ class PasswordField(BaseField):
     >>> print PasswordField( "bins", size=4, value="default" ).get_html()
     <input type="password" name="bins" size="4" value="default">
     """
+
     def __init__(self, name, size=None, value=None, **kwds):
         super(PasswordField, self).__init__(name, value, **kwds)
         self.name = name
@@ -213,6 +215,7 @@ class HiddenField(BaseField):
     >>> print HiddenField( "foo", 100 ).get_html()
     <input type="hidden" name="foo" value="100">
     """
+
     def __init__(self, name, value=None, **kwds):
         super(HiddenField, self).__init__(name, value, **kwds)
         self.name = name
@@ -265,6 +268,7 @@ class SelectField(BaseField):
     <div><input type="checkbox" name="bar" value="3" id="bar|3"><label class="inline" for="bar|3">automatic</label></div>
     <div><input type="checkbox" name="bar" value="4" id="bar|4" checked='checked'><label class="inline" for="bar|4">bazooty</label></div>
     """
+
     def __init__(self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None, value=None, selectlist=None, **kwds):
         super(SelectField, self).__init__(name, value, **kwds)
         self.name = name

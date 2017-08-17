@@ -11,6 +11,7 @@ log = logging.getLogger(__name__)
 
 class UniverseApplication(object):
     """Encapsulates the state of a Universe application"""
+
     def __init__(self, **kwargs):
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "reports"

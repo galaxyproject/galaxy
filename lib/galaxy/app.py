@@ -44,6 +44,7 @@ app = None
 
 class UniverseApplication(object, config.ConfiguresGalaxyMixin):
     """Encapsulates the state of a Universe application"""
+
     def __init__(self, **kwargs):
         if not log.handlers:
             # Paste didn't handle it, so we need a temporary basic log

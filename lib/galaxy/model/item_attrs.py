@@ -21,6 +21,7 @@ class UsesItemRatings:
         (2) item-rating association table has a column with a foreign key referencing
         item table that contains the item's id.
     """
+
     def get_ave_item_rating_data(self, db_session, item, webapp_model=None):
         """ Returns the average rating for an item."""
         if webapp_model is None:
@@ -96,6 +97,7 @@ class UsesItemRatings:
 
 class UsesAnnotations:
     """ Mixin for getting and setting item annotations. """
+
     def get_item_annotation_str(self, db_session, user, item):
         """ Returns a user's annotation string for an item. """
         annotation_obj = self.get_item_annotation_obj(db_session, user, item)

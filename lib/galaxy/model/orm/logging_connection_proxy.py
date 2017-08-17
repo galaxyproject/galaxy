@@ -58,6 +58,7 @@ class TraceLoggerProxy(ConnectionProxy):
     """
     Logs SQL statements using a metlog client
     """
+
     def __init__(self, trace_logger):
         self.trace_logger = trace_logger
 

@@ -69,6 +69,7 @@ class DependencyManager(object):
     and should each contain a file 'env.sh' which can be sourced to make the
     dependency available in the current shell environment.
     """
+
     def __init__(self, default_base_path, conf_file=None, app_config={}):
         """
         Create a new dependency manager looking for packages under the paths listed

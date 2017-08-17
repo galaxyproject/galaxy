@@ -12,6 +12,7 @@ class FormBuilder(object):
     """
     Simple class describing an HTML form
     """
+
     def __init__(self, action="", title="", name="form", submit_text="submit", use_panels=False):
         self.title = title
         self.name = name
@@ -42,6 +43,7 @@ class FormInput(object):
     """
     Simple class describing a form input element
     """
+
     def __init__(self, type, name, label, value=None, error=None, help=None, use_label=True, extra_attributes={}, **kwargs):
         self.type = type
         self.name = name
@@ -70,6 +72,7 @@ class DatalistInput(FormInput):
 
 class SelectInput(FormInput):
     """ A select form input. """
+
     def __init__(self, name, label, value=None, options=[], error=None, help=None, use_label=True):
         FormInput.__init__(self, "select", name, label, value=value, error=error, help=help, use_label=use_label)
         self.options = options
@@ -80,6 +83,7 @@ class FormData(object):
     Class for passing data about a form to a template, very rudimentary, could
     be combined with the tool form handling to build something more general.
     """
+
     def __init__(self):
         # TODO: galaxy's two Bunchs are defined differently. Is this right?
         self.values = bunch.Bunch()

@@ -3304,6 +3304,7 @@ class DatasetCollection(object, Dictifiable, UsesAnnotations):
 class DatasetCollectionInstance(object, HasName):
     """
     """
+
     def __init__(
         self,
         collection=None,

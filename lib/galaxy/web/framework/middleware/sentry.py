@@ -24,6 +24,7 @@ class Sentry(object):
     A WSGI middleware which will attempt to capture any
     uncaught exceptions and send them to Sentry.
     """
+
     def __init__(self, application, dsn):
         assert Client is not None, RAVEN_IMPORT_MESSAGE
         self.application = application

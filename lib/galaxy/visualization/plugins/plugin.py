@@ -329,6 +329,7 @@ class StaticFileVisualizationPlugin(VisualizationPlugin):
     """
     # TODO: these are not embeddable by their nature - update config
     # TODO: should do render/render_saved here since most of the calc done there is unneeded in this case
+
     def _render(self, render_vars, trans=None, embedded=None, **kwargs):
         """
         Render the static file simply by reading and returning it.

@@ -223,9 +223,9 @@ class GalaxyRBACAgent(RBACAgent):
         """
         roles = []
         for item_permission in item.actions:
-                permission_action = self.get_action(item_permission.action)
-                if permission_action == action:
-                    roles.append(item_permission.role)
+            permission_action = self.get_action(item_permission.action)
+            if permission_action == action:
+                roles.append(item_permission.role)
         return roles
 
     def get_valid_roles(self, trans, item, query=None, page=None, page_limit=None, is_library_access=False):

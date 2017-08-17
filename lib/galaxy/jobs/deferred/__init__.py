@@ -151,6 +151,7 @@ class DeferredJobQueue(object):
 
 class FakeTrans(object):
     """A fake trans for calling the external set metadata tool"""
+
     def __init__(self, app, history=None, user=None):
         class Dummy(object):
             def __init__(self):

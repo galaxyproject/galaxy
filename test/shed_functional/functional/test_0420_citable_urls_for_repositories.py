@@ -26,6 +26,7 @@ first_changeset_hash = ''
 
 class TestRepositoryCitableURLs(ShedTwillTestCase):
     '''Test repository citable url features.'''
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user."""
         """

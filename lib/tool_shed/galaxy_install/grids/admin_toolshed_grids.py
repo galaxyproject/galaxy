@@ -112,14 +112,14 @@ class InstalledRepositoryGrid(grids.Grid):
 
     class DeletedColumn(grids.DeletedColumn):
 
-            def get_accepted_filters(self):
-                """ Returns a list of accepted filters for this column. """
-                accepted_filter_labels_and_vals = {"Active": "False", "Deactivated or uninstalled": "True", "All": "All"}
-                accepted_filters = []
-                for label, val in accepted_filter_labels_and_vals.items():
-                    args = {self.key: val}
-                    accepted_filters.append(grids.GridColumnFilter(label, args))
-                return accepted_filters
+        def get_accepted_filters(self):
+            """ Returns a list of accepted filters for this column. """
+            accepted_filter_labels_and_vals = {"Active": "False", "Deactivated or uninstalled": "True", "All": "All"}
+            accepted_filters = []
+            for label, val in accepted_filter_labels_and_vals.items():
+                args = {self.key: val}
+                accepted_filters.append(grids.GridColumnFilter(label, args))
+            return accepted_filters
 
     # Grid definition
     title = "Installed tool shed repositories"

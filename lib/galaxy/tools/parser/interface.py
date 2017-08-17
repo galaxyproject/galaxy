@@ -196,6 +196,7 @@ class PagesSource(object):
     Pages are deprecated so ideally this outer list will always
     be exactly a singleton.
     """
+
     def __init__(self, page_sources):
         self.page_sources = page_sources
 
@@ -298,6 +299,7 @@ class ToolStdioRegex(object):
     attribute that contains "output" and/or "error", and a "level"
     attribute that contains "warning" or "fatal".
     """
+
     def __init__(self):
         self.match = ""
         self.stdout_match = False
@@ -312,6 +314,7 @@ class ToolStdioExitCode(object):
     This is a container for the <stdio> element's <exit_code> subelement.
     The exit_code element has a range of exit codes and the error level.
     """
+
     def __init__(self):
         self.range_start = float("-inf")
         self.range_end = float("inf")

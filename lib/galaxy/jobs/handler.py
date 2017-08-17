@@ -27,6 +27,7 @@ class JobHandler(object):
     """
     Handle the preparation, running, tracking, and finishing of jobs
     """
+
     def __init__(self, app):
         self.app = app
         # The dispatcher launches the underlying job runners
@@ -109,11 +110,11 @@ class JobHandlerQueue(object):
                        model.Job.states.QUEUED,
                        model.Job.states.RUNNING)
         if self.app.config.user_activation_on:
-                jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                    .outerjoin(model.User) \
-                    .filter(model.Job.state.in_(in_list) &
-                            (model.Job.handler == self.app.config.server_name) &
-                            or_((model.Job.user_id == null()), (model.User.active == true()))).all()
+            jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
+                .outerjoin(model.User) \
+                .filter(model.Job.state.in_(in_list) &
+                        (model.Job.handler == self.app.config.server_name) &
+                        or_((model.Job.user_id == null()), (model.User.active == true()))).all()
         else:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
                 .filter(model.Job.state.in_(in_list) &

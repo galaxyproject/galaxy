@@ -33,6 +33,7 @@ class Heartbeat(threading.Thread):
     """
     Thread that periodically dumps the state of all threads to a file
     """
+
     def __init__(self, config, name="Heartbeat Thread", period=20, fname="heartbeat.log"):
         threading.Thread.__init__(self, name=name)
         self.config = config

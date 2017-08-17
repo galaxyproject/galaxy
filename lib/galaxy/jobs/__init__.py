@@ -55,6 +55,7 @@ class JobDestination(Bunch):
     """
     Provides details about where a job runs
     """
+
     def __init__(self, **kwds):
         self['id'] = None
         self['url'] = None
@@ -87,6 +88,7 @@ class JobToolConfiguration(Bunch):
     A JobToolConfiguration will have the required attribute 'id' and optional
     attributes 'handler', 'destination', and 'params'
     """
+
     def __init__(self, **kwds):
         self['handler'] = None
         self['destination'] = None
@@ -723,6 +725,7 @@ class JobWrapper(object, HasResourceParameters):
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.
     """
+
     def __init__(self, job, queue, use_persisted_destination=False):
         self.job_id = job.id
         self.session_id = job.session_id
@@ -2101,6 +2104,7 @@ class NoopQueue(object):
     """
     Implements the JobQueue / JobStopQueue interface but does nothing
     """
+
     def put(self, *args, **kwargs):
         return
 
@@ -2116,6 +2120,7 @@ class ParallelismInfo(object):
     Stores the information (if any) for running multiple instances of the tool in parallel
     on the same set of inputs.
     """
+
     def __init__(self, tag):
         self.method = tag.get('method')
         if isinstance(tag, dict):

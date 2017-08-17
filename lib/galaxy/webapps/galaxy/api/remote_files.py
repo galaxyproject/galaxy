@@ -70,13 +70,13 @@ class RemoteFilesAPIController(BaseAPIController):
             if base_dir is None:
                 raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow usage of import directory.')
             if format == 'jstree':
-                    disable = kwd.get('disable', 'folders')
-                    try:
-                        importdir_jstree = self.__create_jstree(base_dir, disable)
-                        response = importdir_jstree.jsonData()
-                    except Exception as exception:
-                        log.debug(str(exception))
-                        raise exceptions.InternalServerError('Could not create tree representation of the given folder: ' + str(base_dir))
+                disable = kwd.get('disable', 'folders')
+                try:
+                    importdir_jstree = self.__create_jstree(base_dir, disable)
+                    response = importdir_jstree.jsonData()
+                except Exception as exception:
+                    log.debug(str(exception))
+                    raise exceptions.InternalServerError('Could not create tree representation of the given folder: ' + str(base_dir))
             elif format == 'ajax':
                 raise exceptions.NotImplemented('Not implemented yet. Sorry.')
             else:

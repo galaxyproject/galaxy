@@ -66,12 +66,12 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         for user in trans.sa_session.query(trans.app.model.User) \
                                     .filter(trans.app.model.User.table.c.deleted == false()) \
                                     .order_by(trans.app.model.User.table.c.email):
-                uid = int(user.id)
-                userkey = ""
-                for api_user in trans.sa_session.query(trans.app.model.APIKeys) \
-                        .filter(trans.app.model.APIKeys.user_id == uid):
-                    userkey = api_user.key
-                users.append({'uid': uid, 'email': user.email, 'key': userkey})
+            uid = int(user.id)
+            userkey = ""
+            for api_user in trans.sa_session.query(trans.app.model.APIKeys) \
+                    .filter(trans.app.model.APIKeys.user_id == uid):
+                userkey = api_user.key
+            users.append({'uid': uid, 'email': user.email, 'key': userkey})
         return trans.fill_template('webapps/galaxy/user/list_users.mako',
                                    cntrller=cntrller,
                                    users=users,

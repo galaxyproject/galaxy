@@ -52,6 +52,7 @@ class WebApplication(object):
     complicated encoding of arguments in the PATH_INFO can be performed
     with routes.
     """
+
     def __init__(self):
         """
         Create a new web application object. To actually connect some
@@ -263,6 +264,7 @@ class WSGIEnvironmentProperty(object):
     associated object (provides property style access to keys in the WSGI
     environment)
     """
+
     def __init__(self, key, default=''):
         self.key = key
         self.default = default
@@ -278,6 +280,7 @@ class LazyProperty(object):
     Property that replaces itself with a calculated value the first time
     it is used.
     """
+
     def __init__(self, func):
         self.func = func
 
@@ -299,6 +302,7 @@ class DefaultWebTransaction(object):
     TODO: Provide hooks to allow application specific state to be included
           in here.
     """
+
     def __init__(self, environ):
         self.environ = environ
         self.request = Request(environ)
@@ -343,6 +347,7 @@ class Request(webob.Request):
     """
     Encapsulates an HTTP request.
     """
+
     def __init__(self, environ):
         """
         Create a new request wrapping the WSGI environment `environ`
@@ -406,6 +411,7 @@ class Response(object):
     Describes an HTTP response. Currently very simple since the actual body
     of the request is handled separately.
     """
+
     def __init__(self):
         """
         Create a new Response defaulting to HTML content and "200 OK" status

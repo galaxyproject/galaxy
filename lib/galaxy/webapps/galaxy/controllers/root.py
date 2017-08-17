@@ -24,6 +24,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
+
     def __init__(self, app):
         super(RootController, self).__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)

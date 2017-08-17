@@ -325,6 +325,7 @@ class DefaultToolState(object):
     Keeps track of the state of a users interaction with a tool between
     requests.
     """
+
     def __init__(self):
         self.page = 0
         self.rerun_remap_job_id = None
@@ -2396,12 +2397,12 @@ class MergeCollectionTool(DatabaseOperationTool):
         identifiers_map = {}
         for input_num, input_list in enumerate(input_lists):
             for dce in input_list.collection.elements:
-                    element_identifier = dce.element_identifier
-                    if element_identifier not in identifiers_map:
-                        identifiers_map[element_identifier] = []
-                    elif dupl_actions == "fail":
-                        raise Exception("Duplicate collection element identifiers found for [%s]" % element_identifier)
-                    identifiers_map[element_identifier].append(input_num)
+                element_identifier = dce.element_identifier
+                if element_identifier not in identifiers_map:
+                    identifiers_map[element_identifier] = []
+                elif dupl_actions == "fail":
+                    raise Exception("Duplicate collection element identifiers found for [%s]" % element_identifier)
+                identifiers_map[element_identifier].append(input_num)
 
         for copy, input_list in enumerate(input_lists):
             for dce in input_list.collection.elements:

@@ -9,6 +9,7 @@ category_description = 'Test 1070 for a repository with an invalid tool.'
 
 class TestFreebayesRepository(ShedTwillTestCase):
     '''Test repository with multiple revisions with invalid tools.'''
+
     def test_0000_create_or_login_admin_user(self):
         """Create necessary user accounts and login as an admin user."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)

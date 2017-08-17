@@ -21,6 +21,7 @@ class Godocker(object):
     """
     API parameters
     """
+
     def __init__(self, server, login, apikey, noCert):
         self.token = None
         self.server = server
