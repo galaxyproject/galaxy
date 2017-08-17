@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 class NoQuotaAgent(object):
     """Base quota agent, always returns no quota"""
+
     def __init__(self, model):
         self.model = model
         self.sa_session = model.context
@@ -42,6 +43,7 @@ class NoQuotaAgent(object):
 
 class QuotaAgent(NoQuotaAgent):
     """Class that handles galaxy quotas"""
+
     def get_quota(self, user, nice_size=False):
         """
         Calculated like so:

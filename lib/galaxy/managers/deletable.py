@@ -18,6 +18,7 @@ class DeletableManagerMixin(object):
     that they are no longer needed, should not be displayed, or may be actually
     removed by an admin/script.
     """
+
     def delete(self, item, flush=True, **kwargs):
         """
         Mark as deleted and return.
@@ -72,6 +73,7 @@ class PurgableManagerMixin(DeletableManagerMixin):
     purging is often removal of some additional, non-db resource (e.g. a dataset's
     file).
     """
+
     def purge(self, item, flush=True, **kwargs):
         """
         Mark as purged and return.

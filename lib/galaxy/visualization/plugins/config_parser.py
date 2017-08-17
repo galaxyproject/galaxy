@@ -452,6 +452,7 @@ class ParamModifierParser(ParamParser):
     (normal) param (e.g. 'hda_ldda' can equal 'hda' or 'ldda' and control
     whether a visualizations 'dataset_id' param is for an HDA or LDDA).
     """
+
     def parse(self, element):
         # modifies is required
         modifies = element.get('modifies')

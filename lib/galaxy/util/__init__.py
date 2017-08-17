@@ -407,18 +407,18 @@ def pretty_print_time_interval(time=False, precise=False):
 
     if precise:
         if day_diff == 0:
-                if second_diff < 10:
-                    return "just now"
-                if second_diff < 60:
-                    return str(second_diff) + " seconds ago"
-                if second_diff < 120:
-                    return "a minute ago"
-                if second_diff < 3600:
-                    return str(second_diff / 60) + " minutes ago"
-                if second_diff < 7200:
-                    return "an hour ago"
-                if second_diff < 86400:
-                    return str(second_diff / 3600) + " hours ago"
+            if second_diff < 10:
+                return "just now"
+            if second_diff < 60:
+                return str(second_diff) + " seconds ago"
+            if second_diff < 120:
+                return "a minute ago"
+            if second_diff < 3600:
+                return str(second_diff / 60) + " minutes ago"
+            if second_diff < 7200:
+                return "an hour ago"
+            if second_diff < 86400:
+                return str(second_diff / 3600) + " hours ago"
         if day_diff == 1:
             return "yesterday"
         if day_diff < 7:
@@ -599,7 +599,7 @@ def which(file):
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
         if os.path.exists(path + "/" + file):
-                return path + "/" + file
+            return path + "/" + file
 
     return None
 
@@ -721,7 +721,7 @@ class Params(object):
                     key not in self.NEVER_SANITIZE and
                     True not in [key.endswith("|%s" % nonsanitize_parameter) for
                                  nonsanitize_parameter in self.NEVER_SANITIZE]):
-                        self.__dict__[key] = sanitize_param(value)
+                    self.__dict__[key] = sanitize_param(value)
                 else:
                     self.__dict__[key] = value
         else:

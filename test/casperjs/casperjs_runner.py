@@ -345,6 +345,7 @@ class Test_01_User(CasperJSTestCase):
     """Tests for the Galaxy user centered functionality:
     registration, login, etc.
     """
+
     def test_10_registration(self):
         """User registration tests:
         register new user, logout, attempt bad registrations.
@@ -369,6 +370,7 @@ class Test_01_User(CasperJSTestCase):
 class Test_02_Tools(CasperJSTestCase):
     """(Minimal) casperjs tests for tools.
     """
+
     def test_10_upload(self):
         """Tests uploading files
         """
@@ -378,6 +380,7 @@ class Test_02_Tools(CasperJSTestCase):
 class Test_03_HistoryPanel(CasperJSTestCase):
     """Tests for History fetching, rendering, and modeling.
     """
+
     def test_00_history_panel(self):
         """Test history panel basics (controls, structure, refresh, history options menu, etc.).
         """
@@ -397,6 +400,7 @@ class Test_03_HistoryPanel(CasperJSTestCase):
 class Test_04_HDAs(CasperJSTestCase):
     """Tests for HistoryDatasetAssociation fetching, rendering, and modeling.
     """
+
     def test_00_HDA_states(self):
         """Test structure rendering of HDAs in all the possible HDA states
         """
@@ -406,6 +410,7 @@ class Test_04_HDAs(CasperJSTestCase):
 class Test_05_API(CasperJSTestCase):
     """Tests for API functionality and security.
     """
+
     def test_00_history_api(self):
         """Test history API.
         """

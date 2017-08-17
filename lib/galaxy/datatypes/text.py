@@ -487,6 +487,7 @@ class SnpSiftDbNSFP(Text):
     ## Create tabix index
     tabix -s 1 -b 2 -e 2 dbNSFP2.3.txt.gz
     """
+
     def __init__(self, **kwd):
         Text.__init__(self, **kwd)
         self.add_composite_file('%s.gz', description='dbNSFP bgzip', substitute_name_with_metadata='reference_name', is_binary=True)

@@ -13,6 +13,7 @@ class AdminActions(object):
     """
     Mixin for controllers that provide administrative functionality.
     """
+
     def _create_quota(self, params, decode_id=None):
         if params.amount.lower() in ('unlimited', 'none', 'no limit'):
             create_amount = None

@@ -3,6 +3,7 @@ import json
 
 class Node(object):
     """Node class of PhyloTree, which represents a CLAUDE in a phylogenetic tree"""
+
     def __init__(self, nodeName, **kwargs):
         """Creates a node and adds in the typical annotations"""
         self.name, self.id = nodeName, kwargs.get("id", 0)

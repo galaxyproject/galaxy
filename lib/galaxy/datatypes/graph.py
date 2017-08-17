@@ -106,6 +106,7 @@ class XGMMLGraphDataProvider(dataproviders.hierarchy.XMLDataProvider):
         'edges': contains objects of the form:
             { 'source' : <an index into nodes>, 'target': <an index into nodes>, 'data': <any extra data> }
     """
+
     def __iter__(self):
         # use simple graph to store nodes and links, later providing them as a dict
         #   essentially this is a form of aggregation
@@ -139,6 +140,7 @@ class SIFGraphDataProvider(dataproviders.column.ColumnarDataProvider):
         'edges': contains objects of the form:
             { 'source' : <an index into nodes>, 'target': <an index into nodes>, 'data': <any extra data> }
     """
+
     def __iter__(self):
         # use simple graph to store nodes and links, later providing them as a dict
         #   essentially this is a form of aggregation

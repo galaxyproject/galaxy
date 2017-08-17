@@ -251,6 +251,7 @@ class TextToolParameter(ToolParameter):
     >>> sorted( p.to_dict( trans ).items() )
     [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
     """
+
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
@@ -455,6 +456,7 @@ class BooleanToolParameter(ToolParameter):
     >>> print p.to_param_dict_string( False )
     _falsevalue
     """
+
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
@@ -506,6 +508,7 @@ class FileToolParameter(ToolParameter):
     >>> sorted( p.to_dict( trans ).items() )
     [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FileToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'file'), ('value', None)]
     """
+
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
@@ -562,6 +565,7 @@ class FTPFileToolParameter(ToolParameter):
     >>> sorted( p.to_dict( trans ).items() )
     [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FTPFileToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'ftpfile'), ('value', None)]
     """
+
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
@@ -634,6 +638,7 @@ class HiddenToolParameter(ToolParameter):
     >>> sorted( p.to_dict( trans ).items() )
     [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', u'_value')]
     """
+
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
@@ -668,6 +673,7 @@ class ColorToolParameter(ToolParameter):
         ...
     ValueError: Failed to convert 'None' to RGB.
     """
+
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
@@ -699,6 +705,7 @@ class BaseURLToolParameter(HiddenToolParameter):
     >>> sorted( p.to_dict( trans ).items() )
     [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', u'_value')]
     """
+
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super(BaseURLToolParameter, self).__init__(tool, input_source)
@@ -755,6 +762,7 @@ class SelectToolParameter(ToolParameter):
     >>> print p.to_param_dict_string( ["y", "z"] )
     y,z
     """
+
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
@@ -946,6 +954,7 @@ class GenomeBuildParameter(SelectToolParameter):
     >>> [ i for i in o if i[ 1 ] == 'hg18' ]
     [('Human Mar. 2006 (NCBI36/hg18) (hg18)', 'hg18', False)]
     """
+
     def __init__(self, *args, **kwds):
         super(GenomeBuildParameter, self).__init__(*args, **kwds)
         if self.tool:
@@ -1013,6 +1022,7 @@ class ColumnListParameter(SelectToolParameter):
     >>> print clp.name
     numerical_column
     """
+
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         SelectToolParameter.__init__(self, tool, input_source)
@@ -1195,6 +1205,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> assert d[ 'options' ][ 1 ][ 'name' ] == 'Option 5'
     >>> assert d[ 'options' ][ 1 ][ 'value' ] == 'option5'
     """
+
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
 
@@ -1965,6 +1976,7 @@ class HiddenDataToolParameter(HiddenToolParameter, DataToolParameter):
     Hidden parameter that behaves as a DataToolParameter. As with all hidden
     parameters, this is a HACK.
     """
+
     def __init__(self, tool, elem):
         DataToolParameter.__init__(self, tool, elem)
         self.value = "None"

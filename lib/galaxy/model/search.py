@@ -79,6 +79,7 @@ class ViewField(object):
         its chain of parents to find out which library it belongs to
 
     """
+
     def __init__(self, name, sqlalchemy_field=None, handler=None, post_filter=None, id_decode=False):
         self.name = name
         self.sqlalchemy_field = sqlalchemy_field
@@ -603,6 +604,7 @@ class GalaxyQuery(object):
     """
     This class represents a data structure of a compiled GQL query
     """
+
     def __init__(self, field_list, table_name, conditional):
         self.field_list = field_list
         self.table_name = table_name
@@ -614,6 +616,7 @@ class GalaxyQueryComparison(object):
     This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
     """
+
     def __init__(self, left, operator, right):
         self.left = left
         self.operator = operator
@@ -625,6 +628,7 @@ class GalaxyQueryAnd(object):
     This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
     """
+
     def __init__(self, left, right):
         self.left = left
         self.operator = 'and'
@@ -669,6 +673,7 @@ class GalaxySearchEngine(object):
     """
     Primary class for searching. Parses GQL (Galaxy Query Language) queries and returns a 'SearchQuery' class
     """
+
     def __init__(self):
         self.parser = parsley.makeGrammar(gqlGrammar, {
             're': re,

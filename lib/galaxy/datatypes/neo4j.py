@@ -20,6 +20,7 @@ class Neo4j(Html):
     derived from html - composite datatype elements
     stored in extra files path
     """
+
     def generate_primary_file(self, dataset=None):
         """
         This is called only at upload to write the html file

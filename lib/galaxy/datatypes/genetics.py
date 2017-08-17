@@ -320,7 +320,6 @@ class Rgenetics(Html):
         return 'text/html'
 
     def set_meta(self, dataset, **kwd):
-
         """
         for lped/pbed eg
 
@@ -617,10 +616,10 @@ class RexpBase(Html):
             del useConc[i]  # get rid of concordance
             del useCols[i]  # and usecols entry
         for i, conc in enumerate(useConc):  # these are all unique columns for the design matrix
-                ccounts = sorted((conc.get(code, 0), code) for code in conc.keys())  # decorate
-                cc = [(x[1], x[0]) for x in ccounts]  # list of code count tuples
-                codeDetails = (head[useCols[i]], cc)  # ('foo',[('a',3),('b',11),..])
-                listCol.append(codeDetails)
+            ccounts = sorted((conc.get(code, 0), code) for code in conc.keys())  # decorate
+            cc = [(x[1], x[0]) for x in ccounts]  # list of code count tuples
+            codeDetails = (head[useCols[i]], cc)  # ('foo',[('a',3),('b',11),..])
+            listCol.append(codeDetails)
         if len(listCol) > 0:
             res = listCol
             # metadata.pheCols becomes [('bar;22,zot;113','foo'), ...]
@@ -706,7 +705,6 @@ class RexpBase(Html):
             dataset.metadata = copy_from.metadata
 
     def set_meta(self, dataset, **kwd):
-
         """
         NOTE we apply the tabular machinary to the phenodata extracted
         from a BioC eSet or affybatch.

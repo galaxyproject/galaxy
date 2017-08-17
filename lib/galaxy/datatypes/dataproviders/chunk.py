@@ -74,6 +74,7 @@ class Base64ChunkDataProvider(ChunkDataProvider):
     """
     Data provider that yields chunks of base64 encoded data from its file.
     """
+
     def encode(self, chunk):
         """
         Return chunks encoded in base 64.

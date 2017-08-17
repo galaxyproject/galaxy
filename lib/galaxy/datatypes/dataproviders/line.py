@@ -139,6 +139,7 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
     e.g. Fasta, GenBank, MAF, hg log
     Note: mem intensive (gathers list of lines before output)
     """
+
     def __init__(self, source, new_block_delim_fn=None, block_filter_fn=None, **kwargs):
         """
         :param new_block_delim_fn: T/F function to determine whether a given line

@@ -70,6 +70,7 @@ class WebApplication(base.WebApplication):
         * builds mako template lookups.
         * generates GalaxyWebTransactions.
     """
+
     def __init__(self, galaxy_app, session_cookie='galaxysession', name=None):
         self.name = name
         base.WebApplication.__init__(self)

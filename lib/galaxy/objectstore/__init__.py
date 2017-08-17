@@ -749,6 +749,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
 
 def local_extra_dirs(func):
     """Non-local plugin decorator using local directories for the extra_dirs (job_work and temp)."""
+
     def wraps(self, *args, **kwargs):
         if kwargs.get('base_dir', None) is None:
             return func(self, *args, **kwargs)

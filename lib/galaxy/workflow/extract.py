@@ -163,6 +163,7 @@ class FakeJob(object):
     Fake job object for datasets that have no creating_job_associations,
     they will be treated as "input" datasets.
     """
+
     def __init__(self, dataset):
         self.is_fake = True
         self.id = "fake_%s" % dataset.id

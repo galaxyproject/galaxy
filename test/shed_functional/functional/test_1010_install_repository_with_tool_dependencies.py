@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 
 class ToolWithToolDependencies(ShedTwillTestCase):
     '''Test installing a repository with tool dependencies.'''
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)

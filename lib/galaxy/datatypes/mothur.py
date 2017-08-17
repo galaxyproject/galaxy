@@ -904,6 +904,7 @@ class SffFlow(Tabular):
           GQY1XT001CQIRF 84 1.02 0.06 0.98 0.06 0.09 1.05 0.07 ...
           GQY1XT001CF5YW 88 1.02 0.02 1.01 0.04 0.06 1.02 0.03 ...
     """
+
     def __init__(self, **kwd):
         super(SffFlow, self).__init__(**kwd)
 

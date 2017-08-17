@@ -35,6 +35,7 @@ class AzureBlobObjectStore(ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and Azure.
     """
+
     def __init__(self, config, config_xml):
         if BlockBlobService is None:
             raise Exception(NO_BLOBSERVICE_ERROR_MESSAGE)

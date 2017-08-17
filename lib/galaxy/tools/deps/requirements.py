@@ -20,6 +20,7 @@ class ToolRequirement(object):
     run (for example, a program, package, or library).  Requirements can
     optionally assert a specific version.
     """
+
     def __init__(self, name=None, type=None, version=None, specs=[]):
         self.name = name
         self.type = type
@@ -94,6 +95,7 @@ class ToolRequirements(object):
     """
     Represents all requirements (packages, env vars) needed to run a tool.
     """
+
     def __init__(self, tool_requirements=None):
         if tool_requirements:
             if not isinstance(tool_requirements, list):

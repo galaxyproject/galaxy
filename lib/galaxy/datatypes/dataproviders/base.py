@@ -291,6 +291,7 @@ class MultiSourceDataProvider(DataProvider):
 
     An iterator over iterators.
     """
+
     def __init__(self, source_list, **kwargs):
         """
         :param source_list: an iterator of iterables

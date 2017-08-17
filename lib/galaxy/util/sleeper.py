@@ -6,6 +6,7 @@ class Sleeper(object):
     Provides a 'sleep' method that sleeps for a number of seconds *unless*
     the notify method is called (from a different thread).
     """
+
     def __init__(self):
         self.condition = threading.Condition()
 

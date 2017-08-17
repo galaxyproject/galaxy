@@ -44,6 +44,7 @@ class DatasetDataProvider(base.DataProvider):
     and conv. methods for using dataset metadata to set up and control how
     the data is provided.
     """
+
     def __init__(self, dataset, **kwargs):
         """
         :param dataset: the Galaxy dataset whose file will be the source
@@ -164,6 +165,7 @@ class ConvertedDatasetDataProvider(DatasetDataProvider):
     Class that uses the file contents of a dataset after conversion to a different
     format.
     """
+
     def __init__(self, dataset, **kwargs):
         raise NotImplementedError('Abstract class')
         self.original_dataset = dataset
@@ -185,6 +187,7 @@ class DatasetColumnarDataProvider(column.ColumnarDataProvider):
     dataset's metadata to buuild settings for the ColumnarDataProvider it's
     inherited from.
     """
+
     def __init__(self, dataset, **kwargs):
         """
         All kwargs are inherited from ColumnarDataProvider.
@@ -208,6 +211,7 @@ class DatasetDictDataProvider(column.DictDataProvider):
     dataset's metadata to buuild settings for the DictDataProvider it's
     inherited from.
     """
+
     def __init__(self, dataset, **kwargs):
         """
         All kwargs are inherited from DictDataProvider.
@@ -575,6 +579,7 @@ class DatasetSubprocessDataProvider(external.SubprocessDataProvider):
     for the process).
     """
     # TODO: below should be a subclass of this and not RegexSubprocess
+
     def __init__(self, dataset, *args, **kwargs):
         """
         :param args: the list of strings used to build commands.
@@ -690,6 +695,7 @@ class BcftoolsDataProvider(line.RegexLineDataProvider):
 
     This can be piped through other providers (column, map, genome region, etc.).
     """
+
     def __init__(self, dataset, **kwargs):
         # TODO: as samtools
         raise NotImplementedError()
@@ -702,6 +708,7 @@ class BGzipTabixDataProvider(base.DataProvider):
 
     This can be piped through other providers (column, map, genome region, etc.).
     """
+
     def __init__(self, dataset, **kwargs):
         # TODO: as samtools - need more info on output format
         raise NotImplementedError()

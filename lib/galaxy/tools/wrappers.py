@@ -49,6 +49,7 @@ class RawObjectWrapper(ToolParameterValueWrapper):
     """
     Wraps an object so that __str__ returns module_name:class_name.
     """
+
     def __init__(self, obj):
         self.obj = obj
 
@@ -71,6 +72,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
     """
+
     def __init__(self, input, value, other_values={}):
         self.input = input
         self.value = value
@@ -124,6 +126,7 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         Provide access to any field by name or index for this particular value.
         Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
         """
+
         def __init__(self, input, value, other_values, path_rewriter):
             self._input = input
             self._value = value
@@ -181,6 +184,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         according to the metadata spec. Methods implemented to match behavior
         of a Metadata Collection.
         """
+
         def __init__(self, metadata):
             self.metadata = metadata
 
@@ -314,6 +318,7 @@ class HasDatasets:
 class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
     """
     """
+
     def __init__(self, job_working_directory, datasets, dataset_paths=[], **kwargs):
         if not isinstance(datasets, list):
             datasets = [datasets]

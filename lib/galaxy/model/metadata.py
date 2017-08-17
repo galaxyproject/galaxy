@@ -37,6 +37,7 @@ class Statement(object):
     statements.  This is how we shove the metadata element spec into
     the class.
     """
+
     def __init__(self, target):
         self.target = target
 
@@ -61,6 +62,7 @@ class MetadataCollection(object):
     handles processing the metadata elements when they are set and
     retrieved, returning default values in cases when metadata is not set.
     """
+
     def __init__(self, parent):
         self.parent = parent
         # initialize dict if needed
@@ -205,6 +207,7 @@ class MetadataSpecCollection(odict):
     list.  append() is also implemented for simplicity and does not
     "append".
     """
+
     def __init__(self, dict=None):
         odict.__init__(self, dict=None)
 
@@ -309,6 +312,7 @@ class MetadataElementSpec(object):
     Defines a metadata element and adds it to the metadata_spec (which
     is a MetadataSpecCollection) of datatype.
     """
+
     def __init__(self, datatype, name=None, desc=None,
                  param=MetadataParameter, default=None, no_value=None,
                  visible=True, set_in_upload=False, **kwargs):

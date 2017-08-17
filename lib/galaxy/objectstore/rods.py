@@ -33,6 +33,7 @@ class IRODSObjectStore(DiskObjectStore):
     """
     Galaxy object store based on iRODS
     """
+
     def __init__(self, config, file_path=None, extra_dirs=None):
         super(IRODSObjectStore, self).__init__(config, file_path=file_path, extra_dirs=extra_dirs)
         assert irods is not None, IRODS_IMPORT_MESSAGE

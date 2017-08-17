@@ -1620,13 +1620,13 @@ class RequestsCommon(BaseUIController, UsesFormDefinitionsMixin):
                             workflow_dict['mappings'][int(k[len(kwd_tag):])] = {'ds_tag': v}
             field_values = {}
             for field_index, field in enumerate(request.type.sample_form.fields):
-                    field_name = field['name']
-                    input_value = params.get('sample_%i_field_%i' % (index, field_index), '')
-                    if field['type'] == CheckboxField.__name__:
-                        field_value = CheckboxField.is_checked(input_value)
-                    else:
-                        field_value = util.restore_text(input_value)
-                    field_values[field_name] = field_value
+                field_name = field['name']
+                input_value = params.get('sample_%i_field_%i' % (index, field_index), '')
+                if field['type'] == CheckboxField.__name__:
+                    field_value = CheckboxField.is_checked(input_value)
+                else:
+                    field_value = util.restore_text(input_value)
+                field_values[field_name] = field_value
             library_select_field, folder_select_field = self.__build_library_and_folder_select_fields(trans=trans,
                                                                                                       user=request.user,
                                                                                                       sample_index=index,

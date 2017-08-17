@@ -17,6 +17,7 @@ repository_long_description = 'Long description of Galaxy filtering tool for tes
 
 class TestRepositoryComponentReviews(ShedTwillTestCase):
     '''Test repository component review features.'''
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user."""
         """

@@ -19,6 +19,7 @@ class TransferManager(object):
     """
     Manage simple data transfers from URLs to temporary locations.
     """
+
     def __init__(self, app):
         self.app = app
         self.sa_session = app.model.context.current

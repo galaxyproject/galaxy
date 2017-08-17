@@ -24,6 +24,7 @@ class ToolExecutionCache(object):
     """ An object mean to cache calculation caused by repeatedly evaluting
     the same tool by the same user with slightly different parameters.
     """
+
     def __init__(self, trans):
         self.trans = trans
         self.current_user_roles = trans.get_current_user_roles()
@@ -34,6 +35,7 @@ class ToolAction(object):
     The actions to be taken when a tool is run (after parameters have
     been converted and validated).
     """
+
     def execute(self, tool, trans, incoming={}, set_output_hid=True):
         raise TypeError("Abstract method")
 

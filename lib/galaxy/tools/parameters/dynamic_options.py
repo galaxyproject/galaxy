@@ -57,6 +57,7 @@ class StaticValueFilter(Filter):
         keep: Keep columns matching value (True)
               Discard columns matching value (False)
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.value = elem.get("value", None)
@@ -100,6 +101,7 @@ class DataMetaFilter(Filter):
         - separator: When multiple split by this (,)
 
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.ref_name = elem.get("ref", None)
@@ -196,6 +198,7 @@ class ParamValueFilter(Filter):
         - ref_attribute: Period (.) separated attribute chain of input (ref) to use as value for filter
 
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.ref_name = elem.get("ref", None)
@@ -238,6 +241,7 @@ class UniqueValueFilter(Filter):
     Required Attributes:
         column: column in options to compare with
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         column = elem.get("column", None)
@@ -268,6 +272,7 @@ class MultipleSplitterFilter(Filter):
     Optional Attributes:
         separator: Split column by this (,)
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.separator = elem.get("separator", ",")
@@ -296,6 +301,7 @@ class AttributeValueSplitterFilter(Filter):
         pair_separator: Split column by this (,)
         name_val_separator: Split name-value pair by this ( whitespace )
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.pair_separator = elem.get("pair_separator", ",")
@@ -331,6 +337,7 @@ class AdditionalValueFilter(Filter):
         name: Display name to appear in select list (value)
         index: Index of option list to add value (APPEND)
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.value = elem.get("value", None)
@@ -375,6 +382,7 @@ class RemoveValueFilter(Filter):
         key: metadata key to compare to
 
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.value = elem.get("value", None)
@@ -424,6 +432,7 @@ class SortByColumnFilter(Filter):
     Required Attributes:
         column: column to sort by
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         column = elem.get("column", None)
@@ -455,6 +464,7 @@ filter_types = dict(data_meta=DataMetaFilter,
 
 class DynamicOptions(object):
     """Handles dynamically generated SelectToolParameter options"""
+
     def __init__(self, elem, tool_param):
         def load_from_parameter(from_parameter, transform_lines=None):
             obj = self.tool_param

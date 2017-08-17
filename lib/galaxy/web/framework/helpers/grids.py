@@ -529,12 +529,14 @@ class GridColumn(object):
 
 class ReverseSortColumn(GridColumn):
     """ Column that reverses sorting; this is useful when the natural sort is descending. """
+
     def sort(self, trans, query, ascending, column_name=None):
         return GridColumn.sort(self, trans, query, (not ascending), column_name=column_name)
 
 
 class TextColumn(GridColumn):
     """ Generic column that employs freetext and, hence, supports freetext, case-independent filtering. """
+
     def filter(self, trans, user, query, column_filter):
         """ Modify query to filter using free text, case independence. """
         if column_filter == "All":
@@ -615,6 +617,7 @@ class IntegerColumn(TextColumn):
     JobIdColumn column in the SpecifiedDateListGrid class in the jobs controller of
     the reports webapp for an example.
     """
+
     def get_single_filter(self, user, a_filter):
         model_class_key_field = getattr(self.model_class, self.key)
         assert int(a_filter), "The search entry must be an integer"
@@ -627,6 +630,7 @@ class IntegerColumn(TextColumn):
 
 class CommunityRatingColumn(GridColumn, UsesItemRatings):
     """ Column that displays community ratings for an item. """
+
     def get_value(self, trans, grid, item):
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, item, webapp_model=trans.model)
         return trans.fill_template("tool_shed_rating.mako",
@@ -667,6 +671,7 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
 
 class OwnerAnnotationColumn(TextColumn, UsesAnnotations):
     """ Column that displays and filters item owner's annotations. """
+
     def __init__(self, col_name, key, model_class=None, model_annotation_association_class=None, filterable=None):
         GridColumn.__init__(self, col_name, key=key, model_class=model_class, filterable=filterable)
         self.sortable = False
@@ -695,6 +700,7 @@ class OwnerAnnotationColumn(TextColumn, UsesAnnotations):
 
 class CommunityTagsColumn(TextColumn):
     """ Column that supports community tags. """
+
     def __init__(self, col_name, key, model_class=None, model_tag_association_class=None, filterable=None, grid_name=None):
         GridColumn.__init__(self, col_name, key=key, model_class=model_class, nowrap=True, filterable=filterable, sortable=False)
         self.model_tag_association_class = model_tag_association_class
@@ -714,24 +720,25 @@ class CommunityTagsColumn(TextColumn):
         return query
 
     def get_filter(self, trans, user, column_filter):
-            # Parse filter to extract multiple tags.
-            if isinstance(column_filter, list):
-                # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
-                column_filter = ",".join(column_filter)
-            raw_tags = trans.app.tag_handler.parse_tags(column_filter.encode("utf-8"))
-            clause_list = []
-            for name, value in raw_tags:
-                if name:
-                    # Filter by all tags.
-                    clause_list.append(self.model_class.tags.any(func.lower(self.model_tag_association_class.user_tname).like("%" + name.lower() + "%")))
-                    if value:
-                        # Filter by all values.
-                        clause_list.append(self.model_class.tags.any(func.lower(self.model_tag_association_class.user_value).like("%" + value.lower() + "%")))
-            return and_(*clause_list)
+        # Parse filter to extract multiple tags.
+        if isinstance(column_filter, list):
+            # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
+            column_filter = ",".join(column_filter)
+        raw_tags = trans.app.tag_handler.parse_tags(column_filter.encode("utf-8"))
+        clause_list = []
+        for name, value in raw_tags:
+            if name:
+                # Filter by all tags.
+                clause_list.append(self.model_class.tags.any(func.lower(self.model_tag_association_class.user_tname).like("%" + name.lower() + "%")))
+                if value:
+                    # Filter by all values.
+                    clause_list.append(self.model_class.tags.any(func.lower(self.model_tag_association_class.user_value).like("%" + value.lower() + "%")))
+        return and_(*clause_list)
 
 
 class IndividualTagsColumn(CommunityTagsColumn):
     """ Column that supports individual tags. """
+
     def get_value(self, trans, grid, item):
         return trans.fill_template("/tagging_common.mako",
                                    tag_type="individual",
@@ -744,24 +751,25 @@ class IndividualTagsColumn(CommunityTagsColumn):
                                    use_toggle_link=True)
 
     def get_filter(self, trans, user, column_filter):
-            # Parse filter to extract multiple tags.
-            if isinstance(column_filter, list):
-                # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
-                column_filter = ",".join(column_filter)
-            raw_tags = trans.app.tag_handler.parse_tags(column_filter.encode("utf-8"))
-            clause_list = []
-            for name, value in raw_tags:
-                if name:
-                    # Filter by individual's tag names.
-                    clause_list.append(self.model_class.tags.any(and_(func.lower(self.model_tag_association_class.user_tname).like("%" + name.lower() + "%"), self.model_tag_association_class.user == user)))
-                    if value:
-                        # Filter by individual's tag values.
-                        clause_list.append(self.model_class.tags.any(and_(func.lower(self.model_tag_association_class.user_value).like("%" + value.lower() + "%"), self.model_tag_association_class.user == user)))
-            return and_(*clause_list)
+        # Parse filter to extract multiple tags.
+        if isinstance(column_filter, list):
+            # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
+            column_filter = ",".join(column_filter)
+        raw_tags = trans.app.tag_handler.parse_tags(column_filter.encode("utf-8"))
+        clause_list = []
+        for name, value in raw_tags:
+            if name:
+                # Filter by individual's tag names.
+                clause_list.append(self.model_class.tags.any(and_(func.lower(self.model_tag_association_class.user_tname).like("%" + name.lower() + "%"), self.model_tag_association_class.user == user)))
+                if value:
+                    # Filter by individual's tag values.
+                    clause_list.append(self.model_class.tags.any(and_(func.lower(self.model_tag_association_class.user_value).like("%" + value.lower() + "%"), self.model_tag_association_class.user == user)))
+        return and_(*clause_list)
 
 
 class MulticolFilterColumn(TextColumn):
     """ Column that performs multicolumn filtering. """
+
     def __init__(self, col_name, cols_to_filter, key, visible, filterable="default"):
         GridColumn.__init__(self, col_name, key=key, visible=visible, filterable=filterable)
         self.cols_to_filter = cols_to_filter
@@ -788,6 +796,7 @@ class MulticolFilterColumn(TextColumn):
 
 class OwnerColumn(TextColumn):
     """ Column that lists item's owner. """
+
     def get_value(self, trans, grid, item):
         return item.user.username
 
@@ -802,6 +811,7 @@ class OwnerColumn(TextColumn):
 
 class PublicURLColumn(TextColumn):
     """ Column displays item's public URL based on username and slug. """
+
     def get_link(self, trans, grid, item):
         if item.user.username and item.slug:
             return dict(action='display_by_username_and_slug', username=item.user.username, slug=item.slug)
@@ -815,6 +825,7 @@ class PublicURLColumn(TextColumn):
 
 class DeletedColumn(GridColumn):
     """ Column that tracks and filters for items with deleted attribute. """
+
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
         accepted_filter_labels_and_vals = {"active" : "False", "deleted" : "True", "all": "All"}
@@ -840,6 +851,7 @@ class StateColumn(GridColumn):
     IMPORTANT NOTE: self.model_class must have a states Bunch or dict if
     this column type is used in the grid.
     """
+
     def get_value(self, trans, grid, item):
         return item.state
 
@@ -863,6 +875,7 @@ class StateColumn(GridColumn):
 
 class SharingStatusColumn(GridColumn):
     """ Grid column to indicate sharing status. """
+
     def get_value(self, trans, grid, item):
         # Delete items cannot be shared.
         if item.deleted:
@@ -953,6 +966,7 @@ class GridOperation(object):
 
 class DisplayByUsernameAndSlugGridOperation(GridOperation):
     """ Operation to display an item by username and slug. """
+
     def get_url_args(self, item):
         return {'action' : 'display_by_username_and_slug', 'username' : item.user.username, 'slug' : item.slug}
 

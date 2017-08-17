@@ -15,6 +15,7 @@ class OpenObject(dict):
     KeyError).
     JSON-serializable.
     """
+
     def __getitem__(self, key):
         if key not in self:
             return None

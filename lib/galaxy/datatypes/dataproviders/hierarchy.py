@@ -23,6 +23,7 @@ class HierarchalDataProvider(line.BlockDataProvider):
 
     e.g. XML, HTML, GFF3, Phylogenetic
     """
+
     def __init__(self, source, **kwargs):
         # TODO: (and defer to better (than I can write) parsers for each subtype)
         super(HierarchalDataProvider, self).__init__(source, **kwargs)

@@ -1270,6 +1270,7 @@ class BigWigDataProvider (BBIDataProvider):
     Provides data from BigWig files; position data is reported in 1-based
     coordinate system, i.e. wiggle format.
     """
+
     def _get_dataset(self):
         if self.converted_dataset is not None:
             f = open(self.converted_dataset.file_name)

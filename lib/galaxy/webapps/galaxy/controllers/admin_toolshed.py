@@ -787,9 +787,9 @@ class AdminToolshed(AdminGalaxy):
                         message = 'All selected tool dependencies are already installed.'
                         status = 'error'
                 else:
-                        message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (galaxy.ini) '
-                        message += ' and restart your Galaxy server to install tool dependencies.'
-                        status = 'error'
+                    message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (galaxy.ini) '
+                    message += ' and restart your Galaxy server to install tool dependencies.'
+                    status = 'error'
         installed_tool_dependencies_select_field = \
             tool_dependency_util.build_tool_dependencies_select_field(trans.app,
                                                                       tool_shed_repository=tool_shed_repository,
@@ -856,10 +856,10 @@ class AdminToolshed(AdminGalaxy):
                         kwd['message'] = 'All selected tool dependencies are already installed.'
                         kwd['status'] = 'error'
                 else:
-                        message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (galaxy.ini) '
-                        message += ' and restart your Galaxy server to install tool dependencies.'
-                        kwd['message'] = message
-                        kwd['status'] = 'error'
+                    message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (galaxy.ini) '
+                    message += ' and restart your Galaxy server to install tool dependencies.'
+                    kwd['message'] = message
+                    kwd['status'] = 'error'
         # Redirect if no tool dependencies are in the process of being installed.
         if tool_shed_repository.tool_dependencies_being_installed:
             return self.tool_dependency_grid(trans, **kwd)

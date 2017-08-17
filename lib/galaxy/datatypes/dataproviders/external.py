@@ -31,6 +31,7 @@ class SubprocessDataProvider(base.DataProvider):
     subprocess as its data source.
     """
     # TODO: need better ways of checking returncode, stderr for errors and raising
+
     def __init__(self, *args, **kwargs):
         """
         :param args: the list of strings used to build commands.
@@ -80,6 +81,7 @@ class RegexSubprocessDataProvider(line.RegexLineDataProvider):
     RegexLineDataProvider that uses a SubprocessDataProvider as its data source.
     """
     # this is a conv. class and not really all that necc...
+
     def __init__(self, *args, **kwargs):
         # using subprocess as proxy data source in filtered line prov.
         subproc_provider = SubprocessDataProvider(*args)
@@ -135,6 +137,7 @@ class GzipDataProvider(base.DataProvider):
 
     This can be piped through other providers (column, map, genome region, etc.).
     """
+
     def __init__(self, source, **kwargs):
         unzipped = gzip.GzipFile(source, 'rb')
         super(GzipDataProvider, self).__init__(unzipped, **kwargs)
@@ -148,6 +151,7 @@ class TempfileDataProvider(base.DataProvider):
     it to be used as a source where a file_name is needed (e.g. as a parameter
     to a command line tool: samtools view -t <this_provider.source.file_name>)
     """
+
     def __init__(self, source, **kwargs):
         # TODO:
         raise NotImplementedError()

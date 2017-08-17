@@ -74,13 +74,13 @@ class TransLogger(object):
         if bytes is None:
             bytes = '-'
         if time.daylight:
-                offset = time.altzone / 60 / 60 * -100
+            offset = time.altzone / 60 / 60 * -100
         else:
-                offset = time.timezone / 60 / 60 * -100
+            offset = time.timezone / 60 / 60 * -100
         if offset >= 0:
-                offset = "+%0.4d" % (offset)
+            offset = "+%0.4d" % (offset)
         elif offset < 0:
-                offset = "%0.4d" % (offset)
+            offset = "%0.4d" % (offset)
         d = {
             'REMOTE_ADDR': environ.get('REMOTE_ADDR') or '-',
             'REMOTE_USER': environ.get('REMOTE_USER') or '-',

@@ -233,6 +233,7 @@ class DatasetOkValidator(Validator):
 
 class DatasetEmptyValidator(Validator):
     """Validator that checks if a dataset has a positive file size."""
+
     def __init__(self, message=None):
         self.message = message
 
@@ -250,6 +251,7 @@ class DatasetEmptyValidator(Validator):
 
 class DatasetExtraFilesPathEmptyValidator(Validator):
     """Validator that checks if a dataset's extra_files_path exists and is not empty."""
+
     def __init__(self, message=None):
         self.message = message
 

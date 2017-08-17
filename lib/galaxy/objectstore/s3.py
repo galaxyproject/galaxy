@@ -47,6 +47,7 @@ class S3ObjectStore(ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and S3.
     """
+
     def __init__(self, config, config_xml):
         if boto is None:
             raise Exception(NO_BOTO_ERROR_MESSAGE)

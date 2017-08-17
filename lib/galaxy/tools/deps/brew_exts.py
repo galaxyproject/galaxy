@@ -547,7 +547,7 @@ def which(file):
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
         if os.path.exists(path + "/" + file):
-                return path + "/" + file
+            return path + "/" + file
 
     return None
 

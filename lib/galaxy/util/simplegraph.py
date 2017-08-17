@@ -10,6 +10,7 @@ class SimpleGraphNode(object):
     """
     Node representation.
     """
+
     def __init__(self, index, **data):
         """
         :param index: index of this node in some parent list
@@ -26,6 +27,7 @@ class SimpleGraphEdge(object):
     """
     Edge representation.
     """
+
     def __init__(self, source_index, target_index, **data):
         """
         :param source_index: index of the edge's source node in some parent list
@@ -53,6 +55,7 @@ class SimpleGraph(object):
     These graphs are not specifically directed but since source and targets on the
     edges are listed - it could easily be used that way.
     """
+
     def __init__(self, nodes=None, edges=None):
         # use an odict so that edge indeces actually match the final node list indeces
         self.nodes = nodes or odict()

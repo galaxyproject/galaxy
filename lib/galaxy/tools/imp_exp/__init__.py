@@ -22,6 +22,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
         Class provides support for performing jobs that import a history from
         an archive.
     """
+
     def __init__(self, app, job_id):
         self.app = app
         self.job_id = job_id
@@ -217,8 +218,8 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                     """ Hook to 'decode' an HDA; method uses history and HID to get the HDA represented by
                         the encoded object. This only works because HDAs are created above. """
                     if obj_dct.get('__HistoryDatasetAssociation__', False):
-                            return self.sa_session.query(model.HistoryDatasetAssociation) \
-                                .filter_by(history=new_history, hid=obj_dct['hid']).first()
+                        return self.sa_session.query(model.HistoryDatasetAssociation) \
+                            .filter_by(history=new_history, hid=obj_dct['hid']).first()
                     return obj_dct
                 jobs_attrs = loads(jobs_attr_str, object_hook=as_hda)
 
@@ -249,6 +250,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
 
                     class HistoryDatasetAssociationIDEncoder(json.JSONEncoder):
                         """ Custom JSONEncoder for a HistoryDatasetAssociation that encodes an HDA as its ID. """
+
                         def default(self, obj):
                             """ Encode an HDA, default encoding for everything else. """
                             if isinstance(obj, model.HistoryDatasetAssociation):
@@ -309,6 +311,7 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
     Class provides support for performing jobs that export a history to an
     archive.
     """
+
     def __init__(self, job_id):
         self.job_id = job_id
 
@@ -358,6 +361,7 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
 
         class HistoryDatasetAssociationEncoder(json.JSONEncoder):
             """ Custom JSONEncoder for a HistoryDatasetAssociation. """
+
             def default(self, obj):
                 """ Encode an HDA, default encoding for everything else. """
                 if isinstance(obj, trans.app.model.HistoryDatasetAssociation):
