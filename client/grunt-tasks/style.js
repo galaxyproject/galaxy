@@ -86,7 +86,7 @@ module.exports = function( grunt ){
             watch: {
                 // watch for changes in the src dir
                 files: [ lessPath + '/**' ],
-                tasks: ['check-modules', 'sprite', 'less-site-config', 'less', 'clean'],
+                tasks: ['sprite', 'less-site-config', 'less', 'clean'],
                 options: {
                     spawn: false
                 }
@@ -105,5 +105,5 @@ module.exports = function( grunt ){
     });
 
     grunt.registerTask( 'watch-style', [ 'watch' ] );
-    grunt.registerTask( 'style', [  'check-modules', 'sprite', 'less-site-config', 'less', 'clean' ] );
+    grunt.registerTask( 'style', [  'sprite', 'less-site-config', 'less', 'clean' ] );
 };

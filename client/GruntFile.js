@@ -20,8 +20,7 @@ module.exports = function(grunt) {
 	    grunt.config.set( 'paths', TOOLSHED_PATHS );
     }
 
-    grunt.loadNpmTasks('grunt-check-modules');
     // see the sub directory grunt-tasks/ for individual task definitions
     grunt.loadTasks( 'grunt-tasks' );
-    grunt.registerTask( 'default', [ 'check-modules', 'uglify' ] );
+    grunt.registerTask( 'default', [ 'uglify' ] );
 };
