@@ -69,9 +69,9 @@ def ensure_installed(installable_context, install_func, auto_init):
 
     try:
         if auto_init and os.access(parent_path, os.W_OK):
-            with FileLock(os.path.join(parent_path, desc.lower())):
+            with FileLock(os.path.join(parent_path, desc.lower()), timeout=300):
                 return _check()
         else:
             return _check()
     except FileLockException:
-        return ensure_installed(installable_context, auto_init)
+        raise Exception("Failed to get file lock for %s" % os.path.join(parent_path, desc.lower()))
