@@ -83,9 +83,9 @@ class Forms(BaseUIController):
                    'default': ''}
     forms_grid = FormsGrid()
 
-    @web.expose
+    @web.expose_api
     @web.require_admin
-    def browse_form_definitions(self, trans, **kwd):
+    def browse_form_definitions(self, trans, payload=None, **kwd):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if not kwd.get('id', None):
@@ -101,7 +101,8 @@ class Forms(BaseUIController):
                 return self.undelete_form_definition(trans, **kwd)
             elif operation == "edit":
                 return self.edit_form_definition(trans, **kwd)
-        return self.forms_grid(trans, **kwd)
+        kwd[ 'dict_format' ] = True
+        return self.forms_grid( trans, **kwd )
 
     @web.expose
     @web.require_admin
